@@ -1,8 +1,8 @@
 package net.corda.membership.client
 
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.membership.client.dto.ApprovalRuleTypeDto
 import net.corda.virtualnode.ShortHash
 import kotlin.jvm.Throws
 
@@ -54,7 +54,7 @@ interface MGMOpsClient : Lifecycle {
     fun addApprovalRule(
         holdingIdentityShortHash: ShortHash,
         rule: String,
-        ruleType: ApprovalRuleTypeDto,
+        ruleType: ApprovalRuleType,
         label: String? = null
     ): String
 
@@ -71,7 +71,7 @@ interface MGMOpsClient : Lifecycle {
      * @throws [MemberNotAnMgmException] If the member [holdingIdentityShortHash] is not an MGM.
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
-    fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleTypeDto): Collection<String>
+    fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType): Collection<String>
 
     /**
      * Deletes a previously added approval rule.

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.configuration.read.ConfigurationGetService
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -13,7 +14,6 @@ import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.membership.client.dto.ApprovalRuleTypeDto
 import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -141,7 +141,7 @@ class MGMRpcOpsTest {
             mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, rule, label)
 
             verify(mgmOpsClient).addApprovalRule(
-                eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(rule), eq(ApprovalRuleTypeDto.STANDARD), eq(label)
+                eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(rule), eq(ApprovalRuleType.STANDARD), eq(label)
             )
             mgmRpcOps.deactivate("")
             mgmRpcOps.stop()
@@ -256,7 +256,7 @@ class MGMRpcOpsTest {
 
             mgmRpcOps.getGroupApprovalRules(HOLDING_IDENTITY_ID)
 
-            verify(mgmOpsClient).getApprovalRules(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(ApprovalRuleTypeDto.STANDARD))
+            verify(mgmOpsClient).getApprovalRules(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(ApprovalRuleType.STANDARD))
             mgmRpcOps.deactivate("")
             mgmRpcOps.stop()
         }

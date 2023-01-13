@@ -21,7 +21,6 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
-import net.corda.membership.client.dto.ApprovalRuleTypeDto
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -95,11 +94,11 @@ class MGMOpsClientImpl @Activate constructor(
         fun addApprovalRule(
             holdingIdentityShortHash: ShortHash,
             rule: String,
-            ruleType: ApprovalRuleTypeDto,
+            ruleType: ApprovalRuleType,
             label: String?
         ): String
 
-        fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleTypeDto): Collection<String>
+        fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType): Collection<String>
 
         fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String)
     }
@@ -151,10 +150,10 @@ class MGMOpsClientImpl @Activate constructor(
     )
 
     override fun addApprovalRule(
-        holdingIdentityShortHash: ShortHash, rule: String, ruleType: ApprovalRuleTypeDto, label: String?
+        holdingIdentityShortHash: ShortHash, rule: String, ruleType: ApprovalRuleType, label: String?
     ) = impl.addApprovalRule(holdingIdentityShortHash, rule, ruleType, label)
 
-    override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleTypeDto) =
+    override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
         impl.getApprovalRules(holdingIdentityShortHash, ruleType)
 
     override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
@@ -229,11 +228,11 @@ class MGMOpsClientImpl @Activate constructor(
         override fun addApprovalRule(
             holdingIdentityShortHash: ShortHash,
             rule: String,
-            ruleType: ApprovalRuleTypeDto,
+            ruleType: ApprovalRuleType,
             label: String?
         ) = throw IllegalStateException(ERROR_MSG)
 
-        override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleTypeDto) =
+        override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
@@ -321,26 +320,26 @@ class MGMOpsClientImpl @Activate constructor(
         }
 
         override fun addApprovalRule(
-            holdingIdentityShortHash: ShortHash, rule: String, ruleType: ApprovalRuleTypeDto, label: String?
+            holdingIdentityShortHash: ShortHash, rule: String, ruleType: ApprovalRuleType, label: String?
         ): String {
             val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
 
             return membershipPersistenceClient.addApprovalRule(
                 mgmHoldingIdentity,
                 rule,
-                ApprovalRuleType.valueOf(ruleType.name),
+                ruleType,
                 label
             ).getOrThrow()
         }
 
         override fun getApprovalRules(
-            holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleTypeDto
+            holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType
         ): Collection<String> {
             val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
 
             return membershipQueryClient.getApprovalRules(
                 mgmHoldingIdentity,
-                ApprovalRuleType.valueOf(ruleType.name)
+                ruleType
             ).getOrThrow()
         }
 

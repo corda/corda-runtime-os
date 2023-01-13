@@ -2,6 +2,7 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -14,7 +15,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
-import net.corda.membership.client.dto.ApprovalRuleTypeDto
 import net.corda.membership.httprpc.v1.MGMRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
@@ -272,7 +272,7 @@ class MGMRpcOpsImpl @Activate constructor(
         override fun addGroupApprovalRule(holdingIdentityShortHash: String, rule: String, label: String?): String {
             return try {
                 mgmOpsClient.addApprovalRule(
-                    ShortHash.parseOrThrow(holdingIdentityShortHash), rule, ApprovalRuleTypeDto.STANDARD, label
+                    ShortHash.parseOrThrow(holdingIdentityShortHash), rule, ApprovalRuleType.STANDARD, label
                 )
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
@@ -289,7 +289,7 @@ class MGMRpcOpsImpl @Activate constructor(
         override fun getGroupApprovalRules(holdingIdentityShortHash: String): Collection<String> {
             return try {
                 mgmOpsClient.getApprovalRules(
-                    ShortHash.parseOrThrow(holdingIdentityShortHash), ApprovalRuleTypeDto.STANDARD
+                    ShortHash.parseOrThrow(holdingIdentityShortHash), ApprovalRuleType.STANDARD
                 )
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
