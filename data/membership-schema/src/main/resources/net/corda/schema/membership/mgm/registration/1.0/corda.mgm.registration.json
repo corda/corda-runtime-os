@@ -79,6 +79,14 @@
         "1.3"
       ]
     },
+    "corda.group.tls.type": {
+      "description": "What kind of TLS connections to establish between the gateways in our cluster and gateways in other clusters. This setting MUST be the same on all Gateways that need to communicate via HTTPS. The default value is OneWay",
+      "type": "string",
+      "examples": [
+        "Mutual",
+        "OneWay"
+      ]
+    },
     "corda.group.protocol.p2p.mode": {
       "description": "The protocol mode which the P2P layer should use.",
       "type": "string",
