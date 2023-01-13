@@ -9,7 +9,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
@@ -24,13 +23,13 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 class UtxoFinalityFlow(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>
-) : SubFlow<UtxoSignedTransaction>, UtxoFinalityBase() {
-
-    private val transactionId = initialTransaction.id
+) : UtxoFinalityBase() {
 
     private companion object {
         val log = contextLogger()
     }
+
+    private val transactionId = initialTransaction.id
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -72,12 +71,12 @@ class UtxoFinalityFlow(
     @Suppress("MaxLineLength")
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
-        val signaturesPayloads = sessions.associateWith {
+        val signaturesPayloads = sessions.associateWith { session ->
             try {
-                log.debug { "Requesting signatures from ${it.counterparty} for transaction $transactionId" }
-                it.receive<Payload<List<DigitalSignatureAndMetadata>>>()
+                log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
+                session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
-                log.warn("Failed to receive signatures from ${it.counterparty} for transaction $transactionId")
+                log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
                 throw e
             }
         }
@@ -91,13 +90,14 @@ class UtxoFinalityFlow(
                 CordaRuntimeException(message)
             }
 
-            log.debug {
-                "Received ${signatures.size} signatures from ${session.counterparty}" +
-                        " for transaction $transactionId"
-            }
+            log.debug { "Received ${signatures.size} signatures from ${session.counterparty} for transaction $transactionId" }
 
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
+                log.debug {
+                    "Added signature by ${signature.by.encoded} (encoded) from ${session.counterparty} of $signature for transaction " +
+                            transactionId
+                }
             }
             session to signatures
         }.toMap()
@@ -150,6 +150,7 @@ class UtxoFinalityFlow(
             }
         }.toMap()
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
+        log.debug { "Sent updated signatures to counterparties for transaction $transactionId" }
     }
 
     @Suppress("ThrowsCount")
@@ -192,7 +193,7 @@ class UtxoFinalityFlow(
     @Suspendable
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded verified (notarised) transaction $transactionId" }
+        log.debug { "Recorded notarised transaction $transactionId" }
     }
 
     @Suspendable

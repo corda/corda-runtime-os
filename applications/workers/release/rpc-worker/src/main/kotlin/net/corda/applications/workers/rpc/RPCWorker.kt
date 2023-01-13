@@ -9,6 +9,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
@@ -36,6 +37,8 @@ class RPCWorker @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
+    @Reference(service = SmartConfigFactoryFactory::class)
+    val smartConfigFactoryFactory: SmartConfigFactoryFactory,
 ) : Application {
 
     private companion object {
@@ -56,7 +59,10 @@ class RPCWorker @Activate constructor(
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config =
-            getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator(), listOf())
+            getBootstrapConfig(
+                smartConfigFactoryFactory,
+                params.defaultParams,
+                configurationValidatorFactory.createConfigValidator(), listOf())
 
         processor.start(config)
     }

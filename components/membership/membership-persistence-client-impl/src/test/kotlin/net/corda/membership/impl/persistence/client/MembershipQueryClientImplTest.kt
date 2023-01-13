@@ -10,6 +10,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
@@ -17,11 +18,12 @@ import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignature
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
+import net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -104,7 +106,7 @@ class MembershipQueryClientImplTest {
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(emptyList())
 
     private val testConfig =
-        SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
+        SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
     private fun postStartEvent() {
         lifecycleEventCaptor.firstValue.processEvent(StartEvent(), coordinator)
@@ -844,6 +846,114 @@ class MembershipQueryClientImplTest {
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
+    }
 
+    @Nested
+    inner class MutualTlsQueryTest {
+        @Test
+        fun `mutualTlsListAllowedCertificates sends the correct request`() {
+            postConfigChangedEvent()
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipQueryClient.mutualTlsListAllowedCertificates(
+                ourHoldingIdentity,
+            )
+
+            assertThat(argument.firstValue.request).isInstanceOf(MutualTlsListAllowedCertificates::class.java)
+        }
+
+        @Test
+        fun `mutualTlsListAllowedCertificates return the correct result if the request was successful`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val request = it.getArgument<MembershipPersistenceRequest>(0)
+                val context = MembershipResponseContext(
+                    request.context.requestTimestamp,
+                    request.context.requestId,
+                    clock.instant(),
+                    request.context.holdingIdentity,
+                )
+
+                CompletableFuture.completedFuture(
+                    buildResponse(
+                        context,
+                        true,
+                        MutualTlsListAllowedCertificatesResponse(
+                            listOf(
+                                ourX500Name.toString(),
+                            )
+                        )
+                    )
+                )
+            }
+
+            val response = membershipQueryClient.mutualTlsListAllowedCertificates(
+                ourHoldingIdentity,
+            )
+
+            assertThat((response as? MembershipQueryResult.Success)?.payload).containsExactly(ourX500Name.toString())
+        }
+
+        @Test
+        fun `mutualTlsListAllowedCertificates return error if the query failed`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val request = it.getArgument<MembershipPersistenceRequest>(0)
+                val context = MembershipResponseContext(
+                    request.context.requestTimestamp,
+                    request.context.requestId,
+                    clock.instant(),
+                    request.context.holdingIdentity,
+                )
+
+                CompletableFuture.completedFuture(
+                    buildResponse(
+                        context,
+                        false,
+                        MutualTlsListAllowedCertificatesResponse(
+                            listOf(
+                                ourX500Name.toString(),
+                            )
+                        )
+                    )
+                )
+            }
+
+            val response = membershipQueryClient.mutualTlsListAllowedCertificates(
+                ourHoldingIdentity,
+            )
+
+            assertThat(response).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+
+        @Test
+        fun `mutualTlsListAllowedCertificates return error if the result is unknown`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val request = it.getArgument<MembershipPersistenceRequest>(0)
+                val context = MembershipResponseContext(
+                    request.context.requestTimestamp,
+                    request.context.requestId,
+                    clock.instant(),
+                    request.context.holdingIdentity,
+                )
+
+                CompletableFuture.completedFuture(
+                    buildResponse(
+                        context,
+                        true,
+                        "ooops"
+                    )
+                )
+            }
+
+            val response = membershipQueryClient.mutualTlsListAllowedCertificates(
+                ourHoldingIdentity,
+            )
+
+            assertThat(response).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
     }
 }

@@ -41,7 +41,7 @@ spec:
         env:
         {{- include "corda.workerEnv" . | nindent 10 }}
         {{- include "corda.clusterDbEnv" . | nindent 10 }}
-        {{- include "corda.dbSaltAndPassphraseEnv" . | nindent 10 }}
+        {{- include "corda.configSaltAndPassphraseEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
           - -spassphrase=$(PASSPHRASE)
@@ -64,26 +64,7 @@ spec:
           - name: profiling
             containerPort: 10045
         {{- end }}
-        {{- if not .Values.workers.db.debug.enabled }}
-        readinessProbe:
-          httpGet:
-            path: /status
-            port: monitor
-          periodSeconds: 10
-          failureThreshold: 1
-        livenessProbe:
-          httpGet:
-            path: /isHealthy
-            port: monitor
-          periodSeconds: 10
-          failureThreshold: 1
-        startupProbe:
-          httpGet:
-            path: /isHealthy
-            port: monitor
-          periodSeconds: 5
-          failureThreshold: 20
-        {{- end }}
+        {{- include "corda.workerProbes" . | nindent 8 }}
       initContainers:
       {{ include "corda.kafkaSaslInitContainer" . | nindent 8 }}
       volumes:

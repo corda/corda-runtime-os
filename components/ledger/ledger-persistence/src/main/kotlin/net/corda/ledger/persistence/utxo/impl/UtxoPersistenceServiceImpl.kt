@@ -146,12 +146,14 @@ class UtxoPersistenceServiceImpl constructor(
             }
 
             // Mark inputs as consumed
-            val inputStateRefs = transaction.getConsumedStateRefs()
-            if (inputStateRefs.isNotEmpty()) {
-                repository.markTransactionRelevantStatesConsumed(
-                    em,
-                    inputStateRefs
-                )
+            if (transaction.status == TransactionStatus.VERIFIED) {
+                val inputStateRefs = transaction.getConsumedStateRefs()
+                if (inputStateRefs.isNotEmpty()) {
+                    repository.markTransactionRelevantStatesConsumed(
+                        em,
+                        inputStateRefs
+                    )
+                }
             }
 
             // Insert the Transactions signatures

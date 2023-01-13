@@ -1,14 +1,13 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import com.typesafe.config.ConfigFactory
-import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
-import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.exception.ConfigException
+import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -20,7 +19,7 @@ import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
@@ -54,6 +53,7 @@ import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 /** An implementation of [ConfigRPCOps]. */
 @Suppress("Unused")
@@ -227,7 +227,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
      */
     private fun validateRequestedConfig(request: UpdateConfigParameters) = try {
         val config = request.config.escapedJson
-        val smartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(config))
+        val smartConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString(config))
         val updatedConfig = validator.validate(
             request.section,
             Version(request.schemaVersion.major, request.schemaVersion.minor),

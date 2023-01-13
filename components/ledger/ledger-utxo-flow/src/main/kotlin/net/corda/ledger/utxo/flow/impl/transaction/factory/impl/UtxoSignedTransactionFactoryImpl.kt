@@ -22,9 +22,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -71,7 +69,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
 
-        verifyTransaction(utxoLedgerTransactionFactory.create(wireTransaction), utxoTransactionBuilder.notary!!)
+        UtxoLedgerTransactionVerifier(utxoLedgerTransactionFactory.create(wireTransaction)).verify(utxoTransactionBuilder.notary!!)
 
         val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
 
@@ -172,11 +170,5 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                 }
             }
         }
-    }
-
-    private fun verifyTransaction(ledgerTransactionToCheck: UtxoLedgerTransaction, notary: Party){
-        val verifier = UtxoLedgerTransactionVerifier(ledgerTransactionToCheck)
-        verifier.verifyPlatformChecks(notary)
-        verifier.verifyContracts()
     }
 }

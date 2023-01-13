@@ -6,6 +6,7 @@ import com.sun.management.HotSpotDiagnosticMXBean
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import java.lang.management.ManagementFactory
+import java.time.Duration.ofSeconds
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -21,7 +22,7 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
@@ -78,11 +79,12 @@ class CordaVNode @Activate constructor(
 
         private const val TIMEOUT_MILLIS = 1000L
         private const val WAIT_MILLIS = 100L
+        private val ONE_SECOND = ofSeconds(1)
 
         private val smartConfig: SmartConfig
 
         init {
-            val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
+            val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
             val config = ConfigFactory.empty()
                 .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
@@ -155,19 +157,6 @@ class CordaVNode @Activate constructor(
         )
     }
 
-    private fun flushHeapAfter(action: Runnable) {
-        try {
-            action.run()
-        } finally {
-            @Suppress("ExplicitGarbageCollectionCall")
-            System.gc()
-
-            Thread.sleep(WAIT_MILLIS)
-
-            vnode.flushSandboxCache()
-        }
-    }
-
     @Suppress("SameParameterValue")
     private fun executeSandbox(clientId: String, resourceName: String) {
         val holdingIdentity = HoldingIdentity(MemberX500Name.parse(X500_NAME), generateRandomId())
@@ -195,15 +184,20 @@ class CordaVNode @Activate constructor(
                 }
             }
         } finally {
-            vnode.flushSandboxCache()
+            val completion = vnode.flushSandboxCache()
+            do {
+                @Suppress("ExplicitGarbageCollectionCall")
+                System.gc()
+            } while (!vnode.waitForSandboxCache(completion, ONE_SECOND))
 
-            // Checkpoint: We have dropped the sandbox reference.
-            logger.info("Dropped sandbox")
-            dumpHeap("dropped")
+            // Checkpoint: We have destroyed the sandbox.
+            dumpHeap("destroyed")
+            logger.info("Destroyed sandbox")
 
             vnode.unloadVirtualNode(vnodeInfo)
+            logger.info("Unloaded CPI")
+            dumpHeap("unloaded")
         }
-        logger.info("Unloaded CPI")
     }
 
     @Deactivate
@@ -220,15 +214,9 @@ class CordaVNode @Activate constructor(
         logger.info("Starting")
         try {
             dumpHeap("started")
-            flushHeapAfter {
-                executeSandbox("client-1", EXAMPLE_CPI_RESOURCE)
-            }
-            flushHeapAfter {
-                executeSandbox("client-2", EXAMPLE_CPI_RESOURCE)
-            }
-            flushHeapAfter {
-                executeSandbox("client-3", EXAMPLE_CPI_RESOURCE)
-            }
+            executeSandbox("client-1", EXAMPLE_CPI_RESOURCE)
+            executeSandbox("client-2", EXAMPLE_CPI_RESOURCE)
+            executeSandbox("client-3", EXAMPLE_CPI_RESOURCE)
         } catch (e: Exception) {
             logger.error("Application error", e)
         } finally {

@@ -132,5 +132,6 @@ fun buildPersistedProperties(layeredPropertyMapFactory: LayeredPropertyMapFactor
             "truststore.session.0" to TEST_CERT,
             "truststore.tls.0" to TEST_CERT,
             "tls.version" to "1.2",
+            "tls.type" to "OneWay",
         )
     )

@@ -78,5 +78,15 @@ interface MembershipQueryClient : Lifecycle {
      * Returns an empty [LayeredPropertyMap] if there was no group policy persisted.
      */
     fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap>
+
+
+    /**
+     * Retrieve the list of the mutual TLS client certificate subject in the allowed list.
+     *
+     * @param mgmHoldingIdentity The holding identity of the MGM.
+     *
+     * @return a query result with the list of the client certificates subject.
+     */
+    fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>>
 }
 

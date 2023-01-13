@@ -199,6 +199,16 @@ class UtxoPersistenceServiceImplTest {
                 true,
                 createdTs
             ).also { em.persist(it) }
+
+            em
+                .createNativeQuery("""UPDATE {h-schema}utxo_transaction_status
+                    SET
+                        status=:verified
+                    WHERE
+                        transaction_id in (:transactionIds)""" )
+                .setParameter("verified", TransactionStatus.VERIFIED.value)
+                .setParameter("transactionIds", listOf(transaction1.id.toString(), transaction2.id.toString()))
+                .executeUpdate()
         }
 
         val stateClass = TestContractState2::class.java

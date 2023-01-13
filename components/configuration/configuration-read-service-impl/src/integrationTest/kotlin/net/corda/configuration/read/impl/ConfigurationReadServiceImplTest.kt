@@ -6,7 +6,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -61,7 +61,7 @@ class ConfigurationReadServiceImplTest {
     @InjectService(timeout = 4000)
     lateinit var publisherFactory: PublisherFactory
 
-    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
     @Test
     fun `config read service delivers configuration updates to clients`() {

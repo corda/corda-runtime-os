@@ -3,16 +3,13 @@ package net.corda.cli.plugins.mgm
 import kong.unirest.Unirest
 import kong.unirest.json.JSONArray
 import kong.unirest.json.JSONObject
+import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.v5.base.util.toBase64
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
-import java.util.jar.JarInputStream
-import java.util.jar.JarOutputStream
-import java.util.zip.ZipEntry
 
 @Command(
     name = "member",
@@ -34,8 +31,8 @@ class OnBoardMember : Runnable, BaseOnboard() {
     @Option(
         names = ["--cpb-file"],
         description = [
-            "Location of a CPI file (Use either cpi-file, cpb-file or cpi-hash).",
-            "To create the CPI use the MGM created group policy file and sign it using the package create-cpi command."
+            "Location of a CPB file (Use either cpi-file, cpb-file or cpi-hash).",
+            "Usage of --cpi-file or --cpi-hash is recommended. The CPI will be signed with default options."
         ]
     )
     var cpbFile: File? = null
@@ -163,11 +160,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
             }
         }
         if (!cpiFile.canRead()) {
-            val cpi = createCpi(cpbFile)
-            cpiFile.parentFile.mkdirs()
-            cpiFile.writeBytes(cpi)
+            createCpi(cpbFile, cpiFile)
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
+        uploadSigningCertificates()
         return uploadCpi(cpiFile).also {
             cpiHashesFile.writeText(it)
         }
@@ -185,26 +181,19 @@ class OnBoardMember : Runnable, BaseOnboard() {
             .replace('+', '-')
             .replace('=', '_')
     }
-
-    private fun copyJar(source: JarInputStream, target: JarOutputStream) {
-        while (true) {
-            val entry = source.nextJarEntry ?: return
-            target.putNextEntry(entry)
-            source.copyTo(target)
-            target.closeEntry()
-        }
-    }
-    private fun createCpi(cpbFile: File): ByteArray {
-        return JarInputStream(cpbFile.inputStream()).use { cpbJar ->
-            ByteArrayOutputStream().use { cpiByteStream ->
-                JarOutputStream(cpiByteStream, cpbJar.manifest).use { cpiJar ->
-                    cpiJar.putNextEntry(ZipEntry("GroupPolicy.json"))
-                    cpiJar.write(groupPolicyFile.readBytes())
-                    copyJar(cpbJar, cpiJar)
-                }
-                cpiByteStream.toByteArray()
-            }
-        }
+    private fun createCpi(cpbFile: File, cpiFile: File) {
+        println("Using the cpb file is not recommended." +
+                " It is advised to create CPI using the package create-cpi command.")
+        cpiFile.parentFile.mkdirs()
+        val creator = CreateCpiV2()
+        creator.cpbFileName = cpbFile.absolutePath
+        creator.groupPolicyFileName = groupPolicyFile.absolutePath
+        creator.cpiName = cpbFile.name
+        creator.cpiVersion = "1.0"
+        creator.cpiUpgrade = false
+        creator.outputFileName = cpiFile.absolutePath
+        creator.signingOptions = createDefaultSingingOptions()
+        creator.run()
     }
 
     private val ledgerKeyId by lazy {

@@ -8,9 +8,10 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualTransactionMetadataVerifier
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -59,7 +60,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         signatories: Iterable<PublicKey>
     ): ConsensualSignedTransaction {
         val metadata: TransactionMetadata = transactionMetadataFactory.create(consensualMetadata())
-        ConsensualTransactionVerification.verifyMetadata(metadata)
+        ConsensualTransactionMetadataVerifier(metadata).verify()
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(consensualTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
@@ -120,19 +121,19 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
             .sorted()
             .map { componentGroupIndex ->
                 when (componentGroupIndex) {
-                    ConsensualComponentGroup.METADATA ->
+                    ConsensualComponentGroup.METADATA -> {
                         listOf(metadataBytes)
-
-                    ConsensualComponentGroup.TIMESTAMP ->
+                    }
+                    ConsensualComponentGroup.TIMESTAMP -> {
                         listOf(serializationService.serialize(Instant.now()).bytes)
-
-                    ConsensualComponentGroup.SIGNATORIES ->
+                    }
+                    ConsensualComponentGroup.SIGNATORIES -> {
                         requiredSigningKeys.map { serializationService.serialize(it).bytes }
-
-                    ConsensualComponentGroup.OUTPUT_STATES ->
+                    }
+                    ConsensualComponentGroup.OUTPUT_STATES -> {
                         consensualTransactionBuilder.states.map { serializationService.serialize(it).bytes }
-
-                    ConsensualComponentGroup.OUTPUT_STATE_TYPES ->
+                    }
+                    ConsensualComponentGroup.OUTPUT_STATE_TYPES -> {
                         consensualTransactionBuilder.states.map {
                             serializationService.serialize(
                                 currentSandboxGroup.getEvolvableTag(
@@ -140,12 +141,14 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                                 )
                             ).bytes
                         }
+                    }
                 }
             }
     }
 
     private fun verifyTransaction(wireTransaction: WireTransaction){
-        val ledgerTransactionToCheck = ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
-        ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+        ConsensualLedgerTransactionVerifier(
+            ConsensualLedgerTransactionImpl(wireTransaction, serializationService)
+        ).verify()
     }
 }

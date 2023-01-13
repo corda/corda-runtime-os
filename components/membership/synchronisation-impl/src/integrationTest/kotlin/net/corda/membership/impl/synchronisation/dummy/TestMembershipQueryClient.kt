@@ -104,6 +104,10 @@ class TestMembershipQueryClientImpl @Activate constructor(
         }
     }
 
+    override fun mutualTlsListAllowedCertificates(
+        mgmHoldingIdentity: HoldingIdentity,
+    ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
 

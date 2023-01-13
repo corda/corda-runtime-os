@@ -7,7 +7,8 @@ import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -18,7 +19,7 @@ import net.corda.test.util.TestRandom
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 object CryptoConfigurationSetup {
 
@@ -108,11 +109,11 @@ object CryptoConfigurationSetup {
         )
 
     private fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
-        var cfg = SmartConfigFactory.create(
+        var cfg = SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory())).create(
             ConfigFactory.parseString(
                 """
-            ${SmartConfigFactory.SECRET_PASSPHRASE_KEY}=passphrase
-            ${SmartConfigFactory.SECRET_SALT_KEY}=salt
+            ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase
+            ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
         """.trimIndent()
             )
         ).create(

@@ -1,15 +1,16 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
-import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
-import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.serialization.SerializationService
@@ -18,20 +19,21 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import java.security.PublicKey
 
 @CordaSystemFlow
 class ConsensualFinalityFlow(
-    private val signedTransaction: ConsensualSignedTransactionInternal,
+    private val initialTransaction: ConsensualSignedTransactionInternal,
     private val sessions: List<FlowSession>
-) : SubFlow<ConsensualSignedTransaction> {
+) : ConsensualFinalityBase() {
 
     private companion object {
         val log = contextLogger()
     }
 
+    private val transactionId = initialTransaction.id
+
     @CordaInject
-    lateinit var transactionSignatureService: TransactionSignatureService
+    lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
@@ -44,149 +46,114 @@ class ConsensualFinalityFlow(
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
-
-        // TODO Check there is at least one state
-
-        val sessionPublicKeys = getSessionPublicKeys()
-        requireSessionsToSatisfySignatories(sessionPublicKeys)
+        verifyTransaction(initialTransaction)
         persistUnverifiedTransaction()
-        val fullySignedTransaction = receiveSignaturesAndAddToTransaction(sessionPublicKeys)
-        persistFullySignedTransaction(fullySignedTransaction)
-        sendFullySignedTransactionToCounterparties(fullySignedTransaction)
+        val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
+        verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
+        persistTransactionWithCounterpartySignatures(transaction)
+        sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
 
         if (sessions.isNotEmpty()) {
-            log.debug { "All sessions received and acknowledged storage of signed transaction ${signedTransaction.id}" }
+            log.debug { "All sessions received and acknowledged storage of transaction $transactionId" }
         }
 
-        return fullySignedTransaction
+        return transaction
     }
 
-    private fun getSessionPublicKeys(): Map<FlowSession, List<PublicKey>> {
-        // Check if the sessions' counterparties are all available and have keys.
-        val sessionPublicKeys = sessions.map { session ->
-            val member = memberLookup.lookup(session.counterparty)
-                ?: throw CordaRuntimeException(
-                    "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
-                )
-            session to member
-        }.associate { (session, memberInfo) ->
-            session to memberInfo.ledgerKeys.ifEmpty {
-                throw CordaRuntimeException(
-                    "A session with ${session.counterparty} exists but the member does not have any active ledger keys"
-                )
-            }
-        }
-
-        return sessionPublicKeys
-    }
-
-    private fun requireSessionsToSatisfySignatories(sessionPublicKeys: Map<FlowSession, List<PublicKey>>) {
-        // TODO [CORE-8655] Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        val missingSignatories = signedTransaction.getMissingSignatories()
-        // Check if all missing signing keys are covered by the sessions.
-        require(sessionPublicKeys.values.flatten().containsAll(missingSignatories)) {
-            "Required signatures $missingSignatories but ledger keys for the passed in sessions are $sessionPublicKeys"
-        }
+    private fun verifyTransaction(signedTransaction: ConsensualSignedTransactionInternal) {
+        ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
     @Suspendable
     private fun persistUnverifiedTransaction() {
-        persistenceService.persist(signedTransaction, TransactionStatus.UNVERIFIED)
-        log.debug { "Recorded transaction with initial signatures ${signedTransaction.id}" }
+        persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
+        log.debug { "Recorded transaction with initial signatures $transactionId" }
     }
 
+    @Suppress("MaxLineLength")
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(
-        sessionPublicKeys: Map<FlowSession, List<PublicKey>>
-    ): ConsensualSignedTransactionInternal {
-        var signedByParticipantsTransaction = signedTransaction
+    private fun receiveSignaturesAndAddToTransaction(): Pair<ConsensualSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>>  {
 
         // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
-        sessions.forEach { session ->
-            // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
-            log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
-            session.send(signedTransaction)
-
-            val signaturesPayload = try {
+        val signaturesPayloads = sessions.associateWith { session ->
+            try {
+                log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
+                session.send(initialTransaction)
                 session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
-                log.warn("Failed to receive signature from ${session.counterparty} for signed transaction ${signedTransaction.id}")
+                log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
                 throw e
             }
+        }
 
+        var transaction = initialTransaction
+        val signaturesReceivedFromSessions = signaturesPayloads.map { (session, signaturesPayload) ->
             val signatures = signaturesPayload.getOrThrow { failure ->
-                val message = "Failed to receive signature from ${session.counterparty} for signed transaction " +
-                        "${signedTransaction.id} with message: ${failure.message}"
-                log.debug { message }
+                val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
+                        "$transactionId with message: ${failure.message}"
+                log.warn(message)
                 CordaRuntimeException(message)
             }
 
-            log.debug { "Received signatures from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
-
-            requireCorrectReceivedSigningKeys(
-                signatures,
-                signedTransaction.getMissingSignatories(),
-                ledgerKeys = sessionPublicKeys[session]!!,
-                session
-            )
+            log.debug { "Received ${signatures.size} signatures from ${session.counterparty} for transaction $transactionId" }
 
             signatures.forEach { signature ->
-                try {
-                    transactionSignatureService.verifySignature(signedTransaction.id, signature)
-                    log.debug {
-                        "Successfully verified signature from ${session.counterparty} of $signature for signed transaction " +
-                                "${signedTransaction.id}"
-                    }
-                } catch (e: Exception) {
-                    log.warn(
-                        "Failed to verify signature from ${session.counterparty} of $signature for signed transaction " +
-                                "${signedTransaction.id}. Message: ${e.message}"
-                    )
-
-                    throw e
+                transaction = verifyAndAddSignature(transaction, signature)
+                log.debug {
+                    "Added signature by ${signature.by.encoded} (encoded) from ${session.counterparty} of $signature for transaction " +
+                            transactionId
                 }
-                signedByParticipantsTransaction = signedByParticipantsTransaction.addSignature(signature)
-                log.debug { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
-        }
+            session to signatures
+        }.toMap()
 
-        return signedByParticipantsTransaction
+        return transaction to signaturesReceivedFromSessions
     }
 
-    private fun requireCorrectReceivedSigningKeys(
-        signatures: List<DigitalSignatureAndMetadata>,
-        missingSignatories: Set<PublicKey>,
-        ledgerKeys: List<PublicKey>,
-        session: FlowSession
+    private fun verifyAllReceivedSignatures(
+        transaction: ConsensualSignedTransactionInternal,
+        signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
     ) {
-        val receivedSigningKeys = signatures.map { it.by }
-        val expectedSigningKeys = missingSignatories.intersect(ledgerKeys.toSet())
-        if (receivedSigningKeys.toSet() != expectedSigningKeys) {
-            throw CordaRuntimeException(
-                "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
-                        "Expected: $expectedSigningKeys But received: $receivedSigningKeys"
-            )
+        log.debug { "Verifying all signatures for transaction $transactionId." }
+
+        try {
+            transaction.verifySignatures()
+        } catch (e: TransactionMissingSignaturesException) {
+            val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
+                "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
+                        signatures.map { it.by.encoded }
+            }
+            val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
+                "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
+            } else {
+                "[]"
+            }
+            val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
+                    "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
+                    "the transaction: $counterpartiesToSignatoriesMessage"
+            log.warn(message)
+            throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
         }
     }
 
     @Suspendable
-    private fun persistFullySignedTransaction(fullySignedTransaction: ConsensualSignedTransactionInternal) {
-        persistenceService.persist(fullySignedTransaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded signed transaction ${signedTransaction.id}" }
+    private fun persistTransactionWithCounterpartySignatures(transaction: ConsensualSignedTransactionInternal) {
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED)
+        log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 
     @Suspendable
-    private fun sendFullySignedTransactionToCounterparties(fullySignedTransaction: ConsensualSignedTransactionInternal) {
-        // TODO Consider removing
-        for (session in sessions) {
-            // Split send and receive since we have to use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
-            session.send(fullySignedTransaction)
-            // Do we want a situation where a boolean can be received to execute some sort of failure logic?
-            // Or would that always be covered by an exception as it always indicates something wrong occurred.
-            // Returning a context map might be appropriate in case we want to do any sort of handling in the future
-            // without having to worry about backwards compatibility.
-            session.receive<Unit>()
-            log.debug { "${session.counterparty} received and acknowledged storage of signed transaction ${signedTransaction.id}" }
-        }
+    private fun sendUnseenSignaturesToCounterparties(
+        transaction: ConsensualSignedTransactionInternal,
+        signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
+    ) {
+        val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
+            session to transaction.signatures.filter {
+                it !in initialTransaction.signatures &&             // These have already been distributed with the first go
+                it !in signatures                                   // These came from that party
+            }
+        }.toMap()
+        flowMessaging.sendAllMap(notSeenSignaturesBySessions)
+        log.debug { "Sent updated signatures to counterparties for transaction $transactionId" }
     }
 }

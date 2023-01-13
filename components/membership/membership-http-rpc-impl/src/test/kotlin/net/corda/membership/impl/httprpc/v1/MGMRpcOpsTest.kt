@@ -1,17 +1,23 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -23,7 +29,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 class MGMRpcOpsTest {
     companion object {
@@ -46,10 +51,19 @@ class MGMRpcOpsTest {
     private val mgmOpsClient: MGMOpsClient = mock {
         on { generateGroupPolicy(any()) } doReturn mgmGenerateGroupPolicyResponseDto
     }
+    private val subject = "CN=Alice, O=Alice ,L=London ,C=GB"
+    private val gatewayConfiguration = mock<SmartConfig> {
+        on { getConfig("sslConfig") } doReturn mock
+        on { getString("tlsType") } doReturn "MUTUAL"
+    }
+    private val configurationGetService = mock<ConfigurationGetService> {
+        on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
+    }
 
     private val mgmRpcOps = MGMRpcOpsImpl(
         lifecycleCoordinatorFactory,
-        mgmOpsClient
+        mgmOpsClient,
+        configurationGetService,
     )
 
     @Test
@@ -105,9 +119,183 @@ class MGMRpcOpsTest {
 
     @Test
     fun `operation fails when svc is not running`() {
-        val ex = assertFailsWith<ServiceUnavailableException> {
+        val ex = assertThrows<ServiceUnavailableException> {
             mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
         }
         assertEquals("MGMRpcOpsImpl is not running. Operation cannot be fulfilled.", ex.message)
+    }
+
+    @Nested
+    inner class MutualTlsAllowClientCertificateTest {
+        @Test
+        fun `it fails when not ready`() {
+            assertThrows<ServiceUnavailableException> {
+                mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, subject)
+            }
+        }
+
+        @Test
+        fun `it fails when mutual tls is not enabled`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            whenever(gatewayConfiguration.getString("tlsType")).doReturn("ONE_WAY")
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, subject)
+            }
+        }
+
+        @Test
+        fun `it fails when the subject is not a valid X500 name`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+
+            assertThrows<InvalidInputDataException> {
+                mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, "Invalid")
+            }
+        }
+
+        @Test
+        fun `it fails when the member is not an MGM`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            whenever(
+                mgmOpsClient.mutualTlsAllowClientCertificate(
+                    any(),
+                    any(),
+                )
+            ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
+
+            assertThrows<InvalidInputDataException> {
+                mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, subject)
+            }
+        }
+
+        @Test
+        fun `it sends the request to the client`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+
+            mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, subject)
+
+            verify(mgmOpsClient).mutualTlsAllowClientCertificate(
+                ShortHash.of(HOLDING_IDENTITY_ID),
+                MemberX500Name.Companion.parse(subject),
+            )
+        }
+    }
+
+    @Nested
+    inner class MutualTlsDisallowClientCertificateTest {
+        @Test
+        fun `it fails when not ready`() {
+            assertThrows<ServiceUnavailableException> {
+                mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, subject)
+            }
+        }
+
+        @Test
+        fun `it fails when mutual tls is not enabled`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            whenever(gatewayConfiguration.getString("tlsType")).doReturn("ONE_WAY")
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, subject)
+            }
+        }
+
+        @Test
+        fun `it fails when the subject is not a valid X500 name`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+
+            assertThrows<InvalidInputDataException> {
+                mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, "Invalid")
+            }
+        }
+
+        @Test
+        fun `it fails when the member is not an MGM`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            whenever(
+                mgmOpsClient.mutualTlsDisallowClientCertificate(
+                    any(),
+                    any(),
+                )
+            ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
+
+            assertThrows<InvalidInputDataException> {
+                mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, subject)
+            }
+        }
+
+        @Test
+        fun `it sends the request to the client`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+
+            mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, subject)
+
+            verify(mgmOpsClient).mutualTlsDisallowClientCertificate(
+                ShortHash.of(HOLDING_IDENTITY_ID),
+                MemberX500Name.Companion.parse(subject),
+            )
+        }
+    }
+
+
+    @Nested
+    inner class MutualTlsListClientCertificateTest {
+        @Test
+        fun `it fails when not ready`() {
+            assertThrows<ServiceUnavailableException> {
+                mgmRpcOps.mutualTlsListClientCertificate(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `it fails when mutual tls is not enabled`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            whenever(gatewayConfiguration.getString("tlsType")).doReturn("ONE_WAY")
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.mutualTlsListClientCertificate(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `it fails when the member is not an MGM`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            whenever(
+                mgmOpsClient.mutualTlsListClientCertificate(
+                    any(),
+                )
+            ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
+
+            assertThrows<InvalidInputDataException> {
+                mgmRpcOps.mutualTlsListClientCertificate(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `it returns the list from the client`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            val parsedSubject = MemberX500Name.parse(subject)
+            whenever(
+                mgmOpsClient.mutualTlsListClientCertificate(
+                    ShortHash.of(HOLDING_IDENTITY_ID)
+                )
+            ).doReturn(listOf(parsedSubject))
+
+            val list = mgmRpcOps.mutualTlsListClientCertificate(HOLDING_IDENTITY_ID)
+
+            assertThat(list)
+                .containsExactly(parsedSubject.toString())
+        }
     }
 }

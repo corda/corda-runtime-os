@@ -11,3 +11,4 @@ interface SecretsCreateService {
      */
     fun createValue(plainText: String): Config
 }
+

@@ -3,16 +3,13 @@ package net.corda.cli.plugins.mgm
 import kong.unirest.Unirest
 import kong.unirest.json.JSONArray
 import kong.unirest.json.JSONObject
+import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.crypto.test.certificates.generation.toPem
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
-import java.util.jar.Attributes
-import java.util.jar.JarOutputStream
-import java.util.jar.Manifest
-import java.util.zip.ZipEntry
 
 @Command(
     name = "mgm",
@@ -40,6 +37,16 @@ class OnboardMgm : Runnable, BaseOnboard() {
     )
     var groupPolicyFile: File = File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
+    @Option(
+        names = ["--cpi-file"],
+        description = [
+            "Location of the MGM CPI file.",
+            "To create the CPI use the package create-cpi command.",
+            "Leave empty to auto generate CPI file (not recommended)."
+        ]
+    )
+    var cpiFile: File? = null
+
     private val groupPolicy by lazy {
         mapOf(
             "fileFormatVersion" to 1,
@@ -51,31 +58,6 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 json.writeValue(outputStream, groupPolicyMap)
                 outputStream.toByteArray()
             }
-        }
-    }
-    private val cordaVersion by lazy {
-        val manifest = OnboardMgm::class.java.classLoader
-            .getResource("META-INF/MANIFEST.MF")
-            ?.openStream()
-            ?.use {
-                Manifest(it)
-            }
-        manifest?.mainAttributes?.getValue("Bundle-Version") ?: "5.0.0.0-SNAPSHOT"
-    }
-
-    private val jar by lazy {
-        ByteArrayOutputStream().use { outputStream ->
-            val manifest = Manifest()
-            manifest.mainAttributes[Attributes.Name.MANIFEST_VERSION] = "1.0"
-            manifest.mainAttributes.putValue("Corda-CPB-Name", cpbName)
-            manifest.mainAttributes.putValue("Corda-CPB-Version", cordaVersion)
-
-            JarOutputStream(outputStream, manifest).use { jarOutputStream ->
-                jarOutputStream.putNextEntry(ZipEntry("GroupPolicy.json"))
-                jarOutputStream.write(groupPolicy)
-                jarOutputStream.closeEntry()
-            }
-            outputStream.toByteArray()
         }
     }
 
@@ -104,6 +86,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
             "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
             "corda.group.key.session.policy" to "Distinct",
+            "corda.group.tls.type" to "OneWay",
             "corda.group.pki.session" to "NoPKI",
             "corda.group.pki.tls" to "Standard",
             "corda.group.tls.version" to "1.3",
@@ -111,6 +94,34 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "corda.endpoints.0.protocolVersion" to "1",
             "corda.group.truststore.tls.0" to tlsTrustRoot,
         )
+    }
+
+    private val cpi by lazy {
+        val parametersCpiFile = cpiFile
+        if(parametersCpiFile != null) {
+            return@lazy parametersCpiFile
+        }
+        val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
+            it.deleteOnExit()
+            it.writeBytes(groupPolicy)
+        }
+        val cpiFile = File.createTempFile("mgm.", ".cpi").also {
+            it.deleteOnExit()
+            it.delete()
+        }
+        println("Using the cpi file is recommended." +
+                " It is advised to create CPI using the package create-cpi command.")
+        cpiFile.parentFile.mkdirs()
+        val creator = CreateCpiV2()
+        creator.groupPolicyFileName = mgmGroupPolicyFile.absolutePath
+        creator.cpiName = cpbName
+        creator.cpiVersion = "1.0"
+        creator.cpiUpgrade = false
+        creator.outputFileName = cpiFile.absolutePath
+        creator.signingOptions = createDefaultSingingOptions()
+        creator.run()
+        uploadSigningCertificates()
+        cpiFile
     }
 
     override val cpiFileChecksum by lazy {
@@ -127,7 +138,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             }
         if (existingHash is String) return@lazy existingHash
 
-        uploadCpi(jar.inputStream(), cpbName)
+        uploadCpi(cpi.inputStream(), cpbName)
     }
     override fun run() {
         println("This sub command should only be used in for internal development")

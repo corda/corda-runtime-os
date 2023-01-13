@@ -237,7 +237,11 @@ class SigningServiceImpl(
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
         val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
         if (alias != null && store.find(tenantId, alias) != null) {
-            throw KeyAlreadyExistsException("The key with alias $alias already exists for tenant $tenantId")
+            throw KeyAlreadyExistsException(
+                "The key with alias $alias already exists for tenant $tenantId",
+                alias,
+                tenantId
+            )
         }
         val generatedKey = ref.instance.generateKeyPair(
             KeyGenerationSpec(

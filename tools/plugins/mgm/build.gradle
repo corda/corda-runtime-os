@@ -23,6 +23,8 @@ dependencies {
     implementation "org.pf4j:pf4j:${pf4jVersion}"
     kapt "org.pf4j:pf4j:${pf4jVersion}"
 
+    implementation project(":tools:plugins:package")
+
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"

@@ -3,6 +3,10 @@ plugins {
     id 'corda.common-library'
 }
 
+ext {
+    releasable = false
+}
+
 description 'Custom converter for layered property map intergration tests'
 
 dependencies {

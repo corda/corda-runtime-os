@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualTransactionBuilderVerifier
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
@@ -54,7 +55,7 @@ class ConsensualTransactionBuilderImpl(
 
     private fun verifyIfReady() {
         check(!alreadySigned) { "A transaction cannot be signed twice." }
-        ConsensualTransactionVerification.verifyStatesStructure(states)
+        ConsensualTransactionBuilderVerifier(this).verify()
         // The metadata, states will get verified in the [ConsensualSignedTransactionFactoryImpl.create()] since the whole
         // transaction is assembled there.
     }

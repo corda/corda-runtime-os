@@ -13,6 +13,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.print
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
@@ -65,6 +66,8 @@ class CombinedWorker @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
+    @Reference(service = SmartConfigFactoryFactory::class)
+    val smartConfigFactoryFactory: SmartConfigFactoryFactory,
 ) : Application {
 
     private companion object {
@@ -92,6 +95,7 @@ class CombinedWorker @Activate constructor(
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         val config = getBootstrapConfig(
+            smartConfigFactoryFactory,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig, cryptoConfig)

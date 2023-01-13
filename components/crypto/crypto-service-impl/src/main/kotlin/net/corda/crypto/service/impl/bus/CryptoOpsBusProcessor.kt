@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.bus
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
@@ -82,6 +83,9 @@ class CryptoOpsBusProcessor(
                         " ${if (result.response != null) result.response::class.java.name else "null"}"
             }
             respFuture.complete(result)
+        } catch (e: KeyAlreadyExistsException) {
+            logger.info("Key alias ${e.alias} already exists in tenant ${e.tenantId}; returning error rather than recreating")
+            respFuture.completeExceptionally(e)
         } catch (e: Throwable) {
             logger.error("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", e)
             respFuture.completeExceptionally(e)

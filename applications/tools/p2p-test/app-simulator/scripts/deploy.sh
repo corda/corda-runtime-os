@@ -131,6 +131,7 @@ register_mgm() {
       "corda.group.pki.session": "NoPKI",
       "corda.group.pki.tls": "Standard",
       "corda.group.tls.version": "1.3",
+      "corda.group.tls.type": "OneWay",
       "corda.endpoints.0.connectionURL": "'$4'",
       "corda.endpoints.0.protocolVersion": "1",
       "corda.group.truststore.tls.0" : "'$TLS_TRUST_STORE'",

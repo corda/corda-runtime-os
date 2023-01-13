@@ -10,7 +10,7 @@ import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlowProvider
 import net.corda.v5.serialization.SerializationCustomSerializer
 
-interface SandboxGroupContextComponent : SandboxGroupContextService, CacheConfiguration, Lifecycle
+interface SandboxGroupContextComponent : SandboxGroupContextService, CacheControl, Lifecycle
 
 /**
  * This function registers any [DigestAlgorithmFactory][net.corda.v5.crypto.extensions.DigestAlgorithmFactory]

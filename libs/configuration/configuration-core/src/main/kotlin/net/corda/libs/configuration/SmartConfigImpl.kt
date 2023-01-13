@@ -30,8 +30,7 @@ class SmartConfigImpl(
     private val secretsLookupService: SecretsLookupService,
 ) : SmartConfig {
     companion object{
-        fun empty(): SmartConfig = SmartConfigFactory
-                .create(ConfigFactory.empty())
+        fun empty(): SmartConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
                 .create(ConfigFactory.empty())
         private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }

@@ -7,5 +7,6 @@ object MembershipEntities {
         MemberInfoEntity::class.java,
         MemberSignatureEntity::class.java,
         GroupParametersEntity::class.java,
+        MutualTlsAllowedClientCertificateEntity::class.java,
     )
 }
