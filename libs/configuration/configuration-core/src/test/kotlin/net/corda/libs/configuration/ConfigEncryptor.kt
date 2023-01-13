@@ -1,6 +1,7 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -20,11 +21,11 @@ class ConfigEncryptor {
         val configSection = encryptionService.createValue(passwordToEncrypt)
 
         val secretsConfig = mapOf(
-            SmartConfigFactory.SECRET_SALT_KEY to salt,
-            SmartConfigFactory.SECRET_PASSPHRASE_KEY to passphrase
+            EncryptionSecretsServiceFactory.SECRET_SALT_KEY to salt,
+            EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to passphrase
         )
 
-        val configFactory = SmartConfigFactory
+        val configFactory = SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
             .create(ConfigFactory.parseMap(secretsConfig))
         val config = configFactory.create(configSection)
 

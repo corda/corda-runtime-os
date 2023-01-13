@@ -5,7 +5,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -26,7 +26,7 @@ import javax.persistence.EntityManagerFactory
 
 /** Tests of [VirtualNodeWriterFactory]. */
 class VirtualNodeWriterFactoryTests {
-    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
     /** Returns a mock [SubscriptionFactory]. */
     private fun getSubscriptionFactory() = mock<SubscriptionFactory>().apply {

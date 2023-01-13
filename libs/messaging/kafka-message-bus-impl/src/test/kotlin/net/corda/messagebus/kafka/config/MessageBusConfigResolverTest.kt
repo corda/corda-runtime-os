@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import java.util.Properties
 import java.util.stream.Stream
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -187,7 +187,7 @@ class MessageBusConfigResolverTest {
         }
     }
 
-    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
     @ParameterizedTest(name = "Config resolution for consumers: {0}")
     @MethodSource("consumerConfigSource")

@@ -2,7 +2,7 @@ package net.corda.configuration.read.impl
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -19,7 +19,7 @@ class ComponentConfigHandlerTest {
         private const val BAZ_KEY = "baz"
     }
 
-    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
     private val fooConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to 1)))
     private val barConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("bar" to 2)))
     private val bazConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("baz" to 3)))

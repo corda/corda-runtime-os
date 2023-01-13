@@ -695,8 +695,10 @@ Kafka SASL init container
 
 {{/*
 DB SALT and Passphrase environment variable
+NOTE: some of then naming here is incorrect.
+      These variables have nothing to do with the DB or DB Worker, but are common for all worker types.
 */}}
-{{- define "corda.dbSaltAndPassphraseEnv" -}}
+{{- define "corda.configSaltAndPassphraseEnv" -}}
 - name: SALT
   valueFrom:
     secretKeyRef:
