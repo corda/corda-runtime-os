@@ -26,8 +26,11 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.utxo.Contract
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -85,6 +88,10 @@ class UtxoFinalityFlowTest {
     private val pluggableNotaryClientFlow = mock<PluggableNotaryClientFlow>()
     private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
+    private val transactionState = mock<TransactionState<TestState>>()
+    private val stateAndRef = mock<StateAndRef<TestState>>()
+    private val testState = TestState(listOf(publicKeyAlice1))
+
     @BeforeEach
     fun beforeEach() {
         whenever(sessionAlice.counterparty).thenReturn(ALICE)
@@ -130,10 +137,15 @@ class UtxoFinalityFlowTest {
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
 
-        whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(
+        whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any())).thenReturn(
             pluggableNotaryClientFlow
         )
         whenever(notaryService.owningKey).thenReturn(publicKeyNotary)
+
+        // Single output State
+        whenever(stateAndRef.state).thenReturn(transactionState)
+        whenever(transactionState.contractType).thenReturn(TestContact::class.java)
+        whenever(transactionState.contractState).thenReturn(testState)
     }
 
     @Test
@@ -162,6 +174,7 @@ class UtxoFinalityFlowTest {
             )
         )
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+        whenever(updatedTxAllSigs.outputStateAndRefs).thenReturn(listOf(stateAndRef))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
@@ -177,9 +190,9 @@ class UtxoFinalityFlowTest {
         verify(updatedTxSomeSigs).addSignature(signatureBob)
         verify(updatedTxAllSigs).addSignature(signatureNotary)
 
-        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(notarisedTx, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED, emptyList())
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED, emptyList())
+        verify(persistenceService).persist(notarisedTx, TransactionStatus.VERIFIED, listOf(0))
 
         verify(sessionAlice).receive(Payload::class.java)
         verify(sessionBob).receive(Payload::class.java)
@@ -305,7 +318,10 @@ class UtxoFinalityFlowTest {
             )
         )
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
-        verify(flowMessaging).sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>("Notary has not returned any signatures."), sessions)
+        verify(flowMessaging).sendAll(
+            Payload.Failure<List<DigitalSignatureAndMetadata>>("Notary has not returned any signatures."),
+            sessions
+        )
     }
 
     @Test
@@ -578,7 +594,14 @@ class UtxoFinalityFlowTest {
         whenever(initialTx.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
-        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
         callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
@@ -605,4 +628,11 @@ class UtxoFinalityFlowTest {
             DigitalSignatureMetadata(Instant.now(), emptyMap())
         )
     }
+
+    class TestContact : Contract {
+        override fun verify(transaction: UtxoLedgerTransaction) {
+        }
+    }
+
+    class TestState(override val participants: List<PublicKey>) : ContractState
 }
