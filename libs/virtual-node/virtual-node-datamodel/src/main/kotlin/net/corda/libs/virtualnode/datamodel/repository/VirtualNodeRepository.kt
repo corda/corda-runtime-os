@@ -12,6 +12,9 @@ import javax.persistence.EntityManager
 interface VirtualNodeRepository {
     fun findAll(entityManager: EntityManager): Stream<VirtualNodeInfo>
     fun find(entityManager: EntityManager, holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
+
+    @Suppress("LongParameterList")
+
     fun put(
         entityManager: EntityManager,
         holdingId: HoldingIdentity,

@@ -13,6 +13,7 @@ import net.corda.db.schema.DbSchema.CONFIG
 
 @Entity
 @Table(name = "virtual_node_operation", schema = CONFIG)
+@Suppress("LongParameterList")
 internal class VirtualNodeOperationEntity(
     @Id
     @Column(name = "id", nullable = false)

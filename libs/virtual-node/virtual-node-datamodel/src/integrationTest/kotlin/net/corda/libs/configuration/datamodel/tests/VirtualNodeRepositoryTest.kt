@@ -212,8 +212,8 @@ class VirtualNodeRepositoryTest {
 
         assertThat(changedEntity).isNotNull
         assertThat(changedEntity!!.flowP2pOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
-        assertThat(changedEntity!!.flowStartOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
-        assertThat(changedEntity!!.flowOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
-        assertThat(changedEntity!!.vaultDbOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+        assertThat(changedEntity.flowStartOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+        assertThat(changedEntity.flowOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+        assertThat(changedEntity.vaultDbOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
     }
 }

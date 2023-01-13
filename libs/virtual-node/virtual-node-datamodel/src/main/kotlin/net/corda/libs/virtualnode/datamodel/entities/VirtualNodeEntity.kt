@@ -17,11 +17,7 @@ import javax.persistence.Entity
 import javax.persistence.Enumerated
 import javax.persistence.EnumType
 import javax.persistence.FetchType
-import javax.persistence.Id
-import javax.persistence.IdClass
 import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
-import javax.persistence.MapsId
 import javax.persistence.OneToOne
 import javax.persistence.Table
 import javax.persistence.Version
@@ -39,7 +35,7 @@ import javax.persistence.Version
  * @param cryptoDMLConnectionId A pointer to the virtual node's crypto DML details in the DB connection table.
  * @param uniquenessDDLConnectionId A pointer to the virtual node's crypto DDL details in the DB connection table.
  * @param flowP2pOperationalStatus  The virtual node's ability to communicate with peers, both inbound and outbound.
- * @param flowStartOperationalStatus The virtual node's ability to start new flows, from both the REST endpoint and start flow events arriving to the flow mapper.
+ * @param flowStartOperationalStatus The virtual node's ability to start new flows.
  * @param flowOperationalStatus The virtual node's ability to run flows, to have checkpoints, to continue in-progress flows.
  * @param vaultDbOperationalStatus The virtual node's ability to perform persistence operations on the virtual node's vault.
  * @param operationInProgress Details of the current operation in progress.
