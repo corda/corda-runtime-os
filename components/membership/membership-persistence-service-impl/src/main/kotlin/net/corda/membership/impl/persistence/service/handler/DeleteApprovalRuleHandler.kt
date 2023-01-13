@@ -2,7 +2,7 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
-import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
+import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda

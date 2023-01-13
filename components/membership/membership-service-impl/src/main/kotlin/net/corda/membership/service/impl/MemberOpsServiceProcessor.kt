@@ -2,20 +2,13 @@ package net.corda.membership.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatusDetails
-import net.corda.data.membership.rpc.request.AddApprovalRuleRequest
-import net.corda.data.membership.rpc.request.DeleteApprovalRuleRequest
-import net.corda.data.membership.rpc.request.GetApprovalRulesRequest
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
-import net.corda.data.membership.rpc.response.AddApprovalRuleResponse
-import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
-import net.corda.data.membership.rpc.response.GetApprovalRulesResponse
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
@@ -43,11 +36,10 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.SYNC_PROTOCOL
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
-import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
@@ -60,7 +52,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
@@ -89,29 +80,12 @@ class MemberOpsServiceProcessor(
             MGMGroupPolicyRequest::class.java to { it.MGMGroupPolicyRequestHandler() },
             RegistrationStatusRpcRequest::class.java to { it.RegistrationStatusRequestHandler() },
             RegistrationStatusSpecificRpcRequest::class.java to { it.RegistrationStatusSpecificRpcRequestHandler() },
-            AddApprovalRuleRequest::class.java to { it.AddApprovalRuleRequestHandler() },
-            GetApprovalRulesRequest::class.java to { it.GetApprovalRulesRequestHandler() },
-            DeleteApprovalRuleRequest::class.java to { it.DeleteApprovalRuleRequestHandler() },
         )
 
         /**
          * Temporarily hardcoded to 1.
          */
         private const val REGISTRATION_PROTOCOL_VERSION = 1
-    }
-
-    private fun validateShortHash(shortHashString: String): HoldingIdentity {
-        val holdingIdentityShortHash = ShortHash.of(shortHashString)
-        val holdingIdentity =
-            virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw MembershipRpcRequestException("Could not find holding identity associated with '$shortHashString'.")
-
-        return membershipGroupReaderProvider.getGroupReader(holdingIdentity).run {
-            lookup(holdingIdentity.x500Name)?.isMgm ?: throw MembershipRpcRequestException(
-                "'$shortHashString' is not the holding identity of an MGM and so this holding identity cannot perform this action."
-            )
-            holdingIdentity
-        }
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {
@@ -308,47 +282,4 @@ class MemberOpsServiceProcessor(
             return MGMGroupPolicyResponse(ObjectMapper().writeValueAsString(groupPolicy))
         }
     }
-
-    private inner class AddApprovalRuleRequestHandler : RpcHandler<AddApprovalRuleRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: AddApprovalRuleRequest): Any {
-            val holdingIdentity = validateShortHash(request.holdingIdentityId)
-
-            val persistedRuleId = membershipPersistenceClient.addApprovalRule(
-                holdingIdentity,
-                request.rule,
-                request.ruleType,
-                request.label
-            ).getOrThrow()
-
-            return AddApprovalRuleResponse(persistedRuleId)
-        }
-    }
-
-    private inner class GetApprovalRulesRequestHandler : RpcHandler<GetApprovalRulesRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: GetApprovalRulesRequest): Any {
-            val holdingIdentity = validateShortHash(request.holdingIdentityId)
-
-            val rules = membershipQueryClient.getApprovalRules(
-                holdingIdentity,
-                ApprovalRuleType.valueOf(request.ruleType.name),
-            ).getOrThrow()
-
-            return GetApprovalRulesResponse(rules.toList())
-        }
-    }
-
-    private inner class DeleteApprovalRuleRequestHandler : RpcHandler<DeleteApprovalRuleRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: DeleteApprovalRuleRequest): Any {
-            val holdingIdentity = validateShortHash(request.holdingIdentityId)
-
-            membershipPersistenceClient.deleteApprovalRule(
-                holdingIdentity,
-                request.ruleId
-            ).getOrThrow()
-
-            return DeleteApprovalRuleResponse()
-        }
-    }
-
-    class MembershipRpcRequestException(message: String, cause: Throwable? = null) : Exception(message, cause)
 }

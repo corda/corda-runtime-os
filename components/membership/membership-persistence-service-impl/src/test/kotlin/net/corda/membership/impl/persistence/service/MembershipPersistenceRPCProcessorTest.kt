@@ -19,13 +19,13 @@ import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
+import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier

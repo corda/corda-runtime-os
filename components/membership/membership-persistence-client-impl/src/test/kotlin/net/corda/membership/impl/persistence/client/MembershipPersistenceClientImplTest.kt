@@ -22,12 +22,12 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
-import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinator

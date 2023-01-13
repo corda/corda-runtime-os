@@ -18,7 +18,6 @@ import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationR
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
-import net.corda.data.membership.db.request.query.GetApprovalRules
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo

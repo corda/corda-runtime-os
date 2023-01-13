@@ -1,11 +1,7 @@
 package net.corda.membership.service.impl
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.rpc.request.AddApprovalRuleRequest
-import net.corda.data.membership.rpc.request.DeleteApprovalRuleRequest
-import net.corda.data.membership.rpc.request.GetApprovalRulesRequest
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -13,9 +9,6 @@ import net.corda.data.membership.rpc.request.RegistrationRpcAction
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
-import net.corda.data.membership.rpc.response.AddApprovalRuleResponse
-import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
-import net.corda.data.membership.rpc.response.GetApprovalRulesResponse
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
@@ -46,8 +39,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.impl.MGMContextImpl
 import net.corda.membership.lib.impl.MemberContextImpl
 import net.corda.membership.lib.registration.RegistrationRequestStatus
-import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader

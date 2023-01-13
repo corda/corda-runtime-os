@@ -30,6 +30,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class MGMRpcOpsTest {
     companion object {

@@ -3,15 +3,9 @@ package net.corda.membership.impl.client
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.rpc.request.AddApprovalRuleRequest
-import net.corda.data.membership.rpc.request.DeleteApprovalRuleRequest
-import net.corda.data.membership.rpc.request.GetApprovalRulesRequest
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.response.AddApprovalRuleResponse
-import net.corda.data.membership.rpc.response.DeleteApprovalRuleResponse
-import net.corda.data.membership.rpc.response.GetApprovalRulesResponse
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.helper.getConfig
@@ -265,8 +259,6 @@ class MGMOpsClientImpl @Activate constructor(
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-        private val newId: String get() = UUID.randomUUID().toString()
-
         @Suppress("ThrowsCount")
         fun mgmHoldingIdentity(holdingIdentityShortHash: ShortHash): HoldingIdentity {
             val holdingIdentity =
@@ -331,66 +323,34 @@ class MGMOpsClientImpl @Activate constructor(
         override fun addApprovalRule(
             holdingIdentityShortHash: ShortHash, rule: String, ruleType: ApprovalRuleTypeDto, label: String?
         ): String {
-            mgmHoldingIdentity(holdingIdentityShortHash)
-            try {
-                val request = MembershipRpcRequest(
-                    MembershipRpcRequestContext(
-                        newId, clock.instant()
-                    ),
-                    AddApprovalRuleRequest(
-                        holdingIdentityShortHash.toString(),
-                        rule,
-                        ApprovalRuleType.valueOf(ruleType.name),
-                        label
-                    )
-                )
-                val response: AddApprovalRuleResponse = request.sendRequest()
-                return response.ruleId
-            } catch (e: Exception) {
-                logger.warn("Something went wrong while adding the approval rule. Reason: ${e.message}")
-                throw e
-            }
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
+
+            return membershipPersistenceClient.addApprovalRule(
+                mgmHoldingIdentity,
+                rule,
+                ApprovalRuleType.valueOf(ruleType.name),
+                label
+            ).getOrThrow()
         }
 
         override fun getApprovalRules(
             holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleTypeDto
         ): Collection<String> {
-            mgmHoldingIdentity(holdingIdentityShortHash)
-            try {
-                val request = MembershipRpcRequest(
-                    MembershipRpcRequestContext(
-                        newId, clock.instant()
-                    ),
-                    GetApprovalRulesRequest(
-                        holdingIdentityShortHash.toString(),
-                        ApprovalRuleType.valueOf(ruleType.name),
-                    )
-                )
-                val response: GetApprovalRulesResponse = request.sendRequest()
-                return response.rules
-            } catch (e: Exception) {
-                logger.warn("Something went wrong while retrieving the approval rules. Reason: ${e.message}")
-                throw e
-            }
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
+
+            return membershipQueryClient.getApprovalRules(
+                mgmHoldingIdentity,
+                ApprovalRuleType.valueOf(ruleType.name)
+            ).getOrThrow()
         }
 
         override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) {
-            mgmHoldingIdentity(holdingIdentityShortHash)
-            try {
-                val request = MembershipRpcRequest(
-                    MembershipRpcRequestContext(
-                        newId, clock.instant()
-                    ),
-                    DeleteApprovalRuleRequest(
-                        holdingIdentityShortHash.toString(),
-                        ruleId
-                    )
-                )
-                request.sendRequest<DeleteApprovalRuleResponse>()
-            } catch (e: Exception) {
-                logger.warn("Something went wrong while adding the approval rule. Reason: ${e.message}")
-                throw e
-            }
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
+
+            membershipPersistenceClient.deleteApprovalRule(
+                mgmHoldingIdentity,
+                ruleId
+            ).getOrThrow()
         }
 
         override fun close() = rpcSender.close()

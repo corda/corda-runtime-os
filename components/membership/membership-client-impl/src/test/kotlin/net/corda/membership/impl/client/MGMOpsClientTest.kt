@@ -41,6 +41,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -461,154 +462,229 @@ class MGMOpsClientTest {
         mgmOpsClient.stop()
     }
 
-    @Test
-    fun `addApprovalRule should fail if the member cannot be found`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
-
-        assertThrows<CouldNotFindMemberException> {
-            mgmOpsClient.addApprovalRule(
-                ShortHash.of("000000000000"),
-                RULE_REGEX,
-                ApprovalRuleTypeDto.STANDARD,
-                RULE_LABEL
+    @Nested
+    inner class AddApprovalRuleTests {
+        @Test
+        fun `addApprovalRule should send the correct request`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val rule = "rule"
+            val label = "label"
+            whenever(
+                membershipPersistenceClient.addApprovalRule(
+                    holdingIdentity,
+                    rule,
+                    ApprovalRuleType.STANDARD,
+                    label
+                )
+            ).doReturn(
+                MembershipPersistenceResult.Success("rule-id")
             )
-        }
-        mgmOpsClient.stop()
-    }
 
-    @Test
-    fun `addApprovalRule should fail if the member cannot be read`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
-        whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
-
-        assertThrows<CouldNotFindMemberException> {
             mgmOpsClient.addApprovalRule(
                 shortHash,
-                RULE_REGEX,
+                rule,
                 ApprovalRuleTypeDto.STANDARD,
-                RULE_LABEL
+                label
+            )
+
+            verify(membershipPersistenceClient).addApprovalRule(
+                holdingIdentity,
+                rule,
+                ApprovalRuleType.STANDARD,
+                label
             )
         }
-        mgmOpsClient.stop()
+
+        @Test
+        fun `addApprovalRule should fail if the member cannot be found`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.addApprovalRule(
+                    ShortHash.of("000000000000"), RULE_REGEX, ApprovalRuleTypeDto.STANDARD, RULE_LABEL
+                )
+            }
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `addApprovalRule should fail if the member cannot be read`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.addApprovalRule(
+                    shortHash, RULE_REGEX, ApprovalRuleTypeDto.STANDARD, RULE_LABEL
+                )
+            }
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `addApprovalRule should fail if the member is not the MGM`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmOpsClient.addApprovalRule(
+                    shortHash, RULE_REGEX, ApprovalRuleTypeDto.STANDARD, RULE_LABEL
+                )
+            }
+            mgmOpsClient.stop()
+        }
     }
 
-    @Test
-    fun `addApprovalRule should fail if the member is not the MGM`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
-        val mgmContext = mock<MGMContext>()
-        val memberInfo = mock<MemberInfo> {
-            on { mgmProvidedContext } doReturn mgmContext
-        }
-        whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+    @Nested
+    inner class DeleteApprovalRuleTests {
+        @Test
+        fun `deleteApprovalRule should send the correct request`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val ruleId = "rule-id"
+            whenever(
+                membershipPersistenceClient.deleteApprovalRule(
+                    holdingIdentity,
+                    ruleId
+                )
+            ).doReturn(
+                MembershipPersistenceResult.success()
+            )
 
-        assertThrows<MemberNotAnMgmException> {
-            mgmOpsClient.addApprovalRule(
+            mgmOpsClient.deleteApprovalRule(
                 shortHash,
-                RULE_REGEX,
+                ruleId,
+            )
+
+            verify(membershipPersistenceClient).deleteApprovalRule(
+                holdingIdentity,
+                ruleId
+            )
+        }
+
+        @Test
+        fun `deleteApprovalRule should fail if the member cannot be found`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.deleteApprovalRule(
+                    ShortHash.of("000000000000"), RULE_ID
+                )
+            }
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `deleteApprovalRule should fail if the member cannot be read`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.deleteApprovalRule(
+                    shortHash, RULE_ID
+                )
+            }
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `deleteApprovalRule should fail if the member is not the MGM`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmOpsClient.deleteApprovalRule(
+                    shortHash, RULE_ID
+                )
+            }
+            mgmOpsClient.stop()
+        }
+    }
+
+    @Nested
+    inner class GetApprovalRulesTests {
+        @Test
+        fun `getApprovalRules should send the correct request`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            whenever(
+                membershipQueryClient.getApprovalRules(
+                    holdingIdentity,
+                    ApprovalRuleType.STANDARD,
+                )
+            ).doReturn(
+                MembershipQueryResult.Success(listOf("rule"))
+            )
+
+            mgmOpsClient.getApprovalRules(
+                shortHash,
                 ApprovalRuleTypeDto.STANDARD,
-                RULE_LABEL
+            )
+
+            verify(membershipQueryClient).getApprovalRules(
+                holdingIdentity,
+                ApprovalRuleType.STANDARD,
             )
         }
-        mgmOpsClient.stop()
-    }
 
-    @Test
-    fun `deleteApprovalRule should fail if the member cannot be found`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
+        @Test
+        fun `getApprovalRules should fail if the member cannot be found`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
 
-        assertThrows<CouldNotFindMemberException> {
-            mgmOpsClient.deleteApprovalRule(
-                ShortHash.of("000000000000"),
-                RULE_ID
-            )
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.getApprovalRules(
+                    ShortHash.of("000000000000"), ApprovalRuleTypeDto.STANDARD
+                )
+            }
+            mgmOpsClient.stop()
         }
-        mgmOpsClient.stop()
-    }
 
-    @Test
-    fun `deleteApprovalRule should fail if the member cannot be read`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
-        whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+        @Test
+        fun `getApprovalRules should fail if the member cannot be read`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-        assertThrows<CouldNotFindMemberException> {
-            mgmOpsClient.deleteApprovalRule(
-                shortHash,
-                RULE_ID
-            )
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.getApprovalRules(
+                    shortHash, ApprovalRuleTypeDto.STANDARD
+                )
+            }
+            mgmOpsClient.stop()
         }
-        mgmOpsClient.stop()
-    }
 
-    @Test
-    fun `deleteApprovalRule should fail if the member is not the MGM`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
-        val mgmContext = mock<MGMContext>()
-        val memberInfo = mock<MemberInfo> {
-            on { mgmProvidedContext } doReturn mgmContext
+        @Test
+        fun `getApprovalRules should fail if the member is not the MGM`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmOpsClient.getApprovalRules(
+                    shortHash, ApprovalRuleTypeDto.STANDARD
+                )
+            }
+            mgmOpsClient.stop()
         }
-        whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
-
-        assertThrows<MemberNotAnMgmException> {
-            mgmOpsClient.deleteApprovalRule(
-                shortHash,
-                RULE_ID
-            )
-        }
-        mgmOpsClient.stop()
-    }
-
-    @Test
-    fun `getApprovalRules should fail if the member cannot be found`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
-
-        assertThrows<CouldNotFindMemberException> {
-            mgmOpsClient.getApprovalRules(
-                ShortHash.of("000000000000"),
-                ApprovalRuleTypeDto.STANDARD
-            )
-        }
-        mgmOpsClient.stop()
-    }
-
-    @Test
-    fun `getApprovalRules should fail if the member cannot be read`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
-        whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
-
-        assertThrows<CouldNotFindMemberException> {
-            mgmOpsClient.getApprovalRules(
-                shortHash,
-                ApprovalRuleTypeDto.STANDARD
-            )
-        }
-        mgmOpsClient.stop()
-    }
-
-    @Test
-    fun `getApprovalRules should fail if the member is not the MGM`() {
-        mgmOpsClient.start()
-        setUpRpcSender()
-        val mgmContext = mock<MGMContext>()
-        val memberInfo = mock<MemberInfo> {
-            on { mgmProvidedContext } doReturn mgmContext
-        }
-        whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
-
-        assertThrows<MemberNotAnMgmException> {
-            mgmOpsClient.getApprovalRules(
-                shortHash,
-                ApprovalRuleTypeDto.STANDARD
-            )
-        }
-        mgmOpsClient.stop()
     }
 
     @Test
