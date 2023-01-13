@@ -247,7 +247,7 @@ class MembershipQueryClientImpl(
     ): MembershipQueryResult<Collection<String>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryApprovalRules()
+            QueryApprovalRules(ruleType)
         ).execute()
         return when (val payload = result.payload) {
             is ApprovalRulesQueryResponse -> MembershipQueryResult.Success(payload.rules)

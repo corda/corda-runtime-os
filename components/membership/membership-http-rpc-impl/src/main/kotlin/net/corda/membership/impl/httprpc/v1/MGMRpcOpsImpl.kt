@@ -17,6 +17,7 @@ import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -315,6 +316,8 @@ class MGMRpcOpsImpl @Activate constructor(
                     ),
                     message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
                 )
+            } catch (e: MembershipPersistenceException) {
+                throw ResourceNotFoundException("Approval rule with ID '$ruleId' does not exist.")
             }
         }
     }

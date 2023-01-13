@@ -34,6 +34,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -1086,6 +1087,68 @@ class MembershipPersistenceTest {
         assertThat(updatedEntity.registrationId).isEqualTo(registrationId)
         assertThat(updatedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
         assertThat(updatedEntity.status).isEqualTo(RegistrationStatus.PENDING_AUTO_APPROVAL.name)
+    }
+
+    @Test
+    fun `addApprovalRule persists the approval rule and returns the rule ID`() {
+        val rule = "corda.*"
+        val label = "rule-label"
+
+        val ruleId = membershipPersistenceClientWrapper.addApprovalRule(
+            viewOwningHoldingIdentity,
+            rule,
+            ApprovalRuleType.STANDARD,
+            label
+        ).getOrThrow()
+
+        val approvalRuleEntity = vnodeEmf.use {
+            it.find(ApprovalRulesEntity::class.java, ruleId)
+        }
+        with(approvalRuleEntity) {
+            assertThat(ruleRegex).isEqualTo(rule)
+            assertThat(ruleType).isEqualTo(ApprovalRuleType.STANDARD.name)
+            assertThat(ruleLabel).isEqualTo(label)
+        }
+    }
+
+    @Test
+    fun `deleteApprovalRule deletes the approval rule from the db`() {
+        val ruleId = "rule-id"
+        val testRule = ApprovalRulesEntity(ruleId, "rule-regex", ApprovalRuleType.STANDARD.name, "label")
+        vnodeEmf.transaction {
+            it.persist(testRule)
+        }
+
+        membershipPersistenceClientWrapper.deleteApprovalRule(viewOwningHoldingIdentity, ruleId).getOrThrow()
+
+        vnodeEmf.use {
+            assertThat(it.find(ApprovalRulesEntity::class.java, ruleId)).isNull()
+        }
+    }
+
+    @Test
+    fun `getApprovalRules retrieves all approval rules`() {
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        val rule1 = "rule1"
+        val rule2 = "rule2"
+        val entities = listOf(
+            ApprovalRulesEntity("rule-1", rule1, ApprovalRuleType.STANDARD.name, "label-1"),
+            ApprovalRulesEntity("rule-2", rule2, ApprovalRuleType.STANDARD.name, "label-2")
+        )
+        vnodeEmf.transaction { em ->
+            entities.forEach { em.persist(it) }
+        }
+
+        val result = membershipQueryClient.getApprovalRules(
+            viewOwningHoldingIdentity,
+            ApprovalRuleType.STANDARD
+        ).getOrThrow()
+
+        assertThat(result.size).isEqualTo(2)
+        assertThat(result).containsAll(listOf(rule1, rule2))
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
