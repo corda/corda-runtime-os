@@ -9,6 +9,7 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -109,7 +110,9 @@ object CryptoConfigurationSetup {
         )
 
     private fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
-        var cfg = SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory())).create(
+        var cfg = SmartConfigFactoryFactory(object: SecretsServiceFactoryResolver {
+            override fun findAll() = listOf(EncryptionSecretsServiceFactory())
+        }).create(
             ConfigFactory.parseString(
                 """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase

@@ -25,7 +25,7 @@ class OsgiCordaAddonResolver @Activate constructor(
     }
 
     override fun findAll(): Collection<CordaAddon> {
-        @Suppress("unchecked_cast")
-        return (componentContext.locateServices(ADDONS_SERVICE_NAME) as? Array<CordaAddon>)?.toList() ?: emptyList()
+        return componentContext.locateServices(ADDONS_SERVICE_NAME)
+            ?.filterIsInstance<CordaAddon>() ?: emptyList()
     }
 }
