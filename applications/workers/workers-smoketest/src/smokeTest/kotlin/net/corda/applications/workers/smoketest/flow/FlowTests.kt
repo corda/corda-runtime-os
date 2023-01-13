@@ -657,6 +657,19 @@ class FlowTests {
     }
 
     @Test
+    fun `Crypto - Signing service returns my keys`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_get_my_keys"
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(flowResult.command).isEqualTo("crypto_get_my_keys")
+        assertThat(flowResult.result).isEqualTo("success")
+    }
+
+    @Test
     fun `Context is propagated to initiated and sub flows`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "context_propagation"

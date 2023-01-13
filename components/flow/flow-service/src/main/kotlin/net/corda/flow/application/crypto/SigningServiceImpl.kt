@@ -2,6 +2,7 @@ package net.corda.flow.application.crypto
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
+import net.corda.flow.application.crypto.external.events.FilterMyKeysExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandbox.type.UsedByFlow
@@ -32,6 +33,14 @@ class SigningServiceImpl @Activate constructor(
         return externalEventExecutor.execute(
             CreateSignatureExternalEventFactory::class.java,
             SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
+        )
+    }
+
+    @Suspendable
+    override fun getMyKeys(keys: Set<PublicKey>): Set<PublicKey> {
+        return externalEventExecutor.execute(
+            FilterMyKeysExternalEventFactory::class.java,
+            keys
         )
     }
 }
