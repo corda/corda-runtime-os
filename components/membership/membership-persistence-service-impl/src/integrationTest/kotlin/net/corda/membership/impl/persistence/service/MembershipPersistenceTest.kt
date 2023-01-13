@@ -23,7 +23,7 @@ import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
@@ -304,7 +304,7 @@ class MembershipPersistenceTest {
 //        private val vnodeDbInfo = TestDbInfo("vnode_vault_$holdingIdentityShortHash", DbSchema.VNODE)
         private val clusterDbInfo = TestDbInfo.createConfig()
 
-        private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+        private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
         private val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         private val dbConfig = smartConfigFactory.create(clusterDbInfo.config)
 

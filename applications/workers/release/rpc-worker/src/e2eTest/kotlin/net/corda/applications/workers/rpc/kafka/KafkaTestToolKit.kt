@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.applications.workers.rpc.http.TestToolkit
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -69,8 +70,7 @@ class KafkaTestToolKit(
             "$KAFKA_PROPERTIES_COMMON.${key.trim()}"
         }
 
-        val secretsConfig = ConfigFactory.empty()
-        SmartConfigFactory.create(secretsConfig).create(
+        SmartConfigFactoryFactory.createWithoutSecurityServices().create(
             ConfigFactory.parseMap(kafkaProperties)
                 .withValue(MessagingConfig.Bus.BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                 .withValue(MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("e2e-test"))

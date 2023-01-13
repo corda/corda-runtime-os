@@ -3,6 +3,7 @@ package net.corda.libs.configuration.validation.integration
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -124,6 +125,6 @@ class ConfigurationValidationIntegrationTest {
         val url =
             FrameworkUtil.getBundle(this::class.java).getResource(resource)
                 ?: throw IllegalArgumentException("Failed to find $resource")
-        return SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseURL(url))
+        return SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseURL(url))
     }
 }

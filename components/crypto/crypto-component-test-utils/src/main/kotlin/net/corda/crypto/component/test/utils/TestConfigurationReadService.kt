@@ -5,7 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -16,7 +16,7 @@ import net.corda.schema.configuration.ConfigKeys
 import org.mockito.kotlin.mock
 
 val emptyConfig: SmartConfig =
-    SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+    SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
 
 class TestConfigurationReadService(
     coordinatorFactory: LifecycleCoordinatorFactory,

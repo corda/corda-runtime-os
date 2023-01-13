@@ -3,7 +3,7 @@ package net.corda.applications.workers.workercommon
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
@@ -56,6 +56,7 @@ class WorkerHelpers {
          * params in the [defaultParams], and any [extraParams].
          */
         fun getBootstrapConfig(
+            smartConfigFactoryFactory: SmartConfigFactoryFactory,
             defaultParams: DefaultWorkerParams,
             validator: ConfigurationValidator,
             extraParams: List<PathAndConfig> = emptyList(),
@@ -85,7 +86,7 @@ class WorkerHelpers {
             val secretsConfig =
                 ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys { (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
 
-            val bootConfig = SmartConfigFactory.create(secretsConfig).create(config)
+            val bootConfig = smartConfigFactoryFactory.create(secretsConfig).create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
             validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))

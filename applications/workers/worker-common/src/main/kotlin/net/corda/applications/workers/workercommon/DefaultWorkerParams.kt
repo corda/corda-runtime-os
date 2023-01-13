@@ -39,7 +39,7 @@ class DefaultWorkerParams {
     @Option(names = ["-m", "--messaging-params"], description = ["Messaging parameters for the worker."])
     var messagingParams = emptyMap<String, String>()
 
-    @Option(names = ["-s", "--secrets-params"], description = ["Secrets parameters for the worker."])
+    @Option(names = ["-s", "--secrets-params"], description = ["Secrets parameters for the worker."], required = true)
     var secretsParams = emptyMap<String, String>()
 
     @Option(names = ["--workspace-dir"], description = ["Corda workspace directory."])
