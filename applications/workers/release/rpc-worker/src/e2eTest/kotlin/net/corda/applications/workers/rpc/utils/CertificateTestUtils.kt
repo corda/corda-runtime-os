@@ -75,7 +75,7 @@ fun E2eCluster.uploadCertificate(
     holdingIdentityId: String?,
 ) {
     clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
-        val fileName = holdingIdentityId?. let { "$usage-it.pem"  } ?: "$usage.pem"
+        val fileName = holdingIdentityId?. let { "$usage-$it.pem"  } ?: "$usage.pem"
         client.start().proxy.importCertificateChain(
             usage = usage,
             alias = alias,
