@@ -1,10 +1,13 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.configuration.read.ConfigurationGetService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.membership.MembershipSchema
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -26,9 +29,17 @@ class MGMRegistrationContextValidatorTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
+    private val gatewayConfiguration = mock<SmartConfig> {
+        on { getConfig("sslConfig") } doReturn mock
+        on { getString("tlsType") } doReturn "ONE_WAY"
+    }
+    private val configurationGetService = mock<ConfigurationGetService> {
+        on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
+    }
 
     private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        configurationGetService = configurationGetService,
     )
 
     companion object {
@@ -137,5 +148,35 @@ class MGMRegistrationContextValidatorTest {
         assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationContextValidator.validate(testContext)
         }
+    }
+
+    @Test
+    fun `invalid TLS type will throw an exception`() {
+        val context = validTestContext + (TLS_TYPE to "nop")
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(context)
+        }
+    }
+
+    @Test
+    fun `missing TLS type will default to one way`() {
+        val context = validTestContext - TLS_TYPE
+
+        mgmRegistrationContextValidator.validate(context)
+    }
+
+    @Test
+    fun `wrong TLS type will throw an exception`() {
+        val context = validTestContext + (TLS_TYPE to "mutual")
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(context)
+        }
+    }
+
+    @Test
+    fun `valid TLS type will not throw an exception`() {
+        val context = validTestContext + (TLS_TYPE to "one_way")
+
+        mgmRegistrationContextValidator.validate(context)
     }
 }

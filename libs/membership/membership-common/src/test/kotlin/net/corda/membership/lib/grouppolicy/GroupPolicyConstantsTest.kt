@@ -40,5 +40,35 @@ class GroupPolicyConstantsTest {
 
             assertThat(tlsType).isEqualTo(TlsType.MUTUAL)
         }
+
+        @Test
+        fun `fromString return null for null value`() {
+            assertThat(TlsType.fromString(null))
+                .isNull()
+        }
+
+        @Test
+        fun `fromString return null by default`() {
+            assertThat(TlsType.fromString("nop"))
+                .isNull()
+        }
+
+        @Test
+        fun `fromString ignores case`() {
+            assertThat(TlsType.fromString("MuTual"))
+                .isEqualTo(TlsType.MUTUAL)
+        }
+
+        @Test
+        fun `fromString compares with underscore`() {
+            assertThat(TlsType.fromString("one_way"))
+                .isEqualTo(TlsType.ONE_WAY)
+        }
+
+        @Test
+        fun `fromString compares without underscore`() {
+            assertThat(TlsType.fromString("oneway"))
+                .isEqualTo(TlsType.ONE_WAY)
+        }
     }
 }

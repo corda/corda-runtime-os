@@ -125,10 +125,9 @@ class MGMGroupPolicyImpl(
             ) ?: AUTH_ENCRYPT
         }
         override val tlsType by lazy {
-            // CORE-8860 - Verify this works
             TlsType.fromString(
                 getPersistedString(PropertyKeys.TLS_TYPE)
-            )
+            ) ?: TlsType.ONE_WAY
         }
     }
 

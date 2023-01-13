@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
@@ -18,6 +19,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -74,6 +76,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema
@@ -153,6 +156,13 @@ class MGMRegistrationServiceTest {
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { lookup(mgmId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
         on { lookup(mgmId.value, listOf(ECDH_KEY_ID)) } doReturn listOf(ecdhCryptoSigningKey)
+    }
+    private val gatewayConfiguration = mock<SmartConfig> {
+        on { getConfig("sslConfig") } doReturn mock
+        on { getString("tlsType") } doReturn "ONE_WAY"
+    }
+    private val configurationGetService = mock<ConfigurationGetService> {
+        on { getSmartConfig(ConfigKeys.P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
 
     private val componentHandle: RegistrationHandle = mock()
@@ -245,6 +255,7 @@ class MGMRegistrationServiceTest {
         virtualNodeInfoReadService,
         writerService,
         groupParametersFactory,
+        configurationGetService,
     )
 
     private val properties = mapOf(
@@ -256,6 +267,7 @@ class MGMRegistrationServiceTest {
                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
         "corda.group.key.session.policy" to "Combined",
+        "corda.group.tls.type" to "OneWay",
         "corda.group.pki.session" to "Standard",
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
@@ -407,6 +419,7 @@ class MGMRegistrationServiceTest {
                         "protocol.synchronisation"
                                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                         "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
+                        "tls.type" to "OneWay",
                         "key.session.policy" to "Combined",
                         "pki.session" to "Standard",
                         "pki.tls" to "C5",
