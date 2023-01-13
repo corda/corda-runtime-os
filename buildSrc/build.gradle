@@ -4,7 +4,7 @@ plugins {
 
 // We can't get the values directly from `gradle.properties` from here for some gradle-y reason.
 // So we'll load it into our own object to grab what we need.
-def constants = new Properties()
+Properties constants = new Properties()
 file("$rootDir/../gradle.properties").withInputStream { InputStream input -> constants.load(input) }
 Properties cordaInternalDependencies = new Properties()
 file("$projectDir/../cordaInternalDependencies.properties").withInputStream { InputStream input -> cordaInternalDependencies.load(input) }
