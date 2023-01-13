@@ -1,7 +1,10 @@
 package net.corda.db.core
 
-import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.Bundle
 import org.osgi.service.jdbc.DataSourceFactory
+import java.lang.invoke.MethodHandle
+import java.lang.invoke.MethodHandles
+import java.lang.invoke.MethodType
 import java.sql.SQLException
 import java.util.Properties
 import javax.sql.DataSource
@@ -40,6 +43,19 @@ import javax.sql.DataSource
 @Suppress("MaxLineLength")
 object OSGiDataSourceFactory {
     /**
+     * We may not have [FrameworkUtil][org.osgi.framework.FrameworkUtil] on the classpath.
+     * Or we may only have the stub version from "osgi.core".
+     */
+    private val getBundleMethod: MethodHandle? = try {
+        val frameworkUtilClass = Class.forName("org.osgi.framework.FrameworkUtil", false, this::class.java.classLoader)
+        val bundleClass = Class.forName("org.osgi.framework.Bundle", false, this::class.java.classLoader)
+        val getBundleType = MethodType.methodType(bundleClass, Class::class.java)
+        MethodHandles.publicLookup().findStatic(frameworkUtilClass, "getBundle", getBundleType)
+    } catch (_: ClassNotFoundException) {
+        null
+    }
+
+    /**
      * Create a [DataSource] using the OSGi [org.osgi.service.jdbc.DataSourceFactory] service.
      *
      * We simply create a data source using OSGi, and pass that into Hikari, which accepts an _existing_ data source
@@ -67,9 +83,9 @@ object OSGiDataSourceFactory {
     @Suppress("ThrowsCount")
     @Throws(SQLException::class)
     fun create(driverClass: String, jdbcUrl: String, username: String, password: String): DataSource {
-        val bundle = FrameworkUtil.getBundle(this::class.java)
+        val bundle = getBundleMethod?.invoke(this::class.java)
             ?: throw UnsupportedOperationException("No OSGi framework")
-        val bundleContext = bundle.bundleContext
+        val bundleContext = (bundle as Bundle).bundleContext
 
         // This is the driver CLASS name.
         val refs = bundleContext.getServiceReferences(
@@ -79,7 +95,7 @@ object OSGiDataSourceFactory {
         // We could also additionally use:
         // DataSourceFactory.OSGI_JDBC_DRIVER_NAME
 
-        if (refs == null || refs.isEmpty()) {
+        if (refs.isNullOrEmpty()) {
             throw SQLException("No drivers for JDBC classes are loaded, have you specified -ddatabase.jdbc.directory? Or have you forgotten a pax-jdbc jar?")
         }
 

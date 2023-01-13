@@ -50,7 +50,6 @@ dependencies {
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }

@@ -2,6 +2,7 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import java.io.Closeable
 import javax.sql.DataSource
 
 /**
@@ -25,9 +26,8 @@ class HikariDataSourceFactory(
     /**
      * [HikariDataSource] wrapper that makes it [CloseableDataSource]
      */
-    private class DataSourceWrapper(private val delegate: HikariDataSource): CloseableDataSource, DataSource by delegate {
-        override fun close() = delegate.close()
-    }
+    private class DataSourceWrapper(private val delegate: HikariDataSource)
+        : CloseableDataSource, Closeable by delegate, DataSource by delegate
 
     override fun create(
         driverClass: String,

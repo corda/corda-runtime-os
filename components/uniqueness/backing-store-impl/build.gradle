@@ -66,7 +66,6 @@ dependencies {
     integrationTestImplementation project(':libs:uniqueness:jpa-backing-store-datamodel')
     integrationTestImplementation project(':testing:db-testkit')
 
-    integrationTestRuntimeOnly 'org.osgi:osgi.core'
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 

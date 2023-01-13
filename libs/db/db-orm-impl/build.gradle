@@ -36,6 +36,5 @@ dependencies {
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     integrationTestImplementation project(":testing:db-testkit")
-    integrationTestRuntimeOnly 'org.osgi:osgi.core'
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 }
