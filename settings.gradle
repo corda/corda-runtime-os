@@ -35,10 +35,14 @@ pluginManagement {
             }
         }
     }
+
+    Properties cordaInternalDependencies = new Properties()
+    file("./cordaInternalDependencies.properties").withInputStream { cordaInternalDependencies.load(it) }
+
     plugins {
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
         id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
-        id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
+        id 'net.corda.cordapp.cordapp-configuration' version cordaInternalDependencies.getProperty("cordaApiVersion")
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
