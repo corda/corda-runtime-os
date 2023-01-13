@@ -408,7 +408,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             return if (TlsType.getClusterType(configurationGetService::getSmartConfig) == TlsType.MUTUAL) {
                 val info =
                     locallyHostedIdentitiesService.getIdentityInfo(member)
-                        ?: throw CordaRuntimeException("Member $member is not locally hosted")
+                        ?: throw CordaRuntimeException(
+                            "Member $member is not locally hosted. " +
+                            "If it had been configured, please retry the registration in a few seconds. " +
+                            "If it had not been configured, please configure it using the network/setup API."
+                        )
                 val certificate = info.tlsCertificates
                     .firstOrNull()
                     ?: throw CordaRuntimeException("Member $member is missing TLS certificates")

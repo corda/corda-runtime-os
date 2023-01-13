@@ -22,6 +22,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -61,8 +62,8 @@ class LocallyHostedIdentitiesServiceImpl(
         const val WAIT_FOR_CONFIG_RESOURCE_NAME = "LocallyHostedIdentitiesServiceImpl.registerComponentForUpdates"
         const val SUBSCRIPTION_RESOURCE_NAME = "LocallyHostedIdentitiesServiceImpl.subscription"
         const val SUBSCRIPTION_GROUP_NAME = "locally-hosted-identities-service"
-        const val defaultRetries = 3
-        val waitBetweenRetries = 1.seconds
+        const val defaultRetries = 4
+        val waitBetweenRetries = 100.millis
         val logger = contextLogger()
     }
 
