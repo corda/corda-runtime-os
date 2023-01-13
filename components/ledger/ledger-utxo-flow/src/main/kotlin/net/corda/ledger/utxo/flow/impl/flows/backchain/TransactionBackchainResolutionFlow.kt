@@ -1,92 +1,30 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
-import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.flow.application.services.VersioningService
+import net.corda.flow.application.versioning.VersionedReceiveFlowFactory
+import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainResolutionFlowV1
 import net.corda.sandbox.CordaSystemFlow
-import net.corda.utilities.debug
-import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 @CordaSystemFlow
 class TransactionBackchainResolutionFlow(
-    private val initialTransactionIds: Set<SecureHash>,
-    private val session: FlowSession,
+    private val transaction: UtxoSignedTransaction,
+    private val session: FlowSession
 ) : SubFlow<Unit> {
 
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(TransactionBackchainResolutionFlow::class.java)
-    }
-
     @CordaInject
-    lateinit var flowEngine: FlowEngine
-
-    @CordaInject
-    lateinit var transactionBackchainVerifier: TransactionBackchainVerifier
-
-    @CordaInject
-    lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+    lateinit var versioningService: VersioningService
 
     @Suspendable
     override fun call() {
-        val alreadyVerifiedTransactions =
-            initialTransactionIds.filter { utxoLedgerPersistenceService.find(it, VERIFIED) != null }.toSet()
-        val originalTransactionsToRetrieve = initialTransactionIds - alreadyVerifiedTransactions
-        if (originalTransactionsToRetrieve.isNotEmpty()) {
-            log.debug {
-                "Backchain resolution of $initialTransactionIds - Transaction needs to resolve its dependencies of " +
-                        "$originalTransactionsToRetrieve in its backchain, starting transaction backchain resolution"
-            }
-            val topologicalSort = flowEngine.subFlow(
-                TransactionBackchainReceiverFlow(
-                    initialTransactionIds = initialTransactionIds,
-                    originalTransactionsToRetrieve,
-                    session
-                )
-            )
-            log.debug {
-                "Backchain resolution of $initialTransactionIds - Retrieved dependencies of $originalTransactionsToRetrieve from its " +
-                        "backchain, beginning verification before storing the transactions locally"
-            }
-            try {
-                if (!transactionBackchainVerifier.verify(initialTransactionIds, topologicalSort)) {
-                    log.warn(
-                        "Backchain resolution of $initialTransactionIds - Failed due to a transaction in its backchain failing verification"
-                    )
-                    throw CordaRuntimeException(
-                        "Backchain resolution of $initialTransactionIds - Failed due to a transaction in its backchain failing verification"
-                    )
-                }
-                log.debug {
-                    "Backchain resolution of $initialTransactionIds - Completed, resolved ${topologicalSort.size} transactions"
-                }
-            } catch (e: Exception) {
-                log.warn(
-                    "Backchain resolution of $initialTransactionIds - Failed due to a transaction in its backchain failing verification"
-                )
-                throw e
-            }
-        } else {
-            if (initialTransactionIds.isEmpty()) {
-                log.trace {
-                    "Backchain resolution of $initialTransactionIds - Has no dependencies in its backchain, skipping transaction " +
-                            "backchain resolution"
-                }
-            } else {
-                log.trace {
-                    "Backchain resolution of $initialTransactionIds - Has dependencies $initialTransactionIds which have already " +
-                            "been verified locally, skipping transaction backchain resolution"
-                }
-            }
-            session.send(TransactionBackchainRequest.Stop)
-        }
+        return versioningService.versionedSubFlow(
+            TransactionBackchainResolutionFlowVersionedFlowFactory(transaction),
+            session
+        )
     }
 
     override fun equals(other: Any?): Boolean {
@@ -95,15 +33,29 @@ class TransactionBackchainResolutionFlow(
 
         other as TransactionBackchainResolutionFlow
 
-        if (initialTransactionIds != other.initialTransactionIds) return false
+        if (transaction != other.transaction) return false
         if (session != other.session) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = initialTransactionIds.hashCode()
+        var result = transaction.hashCode()
         result = 31 * result + session.hashCode()
         return result
+    }
+}
+
+class TransactionBackchainResolutionFlowVersionedFlowFactory(
+    private val transaction: UtxoSignedTransaction,
+) : VersionedReceiveFlowFactory<Unit> {
+
+    override val versionedInstanceOf: Class<TransactionBackchainResolutionFlow> = TransactionBackchainResolutionFlow::class.java
+
+    override fun create(version: Int, session: FlowSession): SubFlow<Unit> {
+        return when {
+            version >= 1 -> TransactionBackchainResolutionFlowV1(transaction, session)
+            else -> throw IllegalArgumentException()
+        }
     }
 }

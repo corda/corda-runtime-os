@@ -1,5 +1,6 @@
 package net.corda.flow.testing.tests
 
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateTwoFlows
@@ -45,8 +46,8 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1,
-                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_2,
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_2,
                     )))
         }
 
@@ -65,8 +66,8 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
-                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
-                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
                 )))
         }
 
@@ -76,8 +77,8 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.SendAndReceive(
                     mapOf(
-                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_3,
-                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_4,
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_3,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_4,
                     )))
         }
 

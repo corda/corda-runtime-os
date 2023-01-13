@@ -23,11 +23,6 @@ class FlowStackBasedContext(
                 checkNotNull(flowStack.peek())
                 { "Attempt to set context before any items added to flow stack" }.contextPlatformProperties
             )
-
-            require(getPropertyFromPlatformStack(key) == null) {
-                "'${key}' is already a platform context property, it cannot be overwritten"
-            }
-
             platformContextKeyValueStore[key] = value
         }
     }

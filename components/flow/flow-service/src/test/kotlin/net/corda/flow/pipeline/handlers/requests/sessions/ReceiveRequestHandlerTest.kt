@@ -4,6 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.SessionData
 import net.corda.flow.RequestHandlerTestContext
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
@@ -34,8 +35,8 @@ class ReceiveRequestHandlerTest {
             flowEventContext,
             FlowIORequest.Receive(
                 setOf(
-                    FlowIORequest.SessionInfo(SESSION_ID, testContext.counterparty),
-                    FlowIORequest.SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
+                    SessionInfo(SESSION_ID, testContext.counterparty),
+                    SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
                 )
             )
         )
@@ -51,8 +52,8 @@ class ReceiveRequestHandlerTest {
             flowEventContext,
             FlowIORequest.Receive(
                 setOf(
-                    FlowIORequest.SessionInfo(SESSION_ID, testContext.counterparty),
-                    FlowIORequest.SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
+                    SessionInfo(SESSION_ID, testContext.counterparty),
+                    SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
                 )
             )
         )
@@ -74,8 +75,8 @@ class ReceiveRequestHandlerTest {
             flowEventContext,
             FlowIORequest.Receive(
                 setOf(
-                    FlowIORequest.SessionInfo(SESSION_ID, testContext.counterparty),
-                    FlowIORequest.SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
+                    SessionInfo(SESSION_ID, testContext.counterparty),
+                    SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
                 )
             )
         )
@@ -95,8 +96,8 @@ class ReceiveRequestHandlerTest {
             flowEventContext,
             FlowIORequest.Receive(
                 setOf(
-                    FlowIORequest.SessionInfo(SESSION_ID, testContext.counterparty),
-                    FlowIORequest.SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
+                    SessionInfo(SESSION_ID, testContext.counterparty),
+                    SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
                 )
             )
         )
