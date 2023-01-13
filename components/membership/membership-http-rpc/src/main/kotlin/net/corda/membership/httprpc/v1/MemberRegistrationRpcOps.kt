@@ -97,7 +97,7 @@ interface MemberRegistrationRpcOps : RpcOps {
         """
     )
     fun checkRegistrationProgress(
-        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
+        @HttpRpcPathParameter(description = "The ID of the holding identity whose view of the registration progress is to be checked.")
         holdingIdentityShortHash: String
     ): List<RegistrationRequestStatus>
 
@@ -134,7 +134,7 @@ interface MemberRegistrationRpcOps : RpcOps {
         """
     )
     fun checkSpecificRegistrationProgress(
-        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
+        @HttpRpcPathParameter(description = "The ID of the holding identity whose view of the registration progress is to be checked.")
         holdingIdentityShortHash: String,
         @HttpRpcPathParameter(description = "The ID of the registration request")
         registrationRequestId: String,
