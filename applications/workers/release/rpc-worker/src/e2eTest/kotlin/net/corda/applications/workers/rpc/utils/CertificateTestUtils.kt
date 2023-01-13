@@ -61,29 +61,34 @@ fun E2eCluster.generateCsr(
 
 fun E2eCluster.uploadTlsCertificate(
     certificatePem: String
-) = this.uploadCertificate("p2p-tls", TLS_CERT_ALIAS, certificatePem, null)
+) {
+    clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
+        client.start().proxy.importCertificateChain(
+            usage = "p2p-tls",
+            alias = TLS_CERT_ALIAS,
+            certificates = listOf(
+                HttpFileUpload(
+                    certificatePem.byteInputStream(),
+                    "$TLS_CERT_ALIAS.pem"
+                )
+            )
+        )
+    }
+}
 
 fun E2eCluster.uploadSessionCertificate(
     certificatePem: String,
     holdingIdentityId: String
-) = this.uploadCertificate("p2p-session", SESSION_CERT_ALIAS, certificatePem, holdingIdentityId)
-
-fun E2eCluster.uploadCertificate(
-    usage: String,
-    alias: String,
-    certificatePem: String,
-    holdingIdentityId: String?,
 ) {
     clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
-        val fileName = holdingIdentityId?. let { "$usage-$it.pem"  } ?: "$usage.pem"
         client.start().proxy.importCertificateChain(
-            usage = usage,
-            alias = alias,
+            usage = "p2p-session",
+            alias = SESSION_CERT_ALIAS,
             holdingIdentityId = holdingIdentityId,
             certificates = listOf(
                 HttpFileUpload(
                     certificatePem.byteInputStream(),
-                    fileName
+                    "$SESSION_CERT_ALIAS-$holdingIdentityId.pem"
                 )
             )
         )
