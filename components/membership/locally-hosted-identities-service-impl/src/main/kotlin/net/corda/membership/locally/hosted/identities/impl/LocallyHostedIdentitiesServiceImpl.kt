@@ -23,7 +23,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
