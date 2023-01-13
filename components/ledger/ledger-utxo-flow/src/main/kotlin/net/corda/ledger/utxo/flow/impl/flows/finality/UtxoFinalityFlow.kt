@@ -133,8 +133,7 @@ class UtxoFinalityFlow(
 
     @Suspendable
     private fun persistTransactionWithCounterpartySignatures(transaction: UtxoSignedTransactionInternal) {
-        val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
-        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED, relevantStatesIndexes)
+        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 
@@ -214,7 +213,8 @@ class UtxoFinalityFlow(
 
     @Suspendable
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
-        persistenceService.persist(transaction, TransactionStatus.VERIFIED)
+        val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded notarised transaction $transactionId" }
     }
 
