@@ -68,6 +68,8 @@ spec:
         {{- include "corda.workerEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
+          - -spassphrase=$(PASSPHRASE)
+          - -ssalt=$(SALT)
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         ports:
