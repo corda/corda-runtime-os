@@ -284,6 +284,8 @@ class MGMRpcOpsImpl @Activate constructor(
                     ),
                     message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
                 )
+            } catch (e: MembershipPersistenceException) {
+                throw BadRequestException("Approval rule not added as an identical rule already exists.")
             }
         }
 

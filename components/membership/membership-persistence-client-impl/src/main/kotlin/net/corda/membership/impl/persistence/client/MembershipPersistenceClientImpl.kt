@@ -44,6 +44,7 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MembershipPersistenceClient::class])
@@ -303,9 +304,10 @@ class MembershipPersistenceClientImpl(
         ruleType: ApprovalRuleType,
         label: String?
     ): MembershipPersistenceResult<String> {
+        val ruleId = UUID.randomUUID().toString()
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            PersistApprovalRule(rule, ruleType, label)
+            PersistApprovalRule(ruleId, rule, ruleType, label)
         ).execute()
         return when (val payload = result.payload) {
             is PersistApprovalRuleResponse -> MembershipPersistenceResult.Success(payload.ruleId)

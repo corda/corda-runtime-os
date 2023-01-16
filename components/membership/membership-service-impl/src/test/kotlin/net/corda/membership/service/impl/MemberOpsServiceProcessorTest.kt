@@ -150,17 +150,12 @@ class MemberOpsServiceProcessorTest {
         on { queryGroupPolicy(eq(mgmHoldingIdentity)) } doReturn membershipQueryResult
         on { getApprovalRules(any(), any()) } doReturn MembershipQueryResult.Success(listOf("rule"))
     }
-    private val membershipPersistenceClient: MembershipPersistenceClient = mock {
-        on { addApprovalRule(any(), any(), any(), any()) } doReturn MembershipPersistenceResult.Success("rule-id")
-        on { deleteApprovalRule(any(), any()) } doReturn MembershipPersistenceResult.success()
-    }
 
     private var processor = MemberOpsServiceProcessor(
         registrationProxy,
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
-        membershipPersistenceClient,
         clock,
     )
 
@@ -290,83 +285,6 @@ class MemberOpsServiceProcessorTest {
         val response = result.response as? MGMGroupPolicyResponse
         val groupPolicy = response?.groupPolicy
         assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"Mutual\"")
-    }
-
-    @Test
-    fun `should successfully submit add approval rule request`() {
-        val requestTimestamp = now
-        val requestId = UUID(0, 1).toString()
-        val requestContext = MembershipRpcRequestContext(
-            requestId,
-            requestTimestamp
-        )
-        val request = MembershipRpcRequest(
-            requestContext,
-            AddApprovalRuleRequest(
-                mgmHoldingIdentity.shortHash.value,
-                "test-regex",
-                ApprovalRuleType.STANDARD,
-                "test-label"
-            )
-        )
-        val future = CompletableFuture<MembershipRpcResponse>()
-
-        processor.onNext(request, future)
-        val result = future.get()
-
-        with(result.response) {
-            assertThat(this).isInstanceOf(AddApprovalRuleResponse::class.java)
-            assertThat((this as AddApprovalRuleResponse).ruleId).isNotNull
-        }
-        assertResponseContext(requestContext, result.responseContext)
-    }
-
-    @Test
-    fun `should successfully submit get approval rules request`() {
-        val requestTimestamp = now
-        val requestId = UUID(0, 1).toString()
-        val requestContext = MembershipRpcRequestContext(
-            requestId,
-            requestTimestamp
-        )
-        val request = MembershipRpcRequest(
-            requestContext,
-            GetApprovalRulesRequest(
-                mgmHoldingIdentity.shortHash.value,
-                ApprovalRuleType.STANDARD,
-            )
-        )
-        val future = CompletableFuture<MembershipRpcResponse>()
-
-        processor.onNext(request, future)
-        val result = future.get()
-
-        assertThat(result.response).isInstanceOf(GetApprovalRulesResponse::class.java)
-        assertResponseContext(requestContext, result.responseContext)
-    }
-
-    @Test
-    fun `should successfully submit delete approval rule request`() {
-        val requestTimestamp = now
-        val requestId = UUID(0, 1).toString()
-        val requestContext = MembershipRpcRequestContext(
-            requestId,
-            requestTimestamp
-        )
-        val request = MembershipRpcRequest(
-            requestContext,
-            DeleteApprovalRuleRequest(
-                mgmHoldingIdentity.shortHash.value,
-                "rule-id",
-            )
-        )
-        val future = CompletableFuture<MembershipRpcResponse>()
-
-        processor.onNext(request, future)
-        val result = future.get()
-
-        assertThat(result.response).isInstanceOf(DeleteApprovalRuleResponse::class.java)
-        assertResponseContext(requestContext, result.responseContext)
     }
 
     @Nested

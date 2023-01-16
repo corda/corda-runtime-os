@@ -12,6 +12,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
@@ -188,6 +189,21 @@ class MGMRpcOpsTest {
             mgmRpcOps.deactivate("")
             mgmRpcOps.stop()
         }
+
+        @Test
+        fun `addGroupApprovalRule throws bad request for duplicate rule`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            whenever(mgmOpsClient.addApprovalRule(any(), any(), any(), any())).doThrow(mock<MembershipPersistenceException>())
+
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.addGroupApprovalRule("ABS09234745D", "rule", "label")
+            }
+
+            mgmRpcOps.deactivate("")
+            mgmRpcOps.stop()
+        }
     }
 
     @Nested
@@ -210,6 +226,20 @@ class MGMRpcOpsTest {
             mgmRpcOps.start()
             mgmRpcOps.activate("")
             whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, "rule-id")
+            }
+
+            mgmRpcOps.deactivate("")
+            mgmRpcOps.stop()
+        }
+
+        @Test
+        fun `deleteGroupApprovalRule throws resource not found for non-existent rule`() {
+            mgmRpcOps.start()
+            mgmRpcOps.activate("")
+            whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, "rule-id")

@@ -49,8 +49,6 @@ class MemberOpsServiceImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
-    @Reference(service = MembershipPersistenceClient::class)
-    private val membershipPersistenceClient: MembershipPersistenceClient,
 ): MemberOpsService {
     private companion object {
         private val logger = contextLogger()
@@ -169,7 +167,6 @@ class MemberOpsServiceImpl @Activate constructor(
                     virtualNodeInfoReadService,
                     membershipGroupReaderProvider,
                     membershipQueryClient,
-                    membershipPersistenceClient,
                 ),
                 messagingConfig = messagingConfig
             ).also { it.start() }

@@ -157,7 +157,6 @@ class MemberOpsServiceTest {
                 virtualNodeInfoReadService,
                 membershipGroupReaderProvider,
                 membershipQueryClient,
-                membershipPersistenceClient,
             )
         }
     }

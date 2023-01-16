@@ -69,6 +69,11 @@ import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
 
 class MembershipPersistenceRPCProcessorTest {
+    private companion object {
+        const val DUMMY_ID = "rule-id"
+        const val DUMMY_RULE = "corda.*"
+        const val DUMMY_LABEL = "label1"
+    }
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
 
@@ -106,8 +111,10 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val entityTransaction: EntityTransaction = mock()
     private val ruleTypePath = mock<Path<String>>()
+    private val ruleRegexPath = mock<Path<String>>()
     private val root = mock<Root<ApprovalRulesEntity>> {
         on { get<String>("ruleType") } doReturn ruleTypePath
+        on { get<String>("ruleRegex") } doReturn ruleRegexPath
     }
     private val predicate = mock<Predicate>()
     private val query = mock<CriteriaQuery<ApprovalRulesEntity>> {
@@ -118,6 +125,7 @@ class MembershipPersistenceRPCProcessorTest {
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(ApprovalRulesEntity::class.java) } doReturn query
         on { equal(ruleTypePath, ApprovalRuleType.STANDARD.name) } doReturn predicate
+        on { equal(ruleRegexPath, DUMMY_RULE) } doReturn predicate
         on { and(predicate, predicate) } doReturn predicate
     }
     private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
@@ -383,7 +391,7 @@ class MembershipPersistenceRPCProcessorTest {
     fun `persist approval rule returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
-            PersistApprovalRule("^*", ApprovalRuleType.STANDARD, "label")
+            PersistApprovalRule(DUMMY_ID, DUMMY_RULE, ApprovalRuleType.STANDARD, DUMMY_LABEL)
         )
 
         processor.onNext(rq, responseFuture)
@@ -392,6 +400,7 @@ class MembershipPersistenceRPCProcessorTest {
         with(responseFuture.get()) {
             assertThat(payload).isNotNull
             assertThat(payload).isInstanceOf(PersistApprovalRuleResponse::class.java)
+            assertThat((payload as PersistApprovalRuleResponse).ruleId).isEqualTo(DUMMY_ID)
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
@@ -404,11 +413,10 @@ class MembershipPersistenceRPCProcessorTest {
 
     @Test
     fun `delete approval rule returns success`() {
-        val ruleId = "rule-id"
-        whenever(entityManager.find(ApprovalRulesEntity::class.java, ruleId)).thenReturn(mock())
+        whenever(entityManager.find(ApprovalRulesEntity::class.java, DUMMY_ID)).thenReturn(mock())
         val rq = MembershipPersistenceRequest(
             rqContext,
-            DeleteApprovalRule(ruleId)
+            DeleteApprovalRule(DUMMY_ID)
         )
 
         processor.onNext(rq, responseFuture)

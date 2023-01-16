@@ -64,7 +64,6 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
-    private val membershipPersistenceClient: MembershipPersistenceClient,
     private val clock: Clock = UTCClock(),
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
