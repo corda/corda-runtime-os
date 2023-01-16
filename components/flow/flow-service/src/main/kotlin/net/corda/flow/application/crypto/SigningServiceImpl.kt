@@ -37,7 +37,7 @@ class SigningServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun getMyKeys(keys: Set<PublicKey>): Set<PublicKey> {
+    override fun getMySigningKeys(keys: Set<PublicKey>): Set<PublicKey> {
         return externalEventExecutor.execute(
             FilterMyKeysExternalEventFactory::class.java,
             keys
