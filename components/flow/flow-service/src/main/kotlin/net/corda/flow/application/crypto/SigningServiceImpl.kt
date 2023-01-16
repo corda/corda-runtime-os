@@ -8,6 +8,7 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -38,19 +39,47 @@ class SigningServiceImpl @Activate constructor(
 
     @Suspendable
     override fun getMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
-        val foundToBeMySigningKeys = externalEventExecutor.execute(
+        val compositeKeys: Set<CompositeKey> = keys.filterIsInstanceTo(linkedSetOf(), CompositeKey::class.java)
+        val plainKeys = keys - compositeKeys
+
+        val compositeKeysLeaves: Set<PublicKey> = compositeKeys.flatMapTo(linkedSetOf()) {
+            it.leafKeys
+        }
+
+        val keysToLookFor = plainKeys + compositeKeysLeaves
+        val foundSigningKeys = externalEventExecutor.execute(
             FilterMyKeysExternalEventFactory::class.java,
-            keys
+            keysToLookFor
         ).toSet()
 
-        require(foundToBeMySigningKeys.size <= keys.size) {
+        require(foundSigningKeys.size <= keysToLookFor.size) {
             "Found keys cannot be more than requested keys"
         }
-        return keys.associate {
-            if (it in foundToBeMySigningKeys) {
-                Pair(it, it)
+
+        val plainKeysReqResp = plainKeys.associate {
+            if (it in foundSigningKeys) {
+                it to it
             } else
-                Pair(it, null)
+                it to null
         }
+
+        val compositeKeysReqResp = compositeKeys.associateWith {
+            var foundLeaf: PublicKey? = null
+            it.leafKeys.forEach { leaf ->
+                if (leaf in foundSigningKeys) {
+                    if (foundLeaf == null) {
+                        foundLeaf = leaf
+                    } else {
+                        throw IllegalStateException(
+                            "A node should be owning one key at most per composite key, but found two owned keys for composite key: \"$it\" " +
+                                    " first: \"$foundLeaf\" second: \"$leaf\""
+                        )
+                    }
+                }
+            }
+            foundLeaf
+        }
+
+        return plainKeysReqResp + compositeKeysReqResp
     }
 }
