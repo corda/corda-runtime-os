@@ -93,7 +93,6 @@ class FlowTests {
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
-            "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
             "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
