@@ -173,9 +173,9 @@ class UtxoPersistenceServiceImplTest {
 
             em.createNativeQuery("DELETE FROM {h-schema}utxo_relevant_transaction_state").executeUpdate()
 
-            val transaction1Entity = createTransactionEntity(entityFactory, transaction1)
+            val transaction1Entity = createTransactionEntity(entityFactory, transaction1, status = VERIFIED)
                 .also { em.persist(it) }
-            val transaction2Entity = createTransactionEntity(entityFactory, transaction2)
+            val transaction2Entity = createTransactionEntity(entityFactory, transaction2, status = VERIFIED)
                 .also { em.persist(it) }
 
             entityFactory.createUtxoRelevantTransactionStateEntity(
@@ -199,16 +199,6 @@ class UtxoPersistenceServiceImplTest {
                 true,
                 createdTs
             ).also { em.persist(it) }
-
-            em
-                .createNativeQuery("""UPDATE {h-schema}utxo_transaction_status
-                    SET
-                        status=:verified
-                    WHERE
-                        transaction_id in (:transactionIds)""" )
-                .setParameter("verified", VERIFIED.value)
-                .setParameter("transactionIds", listOf(transaction1.id.toString(), transaction2.id.toString()))
-                .executeUpdate()
         }
 
         val stateClass = TestContractState2::class.java
