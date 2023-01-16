@@ -6,12 +6,18 @@ NAMESPACE_PREFIX="${USER//./}"
 
 # Chart and Docker Image versions to deploy
 CORDA_CHART_VERSION="^0.1.0-beta"
-DOCKER_IMAGE_VERSION=5.0.0.0-beta-1673614721543
+DOCKER_IMAGE_VERSION=$(curl -u $CORDA_ARTIFACTORY_USERNAME:$CORDA_ARTIFACTORY_PASSWORD  https://corda-os-docker-unstable.software.r3.com:/v2/corda-os-p2p-link-manager-worker/tags/list | jq -r -M '.["tags"] | map(select(contains("5.0.0.0-beta"))) | sort | reverse | .[0]')
+#DOCKER_IMAGE_VERSION=5.0.0.0-beta-167361472154
+
 # K8s namespaces
 A_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-a
 B_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-b
 MGM_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-mgm
 APP_SIMULATOR_DB_NAMESPACE=$NAMESPACE_PREFIX-db
+
+#KAFKA Settings
+KAFKA_REPLICAS=1
+KAFKA_ZOOKEEPER_REPLICAS=1
 
 # RPC PORTS
 A_RPC_PORT=8888
