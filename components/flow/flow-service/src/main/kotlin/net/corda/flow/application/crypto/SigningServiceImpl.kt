@@ -46,15 +46,10 @@ class SigningServiceImpl @Activate constructor(
             it.leafKeys
         }
 
-        val keysToLookFor = plainKeys + compositeKeysLeaves
         val foundSigningKeys = externalEventExecutor.execute(
             FilterMyKeysExternalEventFactory::class.java,
-            keysToLookFor
+            plainKeys + compositeKeysLeaves
         ).toSet()
-
-        require(foundSigningKeys.size <= keysToLookFor.size) {
-            "Found keys cannot be more than requested keys"
-        }
 
         val plainKeysReqResp = plainKeys.associate {
             if (it in foundSigningKeys) {
