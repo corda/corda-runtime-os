@@ -27,7 +27,6 @@ class MgmPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         name = "mgm",
         subcommands = [
             GenerateGroupPolicy::class,
-            SetupCordaCluster::class,
             OnBoard::class,
         ],
         description = ["Plugin for membership operations."]
