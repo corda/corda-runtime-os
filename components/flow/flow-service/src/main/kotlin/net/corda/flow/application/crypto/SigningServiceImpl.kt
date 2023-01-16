@@ -41,7 +41,6 @@ class SigningServiceImpl @Activate constructor(
     override fun getMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
         val compositeKeys: Set<CompositeKey> = keys.filterIsInstanceTo(linkedSetOf(), CompositeKey::class.java)
         val plainKeys = keys - compositeKeys
-
         val compositeKeysLeaves: Set<PublicKey> = compositeKeys.flatMapTo(linkedSetOf()) {
             it.leafKeys
         }
