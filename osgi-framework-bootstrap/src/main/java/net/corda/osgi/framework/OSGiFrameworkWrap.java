@@ -295,11 +295,10 @@ class OSGiFrameworkWrap implements AutoCloseable {
             .collect(toUnmodifiableList());
         for (Bundle bundle: bundles) {
             if (isFragment(bundle)) {
-                final String symbolicName = bundle.getSymbolicName();
                 logger.info("OSGi bundle {} ID = {} {} {} {} fragment.",
                     bundle.getLocation(),
                     bundle.getBundleId(),
-                    symbolicName == null ? "-" : symbolicName,
+                    bundle.getSymbolicName(),
                     bundle.getVersion(),
                     bundleStateMap.get(bundle.getState())
                 );
@@ -380,8 +379,13 @@ class OSGiFrameworkWrap implements AutoCloseable {
                 throw new IllegalStateException("OSGi framework not active yet.");
             }
             final Bundle bundle = bundleContext.installBundle(resource, inputStream);
-            bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
-            logger.debug("OSGi bundle {} installed.", resource);
+            if (bundle.getSymbolicName() == null) {
+                logger.error("Bundle {} has no symbolic name so is not a valid OSGi bundle; skipping", resourceUrl);
+                bundle.uninstall();
+            } else {
+                bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
+                logger.debug("OSGi bundle {} installed.", resource);
+            }
         }
     }
 
@@ -422,11 +426,16 @@ class OSGiFrameworkWrap implements AutoCloseable {
             }
             final Bundle bundle = bundleContext.installBundle(fileUri.getPath(), inputStream);
 
-            bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
 
             // This is the mechanism by which we will allow customers to load their own JDBC drivers,
             // so we must report that visibly in the logs.
-            logger.info("OSGi bundle {} installed - {} {}", fileUri, bundle.getSymbolicName(), bundle.getVersion());
+            if (bundle.getSymbolicName() == null) {
+                logger.error("Bundle {} has no symbolic name so is not a valid OSGi bundle; uninstalling", fileUri);
+                bundle.uninstall();
+            } else {
+                bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
+                logger.info("OSGi bundle {} installed - {} {}", fileUri, bundle.getSymbolicName(), bundle.getVersion());
+            }
         }
     }
 
@@ -502,11 +511,10 @@ class OSGiFrameworkWrap implements AutoCloseable {
                         descriptor.getActive().countDown();
                     }
                 }
-                final String symbolicName = bundle.getSymbolicName();
                 logger.info("OSGi bundle {} ID = {} {} {} {}.",
                     bundle.getLocation(),
                     bundle.getBundleId(),
-                    symbolicName == null ? "-" : symbolicName,
+                    bundle.getSymbolicName(),
                     bundle.getVersion(),
                     bundleStateMap.get(bundle.getState())
                 );
