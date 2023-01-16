@@ -95,6 +95,7 @@ class QueryMemberSignatureHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
     )
     private val handler = QueryMemberSignatureHandler(service)
 

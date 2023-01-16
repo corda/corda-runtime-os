@@ -20,6 +20,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -59,6 +60,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = AllowedCertificatesReaderWriterService::class)
+    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) : MembershipPersistenceService {
 
     private companion object {
@@ -66,6 +69,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
 
         const val GROUP_NAME = "membership.db.persistence"
         const val CLIENT_NAME = "membership.db.persistence"
+        const val PUBLISHER_NAME = "membership.db.persistence.publisher"
 
         private val clock: Clock = UTCClock()
     }
@@ -108,6 +112,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
                 LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                LifecycleCoordinatorName.forComponent<AllowedCertificatesReaderWriterService>(),
             )
         )
     }
@@ -156,6 +161,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         subHandle?.close()
         subHandle = null
         rpcSubscription?.close()
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         rpcSubscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
                 groupName = GROUP_NAME,
@@ -173,8 +179,9 @@ class MembershipPersistenceServiceImpl @Activate constructor(
                 virtualNodeInfoReadService,
                 keyEncodingService,
                 platformInfoProvider,
+                allowedCertificatesReaderWriterService,
             ),
-            messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+            messagingConfig = messagingConfig
         ).also {
             it.start()
             subHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))

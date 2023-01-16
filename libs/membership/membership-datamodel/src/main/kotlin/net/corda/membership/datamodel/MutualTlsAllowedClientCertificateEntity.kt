@@ -16,15 +16,17 @@ class MutualTlsAllowedClientCertificateEntity(
     @Id
     @Column(name = "subject", nullable = false, updatable = false)
     val subject: String,
+    @Column(name = "is_deleted", nullable = false, updatable = true)
+    val isDeleted: Boolean,
 ) {
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
         if (other == null) return false
         if (other !is MutualTlsAllowedClientCertificateEntity) return false
-        return other.subject == this.subject
+        return (other.subject == this.subject && other.isDeleted == this.isDeleted)
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(subject)
+        return Objects.hash(subject, isDeleted)
     }
 }

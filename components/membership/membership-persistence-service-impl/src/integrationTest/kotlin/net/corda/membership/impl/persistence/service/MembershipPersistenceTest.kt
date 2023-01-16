@@ -56,6 +56,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -178,6 +179,9 @@ class MembershipPersistenceTest {
 
         @InjectService(timeout = 5000)
         lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
+
+        @InjectService(timeout = 5000)
+        lateinit var allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService
 
         @InjectService(timeout = 5000)
         lateinit var keyEncodingService: KeyEncodingService
@@ -353,6 +357,7 @@ class MembershipPersistenceTest {
 
             membershipPersistenceService.startAndWait()
             membershipPersistenceClientWrapper.startAndWait()
+            allowedCertificatesReaderWriterService.start()
 
             eventually {
                 logger.info("Waiting for required services to start...")

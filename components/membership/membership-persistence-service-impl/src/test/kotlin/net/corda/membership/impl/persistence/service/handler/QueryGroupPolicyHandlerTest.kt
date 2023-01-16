@@ -100,6 +100,7 @@ class QueryGroupPolicyHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
     )
 
     private lateinit var queryGroupPolicyHandler: QueryGroupPolicyHandler

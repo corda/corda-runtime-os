@@ -3,9 +3,11 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
+import net.corda.data.p2p.AllowedCertificateSubject
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.MutualTlsAllowedClientCertificateEntity
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.VirtualNodeInfo
@@ -15,9 +17,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -48,10 +48,12 @@ class MutualTlsRemoveFromAllowedCertificatesHandlerTest {
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
+    private val writerToKafka = mock<AllowedCertificatesReaderWriterService>()
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
+        on { allowedCertificatesReaderWriterService } doReturn writerToKafka
     }
     private val handler = MutualTlsRemoveFromAllowedCertificatesHandler(persistenceHandlerServices)
     private val context = mock<MembershipRequestContext> {
@@ -62,31 +64,24 @@ class MutualTlsRemoveFromAllowedCertificatesHandlerTest {
     )
 
     @Test
-    fun `invoke will remove subject if found`() {
-        val entity = MutualTlsAllowedClientCertificateEntity("subject")
-        whenever(
-            entityManager.find(MutualTlsAllowedClientCertificateEntity::class.java, "subject")
-        ).doReturn(entity)
-
+    fun `invoke will set the flag as deleted`() {
         handler.invoke(
             context,
             request,
         )
 
-        verify(entityManager).remove(entity)
+        verify(entityManager).merge(
+            MutualTlsAllowedClientCertificateEntity("subject", true)
+        )
     }
 
     @Test
-    fun `invoke will not remove subject if not found`() {
-        whenever(
-            entityManager.find(MutualTlsAllowedClientCertificateEntity::class.java, "subject")
-        ).doReturn(null)
-
+    fun `invoke will publish null`() {
         handler.invoke(
             context,
             request,
         )
 
-        verify(entityManager, never()).remove(any())
+        verify(writerToKafka).remove(AllowedCertificateSubject(request.subject))
     }
 }

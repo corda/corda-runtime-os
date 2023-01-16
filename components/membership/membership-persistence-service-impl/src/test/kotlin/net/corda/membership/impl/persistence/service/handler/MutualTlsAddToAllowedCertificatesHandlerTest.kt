@@ -3,9 +3,11 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
+import net.corda.data.p2p.AllowedCertificateSubject
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.MutualTlsAllowedClientCertificateEntity
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.VirtualNodeInfo
@@ -46,10 +48,12 @@ class MutualTlsAddToAllowedCertificatesHandlerTest {
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
+    private val writerToKafka = mock<AllowedCertificatesReaderWriterService>()
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
+        on { allowedCertificatesReaderWriterService } doReturn writerToKafka
     }
     private val handler = MutualTlsAddToAllowedCertificatesHandler(persistenceHandlerServices)
     private val context = mock<MembershipRequestContext> {
@@ -67,7 +71,20 @@ class MutualTlsAddToAllowedCertificatesHandlerTest {
         )
 
         verify(entityManager).merge(
-            MutualTlsAllowedClientCertificateEntity("subject")
+            MutualTlsAllowedClientCertificateEntity("subject", false)
+        )
+    }
+
+    @Test
+    fun `invoke will publish the subject`() {
+        handler.invoke(
+            context,
+            request,
+        )
+
+        verify(writerToKafka).put(
+            AllowedCertificateSubject(request.subject),
+            AllowedCertificateSubject(request.subject),
         )
     }
 }
