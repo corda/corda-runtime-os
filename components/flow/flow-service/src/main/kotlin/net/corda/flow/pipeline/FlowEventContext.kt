@@ -29,4 +29,7 @@ data class FlowEventContext<T>(
     val sendToDlq: Boolean = false,
     val mdcProperties: Map<String, String>,
     var flowTerminatedContext: FlowTerminatedContext? = null
-)
+) {
+    fun isFlowToBeKilled() = flowTerminatedContext != null &&
+            flowTerminatedContext?.terminationStatus == FlowTerminatedContext.TerminationStatus.TO_BE_KILLED
+}

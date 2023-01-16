@@ -39,8 +39,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {
         val now = Instant.now()
 
-        if (isFlowMarkedToBeKilled(context)) {
-            log.info("Flow ${context.checkpoint.flowId} is to be killed: ${context.flowTerminatedContext!!.details}")
+        if (context.isFlowToBeKilled()) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed. Discarding any records accrued in prior steps in the pipeline, " +
+                    "scheduling all flow sessions for cleanup and updating this flow's status.")
             return createKillFlowContext(context, now)
         }
 
@@ -153,10 +154,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
         return listOf(flowRecordFactory.createFlowStatusRecord(status))
     }
-
-    private fun isFlowMarkedToBeKilled(context: FlowEventContext<Any>) =
-        context.flowTerminatedContext?.terminationStatus ==
-                FlowTerminatedContext.TerminationStatus.TO_BE_KILLED
 
     private fun createKillFlowContext(context: FlowEventContext<Any>, now: Instant): FlowEventContext<Any> {
         return context.copy(

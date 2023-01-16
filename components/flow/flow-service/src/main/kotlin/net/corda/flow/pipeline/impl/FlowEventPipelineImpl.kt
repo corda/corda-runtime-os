@@ -51,6 +51,11 @@ class FlowEventPipelineImpl(
         }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
+        if (context.isFlowToBeKilled()) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping eventPreProcessing.")
+            return this
+        }
+
         log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}" }
 
         /**
@@ -78,6 +83,11 @@ class FlowEventPipelineImpl(
     }
 
     override fun runOrContinue(timeoutMilliseconds: Long): FlowEventPipelineImpl {
+        if (context.isFlowToBeKilled()) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping runOrContinue.")
+            return this
+        }
+
         val waitingFor = context.checkpoint.waitingFor?.value
             ?: throw FlowFatalException("Flow [${context.checkpoint.flowId}] waiting for is null")
 
@@ -94,6 +104,11 @@ class FlowEventPipelineImpl(
     }
 
     override fun setCheckpointSuspendedOn(): FlowEventPipelineImpl {
+        if (context.isFlowToBeKilled()) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping setCheckpointSuspendedOn.")
+            return this
+        }
+
         // If the flow fiber did not run or resume then there is no `suspendedOn` to change to.
         output?.let {
             context.checkpoint.suspendedOn = it::class.qualifiedName!!
@@ -102,6 +117,11 @@ class FlowEventPipelineImpl(
     }
 
     override fun setWaitingFor(): FlowEventPipelineImpl {
+        if (context.isFlowToBeKilled()) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping setWaitingFor.")
+            return this
+        }
+
         output?.let {
             val waitingFor = getFlowRequestHandler(it).getUpdatedWaitingFor(context, it)
             context.checkpoint.waitingFor = waitingFor
@@ -110,6 +130,11 @@ class FlowEventPipelineImpl(
     }
 
     override fun requestPostProcessing(): FlowEventPipelineImpl {
+        if (context.isFlowToBeKilled()) {
+            log.info("Flow ${context.checkpoint.flowId} to be killed, skipping requestPostProcessing.")
+            return this
+        }
+
         output?.let {
             log.trace { "Postprocessing of $output" }
             context = getFlowRequestHandler(it).postProcess(context, it)
