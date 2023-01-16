@@ -1,12 +1,6 @@
 package net.cordapp.demo.obligation.workflow
 
-import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
-import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.application.flows.getRequestBodyAs
+import net.corda.v5.application.flows.*
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -22,8 +16,26 @@ import net.cordapp.demo.obligation.contract.ObligationState
 import net.cordapp.demo.obligation.initiateFlows
 import net.cordapp.demo.obligation.messages.CreateObligationRequestMessage
 import net.cordapp.demo.obligation.messages.CreateObligationResponseMessage
+import net.cordapp.demo.obligation.workflow.CreateObligationFlow.Initiator
 import java.time.Instant
 
+/**
+ * Represents a sub-flow for creating an obligation.
+ *
+ * Note that this flow is not annotated with [InitiatingFlow]. The adopted design pattern for this flow is to
+ * encapsulate and implement transaction behavior as a sub-flow, promoting re-usability. Effectively this sub-flow
+ * can be treated as either an end-to-end business process (via its [Initiator] flow), or as a sub-process within a
+ * larger end-to-end business process.
+ *
+ * TODO : Should these be property or param?...they are properties, but they only appear as params in a public API.
+ * @property obligation The obligation to create.
+ * @property notary The notary to use for all future obligation transactions relating to this obligation.
+ * @property sessions The provided flow sessions for any state counter-parties.
+ * @property fromDayOffset TODO
+ * @property toDayOffset TODO
+ *
+ * TODO : I have not documented private lateinit var properties, since they are not visible on the public API.
+ */
 class CreateObligationFlow(
     private val obligation: ObligationState,
     private val notary: Party,
@@ -46,28 +58,31 @@ class CreateObligationFlow(
     @Suspendable
     override fun call(): UtxoSignedTransaction {
 
+        val from = Instant.now().plusMillis(fromDayOffset.days.toMillis())
+        val to = Instant.now().plusMillis(toDayOffset.days.toMillis())
+
         val transaction = utxoLedgerService
             .getTransactionBuilder()
             .setNotary(notary)
             .addOutputState(obligation)
             .addCommand(ObligationContract.Create())
-            .setTimeWindowBetween(
-                Instant.now().plusMillis(fromDayOffset.days.toMillis()),
-                Instant.now().plusMillis(toDayOffset.days.toMillis())
-            )
-            .addSignatories(listOf(obligation.issuer))
+            .setTimeWindowBetween(from, to)
+            .addSignatories(listOf(obligation.debtor))
 
         @Suppress("DEPRECATION")
-        val initiallySignedTransaction = transaction.toSignedTransaction(memberLookup.myInfo().ledgerKeys.first())
+        val signedTransaction = transaction.toSignedTransaction(memberLookup.myInfo().ledgerKeys.first())
 
-        val fullySignedSignedTransaction = utxoLedgerService.finalize(
-            initiallySignedTransaction,
-            sessions.toList()
-        )
-
-        return fullySignedSignedTransaction
+        return utxoLedgerService.finalize(signedTransaction, sessions.toList())
     }
 
+    /**
+     * Represents an initiating flow for creating an obligation.
+     *
+     * Note that this flow is annotated with [InitiatingFlow]. The adopted design pattern for this flow is to
+     * encapsulate and implement the behavior to accept an obligation creation request as an end-to-end business
+     * process. This calls [CreateObligationFlow] as a sub-flow, passing in the obligation, required sessions and
+     * notary.
+     */
     @InitiatingFlow(FLOW_PROTOCOL)
     class Initiator : RPCStartableFlow {
 
@@ -85,39 +100,50 @@ class CreateObligationFlow(
 
         @Suspendable
         override fun call(requestBody: RPCRequestData): String {
+
             log.info("CreateObligationFlow: starting.")
 
             val request = requestBody.getRequestBodyAs<CreateObligationRequestMessage>(jsonMarshallingService)
 
-            val issuer = requireNotNull(memberLookup.lookup(request.issuer)) { "Unknown issuer: ${request.issuer}." }
+            val debtor = requireNotNull(memberLookup.lookup(request.debtor)) {
+                "Unknown debtor: ${request.debtor}."
+            }
 
-            val holder = requireNotNull(memberLookup.lookup(request.holder)) { "Unknown holder: ${request.holder}." }
+            val creditor = requireNotNull(memberLookup.lookup(request.creditor)) {
+                "Unknown creditor: ${request.creditor}."
+            }
 
             // TODO CORE-6173 use proper notary key and NotaryLookup service here.
-            val notary = memberLookup.lookup(request.notary)?.let { _ ->
+            val notary = memberLookup.lookup(request.notary)?.let {
                 val notaryKey = memberLookup.lookup().single {
                     it.memberProvidedContext["corda.notary.service.name"] == request.notaryService.toString()
                 }.ledgerKeys[0]
+
                 Party(request.notaryService, notaryKey)
-            }
-                ?: throw IllegalArgumentException("Unknown notary: ${request.notaryService}.")
+            } ?: throw IllegalArgumentException("Unknown notary: ${request.notaryService}.")
 
-            val sessions = flowMessaging.initiateFlows(holder)
+            val sessions = flowMessaging.initiateFlows(creditor)
 
-            val issuerKey = issuer.ledgerKeys.first()
+            val debtorKey = debtor.ledgerKeys.first()
 
-            val holderKey = holder.ledgerKeys.first()
+            val creditorKey = creditor.ledgerKeys.first()
 
-            val obligationState = ObligationState(issuerKey, holderKey, request.amount)
+            val obligationState = ObligationState(creditorKey, debtorKey, request.amount)
 
-            val createObligationFlow =
-                CreateObligationFlow(obligationState, notary, sessions, request.fromDayOffset, request.toDayOffset)
+            val createObligationFlow = CreateObligationFlow(
+                obligationState,
+                notary,
+                sessions,
+                request.fromDayOffset,
+                request.toDayOffset
+            )
 
             val transaction = flowEngine.subFlow(createObligationFlow)
 
             val response = CreateObligationResponseMessage(transaction.id.toString(), obligationState.id)
 
             log.info("CreateObligationFlow: finishing.")
+
             return jsonMarshallingService.format(response)
         }
     }

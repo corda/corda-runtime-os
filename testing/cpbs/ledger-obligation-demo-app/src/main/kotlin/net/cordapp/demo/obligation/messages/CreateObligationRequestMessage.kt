@@ -3,9 +3,20 @@ package net.cordapp.demo.obligation.messages
 import net.corda.v5.base.types.MemberX500Name
 import java.math.BigDecimal
 
+/**
+ * Represents a request to create an obligation.
+ *
+ * @property creditor The participant who is owed the obligation.
+ * @property debtor The participant who owes the obligation.
+ * @property amount The amount owed.
+ * @property notary TODO
+ * @property notaryService TODO
+ * @property fromDayOffset TODO
+ * @property toDayOffset TODO
+ */
 data class CreateObligationRequestMessage(
-    val issuer: MemberX500Name,
-    val holder: MemberX500Name,
+    val debtor: MemberX500Name,
+    val creditor: MemberX500Name,
     val amount: BigDecimal,
     val notary: MemberX500Name,
     val notaryService: MemberX500Name,

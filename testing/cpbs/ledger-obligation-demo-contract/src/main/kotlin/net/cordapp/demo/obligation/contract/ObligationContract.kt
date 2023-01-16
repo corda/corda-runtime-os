@@ -3,6 +3,9 @@ package net.cordapp.demo.obligation.contract
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.ledger.utxo.transaction.getCommands
+import net.corda.v5.ledger.utxo.transaction.getInputStates
+import net.corda.v5.ledger.utxo.transaction.getOutputStates
 import java.math.BigDecimal
 
 /**
@@ -16,7 +19,7 @@ class ObligationContract : Contract {
      * @param transaction The transaction to verify.
      */
     override fun verify(transaction: UtxoLedgerTransaction) {
-        val command = transaction.getCommands(ObligationContractCommand::class.java).singleOrNull()
+        val command = transaction.getCommands<ObligationContractCommand>().singleOrNull()
             ?: throw IllegalArgumentException("Expected a single command of type: ${ObligationContractCommand::class.java}.")
 
         /**
@@ -45,6 +48,19 @@ class ObligationContract : Contract {
      *
      * The constant strings are marked internal as they only need to be accessed within this [Contract] class, or from
      * associated tests within the same package.
+     *
+     * On [Create] of a new [ObligationState] we should at least check the following:
+     * 1. We are not consuming any obligation state inputs, since all we want to do is create a new one.
+     * 2. We are creating only one new obligation state output.
+     * 3. The creditor and debtor of the new obligation are not the same participant.
+     * 4. The amount of the new obligation is greater than zero.
+     * 5. The debtor must sign the transaction.
+     *
+     * Note that since the obligation represents an IOU (I-owe-you) type obligation, it is the debtor who claims
+     * responsibility for undertaking the obligation, therefore they are the only required signature. If we were to
+     * include the creditor as a required signer, this would incur an empty transaction check during finality. This
+     * sort of implicit signing holds no value since the creditor does not need to check or verify anything beyond the
+     * contract constraints, therefore their signature is not required.
      */
     class Create : ObligationContractCommand {
         companion object {
@@ -56,13 +72,13 @@ class ObligationContract : Contract {
                 "On state creating, only one output state must be created."
 
             internal const val CONTRACT_RULE_PARTICIPANTS =
-                "On state creating, the issuer and holder must not be the same participant."
+                "On state creating, the creditor and debtor must not be the same participant."
 
             internal const val CONTRACT_RULE_AMOUNT =
                 "On state creating, the amount must be greater than zero."
 
             internal const val CONTRACT_RULE_SIGNATORIES =
-                "On state creating, the issuer must sign the transaction."
+                "On state creating, the debtor must sign the transaction."
         }
     }
 
@@ -75,6 +91,24 @@ class ObligationContract : Contract {
      *
      * The constant strings are marked internal as they only need to be accessed within this [Contract] class, or from
      * associated tests within the same package.
+     *
+     * On [Update] of an existing [ObligationState] we should at least check the following:
+     * 1. We are consuming only one existing obligation state input.
+     * 2. We are creating only one new obligation state output.
+     * 3. The creditor and debtor of the obligation must not change.
+     * 4. The obligation must settle some, or all of the remaining amount.
+     * 5. The obligation must not settle to produce a negative remaining amount.
+     * 6. The debtor must sign the transaction.
+     *
+     * Note that since the obligation represents an IOU (I-owe-you) type obligation, it is the debtor who claims
+     * responsibility for settling any amount of the obligation, therefore they are the only required signature.
+     *
+     * In reality this contract would likely also check for the existence of other state types in the transaction, like
+     * a token or some other asset that is being transferred from the debtor to the creditor as settlement against the
+     * obligation.
+     *
+     * Currently, there are no additional checks beyond contract verification required by the creditor, therefore as
+     * with obligation creation, the creditor is not required to sign.
      */
     class Update : ObligationContractCommand {
         companion object {
@@ -85,21 +119,20 @@ class ObligationContract : Contract {
             internal const val CONTRACT_RULE_OUTPUTS =
                 "On state updating, only one output state must be created."
 
-            internal const val CONTRACT_RULE_ISSUER =
-                "On state updating, the issuer must not change."
+            internal const val CONTRACT_RULE_CREDITOR =
+                "On state updating, the creditor must not change."
 
-            internal const val CONTRACT_RULE_HOLDER =
-                "On state updating, the holder must not change."
+            internal const val CONTRACT_RULE_DEBTOR =
+                "On state updating, the debtor must not change."
 
-            internal const val CONTRACT_RULE_AMOUNT_CONSERVATION =
+            internal const val CONTRACT_RULE_AMOUNT_SETTLED =
                 "On state updating, the output state amount must be less than the input state amount."
 
-            internal const val CONTRACT_RULE_AMOUNT_OUTPUT =
-                "On state updating, the remaining amount must be more than or equal zero."
+            internal const val CONTRACT_RULE_AMOUNT_REMAINING =
+                "On state updating, the remaining amount must be greater than or equal to zero."
 
             internal const val CONTRACT_RULE_SIGNATORIES =
-                "On state updating, the holder must sign the transaction."
-
+                "On state updating, the debtor must sign the transaction."
         }
     }
 
@@ -115,6 +148,20 @@ class ObligationContract : Contract {
      *
      * The constant strings are marked internal as they only need to be accessed within this [Contract] class, or from
      * associated tests within the same package.
+     *
+     * On [Delete] of an existing [ObligationState] we should at least check the following:
+     * 1. We are consuming only one existing obligation state input.
+     * 2. We are not creating any new obligation state outputs.
+     * 3. The amount of the obligation to be deleted (consumed) has reached zero.
+     * 4. The creditor must sign the transaction.
+     *
+     * Note that since the obligation represents an IOU (I-owe-you) type obligation, it is the creditor who claims
+     * responsibility for deleting a settled obligation, therefore they are the only required signature.
+     *
+     * Effectively, the creditor just closes out the contract, since the value of the obligation has reached zero.
+     *
+     * Currently, there are no additional checks beyond contract verification required by the debtor, therefore the
+     * debtor is not required to sign.
      */
     class Delete : ObligationContractCommand {
         companion object {
@@ -129,8 +176,7 @@ class ObligationContract : Contract {
                 "On state deleting, the amount must be zero."
 
             internal const val CONTRACT_RULE_SIGNATORIES =
-                "On state deleting, the issuer and the holder must sign the transaction."
-
+                "On state deleting, the creditor must sign the transaction."
         }
     }
 
@@ -140,18 +186,17 @@ class ObligationContract : Contract {
      * @param transaction The transaction to verify.
      */
     private fun verifyCreate(transaction: UtxoLedgerTransaction) {
-        // TODO : The generic variants of this don't work properly!
-        val inputs = transaction.getInputStates(ObligationState::class.java)
-        val outputs = transaction.getOutputStates(ObligationState::class.java)
+        val inputs = transaction.getInputStates<ObligationState>()
+        val outputs = transaction.getOutputStates<ObligationState>()
 
         require(inputs.isEmpty()) { Create.CONTRACT_RULE_INPUTS }
         require(outputs.size == 1) { Create.CONTRACT_RULE_OUTPUTS }
 
         val output = outputs.single()
 
-        require(output.issuer != output.holder) { Create.CONTRACT_RULE_PARTICIPANTS }
+        require(output.creditor != output.debtor) { Create.CONTRACT_RULE_PARTICIPANTS }
         require(output.amount > BigDecimal.ZERO) { Create.CONTRACT_RULE_AMOUNT }
-        require(output.issuer in transaction.signatories) { Create.CONTRACT_RULE_SIGNATORIES }
+        require(output.debtor in transaction.signatories) { Create.CONTRACT_RULE_SIGNATORIES }
     }
 
     /**
@@ -160,8 +205,8 @@ class ObligationContract : Contract {
      * @param transaction The transaction to verify.
      */
     private fun verifyUpdate(transaction: UtxoLedgerTransaction) {
-        val inputs = transaction.getInputStates(ObligationState::class.java)
-        val outputs = transaction.getOutputStates(ObligationState::class.java)
+        val inputs = transaction.getInputStates<ObligationState>()
+        val outputs = transaction.getOutputStates<ObligationState>()
 
         require(inputs.size == 1) { Update.CONTRACT_RULE_INPUTS }
         require(outputs.size == 1) { Update.CONTRACT_RULE_OUTPUTS }
@@ -169,11 +214,11 @@ class ObligationContract : Contract {
         val input = inputs.single()
         val output = outputs.single()
 
-        require(input.issuer == output.issuer) { Update.CONTRACT_RULE_ISSUER }
-        require(input.holder == output.holder) { Update.CONTRACT_RULE_HOLDER }
-        require(input.amount > output.amount) { Update.CONTRACT_RULE_AMOUNT_CONSERVATION }
-        require(output.amount >= BigDecimal.ZERO) { Update.CONTRACT_RULE_AMOUNT_OUTPUT }
-        require(output.holder in transaction.signatories) { Update.CONTRACT_RULE_SIGNATORIES }
+        require(input.creditor == output.creditor) { Update.CONTRACT_RULE_CREDITOR }
+        require(input.debtor == output.debtor) { Update.CONTRACT_RULE_DEBTOR }
+        require(input.amount > output.amount) { Update.CONTRACT_RULE_AMOUNT_SETTLED }
+        require(output.amount >= BigDecimal.ZERO) { Update.CONTRACT_RULE_AMOUNT_REMAINING }
+        require(output.debtor in transaction.signatories) { Update.CONTRACT_RULE_SIGNATORIES }
     }
 
     /**
@@ -182,8 +227,8 @@ class ObligationContract : Contract {
      * @param transaction The transaction to verify.
      */
     private fun verifyDelete(transaction: UtxoLedgerTransaction) {
-        val inputs = transaction.getInputStates(ObligationState::class.java)
-        val outputs = transaction.getOutputStates(ObligationState::class.java)
+        val inputs = transaction.getInputStates<ObligationState>()
+        val outputs = transaction.getOutputStates<ObligationState>()
 
         require(inputs.size == 1) { Delete.CONTRACT_RULE_INPUTS }
         require(outputs.isEmpty()) { Delete.CONTRACT_RULE_OUTPUTS }
