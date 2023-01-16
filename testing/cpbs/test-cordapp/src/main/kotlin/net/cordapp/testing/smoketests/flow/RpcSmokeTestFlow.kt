@@ -64,7 +64,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
         "crypto_get_compatible_signature_specs" to this::getCompatibleSignatureSpecs,
-        "crypto_get_my_keys" to this::getMyKeys,
+        "crypto_get_my_signing_keys" to this::getMySigningKeys,
         "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
@@ -417,11 +417,11 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @Suspendable
     @Suppress("unused_parameter")
-    private fun getMyKeys(input: RpcSmokeTestInput): String {
+    private fun getMySigningKeys(input: RpcSmokeTestInput): String {
         val myInfo = memberLookup.myInfo()
         // Include my keys and others to see they are being filtered properly
         val myKeysFromMemberInfo = myInfo.ledgerKeys.toSet()
-        val myKeysFromCryptoWorker = signingService.getMyKeys(myKeysFromMemberInfo)
+        val myKeysFromCryptoWorker = signingService.getMySigningKeys(myKeysFromMemberInfo)
         return if (myKeysFromMemberInfo == myKeysFromCryptoWorker) {
             "success"
         } else {

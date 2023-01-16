@@ -657,15 +657,15 @@ class FlowTests {
     }
 
     @Test
-    fun `Crypto - Signing service returns my keys`() {
+    fun `Crypto - Signing service returns my signing keys`() {
         val requestBody = RpcSmokeTestInput()
-        requestBody.command = "crypto_get_my_keys"
+        requestBody.command = "crypto_get_my_signing_keys"
         val requestId = startRpcFlow(bobHoldingId, requestBody)
         val result = awaitRpcFlowFinished(bobHoldingId, requestId)
         val flowResult = result.getRpcFlowResult()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
-        assertThat(flowResult.command).isEqualTo("crypto_get_my_keys")
+        assertThat(flowResult.command).isEqualTo("crypto_get_my_signing_keys")
         assertThat(flowResult.result).isEqualTo("success")
     }
 
