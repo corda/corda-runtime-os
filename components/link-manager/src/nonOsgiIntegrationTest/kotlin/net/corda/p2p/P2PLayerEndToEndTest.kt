@@ -11,8 +11,10 @@ import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
@@ -48,9 +50,9 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.gateway.Gateway
@@ -59,10 +61,10 @@ import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.markers.AppMessageMarker
-import net.corda.p2p.markers.LinkManagerProcessedMarker
-import net.corda.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.markers.TtlExpiredMarker
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerProcessedMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -140,7 +142,7 @@ class P2PLayerEndToEndTest {
         }
     }
 
-    private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())
+    private val bootstrapConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
         .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
 
     @Test

@@ -1,7 +1,6 @@
 package net.corda.membership.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -65,7 +64,6 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
-    private val configurationGetService: ConfigurationGetService,
     private val clock: Clock = UTCClock(),
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
@@ -243,9 +241,9 @@ class MemberOpsServiceProcessor(
             val sessionPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.SESSION_PKI_MODE)
             val tlsPkiMode: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_PKI_MODE)
             val tlsVersion: String = persistedGroupPolicyProperties.parse(PropertyKeys.TLS_VERSION)
-            // The TLS type will be added to the MGM registration context in CORE-8860, at that point we
-            // will be able to get it like the other properties.
-            val tlsType = TlsType.getClusterType(configurationGetService::getSmartConfig)
+            val tlsType = TlsType.fromString(
+                persistedGroupPolicyProperties.parseOrNull(PropertyKeys.TLS_TYPE, String::class.java)
+            ) ?: TlsType.ONE_WAY
 
             val isNoSessionPkiMode = GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI ==
                 GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.fromString(sessionPkiMode)

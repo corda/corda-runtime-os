@@ -21,6 +21,7 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -46,6 +47,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.p2p.gateway.messaging.TlsType
@@ -125,7 +127,7 @@ open class TestBase {
         tlsType = TlsType.ONE_WAY,
     )
 
-    protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    protected val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
 

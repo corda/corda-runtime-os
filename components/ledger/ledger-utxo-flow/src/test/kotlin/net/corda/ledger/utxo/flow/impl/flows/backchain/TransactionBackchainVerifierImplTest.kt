@@ -4,9 +4,11 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
+import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateAndRefExample
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
@@ -19,6 +21,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.security.PublicKey
 
 @Suppress("MaxLineLength")
 class TransactionBackchainVerifierImplTest {
@@ -40,6 +43,9 @@ class TransactionBackchainVerifierImplTest {
     private val ledgerTransaction2 = mock<UtxoLedgerTransaction>()
     private val ledgerTransaction3 = mock<UtxoLedgerTransaction>()
 
+    private val signatory = mock<PublicKey>()
+    private val command = mock<Command>()
+
     private val transactionBackchainVerifier = TransactionBackchainVerifierImpl(utxoLedgerPersistenceService)
 
     @BeforeEach
@@ -48,14 +54,32 @@ class TransactionBackchainVerifierImplTest {
         whenever(utxoLedgerPersistenceService.find(TX_ID_2, UNVERIFIED)).thenReturn(transaction2)
         whenever(utxoLedgerPersistenceService.find(TX_ID_3, UNVERIFIED)).thenReturn(transaction3)
         whenever(transaction1.toLedgerTransaction()).thenReturn(ledgerTransaction1)
+        whenever(transaction1.notary).thenReturn(utxoNotaryExample)
         whenever(transaction2.toLedgerTransaction()).thenReturn(ledgerTransaction2)
+        whenever(transaction2.notary).thenReturn(utxoNotaryExample)
         whenever(transaction3.toLedgerTransaction()).thenReturn(ledgerTransaction3)
+        whenever(transaction3.notary).thenReturn(utxoNotaryExample)
+        whenever(ledgerTransaction1.id).thenReturn(TX_ID_1)
+        whenever(ledgerTransaction1.inputStateRefs).thenReturn(listOf(utxoStateAndRefExample.ref))
+        whenever(ledgerTransaction1.outputContractStates).thenReturn(emptyList())
         whenever(ledgerTransaction1.inputStateAndRefs).thenReturn(listOf(utxoStateAndRefExample))
-        whenever(ledgerTransaction2.inputStateAndRefs).thenReturn(listOf(utxoStateAndRefExample))
-        whenever(ledgerTransaction3.inputStateAndRefs).thenReturn(listOf(utxoStateAndRefExample))
         whenever(ledgerTransaction1.outputStateAndRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction1.signatories).thenReturn(listOf(signatory))
+        whenever(ledgerTransaction1.commands).thenReturn(listOf(command))
+        whenever(ledgerTransaction2.id).thenReturn(TX_ID_2)
+        whenever(ledgerTransaction2.inputStateRefs).thenReturn(listOf(utxoStateAndRefExample.ref))
+        whenever(ledgerTransaction2.outputContractStates).thenReturn(emptyList())
+        whenever(ledgerTransaction2.inputStateAndRefs).thenReturn(listOf(utxoStateAndRefExample))
         whenever(ledgerTransaction2.outputStateAndRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction2.signatories).thenReturn(listOf(signatory))
+        whenever(ledgerTransaction2.commands).thenReturn(listOf(command))
+        whenever(ledgerTransaction3.id).thenReturn(TX_ID_3)
+        whenever(ledgerTransaction3.inputStateRefs).thenReturn(listOf(utxoStateAndRefExample.ref))
+        whenever(ledgerTransaction3.outputContractStates).thenReturn(emptyList())
+        whenever(ledgerTransaction3.inputStateAndRefs).thenReturn(listOf(utxoStateAndRefExample))
         whenever(ledgerTransaction3.outputStateAndRefs).thenReturn(emptyList())
+        whenever(ledgerTransaction3.signatories).thenReturn(listOf(signatory))
+        whenever(ledgerTransaction3.commands).thenReturn(listOf(command))
     }
 
     @Test

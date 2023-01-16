@@ -1,14 +1,13 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionVerification
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
@@ -18,7 +17,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 
@@ -26,7 +24,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 class ConsensualReceiveFinalityFlow(
     private val session: FlowSession,
     private val validator: ConsensualTransactionValidator
-) : SubFlow<ConsensualSignedTransaction> {
+) : ConsensualFinalityBase() {
 
     private companion object {
         val log = contextLogger()
@@ -46,16 +44,18 @@ class ConsensualReceiveFinalityFlow(
         val initialTransaction = session.receive<ConsensualSignedTransactionInternal>()
         val transactionId = initialTransaction.id
 
+        verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
-        // TODO [CORE-5982] Verify already added signatures.
-         if (validateTransaction(initialTransaction)) {
+        var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
             val (transaction, payload) = signTransaction(initialTransaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
             log.debug { "Recorded transaction with the initial and our signatures: $transactionId" }
             session.send(payload)
+            transaction
         } else {
+            persistInvalidTransaction(initialTransaction)
             val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Transaction validation failed for transaction $transactionId when signature was requested"
             )
@@ -63,15 +63,24 @@ class ConsensualReceiveFinalityFlow(
             throw CordaRuntimeException(payload.message)
         }
 
-        val transaction = receiveFinalizedTransaction(transactionId)
+        transaction = receiveSignaturesAndAddToTransaction(transaction)
+
+        log.debug { "Verifying signatures of transaction: $transactionId" }
         transaction.verifySignatures()
 
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded signed transaction $transactionId" }
-
-        acknowledgeFinalizedTransaction(transaction)
+        log.debug { "Recorded transaction with all parties' signatures $transactionId" }
 
         return transaction
+    }
+
+    @Suspendable
+    private fun verifyExistingSignatures(initialTransaction: ConsensualSignedTransactionInternal) {
+        initialTransaction.signatures.forEach {
+            verifySignature(initialTransaction.id, it) { message ->
+                session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
+            }
+        }
     }
 
     @Suspendable
@@ -91,9 +100,8 @@ class ConsensualReceiveFinalityFlow(
         }
     }
 
-    private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction){
-        val ledgerTransactionToCheck = signedTransaction.toLedgerTransaction()
-        ConsensualTransactionVerification.verifyLedgerTransaction(ledgerTransactionToCheck)
+    private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction) {
+        ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
     @Suspendable
@@ -124,20 +132,25 @@ class ConsensualReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun receiveFinalizedTransaction(transactionId: SecureHash): ConsensualSignedTransactionInternal {
-        val transaction = session.receive<ConsensualSignedTransactionInternal>()
-        // A [require] block isn't the correct option if we want to do something with the error on the peer side
-        require(transaction.id == transactionId) {
-            "Expected to received transaction $transactionId from ${session.counterparty} to finalise but received " +
-                    "${transaction.id} instead"
-        }
-
-        return transaction
+    private fun persistInvalidTransaction(transaction: ConsensualSignedTransactionInternal) {
+        log.warn("Failed to validate transaction: ${transaction.id}")
+        persistenceService.persist(transaction, TransactionStatus.INVALID)
+        log.debug { "Recorded transaction as invalid: ${transaction.id}" }
     }
 
     @Suspendable
-    private fun acknowledgeFinalizedTransaction(transaction: ConsensualSignedTransactionInternal) {
-        session.send(Unit)
-        log.trace { "Sent acknowledgement to initiator of finality for signed transaction ${transaction.id}" }
+    private fun receiveSignaturesAndAddToTransaction(
+        transaction: ConsensualSignedTransactionInternal
+    ): ConsensualSignedTransactionInternal {
+        log.debug { "Waiting for other parties' signatures for transaction: ${transaction.id}" }
+        val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
+        var signedTransaction = transaction
+        otherPartiesSignatures
+            .filter { it !in transaction.signatures }
+            .forEach {
+                signedTransaction = signedTransaction.addSignature(it)
+            }
+
+        return signedTransaction
     }
 }

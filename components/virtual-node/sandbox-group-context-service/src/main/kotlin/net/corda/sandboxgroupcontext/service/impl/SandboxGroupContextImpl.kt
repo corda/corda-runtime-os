@@ -4,6 +4,7 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -19,6 +20,8 @@ class SandboxGroupContextImpl(
 ) :  MutableSandboxGroupContext {
 
     private val objectByKey = ConcurrentHashMap<String, Any>()
+
+    override val completion: CompletableFuture<Boolean> = CompletableFuture()
 
     override fun <T : Any> put(key: String, value: T) {
         if (objectByKey.putIfAbsent(key, value) != null) {

@@ -23,16 +23,18 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.HeartbeatMessage
-import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.SessionPartitions
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.crypto.InitiatorHandshakeMessage
-import net.corda.p2p.crypto.InitiatorHelloMessage
-import net.corda.p2p.crypto.ResponderHandshakeMessage
-import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.HeartbeatMessage
+import net.corda.data.p2p.LinkInMessage
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.SessionPartitions
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.data.p2p.crypto.InitiatorHelloMessage
+import net.corda.data.p2p.crypto.ResponderHandshakeMessage
+import net.corda.data.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
@@ -43,6 +45,7 @@ import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.getSignatureSpec
@@ -66,6 +69,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerHashNotInMe
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.validationFailedWarning
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
@@ -88,7 +92,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class SessionManagerImpl(
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
@@ -101,7 +105,7 @@ internal class SessionManagerImpl(
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
-    clock: Clock,
+    private val clock: Clock,
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
@@ -289,7 +293,7 @@ internal class SessionManagerImpl(
         pendingInboundSessions.remove(sessionId)
     }
 
-    override fun dataMessageSent(session: Session) {
+    private fun dataMessageSent(session: Session) {
         dominoTile.withLifecycleLock {
             heartbeatManager.dataMessageSent(session)
         }
@@ -299,6 +303,28 @@ internal class SessionManagerImpl(
         dominoTile.withLifecycleLock {
             heartbeatManager.messageAcknowledged(sessionId)
         }
+    }
+
+    override fun recordsForSessionEstablished(
+        session: Session,
+        messageAndKey: AuthenticatedMessageAndKey,
+    ): List<Record<String, *>> {
+        return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(
+            messageAndKey,
+            session,
+            groupPolicyProvider,
+            membershipGroupReaderProvider,
+        )?.let { message ->
+            val key = LinkManager.generateKey()
+            val messageRecord = Record(LINK_OUT_TOPIC, key, message)
+            val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
+            val markerRecord = Record(P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
+            dataMessageSent(session)
+            listOf(
+                messageRecord,
+                markerRecord,
+            )
+        } ?: emptyList()
     }
 
     private fun onTileStart() {
@@ -595,8 +621,6 @@ internal class SessionManagerImpl(
                 this,
                 sessionCounterparties,
                 authenticatedSession,
-                groupPolicyProvider,
-                membershipGroupReaderProvider
             )
         }
         logger.info(

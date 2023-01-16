@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.common
 
-import net.corda.p2p.crypto.AuthenticatedDataMessage
-import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.Session

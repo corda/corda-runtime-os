@@ -11,7 +11,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.GatewayTruststore
+import net.corda.data.p2p.GatewayTruststore
 import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -58,6 +58,8 @@ internal class TrustStoresMap(
             ?.trustStore
             ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
                     "and group ID ($destinationGroupId)")
+
+    fun getTrustStores() = trustRootsPerHoldingIdentity.values.mapNotNull { it.trustStore }
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,

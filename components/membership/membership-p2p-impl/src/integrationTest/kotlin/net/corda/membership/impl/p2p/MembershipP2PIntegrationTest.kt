@@ -33,6 +33,7 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -65,11 +66,11 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.app.UnauthenticatedMessage
-import net.corda.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
@@ -145,7 +146,7 @@ class MembershipP2PIntegrationTest {
         const val MEMBER_CONTEXT_KEY = "key"
         const val MEMBER_CONTEXT_VALUE = "value"
 
-        val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
+        val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
             .create(
                 ConfigFactory.parseString(
                     """

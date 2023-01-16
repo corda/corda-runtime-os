@@ -156,4 +156,32 @@ interface MembershipPersistenceClient : Lifecycle {
         registrationId: String,
         registrationRequestStatus: RegistrationStatus
     ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Add mutual TLS client certificate subject to the allowed list.
+     *
+     * @param mgmHoldingIdentity The holding identity of the MGM.
+     * @param subject The client certificate subject.
+     *
+     * @return membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
+     */
+    fun mutualTlsAddCertificateToAllowedList(
+        mgmHoldingIdentity: HoldingIdentity,
+        subject: String,
+    ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Remove mutual TLS client certificate subject from the allowed list.
+     *
+     * @param mgmHoldingIdentity The holding identity of the MGM.
+     * @param subject The client certificate subject.
+     *
+     * @return membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
+     */
+    fun mutualTlsRemoveCertificateFromAllowedList(
+        mgmHoldingIdentity: HoldingIdentity,
+        subject: String,
+    ): MembershipPersistenceResult<Unit>
 }

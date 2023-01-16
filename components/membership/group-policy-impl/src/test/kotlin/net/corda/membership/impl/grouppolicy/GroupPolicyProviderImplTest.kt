@@ -8,7 +8,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
@@ -64,7 +64,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
@@ -233,7 +233,7 @@ class GroupPolicyProviderImplTest {
     private fun postConfigChangedEvent() = postEvent(
         ConfigChangedEvent(
             setOf(MESSAGING_CONFIG),
-            mapOf(MESSAGING_CONFIG to SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty()))
+            mapOf(MESSAGING_CONFIG to SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.empty()))
         )
     )
 

@@ -6,7 +6,7 @@ import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -46,7 +46,7 @@ class ConfigPublishServiceImpl @Activate constructor(
     )
 
     private val validator = configurationValidatorFactory.createConfigValidator()
-    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
     private val publisher: Publisher
         get() =

@@ -74,7 +74,7 @@ class KeysFactoryTest {
                 scheme = eq(scheme),
                 context = any(),
             )
-        } doThrow KeyAlreadyExistsException("")
+        } doThrow KeyAlreadyExistsException("", "", "")
         on {
             lookup(tenantId, listOf(publicKey.publicKeyId()))
         } doReturn listOf(cryptoSigningKey)

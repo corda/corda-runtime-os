@@ -7,6 +7,7 @@ import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
 import kotlin.concurrent.thread
+import kotlin.math.min
 
 @Command(
     name = "setupCluster",
@@ -94,6 +95,7 @@ class SetupCordaCluster : Runnable {
             kubectl("label", "ns", clusterName, "namespace-type=corda-e2e", "--overwrite=true")
         }
 
+
         try {
             kubectl(
                 "create", "secret", "docker-registry", "docker-registry-cred",
@@ -106,19 +108,30 @@ class SetupCordaCluster : Runnable {
             // Do nothing, the secret might already be there
         }
 
+        val prereqsYaml = File(File(File(cordaOsRuntimeDir, ".ci"), "e2eTests"), "prereqs.yaml")
+        val prereqsEksYaml = File(File(File(cordaOsRuntimeDir, ".ci"), "e2eTests"), "prereqs-eks.yaml")
+        val replicationFactor = min(kafkaReplicas, 3)
         helm(
             "install", "prereqs", "oci://corda-os-docker.software.r3.com/helm-charts/corda-dev",
-            "--set", "kafka.replicaCount=$kafkaReplicas,kafka.zookeeper.replicaCount=$zooKeeperReplicas,kafka.auth.clientProtocol=tls",
+            "-f", prereqsYaml.absolutePath,
+            "-f", prereqsEksYaml.absolutePath,
+            "--set", "kafka.replicaCount=$kafkaReplicas," +
+                "kafka.zookeeper.replicaCount=$zooKeeperReplicas," +
+                "kafka.auth.clientProtocol=tls," +
+                "kafka.offsetsTopicReplicationFactor=$replicationFactor," +
+                "kafka.transactionStateLogReplicationFactor=$replicationFactor",
             "-n", clusterName, "--wait", "--timeout", "600s"
         )
 
         val chart = File(cordaOsRuntimeDir, "charts")
         val cordaChart = File(chart, "corda")
-        val yaml = File(File(File(cordaOsRuntimeDir, ".ci"), "e2eTests"), "corda.yaml")
+        val cordaYaml = File(File(File(cordaOsRuntimeDir, ".ci"), "e2eTests"), "corda.yaml")
+        val cordaEksYaml = File(File(File(cordaOsRuntimeDir, ".ci"), "e2eTests"), "corda-eks.yaml")
         helm(
             "install",
             "corda", cordaChart.absolutePath,
-            "-f", yaml.absolutePath,
+            "-f", cordaYaml.absolutePath,
+            "-f", cordaEksYaml.absolutePath,
             "--set",
             "image.tag=$actualBaseImage," +
                 "bootstrap.kafka.replicas=$kafkaReplicas," +

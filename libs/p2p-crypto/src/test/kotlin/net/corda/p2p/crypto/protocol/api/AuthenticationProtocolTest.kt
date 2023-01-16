@@ -1,7 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.crypto.utils.PemCertificate
-import net.corda.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec

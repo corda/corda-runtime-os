@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode

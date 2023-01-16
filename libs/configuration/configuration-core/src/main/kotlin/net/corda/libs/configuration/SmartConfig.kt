@@ -72,4 +72,9 @@ interface SmartConfig : Config {
     override fun withValue(path: String?, value: ConfigValue?): SmartConfig
 }
 
+fun Config.getStringOrDefault(path: String, default: String): String {
+    if(this.hasPath(path)) return this.getString(path)
+    return default
+}
+
 

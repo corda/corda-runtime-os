@@ -2,8 +2,6 @@ package net.corda.flow.state
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.flow.FlowKey
@@ -25,7 +23,7 @@ import net.corda.flow.state.impl.FlowCheckpointImpl
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
@@ -33,12 +31,14 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.nio.ByteBuffer
+import java.time.Instant
 
 class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
         .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(60000L))
-    private val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
+    private val smartFlowConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(flowConfig)
     private val now = Instant.MIN
 
     private fun getMinimumCheckpoint(): Pair<Checkpoint, FlowCheckpointImpl> {
@@ -583,7 +583,7 @@ class FlowCheckpointImplTest {
         val flowConfig = ConfigFactory.empty()
             .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
             .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(3000L))
-        val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
+        val smartFlowConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(flowConfig)
 
         val checkpoint = setupAvroCheckpoint(retryState = RetryState().apply {
             retryCount = 5

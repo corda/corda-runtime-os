@@ -11,7 +11,7 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -47,8 +47,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
@@ -75,7 +75,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
@@ -116,7 +116,7 @@ class MemberRegistrationIntegrationTest {
         lateinit var testVirtualNodeInfoReadService: TestVirtualNodeInfoReadService
 
         val logger = contextLogger()
-        val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
+        val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
             .create(
                 ConfigFactory.parseString(
                     """

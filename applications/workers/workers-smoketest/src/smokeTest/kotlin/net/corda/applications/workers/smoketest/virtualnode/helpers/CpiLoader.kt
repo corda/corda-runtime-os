@@ -12,7 +12,6 @@ import java.nio.file.StandardOpenOption
 import kotlin.io.path.createTempDirectory
 
 object CpiLoader {
-    private const val groupIdPlaceholder = "group-id-placeholder"
     private fun getInputStream(resourceName: String): InputStream {
         return this::class.java.getResource(resourceName)?.openStream()
             ?: throw FileNotFoundException("No such resource: '$resourceName'")

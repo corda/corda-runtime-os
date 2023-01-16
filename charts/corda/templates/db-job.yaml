@@ -71,7 +71,7 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.dbSaltAndPassphraseEnv" . | nindent 12 }}
+            {{ include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
             {{ include "corda.rbacDbUserEnv" . | nindent 12 }}
         - name: apply-initial-rbac-db-config
@@ -97,7 +97,7 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.dbSaltAndPassphraseEnv" . | nindent 12 }}
+            {{ include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
             {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
         - name: apply-initial-crypto-db-config
@@ -169,7 +169,7 @@ spec:
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.dbSaltAndPassphraseEnv" . | nindent 12 }}
+            {{ include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-initial-crypto-worker-config
           image: {{ include "corda.dbClientImage" . }}
