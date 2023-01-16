@@ -91,7 +91,7 @@ class WebSocketFlowStatusUpdateListener(
         }
     }
 
-    private fun FlowStates.isFlowFinished() = this == FlowStates.COMPLETED || this == FlowStates.FAILED
+    private fun FlowStates.isFlowFinished() = this == FlowStates.COMPLETED || this == FlowStates.FAILED || this == FlowStates.KILLED
 
     private fun FlowStatus.createFlowStatusResponse(): FlowStatusResponse {
         return FlowStatusResponse(

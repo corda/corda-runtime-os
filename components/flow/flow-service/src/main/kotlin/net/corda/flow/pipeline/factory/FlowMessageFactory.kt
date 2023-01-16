@@ -43,4 +43,13 @@ interface FlowMessageFactory {
      * @return a new instance of a [FlowStatus] record.
      */
     fun createFlowFailedStatusMessage(checkpoint: FlowCheckpoint, errorType: String, message: String): FlowStatus
+
+    /**
+     * Creates [FlowStatus] message with a [FlowStates.KILLED] status.
+     *
+     * @param checkpoint of the flow
+     * @param details additional details why the flow was killed.
+     * @return a new instance of a [FlowStatus] record.
+     */
+    fun createFlowKilledStatusMessage(checkpoint: FlowCheckpoint, details: Map<String, String>?): FlowStatus
 }
