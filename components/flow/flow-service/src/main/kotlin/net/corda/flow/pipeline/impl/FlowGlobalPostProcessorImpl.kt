@@ -9,6 +9,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
+import net.corda.flow.pipeline.FlowTerminatedContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
@@ -155,7 +156,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
     private fun isFlowMarkedToBeKilled(context: FlowEventContext<Any>) =
         context.flowTerminatedContext?.terminationStatus ==
-                FlowEventContext.FlowTerminatedContext.TerminationStatus.TO_BE_KILLED
+                FlowTerminatedContext.TerminationStatus.TO_BE_KILLED
 
     private fun createKillFlowContext(context: FlowEventContext<Any>, now: Instant): FlowEventContext<Any> {
         return context.copy(
@@ -168,10 +169,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val expiryTime = getScheduledCleanupExpiryTime(context, now)
 
         return context.checkpoint.sessions
-            // not necessary to clean up sessions that are already closed or errored. What about CLOSING?
+            // not necessary to clean up sessions that are already closed or errored.
             .filterNot { sessionState -> sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR }
+            .onEach { sessionState -> sessionState.hasScheduledCleanup = true }
             .map {
-                it.hasScheduledCleanup = true
                 flowRecordFactory.createFlowMapperEventRecord(
                     it.sessionId,
                     ScheduleCleanup(expiryTime)
@@ -179,9 +180,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             }
     }
 
-    private fun createFlowKilledStatusRecords(context: FlowEventContext<Any>) =
-        flowRecordFactory.createFlowStatusRecord(
+    private fun createFlowKilledStatusRecords(context: FlowEventContext<Any>): Record<FlowKey, FlowStatus> {
+        return flowRecordFactory.createFlowStatusRecord(
             flowMessageFactory.createFlowKilledStatusMessage(context.checkpoint, context.flowTerminatedContext?.details)
         )
+    }
 
 }

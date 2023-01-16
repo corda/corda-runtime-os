@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.FlowTerminatedContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -20,7 +21,8 @@ fun <T> buildFlowEventContext(
     config: SmartConfig = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty()),
     outputRecords: List<Record<*, *>> = emptyList(),
     flowId: String = FLOW_ID_1,
-    sendToDlq: Boolean = false
+    sendToDlq: Boolean = false,
+    flowTerminatedContext: FlowTerminatedContext? = null
 ): FlowEventContext<T> {
 
 
@@ -36,7 +38,8 @@ fun <T> buildFlowEventContext(
         configWithRequired,
         outputRecords,
         sendToDlq,
-        emptyMap()
+        emptyMap(),
+        flowTerminatedContext
     )
 }
 

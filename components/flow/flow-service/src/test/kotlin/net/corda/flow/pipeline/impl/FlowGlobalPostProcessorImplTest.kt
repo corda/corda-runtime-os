@@ -5,13 +5,18 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.output.FlowStates
+import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.external.events.impl.ExternalEventManager
+import net.corda.flow.pipeline.FlowTerminatedContext
+import net.corda.flow.pipeline.FlowTerminatedContext.Companion.TERMINATION_REASON_KEY
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
@@ -36,6 +41,10 @@ class FlowGlobalPostProcessorImplTest {
     private companion object {
         const val SESSION_ID_1 = "s1"
         const val SESSION_ID_2 = "s2"
+        const val SESSION_ID_3 = "s3"
+        const val SESSION_ID_4 = "s4"
+        const val SESSION_ID_5 = "s5"
+        const val SESSION_ID_6 = "s6"
 
         @JvmStatic
         fun sessionStatuses(): Stream<Arguments> {
@@ -55,6 +64,26 @@ class FlowGlobalPostProcessorImplTest {
         this.sessionId = SESSION_ID_2
         this.hasScheduledCleanup = false
     }
+    private val sessionState3 = SessionState().apply {
+        sessionId = SESSION_ID_3
+        hasScheduledCleanup = true
+        status = SessionStateType.CLOSED
+    }
+    private val sessionState4 = SessionState().apply {
+        sessionId = SESSION_ID_4
+        hasScheduledCleanup = false
+        status = SessionStateType.CONFIRMED
+    }
+    private val sessionState5 = SessionState().apply {
+        sessionId = SESSION_ID_5
+        hasScheduledCleanup = false
+        status = SessionStateType.CREATED
+    }
+    private val sessionState6 = SessionState().apply {
+        sessionId = SESSION_ID_6
+        hasScheduledCleanup = false
+        status = SessionStateType.WAIT_FOR_FINAL_ACK
+    }
     private val sessionEvent1 = SessionEvent().apply {
         this.sessionId = SESSION_ID_1
         this.sequenceNum = 1
@@ -72,12 +101,18 @@ class FlowGlobalPostProcessorImplTest {
     private val sessionRecord3 = Record("t", SESSION_ID_2, FlowMapperEvent(sessionEvent3))
     private val scheduleCleanupRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(ScheduleCleanup(1000)))
     private val scheduleCleanupRecord2 = Record("t", SESSION_ID_2, FlowMapperEvent(ScheduleCleanup(1000)))
+    private val scheduleCleanupRecord4 = Record("t", SESSION_ID_4, FlowMapperEvent(ScheduleCleanup(1000)))
+    private val scheduleCleanupRecord5 = Record("t", SESSION_ID_5, FlowMapperEvent(ScheduleCleanup(1000)))
+    private val scheduleCleanupRecord6 = Record("t", SESSION_ID_6, FlowMapperEvent(ScheduleCleanup(1000)))
     private val externalEventRecord = Record("t", "key", byteArrayOf(1, 2, 3))
     private val sessionManager = mock<SessionManager>()
     private val externalEventManager = mock<ExternalEventManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
-    private val checkpoint = mock<FlowCheckpoint>()
+    private val flowKey = FlowKey("id", HoldingIdentity("x500", "grp1"))
+    private val checkpoint = mock<FlowCheckpoint> {
+        whenever(it.flowKey).thenReturn(flowKey)
+    }
     private val testContext = buildFlowEventContext(checkpoint, Any())
     private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(
         externalEventManager,
@@ -85,6 +120,14 @@ class FlowGlobalPostProcessorImplTest {
         flowMessageFactory,
         flowRecordFactory
     )
+    private val flowTerminationDetails = mapOf(TERMINATION_REASON_KEY to "Flow killed reasoning.")
+    private val flowKilledStatus = FlowStatus().apply {
+        key = checkpoint.flowKey
+        flowId = checkpoint.flowId
+        flowStatus = FlowStates.KILLED
+        processingTerminationDetails = flowTerminationDetails
+    }
+    private val flowKilledStatusRecord = Record("s", flowKey, flowKilledStatus)
 
     @Suppress("Unused")
     @BeforeEach
@@ -123,6 +166,12 @@ class FlowGlobalPostProcessorImplTest {
         )
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_2), any<ScheduleCleanup>())).thenReturn(
             scheduleCleanupRecord2
+        )
+        whenever(flowMessageFactory.createFlowKilledStatusMessage(any(), any())).thenReturn(
+            flowKilledStatus
+        )
+        whenever(flowRecordFactory.createFlowStatusRecord(flowKilledStatus)).thenReturn(
+            flowKilledStatusRecord
         )
     }
 
@@ -257,5 +306,52 @@ class FlowGlobalPostProcessorImplTest {
         assertThat(outputContext.outputRecords).doesNotContain(externalEventRecord)
         verify(externalEventManager, never()).getEventToSend(any(), any(), any())
         verify(checkpoint, never()).externalEventState = any()
+    }
+
+    @Test
+    fun `When flow is to be killed, all necessary sessions scheduled for cleanup and flow killed status created`() {
+        val externalEventState = ExternalEventState()
+        val testContext = buildFlowEventContext(
+            checkpoint,
+            Any(),
+            flowTerminatedContext = FlowTerminatedContext(
+                FlowTerminatedContext.TerminationStatus.TO_BE_KILLED,
+                flowTerminationDetails
+            )
+        )
+
+        sessionState1.status = SessionStateType.CLOSING
+        sessionState1.hasScheduledCleanup = true
+        sessionState2.status = SessionStateType.ERROR
+        sessionState2.hasScheduledCleanup = true
+
+        val flowSessions = listOf(sessionState1, sessionState2, sessionState3, sessionState4, sessionState5, sessionState6)
+        whenever(checkpoint.sessions).thenReturn(flowSessions)
+        whenever(checkpoint.externalEventState).thenReturn(externalEventState)
+        whenever(checkpoint.inRetryState).thenReturn(true)
+        whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s1"), any())).thenReturn(scheduleCleanupRecord1)
+        whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s4"), any())).thenReturn(scheduleCleanupRecord4)
+        whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s5"), any())).thenReturn(scheduleCleanupRecord5)
+        whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s6"), any())).thenReturn(scheduleCleanupRecord6)
+
+
+        val outputContext = flowGlobalPostProcessor.postProcess(testContext)
+
+        // s2 status is ERROR and s3 status is CLOSED therefore are not appearing in this list
+        assertThat(outputContext.outputRecords)
+            .withFailMessage("Output records should contain cleanup records for flow sessions that aren't CLOSED or ERRORED")
+            .contains(
+                scheduleCleanupRecord1,
+                scheduleCleanupRecord4,
+                scheduleCleanupRecord5,
+                scheduleCleanupRecord6,
+            )
+        assertThat(outputContext.outputRecords)
+            .withFailMessage("Output records should contain the flow killed status record")
+            .contains(flowKilledStatusRecord)
+        assertThat(outputContext.outputRecords)
+            .withFailMessage("The external event record, retry record, and all other records should have been discarded")
+            .hasSize(5)
+        assertTrue(flowSessions.all { it.hasScheduledCleanup })
     }
 }
