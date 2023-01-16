@@ -30,6 +30,7 @@ dependencies {
     implementation project(':components:membership:synchronisation')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:membership:locally-hosted-identities-service')
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
@@ -57,6 +58,7 @@ dependencies {
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(':libs:crypto:merkle-impl')
+    runtimeOnly project(':components:membership:locally-hosted-identities-service-impl')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")

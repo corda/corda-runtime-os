@@ -1,6 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.member
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
@@ -74,6 +75,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -81,6 +85,7 @@ import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SignatureSpec
@@ -122,7 +127,11 @@ class DynamicMemberRegistrationService @Activate constructor(
     @Reference(service = EphemeralKeyPairEncryptor::class)
     private val ephemeralKeyPairEncryptor: EphemeralKeyPairEncryptor,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = LocallyHostedIdentitiesService::class)
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
+    @Reference(service = ConfigurationGetService::class)
+    private val configurationGetService: ConfigurationGetService,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -370,6 +379,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             val filteredContext = context.filterNot {
                 it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
             }
+            val tlsSubject = getTlsSubject(member)
             val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)
             val ledgerKeyContext = generateLedgerKeyData(context, member.shortHash.value)
             val additionalContext = mapOf(
@@ -389,8 +399,28 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ledgerKeyContext +
                     additionalContext +
                     roleContext +
-                    optionalContext
+                    optionalContext +
+                    tlsSubject
 
+        }
+
+        private fun getTlsSubject(member: HoldingIdentity) : Map<String, String> {
+            return if (TlsType.getClusterType(configurationGetService::getSmartConfig) == TlsType.MUTUAL) {
+                val info =
+                    locallyHostedIdentitiesService.getIdentityInfo(member)
+                        ?: throw CordaRuntimeException(
+                            "Member $member is not locally hosted. " +
+                            "If it had been configured, please retry the registration in a few seconds. " +
+                            "If it had not been configured, please configure it using the network/setup API."
+                        )
+                val certificate = info.tlsCertificates
+                    .firstOrNull()
+                    ?: throw CordaRuntimeException("Member $member is missing TLS certificates")
+                val subject = MemberX500Name.parse(certificate.subjectX500Principal.toString())
+                mapOf(TLS_CERTIFICATE_SUBJECT to subject.toString())
+            } else {
+                emptyMap()
+            }
         }
 
         private fun validateContext(context: Map<String, String>) {
@@ -546,6 +576,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                 LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
             )
         )
     }

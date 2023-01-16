@@ -23,6 +23,7 @@ dependencies {
     implementation project(":components:membership:membership-persistence-client")
     implementation project(':components:membership:membership-p2p')
     implementation project(":components:membership:registration")
+    implementation project(':components:membership:locally-hosted-identities-service')
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite')
