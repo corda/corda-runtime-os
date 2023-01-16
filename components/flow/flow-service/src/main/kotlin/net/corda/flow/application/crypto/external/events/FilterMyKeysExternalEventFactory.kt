@@ -17,7 +17,7 @@ import java.security.PublicKey
 class FilterMyKeysExternalEventFactory @Activate constructor(
     @Reference(service = CryptoFlowOpsTransformer::class)
     private val cryptoFlowOpsTransformer: CryptoFlowOpsTransformer
-) : ExternalEventFactory<Collection<PublicKey>, FlowOpsResponse, Set<PublicKey>> {
+) : ExternalEventFactory<Collection<PublicKey>, FlowOpsResponse, List<PublicKey>> {
     override val responseType: Class<FlowOpsResponse> = FlowOpsResponse::class.java
 
     override fun createExternalEvent(
@@ -35,7 +35,7 @@ class FilterMyKeysExternalEventFactory @Activate constructor(
         return ExternalEventRecord(topic = Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC, payload = flowOpsRequest)
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): Set<PublicKey> {
-        return uncheckedCast<Any, List<PublicKey>>(cryptoFlowOpsTransformer.transform(response)).toSet()
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): List<PublicKey> {
+        return uncheckedCast(cryptoFlowOpsTransformer.transform(response))
     }
 }

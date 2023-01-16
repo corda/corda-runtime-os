@@ -37,10 +37,20 @@ class SigningServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun getMySigningKeys(keys: Set<PublicKey>): Set<PublicKey> {
-        return externalEventExecutor.execute(
+    override fun getMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
+        val foundToBeMySigningKeys = externalEventExecutor.execute(
             FilterMyKeysExternalEventFactory::class.java,
             keys
-        )
+        ).toSet()
+
+        require(foundToBeMySigningKeys.size <= keys.size) {
+            "Found keys cannot be more than requested keys"
+        }
+        return keys.associate {
+            if (it in foundToBeMySigningKeys) {
+                Pair(it, it)
+            } else
+                Pair(it, null)
+        }
     }
 }
