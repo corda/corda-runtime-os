@@ -17,6 +17,7 @@ import javax.persistence.Entity
 import javax.persistence.Enumerated
 import javax.persistence.EnumType
 import javax.persistence.FetchType
+import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.OneToOne
 import javax.persistence.Table
@@ -49,6 +50,7 @@ internal class VirtualNodeEntity(
         cascade = [CascadeType.PERSIST, CascadeType.MERGE]
     )
     @JoinColumn(name = "holding_identity_id")
+    @Id
     val holdingIdentity: HoldingIdentityEntity,
 
     @Column(name = "cpi_name", nullable = false)
