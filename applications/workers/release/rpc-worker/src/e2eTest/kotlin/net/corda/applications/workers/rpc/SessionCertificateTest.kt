@@ -7,20 +7,18 @@ import net.corda.applications.workers.rpc.utils.E2eClusterFactory
 import net.corda.applications.workers.rpc.utils.E2eClusterMember
 import net.corda.applications.workers.rpc.utils.assertAllMembersAreInMemberList
 import net.corda.applications.workers.rpc.utils.disableGatewayCLRChecks
+import net.corda.applications.workers.rpc.utils.disableLinkManagerCLRChecks
 import net.corda.applications.workers.rpc.utils.generateGroupPolicy
 import net.corda.applications.workers.rpc.utils.getGroupId
 import net.corda.applications.workers.rpc.utils.onboardMembers
 import net.corda.applications.workers.rpc.utils.onboardMgm
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
-/**
- * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
- */
-class MultiClusterDynamicNetworkTest {
+class SessionCertificateTest {
     @TempDir
     lateinit var tempDir: Path
 
@@ -48,15 +46,15 @@ class MultiClusterDynamicNetworkTest {
     fun validSetup() {
         // Verify that test clusters are actually configured with different endpoints.
         // If not, this test isn't testing what it should.
-        assertThat(clusterA.clusterConfig.p2pHost)
+        Assertions.assertThat(clusterA.clusterConfig.p2pHost)
             .isNotEqualTo(clusterB.clusterConfig.p2pHost)
             .isNotEqualTo(clusterC.clusterConfig.p2pHost)
-        assertThat(clusterB.clusterConfig.p2pHost)
+        Assertions.assertThat(clusterB.clusterConfig.p2pHost)
             .isNotEqualTo(clusterC.clusterConfig.p2pHost)
 
         // For the purposes of this test, the MGM cluster is
         // expected to have only one MGM (in reality there can be more on a cluster).
-        assertThat(clusterC.members).hasSize(1)
+        Assertions.assertThat(clusterC.members).hasSize(1)
     }
 
     @Test
@@ -71,13 +69,15 @@ class MultiClusterDynamicNetworkTest {
         val mgm = clusterC.members[0]
 
         clusterC.disableGatewayCLRChecks()
-        clusterC.onboardMgm(mgm, tempDir)
+        clusterC.disableLinkManagerCLRChecks()
+        clusterC.onboardMgm(mgm, tempDir, useSessionCertificate = true)
 
         val memberGroupPolicy = clusterC.generateGroupPolicy(mgm.holdingId)
 
         memberClusters.forEach { cordaCluster ->
             cordaCluster.disableGatewayCLRChecks()
-            cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir)
+            cordaCluster.disableLinkManagerCLRChecks()
+            cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir, useSessionCertificate = true)
         }
 
         // Assert all members can see each other in their member lists.

@@ -37,6 +37,7 @@ import java.nio.file.StandardOpenOption
 import java.util.UUID
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
+const val LINK_MANAGER_CONFIG = "corda.p2p.linkManager"
 const val P2P_TENANT_ID = "p2p"
 const val HSM_CAT_SESSION = "SESSION_INIT"
 const val HSM_CAT_PRE_AUTH = "PRE_AUTH"
@@ -265,22 +266,25 @@ fun E2eCluster.generateGroupPolicy(
 
 fun E2eCluster.setUpNetworkIdentity(
     holdingId: String,
-    sessionKeyId: String
+    sessionKeyId: String,
+    useClusterLevelSessionKeyAndCert: Boolean? = null,
+    sessionCertificateChainAlias: String? = null
 ) {
     clusterHttpClientFor(NetworkRpcOps::class.java).use { client ->
         client.start().proxy.setupHostedIdentities(
             holdingId,
             HostedIdentitySetupRequest(
-                TLS_CERT_ALIAS,
-                true,
-                null,
-                sessionKeyId
+                p2pTlsCertificateChainAlias = TLS_CERT_ALIAS,
+                useClusterLevelTlsCertificateAndKey = true,
+                useClusterLevelSessionCertificateAndKey = useClusterLevelSessionKeyAndCert,
+                sessionKeyId = sessionKeyId,
+                sessionCertificateChainAlias = sessionCertificateChainAlias
             )
         )
     }
 }
 
-fun E2eCluster.disableCLRChecks() {
+fun E2eCluster.disableGatewayCLRChecks() {
     val sslConfig = "sslConfig"
     val revocationCheck = "revocationCheck"
     val mode = "mode"
@@ -304,6 +308,29 @@ fun E2eCluster.disableCLRChecks() {
     }
 }
 
+fun E2eCluster.disableLinkManagerCLRChecks() {
+    val revocationCheck = "revocationCheck"
+    val mode = "mode"
+    val modeOff = "OFF"
+    clusterHttpClientFor(ConfigRPCOps::class.java).use { client ->
+        val proxy = client.start().proxy
+        val configResponse = proxy.get(LINK_MANAGER_CONFIG)
+        val config = ObjectMapper().readTree(
+            configResponse.configWithDefaults
+        )
+        if (modeOff != config[revocationCheck][mode].asText()) {
+            proxy.updateConfig(
+                UpdateConfigParameters(
+                    LINK_MANAGER_CONFIG,
+                    configResponse.version,
+                    TestJsonObject("{ \"$revocationCheck\": { \"$mode\": \"$modeOff\" } }"),
+                    ConfigSchemaVersion(1, 0)
+                )
+            )
+        }
+    }
+}
+
 /**
  * Onboard all members in a cluster definition using a given CPI checksum.
  * Returns a map from member X500 name to holding ID.
@@ -311,7 +338,8 @@ fun E2eCluster.disableCLRChecks() {
 fun E2eCluster.onboardMembers(
     mgm: E2eClusterMember,
     memberGroupPolicy: String,
-    tempDir: Path
+    tempDir: Path,
+    useSessionCertificate: Boolean = false,
 ): List<E2eClusterMember> {
     val holdingIds = mutableListOf<E2eClusterMember>()
     val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray(), tempDir)
@@ -329,9 +357,21 @@ fun E2eCluster.onboardMembers(
         }
 
         val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)
+
+        if (useSessionCertificate) {
+            val memberSessionCsr = generateCsr(member, memberSessionKeyId, member.holdingId, addHostToSubjectAlternativeNames = false)
+            val memberSessionCert = getCa().generateCert(memberSessionCsr)
+            uploadSessionCertificate(memberSessionCert, member.holdingId)
+        }
+
         val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
 
-        setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
+        if (useSessionCertificate) {
+            setUpNetworkIdentity(member.holdingId, memberSessionKeyId, useClusterLevelSessionKeyAndCert = false, SESSION_CERT_ALIAS)
+        } else {
+            setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
+        }
+
 
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
         register(
@@ -356,7 +396,8 @@ fun E2eCluster.onboardMembers(
 
 fun E2eCluster.onboardMgm(
     mgm: E2eClusterMember,
-    tempDir: Path
+    tempDir: Path,
+    useSessionCertificate: Boolean = false,
 ) {
     val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), tempDir, true)
     createVirtualNode(mgm, cpiChecksum)
@@ -366,14 +407,29 @@ fun E2eCluster.onboardMgm(
     val mgmSessionKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_SESSION)
     val mgmECDHKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_PRE_AUTH)
 
-    register(
-        mgm.holdingId,
+    val mgmRegistrationContext = if (useSessionCertificate) {
+        val mgmSessionCsr = generateCsr(mgm, mgmSessionKeyId, mgm.holdingId, addHostToSubjectAlternativeNames = false)
+        val mgmSessionCert = getCa().generateCert(mgmSessionCsr)
+        uploadSessionCertificate(mgmSessionCert, mgm.holdingId)
         createMgmRegistrationContext(
-            tlsTrustRoot = getCa().caCertificate.toPem(),
+            caTrustRoot = getCa().caCertificate.toPem(),
+            sessionKeyId = mgmSessionKeyId,
+            ecdhKeyId = mgmECDHKeyId,
+            p2pUrl = p2pUrl,
+            sessionPkiMode = "Standard"
+        )
+    } else {
+        createMgmRegistrationContext(
+            caTrustRoot = getCa().caCertificate.toPem(),
             sessionKeyId = mgmSessionKeyId,
             ecdhKeyId = mgmECDHKeyId,
             p2pUrl = p2pUrl
         )
+    }
+
+    register(
+        mgm.holdingId,
+        mgmRegistrationContext,
     )
 
     assertOnlyMgmIsInMemberList(mgm.holdingId, mgm.name)
@@ -385,7 +441,11 @@ fun E2eCluster.onboardMgm(
         uploadTlsCertificate(mgmTlsCert)
     }
 
-    setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
+    if (useSessionCertificate) {
+        setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId, useClusterLevelSessionKeyAndCert = false, SESSION_CERT_ALIAS)
+    } else {
+        setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
+    }
 }
 
 fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
