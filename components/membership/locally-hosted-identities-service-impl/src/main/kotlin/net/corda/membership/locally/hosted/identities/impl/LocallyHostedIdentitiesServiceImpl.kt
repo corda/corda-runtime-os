@@ -193,7 +193,7 @@ class LocallyHostedIdentitiesServiceImpl(
             logger.warn("Identity {} is unknown!", identity)
             return null
         }
-        logger.info("Identity {} is unknown yet, will retry in a second", identity)
+        logger.info("Identity {} is unknown yet, will retry in a while", identity)
         sleeper(waitBetweenRetries.toMillis())
         return getIdentityInfo(identity, retries - 1)
     }

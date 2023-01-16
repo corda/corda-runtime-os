@@ -225,7 +225,7 @@ abstract class BaseOnboard : Runnable {
                     }
                 }
             }.also {
-                println("Onboard member holding identity is: $it")
+                println("Onboarded member holding identity is: $it")
             }
     }
 
