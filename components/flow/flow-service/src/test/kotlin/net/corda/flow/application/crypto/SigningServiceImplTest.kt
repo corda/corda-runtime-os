@@ -83,7 +83,7 @@ class SigningServiceImplTest {
         ).thenReturn(listOf(compositeKeyLeaf1, compositeKeyLeaf2))
 
         assertThrows<IllegalStateException>(
-            "A node should be owning one key at most per composite key, but found two owned keys for composite key: \"$compositeKey\" " +
+            "A node should be owning one key at most per composite key, but two owned keys were found for composite key: \"$compositeKey\" " +
                     " first: \"$compositeKeyLeaf1\" second: \"$compositeKeyLeaf2\""
         ) {
             signingService.getMySigningKeys(setOf(compositeKey))

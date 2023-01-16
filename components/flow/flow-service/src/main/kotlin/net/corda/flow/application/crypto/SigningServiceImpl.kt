@@ -71,7 +71,7 @@ class SigningServiceImpl @Activate constructor(
                         foundLeaf = leaf
                     } else {
                         throw IllegalStateException(
-                            "A node should be owning one key at most per composite key, but found two owned keys for composite key: \"$it\" " +
+                            "A node should be owning one key at most per composite key, but two owned keys were found for composite key: \"$it\" " +
                                     " first: \"$foundLeaf\" second: \"$leaf\""
                         )
                     }
