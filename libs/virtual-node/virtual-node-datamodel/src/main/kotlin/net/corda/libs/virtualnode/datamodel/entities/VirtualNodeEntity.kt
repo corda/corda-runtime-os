@@ -9,16 +9,17 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.OperationalStatus
 import java.io.Serializable
 import java.time.Instant
-import java.util.*
+import java.util.Objects
+import java.util.UUID
 import javax.persistence.CascadeType
 import javax.persistence.Column
-import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.Enumerated
 import javax.persistence.EnumType
 import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.JoinColumn
+import javax.persistence.MapsId
 import javax.persistence.OneToOne
 import javax.persistence.Table
 import javax.persistence.Version
@@ -45,12 +46,13 @@ import javax.persistence.Version
 @Table(name = VIRTUAL_NODE_DB_TABLE, schema = CONFIG)
 @Suppress("LongParameterList")
 internal class VirtualNodeEntity(
-    @OneToOne(
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.PERSIST, CascadeType.MERGE]
-    )
-    @JoinColumn(name = "holding_identity_id")
     @Id
+    @Column(name = "holding_identity_id")
+    val holdingIdentityId: String,
+
+    @MapsId
+    @OneToOne(cascade = [CascadeType.ALL])
+    @JoinColumn(name = "holding_identity_id")
     val holdingIdentity: HoldingIdentityEntity,
 
     @Column(name = "cpi_name", nullable = false)
@@ -110,6 +112,7 @@ internal class VirtualNodeEntity(
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0,
 ) : Serializable {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -117,9 +120,6 @@ internal class VirtualNodeEntity(
         other as VirtualNodeEntity
 
         return Objects.equals(holdingIdentity, other.holdingIdentity)
-                && Objects.equals(cpiName, other.cpiName)
-                && Objects.equals(cpiVersion, other.cpiVersion)
-                && Objects.equals(cpiSignerSummaryHash, other.cpiSignerSummaryHash)
     }
 
     override fun hashCode(): Int {
@@ -171,13 +171,3 @@ internal class VirtualNodeEntity(
         this.uniquenessDMLConnectionId = uniquenessDMLConnectionId
     }
 }
-
-/** The composite primary key for a virtual node instance. */
-@Embeddable
-@Suppress("Unused")
-internal class VirtualNodeEntityKey(
-    private val holdingIdentity: HoldingIdentityEntity,
-    private val cpiName: String,
-    private val cpiVersion: String,
-    private val cpiSignerSummaryHash: String
-) : Serializable

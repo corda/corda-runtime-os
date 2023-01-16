@@ -4,7 +4,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
-import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntityKey
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -71,7 +70,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         val hie = entityManager.find(HoldingIdentityEntity::class.java, holdingId.shortHash.value)
             ?: throw CordaRuntimeException("Could not find holding identity")
 
-        val virtualNodeEntityKey = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
+        val virtualNodeEntityKey = hie.holdingIdentityShortHash
         val foundVNode = entityManager.find(VirtualNodeEntity::class.java, virtualNodeEntityKey).apply {
             this.update(
                 vaultDDLConnectionId = vaultDDLConnectionId,
@@ -82,6 +81,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
                 uniquenessDMLConnectionId = uniquenessDMLConnectionId
             )
         } ?: VirtualNodeEntity(
+            hie.holdingIdentityShortHash,
             hie,
             cpiId.name,
             cpiId.version,

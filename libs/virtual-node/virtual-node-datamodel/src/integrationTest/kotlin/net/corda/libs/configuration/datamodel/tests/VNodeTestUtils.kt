@@ -25,6 +25,7 @@ internal object VNodeTestUtils {
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
         val holdingIdentity = newHoldingIdentityEntity(name)
         val virtualNode = VirtualNodeEntity(
+            holdingIdentity.holdingIdentityShortHash,
             holdingIdentity,
             name,
             version,

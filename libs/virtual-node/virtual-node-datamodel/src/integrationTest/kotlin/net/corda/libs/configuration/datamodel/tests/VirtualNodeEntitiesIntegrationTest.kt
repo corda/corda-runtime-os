@@ -11,7 +11,6 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
-import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntityKey
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom
@@ -116,7 +115,7 @@ class VirtualNodeEntitiesIntegrationTest {
             em.persist(virtualNode)
         }
 
-        val key = VirtualNodeEntityKey(holdingIdentityEntity, name, version, hash)
+        val key = holdingIdentityEntity.holdingIdentityShortHash
 
         assertThat(virtualNode == entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, key))
     }
@@ -151,11 +150,7 @@ class VirtualNodeEntitiesIntegrationTest {
             em.merge(virtualNode)
         }
 
-        // Use a reference to *find* only - we do NOT need the other fields in the HoldingIdentityEntity
-        // (and in fact, neither does hibernate - it only cares about the primary keys).
-        val holdingIdentityReference = entityManagerFactory.createEntityManager()
-            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityEntity.holdingIdentityShortHash) }
-        val key = VirtualNodeEntityKey(holdingIdentityReference, name, version, hash)
+        val key = holdingIdentityEntity.holdingIdentityShortHash
 
         assertThat(virtualNode == entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, key))
     }
