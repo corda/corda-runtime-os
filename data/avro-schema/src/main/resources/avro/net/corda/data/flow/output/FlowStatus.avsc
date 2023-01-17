@@ -52,13 +52,7 @@
     },
     {
       "name": "processingTerminationDetails",
-      "type": [
-        "null",
-        {
-            "type": "map",
-            "values": "string"
-        }
-      ],
+      "type": ["null", "net.corda.data.KeyValuePairList"],
       "doc": "Optional details about processing termination, for example, reasons and additional info about why a flow was killed."
     },
     {
