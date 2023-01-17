@@ -25,6 +25,12 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
     fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys
 
     /**
+     * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for)
+     * by public key ids (See [PublicKeyHash.id]).
+     */
+    fun filterMyKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys
+
+    /**
      * Using the provided signing public key internally looks up the matching private key information and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
      * Default signature scheme for the key scheme is used.
