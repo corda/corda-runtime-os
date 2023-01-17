@@ -153,7 +153,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         }
 
         @Test
-        fun `config changed event will create the subscriber`() {
+        fun `config changed event will create the subscription`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             verify(subscriptionFactory).createCompactedSubscription(
@@ -163,7 +163,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
             )
         }
         @Test
-        fun `config changed event will start the subscriber`() {
+        fun `config changed event will start the subscription`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             verify(compactedSubscription).start()
