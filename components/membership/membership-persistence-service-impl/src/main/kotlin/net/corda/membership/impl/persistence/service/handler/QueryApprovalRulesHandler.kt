@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
@@ -20,7 +21,7 @@ internal class QueryApprovalRulesHandler(
 
             val approvalRules = em.createQuery(query)
                 .resultList
-                .map { it.ruleRegex }
+                .map { ApprovalRuleDetails(it.ruleId, it.ruleRegex, it.ruleLabel) }
 
             ApprovalRulesQueryResponse(approvalRules)
         }

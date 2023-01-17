@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryApprovalRules
@@ -110,10 +111,11 @@ class QueryApprovalRulesHandlerTest {
     @Test
     fun `invoke returns rules as regular expressions`() {
         whenever(approvalRulesQuery.resultList).doReturn(listOf(mockEntity))
+        val expectedRules = listOf(ApprovalRuleDetails(mockEntity.ruleId, mockEntity.ruleRegex, mockEntity.ruleLabel))
 
         val result = handler.invoke(context, request)
 
-        assertThat(result.rules).isEqualTo(listOf(mockEntity.ruleRegex))
+        assertThat(result.rules).isEqualTo(expectedRules)
     }
 
     @Test
@@ -122,6 +124,6 @@ class QueryApprovalRulesHandlerTest {
 
         val result = handler.invoke(context, request)
 
-        assertThat(result.rules).isEqualTo(emptyList<String>())
+        assertThat(result.rules).isEqualTo(emptyList<ApprovalRuleDetails>())
     }
 }

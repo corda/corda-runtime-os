@@ -12,6 +12,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.httprpc.v1.types.request.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.v5.base.types.MemberX500Name
@@ -36,6 +37,10 @@ import kotlin.test.assertFailsWith
 class MGMRpcOpsTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "111213141500"
+        private const val INVALID_SHORT_HASH = "ABS09234745D"
+        private const val RULE_REGEX = "rule-regex"
+        private const val RULE_LABEL = "rule-label"
+        private const val RULE_ID = "rule-id"
     }
 
     private var coordinatorIsRunning = false
@@ -69,6 +74,16 @@ class MGMRpcOpsTest {
         configurationGetService,
     )
 
+    private fun startService() {
+        mgmRpcOps.start()
+        mgmRpcOps.activate("")
+    }
+
+    private fun stopService() {
+        mgmRpcOps.deactivate("")
+        mgmRpcOps.stop()
+    }
+
     @Test
     fun `starting and stopping the service succeeds`() {
         mgmRpcOps.start()
@@ -89,18 +104,15 @@ class MGMRpcOpsTest {
     inner class GenerateGroupPolicyTests {
         @Test
         fun `generateGroupPolicy calls the client svc`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
             verify(mgmOpsClient).generateGroupPolicy(eq((ShortHash.of(HOLDING_IDENTITY_ID))))
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `generateGroupPolicy throws resource not found for invalid member`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.generateGroupPolicy(any())).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
@@ -110,8 +122,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `generateGroupPolicy throws invalid input for non MGM member`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.generateGroupPolicy(any())).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
@@ -121,11 +132,10 @@ class MGMRpcOpsTest {
 
         @Test
         fun `generateGroupPolicy throws bad request if short hash is invalid`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.generateGroupPolicy("ABS09234745D")
+                mgmRpcOps.generateGroupPolicy("INVALID_SHORT_HASH")
             }
         }
     }
@@ -134,75 +144,63 @@ class MGMRpcOpsTest {
     inner class AddGroupApprovalRuleTests {
         @Test
         fun `addGroupApprovalRule delegates correctly to mgm ops client`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
-            val rule = "rule"
-            val label = "label"
+            startService()
 
-            mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, rule, label)
+            mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
 
             verify(mgmOpsClient).addApprovalRule(
-                eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(rule), eq(ApprovalRuleType.STANDARD), eq(label)
+                eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(RULE_REGEX), eq(ApprovalRuleType.STANDARD), eq(RULE_LABEL)
             )
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `addGroupApprovalRule throws resource not found for invalid member`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.addApprovalRule(any(), any(), any(), any()))
                 .doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
-                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, "rule", "label")
+                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `addGroupApprovalRule throws invalid input for non MGM member`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.addApprovalRule(any(), any(), any(), any())).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, "rule", "label")
+                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `addGroupApprovalRule throws bad request if short hash is invalid`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.addGroupApprovalRule("ABS09234745D", "rule", "label")
+                mgmRpcOps.addGroupApprovalRule(INVALID_SHORT_HASH, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `addGroupApprovalRule throws bad request for duplicate rule`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.addApprovalRule(any(), any(), any(), any())).doThrow(mock<MembershipPersistenceException>())
 
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.addGroupApprovalRule("ABS09234745D", "rule", "label")
+                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
     }
 
@@ -210,70 +208,59 @@ class MGMRpcOpsTest {
     inner class DeleteGroupApprovalRuleTests {
         @Test
         fun `deleteGroupApprovalRule delegates correctly to mgm ops client`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
-            val ruleId = "rule-id"
+            startService()
 
-            mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, ruleId)
+            mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
 
-            verify(mgmOpsClient).deleteApprovalRule(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(ruleId))
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            verify(mgmOpsClient).deleteApprovalRule(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(RULE_ID))
+            stopService()
         }
 
         @Test
         fun `deleteGroupApprovalRule throws resource not found for invalid member`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
-                mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, "rule-id")
+                mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `deleteGroupApprovalRule throws resource not found for non-existent rule`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
 
             assertThrows<ResourceNotFoundException> {
-                mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, "rule-id")
+                mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `deleteGroupApprovalRule throws invalid input for non MGM member`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, "rule-id")
+                mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `deleteGroupApprovalRule throws bad request if short hash is invalid`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.deleteGroupApprovalRule("ABS09234745D", "rule-id")
+                mgmRpcOps.deleteGroupApprovalRule(INVALID_SHORT_HASH, RULE_ID)
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
     }
 
@@ -281,55 +268,47 @@ class MGMRpcOpsTest {
     inner class GetGroupApprovalRulesTests {
         @Test
         fun `getGroupApprovalRules delegates correctly to mgm ops client`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             mgmRpcOps.getGroupApprovalRules(HOLDING_IDENTITY_ID)
 
             verify(mgmOpsClient).getApprovalRules(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(ApprovalRuleType.STANDARD))
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `getGroupApprovalRules throws resource not found for invalid member`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.getApprovalRules(any(), any())).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRpcOps.getGroupApprovalRules(HOLDING_IDENTITY_ID)
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `getGroupApprovalRules throws invalid input for non MGM member`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(mgmOpsClient.getApprovalRules(any(), any())).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRpcOps.getGroupApprovalRules(HOLDING_IDENTITY_ID)
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
 
         @Test
         fun `getGroupApprovalRules throws bad request if short hash is invalid`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.getGroupApprovalRules("ABS09234745D")
+                mgmRpcOps.getGroupApprovalRules(INVALID_SHORT_HASH)
             }
 
-            mgmRpcOps.deactivate("")
-            mgmRpcOps.stop()
+            stopService()
         }
     }
 
@@ -344,8 +323,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it fails when mutual tls is not enabled`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(gatewayConfiguration.getString("tlsType")).doReturn("ONE_WAY")
 
             assertThrows<BadRequestException> {
@@ -355,8 +333,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it fails when the subject is not a valid X500 name`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             assertThrows<InvalidInputDataException> {
                 mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, "Invalid")
@@ -365,8 +342,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it fails when the member is not an MGM`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(
                 mgmOpsClient.mutualTlsAllowClientCertificate(
                     any(),
@@ -381,8 +357,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it sends the request to the client`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, subject)
 
@@ -404,8 +379,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it fails when mutual tls is not enabled`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(gatewayConfiguration.getString("tlsType")).doReturn("ONE_WAY")
 
             assertThrows<BadRequestException> {
@@ -415,8 +389,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it fails when the subject is not a valid X500 name`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             assertThrows<InvalidInputDataException> {
                 mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, "Invalid")
@@ -425,8 +398,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it fails when the member is not an MGM`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(
                 mgmOpsClient.mutualTlsDisallowClientCertificate(
                     any(),
@@ -441,8 +413,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it sends the request to the client`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
 
             mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, subject)
 
@@ -465,8 +436,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it fails when mutual tls is not enabled`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(gatewayConfiguration.getString("tlsType")).doReturn("ONE_WAY")
 
             assertThrows<BadRequestException> {
@@ -476,8 +446,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it fails when the member is not an MGM`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             whenever(
                 mgmOpsClient.mutualTlsListClientCertificate(
                     any(),
@@ -491,8 +460,7 @@ class MGMRpcOpsTest {
 
         @Test
         fun `it returns the list from the client`() {
-            mgmRpcOps.start()
-            mgmRpcOps.activate("")
+            startService()
             val parsedSubject = MemberX500Name.parse(subject)
             whenever(
                 mgmOpsClient.mutualTlsListClientCertificate(

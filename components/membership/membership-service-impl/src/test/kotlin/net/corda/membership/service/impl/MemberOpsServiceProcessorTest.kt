@@ -148,7 +148,6 @@ class MemberOpsServiceProcessorTest {
     private val membershipQueryResult = MembershipQueryResult.Success(testPersistedGroupPolicyEntries)
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(eq(mgmHoldingIdentity)) } doReturn membershipQueryResult
-        on { getApprovalRules(any(), any()) } doReturn MembershipQueryResult.Success(listOf("rule"))
     }
 
     private var processor = MemberOpsServiceProcessor(

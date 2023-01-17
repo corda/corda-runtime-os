@@ -2,6 +2,7 @@ package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
@@ -244,7 +245,7 @@ class MembershipQueryClientImpl(
     override fun getApprovalRules(
         viewOwningIdentity: HoldingIdentity,
         ruleType: ApprovalRuleType
-    ): MembershipQueryResult<Collection<String>> {
+    ): MembershipQueryResult<Collection<ApprovalRuleDetails>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryApprovalRules(ruleType)

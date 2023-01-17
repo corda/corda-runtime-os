@@ -7,6 +7,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
@@ -963,7 +964,7 @@ class MembershipQueryClientImplTest {
     inner class QueryApprovalRulesTests {
         @Test
         fun `getApprovalRules returns the correct list of rules`() {
-            val rules = listOf("^*", "corda.*")
+            val rules = listOf(ApprovalRuleDetails("rule-id", "rule-regex", "rule-label"))
             postConfigChangedEvent()
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {

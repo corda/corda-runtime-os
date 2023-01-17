@@ -70,24 +70,28 @@ class ApprovalRulesEntityTest {
 
         @Test
         fun `same instance is not equal to null`() {
-            val e1 = ApprovalRulesEntity(
+            assertNotEquals(
+                ApprovalRulesEntity(
                 randomId,
                 rule1,
                 ruleType1,
                 ruleLabel1
+                ),
+                null
             )
-            assertNotEquals(e1, null)
         }
 
         @Test
         fun `same instance is not equal to different class type`() {
-            val e1 = ApprovalRulesEntity(
+            assertNotEquals(
+                ApprovalRulesEntity(
                 randomId,
                 rule1,
                 ruleType1,
                 ruleLabel1
+                ),
+                ""
             )
-            assertNotEquals(e1, "")
         }
     }
 }

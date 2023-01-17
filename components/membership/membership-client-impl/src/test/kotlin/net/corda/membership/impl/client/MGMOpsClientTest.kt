@@ -53,6 +53,7 @@ import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -467,32 +468,31 @@ class MGMOpsClientTest {
         fun `addApprovalRule should send the correct request`() {
             mgmOpsClient.start()
             setUpRpcSender(null)
-            val rule = "rule"
-            val label = "label"
             whenever(
                 membershipPersistenceClient.addApprovalRule(
                     holdingIdentity,
-                    rule,
+                    RULE_REGEX,
                     ApprovalRuleType.STANDARD,
-                    label
+                    RULE_LABEL
                 )
             ).doReturn(
-                MembershipPersistenceResult.Success("rule-id")
+                MembershipPersistenceResult.Success(RULE_ID)
             )
 
             mgmOpsClient.addApprovalRule(
                 shortHash,
-                rule,
+                RULE_REGEX,
                 ApprovalRuleType.STANDARD,
-                label
+                RULE_LABEL
             )
 
             verify(membershipPersistenceClient).addApprovalRule(
                 holdingIdentity,
-                rule,
+                RULE_REGEX,
                 ApprovalRuleType.STANDARD,
-                label
+                RULE_LABEL
             )
+            mgmOpsClient.stop()
         }
 
         @Test
@@ -547,11 +547,10 @@ class MGMOpsClientTest {
         fun `deleteApprovalRule should send the correct request`() {
             mgmOpsClient.start()
             setUpRpcSender(null)
-            val ruleId = "rule-id"
             whenever(
                 membershipPersistenceClient.deleteApprovalRule(
                     holdingIdentity,
-                    ruleId
+                    RULE_ID
                 )
             ).doReturn(
                 MembershipPersistenceResult.success()
@@ -559,13 +558,14 @@ class MGMOpsClientTest {
 
             mgmOpsClient.deleteApprovalRule(
                 shortHash,
-                ruleId,
+                RULE_ID,
             )
 
             verify(membershipPersistenceClient).deleteApprovalRule(
                 holdingIdentity,
-                ruleId
+                RULE_ID
             )
+            mgmOpsClient.stop()
         }
 
         @Test
@@ -626,7 +626,7 @@ class MGMOpsClientTest {
                     ApprovalRuleType.STANDARD,
                 )
             ).doReturn(
-                MembershipQueryResult.Success(listOf("rule"))
+                MembershipQueryResult.Success(emptyList())
             )
 
             mgmOpsClient.getApprovalRules(
@@ -638,6 +638,7 @@ class MGMOpsClientTest {
                 holdingIdentity,
                 ApprovalRuleType.STANDARD,
             )
+            mgmOpsClient.stop()
         }
 
         @Test

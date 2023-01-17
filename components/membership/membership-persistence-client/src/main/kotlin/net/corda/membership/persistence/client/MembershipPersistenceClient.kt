@@ -191,7 +191,7 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param rule The regular expression associated with the rule to be added.
-     * @param ruleType Can be `STANDARD` for group approval rules, or `PREAUTH` for pre-auth token rules.
+     * @param ruleType The approval rule type for this rule. See [ApprovalRuleType] for the available types.
      * @param label Optional. A label describing the rule to be added.
      *
      * @return Membership persistence result with the ID of the newly added rule.

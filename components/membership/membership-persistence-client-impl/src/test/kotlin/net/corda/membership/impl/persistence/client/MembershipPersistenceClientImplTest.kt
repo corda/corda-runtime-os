@@ -77,6 +77,11 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class MembershipPersistenceClientImplTest {
+    private companion object {
+        const val RULE_ID = "rule-id"
+        const val RULE_REGEX = "rule-regex"
+        const val RULE_LABEL = "rule-label"
+    }
 
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
 
@@ -681,20 +686,19 @@ class MembershipPersistenceClientImplTest {
     inner class AddApprovalRuleTests {
         @Test
         fun `addApprovalRule returns the correct ID`() {
-            val ruleId = "id"
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistApprovalRuleResponse(ruleId),
+                PersistApprovalRuleResponse(RULE_ID),
             )
 
             val result = membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
-                "^*",
+                RULE_REGEX,
                 ApprovalRuleType.STANDARD,
-                "label"
+                RULE_LABEL
             )
 
-            assertThat(result.getOrThrow()).isEqualTo(ruleId)
+            assertThat(result.getOrThrow()).isEqualTo(RULE_ID)
         }
 
         @Test
@@ -706,9 +710,9 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
-                "^*",
+                RULE_REGEX,
                 ApprovalRuleType.STANDARD,
-                "label"
+                RULE_LABEL
             )
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
@@ -723,9 +727,9 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
-                "^*",
+                RULE_REGEX,
                 ApprovalRuleType.STANDARD,
-                "label"
+                RULE_LABEL
             )
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<String>("Unexpected response: null"))
@@ -733,9 +737,6 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `addApprovalRule sends the correct data`() {
-            val ruleRegex = "^*"
-            val ruleLabel = "label"
-
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
@@ -743,15 +744,15 @@ class MembershipPersistenceClientImplTest {
 
             membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
-                ruleRegex,
+                RULE_REGEX,
                 ApprovalRuleType.STANDARD,
-                ruleLabel
+                RULE_LABEL
             )
 
             val sentRequest = (argument.firstValue.request as? PersistApprovalRule)!!
-            assertThat(sentRequest.rule).isEqualTo(ruleRegex)
+            assertThat(sentRequest.rule).isEqualTo(RULE_REGEX)
             assertThat(sentRequest.ruleType).isEqualTo(ApprovalRuleType.STANDARD)
-            assertThat(sentRequest.label).isEqualTo(ruleLabel)
+            assertThat(sentRequest.label).isEqualTo(RULE_LABEL)
         }
     }
 
@@ -766,7 +767,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                "id"
+                RULE_ID
             )
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.success())
@@ -780,7 +781,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                "id"
+                RULE_ID
             )
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
@@ -788,8 +789,6 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `deleteApprovalRule sends the correct data`() {
-            val ruleId = "id"
-
             postConfigChangedEvent()
             val argument = argumentCaptor<MembershipPersistenceRequest>()
             val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
@@ -797,11 +796,11 @@ class MembershipPersistenceClientImplTest {
 
             membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                ruleId
+                RULE_ID
             )
 
             val sentRequest = (argument.firstValue.request as? DeleteApprovalRule)!!
-            assertThat(sentRequest.ruleId).isEqualTo(ruleId)
+            assertThat(sentRequest.ruleId).isEqualTo(RULE_ID)
         }
     }
 
