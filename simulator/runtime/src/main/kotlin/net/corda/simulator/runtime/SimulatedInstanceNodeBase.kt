@@ -58,10 +58,8 @@ class SimulatedInstanceNodeBase(
                         "was not an RPCStartableFlow"
             )
         }
-        log.info(
-            "Calling flow instance for member \"$member\" and protocol \"$protocol\" " +
-                    "with request: ${input.requestBody}"
-        )
+        log.info("Calling flow instance for member \"$member\" and protocol \"$protocol\" " +
+                "with request: ${input.requestData}")
         injector.injectServices(
             FlowAndProtocol(flow, protocol),
             member,
