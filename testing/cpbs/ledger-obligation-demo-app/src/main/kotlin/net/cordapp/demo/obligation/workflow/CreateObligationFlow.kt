@@ -108,7 +108,7 @@ class CreateObligationFlow(
 
             val holderKey = holder.ledgerKeys.first()
 
-            val obligationState = ObligationState(issuerKey, holderKey, request.amount)
+            val obligationState = ObligationState(issuerKey, holderKey, request.amount, false)
 
             val createObligationFlow =
                 CreateObligationFlow(obligationState, notary, sessions, request.fromDayOffset, request.toDayOffset)

@@ -9,6 +9,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.cordapp.demo.obligation.contract.ObligationState
 
 class UpdateObligationFlowHandler(private val session: FlowSession) : SubFlow<Unit> {
 
@@ -23,6 +24,9 @@ class UpdateObligationFlowHandler(private val session: FlowSession) : SubFlow<Un
     override fun call() {
         try {
             val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) {
+                if ((it.outputStateAndRefs.first().state.contractState as ObligationState).toFail) {
+                    throw IllegalArgumentException()
+                }
                 log.info("Settle request accepted unconditionally. (Do not use this validator in real cordapps...)")
             }
             log.info("Finalised tx: $finalizedSignedTransaction.id")

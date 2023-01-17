@@ -93,7 +93,7 @@ class UpdateObligationFlow(
                     .firstOrNull { it.state.contractState.id == request.id }
                     ?: throw IllegalArgumentException("Obligation not found: ${request.id}.")
 
-            val newObligation = oldObligation.state.contractState.settle(request.amountToSettle)
+            val newObligation = oldObligation.state.contractState.settle(request.amountToSettle, request.toFail)
 
             val issuer =
                 requireNotNull(memberLookup.lookup(newObligation.issuer)) { "Unknown issuer: ${newObligation.issuer}." }
@@ -104,7 +104,7 @@ class UpdateObligationFlow(
 
             if(request.doubleSpend) {
                 val anotherSessions = flowMessaging.initiateFlows(issuer)
-                val anotherNewObligation = oldObligation.state.contractState.settle(request.amountToSettle)
+                val anotherNewObligation = oldObligation.state.contractState.settle(request.amountToSettle, request.toFail)
 
                 flowEngine.subFlow(UpdateObligationFlow(oldObligation, anotherNewObligation, anotherSessions))
             }

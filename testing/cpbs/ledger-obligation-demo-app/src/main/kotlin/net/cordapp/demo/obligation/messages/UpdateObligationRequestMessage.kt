@@ -7,5 +7,7 @@ data class UpdateObligationRequestMessage(
     val id: UUID,
     val amountToSettle: BigDecimal,
     // For testing
-    val doubleSpend: Boolean = false
+    val doubleSpend: Boolean = false,
+    // fail transaction
+    val toFail: Boolean = false
 )

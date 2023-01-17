@@ -11,13 +11,14 @@ data class ObligationState(
     val issuer: PublicKey,
     val holder: PublicKey,
     val amount: BigDecimal,
+    val toFail: Boolean,
     val id: UUID = UUID.randomUUID()
 ) : ContractState {
 
     override val participants: List<PublicKey>
         get() = listOf(issuer, holder).distinct()
 
-    fun settle(amountToSettle: BigDecimal): ObligationState {
-        return copy(amount = amount - amountToSettle)
+    fun settle(amountToSettle: BigDecimal, toFail : Boolean): ObligationState {
+        return copy(amount = amount - amountToSettle, toFail = toFail)
     }
 }
