@@ -123,7 +123,7 @@ internal class PermissionManagementServiceEventHandlerTest {
             coordinator, setOf(
                 ConfigKeys.BOOT_CONFIG,
                 ConfigKeys.MESSAGING_CONFIG,
-                ConfigKeys.RPC_CONFIG
+                ConfigKeys.REST_CONFIG
             )
         )
     }
@@ -146,7 +146,7 @@ internal class PermissionManagementServiceEventHandlerTest {
             coordinator, setOf(
                 ConfigKeys.BOOT_CONFIG,
                 ConfigKeys.MESSAGING_CONFIG,
-                ConfigKeys.RPC_CONFIG
+                ConfigKeys.REST_CONFIG
             )
         )
     }

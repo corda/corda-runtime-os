@@ -17,7 +17,7 @@ import javax.persistence.Version
  * A named collection of permissions.
  */
 @Entity
-@Table(name = "rpc_role", schema = DbSchema.RPC_RBAC)
+@Table(name = "rbac_role", schema = DbSchema.RBAC)
 class Role(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

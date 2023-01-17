@@ -81,7 +81,7 @@ class RoleWriterImpl(
             role.rolePermAssociations.add(rolePermissionAssociation)
 
             // Note: We are not making checks whether a permission is already associated with a role.
-            // Should this be the case, there is a unique constraint (`rpc_role_perm_rel_uc1`) which will not let
+            // Should this be the case, there is a unique constraint (`rest_role_perm_rel_uc1`) which will not let
             // this happen.
             entityManager.merge(role)
 
