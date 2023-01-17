@@ -12,7 +12,7 @@ import javax.persistence.Table
 import javax.persistence.Version
 
 @Entity
-@Table(name = "rpc_group_props", schema = DbSchema.RPC_RBAC)
+@Table(name = "rbac_group_props", schema = DbSchema.RBAC)
 class GroupProperty(
     @Id
     @Column(name = "id", nullable = false)

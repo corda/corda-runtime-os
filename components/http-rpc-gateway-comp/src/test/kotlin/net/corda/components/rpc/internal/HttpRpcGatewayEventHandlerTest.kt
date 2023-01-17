@@ -40,9 +40,9 @@ internal class HttpRpcGatewayEventHandlerTest {
     private val server = mock<HttpRpcServer>()
     private val sslCertReadService = mock<SslCertReadService>()
     private val rpcConfig = mock<SmartConfig>().also {
-        whenever(it.getString(ConfigKeys.RPC_ADDRESS)).thenReturn("localhost:0")
-        whenever(it.getString(ConfigKeys.RPC_CONTEXT_DESCRIPTION)).thenReturn("RPC_CONTEXT_DESCRIPTION")
-        whenever(it.getString(ConfigKeys.RPC_CONTEXT_TITLE)).thenReturn("RPC_CONTEXT_TITLE")
+        whenever(it.getString(ConfigKeys.REST_ADDRESS)).thenReturn("localhost:0")
+        whenever(it.getString(ConfigKeys.REST_CONTEXT_DESCRIPTION)).thenReturn("REST_CONTEXT_DESCRIPTION")
+        whenever(it.getString(ConfigKeys.REST_CONTEXT_TITLE)).thenReturn("REST_CONTEXT_TITLE")
     }
     private val tempPathProvider = mock<PathProvider>().also {
         whenever(it.getOrCreate(any(), anyVararg())).thenReturn(mock())

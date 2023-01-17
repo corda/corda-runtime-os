@@ -145,8 +145,8 @@ spec:
           args:
             - |
               psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} -c "CREATE USER $RBAC_DB_USER_USERNAME WITH ENCRYPTED PASSWORD '$RBAC_DB_USER_PASSWORD';"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA RPC_RBAC to $RBAC_DB_USER_USERNAME;"
-              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to $RBAC_DB_USER_USERNAME;"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA RBAC to $RBAC_DB_USER_USERNAME;"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RBAC to $RBAC_DB_USER_USERNAME;"
               psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "CREATE USER $CRYPTO_DB_USER_USERNAME WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD';"
               psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT USAGE ON SCHEMA CRYPTO to $CRYPTO_DB_USER_USERNAME;"
               psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }}  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to $CRYPTO_DB_USER_USERNAME;"
