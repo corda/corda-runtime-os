@@ -49,7 +49,7 @@ class TruancySubFlowTest {
         val aliceNode = simulator.createInstanceNode(alice, "truancy-record", initiatingFlow)
         simulator.createInstanceNode(charlie, "truancy-record", respondingFlow)
 
-        aliceNode.callInstanceFlow(RequestData.IGNORED)
+        aliceNode.callFlow(RequestData.IGNORED)
 
         assertThat(receivedRecord, `is`(truancyRecord))
     }

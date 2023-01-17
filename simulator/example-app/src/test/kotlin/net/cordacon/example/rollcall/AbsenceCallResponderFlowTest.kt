@@ -1,7 +1,6 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.v5.application.flows.Flow
-import net.cordacon.example.rollcall.AbsenceCallResponderFlow
 
 class AbsenceCallResponderFlowTest : ResponderFlowDelegateTest() {
     override val protocol: String = "absence-call"

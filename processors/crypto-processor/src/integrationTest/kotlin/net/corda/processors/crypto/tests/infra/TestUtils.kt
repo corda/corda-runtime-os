@@ -9,6 +9,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -45,7 +46,9 @@ private const val BOOT_CONFIGURATION = """
     """
 
 private val smartConfigFactory: SmartConfigFactory =
-    SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory())).create(
+    SmartConfigFactoryFactory(object: SecretsServiceFactoryResolver {
+        override fun findAll() = listOf(EncryptionSecretsServiceFactory())
+    }).create(
     ConfigFactory.parseString(
         """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase

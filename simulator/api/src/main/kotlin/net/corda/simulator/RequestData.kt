@@ -26,7 +26,7 @@ interface RequestData {
     /**
      * A JSON string containing the request body to be passed to the flow.
      */
-    val requestBody: String
+    val requestData: String
     fun toRPCRequestData(): RPCRequestData
 
     companion object {

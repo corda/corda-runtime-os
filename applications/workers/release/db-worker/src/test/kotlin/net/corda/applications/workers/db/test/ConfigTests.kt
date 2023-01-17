@@ -1,6 +1,7 @@
 package net.corda.applications.workers.db.test
 
 import com.typesafe.config.Config
+import net.corda.application.addon.CordaAddonResolver
 import net.corda.application.banner.StartupBanner
 import java.io.InputStream
 import net.corda.applications.workers.db.DBWorker
@@ -22,6 +23,7 @@ import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.v5.base.versioning.Version
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
 
@@ -33,6 +35,10 @@ import org.osgi.framework.Bundle
 class ConfigTests {
 
     val defaultArgs = listOf("-spassphrase=password", "-ssalt=salt")
+    val applicationBanner = ApplicationBanner(DummyStartupBanner(), mock<CordaAddonResolver> {
+        on { findAll() } doReturn emptyList()})
+    val smartConfigFactoryFactory = SmartConfigFactoryFactory(mock {
+        on { findAll() } doReturn listOf(EncryptionSecretsServiceFactory())})
 
     @Test
     @Suppress("MaxLineLength")
@@ -45,8 +51,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
+            applicationBanner,
+            smartConfigFactoryFactory
         )
         val args = defaultArgs + arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
@@ -85,8 +91,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
+            applicationBanner,
+            smartConfigFactoryFactory
         )
 
         val args = defaultArgs + arrayOf(
@@ -117,8 +123,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
+            applicationBanner,
+            smartConfigFactoryFactory
         )
 
         dbWorker.startup(defaultArgs.toTypedArray())
@@ -147,8 +153,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
+            applicationBanner,
+            smartConfigFactoryFactory
         )
 
         val args = defaultArgs + arrayOf(
@@ -172,8 +178,8 @@ class ConfigTests {
             DummyWorkerMonitor(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
-            ApplicationBanner(DummyStartupBanner(), emptyList()),
-            SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
+            applicationBanner,
+            smartConfigFactoryFactory
         )
         val args = defaultArgs + arrayOf(
             FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",

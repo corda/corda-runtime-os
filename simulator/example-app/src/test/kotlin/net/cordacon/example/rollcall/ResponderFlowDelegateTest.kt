@@ -1,4 +1,4 @@
-package net.cordacon.example
+package net.cordacon.example.rollcall
 
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
@@ -8,8 +8,6 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
-import net.cordacon.example.rollcall.RollCallRequest
-import net.cordacon.example.rollcall.RollCallResponse
 import net.cordacon.example.utils.createMember
 import org.hamcrest.MatcherAssert
 import org.hamcrest.Matchers
@@ -46,7 +44,7 @@ abstract class ResponderFlowDelegateTest {
         val teacherNode = simulator.createInstanceNode(teacher, protocol, teacherFlow)
         simulator.createVirtualNode(student, flowClass)
 
-        val result = teacherNode.callInstanceFlow(RequestData.IGNORED)
+        val result = teacherNode.callFlow(RequestData.IGNORED)
 
         MatcherAssert.assertThat(result, Matchers.`is`("Here!"))
     }
@@ -63,7 +61,7 @@ abstract class ResponderFlowDelegateTest {
         val teacherNode = simulator.createInstanceNode(teacher, protocol, teacherFlow)
         simulator.createVirtualNode(student, flowClass)
 
-        val result = teacherNode.callInstanceFlow(RequestData.IGNORED)
+        val result = teacherNode.callFlow(RequestData.IGNORED)
 
         MatcherAssert.assertThat(result, Matchers.`is`(""))
     }
