@@ -9,7 +9,6 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.FlowTerminatedContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
