@@ -48,25 +48,6 @@ class LedgerUniquenessCheckerClientServiceImplTest {
     private val argumentCaptor = argumentCaptor<Class<out UniquenessCheckExternalEventFactory>>()
 
     @Test
-    fun `Uniqueness check client responds with success if uniqueness check was successful`() {
-        val response = createClientService(
-            currentVNodeNotaryKey = aliceNotaryVNodeKey
-        ).requestUniquenessCheck(
-            dummyTxId.toString(),
-            emptyList(),
-            emptyList(),
-            5,
-            null,
-            Instant.now(),
-            notaryServiceKeys
-        )
-
-        assertThat(response.result).isInstanceOf(UniquenessCheckResultSuccess::class.java)
-        assertThat(response.signature).isNotNull
-        assertThat(response.signature?.by).isEqualTo(aliceNotaryVNodeKey)
-    }
-
-    @Test
     fun `Signing is successful when the provided notary service composite key contains the current vnode key`() {
         val response = createClientService(
             currentVNodeNotaryKey = aliceNotaryVNodeKey
