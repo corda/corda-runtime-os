@@ -20,6 +20,7 @@ import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -39,6 +40,8 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.impl.MGMContextImpl
 import net.corda.membership.lib.impl.MemberContextImpl
 import net.corda.membership.lib.registration.RegistrationRequestStatus
+import net.corda.membership.locally.hosted.identities.IdentityInfo
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
@@ -65,10 +68,12 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.security.cert.X509Certificate
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
+import javax.security.auth.x500.X500Principal
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -149,12 +154,22 @@ class MemberOpsServiceProcessorTest {
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(eq(mgmHoldingIdentity)) } doReturn membershipQueryResult
     }
+    private val certificate = mock<X509Certificate> {
+        on { subjectX500Principal } doReturn X500Principal("O=MTLS ,L=London, C=GB")
+    }
+    private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService> {
+        on { getIdentityInfo(mgmHoldingIdentity) } doReturn IdentityInfo(
+            mgmHoldingIdentity,
+            listOf(certificate),
+        )
+    }
 
     private var processor = MemberOpsServiceProcessor(
         registrationProxy,
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
+        locallyHostedIdentitiesService,
         clock,
     )
 
@@ -253,6 +268,7 @@ class MemberOpsServiceProcessorTest {
             it.assertThat(groupPolicy).contains("\"corda.groupId\":\"$MGM_GROUP_ID\"")
             it.assertThat(groupPolicy).contains("\"$CIPHER_SUITE\"")
             it.assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"OneWay\"")
+            it.assertThat(groupPolicy).doesNotContain(MGM_CLIENT_CERTIFICATE_SUBJECT)
         }
     }
 
@@ -284,6 +300,95 @@ class MemberOpsServiceProcessorTest {
         val response = result.response as? MGMGroupPolicyResponse
         val groupPolicy = response?.groupPolicy
         assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"Mutual\"")
+    }
+
+    @Test
+    fun `should add MGM client certificate subject if mutual TLS is set`() {
+        val testPropertiesWithMutualTls = testProperties +
+                (PropertyKeys.TLS_TYPE to "mutual")
+        val testPersistedGroupPolicyEntries =
+            LayeredPropertyMapMocks.create<LayeredContextImpl>(testPropertiesWithMutualTls)
+        whenever(
+            membershipQueryClient.queryGroupPolicy(eq(mgmHoldingIdentity))
+        ).doReturn(MembershipQueryResult.Success(testPersistedGroupPolicyEntries))
+        val requestTimestamp = now
+        val requestContext = MembershipRpcRequestContext(
+            UUID.randomUUID().toString(),
+            requestTimestamp
+        )
+        val request = MembershipRpcRequest(
+            requestContext,
+            MGMGroupPolicyRequest(
+                mgmHoldingIdentity.shortHash.value
+            )
+        )
+        val future = CompletableFuture<MembershipRpcResponse>()
+        processor.onNext(request, future)
+
+        val result = future.get()
+
+        val response = result.response as? MGMGroupPolicyResponse
+        val groupPolicy = response?.groupPolicy
+        assertThat(groupPolicy).contains("\"$MGM_CLIENT_CERTIFICATE_SUBJECT\":\"O=MTLS, L=London, C=GB\"")
+    }
+
+    @Test
+    fun `should fail if mutual TLS is set and MGM is not locally hosted`() {
+        val testPropertiesWithMutualTls = testProperties +
+                (PropertyKeys.TLS_TYPE to "mutual")
+        val testPersistedGroupPolicyEntries =
+            LayeredPropertyMapMocks.create<LayeredContextImpl>(testPropertiesWithMutualTls)
+        whenever(
+            membershipQueryClient.queryGroupPolicy(eq(mgmHoldingIdentity))
+        ).doReturn(MembershipQueryResult.Success(testPersistedGroupPolicyEntries))
+        whenever(locallyHostedIdentitiesService.getIdentityInfo(any())).doReturn(null)
+        val requestTimestamp = now
+        val requestContext = MembershipRpcRequestContext(
+            UUID.randomUUID().toString(),
+            requestTimestamp
+        )
+        val request = MembershipRpcRequest(
+            requestContext,
+            MGMGroupPolicyRequest(
+                mgmHoldingIdentity.shortHash.value
+            )
+        )
+        val future = CompletableFuture<MembershipRpcResponse>()
+        processor.onNext(request, future)
+
+        assertThat(future).isCompletedExceptionally
+    }
+
+    @Test
+    fun `should fail if mutual TLS is set and MGM has no TLS certificate`() {
+        val testPropertiesWithMutualTls = testProperties +
+                (PropertyKeys.TLS_TYPE to "mutual")
+        val testPersistedGroupPolicyEntries =
+            LayeredPropertyMapMocks.create<LayeredContextImpl>(testPropertiesWithMutualTls)
+        whenever(
+            membershipQueryClient.queryGroupPolicy(eq(mgmHoldingIdentity))
+        ).doReturn(MembershipQueryResult.Success(testPersistedGroupPolicyEntries))
+        whenever(locallyHostedIdentitiesService.getIdentityInfo(any())).doReturn(
+            IdentityInfo(
+                mgmHoldingIdentity,
+                emptyList(),
+            )
+        )
+        val requestTimestamp = now
+        val requestContext = MembershipRpcRequestContext(
+            UUID.randomUUID().toString(),
+            requestTimestamp
+        )
+        val request = MembershipRpcRequest(
+            requestContext,
+            MGMGroupPolicyRequest(
+                mgmHoldingIdentity.shortHash.value
+            )
+        )
+        val future = CompletableFuture<MembershipRpcResponse>()
+        processor.onNext(request, future)
+
+        assertThat(future).isCompletedExceptionally
     }
 
     @Nested

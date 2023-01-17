@@ -6,6 +6,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationProxy
@@ -148,6 +149,7 @@ class MemberOpsServiceTest {
             addDependency<VirtualNodeInfoReadService>()
             addDependency<MembershipGroupReaderProvider>()
             addDependency<MembershipQueryClient>()
+            addDependency<LocallyHostedIdentitiesService>()
 
             MemberOpsServiceImpl(
                 coordinatorFactory,
@@ -157,6 +159,7 @@ class MemberOpsServiceTest {
                 virtualNodeInfoReadService,
                 membershipGroupReaderProvider,
                 membershipQueryClient,
+                mock(),
             )
         }
     }

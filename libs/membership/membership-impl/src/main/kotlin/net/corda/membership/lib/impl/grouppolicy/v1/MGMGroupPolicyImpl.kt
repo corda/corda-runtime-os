@@ -129,6 +129,10 @@ class MGMGroupPolicyImpl(
                 getPersistedString(PropertyKeys.TLS_TYPE)
             ) ?: TlsType.ONE_WAY
         }
+
+        // The MGM group policy is in the MGM cluster,
+        // so there is no need to extract the MGM client certificate subject.
+        override val mgmClientCertificateSubject = null
     }
 
     internal inner class CipherSuiteImpl private constructor(

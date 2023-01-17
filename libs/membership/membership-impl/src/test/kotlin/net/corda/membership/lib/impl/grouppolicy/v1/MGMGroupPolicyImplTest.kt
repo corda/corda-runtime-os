@@ -81,6 +81,7 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD)
                 it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_3)
                 it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH_ENCRYPT)
+                it.assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
 
                 it.assertThat(groupPolicy.mgmInfo).isNull()
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
@@ -117,6 +118,7 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
                 it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
                 it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH)
+                it.assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
 
                 it.assertThat(groupPolicy.mgmInfo).isNull()
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
@@ -160,6 +162,7 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
                 it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
                 it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH)
+                it.assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
 
                 it.assertThat(groupPolicy.mgmInfo).isNull()
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()

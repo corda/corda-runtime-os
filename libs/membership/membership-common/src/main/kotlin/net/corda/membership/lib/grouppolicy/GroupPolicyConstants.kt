@@ -67,6 +67,8 @@ class GroupPolicyConstants {
             const val PROTOCOL_MODE = "protocolMode"
 
             const val TLS_TYPE = "tlsType"
+
+            const val MGM_CLIENT_CERTIFICATE_SUBJECT = "mtlsMgmClientCertificateSubject"
         }
     }
 

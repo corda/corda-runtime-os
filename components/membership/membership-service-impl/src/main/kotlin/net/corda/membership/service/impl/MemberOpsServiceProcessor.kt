@@ -20,6 +20,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -40,6 +41,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
@@ -49,6 +51,7 @@ import net.corda.membership.registration.RegistrationStatusQueryException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -64,6 +67,7 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     private val clock: Clock = UTCClock(),
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
@@ -244,16 +248,41 @@ class MemberOpsServiceProcessor(
             val tlsType = TlsType.fromString(
                 persistedGroupPolicyProperties.parseOrNull(PropertyKeys.TLS_TYPE, String::class.java)
             ) ?: TlsType.ONE_WAY
+            val mgmCertificateSubject = if (tlsType == TlsType.MUTUAL) {
+                val info = locallyHostedIdentitiesService.getIdentityInfo(holdingIdentity)
+                    ?: throw GroupPolicyGenerationException(
+                        "Mgm is not locally hosted. "+
+                        "If it had been configured, please retry the registration in a few seconds. "
+                    )
+                val certificate = info.tlsCertificates
+                    .firstOrNull()
+                    ?: throw GroupPolicyGenerationException("MGM is missing TLS certificates")
+                val subject = MemberX500Name.parse(certificate.subjectX500Principal.toString())
+                mapOf(MGM_CLIENT_CERTIFICATE_SUBJECT to subject.toString())
+            } else {
+                emptyMap()
+            }
 
             val isNoSessionPkiMode = GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI ==
                 GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.fromString(sessionPkiMode)
 
             val tlsTrustroots: List<String> = persistedGroupPolicyProperties.parseList(PropertyKeys.TLS_TRUST_ROOTS)
-            val sessionTrustroots: List<String>? = if (isNoSessionPkiMode) {
-                null
+            val sessionTrustroots = if (isNoSessionPkiMode) {
+                emptyMap()
             } else {
-                persistedGroupPolicyProperties.parseList(PropertyKeys.SESSION_TRUST_ROOTS)
+                mapOf(
+                    SESSION_TRUST_ROOTS to
+                            persistedGroupPolicyProperties.parseList<String>(PropertyKeys.SESSION_TRUST_ROOTS)
+                )
             }
+            val p2pParameters = mapOf(
+                TLS_TRUST_ROOTS to tlsTrustroots,
+                SESSION_PKI to sessionPkiMode,
+                TLS_PKI to tlsPkiMode,
+                TLS_VERSION to tlsVersion,
+                PROTOCOL_MODE to p2pMode,
+                TLS_TYPE to tlsType.groupPolicyName,
+            ) + sessionTrustroots + mgmCertificateSubject
 
             val groupPolicy = mapOf(
                 FILE_FORMAT_VERSION to 1,
@@ -263,18 +292,7 @@ class MemberOpsServiceProcessor(
                 PROTOCOL_PARAMETERS to mapOf(
                     SESSION_KEY_POLICY to sessionKeyPolicy
                 ),
-                P2P_PARAMETERS to mutableMapOf(
-                    TLS_TRUST_ROOTS to tlsTrustroots,
-                    SESSION_PKI to sessionPkiMode,
-                    TLS_PKI to tlsPkiMode,
-                    TLS_VERSION to tlsVersion,
-                    PROTOCOL_MODE to p2pMode,
-                    TLS_TYPE to tlsType.groupPolicyName,
-                ).apply {
-                    sessionTrustroots?.let {
-                        put(SESSION_TRUST_ROOTS, it)
-                    }
-                },
+                P2P_PARAMETERS to p2pParameters,
                 MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value },
                 CIPHER_SUITE to emptyMap<String, String>()
             )

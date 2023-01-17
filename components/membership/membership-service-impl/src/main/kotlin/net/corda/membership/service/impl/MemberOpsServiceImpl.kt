@@ -18,6 +18,7 @@ import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Resource
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -49,6 +50,8 @@ class MemberOpsServiceImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = LocallyHostedIdentitiesService::class)
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
 ): MemberOpsService {
     private companion object {
         private val logger = contextLogger()
@@ -95,6 +98,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                     LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                    LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
                 )
             )
         }
@@ -167,6 +171,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     virtualNodeInfoReadService,
                     membershipGroupReaderProvider,
                     membershipQueryClient,
+                    locallyHostedIdentitiesService,
                 ),
                 messagingConfig = messagingConfig
             ).also { it.start() }
