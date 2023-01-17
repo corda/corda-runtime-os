@@ -27,4 +27,9 @@ dependencies {
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:uniqueness:common')
     implementation project(':libs:virtual-node:virtual-node-info')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(":testing:crypto-testkit")
 }

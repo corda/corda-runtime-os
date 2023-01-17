@@ -45,7 +45,9 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         onFailure: ((message: String) -> Unit)? = null
     ) {
         try {
-            log.debug("Verifying signature($signature) of transaction: $transactionId")
+            log.debug {
+                "Verifying signature($signature) of transaction: $transactionId"
+            }
             transactionSignatureService.verifySignature(transactionId, signature)
             log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transactionId" }
         } catch (e: Exception) {

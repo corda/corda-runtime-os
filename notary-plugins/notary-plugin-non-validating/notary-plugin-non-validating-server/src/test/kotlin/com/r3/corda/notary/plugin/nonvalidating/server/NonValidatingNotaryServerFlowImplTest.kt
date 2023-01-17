@@ -19,7 +19,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -29,7 +28,6 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.membership.MemberInfo
-import net.corda.v5.membership.NotaryInfo
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -321,6 +319,10 @@ class NonValidatingNotaryServerFlowImplTest {
             on { id } doReturn txId
         }
 
+        val mockNotaryCompositeKey = mock<CompositeKey> {
+            on { leafKeys } doReturn setOf(mock(), mock(), mock())
+        }
+
         val paramOrDefaultSession = flowSession ?: mock {
             on { receive(NonValidatingNotarisationPayload::class.java) } doReturn NonValidatingNotarisationPayload(
                 filteredTx,
@@ -331,7 +333,8 @@ class NonValidatingNotaryServerFlowImplTest {
                         emptyMap()
                     ),
                     DUMMY_PLATFORM_VERSION
-                )
+                ),
+                mockNotaryCompositeKey
             )
             on { send(any()) } doAnswer {
                 responseFromServer.add(it.arguments.first() as NotarisationResponse)
@@ -340,19 +343,11 @@ class NonValidatingNotaryServerFlowImplTest {
             on { counterparty } doReturn aliceName
         }
 
-        val mockNotaryInfo = mock<NotaryInfo> {
-            on { publicKey } doReturn mock<CompositeKey>()
-        }
-        val mockNotaryLookup = mock<NotaryLookup> {
-            on { notaryServices } doReturn listOf(mockNotaryInfo)
-        }
-
         val server = NonValidatingNotaryServerFlowImpl(
             clientService,
             mockSerializationService,
             sigVerifier,
-            mockMemberLookupService,
-            mockNotaryLookup
+            mockMemberLookupService
         )
 
         server.call(paramOrDefaultSession)

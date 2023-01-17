@@ -18,7 +18,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -48,9 +47,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @CordaInject
     private lateinit var memberLookup: MemberLookup
 
-    @CordaInject
-    private lateinit var notaryLookup: NotaryLookup
-
     private companion object {
         val logger: Logger = loggerFor<NonValidatingNotaryServerFlowImpl>()
     }
@@ -63,14 +59,12 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         clientService: LedgerUniquenessCheckerClientService,
         serializationService: SerializationService,
         signatureVerifier: DigitalSignatureVerificationService,
-        memberLookup: MemberLookup,
-        notaryLookup: NotaryLookup
+        memberLookup: MemberLookup
     ) : this() {
         this.clientService = clientService
         this.serializationService = serializationService
         this.signatureVerifier = signatureVerifier
         this.memberLookup = memberLookup
-        this.notaryLookup = notaryLookup
     }
 
     /**
@@ -108,12 +102,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             verifyTransaction(requestPayload)
 
-            val notaryServiceKey = notaryLookup.notaryServices.first().publicKey
-
             // If the key is a composite key (multiple notary VNodes) we need to extract the leaves
             // If the key is not a composite key (single notary VNode) we can simply use that public key
-            val notaryServicePublicKeys = (notaryServiceKey as? CompositeKey)?.leafKeys?.toList()
-                ?: listOf(notaryServiceKey)
+            val notaryServicePublicKeys = (requestPayload.notaryKey as? CompositeKey)?.leafKeys?.toList()
+                ?: listOf(requestPayload.notaryKey)
 
             val uniquenessResponse = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
