@@ -36,8 +36,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowTerminatedContext
-import org.assertj.core.api.Assertions.assertThat
+import net.corda.flow.pipeline.KillFlowContextProcessor
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
@@ -82,6 +82,8 @@ class FlowEventPipelineImplTest {
         whenever(postProcess(inputContext)).thenReturn(outputContext)
     }
 
+    private val killFlowContextProcessor = mock<KillFlowContextProcessor>()
+
     private val runFlowFiberFuture = mock<FiberFuture>().apply {
         whenever(future).thenReturn(mock<Future<FlowIORequest<*>>>())
         whenever(interruptable).thenReturn(mock<Interruptable>())
@@ -91,15 +93,6 @@ class FlowEventPipelineImplTest {
         whenever(runFlow(any(), any())).thenReturn(runFlowFiberFuture)
     }
 
-    private val toBeKilledContext = buildFlowEventContext<Any>(
-        checkpoint,
-        FlowEvent(),
-        flowTerminatedContext = FlowTerminatedContext(
-            FlowTerminatedContext.TerminationStatus.TO_BE_KILLED,
-            mapOf("reason" to "explanation")
-        )
-    )
-
     private fun buildPipeline(output: FlowIORequest<*>? = null, context: FlowEventContext<Any> = inputContext): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
             mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
@@ -107,6 +100,7 @@ class FlowEventPipelineImplTest {
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
             flowGlobalPostProcessor,
+            killFlowContextProcessor,
             context,
             output
         )
@@ -143,21 +137,12 @@ class FlowEventPipelineImplTest {
 
     @Test
     fun `eventPreProcessing with flow to be killed skips logic`() {
-        verify(checkpoint) {
-            0 * { inRetryState }
-            0 * { retryEvent }
-        }
-        verify(startFlowEventHandler) {
-            0 * { preProcess(any()) }
-        }
-        verify(wakeUpFlowEventHandler) {
-            0 * { preProcess(any()) }
-        }
+        whenever(startFlowEventHandler.preProcess(any())).thenThrow(FlowMarkedForKillException("killed", mapOf("reason" to "answer")))
 
-        val pipeline = buildPipeline(context = toBeKilledContext)
-        val result = pipeline.eventPreProcessing()
-
-        assertThat(result).isEqualTo(pipeline)
+        val pipeline = buildPipeline()
+        assertThrows<FlowMarkedForKillException>{
+            pipeline.eventPreProcessing()
+        }
     }
 
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
@@ -256,22 +241,6 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
-    fun `runOrContinue with flow to be killed skips logic`() {
-
-        verify(checkpoint) {
-            0 * { waitingFor }
-        }
-        verify(flowWaitingForHandler) {
-            0 * { runOrContinue(any(), any()) }
-        }
-
-        val pipeline = buildPipeline(context = toBeKilledContext)
-        val result = pipeline.runOrContinue(1000)
-
-        assertThat(result).isEqualTo(pipeline)
-    }
-
-    @Test
     fun `setCheckpointSuspendedOn sets the checkpoint's suspendedOn property when output is set`() {
         val pipeline = buildPipeline(FlowIORequest.ForceCheckpoint)
         pipeline.setCheckpointSuspendedOn()
@@ -283,18 +252,6 @@ class FlowEventPipelineImplTest {
         val pipeline = buildPipeline(output = null)
         pipeline.setCheckpointSuspendedOn()
         verify(checkpoint, never()).suspendedOn
-    }
-
-    @Test
-    fun `setCheckpointSuspendedOn with flow to be killed skips logic`() {
-        verify(checkpoint) {
-            0 * { suspendedOn }
-        }
-
-        val pipeline = buildPipeline(context = toBeKilledContext)
-        val result = pipeline.setCheckpointSuspendedOn()
-
-        assertThat(result).isEqualTo(pipeline)
     }
 
     @Test
@@ -318,18 +275,6 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
-    fun `requestPostProcessing with flow to be killed skips logic`() {
-        verify(flowRequestHandler) {
-            0 * { postProcess(any(), any()) }
-        }
-
-        val pipeline = buildPipeline(context = toBeKilledContext)
-        val result = pipeline.requestPostProcessing()
-
-        assertThat(result).isEqualTo(pipeline)
-    }
-
-    @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is set`() {
         val pipeline = buildPipeline(output = FlowIORequest.ForceCheckpoint)
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
@@ -341,15 +286,5 @@ class FlowEventPipelineImplTest {
         val pipeline = buildPipeline(output = null)
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
         verify(flowGlobalPostProcessor).postProcess(inputContext)
-    }
-
-    @Test
-    fun `globalPostProcessing with flow to be killed still calls the post processor`() {
-        whenever(flowGlobalPostProcessor.postProcess(any())).thenReturn(toBeKilledContext)
-
-        val pipeline = buildPipeline(context = toBeKilledContext)
-        val result = pipeline.globalPostProcessing()
-
-        assertThat(result).isEqualTo(pipeline)
     }
 }

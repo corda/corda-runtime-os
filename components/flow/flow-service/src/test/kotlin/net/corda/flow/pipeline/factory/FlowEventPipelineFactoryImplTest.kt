@@ -6,6 +6,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
+import net.corda.flow.pipeline.KillFlowContextProcessor
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
@@ -34,6 +35,7 @@ class FlowEventPipelineFactoryImplTest {
         whenever(factory.create(FLOW_ID_1, checkpoint, config)).thenReturn(flowCheckpoint)
     }
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>()
+    private val killFlowContextProcessor = mock<KillFlowContextProcessor>()
 
     private val flowEventHandler = mock<FlowEventHandler<Any>>().also { handler ->
         @Suppress("unchecked_cast")
@@ -52,6 +54,7 @@ class FlowEventPipelineFactoryImplTest {
     private val factory = FlowEventPipelineFactoryImpl(
         flowRunner,
         flowGlobalPostProcessor,
+        killFlowContextProcessor,
         flowCheckpointFactory,
         listOf(flowEventHandler),
         listOf(flowWaitingForHandler),
@@ -66,6 +69,7 @@ class FlowEventPipelineFactoryImplTest {
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
             flowGlobalPostProcessor,
+            killFlowContextProcessor,
             flowEventContext
         )
         val result = factory.create(checkpoint, flowEvent, config, emptyMap())

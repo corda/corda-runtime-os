@@ -18,7 +18,6 @@ import net.corda.messaging.api.records.Record
  * @param outputRecords The [Record]s that should be sent back to the message bus when the pipeline completes.
  * @param T The type of [FlowEvent.payload].
  * @param mdcProperties properties to set the flow fibers MDC with.
- * @param flowTerminatedContext If this is non-null, provides a context of why processing this flow was terminated.
  */
 data class FlowEventContext<T>(
     val checkpoint: FlowCheckpoint,
@@ -27,9 +26,5 @@ data class FlowEventContext<T>(
     val config: SmartConfig,
     val outputRecords: List<Record<*, *>>,
     val sendToDlq: Boolean = false,
-    val mdcProperties: Map<String, String>,
-    var flowTerminatedContext: FlowTerminatedContext? = null
-) {
-    fun isFlowToBeKilled() = flowTerminatedContext != null &&
-            flowTerminatedContext?.terminationStatus == FlowTerminatedContext.TerminationStatus.TO_BE_KILLED
-}
+    val mdcProperties: Map<String, String>
+)

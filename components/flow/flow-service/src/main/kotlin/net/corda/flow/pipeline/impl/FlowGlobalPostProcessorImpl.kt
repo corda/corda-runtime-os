@@ -38,12 +38,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {
         val now = Instant.now()
 
-        if (context.isFlowToBeKilled()) {
-            log.info("Flow ${context.checkpoint.flowId} to be killed. Discarding any records accumulated in prior steps in the pipeline, " +
-                    "scheduling all flow sessions for cleanup and updating this flow's status to 'KILLED'.")
-            return createKillFlowContext(context, now)
-        }
-
         postProcessPendingPlatformError(context)
 
         val outputRecords = getSessionEvents(context, now) +
@@ -79,7 +73,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         context: FlowEventContext<Any>,
         now: Instant
     ): List<Record<*, FlowMapperEvent>> {
-        val expiryTime = getScheduledCleanupExpiryTime(context, now)
+        val flowCleanupTime = context.config.getLong(SESSION_FLOW_CLEANUP_TIME)
+        val expiryTime = now.plusMillis(flowCleanupTime).toEpochMilli()
         return context.checkpoint.sessions
             .filterNot { sessionState -> sessionState.hasScheduledCleanup }
             .filter { sessionState -> sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR }
@@ -90,11 +85,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                     ScheduleCleanup(expiryTime)
                 )
             }
-    }
-
-    private fun getScheduledCleanupExpiryTime(context: FlowEventContext<Any>, now: Instant): Long {
-        val flowCleanupTime = context.config.getLong(SESSION_FLOW_CLEANUP_TIME)
-        return now.plusMillis(flowCleanupTime).toEpochMilli()
     }
 
     private fun postProcessPendingPlatformError(context: FlowEventContext<Any>) {
@@ -153,33 +143,4 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
         return listOf(flowRecordFactory.createFlowStatusRecord(status))
     }
-
-    private fun createKillFlowContext(context: FlowEventContext<Any>, now: Instant): FlowEventContext<Any> {
-        return context.copy(
-            outputRecords = createFlowMapperSessionKilledEvents(context, now) + createFlowKilledStatusRecords(context),
-            sendToDlq = false // killed flows do not go to DLQ
-        )
-    }
-
-    private fun createFlowMapperSessionKilledEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
-        val expiryTime = getScheduledCleanupExpiryTime(context, now)
-
-        return context.checkpoint.sessions
-            // not necessary to clean up sessions that are already closed or errored.
-            .filterNot { sessionState -> sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR }
-            .onEach { sessionState -> sessionState.hasScheduledCleanup = true }
-            .map {
-                flowRecordFactory.createFlowMapperEventRecord(
-                    it.sessionId,
-                    ScheduleCleanup(expiryTime)
-                )
-            }
-    }
-
-    private fun createFlowKilledStatusRecords(context: FlowEventContext<Any>): Record<FlowKey, FlowStatus> {
-        return flowRecordFactory.createFlowStatusRecord(
-            flowMessageFactory.createFlowKilledStatusMessage(context.checkpoint, context.flowTerminatedContext?.details)
-        )
-    }
-
 }

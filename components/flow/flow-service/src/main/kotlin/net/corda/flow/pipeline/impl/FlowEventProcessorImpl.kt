@@ -7,6 +7,7 @@ import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
@@ -76,14 +77,18 @@ class FlowEventProcessorImpl(
         val flowTimeout = (config.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
         return try {
             flowEventContextConverter.convert(
-                pipeline
-                    .eventPreProcessing()
-                    .runOrContinue(flowTimeout)
-                    .setCheckpointSuspendedOn()
-                    .setWaitingFor()
-                    .requestPostProcessing()
-                    .globalPostProcessing()
-                    .context
+                try {
+                    pipeline
+                        .eventPreProcessing()
+                        .runOrContinue(flowTimeout)
+                        .setCheckpointSuspendedOn()
+                        .setWaitingFor()
+                        .requestPostProcessing()
+                        .globalPostProcessing()
+                        .context
+                } catch (e: FlowMarkedForKillException) {
+                    pipeline.createKillFlowContext(e.details)
+                }
             )
         } catch (e: FlowTransientException) {
             flowEventExceptionProcessor.process(e, pipeline.context)

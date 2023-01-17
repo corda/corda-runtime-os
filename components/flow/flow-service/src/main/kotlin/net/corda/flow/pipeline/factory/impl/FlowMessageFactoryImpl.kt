@@ -37,27 +37,27 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
 
     override fun createFlowFailedStatusMessage(checkpoint: FlowCheckpoint, errorType: String, message: String): FlowStatus {
         return getCommonFlowStatus(checkpoint).apply {
-            flowStatus =  FlowStates.FAILED
-            error =  ExceptionEnvelope(errorType, message)
+            flowStatus = FlowStates.FAILED
+            error = ExceptionEnvelope(errorType, message)
         }
     }
 
     override fun createFlowKilledStatusMessage(checkpoint: FlowCheckpoint, details: Map<String, String>?): FlowStatus {
         return getCommonFlowStatus(checkpoint).apply {
-            flowStatus =  FlowStates.KILLED
-            processingTerminationDetails =  details
+            flowStatus = FlowStates.KILLED
+            processingTerminationDetails = details
         }
     }
 
-    private fun getCommonFlowStatus(checkpoint: FlowCheckpoint):FlowStatus{
+    private fun getCommonFlowStatus(checkpoint: FlowCheckpoint): FlowStatus {
         val startContext = checkpoint.flowStartContext
         return FlowStatus().apply {
             key = startContext.statusKey
             initiatorType = startContext.initiatorType
-            flowId =  checkpoint.flowId
+            flowId = checkpoint.flowId
             flowClassName = startContext.flowClassName
-            createdTimestamp =  startContext.createdTimestamp
-            lastUpdateTimestamp =   currentTimeProvider()
+            createdTimestamp = startContext.createdTimestamp
+            lastUpdateTimestamp = currentTimeProvider()
         }
     }
 }
