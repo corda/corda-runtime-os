@@ -40,8 +40,15 @@ internal object VNodeTestUtils {
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
+            em.persist(newDbConnection(virtualNode.cryptoDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(newDbConnection(virtualNode.cryptoDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(newDbConnection(virtualNode.vaultDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(newDbConnection(virtualNode.vaultDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(newDbConnection(virtualNode.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(newDbConnection(virtualNode.uniquenessDMLConnectionId!!, DbPrivilege.DML))
             em.persist(holdingIdentity)
         }
+
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }
         entityManagerFactory.createEntityManager().transaction { em -> return em.merge(virtualNode) }
     }

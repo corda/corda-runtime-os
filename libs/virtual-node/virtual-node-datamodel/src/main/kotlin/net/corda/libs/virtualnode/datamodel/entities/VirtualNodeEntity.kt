@@ -98,7 +98,7 @@ internal class VirtualNodeEntity(
     @Column(name = "vault_db_operational_status", nullable = false)
     var vaultDbOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
 
-    @OneToOne(cascade = [CascadeType.MERGE], fetch = FetchType.LAZY)
+    @OneToOne(cascade = [CascadeType.PERSIST, CascadeType.MERGE], fetch = FetchType.LAZY)
     @JoinColumn(name = "operation_in_progress")
     var operationInProgress: VirtualNodeOperationEntity? = null,
 

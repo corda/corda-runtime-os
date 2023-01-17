@@ -161,7 +161,6 @@ class VirtualNodeEntitiesIntegrationTest {
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val hash = TestRandom.secureHash().toString()
 
-
         val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
         val entity = VNodeTestUtils.newHoldingIdentityEntity("test")
         val operationEntity = VirtualNodeOperationEntity(entity.holdingIdentityShortHash, "request-id", "data", VirtualNodeOperationState.IN_PROGRESS, Instant.now())
@@ -177,14 +176,13 @@ class VirtualNodeEntitiesIntegrationTest {
 
         val virtualNode = VirtualNodeEntity(entity.holdingIdentityShortHash, entity, name, version, hash, operationInProgress = operationEntity)
 
-        val holdingIdentityEntity = entityManagerFactory.createEntityManager()
-            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, entity.holdingIdentityShortHash) }
-
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
-            em.persist(operationEntity)
             em.persist(virtualNode)
         }
+
+        val holdingIdentityEntity = entityManagerFactory.createEntityManager()
+            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, entity.holdingIdentityShortHash) }
 
         val key = holdingIdentityEntity.holdingIdentityShortHash
         val foundVirtualNode = entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, key)
