@@ -48,7 +48,7 @@ interface FlowMessageFactory {
      * Creates [FlowStatus] message with a [FlowStates.KILLED] status.
      *
      * @param checkpoint of the flow
-     * @param details additional details why the flow was killed.
+     * @param details about flow termination
      * @return a new instance of a [FlowStatus] record.
      */
     fun createFlowKilledStatusMessage(checkpoint: FlowCheckpoint, details: Map<String, String>?): FlowStatus

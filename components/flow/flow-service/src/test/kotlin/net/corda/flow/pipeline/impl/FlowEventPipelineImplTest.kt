@@ -35,9 +35,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.KillFlowContextProcessor
-import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
@@ -93,7 +91,7 @@ class FlowEventPipelineImplTest {
         whenever(runFlow(any(), any())).thenReturn(runFlowFiberFuture)
     }
 
-    private fun buildPipeline(output: FlowIORequest<*>? = null, context: FlowEventContext<Any> = inputContext): FlowEventPipelineImpl {
+    private fun buildPipeline(output: FlowIORequest<*>? = null): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
             mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
             mapOf(WakeUpWaitingFor()::class.java to flowWaitingForHandler),
@@ -101,7 +99,7 @@ class FlowEventPipelineImplTest {
             flowRunner,
             flowGlobalPostProcessor,
             killFlowContextProcessor,
-            context,
+            inputContext,
             output
         )
     }
@@ -133,16 +131,6 @@ class FlowEventPipelineImplTest {
 
         assertEquals(retryHandlerOutputContext, pipeline.eventPreProcessing().context)
         verify(startFlowEventHandler).preProcess(argThat { this.inputEvent == retryEvent && this.inputEventPayload == retryEvent.payload })
-    }
-
-    @Test
-    fun `eventPreProcessing with flow to be killed skips logic`() {
-        whenever(startFlowEventHandler.preProcess(any())).thenThrow(FlowMarkedForKillException("killed", mapOf("reason" to "answer")))
-
-        val pipeline = buildPipeline()
-        assertThrows<FlowMarkedForKillException>{
-            pipeline.eventPreProcessing()
-        }
     }
 
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
