@@ -15,8 +15,7 @@ data class FlowTerminatedContext(
 ) {
     enum class TerminationStatus {
         /**
-         * Indicates to the flow context that this flow should be killed, all events accrued through prior processing steps will be
-         * discarded, the flow status will be marked as 'KILLED', the checkpoint will be deleted.
+         * Indicates to the flow context that this flow should be killed.
          */
         TO_BE_KILLED
     }

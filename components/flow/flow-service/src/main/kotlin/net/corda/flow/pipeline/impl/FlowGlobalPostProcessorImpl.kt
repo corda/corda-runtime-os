@@ -39,8 +39,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val now = Instant.now()
 
         if (context.isFlowToBeKilled()) {
-            log.info("Flow ${context.checkpoint.flowId} to be killed. Discarding any records accrued in prior steps in the pipeline, " +
-                    "scheduling all flow sessions for cleanup and updating this flow's status.")
+            log.info("Flow ${context.checkpoint.flowId} to be killed. Discarding any records accumulated in prior steps in the pipeline, " +
+                    "scheduling all flow sessions for cleanup and updating this flow's status to 'KILLED'.")
             return createKillFlowContext(context, now)
         }
 
