@@ -1,6 +1,6 @@
 package net.corda.membership.impl.persistence.service.dummy
 
-import net.corda.data.p2p.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.AllowedCertificateSubject
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus

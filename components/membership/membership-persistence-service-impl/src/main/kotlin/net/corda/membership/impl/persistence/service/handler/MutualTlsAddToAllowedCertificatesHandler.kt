@@ -2,7 +2,7 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
-import net.corda.data.p2p.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.AllowedCertificateSubject
 import net.corda.membership.datamodel.MutualTlsAllowedClientCertificateEntity
 import net.corda.virtualnode.toCorda
 

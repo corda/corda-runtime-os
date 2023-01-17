@@ -1,6 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.data.p2p.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.AllowedCertificateSubject
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinatorFactory

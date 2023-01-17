@@ -2,7 +2,7 @@ package net.corda.membership.mtls.allowed.list.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.p2p.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.AllowedCertificateSubject
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

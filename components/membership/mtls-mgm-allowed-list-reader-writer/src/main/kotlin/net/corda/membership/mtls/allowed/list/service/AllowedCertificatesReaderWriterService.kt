@@ -1,6 +1,6 @@
 package net.corda.membership.mtls.allowed.list.service
 
-import net.corda.data.p2p.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.AllowedCertificateSubject
 import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
