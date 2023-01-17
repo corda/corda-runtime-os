@@ -19,7 +19,7 @@ internal class VirtualNodeOperationEntity(
     @Column(name = "id", nullable = false)
     var id: String,
 
-    @Column(name = "requestId", nullable = false)
+    @Column(name = "request_id", nullable = false)
     var requestId: String,
 
     @Column(name = "data", nullable = false)
