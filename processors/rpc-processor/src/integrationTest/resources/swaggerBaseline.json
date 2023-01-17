@@ -2009,7 +2009,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Group approval rules as a collection of regular expressions",
+            "description" : "Collection of group approval rules",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2017,8 +2017,7 @@
                   "type" : "array",
                   "nullable" : false,
                   "items" : {
-                    "type" : "string",
-                    "example" : "string"
+                    "$ref" : "#/components/schemas/ApprovalRuleInfo"
                   }
                 }
               }
@@ -2053,7 +2052,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AddGroupApprovalRuleWrapperRequest"
+                "$ref" : "#/components/schemas/ApprovalRuleParams"
               }
             }
           },
@@ -2066,7 +2065,7 @@
               "application/json" : {
                 "schema" : {
                   "type" : "string",
-                  "nullable" : true,
+                  "nullable" : false,
                   "example" : "string"
                 }
               }
@@ -2082,10 +2081,10 @@
       }
     },
     "/mgm/{holdingidentityshorthash}/approval/rules/delete/{ruleid}" : {
-      "put" : {
+      "delete" : {
         "tags" : [ "MGM API" ],
         "description" : "This method deletes a previously added group approval rule.",
-        "operationId" : "put_mgm__holdingidentityshorthash__approval_rules_delete__ruleid_",
+        "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules_delete__ruleid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
@@ -3215,24 +3214,43 @@
   },
   "components" : {
     "schemas" : {
-      "AddGroupApprovalRuleWrapperRequest" : {
-        "required" : [ "rule" ],
+      "ApprovalRuleInfo" : {
+        "required" : [ "ruleId", "ruleRegex" ],
+        "type" : "object",
         "properties" : {
-          "label" : {
+          "ruleId" : {
             "type" : "string",
-            "description" : "A label describing the rule to be added",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "ruleLabel" : {
+            "type" : "string",
             "nullable" : true,
             "example" : "string"
           },
-          "rule" : {
+          "ruleRegex" : {
             "type" : "string",
-            "description" : "The regular expression associated with the rule to be added",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "ApprovalRuleParams" : {
+        "required" : [ "ruleRegex" ],
+        "type" : "object",
+        "properties" : {
+          "ruleLabel" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ruleRegex" : {
+            "type" : "string",
             "nullable" : false,
             "example" : "string"
           }
         },
-        "description" : "AddGroupApprovalRuleWrapperRequest",
-        "nullable" : false
+        "description" : "The approval rule information including the regular expression associated with the rule, and an optional label describing the rule"
       },
       "BulkCreatePermissionsRequestType" : {
         "required" : [ "permissionsToCreate", "roleIds" ],
