@@ -96,7 +96,7 @@ class VirtualNodeEntitiesIntegrationTest {
         val hash = TestRandom.secureHash().toString()
 
         val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
-        val entity = VNodeTestUtils.newHoldingIdentityEntity("test")
+        val entity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
@@ -162,7 +162,7 @@ class VirtualNodeEntitiesIntegrationTest {
         val hash = TestRandom.secureHash().toString()
 
         val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
-        val entity = VNodeTestUtils.newHoldingIdentityEntity("test")
+        val entity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
         val operationEntity = VirtualNodeOperationEntity(entity.holdingIdentityShortHash, "request-id", "data", VirtualNodeOperationState.IN_PROGRESS, Instant.now())
 
         entityManagerFactory.createEntityManager().transaction { em ->
