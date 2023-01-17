@@ -50,11 +50,11 @@ class SigningServiceImpl @Activate constructor(
             plainKeys + compositeKeysLeaves
         ).toSet()
 
-        val plainKeysReqResp = plainKeys.associate {
+        val plainKeysReqResp = plainKeys.associateWith {
             if (it in foundSigningKeys) {
-                it to it
+                it
             } else
-                it to null
+                null
         }
 
         val compositeKeysReqResp = compositeKeys.associateWith {
