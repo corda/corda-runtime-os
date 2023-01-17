@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -92,11 +94,14 @@ class KillFlowContextProcessorImplTest {
         whenever(it.flowKey).thenReturn(flowKey)
     }
     private val flowTerminationDetails = mapOf("reason" to "Flow killed reasoning.")
+    private val flowTerminationDetailsKeyValuePairList = KeyValuePairList.newBuilder()
+        .setItems(flowTerminationDetails.map { KeyValuePair(it.key, it.value) })
+        .build()
     private val flowKilledStatus = FlowStatus().apply {
         key = checkpoint.flowKey
         flowId = checkpoint.flowId
         flowStatus = FlowStates.KILLED
-        processingTerminationDetails = flowTerminationDetails
+        processingTerminationDetails = flowTerminationDetailsKeyValuePairList
     }
     private val flowKilledStatusRecord = Record("s", flowKey, flowKilledStatus)
     private val killFlowContextProcessor = KillFlowContextProcessorImpl(flowMessageFactory, flowRecordFactory)
