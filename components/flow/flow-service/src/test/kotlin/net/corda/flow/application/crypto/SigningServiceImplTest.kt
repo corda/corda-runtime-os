@@ -9,7 +9,6 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -70,7 +69,7 @@ class SigningServiceImplTest {
     }
 
     @Test
-    fun `get my signing keys throws if more than one leaves are found to be owned for the same composite key`() {
+    fun `get my signing keys only makes use of the firstly found composite key leaf and ignores the rest found leaves`() {
         val compositeKeyLeaf1 = mock<PublicKey>()
         val compositeKeyLeaf2 = mock<PublicKey>()
         val compositeKey = mock<CompositeKey>()
@@ -82,11 +81,9 @@ class SigningServiceImplTest {
             )
         ).thenReturn(listOf(compositeKeyLeaf1, compositeKeyLeaf2))
 
-        assertThrows<IllegalStateException>(
-            "A node should be owning one key at most per composite key, but two owned keys were found " +
-                    "for composite key: \"$compositeKey\" first: \"$compositeKeyLeaf1\" second: \"$compositeKeyLeaf2\""
-        ) {
+        assertEquals(
+            mapOf(compositeKey to compositeKeyLeaf1),
             signingService.getMySigningKeys(setOf(compositeKey))
-        }
+        )
     }
 }
