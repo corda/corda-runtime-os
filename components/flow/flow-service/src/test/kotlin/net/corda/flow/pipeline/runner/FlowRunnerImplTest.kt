@@ -16,7 +16,7 @@ import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.RestStartedFlow
+import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
@@ -101,7 +101,7 @@ class FlowRunnerImplTest {
         }
         val restRequestBody = mock<RestRequestBody>()
         whenever(restRequestBody.getRequestBody()).thenReturn(startArgs)
-        val logicAndArgs = RestStartedFlow(clientFlow, restRequestBody)
+        val logicAndArgs = ClientStartedFlow(clientFlow, restRequestBody)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
         whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(logicAndArgs)

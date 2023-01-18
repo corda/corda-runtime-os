@@ -8,7 +8,7 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.Interruptable
-import net.corda.flow.fiber.RestStartedFlow
+import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
@@ -26,7 +26,7 @@ class FakeFlowFiberFactory : FlowFiberFactory {
         }
     }
 
-    val fiber = FakeFiber(UUID(0, 0), RestStartedFlow(FakeFlow(), FakeRestRequestBody()))
+    val fiber = FakeFiber(UUID(0, 0), ClientStartedFlow(FakeFlow(), FakeRestRequestBody()))
 
     override fun createAndStartFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,

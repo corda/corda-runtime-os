@@ -9,7 +9,7 @@ import net.corda.flow.SESSION_ID_1
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.RestStartedFlow
+import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.impl.FlowFactoryImpl
 import net.corda.flow.pipeline.factory.sample.flows.ExampleJavaFlow
@@ -159,7 +159,7 @@ class FlowFactoryImplTest {
         doReturn(flowClass).whenever(sandboxGroup)
             .loadClassFromMainBundles(testFlowClassName, ClientStartableFlow::class.java)
 
-        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as RestStartedFlow
+        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as ClientStartedFlow
         assertThat(result.logic).isInstanceOf(flowClass)
         assertThat(result.invoke()).isEqualTo(flowClass.simpleName)
     }

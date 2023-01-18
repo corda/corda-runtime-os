@@ -7,7 +7,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.InitiatedFlow
 import net.corda.flow.fiber.RestRequestBodyImpl
-import net.corda.flow.fiber.RestStartedFlow
+import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -40,7 +40,7 @@ class FlowFactoryImpl @Activate constructor(
             val logic = flowClass.getDeclaredConstructor().newInstance()
             val args = RestRequestBodyImpl(flowFiberService)
 
-            RestStartedFlow(logic, args)
+            ClientStartedFlow(logic, args)
         } catch (e: Exception) {
             throw FlowFatalException(
                 "Could not create ${startFlowEvent.startContext.flowClassName} for " +

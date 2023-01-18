@@ -6,7 +6,7 @@ import net.corda.v5.application.marshalling.MarshallingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class RestStartedFlowTest {
+class ClientStartedFlowTest {
 
     private companion object {
         private const val REQUEST_BODY = "request body"
@@ -14,8 +14,8 @@ class RestStartedFlowTest {
 
     @Test
     fun `invoking an rpc started flow passes the arguments correctly`() {
-        val restStartedFlow = RestStartedFlow(TestFlow(), TestRPCRequestData())
-        val output = restStartedFlow.invoke()
+        val clientStartedFlow = ClientStartedFlow(TestFlow(), TestRPCRequestData())
+        val output = clientStartedFlow.invoke()
         assertEquals(REQUEST_BODY, output)
     }
 
