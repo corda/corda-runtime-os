@@ -27,6 +27,7 @@ import net.corda.libs.packaging.signerSummaryHashForRequiredSigners
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.Certificate
@@ -114,11 +115,10 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
                 CpkIdentifier(
                     it.name,
                     it.version,
-                    // TODO Should we be using CPKDependencyV2.verifyFileHash if CPKDependencyV2.verifySameSignerAsMe == false?
                     if (it.verifySameSignerAsMe)
                         signerSummaryHash
                     else
-                        throw IllegalStateException("Signer summary hash not found")
+                        SecureHash("PLACEHOLDER", "PLACEHOLDER".toByteArray())
                 )
             }
                 .toList(), // Add file hash option
