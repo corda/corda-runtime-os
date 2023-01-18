@@ -23,6 +23,14 @@ configurations {
     integrationTestImplementation.extendsFrom testImplementation
 }
 
+ext {
+    postgresHost = providers.systemProperty('postgresHost').orElse("")
+    postgresPort = providers.systemProperty('postgresPort').orElse("")
+    postgresDb = providers.systemProperty('postgresDb').orElse("")
+    postgresUser = providers.systemProperty('postgresUser').orElse("")
+    postgresPassword = providers.systemProperty('postgresPassword').orElse("")
+}
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
