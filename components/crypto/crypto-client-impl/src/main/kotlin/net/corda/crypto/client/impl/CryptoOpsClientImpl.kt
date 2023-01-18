@@ -94,10 +94,10 @@ class CryptoOpsClientImpl(
         val publicKeyIds = candidateKeys.map {
             publicKeyIdFromBytes(it.array())
         }
-        return filterMyKeysByIdsProxy(tenantId, publicKeyIds)
+        return lookUpForKeysByIdsProxy(tenantId, publicKeyIds)
     }
 
-    fun filterMyKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys {
+    fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,

@@ -212,7 +212,7 @@ class CryptoFlowOpsBusProcessorTests {
                     )
                 )
             )
-        }.whenever(cryptoOpsClient).filterMyKeysByIdsProxy(any(), any())
+        }.whenever(cryptoOpsClient).lookUpForKeysByIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(
@@ -401,7 +401,7 @@ class CryptoFlowOpsBusProcessorTests {
                     )
                 )
             )
-        }.whenever(cryptoOpsClient).filterMyKeysByIdsProxy(any(), any())
+        }.whenever(cryptoOpsClient).lookUpForKeysByIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(
@@ -527,7 +527,7 @@ class CryptoFlowOpsBusProcessorTests {
                     )
                 )
             )
-        }.whenever(cryptoOpsClient).filterMyKeysByIdsProxy(any(), any())
+        }.whenever(cryptoOpsClient).lookUpForKeysByIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(
@@ -677,7 +677,7 @@ class CryptoFlowOpsBusProcessorTests {
                     )
                 )
             )
-        }.whenever(cryptoOpsClient).filterMyKeysByIdsProxy(any(), any())
+        }.whenever(cryptoOpsClient).lookUpForKeysByIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(

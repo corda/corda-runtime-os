@@ -111,7 +111,7 @@ class CryptoFlowOpsBusProcessor(
                     candidateKeys = request.keys
                 )
             is ByIdsFlowQuery ->
-                cryptoOpsClient.filterMyKeysByIdsProxy(
+                cryptoOpsClient.lookUpForKeysByIdsProxy(
                     tenantId = context.tenantId,
                     candidateKeys = request.keyIds
                 )
