@@ -20,7 +20,6 @@ internal class EndpointTypeConvertersTest {
             manifest = mock(),
             mainBundle = "MainBundle",
             libraries = listOf("LIBRARY_ONE"),
-            dependencies = emptyList(),
             cordappManifest = mock(),
             type = CpkType.CORDA_API,
             fileChecksum = SecureHash.parse("DONT_CARE:1234"),
