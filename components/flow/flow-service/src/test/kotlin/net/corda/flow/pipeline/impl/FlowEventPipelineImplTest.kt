@@ -35,7 +35,6 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
-import net.corda.flow.pipeline.KillFlowContextProcessor
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
@@ -80,8 +79,6 @@ class FlowEventPipelineImplTest {
         whenever(postProcess(inputContext)).thenReturn(outputContext)
     }
 
-    private val killFlowContextProcessor = mock<KillFlowContextProcessor>()
-
     private val runFlowFiberFuture = mock<FiberFuture>().apply {
         whenever(future).thenReturn(mock<Future<FlowIORequest<*>>>())
         whenever(interruptable).thenReturn(mock<Interruptable>())
@@ -98,7 +95,6 @@ class FlowEventPipelineImplTest {
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
             flowGlobalPostProcessor,
-            killFlowContextProcessor,
             inputContext,
             output
         )

@@ -18,7 +18,6 @@ import net.corda.v5.base.util.uncheckedCast
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import net.corda.flow.pipeline.KillFlowContextProcessor
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -38,7 +37,6 @@ class FlowEventPipelineImpl(
     private val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
     private val flowRunner: FlowRunner,
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
-    private val killFlowContextProcessor: KillFlowContextProcessor,
     context: FlowEventContext<Any>,
     private var output: FlowIORequest<*>? = null
 ) : FlowEventPipeline {
@@ -122,10 +120,6 @@ class FlowEventPipelineImpl(
     override fun globalPostProcessing(): FlowEventPipelineImpl {
         context = flowGlobalPostProcessor.postProcess(context)
         return this
-    }
-
-    override fun createKillFlowContext(details: Map<String, String>?): FlowEventContext<Any> {
-        return killFlowContextProcessor.createKillFlowContext(context, details)
     }
 
     private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {

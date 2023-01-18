@@ -77,7 +77,6 @@ class FlowEventProcessorImpl(
         val flowTimeout = (config.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
         return try {
             flowEventContextConverter.convert(
-                try {
                     pipeline
                         .eventPreProcessing()
                         .runOrContinue(flowTimeout)
@@ -86,9 +85,6 @@ class FlowEventProcessorImpl(
                         .requestPostProcessing()
                         .globalPostProcessing()
                         .context
-                } catch (e: FlowMarkedForKillException) {
-                    pipeline.createKillFlowContext(e.details)
-                }
             )
         } catch (e: FlowTransientException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
@@ -97,6 +93,8 @@ class FlowEventProcessorImpl(
         } catch (e: FlowPlatformException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowFatalException) {
+            flowEventExceptionProcessor.process(e, pipeline.context)
+        } catch (e: FlowMarkedForKillException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)

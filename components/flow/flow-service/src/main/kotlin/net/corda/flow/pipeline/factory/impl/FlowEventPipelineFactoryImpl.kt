@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.KillFlowContextProcessor
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
@@ -26,7 +25,6 @@ import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 class FlowEventPipelineFactoryImpl(
     private val flowRunner: FlowRunner,
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
-    private val killFlowContextProcessor: KillFlowContextProcessor,
     private val flowCheckpointFactory: FlowCheckpointFactory,
     flowEventHandlers: List<FlowEventHandler<out Any>>,
     flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>>,
@@ -65,17 +63,7 @@ class FlowEventPipelineFactoryImpl(
         flowGlobalPostProcessor: FlowGlobalPostProcessor,
         @Reference(service = FlowCheckpointFactory::class)
         flowCheckpointFactory: FlowCheckpointFactory,
-        @Reference(service = KillFlowContextProcessor::class)
-        killFlowContextProcessor: KillFlowContextProcessor
-    ) : this(
-        flowRunner = flowRunner,
-        flowGlobalPostProcessor = flowGlobalPostProcessor,
-        killFlowContextProcessor = killFlowContextProcessor,
-        flowCheckpointFactory = flowCheckpointFactory,
-        flowEventHandlers = mutableListOf(),
-        flowWaitingForHandlers = mutableListOf(),
-        flowRequestHandlers = mutableListOf()
-    )
+        ) : this(flowRunner, flowGlobalPostProcessor,flowCheckpointFactory, mutableListOf(), mutableListOf(), mutableListOf())
 
     override fun create(
         checkpoint: Checkpoint?,
@@ -97,7 +85,6 @@ class FlowEventPipelineFactoryImpl(
             flowRequestHandlerMap,
             flowRunner,
             flowGlobalPostProcessor,
-            killFlowContextProcessor,
             context
         )
     }

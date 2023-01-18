@@ -93,11 +93,6 @@ class FlowEventProcessorImplTest {
         outputRecords = outputRecords
     )
     private val flowKilledStatusRecords = listOf(Record(FLOW_STATUS_TOPIC, "key", flowState))
-    private val flowKillContext = buildFlowEventContext<Any>(
-        flowCheckpoint,
-        wakeupPayload,
-        outputRecords = flowKilledStatusRecords
-    )
 
     private val outputResponse = StateAndEventProcessor.Response<Checkpoint>(
         null,
@@ -112,7 +107,6 @@ class FlowEventProcessorImplTest {
         whenever(setWaitingFor()).thenReturn(this)
         whenever(requestPostProcessing()).thenReturn(this)
         whenever(globalPostProcessing()).thenReturn(this)
-        whenever(createKillFlowContext(detailsMap)).thenReturn(flowKillContext)
         whenever(context).thenReturn(updatedContext)
     }
     private val flowEventExceptionProcessor = mock<FlowEventExceptionProcessor>()
@@ -253,13 +247,12 @@ class FlowEventProcessorImplTest {
         val error = FlowMarkedForKillException("reason", detailsMap)
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventContextConverter.convert(flowKillContext)).thenReturn(
-            StateAndEventProcessor.Response(checkpoint, flowKilledStatusRecords)
-        )
+        val killedFlowResponse = StateAndEventProcessor.Response(checkpoint, flowKilledStatusRecords)
+        whenever(flowEventExceptionProcessor.process(error, updatedContext)).thenReturn(killedFlowResponse)
 
         val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
-        assertThat(response.responseEvents).isEqualTo(flowKilledStatusRecords)
+        assertThat(response).isEqualTo(killedFlowResponse)
     }
 
     @Test

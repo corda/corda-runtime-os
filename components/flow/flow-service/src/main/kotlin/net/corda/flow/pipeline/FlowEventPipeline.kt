@@ -56,11 +56,4 @@ interface FlowEventPipeline {
      * @return The updated pipeline instance.
      */
     fun globalPostProcessing(): FlowEventPipeline
-
-    /**
-     * Creates a flow event context to kill the flow.
-     *
-     * @return The flow event context to kill the flow.
-     */
-    fun createKillFlowContext(details: Map<String, String>?): FlowEventContext<Any>
 }
