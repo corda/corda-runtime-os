@@ -133,6 +133,9 @@ class MemberInfoExtension {
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
 
+        /** Key name for TLS certificate subject. */
+        const val TLS_CERTIFICATE_SUBJECT = "corda.tls.certificate.subject"
+
         /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
         @JvmStatic
         val MemberInfo.certificate: List<String>

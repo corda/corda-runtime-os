@@ -224,6 +224,8 @@ abstract class BaseOnboard : Runnable {
                         holdingIdentity.get("shortHash").toString()
                     }
                 }
+            }.also {
+                println("Onboarded member holding identity is: $it")
             }
     }
 

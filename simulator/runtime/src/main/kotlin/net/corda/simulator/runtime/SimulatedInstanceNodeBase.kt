@@ -43,21 +43,23 @@ class SimulatedInstanceNodeBase(
         val log = contextLogger()
     }
 
-    override fun callInstanceFlow(input: RequestData): String {
-        return callInstanceFlow(input, emptyMap())
+    override fun callFlow(input: RequestData): String {
+        return doCallFlow(input, emptyMap())
     }
 
-    override fun callInstanceFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String {
+    override fun callFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String {
+        return doCallFlow(input, contextPropertiesMap)
+    }
+
+    private fun doCallFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String{
         if (flow !is RPCStartableFlow) {
             error(
                 "The flow provided to the instance node for member \"$member\" and protocol $protocol " +
                         "was not an RPCStartableFlow"
             )
         }
-        log.info(
-            "Calling flow instance for member \"$member\" and protocol \"$protocol\" " +
-                    "with request: ${input.requestBody}"
-        )
+        log.info("Calling flow instance for member \"$member\" and protocol \"$protocol\" " +
+                "with request: ${input.requestData}")
         injector.injectServices(
             FlowAndProtocol(flow, protocol),
             member,

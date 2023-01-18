@@ -6,7 +6,7 @@ import net.corda.applications.workers.rpc.utils.E2eClusterCConfig
 import net.corda.applications.workers.rpc.utils.E2eClusterFactory
 import net.corda.applications.workers.rpc.utils.E2eClusterMember
 import net.corda.applications.workers.rpc.utils.assertAllMembersAreInMemberList
-import net.corda.applications.workers.rpc.utils.disableCLRChecks
+import net.corda.applications.workers.rpc.utils.disableGatewayCLRChecks
 import net.corda.applications.workers.rpc.utils.generateGroupPolicy
 import net.corda.applications.workers.rpc.utils.getGroupId
 import net.corda.applications.workers.rpc.utils.onboardMembers
@@ -70,13 +70,13 @@ class MultiClusterDynamicNetworkTest {
     private fun onboardMultiClusterGroup(): String {
         val mgm = clusterC.members[0]
 
-        clusterC.disableCLRChecks()
+        clusterC.disableGatewayCLRChecks()
         clusterC.onboardMgm(mgm, tempDir)
 
         val memberGroupPolicy = clusterC.generateGroupPolicy(mgm.holdingId)
 
         memberClusters.forEach { cordaCluster ->
-            cordaCluster.disableCLRChecks()
+            cordaCluster.disableGatewayCLRChecks()
             cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir)
         }
 

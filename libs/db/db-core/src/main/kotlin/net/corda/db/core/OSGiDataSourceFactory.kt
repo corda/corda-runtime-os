@@ -1,12 +1,14 @@
 package net.corda.db.core
 
-import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.Bundle
 import org.osgi.service.jdbc.DataSourceFactory
+import java.lang.invoke.MethodHandle
+import java.lang.invoke.MethodHandles
+import java.lang.invoke.MethodType
 import java.sql.SQLException
 import java.util.Properties
 import javax.sql.DataSource
 
-@Suppress("MaxLineLength")
 /**
  * OSGi has its own service that returns instances of [DataSource] so we need to use that.  We *must* use the
  * OSGi service registry instead of the jvm [java.sql.DriverManager].
@@ -38,16 +40,21 @@ import javax.sql.DataSource
  * * [pax-jdbc question on stackoverflow](https://stackoverflow.com/questions/42161261/creating-postgresql-datasource-via-pax-jdbc-config-file-on-karaf-4)
  * * [karaf](https://access.redhat.com/documentation/ko-kr/red_hat_fuse/7.2/html/apache_karaf_transaction_guide/using-jdbc-data-sources#doc-wrapper)
  */
+@Suppress("MaxLineLength")
 object OSGiDataSourceFactory {
     /**
-     * Are we running inside an OSGi framework?
-     *
-     * Tests and integration tests won't be.
+     * We may not have [FrameworkUtil][org.osgi.framework.FrameworkUtil] on the classpath.
+     * Or we may only have the stub version from "osgi.core".
      */
-    fun runningInOSGiFramework() : Boolean =
-        this::class.java.classLoader::class.java.simpleName == "BundleClassLoader"
+    private val getBundleMethod: MethodHandle? = try {
+        val frameworkUtilClass = Class.forName("org.osgi.framework.FrameworkUtil", false, this::class.java.classLoader)
+        val bundleClass = Class.forName("org.osgi.framework.Bundle", false, this::class.java.classLoader)
+        val getBundleType = MethodType.methodType(bundleClass, Class::class.java)
+        MethodHandles.publicLookup().findStatic(frameworkUtilClass, "getBundle", getBundleType)
+    } catch (_: ClassNotFoundException) {
+        null
+    }
 
-    @Suppress("MaxLineLength")
     /**
      * Create a [DataSource] using the OSGi [org.osgi.service.jdbc.DataSourceFactory] service.
      *
@@ -73,9 +80,12 @@ object OSGiDataSourceFactory {
      *
      * @throws [SQLException] if it could not get the driver, or could not create data source.
      */
+    @Suppress("ThrowsCount")
+    @Throws(SQLException::class)
     fun create(driverClass: String, jdbcUrl: String, username: String, password: String): DataSource {
-        val bundle = FrameworkUtil.getBundle(this::class.java)
-        val bundleContext = bundle.bundleContext
+        val bundle = getBundleMethod?.invoke(this::class.java)
+            ?: throw UnsupportedOperationException("No OSGi framework")
+        val bundleContext = (bundle as Bundle).bundleContext
 
         // This is the driver CLASS name.
         val refs = bundleContext.getServiceReferences(
@@ -85,11 +95,11 @@ object OSGiDataSourceFactory {
         // We could also additionally use:
         // DataSourceFactory.OSGI_JDBC_DRIVER_NAME
 
-        if (refs == null || refs.isEmpty()) {
+        if (refs.isNullOrEmpty()) {
             throw SQLException("No drivers for JDBC classes are loaded, have you specified -ddatabase.jdbc.directory? Or have you forgotten a pax-jdbc jar?")
         }
 
-        val dsf: DataSourceFactory = bundleContext.getService(refs.first())!!
+        val dsf: DataSourceFactory = bundleContext.getService(refs.max())!!
         val props = Properties()
         props[DataSourceFactory.JDBC_URL] = jdbcUrl
         props[DataSourceFactory.JDBC_USER] = username

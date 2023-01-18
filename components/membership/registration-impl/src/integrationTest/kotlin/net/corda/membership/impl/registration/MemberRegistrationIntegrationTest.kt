@@ -49,6 +49,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
@@ -106,6 +107,9 @@ class MemberRegistrationIntegrationTest {
         lateinit var groupPolicyProvider: TestGroupPolicyProvider
 
         @InjectService(timeout = 5000)
+        lateinit var locallyHostedIdentitiesService: LocallyHostedIdentitiesService
+
+        @InjectService(timeout = 5000)
         lateinit var registrationProxy: RegistrationProxy
 
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
@@ -139,6 +143,11 @@ class MemberRegistrationIntegrationTest {
                 producer {
                     close.timeout = 6000
                 }
+            }
+        """
+        const val gatewayConfig = """
+            sslConfig {
+                tlsType: "ONE_WAY"
             }
         """
         val schemaVersion = ConfigurationSchemaVersion(1, 0)
@@ -185,6 +194,7 @@ class MemberRegistrationIntegrationTest {
             groupPolicyProvider.start()
             registrationProxy.start()
             cryptoOpsClient.start()
+            locallyHostedIdentitiesService.start()
             membershipGroupReaderProvider.start()
 
             configurationReadService.bootstrapConfig(bootConfig)
@@ -216,6 +226,15 @@ class MemberRegistrationIntegrationTest {
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.MESSAGING_CONFIG,
                         Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                    )
+                )
+            )
+            publisher.publish(
+                listOf(
+                    Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.P2P_GATEWAY_CONFIG,
+                        Configuration(gatewayConfig, gatewayConfig, 0, schemaVersion)
                     )
                 )
             )

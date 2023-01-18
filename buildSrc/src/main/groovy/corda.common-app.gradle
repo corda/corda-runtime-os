@@ -351,16 +351,22 @@ class OsgiRun {
     private final NamedDomainObjectContainer<JavaAgent> javaAgents
     private final MapProperty<String, String> frameworkProperties
     private final SetProperty<String> addOpensAttribute
+    private final Provider<? extends String> platformVersion
 
     @Inject
-    OsgiRun(ObjectFactory objects) {
+    OsgiRun(ObjectFactory objects, ProviderFactory providers) {
         javaAgents = objects.domainObjectContainer(JavaAgent)
         frameworkProperties = objects.mapProperty(String, String).convention(new HashMap<String,String>())
         addOpensAttribute = objects.setProperty(String)
+        platformVersion = providers.gradleProperty('platformVersion')
     }
 
     void javaAgents(Action<? super NamedDomainObjectContainer<JavaAgent>> action) {
         action.execute(javaAgents)
+    }
+
+    Provider<? extends String> getPlatformVersion() {
+        return platformVersion
     }
 
     NamedDomainObjectContainer<JavaAgent> getJavaAgents() {
@@ -410,6 +416,7 @@ class FrameworkPropertyFile extends DefaultTask {
 
 TaskProvider<FrameworkPropertyFile> writeFrameworkPropertyFile = tasks.register("writeFrameworkPropertyFile", FrameworkPropertyFile) {
     frameworkProperties = osgiRun.frameworkProperties
+    frameworkProperties.put('net.corda.platform.version', osgiRun.platformVersion)
 }
 
 @CompileStatic

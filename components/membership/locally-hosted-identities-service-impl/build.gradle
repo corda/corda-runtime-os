@@ -1,0 +1,26 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Membership Locally Hosted Identity Service'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':components:membership:locally-hosted-identities-service')
+    implementation project(':libs:membership:membership-common')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':components:configuration:configuration-read-service')
+
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+}

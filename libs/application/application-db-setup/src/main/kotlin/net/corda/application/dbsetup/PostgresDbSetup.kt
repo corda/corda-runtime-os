@@ -178,8 +178,8 @@ class PostgresDbSetup(
             CREATE SCHEMA IF NOT EXISTS CRYPTO;
             
             CREATE USER rbac_user_$dbName WITH ENCRYPTED PASSWORD 'rbac_password';
-            GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user_$dbName;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user_$dbName;
+            GRANT USAGE ON SCHEMA RBAC to rbac_user_$dbName;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RBAC to rbac_user_$dbName;
             CREATE USER crypto_user_$dbName WITH ENCRYPTED PASSWORD 'crypto_password';
             GRANT USAGE ON SCHEMA CRYPTO to crypto_user_$dbName;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user_$dbName;

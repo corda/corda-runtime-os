@@ -91,25 +91,12 @@ members:
     - name: "C=GB, L=London, O=Member2"
 ```
 
-# Setup Corda cluster in Kubernetes
-
-This command should only be used for internal development. 
-
-This is a sub-command under the `mgm` plugin for setting up Kubernetes networks. 
-
-Running `setupCluster` with the name of the clusters to create. For example:
-```shell
-./corda-cli.sh mgm setupCluster demo-cluster-one demo-cluster-two
-```
-By default, it will use the latest released tag. Change it using the `--base-image` option. It will delete any
-existing cluster with that name. Use the `--help` to view all the other options.
-
 # Onboard a member to an existing Corda cluster
 This command should only be used for internal development.
 
 This is a sub-command under the `mgm` plugin for on-boarding a member (MGM or standard member) into a running Corda cluster.
 
-To run the network either use the `setupCluster` command or run a combine worker locally ([see here](../../../applications/workers/release/combined-worker/README.md)).
+To run the network either use the app simulator `deploy.sh` script ([see here](../../../applications/tools/p2p-test/app-simulator/scripts/README.md)) or run a combined worker locally ([see here](../../../applications/workers/release/combined-worker/README.md)).
 
 ## Onboard an MGM member to an existing Corda cluster
 This command should only be used for internal development. See the [wiki](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for more details.
