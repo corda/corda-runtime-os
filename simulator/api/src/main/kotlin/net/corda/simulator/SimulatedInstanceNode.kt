@@ -13,7 +13,7 @@ interface SimulatedInstanceNode : SimulatedNode {
      *
      * @return The response from the flow.
      * @throws IllegalStateException if the flow with which this node was constructed was not a
-     * [net.corda.v5.application.flows.RestStartableFlow].
+     * [net.corda.v5.application.flows.ClientStartableFlow].
      */
     fun callFlow(input: RequestData): String
 
@@ -26,7 +26,7 @@ interface SimulatedInstanceNode : SimulatedNode {
      *
      * @return The response from the flow.
      * @throws IllegalStateException if the flow with which this node was constructed was not a
-     * [net.corda.v5.application.flows.RestStartableFlow].
+     * [net.corda.v5.application.flows.ClientStartableFlow].
      */
     fun callFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String
 }

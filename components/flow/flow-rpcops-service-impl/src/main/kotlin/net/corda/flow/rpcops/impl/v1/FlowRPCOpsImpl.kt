@@ -194,7 +194,7 @@ class FlowRPCOpsImpl @Activate constructor(
         val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
             ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holdingIdentityShortHash}'")
         return cpiMeta.cpksMetadata.flatMap {
-            it.cordappManifest.restStartableFlows
+            it.cordappManifest.clientStartableFlows
         }
     }
 

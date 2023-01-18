@@ -9,7 +9,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
@@ -93,7 +93,7 @@ class FlowProtocolStoreFactoryImplTest {
         val cpkMetadata = mock<CpkMetadata>()
         val manifest = mock<CordappManifest>()
         whenever(manifest.flows).thenReturn(flows.flows.toSet())
-        whenever(manifest.restStartableFlows).thenReturn(flows.rpcFlows.toSet())
+        whenever(manifest.clientStartableFlows).thenReturn(flows.rpcFlows.toSet())
         whenever(manifest.initiatedFlows).thenReturn(flows.initiatedFlows.toSet())
         whenever(cpkMetadata.cordappManifest).thenReturn(manifest)
         return cpkMetadata
@@ -136,7 +136,7 @@ class FlowProtocolStoreFactoryImplTest {
     }
 
     @InitiatingFlow(protocol = PROTOCOL)
-    private class MyRPCFlow : RestStartableFlow {
+    private class MyRPCFlow : ClientStartableFlow {
         override fun call(requestBody: RestRequestBody): String {
             return ""
         }

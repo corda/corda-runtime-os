@@ -7,7 +7,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
@@ -28,7 +28,7 @@ class SessionManagementTest {
         val charlie =createMember("Charlie")
 
         @InitiatingFlow("send-receive")
-        class InitiatingSendingFlow: RestStartableFlow {
+        class InitiatingSendingFlow: ClientStartableFlow {
             @CordaInject
             private lateinit var flowMessaging: FlowMessaging
 

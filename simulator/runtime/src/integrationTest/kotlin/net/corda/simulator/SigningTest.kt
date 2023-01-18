@@ -6,7 +6,7 @@ import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.assertThrows
 class SigningTest {
 
     companion object {
-        class SigningFlow : RestStartableFlow {
+        class SigningFlow : ClientStartableFlow {
             @CordaInject
             private lateinit var signingService: SigningService
 

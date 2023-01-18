@@ -2,7 +2,7 @@ package net.cordapp.testing.testflows.ledger
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
@@ -16,7 +16,7 @@ import net.cordapp.testing.testflows.messages.TokenSelectionRequest
 import net.cordapp.testing.testflows.messages.TokenSelectionResponse
 import java.math.BigDecimal
 
-class TokenSelectionFlow : RestStartableFlow {
+class TokenSelectionFlow : ClientStartableFlow {
 
     private companion object {
         val log = contextLogger()

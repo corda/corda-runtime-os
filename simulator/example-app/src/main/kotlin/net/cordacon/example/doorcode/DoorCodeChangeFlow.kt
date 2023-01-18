@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -27,7 +27,7 @@ import java.security.PublicKey
  * A flow to ensure that everyone living in a building gets the new door code before it's changed.
  */
 @InitiatingFlow("door-code")
-class DoorCodeChangeFlow : RestStartableFlow {
+class DoorCodeChangeFlow : ClientStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -116,7 +116,7 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
     }
 }
 
-class DoorCodeQueryFlow : RestStartableFlow {
+class DoorCodeQueryFlow : ClientStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 

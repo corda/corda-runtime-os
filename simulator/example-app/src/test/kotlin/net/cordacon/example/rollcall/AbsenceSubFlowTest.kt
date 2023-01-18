@@ -5,7 +5,7 @@ import net.corda.simulator.Simulator
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
@@ -26,7 +26,7 @@ class AbsenceSubFlowTest {
 
         val simulator = Simulator()
 
-        val initiatingFlow = object: RestStartableFlow {
+        val initiatingFlow = object: ClientStartableFlow {
             @CordaInject
             private lateinit var flowEngine: FlowEngine
 

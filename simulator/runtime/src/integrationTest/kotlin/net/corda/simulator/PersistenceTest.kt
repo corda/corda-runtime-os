@@ -4,7 +4,7 @@ import net.corda.simulator.runtime.persistence.GreetingEntity
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
@@ -17,7 +17,7 @@ class PersistenceTest {
 
     companion object {
 
-        class PersistingFlow: RestStartableFlow {
+        class PersistingFlow: ClientStartableFlow {
             @CordaInject
             private lateinit var persistenceService: PersistenceService
 
@@ -33,7 +33,7 @@ class PersistenceTest {
             }
         }
 
-        class QueryingFlow: RestStartableFlow {
+        class QueryingFlow: ClientStartableFlow {
             @CordaInject
             private lateinit var persistenceService: PersistenceService
 

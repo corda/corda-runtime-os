@@ -5,7 +5,7 @@ import net.corda.simulator.runtime.flows.FlowAndProtocol
 import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.testflows.PingAckFlow
 import net.corda.simulator.runtime.testflows.PingAckResponderFlow
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -19,7 +19,7 @@ class BaseFlowMessagingFactoryTest {
     @Test
     fun `should create flow messaging for instance flow`(){
         // Given an initiator and responder instance flow
-        val initiator = mock<RestStartableFlow>()
+        val initiator = mock<ClientStartableFlow>()
         val responder = mock<ResponderFlow>()
         val injector = mock<FlowServicesInjector>()
         val fiber = SimFiberBase()

@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parseList
@@ -45,7 +45,7 @@ import java.time.Instant
  * will be the current  UTC time ([Instant.now]) + 1 hour.
  */
 @InitiatingFlow(protocol = "non-validating-test")
-class NonValidatingNotaryTestFlow : RestStartableFlow {
+class NonValidatingNotaryTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine

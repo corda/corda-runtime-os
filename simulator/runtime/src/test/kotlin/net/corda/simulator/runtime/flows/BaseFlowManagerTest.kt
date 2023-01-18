@@ -4,7 +4,7 @@ import net.corda.simulator.runtime.messaging.CloseableFlowMessaging
 import net.corda.simulator.runtime.utils.accessField
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import org.hamcrest.MatcherAssert.assertThat
@@ -22,14 +22,14 @@ class BaseFlowManagerTest {
 
     companion object {
 
-        private class MyCloseableFlowMessagingFlow : RestStartableFlow {
+        private class MyCloseableFlowMessagingFlow : ClientStartableFlow {
             @CordaInject
             private val flowMessaging: FlowMessaging = mock<CloseableFlowMessaging>()
 
             override fun call(requestBody: RestRequestBody): String { return "result" }
         }
 
-        private class MyStandaloneFlow : RestStartableFlow {
+        private class MyStandaloneFlow : ClientStartableFlow {
             override fun call(requestBody: RestRequestBody): String { return "result" }
         }
 

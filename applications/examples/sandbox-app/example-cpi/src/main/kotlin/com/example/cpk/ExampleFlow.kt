@@ -3,7 +3,7 @@ package com.example.cpk
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.base.annotations.Suspendable
@@ -12,7 +12,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
-class ExampleFlow : RestStartableFlow {
+class ExampleFlow : ClientStartableFlow {
     private val logger = loggerFor<ExampleFlow>()
 
     @CordaInject

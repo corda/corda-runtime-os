@@ -2,7 +2,7 @@ package net.cordapp.testing.smoketests.flow.inheritance;
 
 import net.corda.v5.application.flows.CordaInject;
 import net.corda.v5.application.flows.RestRequestBody;
-import net.corda.v5.application.flows.RestStartableFlow;
+import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.application.marshalling.JsonMarshallingService;
 import net.corda.v5.application.membership.MemberLookup;
 import net.corda.v5.base.annotations.Suspendable;
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Objects;
 
-public abstract class AbstractJavaFlow implements RestStartableFlow, JavaMemberResolver {
+public abstract class AbstractJavaFlow implements ClientStartableFlow, JavaMemberResolver {
     private final static Logger logger = LoggerFactory.getLogger(AbstractJavaFlow.class);
 
     abstract String buildOutput(MemberInfo memberInfo);

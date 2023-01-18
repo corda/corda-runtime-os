@@ -1,7 +1,7 @@
 package net.corda.flow.fiber
 
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.MarshallingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -33,7 +33,7 @@ class RestStartedFlowTest {
         }
     }
 
-    private class TestFlow : RestStartableFlow {
+    private class TestFlow : ClientStartableFlow {
         override fun call(requestBody: RestRequestBody): String {
             return requestBody.getRequestBody()
         }

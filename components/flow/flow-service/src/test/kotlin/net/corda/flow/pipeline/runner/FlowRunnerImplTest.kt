@@ -30,7 +30,7 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.toCorda
@@ -55,7 +55,7 @@ class FlowRunnerImplTest {
     private val fiberFuture = mock<FiberFuture>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessions = mutableListOf() }
-    private var rpcFlow = mock<RestStartableFlow>()
+    private var clientFlow = mock<ClientStartableFlow>()
     private var initiatedFlow = mock<ResponderFlow>()
 
     private val flowRunner = FlowRunnerImpl(flowFiberFactory, flowFactory, flowFiberExecutionContextFactory)
@@ -101,7 +101,7 @@ class FlowRunnerImplTest {
         }
         val restRequestBody = mock<RestRequestBody>()
         whenever(restRequestBody.getRequestBody()).thenReturn(startArgs)
-        val logicAndArgs = RestStartedFlow(rpcFlow, restRequestBody)
+        val logicAndArgs = RestStartedFlow(clientFlow, restRequestBody)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
         whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(logicAndArgs)
@@ -113,7 +113,7 @@ class FlowRunnerImplTest {
             )
         ).thenReturn(fiberFuture)
 
-        whenever(flowStack.pushWithContext(rpcFlow, emptyKeyValuePairList(), platformContext.avro)).thenReturn(
+        whenever(flowStack.pushWithContext(clientFlow, emptyKeyValuePairList(), platformContext.avro)).thenReturn(
             flowStackItem
         )
 
@@ -121,7 +121,7 @@ class FlowRunnerImplTest {
 
         assertThat(result).isSameAs(fiberFuture)
 
-        verify(sandboxDependencyInjector).injectServices(rpcFlow)
+        verify(sandboxDependencyInjector).injectServices(clientFlow)
     }
 
     @Test

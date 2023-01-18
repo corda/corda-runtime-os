@@ -4,7 +4,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -28,7 +28,7 @@ import java.time.Instant
  */
 
 @InitiatingFlow("utxo-flow-protocol")
-class UtxoDemoFlow : RestStartableFlow {
+class UtxoDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>, val notary: String)
 
     class TestCommand : Command

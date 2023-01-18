@@ -6,7 +6,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.set
@@ -21,7 +21,7 @@ import net.corda.v5.base.types.MemberX500Name
  * responder flows which gets their own copy of [FlowContextProperties]
  */
 @InitiatingFlow(protocol = "flow-context-1")
-class FlowContextPropertiesMainFlow : RestStartableFlow {
+class FlowContextPropertiesMainFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine

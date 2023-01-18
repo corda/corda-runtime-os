@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -23,7 +23,7 @@ import net.cordacon.example.rollcall.utils.findStudents
 
 
 @InitiatingFlow("roll-call")
-class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): RestStartableFlow {
+class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): ClientStartableFlow {
 
     private data class SessionAndRecipient(val flowSession: FlowSession, val receipient : MemberX500Name)
     private data class SessionAndResponse(val flowSession: FlowSession, val response : String)

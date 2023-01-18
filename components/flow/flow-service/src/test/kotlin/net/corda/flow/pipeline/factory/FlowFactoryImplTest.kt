@@ -18,7 +18,7 @@ import net.corda.flow.pipeline.factory.sample.flows.PrivateConstructorJavaFlow
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
@@ -57,7 +57,7 @@ class FlowFactoryImplTest {
             startContext = flowStartContext
             flowStartArgs = "flow-argument-2"
         }
-        whenever(sandboxGroup.loadClassFromMainBundles("com.MyClassName", RestStartableFlow::class.java))
+        whenever(sandboxGroup.loadClassFromMainBundles("com.MyClassName", ClientStartableFlow::class.java))
             .thenThrow(IllegalStateException())
 
         assertThatThrownBy {
@@ -83,7 +83,7 @@ class FlowFactoryImplTest {
         val testFlowClassName = flowClass.name
         flowStartContext.flowClassName = testFlowClassName
         doReturn(flowClass).whenever(sandboxGroup)
-            .loadClassFromMainBundles(testFlowClassName, RestStartableFlow::class.java)
+            .loadClassFromMainBundles(testFlowClassName, ClientStartableFlow::class.java)
 
         assertThatThrownBy {
             flowFactory.createFlow(
@@ -102,7 +102,7 @@ class FlowFactoryImplTest {
         val testFlowClassName = flowClass.name
         flowStartContext.flowClassName = testFlowClassName
         doReturn(flowClass).whenever(sandboxGroup)
-            .loadClassFromMainBundles(testFlowClassName, RestStartableFlow::class.java)
+            .loadClassFromMainBundles(testFlowClassName, ClientStartableFlow::class.java)
 
         assertThatThrownBy {
             flowFactory.createFlow(
@@ -157,7 +157,7 @@ class FlowFactoryImplTest {
             flowStartArgs = "flow-argument-2"
         }
         doReturn(flowClass).whenever(sandboxGroup)
-            .loadClassFromMainBundles(testFlowClassName, RestStartableFlow::class.java)
+            .loadClassFromMainBundles(testFlowClassName, ClientStartableFlow::class.java)
 
         val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as RestStartedFlow
         assertThat(result.logic).isInstanceOf(flowClass)
@@ -179,7 +179,7 @@ class FlowFactoryImplTest {
         assertThat(result.logic).isInstanceOf(flowClass)
     }
 
-    class ExampleFlow : RestStartableFlow, ResponderFlow {
+    class ExampleFlow : ClientStartableFlow, ResponderFlow {
         override fun call(session: FlowSession) {
         }
 
@@ -188,7 +188,7 @@ class FlowFactoryImplTest {
         }
     }
 
-    class PrivateConstructorFlow private constructor() : RestStartableFlow, ResponderFlow {
+    class PrivateConstructorFlow private constructor() : ClientStartableFlow, ResponderFlow {
         override fun call(session: FlowSession) {
             throw IllegalStateException("Should not reach this point")
         }
@@ -199,7 +199,7 @@ class FlowFactoryImplTest {
         }
     }
 
-    class NoDefaultConstructorFlow(private val message: String) : RestStartableFlow, ResponderFlow {
+    class NoDefaultConstructorFlow(private val message: String) : ClientStartableFlow, ResponderFlow {
         override fun call(session: FlowSession) {
             throw IllegalStateException(message)
         }

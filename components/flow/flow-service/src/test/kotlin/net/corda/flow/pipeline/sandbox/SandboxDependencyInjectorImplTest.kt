@@ -4,7 +4,7 @@ import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
@@ -218,7 +218,7 @@ interface CustomFlowInterface {
     fun method(): String
 }
 
-abstract class AbstractParentFlow : RestStartableFlow, CustomFlowInterface {
+abstract class AbstractParentFlow : ClientStartableFlow, CustomFlowInterface {
     @CordaInject
     lateinit var service1: Service1
 
@@ -243,7 +243,7 @@ class ConcreteChildFlow : AbstractParentFlow() {
     }
 }
 
-class DoubleInjectedFlow : RestStartableFlow {
+class DoubleInjectedFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var service1: Service1

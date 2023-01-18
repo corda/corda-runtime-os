@@ -4,7 +4,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -23,7 +23,7 @@ import net.cordapp.demo.consensual.contract.TestConsensualState
  */
 
 @InitiatingFlow("consensual-flow-protocol")
-class ConsensualDemoFlow : RestStartableFlow {
+class ConsensualDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
 
     private companion object {

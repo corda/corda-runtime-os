@@ -9,7 +9,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
@@ -36,7 +36,7 @@ import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
-class RpcSmokeTestFlow : RestStartableFlow {
+class RpcSmokeTestFlow : ClientStartableFlow {
 
     private companion object {
         val log = contextLogger()

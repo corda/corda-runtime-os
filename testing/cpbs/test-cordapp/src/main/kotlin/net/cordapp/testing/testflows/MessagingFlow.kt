@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.getRequestBodyAs
@@ -22,7 +22,7 @@ import net.corda.v5.base.util.contextLogger
 import net.cordapp.testing.testflows.messages.MessageFlowInput
 
 @InitiatingFlow(protocol = "flowDevProtocol")
-class MessagingFlow : RestStartableFlow {
+class MessagingFlow : ClientStartableFlow {
 
     private companion object {
         val log = contextLogger()

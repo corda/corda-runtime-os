@@ -2,7 +2,7 @@ package net.cordapp.demo.consensual
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
@@ -40,7 +40,7 @@ data class FindTransactionResponse(
     val errorMessage: String?
 )
 
-class FindTransactionFlow : RestStartableFlow {
+class FindTransactionFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var ledgerService: ConsensualLedgerService

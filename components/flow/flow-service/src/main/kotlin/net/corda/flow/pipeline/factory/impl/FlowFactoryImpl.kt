@@ -11,7 +11,7 @@ import net.corda.flow.fiber.RestStartedFlow
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
@@ -30,11 +30,11 @@ class FlowFactoryImpl @Activate constructor(
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         return try {
-            val flowClass: Class<RestStartableFlow> =
+            val flowClass: Class<ClientStartableFlow> =
                 uncheckedCast(
                     sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                         startFlowEvent.startContext.flowClassName,
-                        RestStartableFlow::class.java
+                        ClientStartableFlow::class.java
                     )
                 )
             val logic = flowClass.getDeclaredConstructor().newInstance()

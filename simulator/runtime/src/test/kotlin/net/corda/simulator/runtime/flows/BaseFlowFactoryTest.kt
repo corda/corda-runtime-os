@@ -38,7 +38,7 @@ class BaseFlowFactoryTest {
     }
 
     @Test
-    fun `should error if initiating flow being constructed is not an RestStartableFlow`() {
+    fun `should error if initiating flow being constructed is not an ClientStartableFlow`() {
         val notAnInitFlow = ValidResponderFlow::class.java
         assertThrows<UnrecognizedFlowClassException> {
             BaseFlowFactory().createInitiatingFlow(member, notAnInitFlow.name)

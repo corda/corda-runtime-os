@@ -1,12 +1,12 @@
 package net.corda.flow.pipeline.factory.sample.flows;
 
 import net.corda.v5.application.flows.RestRequestBody;
-import net.corda.v5.application.flows.RestStartableFlow;
+import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.application.flows.ResponderFlow;
 import net.corda.v5.application.messaging.FlowSession;
 import org.jetbrains.annotations.NotNull;
 
-public class PrivateConstructorJavaFlow implements RestStartableFlow, ResponderFlow {
+public class PrivateConstructorJavaFlow implements ClientStartableFlow, ResponderFlow {
     private PrivateConstructorJavaFlow() {
     }
 

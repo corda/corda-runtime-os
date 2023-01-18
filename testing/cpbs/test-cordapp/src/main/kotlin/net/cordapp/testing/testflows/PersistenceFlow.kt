@@ -5,7 +5,7 @@ import java.util.UUID
 import net.cordapp.testing.bundles.dogs.Dog
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.CordaPersistenceException
@@ -18,7 +18,7 @@ import net.cordapp.testing.testflows.messages.TestFlowInput
  * The PersistenceFlow exercises various basic db interactions in a flow.
  */
 @Suppress("unused")
-class PersistenceFlow : RestStartableFlow {
+class PersistenceFlow : ClientStartableFlow {
 
     private companion object {
         val log = contextLogger()

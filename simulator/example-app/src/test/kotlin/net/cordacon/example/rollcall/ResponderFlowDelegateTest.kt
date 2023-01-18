@@ -5,7 +5,7 @@ import net.corda.simulator.Simulator
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 import net.cordacon.example.utils.createMember
@@ -20,7 +20,7 @@ abstract class ResponderFlowDelegateTest {
 
     companion object {
 
-        private fun rollCallFlowFor(student: MemberX500Name) = object : RestStartableFlow {
+        private fun rollCallFlowFor(student: MemberX500Name) = object : ClientStartableFlow {
             @CordaInject
             private lateinit var flowMessaging: FlowMessaging
 

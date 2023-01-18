@@ -13,7 +13,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -204,7 +204,7 @@ class DefaultServicesInjectorTest {
     fun `should inject services to instance initiating flows`() {
 
         // Given an instance flow
-        val flow = object : RestStartableFlow {
+        val flow = object : ClientStartableFlow {
             @CordaInject
             lateinit var flowMessaging: FlowMessaging
             @CordaInject

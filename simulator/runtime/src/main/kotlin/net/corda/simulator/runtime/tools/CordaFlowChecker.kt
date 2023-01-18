@@ -6,7 +6,7 @@ import net.corda.simulator.exceptions.UnrecognizedFlowClassException
 import net.corda.simulator.tools.FlowChecker
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
@@ -26,12 +26,12 @@ class CordaFlowChecker : FlowChecker {
 
             if (ResponderFlow::class.java.isAssignableFrom(flowClass)) {
                 flowClass.getMethod("call", FlowSession::class.java)
-            } else if (RestStartableFlow::class.java.isAssignableFrom(flowClass)) {
+            } else if (ClientStartableFlow::class.java.isAssignableFrom(flowClass)) {
                 flowClass.getMethod("call", RestRequestBody::class.java)
             } else  {
                 throw UnrecognizedFlowClassException(flowClass, listOf(
                     ResponderFlow::class.java,
-                    RestStartableFlow::class.java,
+                    ClientStartableFlow::class.java,
                     SubFlow::class.java
                 ))
             }

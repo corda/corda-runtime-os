@@ -3,13 +3,13 @@ package net.cordapp.testing.calculator
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-class CalculatorFlow : RestStartableFlow {
+class CalculatorFlow : ClientStartableFlow {
 
     private companion object {
         val log = contextLogger()
