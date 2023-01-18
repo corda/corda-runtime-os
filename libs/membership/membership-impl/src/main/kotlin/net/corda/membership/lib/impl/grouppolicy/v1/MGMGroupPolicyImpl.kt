@@ -25,6 +25,7 @@ import net.corda.membership.lib.impl.grouppolicy.BAD_MGM_GROUP_ID_ERROR
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryInt
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryString
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 
 class MGMGroupPolicyImpl(
@@ -130,9 +131,11 @@ class MGMGroupPolicyImpl(
             ) ?: TlsType.ONE_WAY
         }
 
-        // The MGM group policy is in the MGM cluster,
-        // so there is no need to extract the MGM client certificate subject.
-        override val mgmClientCertificateSubject = null
+        override val mgmClientCertificateSubject by lazy {
+            getPersistedString(PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT)?.let {
+                MemberX500Name.parse(it)
+            }
+        }
     }
 
     internal inner class CipherSuiteImpl private constructor(

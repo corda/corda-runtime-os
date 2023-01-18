@@ -41,7 +41,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
-import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
@@ -51,10 +50,10 @@ import net.corda.membership.registration.RegistrationStatusQueryException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
+import net.corda.v5.base.util.parseOrNull
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
@@ -67,7 +66,6 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
-    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     private val clock: Clock = UTCClock(),
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
@@ -249,16 +247,10 @@ class MemberOpsServiceProcessor(
                 persistedGroupPolicyProperties.parseOrNull(PropertyKeys.TLS_TYPE, String::class.java)
             ) ?: TlsType.ONE_WAY
             val mgmCertificateSubject = if (tlsType == TlsType.MUTUAL) {
-                val info = locallyHostedIdentitiesService.getIdentityInfo(holdingIdentity)
-                    ?: throw GroupPolicyGenerationException(
-                        "Mgm is not locally hosted. "+
-                        "If it had been configured, please retry the registration in a few seconds. "
-                    )
-                val certificate = info.tlsCertificates
-                    .firstOrNull()
-                    ?: throw GroupPolicyGenerationException("MGM is missing TLS certificates")
-                val subject = MemberX500Name.parse(certificate.subjectX500Principal.toString())
-                mapOf(MGM_CLIENT_CERTIFICATE_SUBJECT to subject.toString())
+                val subject = persistedGroupPolicyProperties.parse<String>(
+                    PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT
+                )
+                mapOf(MGM_CLIENT_CERTIFICATE_SUBJECT to subject)
             } else {
                 emptyMap()
             }

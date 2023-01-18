@@ -29,11 +29,13 @@ import java.io.StringWriter
 import java.security.InvalidKeyException
 import java.security.cert.CertificateFactory
 
+@Suppress("LongParameterList")
 internal class HostedIdentityEntryFactory(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val cryptoOpsClient: CryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
     private val groupPolicyProvider: GroupPolicyProvider,
+    private val mtlsMgmClientCertificateKeeper: MtlsMgmClientCertificateKeeper,
     private val retrieveCertificates: (ShortHash?, CertificateUsage, String) -> String?,
 ) {
     private companion object {
@@ -128,6 +130,11 @@ internal class HostedIdentityEntryFactory(
             tlsKeyTenantId,
             nodeInfo,
             policy,
+        )
+        mtlsMgmClientCertificateKeeper.keepSubjectIfNeeded(
+            nodeInfo.holdingIdentity,
+            policy,
+            tlsCertificates.first(),
         )
         val sessionCertificate = getAndValidateSessionCertificate(
             sessionCertificateHoldingId,

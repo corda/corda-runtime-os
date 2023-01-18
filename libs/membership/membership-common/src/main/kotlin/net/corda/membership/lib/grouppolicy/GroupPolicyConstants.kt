@@ -235,5 +235,6 @@ class GroupPolicyConstants {
         const val TLS_TRUST_ROOTS = "truststore.tls"
         const val P2P_PROTOCOL_MODE = "protocol.p2p.mode"
         const val TLS_TYPE = "tls.type"
+        const val MGM_CLIENT_CERTIFICATE_SUBJECT = "mtls.mgm.client.certificate.subject"
     }
 }

@@ -13,6 +13,7 @@ import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.data.certificates.rpc.response.ListCertificateAliasRpcResponse
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -25,6 +26,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -56,6 +60,14 @@ class CertificatesClientImpl @Activate constructor(
     keyEncodingService: KeyEncodingService,
     @Reference(service = GroupPolicyProvider::class)
     groupPolicyProvider: GroupPolicyProvider,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MembershipPersistenceClient::class)
+    membershipPersistenceClient : MembershipPersistenceClient,
+    @Reference(service = MembershipQueryClient::class)
+    membershipQueryClient : MembershipQueryClient,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : CertificatesClient {
     private companion object {
         const val GROUP_NAME = "membership.db.certificates.client.group"
@@ -70,11 +82,18 @@ class CertificatesClientImpl @Activate constructor(
     private var configHandle: AutoCloseable? = null
     private var publisher: Publisher? = null
 
+    private val mtlsMgmClientCertificateKeeper = MtlsMgmClientCertificateKeeper(
+        membershipGroupReaderProvider,
+        membershipPersistenceClient,
+        membershipQueryClient,
+        layeredPropertyMapFactory,
+    )
     private val hostedIdentityEntryFactory = HostedIdentityEntryFactory(
         virtualNodeInfoReadService = virtualNodeInfoReadService,
         cryptoOpsClient = cryptoOpsClient,
         keyEncodingService = keyEncodingService,
         groupPolicyProvider = groupPolicyProvider,
+        mtlsMgmClientCertificateKeeper = mtlsMgmClientCertificateKeeper,
         retrieveCertificates = ::retrieveCertificates,
     )
 
@@ -160,6 +179,10 @@ class CertificatesClientImpl @Activate constructor(
                 LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
+                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                LifecycleCoordinatorName.forComponent<LayeredPropertyMapFactory>(),
             )
         )
     }

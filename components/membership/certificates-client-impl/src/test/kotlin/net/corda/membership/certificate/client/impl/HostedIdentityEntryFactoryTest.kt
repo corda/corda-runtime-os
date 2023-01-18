@@ -29,6 +29,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -125,12 +126,14 @@ class HostedIdentityEntryFactoryTest {
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getGroupPolicy(validHoldingId) } doReturn groupPolicy
     }
+    private val mtlsMgmClientCertificateKeeper = mock<MtlsMgmClientCertificateKeeper>()
 
     private val factory = HostedIdentityEntryFactory(
         virtualNodeInfoReadService,
         cryptoOpsClient,
         keyEncodingService,
         groupPolicyProvider,
+        mtlsMgmClientCertificateKeeper,
     ) { _, _, alias ->
         if (alias == VALID_CERTIFICATE_ALIAS) {
             certificatePem
@@ -220,6 +223,24 @@ class HostedIdentityEntryFactoryTest {
         )
 
         assertThat(record.value?.sessionPublicKey).isEqualTo(PUBLIC_KEY_PEM)
+    }
+
+    @Test
+    fun `createIdentityRecord will call keepSubjectIfNeeded if needed`() {
+        factory.createIdentityRecord(
+            holdingIdentityShortHash = VALID_NODE,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            useClusterLevelTlsCertificateAndKey = false,
+            useClusterLevelSessionCertificateAndKey = false,
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = null,
+        )
+
+        verify(mtlsMgmClientCertificateKeeper).keepSubjectIfNeeded(
+            validHoldingId,
+            groupPolicy,
+            certificatePem,
+        )
     }
 
     @Test
@@ -363,6 +384,7 @@ class HostedIdentityEntryFactoryTest {
             cryptoOpsClient,
             keyEncodingService,
             groupPolicyProvider,
+            mock(),
         ) { _, tenant, _ ->
             usage = tenant
             certificatePem
@@ -391,6 +413,7 @@ class HostedIdentityEntryFactoryTest {
             cryptoOpsClient,
             keyEncodingService,
             groupPolicyProvider,
+            mock(),
         ) { tenant, _, _ ->
             tenantId.add(tenant)
             certificatePem
@@ -445,6 +468,7 @@ class HostedIdentityEntryFactoryTest {
             cryptoOpsClient,
             keyEncodingService,
             groupPolicyProvider,
+            mock(),
         ) { _, _, _ ->
             "\n"
         }
