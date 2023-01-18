@@ -54,7 +54,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
 ) : VirtualNodeMaintenanceRPCOps, PluggableRPCOps<VirtualNodeMaintenanceRPCOps>, Lifecycle {
 
     companion object {
-        private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
+        private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
         private val logger = contextLogger()
 
         private const val REGISTRATION = "REGISTRATION"
@@ -108,9 +108,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
-                    val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
+                    val rpcConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {

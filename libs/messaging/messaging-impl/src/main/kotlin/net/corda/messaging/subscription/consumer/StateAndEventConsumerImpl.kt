@@ -111,7 +111,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             return
         }
 
-        log.info("State consumer in group ${config.group} is up to date for $partitionsSynced.  Resuming event feed.")
+        log.info("State consumer in group ${config.group} is up to date for $partitionsSynced. Resuming event feed.")
         eventConsumer.resume(partitionsSynced)
 
         stateAndEventListener?.let { listener ->
@@ -138,9 +138,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
-        val assignment = eventConsumer.assignment()
-        log.debug { "Pause partitions and wait for future to finish. Assignment: $assignment"}
-        eventConsumer.pause(assignment)
+        val partitionsToPause = eventConsumer.assignment() - eventConsumer.paused()
+        log.debug { "Pause partitions and wait for future to finish. Assignment: $partitionsToPause" }
+        eventConsumer.pause(partitionsToPause)
         val maxWaitTime = System.currentTimeMillis() + timeout
         var done = future.isDone
 
@@ -154,9 +154,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         // A rebalance might have been executed while waiting for the future to complete and the consumer might have
         // lost ownership of some previously owned partitions. Make sure to resume only those partitions currently
         // assigned to prevent IllegalStateExceptions due to the consumer trying to poll from unassigned partitions.
-        val currentAssignment = eventConsumer.assignment()
-        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $currentAssignment" }
-        eventConsumer.resume(currentAssignment)
+        val partitionsToResume = eventConsumer.assignment().intersect(partitionsToPause)
+        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $partitionsToResume" }
+        eventConsumer.resume(partitionsToResume)
     }
 
     private fun updateInMemoryState(state: CordaConsumerRecord<K, S>) {
@@ -204,13 +204,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         if (System.currentTimeMillis() > pollIntervalCutoff) {
             // Here we pause each consumer in order to mark a poll to avoid a Kafka timeout without actually consuming
             // any records.
-            val eventConsumerAssignment = eventConsumer.assignment()
-            val stateConsumerAssignment = stateConsumer.assignment()
+            val eventConsumerAssignmentToPause = eventConsumer.assignment() - eventConsumer.paused()
+            val stateConsumerAssignmentToPause = stateConsumer.assignment() - stateConsumer.paused()
 
-            log.debug { "Resetting poll interval. Pausing event consumer partitions: $eventConsumerAssignment"}
-            eventConsumer.pause(eventConsumerAssignment)
-            log.debug { "Resetting poll interval. Pausing state consumer partitions: $stateConsumerAssignment"}
-            stateConsumer.pause(stateConsumerAssignment)
+            log.debug { "Resetting poll interval. Pausing event consumer partitions: $eventConsumerAssignmentToPause" }
+            eventConsumer.pause(eventConsumerAssignmentToPause)
+            log.debug { "Resetting poll interval. Pausing state consumer partitions: $stateConsumerAssignmentToPause" }
+            stateConsumer.pause(stateConsumerAssignmentToPause)
 
             partitionState.dirty = false
             val eventRecords = eventConsumer.poll(PAUSED_POLL_TIMEOUT)
@@ -227,13 +227,13 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             // A rebalance might have been executed and consumers might have lost ownership of some previously owned
             // partitions. Make sure to resume only those partitions currently  assigned to prevent
             // IllegalStateExceptions due to the consumer trying to poll from unassigned partitions.
-            val eventConsumerCurrentAssignment = eventConsumer.assignment()
-            val stateConsumerCurrentAssignment = stateConsumer.assignment()
+            val eventConsumerAssignmentToResume = eventConsumer.assignment().intersect(eventConsumerAssignmentToPause)
+            val stateConsumerAssignmentToResume = stateConsumer.assignment().intersect(stateConsumerAssignmentToPause)
 
-            log.debug { "Reset of event consumer poll interval complete. Resuming event assignment: $eventConsumerCurrentAssignment" }
-            eventConsumer.resume(eventConsumerCurrentAssignment)
-            log.debug { "Reset of state consumer poll interval complete. Resuming state assignment: $stateConsumerCurrentAssignment" }
-            stateConsumer.resume(stateConsumerCurrentAssignment)
+            log.debug { "Reset of event consumer poll interval complete. Resuming event assignment: $eventConsumerAssignmentToResume" }
+            eventConsumer.resume(eventConsumerAssignmentToResume)
+            log.debug { "Reset of state consumer poll interval complete. Resuming state assignment: $stateConsumerAssignmentToResume" }
+            stateConsumer.resume(stateConsumerAssignmentToResume)
 
             pollIntervalCutoff = getNextPollIntervalCutoff()
 

@@ -208,14 +208,24 @@ class StateAndEventConsumerImplTest {
     fun testResetPollPosition() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
 
-        val assignedEventTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
-        val assignedEventTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 0))
+        val pausedEventTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0))
+        val assignedEventTopicPartitions =
+            setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1), CordaTopicPartition(TOPIC, 2))
+        val assignedEventTopicPartitionsAfterRebalance =
+            setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
+        whenever(eventConsumer.paused())
+            .thenReturn(pausedEventTopicPartitions)
         whenever(eventConsumer.assignment())
             .thenReturn(assignedEventTopicPartitions)
             .thenReturn(assignedEventTopicPartitionsAfterRebalance)
 
-        val assignedStateTopicPartitions = setOf(CordaTopicPartition(TOPIC, 2), CordaTopicPartition(TOPIC, 4))
-        val assignedStateTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 2))
+        val pausedStateTopicPartitions = setOf(CordaTopicPartition(TOPIC, 10))
+        val assignedStateTopicPartitions =
+            setOf(CordaTopicPartition(TOPIC, 10), CordaTopicPartition(TOPIC, 11), CordaTopicPartition(TOPIC, 12))
+        val assignedStateTopicPartitionsAfterRebalance =
+            setOf(CordaTopicPartition(TOPIC, 10), CordaTopicPartition(TOPIC, 11))
+        whenever(stateConsumer.paused())
+            .thenReturn(pausedStateTopicPartitions)
         whenever(stateConsumer.assignment())
             .thenReturn(assignedStateTopicPartitions)
             .thenReturn(assignedStateTopicPartitionsAfterRebalance)
@@ -228,17 +238,23 @@ class StateAndEventConsumerImplTest {
 
         val eventConsumerOrder = inOrder(eventConsumer)
         eventConsumerOrder.verify(eventConsumer, times(1)).assignment()
-        eventConsumerOrder.verify(eventConsumer, times(1)).pause(assignedEventTopicPartitions)
+        eventConsumerOrder.verify(eventConsumer, times(1)).paused()
+        eventConsumerOrder.verify(eventConsumer, times(1))
+            .pause(assignedEventTopicPartitions - pausedEventTopicPartitions)
         eventConsumerOrder.verify(eventConsumer, times(1)).poll(any())
         eventConsumerOrder.verify(eventConsumer, times(1)).assignment()
-        eventConsumerOrder.verify(eventConsumer, times(1)).resume(assignedEventTopicPartitionsAfterRebalance)
+        eventConsumerOrder.verify(eventConsumer, times(1))
+            .resume(assignedEventTopicPartitionsAfterRebalance - pausedEventTopicPartitions)
 
         val stateConsumerOrder = inOrder(stateConsumer)
         stateConsumerOrder.verify(stateConsumer, times(1)).assignment()
-        stateConsumerOrder.verify(stateConsumer, times(1)).pause(assignedStateTopicPartitions)
+        stateConsumerOrder.verify(stateConsumer, times(1)).paused()
+        stateConsumerOrder.verify(stateConsumer, times(1))
+            .pause(assignedStateTopicPartitions - pausedStateTopicPartitions)
         stateConsumerOrder.verify(stateConsumer, times(1)).poll(any())
         stateConsumerOrder.verify(stateConsumer, times(1)).assignment()
-        stateConsumerOrder.verify(stateConsumer, times(1)).resume(assignedStateTopicPartitionsAfterRebalance)
+        stateConsumerOrder.verify(stateConsumer, times(1))
+            .resume(assignedStateTopicPartitionsAfterRebalance - pausedStateTopicPartitions)
     }
 
     @Test
@@ -255,8 +271,13 @@ class StateAndEventConsumerImplTest {
     @Test
     fun usesCorrectPartitionAssignmentsWhenPausingAndResumingEventConsumerWhileWaitingForFutureToComplete() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
-        val assignedTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
-        val assignedTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 0))
+        val pausedTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0))
+        val assignedTopicPartitions =
+            setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1), CordaTopicPartition(TOPIC, 2))
+        val assignedTopicPartitionsAfterRebalance = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
+
+        whenever(eventConsumer.paused())
+            .thenReturn(pausedTopicPartitions)
 
         whenever(eventConsumer.assignment())
             .thenReturn(assignedTopicPartitions)
@@ -275,9 +296,10 @@ class StateAndEventConsumerImplTest {
         }, 200L, "test ")
         latch.countDown()
 
+        verify(eventConsumer, times(1)).paused()
         verify(eventConsumer, times(2)).assignment()
-        verify(eventConsumer, times(1)).pause(assignedTopicPartitions)
-        verify(eventConsumer, times(1)).resume(assignedTopicPartitionsAfterRebalance)
+        verify(eventConsumer, times(1)).pause(assignedTopicPartitions - pausedTopicPartitions)
+        verify(eventConsumer, times(1)).resume(assignedTopicPartitionsAfterRebalance - pausedTopicPartitions)
         verify(stateConsumer, atLeast(1)).poll(any())
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
     }

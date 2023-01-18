@@ -7,7 +7,7 @@ import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.VirtualNodeWriteEventHandler
@@ -39,8 +39,8 @@ class VirtualNodeWriteConfigHandlerTests {
 
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
         val event = ConfigChangedEvent(
-            setOf(RPC_CONFIG, MESSAGING_CONFIG),
-            mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+            setOf(REST_CONFIG, MESSAGING_CONFIG),
+            mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
         )
         eventHandler.processEvent(event, coordinator)
 
@@ -64,8 +64,8 @@ class VirtualNodeWriteConfigHandlerTests {
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
             val event = ConfigChangedEvent(
-                setOf(RPC_CONFIG, MESSAGING_CONFIG),
-                mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+                setOf(REST_CONFIG, MESSAGING_CONFIG),
+                mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
             )
             eventHandler.processEvent(event, coordinator)
         }
@@ -91,8 +91,8 @@ class VirtualNodeWriteConfigHandlerTests {
         }
 
         val event = ConfigChangedEvent(
-            setOf(RPC_CONFIG, MESSAGING_CONFIG),
-            mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+            setOf(REST_CONFIG, MESSAGING_CONFIG),
+            mapOf(REST_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
         )
 
         eventHandler.processEvent(event, coordinator)

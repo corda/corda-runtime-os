@@ -207,7 +207,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `creating permission user manager will use the remote writer timeout set in the config`() {
         val config = SmartConfigImpl.empty()
-            .withValue(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS, ConfigValueFactory.fromAnyRef(12345L))
+            .withValue(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS, ConfigValueFactory.fromAnyRef(12345L))
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
