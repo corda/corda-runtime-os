@@ -12,9 +12,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.exceptions.CryptoException
-import java.util.*
+import java.util.UUID
 
 // NOTE: hsmId is part of the bootstrap configuration
 
@@ -248,7 +249,11 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
 
 fun createCryptoSmartConfigFactory(smartFactoryKey: KeyCredentials): SmartConfigFactory =
     // TODO - figure out why this is here and how that is going to work with other SecretsServiceFactory implementations
-    SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory())).create(
+    //  is this test-only? If so, why is it not in a test utils module?
+    SmartConfigFactoryFactory(object: SecretsServiceFactoryResolver {
+        override fun findAll() = listOf(EncryptionSecretsServiceFactory())
+
+    }).create(
         ConfigFactory.parseString(
             """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=${smartFactoryKey.passphrase}

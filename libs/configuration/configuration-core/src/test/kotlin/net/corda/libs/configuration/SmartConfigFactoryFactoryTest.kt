@@ -25,7 +25,8 @@ class SmartConfigFactoryFactoryTest {
 
     @Test
     fun `when create, choose matching secrets provider from list`() {
-        val cff = SmartConfigFactoryFactory(listOf(mockSecretsServiceFactory1, mockSecretsServiceFactory2))
+        val cff = SmartConfigFactoryFactory(
+            mock { on { findAll() } doReturn listOf(mockSecretsServiceFactory1, mockSecretsServiceFactory2)})
         val cf = cff.create(secretsServiceConfig)
         val config = ConfigFactory.parseMap(
             mapOf(SmartConfig.SECRET_KEY to mapOf(
@@ -39,7 +40,8 @@ class SmartConfigFactoryFactoryTest {
 
     @Test
     fun `when create and no matching secrets provider, throw`() {
-        val cff = SmartConfigFactoryFactory(listOf(mockSecretsServiceFactory1))
+        val cff = SmartConfigFactoryFactory(
+            mock { on { findAll() } doReturn listOf(mockSecretsServiceFactory1)})
         assertThrows<SecretsConfigurationException> {
             cff.create(
                 ConfigFactory.parseMap(mapOf(SmartConfigFactoryFactory.SECRET_SERVICE_TYPE to "micky"))

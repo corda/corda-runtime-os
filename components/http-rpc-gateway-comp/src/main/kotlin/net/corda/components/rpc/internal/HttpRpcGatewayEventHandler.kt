@@ -28,15 +28,15 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_ADDRESS
-import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_ID
-import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_SECRET
-import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_TENANT_ID
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_DESCRIPTION
-import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_TITLE
-import net.corda.schema.configuration.ConfigKeys.RPC_MAX_CONTENT_LENGTH
-import net.corda.schema.configuration.ConfigKeys.RPC_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS
+import net.corda.schema.configuration.ConfigKeys.REST_ADDRESS
+import net.corda.schema.configuration.ConfigKeys.REST_AZUREAD_CLIENT_ID
+import net.corda.schema.configuration.ConfigKeys.REST_AZUREAD_CLIENT_SECRET
+import net.corda.schema.configuration.ConfigKeys.REST_AZUREAD_TENANT_ID
+import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
+import net.corda.schema.configuration.ConfigKeys.REST_CONTEXT_DESCRIPTION
+import net.corda.schema.configuration.ConfigKeys.REST_CONTEXT_TITLE
+import net.corda.schema.configuration.ConfigKeys.REST_MAX_CONTENT_LENGTH
+import net.corda.schema.configuration.ConfigKeys.REST_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
@@ -102,7 +102,7 @@ internal class HttpRpcGatewayEventHandler(
                 coordinator.createManagedResource(CONFIG_SUBSCRIPTION) {
                     configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(BOOT_CONFIG, RPC_CONFIG)
+                        setOf(BOOT_CONFIG, REST_CONFIG)
                     )
                 }
 
@@ -142,7 +142,7 @@ internal class HttpRpcGatewayEventHandler(
                 log.info("Gateway component received configuration update event, changedKeys: ${event.keys}")
                 coordinator.updateStatus(LifecycleStatus.DOWN)
 
-                val config = event.config[RPC_CONFIG]!!.withFallback(
+                val config = event.config[REST_CONFIG]!!.withFallback(
                     event.config[BOOT_CONFIG]
                 )
                 rpcConfig = config
@@ -195,17 +195,17 @@ internal class HttpRpcGatewayEventHandler(
         }
 
         val httpRpcSettings = HttpRpcSettings(
-            address = NetworkHostAndPort.parse(config.getString(RPC_ADDRESS)),
+            address = NetworkHostAndPort.parse(config.getString(REST_ADDRESS)),
             context = HttpRpcContext(
                 version = "1",
                 basePath = "/api",
-                description = config.getString(RPC_CONTEXT_DESCRIPTION),
-                title = config.getString(RPC_CONTEXT_TITLE)
+                description = config.getString(REST_CONTEXT_DESCRIPTION),
+                title = config.getString(REST_CONTEXT_TITLE)
             ),
             ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
             sso = config.retrieveSsoOptions(),
             maxContentLength = config.retrieveMaxContentLength(),
-            webSocketIdleTimeoutMs = config.getInt(RPC_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS).toLong()
+            webSocketIdleTimeoutMs = config.getInt(REST_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS).toLong()
         )
 
         val multiPartDir = tempPathProvider.getOrCreate(config, MULTI_PART_DIR)
@@ -221,13 +221,13 @@ internal class HttpRpcGatewayEventHandler(
     }
 
     private fun SmartConfig.retrieveSsoOptions(): SsoSettings? {
-        return if (!hasPath(RPC_AZUREAD_CLIENT_ID) || !hasPath(RPC_AZUREAD_TENANT_ID)) {
+        return if (!hasPath(REST_AZUREAD_CLIENT_ID) || !hasPath(REST_AZUREAD_TENANT_ID)) {
             log.info("AzureAD connection is not configured.")
             null
         } else {
-            val clientId = getString(RPC_AZUREAD_CLIENT_ID)
-            val tenantId = getString(RPC_AZUREAD_TENANT_ID)
-            val clientSecret = RPC_AZUREAD_CLIENT_SECRET.let {
+            val clientId = getString(REST_AZUREAD_CLIENT_ID)
+            val tenantId = getString(REST_AZUREAD_TENANT_ID)
+            val clientSecret = REST_AZUREAD_CLIENT_SECRET.let {
                 if (hasPath(it)) {
                     getString(it)
                 } else null
@@ -237,8 +237,8 @@ internal class HttpRpcGatewayEventHandler(
     }
 
     private fun SmartConfig.retrieveMaxContentLength(): Int {
-        return if (hasPath(RPC_MAX_CONTENT_LENGTH)) {
-            getInt(RPC_MAX_CONTENT_LENGTH)
+        return if (hasPath(REST_MAX_CONTENT_LENGTH)) {
+            getInt(REST_MAX_CONTENT_LENGTH)
         } else {
             MAX_CONTENT_LENGTH_DEFAULT_VALUE
         }

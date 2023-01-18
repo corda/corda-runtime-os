@@ -141,18 +141,21 @@ readinessProbe:
     port: monitor
   periodSeconds: 10
   failureThreshold: 3
+  timeoutSeconds: 5
 livenessProbe:
   httpGet:
     path: /isHealthy
     port: monitor
   periodSeconds: 10
   failureThreshold: 3
+  timeoutSeconds: 5
 startupProbe:
   httpGet:
     path: /isHealthy
     port: monitor
   periodSeconds: 5
   failureThreshold: 20
+  timeoutSeconds: 5
 {{- end }}
 {{- end }}
 

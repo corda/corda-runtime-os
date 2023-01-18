@@ -1,5 +1,6 @@
 package net.corda.simulator
 
+import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -12,8 +13,11 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class SessionManagementTest {
 
@@ -71,6 +75,12 @@ class SessionManagementTest {
                 finished = true
             }
         }
+
+        class ErroringEndFlow: ResponderFlow {
+            override fun call(session: FlowSession) { throw CharliesException() }
+        }
+
+        class CharliesException : Exception("Because")
     }
 
     @Test
@@ -96,6 +106,29 @@ class SessionManagementTest {
         assertTrue(charliesInstanceFlow.finished)
     }
 
+    @Test
+    fun `Simulator nodes should propagate any errors back to the initiating flow`() {
+
+        // Given flow logic that look like:
+        //     Alice sends to Bob
+        //     Bob receives from Alice and starts a sub-flow that sends to Charlie
+        //     Charlie errors
+
+        val simulator = Simulator()
+        val charliesInstanceFlow = ErroringEndFlow()
+
+        val aliceNode = simulator.createVirtualNode(alice, InitiatingSendingFlow::class.java)
+        simulator.createVirtualNode(bob, ReceivingAndSendingOnFlow::class.java)
+        simulator.createInstanceNode(charlie, "receive-send", charliesInstanceFlow)
+
+        // When we call Alice's flow
+        // Then it should get the error from Charlie
+        assertThrows<ResponderFlowException> {
+            aliceNode.callFlow(RequestData.create("r1", InitiatingSendingFlow::class.java, Unit))
+        }.also {
+            assertInstanceOf(CharliesException::class.java, it.cause?.cause)
+        }
+    }
 
 
 }

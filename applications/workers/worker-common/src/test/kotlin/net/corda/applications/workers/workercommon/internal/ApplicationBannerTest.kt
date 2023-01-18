@@ -1,6 +1,7 @@
 package net.corda.applications.workers.workercommon.internal
 
 import net.corda.application.addon.CordaAddon
+import net.corda.application.addon.CordaAddonResolver
 import net.corda.application.banner.ConsolePrinter
 import net.corda.application.banner.StartupBanner
 import net.corda.applications.workers.workercommon.ApplicationBanner
@@ -39,10 +40,14 @@ class ApplicationBannerTest {
         on { localWorkerSoftwareVersion } doReturn "1.2.3.4"
     }
 
+    private val resolver = mock<CordaAddonResolver> { on { findAll() } doReturn listOf(addOn1, addOn2) }
 
     @Test
     fun `when show print banner`() {
-        val banner = ApplicationBanner(mockBanner, listOf(addOn1, addOn2), ConsolePrinter(mockPrinter::print))
+        val banner = ApplicationBanner(
+            mockBanner,
+            resolver,
+            ConsolePrinter(mockPrinter::print))
         banner.show("test", platformInfoProvider)
 
         verify(mockBanner).get("test", "1.2.3.4")
@@ -51,7 +56,7 @@ class ApplicationBannerTest {
 
     @Test
     fun `when addons print details`() {
-        val banner = ApplicationBanner(mockBanner, listOf(addOn1, addOn2), ConsolePrinter(mockPrinter::print))
+        val banner = ApplicationBanner(mockBanner, resolver, ConsolePrinter(mockPrinter::print))
         banner.show("test", platformInfoProvider)
 
         assertSoftly {

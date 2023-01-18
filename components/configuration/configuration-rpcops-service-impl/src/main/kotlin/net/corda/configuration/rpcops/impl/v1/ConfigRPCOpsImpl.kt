@@ -85,7 +85,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         const val SENDER = "SENDER"
         const val CONFIG_HANDLE = "CONFIG_HANDLE"
 
-        val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
+        val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
     }
 
     private val validator = configurationValidatorFactory.createConfigValidator()
@@ -132,9 +132,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                     coordinator.updateStatus(event.status)
                 }
                 is ConfigChangedEvent -> {
-                    val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
+                    val rpcConfig = event.config.getConfig(ConfigKeys.REST_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                    setTimeout(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS))
+                    setTimeout(rpcConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS))
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {

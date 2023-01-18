@@ -85,7 +85,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
             setOf(
                 ConfigKeys.MESSAGING_CONFIG,
                 ConfigKeys.BOOT_CONFIG,
-                ConfigKeys.RPC_CONFIG
+                ConfigKeys.REST_CONFIG
             )
         )
     }
@@ -116,7 +116,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
         val config = mock<Map<String, SmartConfig>>()
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(msgConfigMock)
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
-        whenever(config[ConfigKeys.RPC_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.REST_CONFIG]).thenReturn(mock())
 
         val publisher = mock<Publisher>()
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
