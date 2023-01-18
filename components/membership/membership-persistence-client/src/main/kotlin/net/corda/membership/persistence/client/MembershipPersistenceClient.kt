@@ -1,9 +1,10 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.GroupParameters
@@ -187,21 +188,17 @@ interface MembershipPersistenceClient : Lifecycle {
     ): MembershipPersistenceResult<Unit>
 
     /**
-     * Persists the approval rule of the specified [ruleType].
+     * Persists the specified approval rule.
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
-     * @param rule The regular expression associated with the rule to be added.
-     * @param ruleType The approval rule type for this rule. See [ApprovalRuleType] for the available types.
-     * @param label Optional. A label describing the rule to be added.
+     * @param ruleParams Parameters of the rule to be added, represented by [ApprovalRuleParams].
      *
-     * @return Membership persistence result with the ID of the newly added rule.
+     * @return Membership persistence result with the details of the newly added rule.
      */
     fun addApprovalRule(
         viewOwningIdentity: HoldingIdentity,
-        rule: String,
-        ruleType: ApprovalRuleType,
-        label: String?
-    ): MembershipPersistenceResult<String>
+        ruleParams: ApprovalRuleParams
+    ): MembershipPersistenceResult<ApprovalRuleDetails>
 
     /**
      * Deletes a previously persisted approval rule.

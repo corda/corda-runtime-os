@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
@@ -27,16 +28,15 @@ internal class PersistApprovalRuleHandler(
                 logger.warn("Approval rule not added as an identical rule already exists.")
                 throw MembershipPersistenceException("Approval rule not added as an identical rule already exists.")
             }
-            val ruleId = request.ruleId
-            em.persist(
-                ApprovalRulesEntity(
-                    ruleId,
-                    request.rule,
-                    request.ruleType.name,
-                    request.label
-                )
+            val entity = ApprovalRulesEntity(
+                request.ruleId,
+                request.rule,
+                request.ruleType.name,
+                request.label
             )
-            PersistApprovalRuleResponse(ruleId)
+            em.persist(entity)
+
+            PersistApprovalRuleResponse(ApprovalRuleDetails(entity.ruleId, entity.ruleRegex, entity.ruleLabel))
         }
     }
 }

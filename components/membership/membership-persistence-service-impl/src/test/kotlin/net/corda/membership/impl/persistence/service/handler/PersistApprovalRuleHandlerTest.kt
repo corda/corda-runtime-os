@@ -109,7 +109,7 @@ class PersistApprovalRuleHandlerTest {
     }
 
     @Test
-    fun `invoke persists rule and returns the rule identifier`() {
+    fun `invoke persists rule and returns the rule details`() {
         whenever(approvalRulesQuery.resultList).doReturn(emptyList())
         val context = mock<MembershipRequestContext> {
             on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
@@ -128,7 +128,7 @@ class PersistApprovalRuleHandlerTest {
         with(mergedEntity.firstValue) {
             assertThat(ruleId)
                 .isNotNull
-                .isEqualTo(result.ruleId)
+                .isEqualTo(result.persistedRule.ruleId)
                 .isEqualTo(request.ruleId)
             assertThat(ruleRegex).isEqualTo(DUMMY_RULE)
             assertThat(ruleType).isEqualTo(ApprovalRuleType.STANDARD.name)

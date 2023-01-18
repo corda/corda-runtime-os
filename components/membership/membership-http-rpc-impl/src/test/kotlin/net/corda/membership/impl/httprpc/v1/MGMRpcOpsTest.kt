@@ -1,6 +1,7 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.configuration.read.ConfigurationGetService
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -12,7 +13,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
-import net.corda.membership.httprpc.v1.types.request.ApprovalRuleParams
+import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.v5.base.types.MemberX500Name
@@ -145,11 +147,13 @@ class MGMRpcOpsTest {
         @Test
         fun `addGroupApprovalRule delegates correctly to mgm ops client`() {
             startService()
+            whenever(mgmOpsClient.addApprovalRule(any(), any())).doReturn(ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL))
 
-            mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
+            mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
 
             verify(mgmOpsClient).addApprovalRule(
-                eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(RULE_REGEX), eq(ApprovalRuleType.STANDARD), eq(RULE_LABEL)
+                eq((ShortHash.of(HOLDING_IDENTITY_ID))),
+                eq(ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL))
             )
             stopService()
         }
@@ -157,11 +161,10 @@ class MGMRpcOpsTest {
         @Test
         fun `addGroupApprovalRule throws resource not found for invalid member`() {
             startService()
-            whenever(mgmOpsClient.addApprovalRule(any(), any(), any(), any()))
-                .doThrow(mock<CouldNotFindMemberException>())
+            whenever(mgmOpsClient.addApprovalRule(any(), any())).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
-                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
+                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
             }
 
             stopService()
@@ -170,10 +173,10 @@ class MGMRpcOpsTest {
         @Test
         fun `addGroupApprovalRule throws invalid input for non MGM member`() {
             startService()
-            whenever(mgmOpsClient.addApprovalRule(any(), any(), any(), any())).doThrow(mock<MemberNotAnMgmException>())
+            whenever(mgmOpsClient.addApprovalRule(any(), any())).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
+                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
             }
 
             stopService()
@@ -184,7 +187,7 @@ class MGMRpcOpsTest {
             startService()
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.addGroupApprovalRule(INVALID_SHORT_HASH, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
+                mgmRpcOps.addGroupApprovalRule(INVALID_SHORT_HASH, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
             }
 
             stopService()
@@ -193,11 +196,11 @@ class MGMRpcOpsTest {
         @Test
         fun `addGroupApprovalRule throws bad request for duplicate rule`() {
             startService()
-            whenever(mgmOpsClient.addApprovalRule(any(), any(), any(), any())).doThrow(mock<MembershipPersistenceException>())
+            whenever(mgmOpsClient.addApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
 
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleParams(RULE_REGEX, RULE_LABEL))
+                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
             }
 
             stopService()

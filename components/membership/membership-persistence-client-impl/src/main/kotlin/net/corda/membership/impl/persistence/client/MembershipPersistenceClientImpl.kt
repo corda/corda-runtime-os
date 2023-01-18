@@ -3,13 +3,13 @@ package net.corda.membership.impl.persistence.client
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
-import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
@@ -29,6 +29,7 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -300,17 +301,15 @@ class MembershipPersistenceClientImpl(
 
     override fun addApprovalRule(
         viewOwningIdentity: HoldingIdentity,
-        rule: String,
-        ruleType: ApprovalRuleType,
-        label: String?
-    ): MembershipPersistenceResult<String> {
+        ruleParams: ApprovalRuleParams
+    ): MembershipPersistenceResult<ApprovalRuleDetails> {
         val ruleId = UUID.randomUUID().toString()
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            PersistApprovalRule(ruleId, rule, ruleType, label)
+            PersistApprovalRule(ruleId, ruleParams.ruleRegex, ruleParams.ruleType, ruleParams.ruleLabel)
         ).execute()
         return when (val payload = result.payload) {
-            is PersistApprovalRuleResponse -> MembershipPersistenceResult.Success(payload.ruleId)
+            is PersistApprovalRuleResponse -> MembershipPersistenceResult.Success(payload.persistedRule)
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $payload")
         }

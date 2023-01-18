@@ -8,7 +8,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.membership.httprpc.v1.types.request.ApprovalRuleParams
+import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 
 /**
@@ -111,27 +111,27 @@ interface MGMRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * mgmOps.addGroupApprovalRule("58B6030FABDD", GroupApprovalRuleInfo("corda.roles.*", "roles rule"))
+     * mgmOps.addGroupApprovalRule("58B6030FABDD", ApprovalRuleRequestParams("corda.roles.*", "roles rule"))
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
-     * @param ruleInfo The approval rule information including the regular expression associated with the rule, and an
+     * @param ruleParams The approval rule information including the regular expression associated with the rule, and an
      * optional label describing the rule
      *
-     * @return The ID of the newly added rule.
+     * @return Details of the newly persisted approval rule.
      */
     @HttpRpcPOST(
         path = "{holdingIdentityShortHash}/approval/rules",
         description = "This method adds a rule to the set of group approval rules.",
-        responseDescription = "The ID of the newly added rule"
+        responseDescription = "Details of the newly persisted approval rule"
     )
     fun addGroupApprovalRule(
         @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group")
         holdingIdentityShortHash: String,
         @HttpRpcRequestBodyParameter(description = "The approval rule information including the regular expression " +
                 "associated with the rule, and an optional label describing the rule")
-        ruleInfo: ApprovalRuleParams,
-    ): String
+        ruleParams: ApprovalRuleRequestParams,
+    ): ApprovalRuleInfo
 
     /**
      * The [getGroupApprovalRules] method enables you to retrieve the set of approval rules the group is currently
@@ -172,7 +172,7 @@ interface MGMRpcOps : RpcOps {
      * @param ruleId ID of the group approval rule to be deleted.
      */
     @HttpRpcDELETE(
-        path = "{holdingIdentityShortHash}/approval/rules/delete/{ruleId}",
+        path = "{holdingIdentityShortHash}/approval/rules/{ruleId}",
         description = "This method deletes a previously added group approval rule."
     )
     fun deleteGroupApprovalRule(

@@ -7,6 +7,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
@@ -41,6 +42,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -685,20 +687,19 @@ class MembershipPersistenceClientImplTest {
     @Nested
     inner class AddApprovalRuleTests {
         @Test
-        fun `addApprovalRule returns the correct ID`() {
+        fun `addApprovalRule returns the correct result`() {
             postConfigChangedEvent()
+            val expectedResult = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
             mockPersistenceResponse(
-                PersistApprovalRuleResponse(RULE_ID),
+                PersistApprovalRuleResponse(expectedResult),
             )
 
             val result = membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
-                RULE_REGEX,
-                ApprovalRuleType.STANDARD,
-                RULE_LABEL
+                ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             )
 
-            assertThat(result.getOrThrow()).isEqualTo(RULE_ID)
+            assertThat(result.getOrThrow()).isEqualTo(expectedResult)
         }
 
         @Test
@@ -710,9 +711,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
-                RULE_REGEX,
-                ApprovalRuleType.STANDARD,
-                RULE_LABEL
+                ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             )
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
@@ -727,12 +726,10 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
-                RULE_REGEX,
-                ApprovalRuleType.STANDARD,
-                RULE_LABEL
+                ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             )
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<String>("Unexpected response: null"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<ApprovalRuleDetails>("Unexpected response: null"))
         }
 
         @Test
@@ -744,9 +741,7 @@ class MembershipPersistenceClientImplTest {
 
             membershipPersistenceClient.addApprovalRule(
                 ourHoldingIdentity,
-                RULE_REGEX,
-                ApprovalRuleType.STANDARD,
-                RULE_LABEL
+                ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             )
 
             val sentRequest = (argument.firstValue.request as? PersistApprovalRule)!!

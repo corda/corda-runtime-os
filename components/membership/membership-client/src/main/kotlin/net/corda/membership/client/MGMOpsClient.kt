@@ -3,6 +3,7 @@ package net.corda.membership.client
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
@@ -40,14 +41,12 @@ interface MGMOpsClient : Lifecycle {
 
 
     /**
-     * Adds an approval rule of the specified [ruleType] to be applied to future registration requests.
+     * Adds an approval rule to be applied to future registration requests.
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
-     * @param rule The regular expression associated with the rule to be added.
-     * @param ruleType The approval rule type for this rule. See [ApprovalRuleType] for the available types.
-     * @param label Optional. A label describing the rule to be added.
+     * @param ruleParams Parameters of the rule to be added, represented by [ApprovalRuleParams].
      *
-     * @return The ID of the newly added rule.
+     * @return Details of the newly persisted approval rule.
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
@@ -56,10 +55,8 @@ interface MGMOpsClient : Lifecycle {
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, MembershipPersistenceException::class)
     fun addApprovalRule(
         holdingIdentityShortHash: ShortHash,
-        rule: String,
-        ruleType: ApprovalRuleType,
-        label: String? = null
-    ): String
+        ruleParams: ApprovalRuleParams
+    ): ApprovalRuleDetails
 
     /**
      * Retrieves all approval rules of the specified [ruleType] currently configured for the group.

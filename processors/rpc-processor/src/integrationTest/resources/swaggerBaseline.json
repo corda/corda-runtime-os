@@ -2052,7 +2052,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ApprovalRuleParams"
+                "$ref" : "#/components/schemas/ApprovalRuleRequestParams"
               }
             }
           },
@@ -2060,13 +2060,11 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The ID of the newly added rule",
+            "description" : "Details of the newly persisted approval rule",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "string"
+                  "$ref" : "#/components/schemas/ApprovalRuleInfo"
                 }
               }
             }
@@ -2080,11 +2078,11 @@
         }
       }
     },
-    "/mgm/{holdingidentityshorthash}/approval/rules/delete/{ruleid}" : {
+    "/mgm/{holdingidentityshorthash}/approval/rules/{ruleid}" : {
       "delete" : {
         "tags" : [ "MGM API" ],
         "description" : "This method deletes a previously added group approval rule.",
-        "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules_delete__ruleid_",
+        "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules__ruleid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
@@ -3235,7 +3233,7 @@
           }
         }
       },
-      "ApprovalRuleParams" : {
+      "ApprovalRuleRequestParams" : {
         "required" : [ "ruleRegex" ],
         "type" : "object",
         "properties" : {

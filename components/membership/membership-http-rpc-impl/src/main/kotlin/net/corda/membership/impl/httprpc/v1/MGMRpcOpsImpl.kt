@@ -16,9 +16,10 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRpcOps
-import net.corda.membership.httprpc.v1.types.request.ApprovalRuleParams
+import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.v5.base.types.MemberX500Name
@@ -57,7 +58,7 @@ class MGMRpcOpsImpl @Activate constructor(
             holdingIdentityShortHash: String,
         ): Collection<String>
 
-        fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleParams): String
+        fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo
 
         fun getGroupApprovalRules(holdingIdentityShortHash: String): Collection<ApprovalRuleInfo>
 
@@ -108,8 +109,8 @@ class MGMRpcOpsImpl @Activate constructor(
     override fun mutualTlsListClientCertificate(holdingIdentityShortHash: String) =
         impl.mutualTlsListClientCertificate(holdingIdentityShortHash)
 
-    override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleParams) =
-        impl.addGroupApprovalRule(holdingIdentityShortHash, ruleInfo)
+    override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleParams: ApprovalRuleRequestParams) =
+        impl.addGroupApprovalRule(holdingIdentityShortHash, ruleParams)
 
     override fun getGroupApprovalRules(holdingIdentityShortHash: String) =
         impl.getGroupApprovalRules(holdingIdentityShortHash)
@@ -157,7 +158,7 @@ class MGMRpcOpsImpl @Activate constructor(
             )
         }
 
-        override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleParams): String =
+        override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo =
             throw ServiceUnavailableException(
                 "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -252,20 +253,18 @@ class MGMRpcOpsImpl @Activate constructor(
             }
         }
 
-        override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleParams): String {
+        override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo {
             return try {
                 mgmOpsClient.addApprovalRule(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
-                    ruleInfo.ruleRegex,
-                    ApprovalRuleType.STANDARD,
-                    ruleInfo.ruleLabel
-                )
+                    ApprovalRuleParams(ruleInfo.ruleRegex, ApprovalRuleType.STANDARD, ruleInfo.ruleLabel)
+                ).let { ApprovalRuleInfo(it.ruleId, it.ruleRegex, it.ruleLabel) }
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
             } catch (e: MemberNotAnMgmException) {
                 invalidInput(holdingIdentityShortHash)
             } catch (e: MembershipPersistenceException) {
-                throw BadRequestException("Approval rule not added as an identical rule already exists.")
+                throw BadRequestException("${e.message}")
             }
         }
 
@@ -289,7 +288,7 @@ class MGMRpcOpsImpl @Activate constructor(
             } catch (e: MemberNotAnMgmException) {
                 invalidInput(holdingIdentityShortHash)
             } catch (e: MembershipPersistenceException) {
-                throw ResourceNotFoundException("Approval rule with ID '$ruleId' does not exist.")
+                throw ResourceNotFoundException("${e.message}")
             }
         }
 

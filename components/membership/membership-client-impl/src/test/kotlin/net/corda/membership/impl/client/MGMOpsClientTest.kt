@@ -41,7 +41,9 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -467,29 +469,24 @@ class MGMOpsClientTest {
         fun `addApprovalRule should send the correct request`() {
             mgmOpsClient.start()
             setUpRpcSender(null)
+            val params = ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             whenever(
                 membershipPersistenceClient.addApprovalRule(
                     holdingIdentity,
-                    RULE_REGEX,
-                    ApprovalRuleType.STANDARD,
-                    RULE_LABEL
+                    params
                 )
             ).doReturn(
-                MembershipPersistenceResult.Success(RULE_ID)
+                MembershipPersistenceResult.Success(ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL))
             )
 
             mgmOpsClient.addApprovalRule(
                 shortHash,
-                RULE_REGEX,
-                ApprovalRuleType.STANDARD,
-                RULE_LABEL
+                params
             )
 
             verify(membershipPersistenceClient).addApprovalRule(
                 holdingIdentity,
-                RULE_REGEX,
-                ApprovalRuleType.STANDARD,
-                RULE_LABEL
+                params
             )
             mgmOpsClient.stop()
         }
@@ -501,7 +498,8 @@ class MGMOpsClientTest {
 
             assertThrows<CouldNotFindMemberException> {
                 mgmOpsClient.addApprovalRule(
-                    ShortHash.of("000000000000"), RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL
+                    ShortHash.of("000000000000"),
+                    ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
             }
             mgmOpsClient.stop()
@@ -515,7 +513,7 @@ class MGMOpsClientTest {
 
             assertThrows<CouldNotFindMemberException> {
                 mgmOpsClient.addApprovalRule(
-                    shortHash, RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL
+                    shortHash, ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
             }
             mgmOpsClient.stop()
@@ -533,7 +531,7 @@ class MGMOpsClientTest {
 
             assertThrows<MemberNotAnMgmException> {
                 mgmOpsClient.addApprovalRule(
-                    shortHash, RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL
+                    shortHash, ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
             }
             mgmOpsClient.stop()

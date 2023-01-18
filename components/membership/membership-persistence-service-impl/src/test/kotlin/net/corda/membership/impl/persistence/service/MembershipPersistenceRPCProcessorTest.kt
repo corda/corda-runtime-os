@@ -6,6 +6,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
@@ -400,7 +401,8 @@ class MembershipPersistenceRPCProcessorTest {
         with(responseFuture.get()) {
             assertThat(payload).isNotNull
             assertThat(payload).isInstanceOf(PersistApprovalRuleResponse::class.java)
-            assertThat((payload as PersistApprovalRuleResponse).ruleId).isEqualTo(DUMMY_ID)
+            assertThat((payload as PersistApprovalRuleResponse).persistedRule)
+                .isEqualTo(ApprovalRuleDetails(DUMMY_ID, DUMMY_RULE, DUMMY_LABEL))
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

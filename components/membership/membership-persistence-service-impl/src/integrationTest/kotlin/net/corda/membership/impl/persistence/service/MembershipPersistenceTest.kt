@@ -56,6 +56,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
@@ -286,12 +287,10 @@ class MembershipPersistenceTest {
 
             override fun addApprovalRule(
                 viewOwningIdentity: HoldingIdentity,
-                rule: String,
-                ruleType: ApprovalRuleType,
-                label: String?
+                ruleParams: ApprovalRuleParams
             ) = safeCall {
                 membershipPersistenceClient.addApprovalRule(
-                    viewOwningIdentity, rule, ruleType, label
+                    viewOwningIdentity, ruleParams
                 )
             }
 
@@ -1099,15 +1098,13 @@ class MembershipPersistenceTest {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
         }
-        val ruleId = membershipPersistenceClientWrapper.addApprovalRule(
+        val ruleDetails = membershipPersistenceClientWrapper.addApprovalRule(
             viewOwningHoldingIdentity,
-            RULE_REGEX,
-            ApprovalRuleType.STANDARD,
-            RULE_LABEL
+            ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
         ).getOrThrow()
 
         val approvalRuleEntity = vnodeEmf.use {
-            it.find(ApprovalRulesEntity::class.java, ruleId)
+            it.find(ApprovalRulesEntity::class.java, ruleDetails.ruleId)
         }
         with(approvalRuleEntity) {
             assertThat(ruleRegex).isEqualTo(RULE_REGEX)
