@@ -8,7 +8,7 @@ import net.corda.v5.base.annotations.DoNotImplement
  * This should not be implemented directly when writing a flow. Instead, one of the more specialised types of flow
  * should be implemented:
  *
- * - [ClientStartableFlow] for flows that are started via remote client.
+ * - [ClientStartableFlow] for flows that are started via remote client, e.g. REST.
  * - [ResponderFlow] for flows that are started by a peer session.
  * - [SubFlow] for flows that are started from within other flows.
  */
