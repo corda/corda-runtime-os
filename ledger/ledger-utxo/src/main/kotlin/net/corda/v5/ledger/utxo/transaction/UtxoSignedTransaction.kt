@@ -53,7 +53,7 @@ interface UtxoSignedTransaction {
     val referenceStateRefs: List<StateRef>
 
     /**
-     * @property outputStateAndRefs The state and ref of the ouputs of this transaction
+     * @property outputStateAndRefs The state and ref of the outputs of this transaction
      */
     val outputStateAndRefs: List<StateAndRef<*>>
 

@@ -36,12 +36,12 @@ fun detailedLogger(): Logger = LoggerFactory.getLogger("DetailedInfo")
 /** When called from a companion object, returns the logger for the enclosing class. */
 fun Any.contextLogger(): Logger = LoggerFactory.getLogger(javaClass.enclosingClass)
 
-/** Log a TRACE level message produced by evaluating the given lamdba, but only if TRACE logging is enabled. */
+/** Log a TRACE level message produced by evaluating the given lambda, but only if TRACE logging is enabled. */
 inline fun Logger.trace(msg: () -> String) {
     if (isTraceEnabled) trace(msg())
 }
 
-/** Log a DEBUG level message produced by evaluating the given lamdba, but only if DEBUG logging is enabled. */
+/** Log a DEBUG level message produced by evaluating the given lambda, but only if DEBUG logging is enabled. */
 inline fun Logger.debug(msg: () -> String) {
     if (isDebugEnabled) debug(msg())
 }
