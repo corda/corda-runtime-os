@@ -137,25 +137,70 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         return future
     }
 
+    /**
+     * Helper method to poll events from a paused [eventConsumer], should only be used to prevent it from being kicked
+     * out of the consumer group and only when all partitions are paused as to not lose any events.
+     *
+     * If a rebalance occurs during the poll, the [cleanUp] function is invoked and only [eventConsumer]'s partitions
+     * matching the following conditions are resumed:
+     *  - Not currently being synced.
+     *  - Previously paused by the caller ([pausedPartitions]).
+     *  If a partition not matching the above rules is wrongly resumed, events might be processed twice or for states
+     *  not yet in sync.
+     */
+    private fun pollWithCleanUpAndExceptionOnRebalance(
+        message: String,
+        pausedPartitions: Set<CordaTopicPartition>,
+        cleanUp: () -> Unit
+    ) {
+        partitionState.dirty = false
+        eventConsumer.poll(PAUSED_POLL_TIMEOUT).forEach { event ->
+            // Should not happen, the warning is left in place for easier troubleshooting in case it does.
+            log.warn("Polling from paused eventConsumer has lost event with key: ${event.key}, this will likely " +
+                    "cause execution problems for events with this id")
+        }
+
+        // Rebalance occurred: give up, nothing can be assumed at this point.
+        if (partitionState.dirty) {
+            partitionState.dirty = false
+            cleanUp()
+
+            // If we don't own the paused partitions anymore, they'll start as resumed on the new assigned consumer.
+            // If we still own the paused partitions, resume them if and only if they are not currently being synced.
+            val partitionsToResume = eventConsumer.assignment()
+                // Only partitions previously paused by the caller
+                .intersect(pausedPartitions)
+                // Only those partitions that are not actively being synced.
+                .filter { !partitionsToSync.containsKey(it.partition) }
+
+            log.debug { "Rebalance occurred while polling from paused consumer, resuming partitions: $partitionsToResume" }
+            eventConsumer.resume(partitionsToResume)
+
+            throw StateAndEventConsumer.RebalanceInProgressException(message)
+        }
+    }
+
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
-        val partitionsToPause = eventConsumer.assignment() - eventConsumer.paused()
-        log.debug { "Pause partitions and wait for future to finish. Assignment: $partitionsToPause" }
-        eventConsumer.pause(partitionsToPause)
+        val pausePartitions = eventConsumer.assignment() - eventConsumer.paused()
+        log.debug { "Pause partitions and wait for future to finish. Assignment: $pausePartitions" }
+        eventConsumer.pause(pausePartitions)
         val maxWaitTime = System.currentTimeMillis() + timeout
         var done = future.isDone
 
         while (!done && (maxWaitTime > System.currentTimeMillis())) {
-            eventConsumer.poll(PAUSED_POLL_TIMEOUT)
+            pollWithCleanUpAndExceptionOnRebalance("Rebalance occurred while waiting for future to finish", pausePartitions) {
+                future.cancel(true)
+            }
+
             pollIntervalCutoff = getNextPollIntervalCutoff()
             pollAndUpdateStates(false)
             done = future.isDone
         }
 
-        // A rebalance might have been executed while waiting for the future to complete and the consumer might have
-        // lost ownership of some previously owned partitions. Make sure to resume only those partitions currently
-        // assigned to prevent IllegalStateExceptions due to the consumer trying to poll from unassigned partitions.
-        val partitionsToResume = eventConsumer.assignment().intersect(partitionsToPause)
-        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $partitionsToResume" }
+        // Resume only those partitions currently assigned and previously paused.
+        val partitionsToResume = eventConsumer.assignment().intersect(pausePartitions)
+        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}," +
+                "rebalanceOccurred=${partitionState.dirty}]. Assignment: $partitionsToResume" }
         eventConsumer.resume(partitionsToResume)
     }
 
@@ -200,7 +245,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         stateAndEventListener?.onPostCommit(updatedStatesByKey)
     }
 
-    override fun resetPollInterval(): Boolean {
+    override fun resetPollInterval() {
         if (System.currentTimeMillis() > pollIntervalCutoff) {
             // Here we pause each consumer in order to mark a poll to avoid a Kafka timeout without actually consuming
             // any records.
@@ -212,21 +257,14 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             log.debug { "Resetting poll interval. Pausing state consumer partitions: $stateConsumerAssignmentToPause" }
             stateConsumer.pause(stateConsumerAssignmentToPause)
 
-            partitionState.dirty = false
-            val eventRecords = eventConsumer.poll(PAUSED_POLL_TIMEOUT)
-            eventRecords.forEach { event ->
-                log.warn("Resetting polling interval has lost event with key: ${event.key}, this will likely cause execution" +
-                        " problems with the Flow with this id")
-            }
-            val stateRecords = stateConsumer.poll(PAUSED_POLL_TIMEOUT)
-            stateRecords.forEach { state ->
-                log.warn("Resetting polling interval has lost state with key: ${state.key}, this will likely cause execution" +
-                        " problems with the Flow with this id")
+            pollWithCleanUpAndExceptionOnRebalance("Rebalance occurred while resetting poll interval", eventConsumerAssignmentToPause) {}
+
+            stateConsumer.poll(PAUSED_POLL_TIMEOUT).forEach { state ->
+                log.warn("Polling from paused stateConsumer has lost state with key: ${state.key}, this will likely cause " +
+                        "execution problems for states with this id")
             }
 
-            // A rebalance might have been executed and consumers might have lost ownership of some previously owned
-            // partitions. Make sure to resume only those partitions currently  assigned to prevent
-            // IllegalStateExceptions due to the consumer trying to poll from unassigned partitions.
+            // Resume only those partitions currently assigned and previously paused.
             val eventConsumerAssignmentToResume = eventConsumer.assignment().intersect(eventConsumerAssignmentToPause)
             val stateConsumerAssignmentToResume = stateConsumer.assignment().intersect(stateConsumerAssignmentToPause)
 
@@ -236,14 +274,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             stateConsumer.resume(stateConsumerAssignmentToResume)
 
             pollIntervalCutoff = getNextPollIntervalCutoff()
-
-            if (partitionState.dirty) {
-                partitionState.dirty = false
-                return true
-            }
         }
-
-        return false
     }
 
     /**
