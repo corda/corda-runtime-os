@@ -4,16 +4,16 @@ package net.corda.v5.application.flows
 import net.corda.v5.application.marshalling.MarshallingService
 
 /**
- * [RestRequestBody] wraps the `requestData` parameter of the HTTP call that triggered a [RestStartableFlow].
+ * [RestRequestBody] wraps the `requestData` parameter of the HTTP call that triggered a [ClientStartableFlow].
  *
- * A [RestStartableFlow] receives an instance of this interface, which can be used to retrieve the request body.
+ * A [ClientStartableFlow] receives an instance of this interface, which can be used to retrieve the request body.
  *
- * @see RestStartableFlow
+ * @see ClientStartableFlow
  */
 interface RestRequestBody {
 
     /**
-     * Gets the request body for the [RestStartableFlow].
+     * Gets the request body for the [ClientStartableFlow].
      *
      * @return The request body.
      */

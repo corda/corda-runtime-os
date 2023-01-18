@@ -16,7 +16,7 @@ public class CordaInjectJavaApiTest {
         assertEquals(DONE, new MyFlow().call(mock(RestRequestBody.class)));
     }
 
-    static class MyFlow implements RestStartableFlow {
+    static class MyFlow implements ClientStartableFlow {
 
         @CordaInject
         FlowEngine flowEngine;

@@ -2,7 +2,7 @@ package net.corda.v5.ledger.utxo.token.selection;
 
 import net.corda.v5.application.flows.CordaInject;
 import net.corda.v5.application.flows.RestRequestBody;
-import net.corda.v5.application.flows.RestStartableFlow;
+import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.utxo.StateRef;
@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * This tests validates the code example in the KDoc comments will compile
  */
-public class TokenCacheFlowJavaExample implements RestStartableFlow {
+public class TokenCacheFlowJavaExample implements ClientStartableFlow {
     @CordaInject
     public TokenSelection tokenCache;
 

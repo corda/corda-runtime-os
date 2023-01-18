@@ -12,7 +12,7 @@ import kotlin.annotation.AnnotationTarget.FIELD
  * - Kotlin:
  *
  * ```kotlin
- * class MyFlow : RestStartableFlow {
+ * class MyFlow : ClientStartableFlow {
  *
  *     @CordaInject
  *     lateinit var flowEngine: FlowEngine
@@ -30,7 +30,7 @@ import kotlin.annotation.AnnotationTarget.FIELD
  * - Java:
  *
  * ```java
- * class MyFlow implements RestStartableFlow {
+ * class MyFlow implements ClientStartableFlow {
  *
  *     @CordaInject
  *     public FlowEngine flowEngine;

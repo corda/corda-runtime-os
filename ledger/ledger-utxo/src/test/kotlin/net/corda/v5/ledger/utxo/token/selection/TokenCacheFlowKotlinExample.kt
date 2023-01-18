@@ -4,7 +4,7 @@ package net.corda.v5.ledger.utxo.token.selection
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.RestStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
@@ -13,7 +13,7 @@ import java.math.BigDecimal
 /**
  * This tests validates the code example in the KDoc comments will compile
  */
-class TokenCacheFlowKotlinExample : RestStartableFlow {
+class TokenCacheFlowKotlinExample : ClientStartableFlow {
 
     @CordaInject
     lateinit var tokenCache: TokenSelection

@@ -22,7 +22,7 @@ import net.corda.v5.base.types.MemberX500Name
  * - Kotlin:
  *
  * ```kotlin
- * class MyFlow : RestStartableFlow {
+ * class MyFlow : ClientStartableFlow {
  *    @CordaInject
  *    lateinit var flowMessaging: FlowMessaging
  *
@@ -43,7 +43,7 @@ import net.corda.v5.base.types.MemberX500Name
  * - Java:
  *
  * ```java
- * class MyFlow implements RestStartableFlow {
+ * class MyFlow implements ClientStartableFlow {
  *
  *    @CordaInject
  *    public FlowMessaging flowMessaging;

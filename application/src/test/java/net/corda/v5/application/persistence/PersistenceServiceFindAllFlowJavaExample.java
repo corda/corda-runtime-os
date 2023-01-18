@@ -2,7 +2,7 @@ package net.corda.v5.application.persistence;
 
 import net.corda.v5.application.flows.CordaInject;
 import net.corda.v5.application.flows.RestRequestBody;
-import net.corda.v5.application.flows.RestStartableFlow;
+import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.base.annotations.CordaSerializable;
 
 import javax.persistence.*;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class PersistenceServiceFindAllFlowJavaExample implements RestStartableFlow {
+public class PersistenceServiceFindAllFlowJavaExample implements ClientStartableFlow {
 
     // For JPA Entity:
     @CordaSerializable

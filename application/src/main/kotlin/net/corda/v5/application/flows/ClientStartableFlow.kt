@@ -4,12 +4,12 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.application.marshalling.JsonMarshallingService
 
 /**
- * [RestStartableFlow] is a [Flow] that is started via RPC.
+ * [ClientStartableFlow] is a [Flow] that is started via RPC.
  *
- * [RestStartableFlow.call] takes in a [RestRequestBody], containing the body of the RPC request that started the flow.
+ * [ClientStartableFlow.call] takes in a [RestRequestBody], containing the body of the RPC request that started the flow.
  *
- * The string return type is treated by the platform as a JSON encoded string to return to the RPC
- * service, and will appear in the RPC flow status when the flow completes. To assist in returning valid JSON, the
+ * The string return type is treated by the platform as a JSON encoded string to return to the REST
+ * service, and will appear in the REST flow status when the flow completes. To assist in returning valid JSON, the
  * [JsonMarshallingService] can be used.
  *
  * Flows implementing this interface must have a no-arg constructor. The flow invocation will fail if this constructor
@@ -20,7 +20,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
  * - Kotlin:
  *
  * ```kotlin
- * class MyFlow : RestStartableFlow {
+ * class MyFlow : ClientStartableFlow {
  *
  *     @CordaInject
  *     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -37,7 +37,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
  * - Java:
  *
  * ```java
- * public class MyFlow implements RestStartableFlow {
+ * public class MyFlow implements ClientStartableFlow {
  *
  *     @CordaInject
  *     public JsonMarshallingService jsonMarshallingService;
@@ -52,7 +52,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
  * }
  * ```
  */
-interface RestStartableFlow : Flow {
+interface ClientStartableFlow : Flow {
 
     /**
      * The business logic for this flow should be written here.
