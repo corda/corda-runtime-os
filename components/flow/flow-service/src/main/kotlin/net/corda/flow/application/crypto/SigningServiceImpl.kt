@@ -74,7 +74,7 @@ class SigningServiceImpl @Activate constructor(
                         log.info(
                             "Found multiple composite key leaves to be owned for the same composite key by the same node " +
                                     "while there should only be one per composite key per node. " +
-                                    "Composite key: \"$it\"" +
+                                    "Composite key: \"$it\" " +
                                     "Will make use of firstly found leaf: \"$foundLeaf\" " +
                                     "Will ignore also found leaf: \"$leaf\""
                         )
