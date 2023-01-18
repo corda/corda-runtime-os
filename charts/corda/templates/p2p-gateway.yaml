@@ -55,8 +55,11 @@ spec:
         {{- include "corda.workerResources" . | nindent 8 }}
         env:
         {{- include "corda.workerEnv" . | nindent 10 }}
+        {{- include "corda.configSaltAndPassphraseEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
+          - -spassphrase=$(PASSPHRASE)
+          - -ssalt=$(SALT)
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         ports:
@@ -72,26 +75,7 @@ spec:
         {{- end }}
           - name: monitor
             containerPort: 7000
-        {{- if not .Values.workers.p2pGateway.debug.enabled }}
-        readinessProbe:
-          httpGet:
-            path: /status
-            port: monitor
-          periodSeconds: 10
-          failureThreshold: 1
-        livenessProbe:
-          httpGet:
-            path: /isHealthy
-            port: monitor
-          periodSeconds: 10
-          failureThreshold: 1
-        startupProbe:
-          httpGet:
-            path: /isHealthy
-            port: monitor
-          periodSeconds: 5
-          failureThreshold: 20
-        {{- end }}
+        {{- include "corda.workerProbes" . | nindent 8 }}
       initContainers:
       {{ include "corda.kafkaSaslInitContainer" . | nindent 8 }}        
       volumes:

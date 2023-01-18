@@ -1,6 +1,5 @@
 package net.corda.flow.rpcops.impl.v1
 
-import java.util.concurrent.TimeUnit
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
@@ -31,6 +30,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.publisher.waitOnPublisherFutures
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.validation.PermissionValidationService
+import net.corda.rbac.schema.RbacKeys
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
@@ -43,6 +43,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [FlowRpcOps::class, PluggableRPCOps::class], immediate = true)
@@ -81,7 +82,18 @@ class FlowRPCOpsImpl @Activate constructor(
         publisher = publisherFactory.createPublisher(PublisherConfig("FlowRPCOps"), config)
     }
 
-    @Suppress("SpreadOperator")
+    private fun regexMatch(input: String, regex: String): Boolean {
+        return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
+    }
+
+    private fun validateClientRequestId(clientRequestId: String) {
+        if (!regexMatch(clientRequestId, RbacKeys.CLIENT_REQ_REGEX)) {
+            throw BadRequestException(
+                """Supplied Client Request ID "$clientRequestId" is invalid,""" +
+                        """ it must conform to the pattern "${RbacKeys.CLIENT_REQ_REGEX}".""")
+        }
+    }
+
     override fun startFlow(
         holdingIdentityShortHash: String,
         startFlow: StartFlowParameters
@@ -101,6 +113,8 @@ class FlowRPCOpsImpl @Activate constructor(
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
+
+        validateClientRequestId(clientRequestId)
 
         if (flowStatus != null) {
             throw ResourceAlreadyExistsException("A flow has already been started with for the requested holdingId and clientRequestId")

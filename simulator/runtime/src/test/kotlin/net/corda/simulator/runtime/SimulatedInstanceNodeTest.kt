@@ -51,7 +51,7 @@ class SimulatedInstanceNodeTest {
         // When we create a node for an instance flow
         val input = RPCRequestDataWrapperFactory().create("r1", "aClass", "someData")
 
-        virtualNode.callInstanceFlow(input)
+        virtualNode.callFlow(input)
 
         // Then it should have instantiated the node and injected the services into it
         verify(injector, times(1)).injectServices(

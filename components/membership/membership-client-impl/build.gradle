@@ -18,6 +18,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':components:membership:membership-persistence-client')
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"

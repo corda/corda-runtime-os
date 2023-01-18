@@ -45,7 +45,7 @@ class AbsenceSubFlowTest {
         val aliceNode = simulator.createInstanceNode(alice, "roll-call", initiatingFlow)
         simulator.createVirtualNode(bob, AbsenceCallResponderFlow::class.java)
 
-        val result = aliceNode.callInstanceFlow(RequestData.IGNORED)
+        val result = aliceNode.callFlow(RequestData.IGNORED)
 
         assertThat(result, `is`("Here!"))
     }

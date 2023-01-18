@@ -5,7 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
@@ -23,11 +23,11 @@ import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.DatabaseConfig.DB_PASS
 import net.corda.schema.configuration.DatabaseConfig.DB_USER
 import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -86,7 +86,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
         entityManagerFactoryFactory,
     )
 
-    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
 
     private val reconciliationConfigMap = mapOf(
         ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS to 12345L,

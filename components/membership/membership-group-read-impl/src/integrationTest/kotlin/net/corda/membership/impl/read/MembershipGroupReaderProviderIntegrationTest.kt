@@ -7,6 +7,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -91,7 +92,7 @@ class MembershipGroupReaderProviderIntegrationTest {
     fun setUp() {
         // Set basic bootstrap config
         val bootConfig = with(ConfigFactory.parseString(bootConf)) {
-            SmartConfigFactory.create(this).create(this)
+            SmartConfigFactoryFactory.createWithoutSecurityServices().create(this)
         }
 
         if (!setUpComplete) {

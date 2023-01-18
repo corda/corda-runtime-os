@@ -12,6 +12,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.print
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
@@ -42,6 +43,8 @@ class CryptoWorker @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
+    @Reference(service = SmartConfigFactoryFactory::class)
+    val smartConfigFactoryFactory: SmartConfigFactoryFactory,
 ) : Application {
 
     private companion object {
@@ -78,6 +81,7 @@ class CryptoWorker @Activate constructor(
         params: CryptoWorkerParams,
         configurationValidatorFactory: ConfigurationValidatorFactory
     ): SmartConfig = getBootstrapConfig(
+        smartConfigFactoryFactory,
         params.defaultParams,
         configurationValidatorFactory.createConfigValidator(),
         listOf(

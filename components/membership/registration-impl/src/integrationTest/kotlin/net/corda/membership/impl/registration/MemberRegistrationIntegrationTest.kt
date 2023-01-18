@@ -11,7 +11,7 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -49,6 +49,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
@@ -75,7 +76,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
@@ -106,6 +107,9 @@ class MemberRegistrationIntegrationTest {
         lateinit var groupPolicyProvider: TestGroupPolicyProvider
 
         @InjectService(timeout = 5000)
+        lateinit var locallyHostedIdentitiesService: LocallyHostedIdentitiesService
+
+        @InjectService(timeout = 5000)
         lateinit var registrationProxy: RegistrationProxy
 
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
@@ -116,7 +120,7 @@ class MemberRegistrationIntegrationTest {
         lateinit var testVirtualNodeInfoReadService: TestVirtualNodeInfoReadService
 
         val logger = contextLogger()
-        val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
+        val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
             .create(
                 ConfigFactory.parseString(
                     """
@@ -139,6 +143,11 @@ class MemberRegistrationIntegrationTest {
                 producer {
                     close.timeout = 6000
                 }
+            }
+        """
+        const val gatewayConfig = """
+            sslConfig {
+                tlsType: "ONE_WAY"
             }
         """
         val schemaVersion = ConfigurationSchemaVersion(1, 0)
@@ -185,6 +194,7 @@ class MemberRegistrationIntegrationTest {
             groupPolicyProvider.start()
             registrationProxy.start()
             cryptoOpsClient.start()
+            locallyHostedIdentitiesService.start()
             membershipGroupReaderProvider.start()
 
             configurationReadService.bootstrapConfig(bootConfig)
@@ -216,6 +226,15 @@ class MemberRegistrationIntegrationTest {
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.MESSAGING_CONFIG,
                         Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                    )
+                )
+            )
+            publisher.publish(
+                listOf(
+                    Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.P2P_GATEWAY_CONFIG,
+                        Configuration(gatewayConfig, gatewayConfig, 0, schemaVersion)
                     )
                 )
             )

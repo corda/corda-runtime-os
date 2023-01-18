@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.helper.assertAllMessagesDelivered
@@ -24,7 +25,7 @@ class SessionDataIntegrationTest {
         private val testConfig = ConfigFactory.empty()
             .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(FIVE_SECONDS))
             .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(THIRTY_SECONDS))
-        private val configFactory = SmartConfigFactory.create(testConfig)
+        private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
         private val testSmartConfig = configFactory.create(testConfig)
     }
 

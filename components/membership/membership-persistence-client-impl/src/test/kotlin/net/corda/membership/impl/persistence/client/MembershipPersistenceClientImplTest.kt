@@ -10,6 +10,8 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
+import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
@@ -22,7 +24,7 @@ import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.layeredpropertymap.toAvro
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -130,7 +132,7 @@ class MembershipPersistenceClientImplTest {
     private val memberInfoFactory = mock<MemberInfoFactory>()
 
     private val testConfig =
-        SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
+        SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
     private fun postStartEvent() {
         lifecycleEventCaptor.firstValue.processEvent(StartEvent(), coordinator)
@@ -794,6 +796,117 @@ class MembershipPersistenceClientImplTest {
             )
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+    }
+
+    @Nested
+    inner class MutualTlsCommandsTests {
+        @Test
+        fun `mutualTlsAddCertificateToAllowedList sends the correct request`() {
+            postConfigChangedEvent()
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
+                ourHoldingIdentity,
+                ourX500Name.toString(),
+            )
+
+            assertThat(argument.firstValue.request).isInstanceOf(MutualTlsAddToAllowedCertificates::class.java)
+        }
+
+        @Test
+        fun `mutualTlsAddCertificateToAllowedList return success after success`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse()
+
+            val response = membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
+                ourHoldingIdentity,
+                ourX500Name.toString(),
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        }
+
+        @Test
+        fun `mutualTlsAddCertificateToAllowedList return failure after failure`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+
+            val response = membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
+                ourHoldingIdentity,
+                ourX500Name.toString(),
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `mutualTlsAddCertificateToAllowedList return failure after unknown result`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse("Placeholder error")
+
+            val response = membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
+                ourHoldingIdentity,
+                ourX500Name.toString(),
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `mutualTlsRemoveCertificateFromAllowedList sends the correct request`() {
+            postConfigChangedEvent()
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
+                ourHoldingIdentity,
+                ourX500Name.toString(),
+            )
+
+            assertThat(argument.firstValue.request).isInstanceOf(MutualTlsRemoveFromAllowedCertificates::class.java)
+        }
+
+        @Test
+        fun `mutualTlsRemoveCertificateFromAllowedList return success after success`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse()
+
+            val response = membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
+                ourHoldingIdentity,
+                ourX500Name.toString(),
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        }
+
+        @Test
+        fun `mutualTlsRemoveCertificateFromAllowedList return failure after failure`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+
+            val response = membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
+                ourHoldingIdentity,
+                ourX500Name.toString(),
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `mutualTlsRemoveCertificateFromAllowedList return failure after unknown result`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse("Placeholder error")
+
+            val response = membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
+                ourHoldingIdentity,
+                ourX500Name.toString(),
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
     }
 }

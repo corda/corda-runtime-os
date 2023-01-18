@@ -1,6 +1,7 @@
 package net.corda.membership.client
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
 import kotlin.jvm.Throws
 
@@ -19,4 +20,17 @@ interface MGMOpsClient : Lifecycle {
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
     fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
+
+    fun mutualTlsAllowClientCertificate(
+        holdingIdentityShortHash: ShortHash,
+        subject: MemberX500Name,
+    )
+    fun mutualTlsDisallowClientCertificate(
+        holdingIdentityShortHash: ShortHash,
+        subject: MemberX500Name,
+    )
+    fun mutualTlsListClientCertificate(
+        holdingIdentityShortHash: ShortHash,
+    ): Collection<MemberX500Name>
+
 }

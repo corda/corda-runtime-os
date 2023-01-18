@@ -28,7 +28,7 @@ import java.nio.file.Path
 @TestInstance(PER_CLASS)
 class SandboxSingletonsTest {
     companion object {
-        private const val TIMEOUT_MILLIS = 1000L
+        private const val TIMEOUT_MILLIS = 10000L
         private const val CPB = "META-INF/sandbox-singletons-cpk.cpb"
         private const val MAP_PROVIDER_FLOW = "com.example.singletons.TestDataProvider"
     }

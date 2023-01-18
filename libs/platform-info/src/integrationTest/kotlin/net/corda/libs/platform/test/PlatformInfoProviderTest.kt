@@ -5,7 +5,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.osgi.test.common.annotation.InjectService
-import java.util.jar.Manifest
 
 class PlatformInfoProviderTest {
 
@@ -24,40 +23,7 @@ class PlatformInfoProviderTest {
         assertThat(platformVersion).isEqualTo(EXPECTED_STUB_PLATFORM_VERSION)
     }
 
-    @Test
-    fun `Service returns expected stub value for local worker platform version`() {
-        val platformVersion = assertDoesNotThrow {
-            platformInfoProvider.localWorkerPlatformVersion
-        }
-        assertThat(platformVersion).isEqualTo(EXPECTED_STUB_PLATFORM_VERSION)
-    }
-
-    @Test
-    fun `Service returns expected value from bundle manifest for local worker software version`() {
-        val platformVersion = assertDoesNotThrow {
-            platformInfoProvider.localWorkerSoftwareVersion
-        }
-        val expectedValue = PlatformInfoProvider::class.java.classLoader
-            .getResources("META-INF/MANIFEST.MF")
-            .asSequence()
-            .map {
-                it.openStream().use { input ->
-                    Manifest(input)
-                }
-            }.mapNotNull {
-                it.mainAttributes
-            }.filter {
-                it.getValue("Bundle-SymbolicName") == "net.corda.platform-info"
-            }.mapNotNull {
-                it.getValue("Bundle-Version")
-            }.firstOrNull()
-
-        assertThat(expectedValue)
-            .isNotNull
-            .withFailMessage("Could not read expected software version from bundle manifest.")
-
-        assertThat(platformVersion)
-            .isEqualTo(expectedValue)
-            .withFailMessage("Platform info service did not return the expected software version.")
-    }
+    // Note: We aren't testing for local worker platform version or software version here because the
+    // bundleContext for integration tests is different to that for a running worker.  We can still mock in the unit
+    // test, though.
 }

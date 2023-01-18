@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
@@ -12,6 +13,7 @@ import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
+import net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
@@ -213,6 +215,25 @@ class MembershipQueryClientImpl(
             }
             else -> {
                 MembershipQueryResult.Failure("Failed to find group policy information.")
+            }
+        }
+    }
+
+    override fun mutualTlsListAllowedCertificates(
+        mgmHoldingIdentity: HoldingIdentity
+    ): MembershipQueryResult<Collection<String>> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            MutualTlsListAllowedCertificates()
+        ).execute()
+        return when (val payload = result.payload) {
+            is MutualTlsListAllowedCertificatesResponse -> {
+                MembershipQueryResult.Success(
+                    payload.subjects,
+                )
+            }
+            else -> {
+                MembershipQueryResult.Failure("Failed to retrieve list of allowed certificates.")
             }
         }
     }

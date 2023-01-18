@@ -173,9 +173,9 @@ class UtxoPersistenceServiceImplTest {
 
             em.createNativeQuery("DELETE FROM {h-schema}utxo_relevant_transaction_state").executeUpdate()
 
-            val transaction1Entity = createTransactionEntity(entityFactory, transaction1)
+            val transaction1Entity = createTransactionEntity(entityFactory, transaction1, status = VERIFIED)
                 .also { em.persist(it) }
-            val transaction2Entity = createTransactionEntity(entityFactory, transaction2)
+            val transaction2Entity = createTransactionEntity(entityFactory, transaction2, status = VERIFIED)
                 .also { em.persist(it) }
 
             entityFactory.createUtxoRelevantTransactionStateEntity(
@@ -216,8 +216,8 @@ class UtxoPersistenceServiceImplTest {
     fun `resolve staterefs`() {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transactions = listOf(
-            persistTransactionViaEntity(entityFactory),
-            persistTransactionViaEntity(entityFactory)
+            persistTransactionViaEntity(entityFactory, VERIFIED),
+            persistTransactionViaEntity(entityFactory, VERIFIED)
         )
 
         val stateRefs = listOf(
@@ -402,10 +402,10 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
-    private fun persistTransactionViaEntity(entityFactory: UtxoEntityFactory): SignedTransactionContainer {
+    private fun persistTransactionViaEntity(entityFactory: UtxoEntityFactory, status: TransactionStatus = UNVERIFIED): SignedTransactionContainer {
         val signedTransaction = createSignedTransaction()
         entityManagerFactory.transaction { em ->
-            em.persist(createTransactionEntity(entityFactory, signedTransaction))
+            em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status))
         }
         return signedTransaction
     }
@@ -414,7 +414,8 @@ class UtxoPersistenceServiceImplTest {
         entityFactory: UtxoEntityFactory,
         signedTransaction: SignedTransactionContainer,
         account: String = "Account",
-        createdTs: Instant = TEST_CLOCK.instant()
+        createdTs: Instant = TEST_CLOCK.instant(),
+        status: TransactionStatus = UNVERIFIED
     ): Any {
         return entityFactory.createUtxoTransactionEntity(
                 signedTransaction.id.toString(),
@@ -449,7 +450,7 @@ class UtxoPersistenceServiceImplTest {
                 )
                 transaction.field<MutableCollection<Any>>("statuses").addAll(
                     listOf(
-                        entityFactory.createUtxoTransactionStatusEntity(transaction, UNVERIFIED.value, createdTs)
+                        entityFactory.createUtxoTransactionStatusEntity(transaction, status.value, createdTs)
                     )
                 )
             }

@@ -131,6 +131,35 @@ Worker image
 {{- end }}
 
 {{/*
+Worker probes
+*/}}
+{{- define "corda.workerProbes" -}}
+{{- if not ( get .Values.workers .worker ).debug.enabled }}
+readinessProbe:
+  httpGet:
+    path: /status
+    port: monitor
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 5
+livenessProbe:
+  httpGet:
+    path: /isHealthy
+    port: monitor
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 5
+startupProbe:
+  httpGet:
+    path: /isHealthy
+    port: monitor
+  periodSeconds: 5
+  failureThreshold: 20
+  timeoutSeconds: 5
+{{- end }}
+{{- end }}
+
+{{/*
 Pod security context
 */}}
 {{- define "corda.podSecurityContext" -}}
@@ -669,8 +698,10 @@ Kafka SASL init container
 
 {{/*
 DB SALT and Passphrase environment variable
+NOTE: some of then naming here is incorrect.
+      These variables have nothing to do with the DB or DB Worker, but are common for all worker types.
 */}}
-{{- define "corda.dbSaltAndPassphraseEnv" -}}
+{{- define "corda.configSaltAndPassphraseEnv" -}}
 - name: SALT
   valueFrom:
     secretKeyRef:

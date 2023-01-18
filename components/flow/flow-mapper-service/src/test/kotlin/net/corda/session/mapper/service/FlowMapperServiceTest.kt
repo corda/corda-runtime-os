@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
@@ -26,7 +26,7 @@ import org.mockito.kotlin.whenever
 
 internal class FlowMapperServiceTest {
 
-    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
 
     private val messagingConfig = configFactory.create(

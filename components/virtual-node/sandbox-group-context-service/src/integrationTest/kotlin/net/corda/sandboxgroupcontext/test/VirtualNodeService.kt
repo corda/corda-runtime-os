@@ -21,7 +21,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration.ofSeconds
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import java.util.function.BiConsumer
 
 @Component(service = [ VirtualNodeService::class ])
@@ -37,6 +39,7 @@ class VirtualNodeService @Activate constructor(
 ) {
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
+        private val ONE_SECOND = ofSeconds(1)
 
         private fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
     }
@@ -88,22 +91,23 @@ class VirtualNodeService @Activate constructor(
 
     /**
      * Test purposes only.
-     * In real world scenarios, [SandboxGroupContext] instances can not be unloaded while still in use and there should
+     * In real world scenarios, [SandboxGroupContext] instances cannot be unloaded while still in use and there should
      * be no public API methods allowing users to manually unload them either.
      */
-    fun unloadSandbox(sandboxGroupContext: SandboxGroupContext) {
-        if (sandboxGroupContext is AutoCloseable) {
-            (sandboxGroupContext as? AutoCloseable)?.close()
-        } else {
-            sandboxGroupContext.javaClass.declaredFields.forEach {
-                if (it.type.interfaces.contains(AutoCloseable::class.java)) {
-                    it.trySetAccessible()
-                    (it.get(sandboxGroupContext) as? AutoCloseable)?.close()
-                }
-            }
-        }
+    fun releaseSandbox(sandboxGroupContext: SandboxGroupContext): CompletableFuture<*>? {
+        vnodes.remove(sandboxGroupContext)?.also(virtualNodeLoader::unloadVirtualNode)
+        return sandboxGroupContextComponent.remove(sandboxGroupContext.virtualNodeContext)
+    }
 
-        vnodes.remove(sandboxGroupContext)?.let(virtualNodeLoader::unloadVirtualNode)
+    /**
+     * Wait for a sandbox to be garbage collected. Ensure that invoking test can time out,
+     * because the sandbox cannot be collected if it is still referenced somewhere.
+     */
+    fun unloadSandbox(completion: CompletableFuture<*>) {
+        do {
+            @Suppress("ExplicitGarbageCollectionCall")
+            System.gc()
+        } while (!sandboxGroupContextComponent.waitFor(completion, ONE_SECOND))
     }
 
     fun withSandbox(resourceName: String, type: SandboxGroupType, action: BiConsumer<VirtualNodeService, SandboxGroupContext>) {
@@ -111,7 +115,7 @@ class VirtualNodeService @Activate constructor(
         try {
             action.accept(this, sandboxGroupContext)
         } finally {
-            unloadSandbox(sandboxGroupContext)
+            releaseSandbox(sandboxGroupContext)
         }
     }
 

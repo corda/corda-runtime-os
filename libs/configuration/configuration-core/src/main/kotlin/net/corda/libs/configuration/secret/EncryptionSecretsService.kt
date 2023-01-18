@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.secret
 
-interface EncryptionSecretsService: SecretsLookupService, SecretsCreateService {
+interface EncryptionSecretsService: SecretsService {
     companion object {
         const val SECRET_KEY = "encryptedSecret"
     }

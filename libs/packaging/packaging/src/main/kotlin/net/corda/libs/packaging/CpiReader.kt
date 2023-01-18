@@ -3,7 +3,6 @@ package net.corda.libs.packaging
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.UnknownFormatVersionException
-import net.corda.libs.packaging.internal.v1.CpiLoaderV1
 import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.libs.packaging.internal.v2.CpiLoaderV2
 import java.io.ByteArrayInputStream
@@ -13,7 +12,6 @@ import java.util.jar.JarInputStream
 
 class CpiReader {
     companion object {
-        private val version1 = CpkFormatVersion(1, 0)
         private val version2 = CpkFormatVersion(2, 0)
 
         /**
@@ -43,7 +41,6 @@ class CpiReader {
 
             // Choose correct implementation to read this version
             return when (formatVersion) {
-                version1 -> CpiLoaderV1.loadCpi(buffer, expansionLocation, cpiLocation, verifySignature)
                 version2 -> CpiLoaderV2().loadCpi(buffer, expansionLocation, cpiLocation, verifySignature)
                 else -> throw UnknownFormatVersionException("Unknown Corda-CPI-Format - \"$formatVersion\"")
             }

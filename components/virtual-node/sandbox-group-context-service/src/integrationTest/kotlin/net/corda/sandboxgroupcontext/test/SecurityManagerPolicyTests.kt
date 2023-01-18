@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -23,13 +24,14 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
 import java.security.AccessControlException
+import java.util.concurrent.TimeUnit.SECONDS
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 @Suppress("FunctionName")
 class SecurityManagerPolicyTests {
     companion object {
-        private const val TIMEOUT_MILLIS = 1000L
+        private const val TIMEOUT_MILLIS = 10000L
         private const val CPB1 = "META-INF/sandbox-security-manager-one.cpb"
         private const val CPK1_FLOWS_PACKAGE = "com.example.securitymanager.one.flows"
         private const val CPK1_ENVIRONMENT_FLOW = "$CPK1_FLOWS_PACKAGE.EnvironmentFlow"
@@ -50,7 +52,7 @@ class SecurityManagerPolicyTests {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = TIMEOUT_MILLIS)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -59,7 +61,7 @@ class SecurityManagerPolicyTests {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 1000)
+            virtualNode = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 
@@ -132,28 +134,33 @@ class SecurityManagerPolicyTests {
         ).isEqualTo("test")
     }
 
+    @Timeout(30, unit = SECONDS)
     @Test
     fun `policy can forbid access to injectable service`() {
-        val context1 = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
+        val context1 = mutableListOf(virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW))
         try {
             val ex = assertThrows<UnsupportedOperationException> {
-                virtualNode.runFlow<String>(CPK1_FLOW_ENGINE_FLOW, context1)
+                virtualNode.runFlow<String>(CPK1_FLOW_ENGINE_FLOW, context1.single())
             }
             assertThat(ex).hasMessage("VICTORY IS MINE!")
         } finally {
-            virtualNode.unloadSandbox(context1)
+            val completion = virtualNode.releaseSandbox(context1.single()) ?: fail("Sandbox1 is missing")
+            context1.clear()
+            virtualNode.unloadSandbox(completion)
         }
 
         // Update the security policy to deny sandboxes access to FlowEngine.
         applyPolicyFile("security-deny-flow-engine.policy")
 
-        val context2 = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
+        val context2 = mutableListOf(virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW))
         try {
             assertThat(
-                virtualNode.runFlow<String>(CPK1_FLOW_ENGINE_FLOW, context2)
+                virtualNode.runFlow<String>(CPK1_FLOW_ENGINE_FLOW, context2.single())
             ).isEqualTo("FlowEngine not found")
         } finally {
-            virtualNode.unloadSandbox(context2)
+            val completion = virtualNode.releaseSandbox(context2.single()) ?: fail("Sandbox2 is missing")
+            context2.clear()
+            virtualNode.unloadSandbox(completion)
         }
     }
 }

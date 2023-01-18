@@ -7,6 +7,9 @@ import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -42,11 +45,14 @@ private const val BOOT_CONFIGURATION = """
         bus.busType = INMEMORY
     """
 
-private val smartConfigFactory: SmartConfigFactory = SmartConfigFactory.create(
+private val smartConfigFactory: SmartConfigFactory =
+    SmartConfigFactoryFactory(object: SecretsServiceFactoryResolver {
+        override fun findAll() = listOf(EncryptionSecretsServiceFactory())
+    }).create(
     ConfigFactory.parseString(
         """
-            ${SmartConfigFactory.SECRET_PASSPHRASE_KEY}=passphrase
-            ${SmartConfigFactory.SECRET_SALT_KEY}=salt
+            ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase
+            ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
         """.trimIndent()
     )
 )

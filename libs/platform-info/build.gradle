@@ -17,5 +17,6 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
+    testImplementation "org.osgi:osgi.core"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 }

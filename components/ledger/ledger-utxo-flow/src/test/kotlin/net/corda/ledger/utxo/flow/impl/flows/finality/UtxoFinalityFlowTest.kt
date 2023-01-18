@@ -485,19 +485,8 @@ class UtxoFinalityFlowTest {
 
     @Test
     fun `receiving a session error instead of signatures rethrows the error`() {
-        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
-            Payload.Success(
-                listOf(
-                    signatureAlice1,
-                    signatureAlice2
-                )
-            )
-        )
-        whenever(
-            sessionBob.receive(
-                Payload::class.java,
-            )
-        ).thenThrow(CordaRuntimeException("session error"))
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
+        whenever(sessionBob.receive(Payload::class.java,)).thenThrow(CordaRuntimeException("session error"))
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
@@ -515,19 +504,8 @@ class UtxoFinalityFlowTest {
 
     @Test
     fun `receiving a failure payload throws an exception`() {
-        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
-            Payload.Success(
-                listOf(
-                    signatureAlice1,
-                    signatureAlice2
-                )
-            )
-        )
-        whenever(
-            sessionBob.receive(
-                Payload::class.java
-            )
-        ).thenReturn(Payload.Failure<DigitalSignatureAndMetadata>("message!", "reason"))
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Failure<DigitalSignatureAndMetadata>("message!", "reason"))
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
