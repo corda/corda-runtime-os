@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -248,6 +249,62 @@ class FlowEventExceptionProcessorImplTest {
         val eventError = FlowEventException("error")
         val eventResult = target.process(eventError, context)
         assertEmptyDLQdResult(eventResult)
+    }
+
+    @Test
+    fun `flow fatal exception with false doesExist confirms flow checkpoint not called`() {
+        val flowCheckpoint = mock<FlowCheckpoint>()
+        whenever(flowCheckpoint.doesExist).thenReturn(true)
+        val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
+
+        val error = FlowFatalException("error")
+        val flowStatusUpdate = FlowStatus()
+        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
+
+        whenever(
+            flowMessageFactory.createFlowFailedStatusMessage(
+                flowCheckpoint,
+                FlowProcessingExceptionTypes.FLOW_FAILED,
+                error.message
+            )
+        ).thenReturn(flowStatusUpdate)
+        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+
+        val result = target.process(error, context)
+
+        assertThat(result.updatedState).isNull()
+        assertThat(result.responseEvents).containsOnly(flowStatusUpdateRecord)
+        assertThat(result.markForDLQ).isTrue
+        verify(flowCheckpoint, times(0))
+
+    }
+
+    @Test
+    fun `flow fatal exception with true doesExist confirms flow checkpoint is called`() {
+        val flowCheckpoint = mock<FlowCheckpoint>()
+        whenever(flowCheckpoint.doesExist).thenReturn(false)
+        val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
+
+        val error = FlowFatalException("error")
+        val flowStatusUpdate = FlowStatus()
+        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
+
+        whenever(
+            flowMessageFactory.createFlowFailedStatusMessage(
+                flowCheckpoint,
+                FlowProcessingExceptionTypes.FLOW_FAILED,
+                error.message
+            )
+        ).thenReturn(flowStatusUpdate)
+        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+
+        val result = target.process(error, context)
+
+        assertThat(result.updatedState).isNull()
+        assertThat(result.responseEvents).containsOnly(flowStatusUpdateRecord)
+        assertThat(result.markForDLQ).isTrue
+        verify(flowCheckpoint, times(1))
+
     }
 
     private fun assertEmptyDLQdResult(result: StateAndEventProcessor.Response<Checkpoint>) {
