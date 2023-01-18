@@ -51,9 +51,9 @@
       "doc": "Optional error message, this will be set if the flow status is 'FAILED'"
     },
     {
-      "name": "processingTerminationDetails",
-      "type": ["null", "net.corda.data.KeyValuePairList"],
-      "doc": "Optional details about processing termination, for example, reasons and additional info about why a flow was killed."
+      "name": "processingTerminatedReason",
+      "type": ["null", "string"],
+      "doc": "Optional message indicating reasoning why processing a flow has been terminated."
     },
     {
       "name": "createdTimestamp",
