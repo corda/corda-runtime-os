@@ -22,7 +22,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
-import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysByIdsFlowQuery
+import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
@@ -230,7 +230,7 @@ class CryptoFlowOpsBusProcessorTests {
             )
         }
         assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<FilterMyKeysByIdsFlowQuery, CryptoSigningKeys>(
+        val response = assertResponseContext<ByIdsFlowQuery, CryptoSigningKeys>(
             result,
             flowOpsResponseArgumentCaptor.firstValue
         )
@@ -424,7 +424,7 @@ class CryptoFlowOpsBusProcessorTests {
             )
         }
         assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<FilterMyKeysByIdsFlowQuery, CryptoSigningKeys>(
+        val response = assertResponseContext<ByIdsFlowQuery, CryptoSigningKeys>(
             result,
             flowOpsResponseArgumentCaptor.firstValue
         )
@@ -569,7 +569,7 @@ class CryptoFlowOpsBusProcessorTests {
             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
             val context1 = flowOpsResponse.context
             val response1 = flowOpsResponse.response as CryptoSigningKeys
-            assertResponseContext<FilterMyKeysByIdsFlowQuery>(result, context1, 123)
+            assertResponseContext<ByIdsFlowQuery>(result, context1, 123)
             assertNotNull(response1.keys)
             assertEquals(2, response1.keys.size)
             assertTrue(
@@ -714,7 +714,7 @@ class CryptoFlowOpsBusProcessorTests {
             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
             val context1 = flowOpsResponse.context
             val response1 = flowOpsResponse.response as CryptoSigningKeys
-            assertResponseContext<FilterMyKeysByIdsFlowQuery>(result, context1, 123, tenantId)
+            assertResponseContext<ByIdsFlowQuery>(result, context1, 123, tenantId)
             assertNotNull(response1.keys)
             assertEquals(2, response1.keys.size)
             assertTrue(

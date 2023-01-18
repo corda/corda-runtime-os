@@ -20,7 +20,7 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
-import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysByIdsFlowQuery
+import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -185,8 +185,8 @@ class CryptoFlowOpsTransformerImplTests {
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
-        assertInstanceOf(FilterMyKeysByIdsFlowQuery::class.java, result.value.request)
-        val query = result.value.request as FilterMyKeysByIdsFlowQuery
+        assertInstanceOf(ByIdsFlowQuery::class.java, result.value.request)
+        val query = result.value.request as ByIdsFlowQuery
         assertEquals(3, query.keyIds.size)
         assertTrue(
             query.keyIds.any {
@@ -203,7 +203,7 @@ class CryptoFlowOpsTransformerImplTests {
                 it!!.contentEquals(publicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(notMyKey)))
             }
         )
-        assertRequestContext<FilterMyKeysByIdsFlowQuery>(result)
+        assertRequestContext<ByIdsFlowQuery>(result)
     }
 
     @Test
@@ -213,10 +213,10 @@ class CryptoFlowOpsTransformerImplTests {
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
-        assertInstanceOf(FilterMyKeysByIdsFlowQuery::class.java, result.value.request)
-        val query = result.value.request as FilterMyKeysByIdsFlowQuery
+        assertInstanceOf(ByIdsFlowQuery::class.java, result.value.request)
+        val query = result.value.request as ByIdsFlowQuery
         assertThat(query.keyIds).isEmpty()
-        assertRequestContext<FilterMyKeysByIdsFlowQuery>(result)
+        assertRequestContext<ByIdsFlowQuery>(result)
     }
 
     @Test
@@ -273,16 +273,16 @@ class CryptoFlowOpsTransformerImplTests {
 
     @Test
     fun `Should infer filter my keys query from response`() {
-        val response = createResponse(CryptoSigningKeys(), FilterMyKeysByIdsFlowQuery::class.java)
+        val response = createResponse(CryptoSigningKeys(), ByIdsFlowQuery::class.java)
         val result = buildTransformer().inferRequestType(response)
-        assertEquals(result, FilterMyKeysByIdsFlowQuery::class.java)
+        assertEquals(result, ByIdsFlowQuery::class.java)
     }
 
     @Test
     fun `Should infer filter my keys query from response containing error`() {
-        val response = createResponse(CryptoNoContentValue(), FilterMyKeysByIdsFlowQuery::class.java, "failed")
+        val response = createResponse(CryptoNoContentValue(), ByIdsFlowQuery::class.java, "failed")
         val result = buildTransformer().inferRequestType(response)
-        assertEquals(result, FilterMyKeysByIdsFlowQuery::class.java)
+        assertEquals(result, ByIdsFlowQuery::class.java)
     }
 
     @Test
@@ -359,7 +359,7 @@ class CryptoFlowOpsTransformerImplTests {
                     )
                 )
             ),
-            FilterMyKeysByIdsFlowQuery::class.java
+            ByIdsFlowQuery::class.java
         )
         val result = buildTransformer().transform(response)
         assertThat(result).isInstanceOf(List::class.java)
@@ -406,7 +406,7 @@ class CryptoFlowOpsTransformerImplTests {
                     )
                 )
             ),
-            requestType = FilterMyKeysByIdsFlowQuery::class.java,
+            requestType = ByIdsFlowQuery::class.java,
             error = null,
             ttl = -1
         )
@@ -419,7 +419,7 @@ class CryptoFlowOpsTransformerImplTests {
     fun `Should throw IllegalStateException when transforming error response to filter my keys query`() {
         val response = createResponse(
             CryptoNoContentValue(),
-            FilterMyKeysByIdsFlowQuery::class.java,
+            ByIdsFlowQuery::class.java,
             "--failed--"
         )
         val result = assertThrows<IllegalStateException> {
@@ -432,7 +432,7 @@ class CryptoFlowOpsTransformerImplTests {
     fun `Should throw IllegalStateException when transforming empty error response to filter my keys query`() {
         val response = createResponse(
             CryptoNoContentValue(),
-            FilterMyKeysByIdsFlowQuery::class.java,
+            ByIdsFlowQuery::class.java,
             ""
         )
         assertThrows<IllegalStateException> {
@@ -444,7 +444,7 @@ class CryptoFlowOpsTransformerImplTests {
     fun `Should throw IllegalStateException when transforming unexpected response to filter my keys query`() {
         val response = createResponse(
             CryptoSignatureWithKey(),
-            FilterMyKeysByIdsFlowQuery::class.java
+            ByIdsFlowQuery::class.java
         )
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)

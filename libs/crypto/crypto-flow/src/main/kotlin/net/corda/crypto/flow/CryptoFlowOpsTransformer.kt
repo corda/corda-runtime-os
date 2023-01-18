@@ -7,7 +7,7 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
-import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysByIdsFlowQuery
+import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -28,7 +28,7 @@ interface CryptoFlowOpsTransformer {
     }
 
     /**
-     * Creates a crypto request to filter which of the specified keys are owned by the [tenantId].
+     * Creates a crypto request to query which of the specified keys are owned by the [tenantId].
      */
     fun createFilterMyKeys(
         tenantId: String,
@@ -54,7 +54,7 @@ interface CryptoFlowOpsTransformer {
      * Returns request's type.
      *
      * @throws [IllegalArgumentException] if the request type is not one of [SignFlowCommand], [GenerateFreshKeyFlowCommand],
-     * [FilterMyKeysByIdsFlowQuery]
+     * [ByIdsFlowQuery]
      */
     fun inferRequestType(response: FlowOpsResponse): Class<*>?
 
@@ -62,11 +62,11 @@ interface CryptoFlowOpsTransformer {
      * Transforms the response type.
      *
      * @return [PublicKey] for [GenerateFreshKeyFlowCommand] request and [CryptoPublicKey] response type, [List<PublicKey>] for
-     * [FilterMyKeysByIdsFlowQuery] request and [CryptoSigningKeys] response type [DigitalSignature.WithKey] for [SignFlowCommand] or
+     * [ByIdsFlowQuery] request and [CryptoSigningKeys] response type [DigitalSignature.WithKey] for [SignFlowCommand] or
      * [SignWithSpecFlowCommand] request with [CryptoSignatureWithKey] response type
      *
      * @throws [IllegalArgumentException] if the request type is not one of [SignWithSpecFlowCommand], [SignFlowCommand],
-     * [GenerateFreshKeyFlowCommand], [FilterMyKeysByIdsFlowQuery] or the response is not one of [CryptoPublicKey], [CryptoSigningKeys],
+     * [GenerateFreshKeyFlowCommand], [ByIdsFlowQuery] or the response is not one of [CryptoPublicKey], [CryptoSigningKeys],
      * [CryptoSignatureWithKey]
      *
      * @throws [IllegalStateException]  if the response contains error or its TTL is greater than expected.

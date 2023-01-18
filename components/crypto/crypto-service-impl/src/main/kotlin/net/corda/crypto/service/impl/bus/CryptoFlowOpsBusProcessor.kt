@@ -14,7 +14,7 @@ import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
-import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysByIdsFlowQuery
+import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
@@ -110,7 +110,7 @@ class CryptoFlowOpsBusProcessor(
                     tenantId = context.tenantId,
                     candidateKeys = request.keys
                 )
-            is FilterMyKeysByIdsFlowQuery ->
+            is ByIdsFlowQuery ->
                 cryptoOpsClient.filterMyKeysByIdsProxy(
                     tenantId = context.tenantId,
                     candidateKeys = request.keyIds
