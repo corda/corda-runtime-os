@@ -2,8 +2,6 @@ package net.corda.flow.pipeline.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -93,15 +91,11 @@ class FlowToBeKilledExceptionProcessingTest {
     private val checkpoint = mock<FlowCheckpoint> {
         whenever(it.flowKey).thenReturn(flowKey)
     }
-    private val flowTerminationDetails = mapOf("reason" to "Flow killed reasoning.")
-    private val flowTerminationDetailsKeyValuePairList = KeyValuePairList.newBuilder()
-        .setItems(flowTerminationDetails.map { KeyValuePair(it.key, it.value) })
-        .build()
     private val flowKilledStatus = FlowStatus().apply {
         key = checkpoint.flowKey
         flowId = checkpoint.flowId
         flowStatus = FlowStates.KILLED
-        processingTerminationDetails = flowTerminationDetailsKeyValuePairList
+        processingTerminatedReason = "reason"
     }
     private val flowKilledStatusRecord = Record("s", flowKey, flowKilledStatus)
     private val mockResponse = mock<StateAndEventProcessor.Response<Checkpoint>>()
@@ -122,7 +116,7 @@ class FlowToBeKilledExceptionProcessingTest {
     @Test
     fun `processing MarkedForKillException sends error events to all sessions then schedules cleanup for any not yet scheduled`() {
         val testContext = buildFlowEventContext(checkpoint, Any())
-        val exception = FlowMarkedForKillException("reasoning", flowTerminationDetails)
+        val exception = FlowMarkedForKillException("reasoning")
         val contextCapture = argumentCaptor<FlowEventContext<*>>()
 
         // The first call returns all sessions.
@@ -180,7 +174,7 @@ class FlowToBeKilledExceptionProcessingTest {
         whenever(checkpoint.inRetryState).thenReturn(true)
 
         val testContext = buildFlowEventContext(checkpoint, Any())
-        val exception = FlowMarkedForKillException("reasoning", flowTerminationDetails)
+        val exception = FlowMarkedForKillException("reasoning")
         val contextCapture = argumentCaptor<FlowEventContext<*>>()
 
         whenever(checkpoint.sessions)

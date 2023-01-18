@@ -51,5 +51,5 @@ interface FlowMessageFactory {
      * @param details about flow termination
      * @return a new instance of a [FlowStatus] record.
      */
-    fun createFlowKilledStatusMessage(checkpoint: FlowCheckpoint, details: Map<String, String>?): FlowStatus
+    fun createFlowKilledStatusMessage(checkpoint: FlowCheckpoint, message: String?): FlowStatus
 }

@@ -244,7 +244,7 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `FlowMarkedForKillException produces flow kill context`() {
-        val error = FlowMarkedForKillException("reason", detailsMap)
+        val error = FlowMarkedForKillException("reason")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         val killedFlowResponse = StateAndEventProcessor.Response(checkpoint, flowKilledStatusRecords)

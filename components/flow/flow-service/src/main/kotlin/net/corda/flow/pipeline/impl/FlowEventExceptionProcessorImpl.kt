@@ -193,7 +193,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 getScheduledCleanupExpiryTime(context, now),
                 checkpoint.sessions.filterNot { it.hasScheduledCleanup }
             )
-            val statusRecord = createFlowKilledStatusRecord(context, exception.details)
+            val statusRecord = createFlowKilledStatusRecord(context, exception.message)
 
             flowEventContextConverter.convert(
                 context.copy(
@@ -226,9 +226,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             }
     }
 
-    private fun createFlowKilledStatusRecord(context: FlowEventContext<*>, details: Map<String, String>?): List<Record<*, *>> {
+    private fun createFlowKilledStatusRecord(context: FlowEventContext<*>, message: String?): List<Record<*, *>> {
         return createStatusRecord(context.checkpoint.flowId) {
-            flowMessageFactory.createFlowKilledStatusMessage(context.checkpoint, details)
+            flowMessageFactory.createFlowKilledStatusMessage(context.checkpoint, message)
         }
     }
 
