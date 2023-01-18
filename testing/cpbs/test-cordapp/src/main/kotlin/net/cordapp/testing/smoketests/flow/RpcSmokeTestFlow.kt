@@ -415,17 +415,28 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         return outputs.joinToString("; ")
     }
 
-    @Suspendable
     @Suppress("unused_parameter")
+    @Suspendable
     private fun getMySigningKeys(input: RpcSmokeTestInput): String {
         val myInfo = memberLookup.myInfo()
         val myKeysFromMemberInfo = myInfo.ledgerKeys.toSet()
         val myKeysFromCryptoWorker = signingService.getMySigningKeys(myKeysFromMemberInfo)
-        return if (myKeysFromMemberInfo == myKeysFromCryptoWorker) {
-            "success"
-        } else {
-            "failure"
+        val requestResponseKey =
+            myKeysFromCryptoWorker
+                .map {
+                    it
+                }.single()
+
+        require(requestResponseKey.value != null) {
+            "Requested key was not found"
         }
+        require(requestResponseKey.key == requestResponseKey.value) {
+            "Response key should be same with the requested"
+        }
+        require(myKeysFromMemberInfo.single() == requestResponseKey.key) {
+            "Request key in mapping should match specified request key"
+        }
+        return "success"
     }
 
     @Suspendable
