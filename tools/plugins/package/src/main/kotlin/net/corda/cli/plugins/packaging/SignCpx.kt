@@ -9,7 +9,7 @@ import picocli.CommandLine
 
 @CommandLine.Command(
     name = "sign",
-    description = ["Re-signs the CPK/CPB/CPI, removing the existing signature unless multiple signatures is enabled"]
+    description = ["Signs a CPK/CPB/CPI."]
 )
 class SignCpx : Runnable {
 
