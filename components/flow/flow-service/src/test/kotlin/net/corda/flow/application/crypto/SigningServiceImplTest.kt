@@ -35,7 +35,7 @@ class SigningServiceImplTest {
     }
 
     @Test
-    fun `get my signing keys returns requested signing keys to owned signing keys`() {
+    fun `find my signing keys returns requested signing keys to owned signing keys`() {
         val key1 = mock<PublicKey>()
         val key2 = mock<PublicKey>()
         whenever(
@@ -45,11 +45,11 @@ class SigningServiceImplTest {
             )
         ).thenReturn(listOf(key1))
 
-        assertEquals(mapOf(key1 to key1, key2 to null), signingService.getMySigningKeys(setOf(key1, key2)))
+        assertEquals(mapOf(key1 to key1, key2 to null), signingService.findMySigningKeys(setOf(key1, key2)))
     }
 
     @Test
-    fun `get my signing keys returns requested signing keys to owned signing keys for both plain and composite keys`() {
+    fun `find my signing keys returns requested signing keys to owned signing keys for both plain and composite keys`() {
         val plainKey = mock<PublicKey>()
         val compositeKeyLeaf1 = mock<PublicKey>()
         val compositeKeyLeaf2 = mock<PublicKey>()
@@ -64,12 +64,12 @@ class SigningServiceImplTest {
 
         assertEquals(
             mapOf(plainKey to plainKey, compositeKey to compositeKeyLeaf1),
-            signingService.getMySigningKeys(setOf(plainKey, compositeKey))
+            signingService.findMySigningKeys(setOf(plainKey, compositeKey))
         )
     }
 
     @Test
-    fun `get my signing keys only makes use of the firstly found composite key leaf and ignores the rest found leaves`() {
+    fun `find my signing keys only makes use of the firstly found composite key leaf and ignores the rest found leaves`() {
         val compositeKeyLeaf1 = mock<PublicKey>()
         val compositeKeyLeaf2 = mock<PublicKey>()
         val compositeKey = mock<CompositeKey>()
@@ -83,7 +83,7 @@ class SigningServiceImplTest {
 
         assertEquals(
             mapOf(compositeKey to compositeKeyLeaf1),
-            signingService.getMySigningKeys(setOf(compositeKey))
+            signingService.findMySigningKeys(setOf(compositeKey))
         )
     }
 }

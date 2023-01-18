@@ -43,7 +43,7 @@ class SigningServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun getMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
+    override fun findMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?> {
         val compositeKeys: Set<CompositeKey> = keys.filterIsInstanceTo(linkedSetOf(), CompositeKey::class.java)
         val plainKeys = keys - compositeKeys
         val compositeKeysLeaves: Set<PublicKey> = compositeKeys.flatMapTo(linkedSetOf()) {
@@ -62,7 +62,7 @@ class SigningServiceImpl @Activate constructor(
                 null
         }
 
-        // TODO For now we are going to be matching composite key request with first leaf found
+        // TODO For now we are going to be matching composite key request with first leaf found ignoring other found leaves
         //  Perhaps we should revisit this behavior in the future.
         val compositeKeysReqResp = compositeKeys.associateWith {
             var foundLeaf: PublicKey? = null
