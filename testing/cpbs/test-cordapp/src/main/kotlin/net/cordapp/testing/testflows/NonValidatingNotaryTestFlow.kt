@@ -13,6 +13,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.hours
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
@@ -75,8 +76,10 @@ class NonValidatingNotaryTestFlow : RestStartableFlow {
 
         val isIssuance = params.inputStateRefs.isEmpty()
 
+        val notaryServiceParty = findNotaryServiceParty()
+
         val stx = buildSignedTransaction(
-            findNotaryServiceParty(),
+            notaryServiceParty,
             params.outputStateCount,
             params.inputStateRefs,
             params.referenceStateRefs,
@@ -90,10 +93,18 @@ class NonValidatingNotaryTestFlow : RestStartableFlow {
         } else {
             // If we have a consume it means we can send it directly to the plugin, because we already have a valid state
             // that we can spend
-            flowEngine.subFlow(NonValidatingNotaryClientFlowImpl(
+            val signatures = flowEngine.subFlow(NonValidatingNotaryClientFlowImpl(
                 stx,
                 findNotaryVNodeParty()
             ))
+
+            // Since we are not calling finality flow for consuming transactions we need to verify that the signature
+            // is actually part of the notary service's composite key
+            signatures.forEach {
+                require(notaryServiceParty.owningKey.containsAny(listOf(it.by))) {
+                    "The plugin responded with a signature that is not part of the notary service's composite key."
+                }
+            }
         }
 
         return jsonMarshallingService.format(NonValidatingNotaryTestFlowResult(
@@ -146,12 +157,8 @@ class NonValidatingNotaryTestFlow : RestStartableFlow {
      */
     @Suspendable
     private fun findNotaryServiceParty(): Party {
-        // TODO CORE-6173 use proper notary key
         val notary = notaryLookup.notaryServices.single()
-        val notaryKey = memberLookup.lookup().single {
-            it.memberProvidedContext["corda.notary.service.name"] == notary.name.toString()
-        }.ledgerKeys.first()
-        return Party(notary.name, notaryKey)
+        return Party(notary.name, notary.publicKey)
     }
 
     /**
