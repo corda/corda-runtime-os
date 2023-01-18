@@ -340,7 +340,7 @@ subprojects {
     normalization {
         runtimeClasspath {
             metaInf {
-                ignoreManifest()
+                ignoreCompletely()
             }
         }
     }
