@@ -131,7 +131,7 @@ internal class HostedIdentityEntryFactory(
             nodeInfo,
             policy,
         )
-        mtlsMgmClientCertificateKeeper.keepSubjectIfNeeded(
+        mtlsMgmClientCertificateKeeper.addMgmCertificateSubjectToGroupPolicy(
             nodeInfo.holdingIdentity,
             policy,
             tlsCertificates.first(),

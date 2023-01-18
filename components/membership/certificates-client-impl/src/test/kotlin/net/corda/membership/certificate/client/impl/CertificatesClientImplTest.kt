@@ -306,7 +306,6 @@ class CertificatesClientImplTest {
                         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                         LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
                         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
-                        LifecycleCoordinatorName.forComponent<LayeredPropertyMapFactory>(),
                     )
                 )
             }

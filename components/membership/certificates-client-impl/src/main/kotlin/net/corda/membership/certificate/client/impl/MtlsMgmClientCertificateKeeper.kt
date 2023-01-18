@@ -21,7 +21,7 @@ internal class MtlsMgmClientCertificateKeeper(
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) {
-    fun keepSubjectIfNeeded(
+    fun addMgmCertificateSubjectToGroupPolicy(
         holdingIdentity: HoldingIdentity,
         groupPolicy: GroupPolicy,
         pemTlsCertificates: String,

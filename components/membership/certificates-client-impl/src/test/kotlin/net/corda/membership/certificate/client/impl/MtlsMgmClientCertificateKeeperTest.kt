@@ -90,8 +90,8 @@ class MtlsMgmClientCertificateKeeperTest {
     )
 
     @Test
-    fun `keepSubjectIfNeeded will add the certificate subject`() {
-        keeper.keepSubjectIfNeeded(
+    fun `addMgmCertificateSubjectToGroupPolicy will add the certificate subject`() {
+        keeper.addMgmCertificateSubjectToGroupPolicy(
             mgmHoldingIdentity,
             groupProperty,
             "certificate",
@@ -103,8 +103,8 @@ class MtlsMgmClientCertificateKeeperTest {
     }
 
     @Test
-    fun `keepSubjectIfNeeded will persist the new group policy`() {
-        keeper.keepSubjectIfNeeded(
+    fun `addMgmCertificateSubjectToGroupPolicy will persist the new group policy`() {
+        keeper.addMgmCertificateSubjectToGroupPolicy(
             mgmHoldingIdentity,
             groupProperty,
             "certificate",
@@ -118,12 +118,12 @@ class MtlsMgmClientCertificateKeeperTest {
     }
 
     @Test
-    fun `keepSubjectIfNeeded will throw an exception if persist fails`() {
+    fun `addMgmCertificateSubjectToGroupPolicy will throw an exception if persist fails`() {
         whenever(membershipPersistenceClient.persistGroupPolicy(any(), any()))
             .doReturn(MembershipPersistenceResult.Failure("oops"))
 
         assertThrows<MembershipPersistenceResult.PersistenceRequestException> {
-            keeper.keepSubjectIfNeeded(
+            keeper.addMgmCertificateSubjectToGroupPolicy(
                 mgmHoldingIdentity,
                 groupProperty,
                 "certificate",
@@ -132,14 +132,14 @@ class MtlsMgmClientCertificateKeeperTest {
     }
 
     @Test
-    fun `keepSubjectIfNeeded will throw an exception if query fails`() {
+    fun `addMgmCertificateSubjectToGroupPolicy will throw an exception if query fails`() {
         whenever(membershipQueryClient
             .queryGroupPolicy(mgmHoldingIdentity)
         )
             .doReturn(MembershipQueryResult.Failure("oops"))
 
         assertThrows<MembershipQueryResult.QueryException> {
-            keeper.keepSubjectIfNeeded(
+            keeper.addMgmCertificateSubjectToGroupPolicy(
                 mgmHoldingIdentity,
                 groupProperty,
                 "certificate",
@@ -148,14 +148,14 @@ class MtlsMgmClientCertificateKeeperTest {
     }
 
     @Test
-    fun `keepSubjectIfNeeded will throw an the certificate is invalid`() {
+    fun `addMgmCertificateSubjectToGroupPolicy will throw an exception if the certificate is invalid`() {
         whenever(certificateFactory
             .generateCertificates(any())
         )
             .doReturn(emptyList())
 
         assertThrows<CordaRuntimeException> {
-            keeper.keepSubjectIfNeeded(
+            keeper.addMgmCertificateSubjectToGroupPolicy(
                 mgmHoldingIdentity,
                 groupProperty,
                 "certificate",
@@ -164,14 +164,14 @@ class MtlsMgmClientCertificateKeeperTest {
     }
 
     @Test
-    fun `keepSubjectIfNeeded will read the correct certificate`() {
+    fun `addMgmCertificateSubjectToGroupPolicy will read the correct certificate`() {
         val certificateInputStream = argumentCaptor<InputStream>()
         whenever(certificateFactory
             .generateCertificates(certificateInputStream.capture())
         )
             .doReturn(listOf(certificate))
 
-        keeper.keepSubjectIfNeeded(
+        keeper.addMgmCertificateSubjectToGroupPolicy(
             mgmHoldingIdentity,
             groupProperty,
             "certificate",
@@ -182,7 +182,7 @@ class MtlsMgmClientCertificateKeeperTest {
     }
 
     @Test
-    fun `keepSubjectIfNeeded will do nothing for non MGM`() {
+    fun `addMgmCertificateSubjectToGroupPolicy will do nothing for non MGM`() {
         val memberHoldingIdentity = HoldingIdentity(
             MemberX500Name.parse("C=GB, CN=Member, O=Member, L=LDN"),
             "group"
@@ -196,7 +196,7 @@ class MtlsMgmClientCertificateKeeperTest {
         whenever(groupReader.lookup(memberHoldingIdentity.x500Name)).doReturn(memberMemberInfo)
         whenever(membershipGroupReaderProvider.getGroupReader(memberHoldingIdentity)).doReturn(groupReader)
 
-        keeper.keepSubjectIfNeeded(
+        keeper.addMgmCertificateSubjectToGroupPolicy(
             memberHoldingIdentity,
             groupProperty,
             "certificate",
@@ -206,10 +206,10 @@ class MtlsMgmClientCertificateKeeperTest {
     }
 
     @Test
-    fun `keepSubjectIfNeeded will do nothing for non mutual TLS`() {
+    fun `addMgmCertificateSubjectToGroupPolicy will do nothing for non mutual TLS`() {
         whenever(p2pParameters.tlsType).doReturn(TlsType.ONE_WAY)
 
-        keeper.keepSubjectIfNeeded(
+        keeper.addMgmCertificateSubjectToGroupPolicy(
             mgmHoldingIdentity,
             groupProperty,
             "certificate",

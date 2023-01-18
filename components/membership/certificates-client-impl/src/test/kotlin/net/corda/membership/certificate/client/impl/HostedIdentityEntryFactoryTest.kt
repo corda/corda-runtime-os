@@ -236,7 +236,7 @@ class HostedIdentityEntryFactoryTest {
             sessionCertificateChainAlias = null,
         )
 
-        verify(mtlsMgmClientCertificateKeeper).keepSubjectIfNeeded(
+        verify(mtlsMgmClientCertificateKeeper).addMgmCertificateSubjectToGroupPolicy(
             validHoldingId,
             groupPolicy,
             certificatePem,
