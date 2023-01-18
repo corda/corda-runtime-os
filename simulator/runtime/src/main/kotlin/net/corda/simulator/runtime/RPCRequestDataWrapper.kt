@@ -10,7 +10,7 @@ import net.corda.v5.application.marshalling.MarshallingService
  *
  * @clientRequestId the id which uniquely identifies a request
  * @flowClassName the name of the flow class to run
- * @requestData the data for the request
+ * @requestBody the data for the request
  */
 data class RPCRequestDataWrapper(
     override val clientRequestId : String,
