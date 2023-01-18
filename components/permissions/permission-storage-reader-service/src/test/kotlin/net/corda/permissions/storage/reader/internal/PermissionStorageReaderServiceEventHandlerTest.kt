@@ -5,7 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
@@ -86,7 +86,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
         entityManagerFactoryFactory,
     )
 
-    private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
 
     private val reconciliationConfigMap = mapOf(
         ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS to 12345L,

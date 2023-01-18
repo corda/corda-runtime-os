@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -264,7 +264,7 @@ class CommonConfig(val parameters: CliParameters) {
         parsedMessagingParams.computeIfAbsent("${BootConfig.BOOT_KAFKA_COMMON}.bootstrap.servers") {
             System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
         }
-        bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(
+        bootConfig = SmartConfigFactory.createWithoutSecurityServices().create(
             ConfigFactory.parseMap(parsedMessagingParams)
                 .withValue(
                     BootConfig.TOPIC_PREFIX,

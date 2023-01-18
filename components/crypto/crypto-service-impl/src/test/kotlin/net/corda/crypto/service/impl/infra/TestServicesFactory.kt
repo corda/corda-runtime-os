@@ -34,7 +34,7 @@ import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.TransientSoftKeyMap
 import net.corda.crypto.softhsm.impl.TransientSoftWrappingKeyMap
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
@@ -53,7 +53,7 @@ class TestServicesFactory {
     val recordedCryptoContexts = ConcurrentHashMap<String, Map<String, String>>()
 
     val emptyConfig: SmartConfig =
-        SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
+        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
 
     val cryptoConfig: SmartConfig = createTestCryptoConfig(
         KeyCredentials("salt", "passphrase")

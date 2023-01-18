@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.token.cache.impl
 
 import com.typesafe.config.ConfigFactory
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 
 const val SECURE_HASH = "sh"
 
@@ -14,4 +14,4 @@ val POOL_CACHE_KEY =  TokenPoolCacheKey().apply {
     symbol = "s"
 }
 
-val MINIMUM_SMART_CONFIG = SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
+val MINIMUM_SMART_CONFIG = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())

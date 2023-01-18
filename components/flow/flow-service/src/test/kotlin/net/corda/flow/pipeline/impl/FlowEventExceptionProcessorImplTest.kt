@@ -18,7 +18,7 @@ import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
@@ -40,7 +40,7 @@ class FlowEventExceptionProcessorImplTest {
 
     private val flowConfig = ConfigFactory.empty()
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(2))
-    private val smartFlowConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(flowConfig)
+    private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
     private val inputEvent = Wakeup()
     private val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
     private val converterResponse = StateAndEventProcessor.Response<Checkpoint>(
