@@ -42,10 +42,13 @@ class VerificationSandboxServiceImpl @Activate constructor(
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileChecksums: Set<SecureHash>): SandboxGroupContext {
-        // We're throwing internal exceptions so that we can relay some information back to the flow worker
-        // on how to proceed with any request to us that fails.
-        if (!sandboxService.hasCpks(cpkFileChecksums))
+        if (!sandboxService.hasCpks(cpkFileChecksums)) {
+            // TODO Retries when CPKs not available (CORE-9382)
+
+            // We're throwing internal exceptions so that we can relay some information back to the flow worker
+            // on how to proceed with any request to us that fails.
             throw NotReadyException("CPKs not available (yet): $cpkFileChecksums")
+        }
 
         return sandboxService.getOrCreate(getVirtualNodeContext(holdingIdentity, cpkFileChecksums)) { _, ctx ->
             initializeSandbox(holdingIdentity, ctx)
