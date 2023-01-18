@@ -66,10 +66,10 @@ class UtxoReceiveFinalityFlowTest {
 
     private val notaryService = mock<Party>()
 
-    private val signature1 = digitalSignatureAndMetadata(publicKey1)
-    private val signature2 = digitalSignatureAndMetadata(publicKey2)
-    private val signature3 = digitalSignatureAndMetadata(publicKey3)
-    private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotary)
+    private val signature1 = digitalSignatureAndMetadata(publicKey1, byteArrayOf(1, 2, 3))
+    private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 4))
+    private val signature3 = digitalSignatureAndMetadata(publicKey3, byteArrayOf(1, 2, 5))
+    private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotary, byteArrayOf(1, 2, 6))
 
     private val metadata = mock<TransactionMetadata>()
 
@@ -355,9 +355,9 @@ class UtxoReceiveFinalityFlowTest {
         flow.call()
     }
 
-    private fun digitalSignatureAndMetadata(publicKey: PublicKey): DigitalSignatureAndMetadata {
+    private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKey(publicKey, byteArrayOf(1, 2, 3), emptyMap()),
+            DigitalSignature.WithKey(publicKey, byteArray, emptyMap()),
             DigitalSignatureMetadata(Instant.now(), emptyMap())
         )
     }

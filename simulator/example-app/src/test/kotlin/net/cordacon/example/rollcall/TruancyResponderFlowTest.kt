@@ -58,7 +58,7 @@ class TruancyResponderFlowTest {
         val truancyNode = simulator.createVirtualNode(charlie, TruancyResponderFlow::class.java)
 
         initiatingNode.generateKey("my-key", HsmCategory.LEDGER, "any-scheme")
-        initiatingNode.callInstanceFlow(RequestData.IGNORED)
+        initiatingNode.callFlow(RequestData.IGNORED)
 
         val truancyRecords = truancyNode.getPersistenceService().findAll(TruancyEntity::class.java).execute()
         assertThat(truancyRecords.size, `is`(1))
@@ -101,7 +101,7 @@ class TruancyResponderFlowTest {
         initiatingNode.generateKey("my-key", HsmCategory.LEDGER, "any-scheme")
 
         assertThrows<ResponderFlowException> {
-            initiatingNode.callInstanceFlow(RequestData.IGNORED)
+            initiatingNode.callFlow(RequestData.IGNORED)
         }.also {
             assertThat(it.cause, isA(CryptoSignatureException::class.java))
         }

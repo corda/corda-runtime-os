@@ -54,9 +54,9 @@ class ConsensualReceiveFinalityFlowTest {
     private val publicKey2 = mock<PublicKey>()
     private val publicKey3 = mock<PublicKey>()
 
-    private val signature1 = digitalSignatureAndMetadata(publicKey1)
-    private val signature2 = digitalSignatureAndMetadata(publicKey2)
-    private val signature3 = digitalSignatureAndMetadata(publicKey3)
+    private val signature1 = digitalSignatureAndMetadata(publicKey1, byteArrayOf(1, 2, 2))
+    private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 3))
+    private val signature3 = digitalSignatureAndMetadata(publicKey3, byteArrayOf(1, 2, 4))
 
     private val ledgerTransaction = mock<ConsensualLedgerTransactionImpl>()
     private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
@@ -197,9 +197,9 @@ class ConsensualReceiveFinalityFlowTest {
         flow.call()
     }
 
-    private fun digitalSignatureAndMetadata(publicKey: PublicKey): DigitalSignatureAndMetadata {
+    private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
-            DigitalSignature.WithKey(publicKey, byteArrayOf(1, 2, 3), emptyMap()),
+            DigitalSignature.WithKey(publicKey, byteArray, emptyMap()),
             DigitalSignatureMetadata(Instant.now(), emptyMap())
         )
     }

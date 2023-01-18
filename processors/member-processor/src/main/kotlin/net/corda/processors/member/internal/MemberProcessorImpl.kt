@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -67,6 +68,8 @@ class MemberProcessorImpl @Activate constructor(
     private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
+    @Reference(service = LocallyHostedIdentitiesService::class)
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
 ) : MemberProcessor {
 
     private companion object {
@@ -91,6 +94,7 @@ class MemberProcessorImpl @Activate constructor(
         ::stableKeyPairDecryptor,
         ::groupParametersWriterService,
         ::groupParametersReaderService,
+        ::locallyHostedIdentitiesService,
     )
 
     private val coordinator =

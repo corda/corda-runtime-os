@@ -15,7 +15,7 @@ interface SimulatedInstanceNode : SimulatedNode {
      * @throws IllegalStateException if the flow with which this node was constructed was not a
      * [net.corda.v5.application.flows.RPCStartableFlow].
      */
-    fun callInstanceFlow(input: RequestData): String
+    fun callFlow(input: RequestData): String
 
     /**
      * Calls the flow with the given request and contextProperties provided by the user. Note that this call happens
@@ -28,5 +28,5 @@ interface SimulatedInstanceNode : SimulatedNode {
      * @throws IllegalStateException if the flow with which this node was constructed was not a
      * [net.corda.v5.application.flows.RPCStartableFlow].
      */
-    fun callInstanceFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String
+    fun callFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String
 }

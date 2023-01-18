@@ -28,7 +28,7 @@ import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
@@ -89,7 +89,7 @@ internal class PermissionManagementServiceEventHandler(
                         configSubscription?.close()
                         configSubscription = configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(BOOT_CONFIG, MESSAGING_CONFIG, RPC_CONFIG)
+                            setOf(BOOT_CONFIG, MESSAGING_CONFIG, REST_CONFIG)
                         )
                     }
                     LifecycleStatus.DOWN -> {
@@ -110,7 +110,7 @@ internal class PermissionManagementServiceEventHandler(
                 coordinator.updateStatus(LifecycleStatus.DOWN)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
-                val rpcConfig = event.config[RPC_CONFIG]!!
+                val rpcConfig = event.config[REST_CONFIG]!!
                 createPermissionManager(rpcConfig)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
