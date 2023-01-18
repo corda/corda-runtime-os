@@ -831,7 +831,7 @@ class CryptoProcessorTests {
     }
 
     @Test
-    fun `filterMyKeys returns keys owned by the vnode only`() {
+    fun `filterMyKeys filters and returns keys owned by the vnode`() {
         val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1")
         val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2")
 
