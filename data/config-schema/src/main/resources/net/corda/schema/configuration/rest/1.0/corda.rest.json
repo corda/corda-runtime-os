@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://corda.r3.com/net/corda/schema/configuration/rpc/1.0/corda.rpc.json",
-  "title": "Corda RPC Configuration Schema",
-  "description": "Configuration schema for the RPC subsection.",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/rest/1.0/corda.rest.json",
+  "title": "Corda REST Configuration Schema",
+  "description": "Configuration schema for the REST subsection.",
   "type": "object",
   "default": {},
   "properties": {
@@ -19,12 +19,12 @@
         "description": {
           "description": "",
           "type": "string",
-          "default": "Exposing RPCOps interfaces as OpenAPI WebServices"
+          "default": "Exposing REST interfaces as OpenAPI WebServices"
         },
         "title": {
           "description": "",
           "type": "string",
-          "default": "HTTP RPC"
+          "default": "REST"
         }
       }
     },
@@ -41,7 +41,7 @@
       "default": {},
       "properties": {
         "timeoutMs": {
-          "description": "Amount of time in milliseconds to wait for response on Kafka bus for a remote operation before timing out the HTTP RPC call.",
+          "description": "Amount of time in milliseconds to wait for response on backend message bus for a remote operation before timing out the REST call.",
           "type": "integer",
           "minimum": 100,
           "maximum": 2147483647,

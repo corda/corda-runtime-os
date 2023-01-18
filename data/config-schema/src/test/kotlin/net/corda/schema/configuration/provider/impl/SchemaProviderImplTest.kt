@@ -8,7 +8,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SANDBOX_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SECRETS_CONFIG
 import net.corda.schema.configuration.ConfigKeys.UTXO_LEDGER_CONFIG
@@ -35,7 +35,7 @@ class SchemaProviderImplTest {
             UTXO_LEDGER_CONFIG,
             P2P_LINK_MANAGER_CONFIG,
             P2P_GATEWAY_CONFIG,
-            RPC_CONFIG,
+            REST_CONFIG,
             SECRETS_CONFIG,
             SANDBOX_CONFIG,
             RECONCILIATION_CONFIG,

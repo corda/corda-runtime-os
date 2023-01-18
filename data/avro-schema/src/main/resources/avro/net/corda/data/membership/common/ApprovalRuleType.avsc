@@ -1,0 +1,10 @@
+{
+  "type": "enum",
+  "name": "ApprovalRuleType",
+  "namespace": "net.corda.data.membership.common",
+  "doc": "Type of approval rule.",
+  "symbols": [
+    "STANDARD",
+    "PREAUTH"
+  ]
+}

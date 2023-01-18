@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "PersistApprovalRule",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Persist a new approval rule.",
+  "fields": [
+    {
+      "name": "ruleId",
+      "doc": "The ID of the rule to be added.",
+      "type": "string"
+    },
+    {
+      "name": "rule",
+      "doc": "The regular expression associated with the rule to be added.",
+      "type": "string"
+    },
+    {
+      "name": "ruleType",
+      "doc": "The category to which the rule will be added.",
+      "type": "net.corda.data.membership.common.ApprovalRuleType"
+    },
+    {
+      "name": "label",
+      "doc": "Label describing the rule.",
+      "type": ["string", "null"]
+    }
+  ]
+}

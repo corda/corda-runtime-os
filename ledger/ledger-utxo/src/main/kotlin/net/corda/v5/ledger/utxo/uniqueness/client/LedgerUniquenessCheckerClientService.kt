@@ -3,6 +3,7 @@ package net.corda.v5.ledger.utxo.uniqueness.client
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.Future
 
@@ -30,6 +31,8 @@ interface LedgerUniquenessCheckerClientService {
      * This is an optional parameter.
      *
      * @param timeWindowUpperBound The latest date/time until the transaction is considered valid.
+     *
+     * @param notaryServiceKeys List of notary VNode keys that belong to the selected notary service.
      */
     @Suppress("LongParameterList")
     @Suspendable
@@ -39,7 +42,8 @@ interface LedgerUniquenessCheckerClientService {
         referenceStates: List<String>,
         numOutputStates: Int,
         timeWindowLowerBound: Instant?,
-        timeWindowUpperBound: Instant
+        timeWindowUpperBound: Instant,
+        notaryServiceKeys: List<PublicKey>
     ): LedgerUniquenessCheckResponse
 }
 
@@ -55,12 +59,14 @@ fun LedgerUniquenessCheckerClientService.requestUniquenessCheck(
     referenceStates: List<UniquenessCheckStateRef>,
     numOutputStates: Int,
     timeWindowLowerBound: Instant?,
-    timeWindowUpperBound: Instant
+    timeWindowUpperBound: Instant,
+    notaryServiceKeys: List<PublicKey>
 ) = requestUniquenessCheck(
     txId,
     inputStates.map { it.toString() },
     referenceStates.map { it.toString() },
     numOutputStates,
     timeWindowLowerBound,
-    timeWindowUpperBound
+    timeWindowUpperBound,
+    notaryServiceKeys
 )

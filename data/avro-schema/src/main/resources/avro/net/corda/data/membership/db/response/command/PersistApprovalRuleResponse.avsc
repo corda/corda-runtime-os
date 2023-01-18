@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "PersistApprovalRuleResponse",
+  "namespace": "net.corda.data.membership.db.response.command",
+  "doc": "Response to a persist approval rule request.",
+  "fields": [
+    {
+      "name": "persistedRule",
+      "doc": "Details of the newly persisted approval rule.",
+      "type": "net.corda.data.membership.common.ApprovalRuleDetails"
+    }
+  ]
+}

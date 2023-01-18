@@ -6,7 +6,7 @@ package net.corda.db.schema
  * For more information, please see [here](https://docs.liquibase.com/concepts/advanced/liquibase-schema-name-parameter.html).
  */
 object DbSchema {
-    const val RPC_RBAC = "RPC_RBAC"
+    const val RBAC = "RBAC"
 
     const val CONFIG = "CONFIG"
     const val CONFIG_TABLE = "config"
@@ -32,6 +32,7 @@ object DbSchema {
     const val VNODE_GROUP_POLICY = "vnode_group_policy"
     const val VNODE_MEMBER_SIGNATURE = "vnode_member_signature"
     const val VNODE_GROUP_PARAMETERS = "vnode_group_parameters"
+    const val VNODE_GROUP_APPROVAL_RULES = "vnode_group_approval_rules"
 
     const val LEDGER_CONSENSUAL_TRANSACTION_TABLE = "consensual_transaction"
     const val LEDGER_CONSENSUAL_TRANSACTION_STATUS_TABLE = "consensual_transaction_status"

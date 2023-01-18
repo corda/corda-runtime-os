@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "DeleteApprovalRule",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Delete a previously persisted approval rule.",
+  "fields": [
+    {
+      "name": "ruleId",
+      "doc": "The ID of the rule to be deleted.",
+      "type": "string"
+    }
+  ]
+}

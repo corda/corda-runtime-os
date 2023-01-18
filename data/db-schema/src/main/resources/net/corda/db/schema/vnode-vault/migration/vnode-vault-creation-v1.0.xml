@@ -127,5 +127,22 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+        <createTable tableName="vnode_group_approval_rules">
+            <column name="rule_id" type="NVARCHAR(255)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="rule_regex" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rule_type" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rule_label" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <createIndex indexName="vnode_group_approval_rules_type" tableName="vnode_group_approval_rules" clustered="false">
+            <column name="rule_type"/>
+        </createIndex>
     </changeSet>
 </databaseChangeLog>
