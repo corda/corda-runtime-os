@@ -15,7 +15,7 @@ import net.corda.v5.application.marshalling.MarshallingService
 data class RPCRequestDataWrapper(
     override val clientRequestId : String,
     override val flowClassName: String,
-    override val requestData: String)
+    override val requestBody: String)
     : RequestData {
 
     /**
@@ -24,15 +24,15 @@ data class RPCRequestDataWrapper(
     override fun toRPCRequestData() : RestRequestBody {
         return object : RestRequestBody {
             override fun getRequestBody(): String {
-                return requestData
+                return requestBody
             }
 
             override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
-                return marshallingService.parse(requestData, clazz)
+                return marshallingService.parse(requestBody, clazz)
             }
 
             override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
-                return marshallingService.parseList(requestData, clazz)
+                return marshallingService.parseList(requestBody, clazz)
             }
 
         }
