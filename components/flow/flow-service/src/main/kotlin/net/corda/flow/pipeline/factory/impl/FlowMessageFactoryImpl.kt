@@ -8,8 +8,6 @@ import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
 
 @Component(service = [FlowMessageFactory::class])
 @Suppress("Unused")
