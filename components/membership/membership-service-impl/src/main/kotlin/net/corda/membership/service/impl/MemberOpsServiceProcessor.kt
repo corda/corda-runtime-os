@@ -20,6 +20,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -52,6 +53,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
+import net.corda.v5.base.util.parseOrNull
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
@@ -244,16 +246,35 @@ class MemberOpsServiceProcessor(
             val tlsType = TlsType.fromString(
                 persistedGroupPolicyProperties.parseOrNull(PropertyKeys.TLS_TYPE, String::class.java)
             ) ?: TlsType.ONE_WAY
+            val mgmCertificateSubject = if (tlsType == TlsType.MUTUAL) {
+                val subject = persistedGroupPolicyProperties.parse<String>(
+                    PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT
+                )
+                mapOf(MGM_CLIENT_CERTIFICATE_SUBJECT to subject)
+            } else {
+                emptyMap()
+            }
 
             val isNoSessionPkiMode = GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI ==
                 GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.fromString(sessionPkiMode)
 
             val tlsTrustroots: List<String> = persistedGroupPolicyProperties.parseList(PropertyKeys.TLS_TRUST_ROOTS)
-            val sessionTrustroots: List<String>? = if (isNoSessionPkiMode) {
-                null
+            val sessionTrustroots = if (isNoSessionPkiMode) {
+                emptyMap()
             } else {
-                persistedGroupPolicyProperties.parseList(PropertyKeys.SESSION_TRUST_ROOTS)
+                mapOf(
+                    SESSION_TRUST_ROOTS to
+                            persistedGroupPolicyProperties.parseList<String>(PropertyKeys.SESSION_TRUST_ROOTS)
+                )
             }
+            val p2pParameters = mapOf(
+                TLS_TRUST_ROOTS to tlsTrustroots,
+                SESSION_PKI to sessionPkiMode,
+                TLS_PKI to tlsPkiMode,
+                TLS_VERSION to tlsVersion,
+                PROTOCOL_MODE to p2pMode,
+                TLS_TYPE to tlsType.groupPolicyName,
+            ) + sessionTrustroots + mgmCertificateSubject
 
             val groupPolicy = mapOf(
                 FILE_FORMAT_VERSION to 1,
@@ -263,18 +284,7 @@ class MemberOpsServiceProcessor(
                 PROTOCOL_PARAMETERS to mapOf(
                     SESSION_KEY_POLICY to sessionKeyPolicy
                 ),
-                P2P_PARAMETERS to mutableMapOf(
-                    TLS_TRUST_ROOTS to tlsTrustroots,
-                    SESSION_PKI to sessionPkiMode,
-                    TLS_PKI to tlsPkiMode,
-                    TLS_VERSION to tlsVersion,
-                    PROTOCOL_MODE to p2pMode,
-                    TLS_TYPE to tlsType.groupPolicyName,
-                ).apply {
-                    sessionTrustroots?.let {
-                        put(SESSION_TRUST_ROOTS, it)
-                    }
-                },
+                P2P_PARAMETERS to p2pParameters,
                 MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value },
                 CIPHER_SUITE to emptyMap<String, String>()
             )

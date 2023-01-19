@@ -27,6 +27,7 @@ import net.corda.membership.lib.impl.grouppolicy.getBadEnumError
 import net.corda.membership.lib.impl.grouppolicy.getBlankValueError
 import net.corda.membership.lib.impl.grouppolicy.getMissingCertError
 import net.corda.membership.lib.impl.grouppolicy.getMissingKeyError
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -177,6 +178,29 @@ class MemberGroupPolicyImplTest {
                     )
                 )
             }
+        }
+
+        @Test
+        fun `mgm client certificate subject is null by default`() {
+            val groupPolicy = MemberGroupPolicyImpl(
+                buildGroupPolicyNode()
+            )
+
+            assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isNull()
+        }
+
+        @Test
+        fun `mgm client certificate subject is read correctly`() {
+            val subject = "O=One, C=GB, L = Three"
+            val groupPolicy = MemberGroupPolicyImpl(
+                buildGroupPolicyNode(
+                    p2pParametersOverride = buildP2PParameters(
+                        mgmClientCertificateSubject = subject
+                    )
+                )
+            )
+
+            assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(MemberX500Name.parse(subject))
         }
     }
 
