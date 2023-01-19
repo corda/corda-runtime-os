@@ -268,6 +268,7 @@ class FlowEventExceptionProcessorImplTest {
             )
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+        target.process(error, context)
 
         verify(flowCheckpoint, times(0)).flowStartContext
     }
