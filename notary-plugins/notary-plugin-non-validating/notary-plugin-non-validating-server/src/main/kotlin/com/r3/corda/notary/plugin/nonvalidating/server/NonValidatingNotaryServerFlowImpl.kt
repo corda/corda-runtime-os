@@ -17,6 +17,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -35,6 +36,10 @@ import kotlin.IllegalStateException
 @InitiatedBy(protocol = "non-validating-notary")
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
+    private companion object {
+        val logger: Logger = loggerFor<NonValidatingNotaryServerFlowImpl>()
+    }
+
     @CordaInject
     private lateinit var clientService: LedgerUniquenessCheckerClientService
 
@@ -46,10 +51,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     @CordaInject
     private lateinit var memberLookup: MemberLookup
-
-    private companion object {
-        val logger: Logger = loggerFor<NonValidatingNotaryServerFlowImpl>()
-    }
 
     /**
      * Constructor used for testing to initialize the necessary services
@@ -85,7 +86,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val requestPayload = session.receive(NonValidatingNotarisationPayload::class.java)
 
             val txDetails = validateRequest(requestPayload)
+
             val request = NotarisationRequest(txDetails.inputs, txDetails.id)
+
+            logger.trace { "Received notarization request for transaction ${request.transactionId}" }
 
             val otherMemberInfo = memberLookup.lookup(session.counterparty)
                 ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
@@ -107,6 +111,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val notaryServicePublicKeys = (requestPayload.notaryKey as? CompositeKey)?.leafKeys?.toList()
                 ?: listOf(requestPayload.notaryKey)
 
+            logger.trace { "Requesting uniqueness check for transaction ${txDetails.id}" }
+
             val uniquenessResponse = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
                 txDetails.inputs.map { it.toString() },
@@ -118,8 +124,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             )
 
             logger.debug {
-                "Uniqueness check completed for transaction with Tx [${txDetails.id}], " +
-                        "result is: ${uniquenessResponse.result}"
+                "Uniqueness check completed for transaction ${txDetails.id}, result is: ${uniquenessResponse.result}. Sending response " +
+                        "to ${session.counterparty}"
             }
 
             session.send(uniquenessResponse.toNotarisationResponse())
@@ -200,8 +206,13 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         try {
             (requestPayload.transaction as UtxoFilteredTransaction).verify()
         } catch (e: Exception) {
-            logger.warn("Error while validating the transaction, reason: ${e.message}")
-            throw IllegalStateException("Error while validating the transaction", e)
+            logger.warn(
+                "Error while validating transaction ${(requestPayload.transaction as UtxoFilteredTransaction).id}, reason: ${e.message}"
+            )
+            throw IllegalStateException(
+                "Error while validating transaction ${(requestPayload.transaction as UtxoFilteredTransaction).id}",
+                e
+            )
         }
     }
 
