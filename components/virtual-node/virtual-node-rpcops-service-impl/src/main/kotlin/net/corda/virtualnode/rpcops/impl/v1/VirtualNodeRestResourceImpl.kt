@@ -285,7 +285,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
                 resolvedResponse.run {
-                    ChangeVirtualNodeStateResponse(holdingIdentityShortHash, virtualNodeState)
+                    ChangeVirtualNodeStateResponse(holdingIdentityShortHash, newState)
                 }
             }
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
