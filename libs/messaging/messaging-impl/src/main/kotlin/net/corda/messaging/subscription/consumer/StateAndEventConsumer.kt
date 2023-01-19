@@ -1,11 +1,10 @@
 package net.corda.messaging.subscription.consumer
 
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Clock
 import java.util.concurrent.CompletableFuture
-import kotlin.jvm.Throws
 
 /**
  * Wrapper class to encapsulate the state and event consumers and handle any interactions with the in-memory state objects.
@@ -19,7 +18,7 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
     class RebalanceInProgressException(
         message: String,
         exception: Exception? = null
-    ) : CordaMessageAPIIntermittentException(message, exception)
+    ) : CordaRuntimeException(message, exception)
 
     /**
      * Get the in memory state value for a given [key]
@@ -64,8 +63,7 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
     /**
      * Direct access to [eventConsumer] and [stateConsumer].
      * @Suppress("ForbiddenComment")
-     * TODO: can cause issues if used carelessly, we should remove the direct access and manage the consumers
-     *       internally only (providing adapter methods where necessary).
+     * TODO: remove direct access to consumers. See https://r3-cev.atlassian.net/browse/CORE-9569.
      */
     val eventConsumer: CordaConsumer<K, E>
     val stateConsumer: CordaConsumer<K, S>
