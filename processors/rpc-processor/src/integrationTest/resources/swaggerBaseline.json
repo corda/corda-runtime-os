@@ -1990,6 +1990,135 @@
         }
       }
     },
+    "/mgm/{holdingidentityshorthash}/approval/rules" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method retrieves the set of rules the group is currently configured with",
+        "operationId" : "get_mgm__holdingidentityshorthash__approval_rules",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Collection of group approval rules",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApprovalRuleInfo"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method adds a rule to the set of group approval rules.",
+        "operationId" : "post_mgm__holdingidentityshorthash__approval_rules",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApprovalRuleRequestParams"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Details of the newly persisted approval rule",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApprovalRuleInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/approval/rules/{ruleid}" : {
+      "delete" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method deletes a previously added group approval rule.",
+        "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules__ruleid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "ruleid",
+          "in" : "path",
+          "description" : "The ID of the group approval rule to be deleted",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the group approval rule to be deleted",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
@@ -3083,6 +3212,44 @@
   },
   "components" : {
     "schemas" : {
+      "ApprovalRuleInfo" : {
+        "required" : [ "ruleId", "ruleRegex" ],
+        "type" : "object",
+        "properties" : {
+          "ruleId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "ruleLabel" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ruleRegex" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "ApprovalRuleRequestParams" : {
+        "required" : [ "ruleRegex" ],
+        "type" : "object",
+        "properties" : {
+          "ruleLabel" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ruleRegex" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "The approval rule information including the regular expression associated with the rule, and an optional label describing the rule"
+      },
       "BulkCreatePermissionsRequestType" : {
         "required" : [ "permissionsToCreate", "roleIds" ],
         "type" : "object",

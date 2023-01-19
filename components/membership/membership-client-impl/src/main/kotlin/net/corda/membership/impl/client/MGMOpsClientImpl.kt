@@ -2,6 +2,8 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -21,6 +23,7 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -89,6 +92,16 @@ class MGMOpsClientImpl @Activate constructor(
         fun mutualTlsListClientCertificate(
             holdingIdentityShortHash: ShortHash,
         ): Collection<MemberX500Name>
+
+        fun addApprovalRule(
+            holdingIdentityShortHash: ShortHash,
+            ruleParams: ApprovalRuleParams
+        ): ApprovalRuleDetails
+
+        fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType):
+                Collection<ApprovalRuleDetails>
+
+        fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String)
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -136,6 +149,16 @@ class MGMOpsClientImpl @Activate constructor(
     ) = impl.mutualTlsListClientCertificate(
         holdingIdentityShortHash,
     )
+
+    override fun addApprovalRule(
+        holdingIdentityShortHash: ShortHash, ruleParams: ApprovalRuleParams
+    ) = impl.addApprovalRule(holdingIdentityShortHash, ruleParams)
+
+    override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
+        impl.getApprovalRules(holdingIdentityShortHash, ruleType)
+
+    override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
+        impl.deleteApprovalRule(holdingIdentityShortHash, ruleId)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -203,6 +226,17 @@ class MGMOpsClientImpl @Activate constructor(
         override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
             throw IllegalStateException(ERROR_MSG)
 
+        override fun addApprovalRule(
+            holdingIdentityShortHash: ShortHash,
+            ruleParams: ApprovalRuleParams
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
+            throw IllegalStateException(ERROR_MSG)
+
+        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
+            throw IllegalStateException(ERROR_MSG)
+
         override fun mutualTlsAllowClientCertificate(
             holdingIdentityShortHash: ShortHash,
             subject: MemberX500Name,
@@ -223,7 +257,6 @@ class MGMOpsClientImpl @Activate constructor(
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-
         @Suppress("ThrowsCount")
         fun mgmHoldingIdentity(holdingIdentityShortHash: ShortHash): HoldingIdentity {
             val holdingIdentity =
@@ -284,6 +317,28 @@ class MGMOpsClientImpl @Activate constructor(
                     MemberX500Name.parse(it)
                 }
         }
+
+        override fun addApprovalRule(
+            holdingIdentityShortHash: ShortHash, ruleParams: ApprovalRuleParams
+        ): ApprovalRuleDetails =
+            membershipPersistenceClient.addApprovalRule(
+                mgmHoldingIdentity(holdingIdentityShortHash),
+                ruleParams
+            ).getOrThrow()
+
+        override fun getApprovalRules(
+            holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType
+        ): Collection<ApprovalRuleDetails> =
+            membershipQueryClient.getApprovalRules(
+                mgmHoldingIdentity(holdingIdentityShortHash),
+                ruleType
+            ).getOrThrow()
+
+        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
+            membershipPersistenceClient.deleteApprovalRule(
+                mgmHoldingIdentity(holdingIdentityShortHash),
+                ruleId
+            ).getOrThrow()
 
         override fun close() = rpcSender.close()
 
