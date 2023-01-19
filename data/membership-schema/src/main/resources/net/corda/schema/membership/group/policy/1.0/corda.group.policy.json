@@ -227,6 +227,10 @@
             "OneWay",
             "Mutual"
           ]
+        },
+        "mtlsMgmClientCertificateSubject": {
+          "description": "The client certificate subject (valid only in mutual TLS type).",
+          "type": "string"
         }
       },
       "additionalProperties": false
