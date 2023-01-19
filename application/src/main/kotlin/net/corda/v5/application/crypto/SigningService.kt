@@ -36,4 +36,15 @@ interface SigningService {
      */
     @Suspendable
     fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey
+
+    /**
+     * Gets a set of signing keys to look into and returns a mapping of the requested signing keys to signing keys
+     * found to be owned by the caller. In case of [CompositeKey] it maps the composite key with the firstly found
+     * composite key leaf.
+     *
+     * @param keys The signing keys to look into.
+     * @return A mapping of requested signing keys to found signing keys to be owned by the caller or null if not found to be owned.
+     */
+    @Suspendable
+    fun findMySigningKeys(keys: Set<PublicKey>): Map<PublicKey, PublicKey?>
 }
