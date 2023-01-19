@@ -26,8 +26,18 @@ class VerifyContractsExternalEventFactoryTest {
         val checkpoint = mock<FlowCheckpoint>()
         val transaction = ByteBuffer.wrap(byteArrayOf(1))
         val cpkMetadata = listOf(
-            CordaPackageSummary("cpk1", "1.0", "SHA-256:0000000000000001"),
-            CordaPackageSummary("cpk2", "2.0", "SHA-256:0000000000000002")
+            CordaPackageSummary(
+                "cpk1",
+                "1.0",
+                "SHA-256:0000000000000001",
+                "SHA-256:0000000000000011"
+            ),
+            CordaPackageSummary(
+                "cpk2",
+                "2.0",
+                "SHA-256:0000000000000002",
+                "SHA-256:0000000000000022"
+            )
         )
         val externalEventContext = ExternalEventContext(
             "request id",

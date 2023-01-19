@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.verification
 
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 /**
@@ -12,8 +13,8 @@ interface UtxoLedgerVerificationService {
      *
      * @param transaction UTXO ledger transaction.
      *
-     * @return Contracts verification result.
+     * @throws [ContractVerificationException] if verification was unsuccessful.
      */
     @Suspendable
-    fun verifyContracts(transaction: UtxoLedgerTransaction): Boolean
+    fun verifyContracts(transaction: UtxoLedgerTransaction)
 }
