@@ -17,7 +17,7 @@ import net.corda.v5.base.annotations.Suspendable
  * @CordaInject
  * lateinit var tokenSelection: TokenSelection
  *
- * override fun call(requestBody: RPCRequestData): String {
+ * override fun call(requestBody: RestRequestBody): String {
  *     // Create a criteria describing the tokens to be selected and
  *     // the target amount to be claimed.
  *     val criteria = TokenClaimCriteria(
@@ -53,7 +53,7 @@ import net.corda.v5.base.annotations.Suspendable
  * public TokenSelection tokenSelection;
  *
  * @Override
- * public String call(RPCRequestData requestBody) {
+ * public String call(RestRequestBody requestBody) {
  *
  *     // Create a criteria describing the tokens to be selected and
  *     // the target amount to be claimed.
