@@ -15,6 +15,7 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRpcOps
+import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.v5.base.types.MemberX500Name
@@ -25,6 +26,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.UUID
 
 @Component(service = [PluggableRPCOps::class])
 class MGMRpcOpsImpl @Activate constructor(
@@ -52,6 +54,14 @@ class MGMRpcOpsImpl @Activate constructor(
         fun mutualTlsListClientCertificate(
             holdingIdentityShortHash: String,
         ): Collection<String>
+        fun generatePreAuthToken(holdingIdentityShortHash: String, ownerX500Name: String, ttl: Int, remarks: String?): PreAuthToken
+        fun getPreAuthTokens(
+            holdingIdentityShortHash: String,
+            ownerX500Name: String?,
+            preAuthTokenId: String?,
+            viewInactive: Boolean
+        ): Collection<PreAuthToken>
+        fun revokePreAuthToken(holdingIdentityShortHash: String, preAuthTokenId: String, remarks: String? = null): PreAuthToken
     }
 
     override val protocolVersion = 1
@@ -98,6 +108,19 @@ class MGMRpcOpsImpl @Activate constructor(
     override fun mutualTlsListClientCertificate(holdingIdentityShortHash: String) =
         impl.mutualTlsListClientCertificate(holdingIdentityShortHash)
 
+    override fun generatePreAuthToken(holdingIdentityShortHash: String, ownerX500Name: String, ttl: Int, remarks: String?) =
+        impl.generatePreAuthToken(holdingIdentityShortHash, ownerX500Name, ttl, remarks)
+
+    override fun getPreAuthTokens(
+        holdingIdentityShortHash: String,
+        ownerX500Name: String?,
+        preAuthTokenId: String?,
+        viewInactive: Boolean
+    ) = impl.getPreAuthTokens(holdingIdentityShortHash, ownerX500Name, preAuthTokenId, viewInactive)
+
+    override fun revokePreAuthToken(holdingIdentityShortHash: String, preAuthTokenId: String, remarks: String?) =
+        impl.revokePreAuthToken(holdingIdentityShortHash, preAuthTokenId, remarks)
+
     fun activate(reason: String) {
         impl = ActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP, reason)
@@ -133,6 +156,34 @@ class MGMRpcOpsImpl @Activate constructor(
         }
 
         override fun mutualTlsListClientCertificate(holdingIdentityShortHash: String): Collection<String> {
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+        }
+
+        override fun generatePreAuthToken(
+            holdingIdentityShortHash: String,
+            ownerX500Name: String,
+            ttl: Int,
+            remarks: String?
+        ): PreAuthToken {
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+        }
+
+        override fun getPreAuthTokens(
+            holdingIdentityShortHash: String,
+            ownerX500Name: String?,
+            preAuthTokenId: String?,
+            viewInactive: Boolean
+        ): Collection<PreAuthToken> {
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+        }
+
+        override fun revokePreAuthToken(holdingIdentityShortHash: String, preAuthTokenId: String, remarks: String?): PreAuthToken {
             throw ServiceUnavailableException(
                 "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -228,6 +279,111 @@ class MGMRpcOpsImpl @Activate constructor(
                 ).map {
                     it.toString()
                 }
+            } catch (e: MemberNotAnMgmException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityShortHash" to holdingIdentityShortHash
+                    ),
+                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                )
+            }
+        }
+
+        override fun generatePreAuthToken(
+            holdingIdentityShortHash: String,
+            ownerX500Name: String,
+            ttl: Int,
+            remarks: String?
+        ): PreAuthToken {
+            val ownerX500 = try {
+                MemberX500Name.parse(ownerX500Name)
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "ownerX500Name" to ownerX500Name
+                    ),
+                    message = "ownerX500Name is not a valid X500 name: ${e.message}",
+                )
+            }
+
+            return try {
+                mgmOpsClient.generatePreAuthToken(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    ownerX500,
+                    ttl,
+                    remarks
+                ).fromDto()
+            } catch (e: MemberNotAnMgmException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityShortHash" to holdingIdentityShortHash
+                    ),
+                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                )
+            }
+        }
+
+        override fun getPreAuthTokens(
+            holdingIdentityShortHash: String,
+            ownerX500Name: String?,
+            preAuthTokenId: String?,
+            viewInactive: Boolean
+        ): Collection<PreAuthToken> {
+            val ownerX500 = ownerX500Name?. let {
+                try {
+                    MemberX500Name.parse(it)
+                } catch (e: IllegalArgumentException) {
+                    throw InvalidInputDataException(
+                        details = mapOf(
+                            "ownerX500Name" to ownerX500Name
+                        ),
+                        message = "ownerX500Name is not a valid X500 name: ${e.message}",
+                    )
+                }
+            }
+
+            val tokenId = preAuthTokenId?.let { try {
+                    UUID.fromString(it)
+                } catch (e: java.lang.IllegalArgumentException) {
+                    throw InvalidInputDataException(
+                        details = mapOf("preAuthTokenId" to it),
+                        message = "tokenId is not a valid pre auth token."
+                    )
+                }
+            }
+            return try {
+                mgmOpsClient.getPreAuthTokens(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    ownerX500,
+                    tokenId,
+                    viewInactive
+                ).map { it.fromDto() }
+            } catch (e: MemberNotAnMgmException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityShortHash" to holdingIdentityShortHash
+                    ),
+                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                )
+            }
+        }
+
+        override fun revokePreAuthToken(holdingIdentityShortHash: String, preAuthTokenId: String, remarks: String?): PreAuthToken {
+            val tokenId =  try {
+                UUID.fromString(preAuthTokenId)
+            } catch (e: java.lang.IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    details = mapOf("preAuthTokenId" to preAuthTokenId),
+                    message = "tokenId is not a valid pre auth token."
+                )
+            }
+
+            return try {
+                mgmOpsClient.revokePreAuthToken(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    tokenId,
+                    remarks
+                ).fromDto()
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
                     details = mapOf(

@@ -2,12 +2,15 @@ package net.corda.membership.persistence.client
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import java.util.UUID
 
 /**
  * Interface to be implemented by the service which requires membership persistence outside of the DB worker.
@@ -184,4 +187,24 @@ interface MembershipPersistenceClient : Lifecycle {
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
     ): MembershipPersistenceResult<Unit>
+
+    /**
+     *
+     */
+    fun generatePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        preAuthTokenId: UUID,
+        ownerX500Name: MemberX500Name,
+        ttl: Int,
+        remarks: String?
+    ): MembershipPersistenceResult<Unit>
+
+    /**
+     *
+     */
+    fun revokePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        preAuthTokenId: UUID,
+        remarks: String?
+    ): MembershipPersistenceResult<PreAuthToken>
 }

@@ -3,9 +3,14 @@ package net.corda.membership.httprpc.v1
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.membership.httprpc.v1.types.response.PreAuthToken
+import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -97,4 +102,68 @@ interface MGMRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "The holding identity ID of the MGM.")
         holdingIdentityShortHash: String,
     ): Collection<String>
+
+    /**
+     * Generate a preAuthToken.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param ownerX500Name The X500 name of the member to preauthorize.
+     * @param ttl A (time-to-live) unix timestamp (in milliseconds) after which this token will become invalid. Defaults to infinity.
+     * @param remarks Some optional remarks.
+     */
+    @HttpRpcPOST(
+        path = "{holdingIdentityShortHash}/preauthtoken",
+    )
+    fun generatePreAuthToken(
+        @HttpRpcPathParameter
+        holdingIdentityShortHash: String,
+        @HttpRpcRequestBodyParameter
+        ownerX500Name: String,
+        @HttpRpcRequestBodyParameter(required = false)
+        ttl: Int = Int.MAX_VALUE,
+        @HttpRpcRequestBodyParameter(required = false)
+        remarks: String? = null,
+    ): PreAuthToken
+
+    /**
+     * Query for preAuthTokens.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param ownerX500Name The X500 name of the member to query for.
+     * @param preAuthTokenId The token ID to query for.
+     * @param viewInactive Return in tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
+     * [PreAuthTokenStatus.AUTO_INVALIDATED] as well as [PreAuthTokenStatus.AVAILABLE].
+     */
+    @HttpRpcGET(
+        path = "{holdingIdentityShortHash}/preauthtoken",
+    )
+    fun getPreAuthTokens(
+        @HttpRpcPathParameter
+        holdingIdentityShortHash: String,
+        @HttpRpcQueryParameter(required = false)
+        ownerX500Name: String? = null,
+        @HttpRpcQueryParameter(required = false)
+        preAuthTokenId: String? = null,
+        @HttpRpcQueryParameter(required = false)
+        viewInactive: Boolean = false
+    ): Collection<PreAuthToken>
+
+    /**
+     * Revoke a preAuthToken.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param preAuthTokenId The token ID to revoke.
+     * @param remarks Some optional remarks about why the token was revoked.
+     */
+    @HttpRpcPUT(
+        path = "{holdingIdentityShortHash}/preauthtoken/revoke/{preAuthTokenId}",
+    )
+    fun revokePreAuthToken(
+        @HttpRpcPathParameter
+        holdingIdentityShortHash: String,
+        @HttpRpcPathParameter
+        preAuthTokenId: String,
+        @HttpRpcRequestBodyParameter(required = false)
+        remarks: String? = null
+    ): PreAuthToken
 }

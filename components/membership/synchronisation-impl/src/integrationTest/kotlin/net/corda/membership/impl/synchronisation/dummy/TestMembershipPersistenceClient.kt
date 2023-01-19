@@ -2,6 +2,7 @@ package net.corda.membership.impl.synchronisation.dummy
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -11,6 +12,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
@@ -19,6 +21,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.util.*
 
 /**
  * Created for mocking and simplifying membership persistence client functionalities used by the membership services.
@@ -145,6 +148,20 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun mutualTlsRemoveCertificateFromAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
+    ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
+    override fun generatePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        preAuthTokenId: UUID,
+        ownerX500Name: MemberX500Name,
+        ttl: Int,
+        remarks: String?
+    ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
+    override fun revokePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        preAuthTokenId: UUID,
+        remarks: String?
     ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
     override val isRunning: Boolean

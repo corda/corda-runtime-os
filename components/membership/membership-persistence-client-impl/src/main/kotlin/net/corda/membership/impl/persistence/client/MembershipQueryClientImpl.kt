@@ -8,6 +8,7 @@ import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificat
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
+import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
@@ -15,8 +16,11 @@ import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -29,6 +33,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -37,6 +42,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MembershipQueryClient::class])
@@ -230,6 +236,35 @@ class MembershipQueryClientImpl(
             is MutualTlsListAllowedCertificatesResponse -> {
                 MembershipQueryResult.Success(
                     payload.subjects,
+                )
+            }
+            else -> {
+                MembershipQueryResult.Failure("Failed to retrieve list of allowed certificates.")
+            }
+        }
+    }
+
+    override fun queryPreAuthTokens(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name?,
+        preAuthTokenId: UUID?,
+        viewInactive: Boolean
+    ): MembershipQueryResult<List<PreAuthToken>> {
+        val statuses = if (viewInactive) {
+            PreAuthTokenStatus.values().toList()
+        } else {
+            listOf(PreAuthTokenStatus.AVAILABLE)
+        }
+        val ownerX500NameString = ownerX500Name?.let { ownerX500Name.toString() }
+        val preAuthTokenIdString = preAuthTokenId?.let { preAuthTokenId.toString() }
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            QueryPreAuthToken(ownerX500NameString, preAuthTokenIdString, statuses)
+        ).execute()
+        return when (val payload = result.payload) {
+            is PreAuthTokenQueryResponse -> {
+                MembershipQueryResult.Success(
+                    payload.tokens,
                 )
             }
             else -> {

@@ -11,6 +11,7 @@ import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -20,6 +21,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.nio.ByteBuffer
+import java.util.UUID
 
 /**
  * Created for mocking and simplifying membership query client functionalities used by the membership services.
@@ -106,6 +108,13 @@ class TestMembershipQueryClientImpl @Activate constructor(
 
     override fun mutualTlsListAllowedCertificates(
         mgmHoldingIdentity: HoldingIdentity,
+    ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
+    override fun queryPreAuthTokens(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name?,
+        preAuthTokenId: UUID?,
+        viewInactive: Boolean
     ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
     override val isRunning: Boolean

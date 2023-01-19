@@ -12,6 +12,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -100,6 +101,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.time.Instant
+import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
 
@@ -275,6 +277,26 @@ class MembershipPersistenceTest {
                 membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
                     mgmHoldingIdentity, subject
                 )
+            }
+
+            override fun generatePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                preAuthTokenId: UUID,
+                ownerX500Name: MemberX500Name,
+                ttl: Int,
+                remarks: String?
+            )= safeCall {
+                membershipPersistenceClient.generatePreAuthToken(
+                    mgmHoldingIdentity, preAuthTokenId, ownerX500Name, ttl, remarks
+                )
+            }
+
+            override fun revokePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                preAuthTokenId: UUID,
+                remarks: String?
+            ) = safeCall {
+                membershipPersistenceClient.revokePreAuthToken(mgmHoldingIdentity, preAuthTokenId, remarks)
             }
 
             fun <T> safeCall(func: () -> T): T {

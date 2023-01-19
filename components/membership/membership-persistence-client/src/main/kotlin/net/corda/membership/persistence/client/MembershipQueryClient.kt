@@ -1,11 +1,14 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import java.util.UUID
 
 interface MembershipQueryClient : Lifecycle {
     /**
@@ -88,5 +91,21 @@ interface MembershipQueryClient : Lifecycle {
      * @return a query result with the list of the client certificates subject.
      */
     fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>>
+
+    /**
+     * Query for PreAuthTokens
+     *
+     * @param mgmHoldingIdentity The holding identity of the MGM.
+     * @param ownerX500Name The X500 name of the member to query for.
+     * @param preAuthTokenId The token ID to query for.
+     * @param viewInactive Return in tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
+     * [PreAuthTokenStatus.AUTO_INVALIDATED] as well as [PreAuthTokenStatus.AVAILABLE].
+     */
+    fun queryPreAuthTokens(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name?,
+        preAuthTokenId: UUID?,
+        viewInactive: Boolean
+    ): MembershipQueryResult<List<PreAuthToken>>
 }
 

@@ -6,6 +6,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
 import net.corda.data.membership.db.request.command.PersistGroupParameters
@@ -13,14 +14,17 @@ import net.corda.data.membership.db.request.command.PersistGroupParametersInitia
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
+import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
+import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -32,6 +36,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
@@ -40,6 +45,7 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MembershipPersistenceClient::class])
@@ -288,6 +294,44 @@ class MembershipPersistenceClientImpl(
 
         return when (val payload = result.payload) {
             null -> MembershipPersistenceResult.success()
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+        }
+    }
+
+    override fun generatePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        preAuthTokenId: UUID,
+        ownerX500Name: MemberX500Name,
+        ttl: Int,
+        remarks: String?
+    ): MembershipPersistenceResult<Unit> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            AddPreAuthToken(preAuthTokenId.toString(), ownerX500Name.toString(), ttl.toLong(), remarks)
+        ).execute()
+
+        return when (val payload = result.payload) {
+            null -> MembershipPersistenceResult.success()
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+        }
+    }
+
+    override fun revokePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        preAuthTokenId: UUID,
+        remarks: String?
+    ): MembershipPersistenceResult<PreAuthToken> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            RevokePreAuthToken(preAuthTokenId.toString(), remarks)
+        ).execute()
+
+        return when (val payload = result.payload) {
+            is RevokePreAuthTokenResponse -> MembershipPersistenceResult.Success(
+                payload.preAuthToken
+            )
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
         }
