@@ -2,6 +2,7 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -15,7 +16,11 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRpcOps
+import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -52,6 +57,12 @@ class MGMRpcOpsImpl @Activate constructor(
         fun mutualTlsListClientCertificate(
             holdingIdentityShortHash: String,
         ): Collection<String>
+
+        fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo
+
+        fun getGroupApprovalRules(holdingIdentityShortHash: String): Collection<ApprovalRuleInfo>
+
+        fun deleteGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String)
     }
 
     override val protocolVersion = 1
@@ -98,6 +109,15 @@ class MGMRpcOpsImpl @Activate constructor(
     override fun mutualTlsListClientCertificate(holdingIdentityShortHash: String) =
         impl.mutualTlsListClientCertificate(holdingIdentityShortHash)
 
+    override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleParams: ApprovalRuleRequestParams) =
+        impl.addGroupApprovalRule(holdingIdentityShortHash, ruleParams)
+
+    override fun getGroupApprovalRules(holdingIdentityShortHash: String) =
+        impl.getGroupApprovalRules(holdingIdentityShortHash)
+
+    override fun deleteGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String) =
+        impl.deleteGroupApprovalRule(holdingIdentityShortHash, ruleId)
+
     fun activate(reason: String) {
         impl = ActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP, reason)
@@ -137,6 +157,21 @@ class MGMRpcOpsImpl @Activate constructor(
                 "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
         }
+
+        override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo =
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+
+        override fun getGroupApprovalRules(holdingIdentityShortHash: String): Collection<ApprovalRuleInfo> =
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+
+        override fun deleteGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String) =
+            throw ServiceUnavailableException(
+                "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
     }
 
     private inner class ActiveImpl : InnerMGMRpcOps {
@@ -146,12 +181,7 @@ class MGMRpcOpsImpl @Activate constructor(
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
             } catch (e: MemberNotAnMgmException) {
-                throw InvalidInputDataException(
-                    details = mapOf(
-                        "holdingIdentityShortHash" to holdingIdentityShortHash
-                    ),
-                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
-                )
+                invalidInput(holdingIdentityShortHash)
             }
         }
 
@@ -184,12 +214,7 @@ class MGMRpcOpsImpl @Activate constructor(
                     subjectName
                 )
             } catch (e: MemberNotAnMgmException) {
-                throw InvalidInputDataException(
-                    details = mapOf(
-                        "holdingIdentityShortHash" to holdingIdentityShortHash
-                    ),
-                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
-                )
+                invalidInput(holdingIdentityShortHash)
             }
         }
 
@@ -211,12 +236,7 @@ class MGMRpcOpsImpl @Activate constructor(
                     subjectName
                 )
             } catch (e: MemberNotAnMgmException) {
-                throw InvalidInputDataException(
-                    details = mapOf(
-                        "holdingIdentityShortHash" to holdingIdentityShortHash
-                    ),
-                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
-                )
+                invalidInput(holdingIdentityShortHash)
             }
         }
 
@@ -229,13 +249,55 @@ class MGMRpcOpsImpl @Activate constructor(
                     it.toString()
                 }
             } catch (e: MemberNotAnMgmException) {
-                throw InvalidInputDataException(
-                    details = mapOf(
-                        "holdingIdentityShortHash" to holdingIdentityShortHash
-                    ),
-                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
-                )
+                invalidInput(holdingIdentityShortHash)
             }
         }
+
+        override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo {
+            return try {
+                mgmOpsClient.addApprovalRule(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    ApprovalRuleParams(ruleInfo.ruleRegex, ApprovalRuleType.STANDARD, ruleInfo.ruleLabel)
+                ).let { ApprovalRuleInfo(it.ruleId, it.ruleRegex, it.ruleLabel) }
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                invalidInput(holdingIdentityShortHash)
+            } catch (e: MembershipPersistenceException) {
+                throw BadRequestException("${e.message}")
+            }
+        }
+
+        override fun getGroupApprovalRules(holdingIdentityShortHash: String): Collection<ApprovalRuleInfo> {
+            return try {
+                mgmOpsClient.getApprovalRules(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash), ApprovalRuleType.STANDARD
+                ).map { ApprovalRuleInfo(it.ruleId, it.ruleRegex, it.ruleLabel) }
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                invalidInput(holdingIdentityShortHash)
+            }
+        }
+
+        override fun deleteGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String) {
+            return try {
+                mgmOpsClient.deleteApprovalRule(ShortHash.parseOrThrow(holdingIdentityShortHash), ruleId)
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                invalidInput(holdingIdentityShortHash)
+            } catch (e: MembershipPersistenceException) {
+                throw ResourceNotFoundException("${e.message}")
+            }
+        }
+
+        private fun invalidInput(holdingIdentityShortHash: String): Nothing =
+            throw InvalidInputDataException(
+                details = mapOf(
+                    "holdingIdentityShortHash" to holdingIdentityShortHash
+                ),
+                message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+            )
     }
 }

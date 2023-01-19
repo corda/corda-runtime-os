@@ -1,6 +1,8 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -88,5 +90,19 @@ interface MembershipQueryClient : Lifecycle {
      * @return a query result with the list of the client certificates subject.
      */
     fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>>
+
+    /**
+     * Retrieves all persisted rules of the specified [ruleType].
+     *
+     * @param viewOwningIdentity The holding identity whose view is being requested.
+     * @param ruleType The approval rule type for this rule. See [ApprovalRuleType] for the available types.
+     *
+     * @return A query result with the collection of regular expressions if the query executed successfully.
+     * Returns an empty [List] if no rules have been persisted.
+     */
+    fun getApprovalRules(
+        viewOwningIdentity: HoldingIdentity,
+        ruleType: ApprovalRuleType
+    ): MembershipQueryResult<Collection<ApprovalRuleDetails>>
 }
 

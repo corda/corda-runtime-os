@@ -1,7 +1,5 @@
 package net.cordapp.testing.smoketests.flow
 
-import java.time.Instant
-import java.util.UUID
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
@@ -33,6 +31,8 @@ import net.cordapp.testing.smoketests.flow.messages.JsonSerializationInput
 import net.cordapp.testing.smoketests.flow.messages.JsonSerializationOutput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -64,6 +64,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
         "crypto_get_compatible_signature_specs" to this::getCompatibleSignatureSpecs,
+        "crypto_find_my_signing_keys" to this::findMySigningKeys,
         "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
@@ -93,9 +94,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var signingService: SigningService
-
-    @CordaInject
-    lateinit var memberLookupService: MemberLookup
 
     @CordaInject
     lateinit var signatureSpecService: SignatureSpecService
@@ -414,10 +412,34 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         return outputs.joinToString("; ")
     }
 
+    @Suppress("unused_parameter")
+    @Suspendable
+    private fun findMySigningKeys(input: RpcSmokeTestInput): String {
+        val myInfo = memberLookup.myInfo()
+        val myKeysFromMemberInfo = myInfo.ledgerKeys.toSet()
+        val myKeysFromCryptoWorker = signingService.findMySigningKeys(myKeysFromMemberInfo)
+        val requestResponseKey =
+            myKeysFromCryptoWorker
+                .map {
+                    it
+                }.single()
+
+        require(requestResponseKey.value != null) {
+            "Requested key was not found"
+        }
+        require(requestResponseKey.key == requestResponseKey.value) {
+            "Response key should be same with the requested"
+        }
+        require(myKeysFromMemberInfo.single() == requestResponseKey.key) {
+            "Request key in mapping should match specified request key"
+        }
+        return "success"
+    }
+
     @Suspendable
     private fun lookupMember(input: RpcSmokeTestInput): String {
         val memberX500Name = input.getValue("id")
-        val memberInfo = memberLookupService.lookup(MemberX500Name.parse(memberX500Name))
+        val memberInfo = memberLookup.lookup(MemberX500Name.parse(memberX500Name))
         checkNotNull(memberInfo) { IllegalStateException("Failed to find MemberInfo for $memberX500Name") }
 
         return memberInfo.name.toString()

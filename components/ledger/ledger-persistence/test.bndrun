@@ -5,6 +5,11 @@
 -runtrace: true
 
 -runvm: \
+    -DpostgresHost=${project.postgresHost},\
+    -DpostgresPort=${project.postgresPort},\
+    -DpostgresDb=${project.postgresDb},\
+    -DpostgresUser=${project.postgresUser},\
+    -DpostgresPassword=${project.postgresPassword},\
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
 
 -runsystempackages: \
@@ -21,12 +26,7 @@
     org.slf4j.simpleLogger.showShortLogName=true,\
     org.slf4j.simpleLogger.showThreadName=false,\
     org.slf4j.simpleLogger.showDateTime=true,\
-    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z',\
-    postgresHost=${project.postgresHost},\
-    postgresPort=${project.postgresPort},\
-    postgresDb=${project.postgresDb},\
-    postgresUser=${project.postgresUser},\
-    postgresPassword=${project.postgresPassword}
+    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 # Include the the tests since they're the bundle to be run inside an osgi framework.
 # This should make bnd resolve everything else we need.

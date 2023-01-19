@@ -4,8 +4,12 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -97,4 +101,84 @@ interface MGMRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "The holding identity ID of the MGM.")
         holdingIdentityShortHash: String,
     ): Collection<String>
+
+    /**
+     * The [addGroupApprovalRule] method enables you to add a regular expression rule to configure the approval
+     * method for registration (or re-registration) requests. Requests are evaluated against the rules added
+     * using this method to determine whether they will be automatically or manually approved. If the [MemberInfo]
+     * proposed in the request contains any new or changed keys that match one or more of the approval rules, the
+     * request will require manual approval.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.addGroupApprovalRule("58B6030FABDD", ApprovalRuleRequestParams("corda.roles.*", "roles rule"))
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param ruleParams The approval rule information including the regular expression associated with the rule, and an
+     * optional label describing the rule
+     *
+     * @return Details of the newly persisted approval rule.
+     */
+    @HttpRpcPOST(
+        path = "{holdingIdentityShortHash}/approval/rules",
+        description = "This method adds a rule to the set of group approval rules.",
+        responseDescription = "Details of the newly persisted approval rule"
+    )
+    fun addGroupApprovalRule(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group")
+        holdingIdentityShortHash: String,
+        @HttpRpcRequestBodyParameter(description = "The approval rule information including the regular expression " +
+                "associated with the rule, and an optional label describing the rule")
+        ruleParams: ApprovalRuleRequestParams,
+    ): ApprovalRuleInfo
+
+    /**
+     * The [getGroupApprovalRules] method enables you to retrieve the set of approval rules the group is currently
+     * configured with. Registration (or re-registration) requests are evaluated against these rules to determine
+     * whether they will be automatically or manually approved. If the [MemberInfo] proposed in a request contains any
+     * new or changed keys that match one or more of the approval rules in this collection, the request will require
+     * manual approval.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.getGroupApprovalRules(holdingIdentityShortHash = "58B6030FABDD")
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     *
+     * @return Group approval rules as a collection of [ApprovalRuleInfo].
+     */
+    @HttpRpcGET(
+        path = "{holdingIdentityShortHash}/approval/rules",
+        description = "This method retrieves the set of rules the group is currently configured with",
+        responseDescription = "Collection of group approval rules"
+    )
+    fun getGroupApprovalRules(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group")
+        holdingIdentityShortHash: String
+    ): Collection<ApprovalRuleInfo>
+
+    /**
+     * The [deleteGroupApprovalRule] method allows you to delete a group approval rule that was added through the
+     * [addGroupApprovalRule] method.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.deleteGroupApprovalRule(holdingIdentityShortHash = "58B6030FABDD", ruleId = "b305129b-8c92-4092-b3a2-e6d452ce2b01")
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param ruleId ID of the group approval rule to be deleted.
+     */
+    @HttpRpcDELETE(
+        path = "{holdingIdentityShortHash}/approval/rules/{ruleId}",
+        description = "This method deletes a previously added group approval rule."
+    )
+    fun deleteGroupApprovalRule(
+        @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group")
+        holdingIdentityShortHash: String,
+        @HttpRpcPathParameter(description = "The ID of the group approval rule to be deleted")
+        ruleId: String
+    )
 }
