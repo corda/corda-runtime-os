@@ -44,7 +44,7 @@ class SimulatedVirtualNodeBase(
 
     private fun doCallFlow(input: RequestData, contextPropertiesMap: Map<String, String>): String{
         val flowClassName = input.flowClassName
-        log.info("Calling flow $flowClassName for member \"$member\" with request: ${input.requestData}")
+        log.info("Calling flow $flowClassName for member \"$member\" with request: ${input.requestBody}")
         val flow = flowFactory.createInitiatingFlow(member, flowClassName)
         injector.injectServices(
             FlowAndProtocol(flow),
