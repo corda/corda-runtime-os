@@ -57,7 +57,7 @@ interface FlowRpcOps : RpcOps {
                 Information required to start a flow for this holdingId, including:
                 clientRequestId: a client provided flow identifier
                 flowClassName: fully qualified class name of the flow to start
-                requestData: optional start arguments string passed to the flow; defaults to an empty string
+                requestBody: optional start arguments string passed to the flow; defaults to an empty string
             """,
             required = true
         )

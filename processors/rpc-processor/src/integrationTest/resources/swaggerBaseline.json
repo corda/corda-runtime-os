@@ -4196,7 +4196,7 @@
             } ]
           }
         },
-        "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestData: optional start arguments string passed to the flow; defaults to an empty string\n            "
+        "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestBody: optional start arguments string passed to the flow; defaults to an empty string\n            "
       },
       "StartableFlowsResponse" : {
         "required" : [ "flowClassNames" ],
