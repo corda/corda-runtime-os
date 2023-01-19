@@ -93,7 +93,6 @@ class FlowTests {
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
-            "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
             "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
@@ -740,17 +739,6 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.result).isEqualTo(dataToSerialize)
         assertThat(flowResult.command).isEqualTo("serialization")
-    }
-
-    @Test
-    fun `Notary - Uniqueness client service flow is finishing without exceptions`() {
-        val requestID = startRpcFlow(
-            bobHoldingId,
-            mapOf(),
-            "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
-        )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
 
     @Test

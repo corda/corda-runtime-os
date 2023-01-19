@@ -118,7 +118,8 @@ class NonValidatingNotaryClientFlowImpl(
 
         return NonValidatingNotarisationPayload(
             filteredTx,
-            requestSignature
+            requestSignature,
+            stx.notary.owningKey
         )
     }
 }

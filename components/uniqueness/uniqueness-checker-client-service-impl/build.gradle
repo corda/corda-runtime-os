@@ -22,8 +22,14 @@ dependencies {
     implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':libs:crypto:merkle-impl')
     implementation project(':libs:flows:flow-api')
+    implementation project(':libs:membership:membership-common')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:uniqueness:common')
     implementation project(':libs:virtual-node:virtual-node-info')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(":testing:crypto-testkit")
 }
