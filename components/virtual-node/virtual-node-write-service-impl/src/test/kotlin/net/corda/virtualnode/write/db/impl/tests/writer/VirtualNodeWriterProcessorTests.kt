@@ -446,7 +446,10 @@ class VirtualNodeWriterProcessorTests {
                 connectionId,
                 connectionId,
                 null,
-                "ACTIVE"
+                OperationalStatus.ACTIVE.name,
+                OperationalStatus.ACTIVE.name,
+                OperationalStatus.ACTIVE.name,
+                OperationalStatus.ACTIVE.name
             )
         )
 

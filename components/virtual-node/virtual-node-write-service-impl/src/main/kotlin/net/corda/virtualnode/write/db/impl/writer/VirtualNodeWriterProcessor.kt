@@ -391,7 +391,10 @@ internal class VirtualNodeWriterProcessor(
                 instant,
                 VirtualNodeStateChangeResponse(
                     stateChangeRequest.holdingIdentityShortHash,
-                    stateChangeRequest.newState
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
                 )
             )
             respFuture.complete(response)
@@ -687,6 +690,9 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.uniquenessDdlConnectionId?.toString(),
                 dbConnections.uniquenessDmlConnectionId.toString(),
                 null,
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
                 VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
             )
         )
