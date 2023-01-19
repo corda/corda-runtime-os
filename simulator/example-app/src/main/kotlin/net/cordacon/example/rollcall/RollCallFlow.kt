@@ -4,8 +4,8 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -17,12 +17,13 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
-import net.cordacon.example.rollcall.utils.createScript
+import net.cordacon.example.rollcall.utils.BaseScriptMaker
+import net.cordacon.example.rollcall.utils.ScriptMaker
 import net.cordacon.example.rollcall.utils.findStudents
 
 
 @InitiatingFlow("roll-call")
-class RollCallFlow: RPCStartableFlow {
+class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): ClientStartableFlow {
 
     private data class SessionAndRecipient(val flowSession: FlowSession, val receipient : MemberX500Name)
     private data class SessionAndResponse(val flowSession: FlowSession, val response : String)
@@ -51,7 +52,7 @@ class RollCallFlow: RPCStartableFlow {
     lateinit var signingService: SigningService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         log.info("Initiating roll call")
 
         val students = findStudents(memberLookup)
@@ -79,7 +80,8 @@ class RollCallFlow: RPCStartableFlow {
 
         val studentsAndResponses = responses
             .map { Pair(it.flowSession.counterparty, it.response) }
-        return createScript(studentsAndResponses, flowEngine.virtualNodeName)
+
+        return scriptMaker.createScript(studentsAndResponses, flowEngine.virtualNodeName)
     }
 
     private fun getTruantsFromRetryResults(rechecks: List<SessionAndResponse>): List<MemberX500Name> {

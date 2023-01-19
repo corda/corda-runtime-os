@@ -76,7 +76,7 @@ class CpiUploadRPCOpsServiceHandler(
                 setOf(
                     ConfigKeys.MESSAGING_CONFIG,
                     ConfigKeys.BOOT_CONFIG,
-                    ConfigKeys.RPC_CONFIG
+                    ConfigKeys.REST_CONFIG
                 )
             )
         } else {

@@ -1,9 +1,9 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.marshalling.MarshallingService
 
-class FakeRPCRequestData: RPCRequestData {
+class FakeRestRequestBody: RestRequestBody {
     override fun getRequestBody(): String {
         return ""
     }

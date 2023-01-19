@@ -6,11 +6,13 @@ import net.corda.simulator.crypto.HsmCategory
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
+import net.cordacon.example.rollcall.utils.ScriptMaker
 import net.cordacon.example.utils.createMember
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -96,5 +98,36 @@ class RollCallFlowTest {
 
         verify(bobsAbsentFlow, times(3)).call(any())
         assertThat(receivedRecord.absentees, `is`(listOf(bob)))
+    }
+
+    @Test
+    fun `should pass responses to ScriptMaker to make into script`() {
+        val students = listOf("Alice", "Bob", "Charlie").map { createMember(it) }
+        val teacher = createMember("Ben")
+        val truancyOffice = createMember("TruancyOffice", org="AlsoDifferentOrg")
+
+        val simulator = Simulator()
+
+        students.forEach {
+            val flow = mock<ResponderFlow>()
+            whenever(flow.call(any())).then { f ->
+                receiveAndSendResponse(f.getArgument(0), "Here!")
+            }
+            simulator.createInstanceNode(it, "roll-call", flow)
+        }
+
+        val scriptMaker = mock<ScriptMaker>()
+        whenever(scriptMaker.createScript(students.map { Pair(it, "Here!") }, teacher)).doReturn("Success!")
+
+        // Note we have isolated the script logic here; we're using Simulator's instance injection to mock this one
+        // class out without having to mock all the other services in play.
+        val aliceNode = simulator.createInstanceNode(teacher, "roll-call", RollCallFlow(scriptMaker))
+
+        val result = aliceNode.callFlow(RequestData.create(
+            "r1",
+            RollCallFlow::class.java,
+            RollCallInitiationRequest(truancyOffice)
+        ))
+        assertThat(result, `is`("Success!"))
     }
 }

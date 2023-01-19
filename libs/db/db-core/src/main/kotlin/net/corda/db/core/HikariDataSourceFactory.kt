@@ -2,6 +2,7 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import java.io.Closeable
 import javax.sql.DataSource
 
 /**
@@ -25,9 +26,8 @@ class HikariDataSourceFactory(
     /**
      * [HikariDataSource] wrapper that makes it [CloseableDataSource]
      */
-    private class DataSourceWrapper(private val delegate: HikariDataSource): CloseableDataSource, DataSource by delegate {
-        override fun close() = delegate.close()
-    }
+    private class DataSourceWrapper(private val delegate: HikariDataSource)
+        : CloseableDataSource, Closeable by delegate, DataSource by delegate
 
     override fun create(
         driverClass: String,
@@ -39,7 +39,7 @@ class HikariDataSourceFactory(
     ): CloseableDataSource {
         val conf = HikariConfig()
 
-        if (OSGiDataSourceFactory.runningInOSGiFramework()) {
+        try {
             // Create and *wrap* an existing data source.
             conf.dataSource = OSGiDataSourceFactory.create(
                 driverClass,
@@ -47,9 +47,9 @@ class HikariDataSourceFactory(
                 username,
                 password
             )
-        } else {
+        } catch (_: UnsupportedOperationException) {
             // Defer to Hikari, and hence java.sql.DriverManager, which we don't want in production
-            // code.  This part should only be hit in unit tests.
+            // code. This part should only be hit in unit tests that don't use an OSGi framework.
             conf.driverClassName = driverClass
             conf.jdbcUrl = jdbcUrl
             conf.username = username

@@ -6,26 +6,26 @@ import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.libs.configuration.secret.SecretsConfigurationException
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.libs.configuration.secret.SecretsServiceFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.schema.configuration.ConfigKeys
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
 
 /**
  * Factory for creating [SmartConfigFactory] objects based on configuration.
  * This means that implementations of the [SecretsServiceFactory] can be discovered at
  * start-up and resolved at runtime, allowing us to decouple the implementations from their use.
  *
- * @property secretsServiceFactories list of all available implementations of [SecretsServiceFactory].
+ * @property secretsServiceFactoryResolver to be able to fetch available implementations of [SecretsServiceFactory].
  */
 @Component(service = [SmartConfigFactoryFactory::class])
 class SmartConfigFactoryFactory
     @Activate
     constructor(
         // discover all "SecretsServiceFactory" services available through OSGi injection.
-        @Reference(service = SecretsServiceFactory::class, cardinality = ReferenceCardinality.MULTIPLE)
-        private val secretsServiceFactories: List<SecretsServiceFactory>
+        @Reference(service = SecretsServiceFactoryResolver::class)
+        private val secretsServiceFactoryResolver: SecretsServiceFactoryResolver
     ) {
 
     companion object {
@@ -56,10 +56,12 @@ class SmartConfigFactoryFactory
         // select type from the config, and fall back on the EncryptionSecretsServiceFactory
         val type = secretsServiceConfig.getStringOrDefault(SECRET_SERVICE_TYPE, EncryptionSecretsServiceFactory.TYPE)
 
-        val secretsServiceFactory = secretsServiceFactories
+        val secretsServiceFactory = secretsServiceFactoryResolver
+            .findAll()
             .singleOrNull { it.type == type }
                 ?: throw SecretsConfigurationException("SecretsServiceFactory of type $type is not available.")
 
         return SmartConfigFactoryImpl(secretsServiceFactory.create(secretsServiceConfig))
     }
 }
+

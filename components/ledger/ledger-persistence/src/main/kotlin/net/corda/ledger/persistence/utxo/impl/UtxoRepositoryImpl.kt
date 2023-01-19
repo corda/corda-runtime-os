@@ -122,9 +122,12 @@ class UtxoRepositoryImpl(
             """
                 SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
                 FROM {h-schema}utxo_transaction_component AS tc
-                WHERE tc.group_idx IN (:groupIndices) AND
-                tc.transaction_id in (:transactionIds) AND
-                (tc.transaction_id||':'|| tc.leaf_idx) in (:stateRefs)
+                JOIN {h-schema}utxo_transaction_status AS ts
+                    ON ts.transaction_id = tc.transaction_id
+                WHERE tc.group_idx IN (:groupIndices)
+                AND tc.transaction_id in (:transactionIds)
+                AND (tc.transaction_id||':'|| tc.leaf_idx) in (:stateRefs)
+                AND ts.status = :verified
                 ORDER BY tc.group_idx, tc.leaf_idx""",
             Tuple::class.java
         )
@@ -133,6 +136,7 @@ class UtxoRepositoryImpl(
                 "transactionIds",
                 stateRefs.map { it.transactionHash.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
+            .setParameter("verified", TransactionStatus.VERIFIED.value)
             .resultListAsTuples()
             .map { t ->
                 ComponentLeafDto(

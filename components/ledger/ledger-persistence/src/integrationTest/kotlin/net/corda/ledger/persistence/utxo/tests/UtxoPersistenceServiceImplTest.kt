@@ -10,6 +10,8 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.getPrivacySalt
+import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
@@ -173,9 +175,9 @@ class UtxoPersistenceServiceImplTest {
 
             em.createNativeQuery("DELETE FROM {h-schema}utxo_relevant_transaction_state").executeUpdate()
 
-            val transaction1Entity = createTransactionEntity(entityFactory, transaction1)
+            val transaction1Entity = createTransactionEntity(entityFactory, transaction1, status = VERIFIED)
                 .also { em.persist(it) }
-            val transaction2Entity = createTransactionEntity(entityFactory, transaction2)
+            val transaction2Entity = createTransactionEntity(entityFactory, transaction2, status = VERIFIED)
                 .also { em.persist(it) }
 
             entityFactory.createUtxoRelevantTransactionStateEntity(
@@ -199,16 +201,6 @@ class UtxoPersistenceServiceImplTest {
                 true,
                 createdTs
             ).also { em.persist(it) }
-
-            em
-                .createNativeQuery("""UPDATE {h-schema}utxo_transaction_status
-                    SET
-                        status=:verified
-                    WHERE
-                        transaction_id in (:transactionIds)""" )
-                .setParameter("verified", TransactionStatus.VERIFIED.value)
-                .setParameter("transactionIds", listOf(transaction1.id.toString(), transaction2.id.toString()))
-                .executeUpdate()
         }
 
         val stateClass = TestContractState2::class.java
@@ -226,8 +218,8 @@ class UtxoPersistenceServiceImplTest {
     fun `resolve staterefs`() {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transactions = listOf(
-            persistTransactionViaEntity(entityFactory),
-            persistTransactionViaEntity(entityFactory)
+            persistTransactionViaEntity(entityFactory, VERIFIED),
+            persistTransactionViaEntity(entityFactory, VERIFIED)
         )
 
         val stateRefs = listOf(
@@ -412,10 +404,10 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
-    private fun persistTransactionViaEntity(entityFactory: UtxoEntityFactory): SignedTransactionContainer {
+    private fun persistTransactionViaEntity(entityFactory: UtxoEntityFactory, status: TransactionStatus = UNVERIFIED): SignedTransactionContainer {
         val signedTransaction = createSignedTransaction()
         entityManagerFactory.transaction { em ->
-            em.persist(createTransactionEntity(entityFactory, signedTransaction))
+            em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status))
         }
         return signedTransaction
     }
@@ -424,7 +416,8 @@ class UtxoPersistenceServiceImplTest {
         entityFactory: UtxoEntityFactory,
         signedTransaction: SignedTransactionContainer,
         account: String = "Account",
-        createdTs: Instant = TEST_CLOCK.instant()
+        createdTs: Instant = TEST_CLOCK.instant(),
+        status: TransactionStatus = UNVERIFIED
     ): Any {
         return entityFactory.createUtxoTransactionEntity(
                 signedTransaction.id.toString(),
@@ -459,7 +452,7 @@ class UtxoPersistenceServiceImplTest {
                 )
                 transaction.field<MutableCollection<Any>>("statuses").addAll(
                     listOf(
-                        entityFactory.createUtxoTransactionStatusEntity(transaction, UNVERIFIED.value, createdTs)
+                        entityFactory.createUtxoTransactionStatusEntity(transaction, status.value, createdTs)
                     )
                 )
             }
@@ -480,28 +473,8 @@ class UtxoPersistenceServiceImplTest {
         createdTs: Instant = TEST_CLOCK.instant(),
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
-        val cpks = listOf(
-            CordaPackageSummaryImpl(
-                "$seed-cpk1",
-                "signerSummaryHash1",
-                "1.0",
-                "$seed-fileChecksum1"
-            ),
-            CordaPackageSummaryImpl(
-                "$seed-cpk2",
-                "signerSummaryHash2",
-                "2.0",
-                "$seed-fileChecksum2"
-            ),
-            CordaPackageSummaryImpl(
-                "$seed-cpk3",
-                "signerSummaryHash3",
-                "3.0",
-                "$seed-fileChecksum3"
-            )
-        )
         val transactionMetadata = transactionMetadataExample(
-            cpkMetadata = cpks,
+            cpkPackageSeed = seed,
             numberOfComponentGroups = UtxoComponentGroup.values().size
         )
         val componentGroupLists: List<List<ByteArray>> = listOf(
@@ -524,27 +497,14 @@ class UtxoPersistenceServiceImplTest {
             listOf("group9_component1".toByteArray())
 
         )
-        val privacySalt = PrivacySaltImpl(Random.nextBytes(32))
         val wireTransaction = wireTransactionFactory.create(
             componentGroupLists,
-            privacySalt
+            getPrivacySalt()
         )
         val publicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }
             .generateKeyPair().public
-        val signatures = listOf(
-            DigitalSignatureAndMetadata(
-                DigitalSignature.WithKey(
-                    publicKey,
-                    "signature".toByteArray(),
-                    mapOf("contextKey1" to "contextValue1")
-                ),
-                DigitalSignatureMetadata(
-                    createdTs,
-                    mapOf("propertyKey1" to "propertyValue1")
-                )
-            )
-        )
+        val signatures = listOf(getSignatureWithMetadataExample(publicKey, createdTs))
         return SignedTransactionContainer(wireTransaction, signatures)
     }
 

@@ -1,9 +1,11 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -207,4 +209,31 @@ interface MembershipPersistenceClient : Lifecycle {
         preAuthTokenId: UUID,
         remarks: String?
     ): MembershipPersistenceResult<PreAuthToken>
+
+    /**
+     * Persists the specified approval rule.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param ruleParams Parameters of the rule to be added, represented by [ApprovalRuleParams].
+     *
+     * @return Membership persistence result with the details of the newly added rule.
+     */
+    fun addApprovalRule(
+        viewOwningIdentity: HoldingIdentity,
+        ruleParams: ApprovalRuleParams
+    ): MembershipPersistenceResult<ApprovalRuleDetails>
+
+    /**
+     * Deletes a previously persisted approval rule.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param ruleId ID of the group approval rule to be deleted.
+     *
+     * @return Membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
+     */
+    fun deleteApprovalRule(
+        viewOwningIdentity: HoldingIdentity,
+        ruleId: String
+    ): MembershipPersistenceResult<Unit>
 }

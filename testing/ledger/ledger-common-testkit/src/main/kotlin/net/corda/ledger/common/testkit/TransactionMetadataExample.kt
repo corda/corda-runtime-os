@@ -7,7 +7,8 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
 fun transactionMetadataExample(
     cpiMetadata: CordaPackageSummaryImpl = cpiPackageSummaryExample,
-    cpkMetadata: List<CordaPackageSummaryImpl> = cpkPackageSummaryListExample,
+    cpkPackageSeed: String? = null,
+    cpkMetadata: List<CordaPackageSummaryImpl> = cpkPackageSummaryListExample(cpkPackageSeed),
     numberOfComponentGroups: Int
 ): TransactionMetadata {
     return TransactionMetadataImpl(

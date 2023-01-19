@@ -2,8 +2,8 @@ package net.cordapp.testing.testflows
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -18,7 +18,7 @@ import net.cordapp.testing.testflows.messages.TestFlowOutput
  * is used as a basic flow worker smoke test.
  */
 @Suppress("unused")
-class TestFlow : RPCStartableFlow {
+class TestFlow : ClientStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -34,7 +34,7 @@ class TestFlow : RPCStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         log.info("Starting Test Flow...")
         try {
             val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)

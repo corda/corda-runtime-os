@@ -3,11 +3,11 @@ package net.corda.simulator
 import net.corda.simulator.exceptions.ServiceConfigurationException
 import net.corda.simulator.factories.RequestDataFactory
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RestRequestBody
 import java.util.ServiceLoader
 
 /**
- * A wrapper around [net.corda.v5.application.flows.RPCRequestData] which can be passed to Simulator
+ * A wrapper around [net.corda.v5.application.flows.RestRequestBody] which can be passed to Simulator
  * on initiation of flows. This interface can be implemented, but static / companion factory methods
  * are provided for convenience.
  */
@@ -27,7 +27,7 @@ interface RequestData {
      * A JSON string containing the request body to be passed to the flow.
      */
     val requestBody: String
-    fun toRPCRequestData(): RPCRequestData
+    fun toRPCRequestData(): RestRequestBody
 
     companion object {
         private val factory = ServiceLoader.load(RequestDataFactory::class.java).firstOrNull() ?:

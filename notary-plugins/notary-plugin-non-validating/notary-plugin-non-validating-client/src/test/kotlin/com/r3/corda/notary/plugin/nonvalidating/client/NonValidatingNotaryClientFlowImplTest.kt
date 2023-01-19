@@ -59,10 +59,10 @@ class NonValidatingNotaryClientFlowImplTest {
         }
 
         val txId = SecureHashUtils.randomSecureHash()
-
         val mockUtxoTx = mock<UtxoSignedTransaction> {
             on { toLedgerTransaction() } doReturn mockLedgerTransaction
             on { id } doReturn txId
+            on { notary } doReturn Party(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"), mock())
         }
     }
 

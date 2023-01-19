@@ -8,6 +8,8 @@ import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
+import net.corda.data.membership.db.request.command.DeleteApprovalRule
+import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
@@ -18,6 +20,7 @@ import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationR
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
+import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
@@ -34,6 +37,8 @@ import net.corda.membership.impl.persistence.service.handler.AddPreAuthTokenHand
 import net.corda.membership.impl.persistence.service.handler.MutualTlsAddToAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsListAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsRemoveFromAllowedCertificatesHandler
+import net.corda.membership.impl.persistence.service.handler.DeleteApprovalRuleHandler
+import net.corda.membership.impl.persistence.service.handler.PersistApprovalRuleHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersInitialSnapshotHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupPolicyHandler
@@ -41,6 +46,7 @@ import net.corda.membership.impl.persistence.service.handler.PersistMemberInfoHa
 import net.corda.membership.impl.persistence.service.handler.PersistRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerServices
+import net.corda.membership.impl.persistence.service.handler.QueryApprovalRulesHandler
 import net.corda.membership.impl.persistence.service.handler.QueryGroupPolicyHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatureHandler
@@ -108,7 +114,11 @@ internal class MembershipPersistenceRPCProcessor(
         MutualTlsListAllowedCertificates::class.java to { MutualTlsListAllowedCertificatesHandler(persistenceHandlerServices) },
         QueryPreAuthToken::class.java to { QueryPreAuthTokenHandler(persistenceHandlerServices) },
         AddPreAuthToken::class.java to { AddPreAuthTokenHandler(persistenceHandlerServices) },
-        RevokePreAuthToken::class.java to { RevokePreAuthTokenHandler(persistenceHandlerServices) }
+        RevokePreAuthToken::class.java to { RevokePreAuthTokenHandler(persistenceHandlerServices) },
+        QueryRegistrationRequests::class.java to { QueryRegistrationRequestsHandler(persistenceHandlerServices) },
+        PersistApprovalRule::class.java to { PersistApprovalRuleHandler(persistenceHandlerServices) },
+        DeleteApprovalRule::class.java to { DeleteApprovalRuleHandler(persistenceHandlerServices) },
+        QueryApprovalRules::class.java to { QueryApprovalRulesHandler(persistenceHandlerServices) },
     )
 
     override fun onNext(

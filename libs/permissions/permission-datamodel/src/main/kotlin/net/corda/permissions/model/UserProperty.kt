@@ -12,7 +12,7 @@ import javax.persistence.Table
 import javax.persistence.Version
 
 @Entity
-@Table(name = "rpc_user_props", schema = DbSchema.RPC_RBAC)
+@Table(name = "rbac_user_props", schema = DbSchema.RBAC)
 class UserProperty(
     @Id
     @Column(name = "id", nullable = false)

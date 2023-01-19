@@ -91,18 +91,24 @@ class CryptoOpsClientImpl(
     }
 
     fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys {
+        val publicKeyIds = candidateKeys.map {
+            publicKeyIdFromBytes(it.array())
+        }
+        return lookUpForKeysByIdsProxy(tenantId, publicKeyIds)
+    }
+
+    fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            candidateKeys.joinToString { it.array().sha256Bytes().toBase58().take(12) + ".." }
+            candidateKeys.joinToString { "$it.." }
         )
+
         val request = createRequest(
             tenantId = tenantId,
             request = ByIdsRpcQuery(
-                candidateKeys.map {
-                    publicKeyIdFromBytes(it.array())
-                }
+                candidateKeys
             )
         )
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
