@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl.grouppolicy.v1
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
@@ -81,6 +82,7 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD)
                 it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_3)
                 it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH_ENCRYPT)
+                it.assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
 
                 it.assertThat(groupPolicy.mgmInfo).isNull()
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
@@ -117,6 +119,7 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
                 it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
                 it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH)
+                it.assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
 
                 it.assertThat(groupPolicy.mgmInfo).isNull()
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
@@ -160,12 +163,33 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
                 it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
                 it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH)
+                it.assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
 
                 it.assertThat(groupPolicy.mgmInfo).isNull()
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
             }
             verify(propertyQuery).invoke()
         }
+    }
+
+
+    @Test
+    fun `mgmClientCertificateSubject is extracted correctly`() {
+        val subject = "O=One, C=GB, L = Three"
+        val groupPolicy: GroupPolicy = MGMGroupPolicyImpl(
+            holdingIdentity,
+            buildGroupPolicyNode(
+                groupIdOverride = MGM_DEFAULT_GROUP_ID,
+            )
+        ) {
+            layeredPropertyMapFactory.createMap(
+                mapOf(
+                    GroupPolicyConstants.PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT to subject,
+                )
+            )
+        }
+
+        assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(MemberX500Name.parse(subject))
     }
 
     @Nested
