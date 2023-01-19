@@ -96,9 +96,6 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     lateinit var signingService: SigningService
 
     @CordaInject
-    lateinit var memberLookupService: MemberLookup
-
-    @CordaInject
     lateinit var signatureSpecService: SignatureSpecService
 
     @Suspendable
@@ -442,7 +439,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     @Suspendable
     private fun lookupMember(input: RpcSmokeTestInput): String {
         val memberX500Name = input.getValue("id")
-        val memberInfo = memberLookupService.lookup(MemberX500Name.parse(memberX500Name))
+        val memberInfo = memberLookup.lookup(MemberX500Name.parse(memberX500Name))
         checkNotNull(memberInfo) { IllegalStateException("Failed to find MemberInfo for $memberX500Name") }
 
         return memberInfo.name.toString()
