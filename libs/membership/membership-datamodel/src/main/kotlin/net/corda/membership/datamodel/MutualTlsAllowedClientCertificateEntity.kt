@@ -23,10 +23,10 @@ class MutualTlsAllowedClientCertificateEntity(
         if (other === this) return true
         if (other == null) return false
         if (other !is MutualTlsAllowedClientCertificateEntity) return false
-        return (other.subject == this.subject && other.isDeleted == this.isDeleted)
+        return (other.subject == this.subject)
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(subject, isDeleted)
+        return Objects.hash(subject)
     }
 }

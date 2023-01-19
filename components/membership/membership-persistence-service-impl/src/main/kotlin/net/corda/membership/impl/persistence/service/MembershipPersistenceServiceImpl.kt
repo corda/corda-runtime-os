@@ -69,7 +69,6 @@ class MembershipPersistenceServiceImpl @Activate constructor(
 
         const val GROUP_NAME = "membership.db.persistence"
         const val CLIENT_NAME = "membership.db.persistence"
-        const val PUBLISHER_NAME = "membership.db.persistence.publisher"
 
         private val clock: Clock = UTCClock()
     }

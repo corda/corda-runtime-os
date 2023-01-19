@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.datamodel.MutualTlsAllowedClientCertificateEntity
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.processors.db.internal.reconcile.db.MgmAllowedCertificateSubjectsReconciler.Companion.getAllAllowedSubjects
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
@@ -66,14 +67,16 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
         on { createEntityManagerFactory(connectionId, entitySet) } doReturn entityManagerFactory
     }
     private val reconcilerFactory = mock<ReconcilerFactory> {
-        on { create(
-            dbReader.capture(),
-            eq(kafkaReconcilerReader),
-            eq(kafkaReconcilerWriter),
-            eq(AllowedCertificateSubject::class.java),
-            eq(AllowedCertificateSubject::class.java),
-            any(),
-        ) } doReturn reconciler
+        on {
+            create(
+                dbReader.capture(),
+                eq(kafkaReconcilerReader),
+                eq(kafkaReconcilerWriter),
+                eq(AllowedCertificateSubject::class.java),
+                eq(AllowedCertificateSubject::class.java),
+                any(),
+            )
+        } doReturn reconciler
     }
 
     private val mgmAllowedCertificateSubjectsReconciler = MgmAllowedCertificateSubjectsReconciler(
@@ -128,7 +131,7 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
     @Test
     fun `getAllAllowedSubjects will return all the subjects`() {
         val root = mock<Root<MutualTlsAllowedClientCertificateEntity>>()
-        val queryBuilder = mock< CriteriaQuery<MutualTlsAllowedClientCertificateEntity>> {
+        val queryBuilder = mock<CriteriaQuery<MutualTlsAllowedClientCertificateEntity>> {
             on { from(MutualTlsAllowedClientCertificateEntity::class.java) } doReturn root
             on { select(root) } doReturn mock
         }
@@ -165,5 +168,23 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
                 assertThat(it.key.subject).isEqualTo("subject 3")
                 assertThat(it.isDeleted).isFalse
             }
+    }
+
+    @Test
+    fun `getAllAllowedSubjects create the correct query`() {
+        val root = mock<Root<MutualTlsAllowedClientCertificateEntity>>()
+        val queryBuilder = mock<CriteriaQuery<MutualTlsAllowedClientCertificateEntity>> {
+            on { from(MutualTlsAllowedClientCertificateEntity::class.java) } doReturn root
+            on { select(root) } doReturn mock
+        }
+        val criteriaBuilder = mock<CriteriaBuilder> {
+            on { createQuery(MutualTlsAllowedClientCertificateEntity::class.java) } doReturn queryBuilder
+        }
+        whenever(entityManager.criteriaBuilder).doReturn(criteriaBuilder)
+        whenever(entityManager.createQuery(queryBuilder)).doReturn(mock())
+
+        entityManager.getAllAllowedSubjects()
+
+        verify(entityManager).createQuery(queryBuilder)
     }
 }

@@ -30,11 +30,6 @@ class MutualTlsAllowedClientCertificateEntityTest {
     }
 
     @Test
-    fun `equals return false for another deleted state`() {
-        assertThat(entity.equals(MutualTlsAllowedClientCertificateEntity(entity.subject, true))).isFalse
-    }
-
-    @Test
     fun `equals return true for same subject`() {
         assertThat(entity.equals(MutualTlsAllowedClientCertificateEntity(entity.subject, entity.isDeleted))).isTrue
     }

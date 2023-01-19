@@ -15,6 +15,7 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.stream.Stream
+import javax.persistence.EntityManager
 
 @Suppress("LongParameterList")
 internal class MgmAllowedCertificateSubjectsReconciler(
@@ -25,12 +26,22 @@ internal class MgmAllowedCertificateSubjectsReconciler(
     private val reconcilerFactory: ReconcilerFactory,
     private val kafkaReconcilerReader: ReconcilerReader<AllowedCertificateSubject, AllowedCertificateSubject>,
     private val kafkaReconcilerWriter: ReconcilerWriter<AllowedCertificateSubject, AllowedCertificateSubject>,
-) : ReconcilerWrapper{
-    private companion object {
-        val dependencies = setOf(
+) : ReconcilerWrapper {
+    companion object {
+        private val dependencies = setOf(
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
+
+        internal fun EntityManager.getAllAllowedSubjects(): Stream<MutualTlsAllowedClientCertificateEntity> {
+            val criteriaBuilder = this.criteriaBuilder
+            val queryBuilder = criteriaBuilder.createQuery(MutualTlsAllowedClientCertificateEntity::class.java)
+            val root = queryBuilder.from(MutualTlsAllowedClientCertificateEntity::class.java)
+            val query = queryBuilder
+                .select(root)
+            return this.createQuery(query)
+                .resultStream
+        }
     }
 
     private val entitiesSet by lazy {
@@ -76,25 +87,18 @@ internal class MgmAllowedCertificateSubjectsReconciler(
     }
 
     private fun getAllAllowedSubjects(reconciliationContext: ReconciliationContext):
-            Stream<VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject>> {
-        return reconciliationContext.getOrCreateEntityManager().let { em ->
-            val criteriaBuilder = em.criteriaBuilder
-            val queryBuilder = criteriaBuilder.createQuery(MutualTlsAllowedClientCertificateEntity::class.java)
-            val root = queryBuilder.from(MutualTlsAllowedClientCertificateEntity::class.java)
-            val query = queryBuilder
-                .select(root)
-            em.createQuery(query)
-                .resultStream
-
-        }.map { entity ->
-            val subject = AllowedCertificateSubject(entity.subject)
-            object : VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject> {
-                override val version = 1
-                override val isDeleted = entity.isDeleted
-                override val key = subject
-                override val value = subject
+        Stream<VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject>> {
+        return reconciliationContext.getOrCreateEntityManager()
+            .getAllAllowedSubjects()
+            .map { entity ->
+                val subject = AllowedCertificateSubject(entity.subject)
+                object : VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject> {
+                    override val version = 1
+                    override val isDeleted = entity.isDeleted
+                    override val key = subject
+                    override val value = subject
+                }
             }
-        }
     }
 
     override fun close() {
@@ -102,6 +106,5 @@ internal class MgmAllowedCertificateSubjectsReconciler(
         dbReconcilerReader = null
         reconciler?.stop()
         reconciler = null
-
     }
 }
