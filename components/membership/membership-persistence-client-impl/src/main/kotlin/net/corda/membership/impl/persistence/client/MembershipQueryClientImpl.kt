@@ -2,14 +2,18 @@ package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
+import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
+import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
@@ -235,6 +239,20 @@ class MembershipQueryClientImpl(
             else -> {
                 MembershipQueryResult.Failure("Failed to retrieve list of allowed certificates.")
             }
+        }
+    }
+
+    override fun getApprovalRules(
+        viewOwningIdentity: HoldingIdentity,
+        ruleType: ApprovalRuleType
+    ): MembershipQueryResult<Collection<ApprovalRuleDetails>> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            QueryApprovalRules(ruleType)
+        ).execute()
+        return when (val payload = result.payload) {
+            is ApprovalRulesQueryResponse -> MembershipQueryResult.Success(payload.rules)
+            else -> MembershipQueryResult.Failure("Failed to retrieve approval rules.")
         }
     }
 }

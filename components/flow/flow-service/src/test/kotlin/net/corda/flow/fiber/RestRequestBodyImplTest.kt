@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-class RPCRequestDataImplTest {
+class RestRequestBodyImplTest {
 
     private companion object {
         private const val TEST_START_ARGS = "{\"foo\":\"bar\"}"
@@ -22,19 +22,19 @@ class RPCRequestDataImplTest {
 
     @Test
     fun `rpc request data is retrieved when getRequestBody is called`() {
-        val requestData = RPCRequestDataImpl(setupStartArgs(TEST_START_ARGS))
+        val requestData = RestRequestBodyImpl(setupStartArgs(TEST_START_ARGS))
         assertEquals(TEST_START_ARGS, requestData.getRequestBody())
     }
 
     @Test
     fun `rpc request data can marshal request body to a type`() {
-        val requestData = RPCRequestDataImpl(setupStartArgs(TEST_START_ARGS))
+        val requestData = RestRequestBodyImpl(setupStartArgs(TEST_START_ARGS))
         assertEquals(TestData("bar"), requestData.getRequestBodyAs<TestData>(TestMarshallingService()))
     }
 
     @Test
     fun `rpc request data can marshal request body to a list of types`() {
-        val requestData = RPCRequestDataImpl(setupStartArgs(LIST_START_ARGS))
+        val requestData = RestRequestBodyImpl(setupStartArgs(LIST_START_ARGS))
         assertEquals(
             listOf(TestData("bar"), TestData("baz")),
             requestData.getRequestBodyAsList<TestData>(TestMarshallingService())

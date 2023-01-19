@@ -1,12 +1,14 @@
 package net.corda.membership.impl.synchronisation.dummy
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -130,6 +132,24 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
         registrationRequestStatus: RegistrationStatus
+    ): MembershipPersistenceResult<Unit> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun addApprovalRule(
+        viewOwningIdentity: HoldingIdentity, ruleParams: ApprovalRuleParams
+    ): MembershipPersistenceResult<ApprovalRuleDetails> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun deleteApprovalRule(
+        viewOwningIdentity: HoldingIdentity, ruleId: String
     ): MembershipPersistenceResult<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
