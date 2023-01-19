@@ -2,8 +2,8 @@ package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.runtime.utils.accessField
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.util.contextLogger
@@ -18,7 +18,7 @@ class BaseFlowManager : FlowManager {
         val log = contextLogger()
     }
 
-    override fun call(requestData: RPCRequestData, flow: RPCStartableFlow) : String {
+    override fun call(requestData: RestRequestBody, flow: ClientStartableFlow) : String {
         val result = flow.call(requestData)
         closeFlowMessaging(flow)
         return result

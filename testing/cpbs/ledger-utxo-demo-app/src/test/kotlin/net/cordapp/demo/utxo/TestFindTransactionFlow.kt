@@ -1,7 +1,7 @@
 package net.cordapp.demo.utxo
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
-import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.crypto.SecureHash
@@ -29,7 +29,7 @@ class TestFindTransactionFlow {
         flow.marshallingService = jsonMarshallingService
         flow.ledgerService = ledgerService
 
-        val badRequest = mock<RPCRequestData>()
+        val badRequest = mock<RestRequestBody>()
         val body = FindTransactionParameters(txIdBad.toString())
         whenever(badRequest.getRequestBodyAs<FindTransactionParameters>(jsonMarshallingService)).thenReturn(body)
 
@@ -63,7 +63,7 @@ class TestFindTransactionFlow {
         flow.marshallingService = jsonMarshallingService
         flow.ledgerService = ledgerService
 
-        val goodRequest = mock<RPCRequestData>()
+        val goodRequest = mock<RestRequestBody>()
         val body = FindTransactionParameters(txIdGood.toString())
         whenever(goodRequest.getRequestBodyAs<FindTransactionParameters>(jsonMarshallingService)).thenReturn(body)
 
