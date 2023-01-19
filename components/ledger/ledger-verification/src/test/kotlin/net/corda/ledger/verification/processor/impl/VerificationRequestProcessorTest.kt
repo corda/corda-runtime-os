@@ -24,7 +24,8 @@ class VerificationRequestProcessorTest {
     private companion object {
         const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val ALICE_X500_HOLDING_ID = HoldingIdentity(ALICE_X500, "group1")
-        const val CPK_CHECKSUM = "SHA-256:0000000000000000"
+        const val CPK_CHECKSUM = "SHA-256:1212121212121212"
+        const val SIGNER_SUMMARY_HASH = "SHA-256:3434343434343434"
     }
 
     private val verificationSandboxService = mock<VerificationSandboxService>()
@@ -100,7 +101,7 @@ class VerificationRequestProcessorTest {
             flowExternalEventContext = ExternalEventContext(requestId, "f1", KeyValuePairList())
             holdingIdentity = ALICE_X500_HOLDING_ID
             cpkMetadata = listOf(
-                CordaPackageSummary("cpk1", "1.0", CPK_CHECKSUM)
+                CordaPackageSummary("cpk1", "1.0", SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
             )
         }
     }

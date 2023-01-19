@@ -1,4 +1,4 @@
-package net.corda.ledger.verification.processor.impl
+package net.corda.ledger.utxo.data.transaction
 
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
