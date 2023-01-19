@@ -4163,7 +4163,7 @@
         }
       },
       "StartFlowParameters" : {
-        "required" : [ "clientRequestId", "flowClassName", "requestData" ],
+        "required" : [ "clientRequestId", "flowClassName", "requestBody" ],
         "type" : "object",
         "properties" : {
           "clientRequestId" : {
@@ -4176,7 +4176,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "requestData" : {
+          "requestBody" : {
             "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
