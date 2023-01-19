@@ -199,8 +199,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         // Resume only those partitions currently assigned and previously paused.
         val partitionsToResume = eventConsumer.assignment().intersect(pausePartitions)
-        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}," +
-                "rebalanceOccurred=${partitionState.dirty}]. Assignment: $partitionsToResume" }
+        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $partitionsToResume" }
         eventConsumer.resume(partitionsToResume)
     }
 
