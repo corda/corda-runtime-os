@@ -27,6 +27,7 @@ class UtxoSignedTransactionKryoSerializerTest: UtxoLedgerTest() {
                 emptyMap<String, String>()::class.java,
                 emptyList<String>()::class.java,
                 DigitalSignature.WithKey::class.java,
+                mapOf("" to "")::class.java
             )
         )
         val bytes = serializer.serialize(utxoSignedTransactionExample)

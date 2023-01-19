@@ -5,8 +5,8 @@ import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.set
@@ -21,13 +21,13 @@ import net.corda.v5.base.types.MemberX500Name
  * responder flows which gets their own copy of [FlowContextProperties]
  */
 @InitiatingFlow(protocol = "flow-context-1")
-class FlowContextPropertiesMainFlow : RPCStartableFlow {
+class FlowContextPropertiesMainFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         flowEngine.flowContextProperties["key-1"] = "main-flow"
         flowEngine.flowContextProperties["key-2"] = "main-flow"
         val contextPropertiesMap = flowEngine.subFlow(FlowContextPropertiesSubFlow1())

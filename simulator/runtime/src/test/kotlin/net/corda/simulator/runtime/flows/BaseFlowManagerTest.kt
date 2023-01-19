@@ -3,8 +3,8 @@ package net.corda.simulator.runtime.flows
 import net.corda.simulator.runtime.messaging.CloseableFlowMessaging
 import net.corda.simulator.runtime.utils.accessField
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import org.hamcrest.MatcherAssert.assertThat
@@ -22,15 +22,15 @@ class BaseFlowManagerTest {
 
     companion object {
 
-        private class MyCloseableFlowMessagingFlow : RPCStartableFlow {
+        private class MyCloseableFlowMessagingFlow : ClientStartableFlow {
             @CordaInject
             private val flowMessaging: FlowMessaging = mock<CloseableFlowMessaging>()
 
-            override fun call(requestBody: RPCRequestData): String { return "result" }
+            override fun call(requestBody: RestRequestBody): String { return "result" }
         }
 
-        private class MyStandaloneFlow : RPCStartableFlow {
-            override fun call(requestBody: RPCRequestData): String { return "result" }
+        private class MyStandaloneFlow : ClientStartableFlow {
+            override fun call(requestBody: RestRequestBody): String { return "result" }
         }
 
         private class MyCloseableSubFlow : SubFlow<String> {

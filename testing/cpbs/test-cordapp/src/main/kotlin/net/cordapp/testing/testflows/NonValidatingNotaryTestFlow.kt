@@ -4,8 +4,8 @@ import com.r3.corda.notary.plugin.nonvalidating.client.NonValidatingNotaryClient
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parseList
@@ -45,7 +45,7 @@ import java.time.Instant
  * will be the current  UTC time ([Instant.now]) + 1 hour.
  */
 @InitiatingFlow(protocol = "non-validating-test")
-class NonValidatingNotaryTestFlow : RPCStartableFlow {
+class NonValidatingNotaryTestFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
@@ -67,7 +67,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
     }
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         val params = extractParameters(requestBody)
 
         require(params.outputStateCount > 0 || params.inputStateRefs.isNotEmpty()) {
@@ -121,7 +121,7 @@ class NonValidatingNotaryTestFlow : RPCStartableFlow {
      */
     @Suppress("ComplexMethod")
     @Suspendable
-    private fun extractParameters(requestBody: RPCRequestData): NotarisationTestFlowParameters {
+    private fun extractParameters(requestBody: RestRequestBody): NotarisationTestFlowParameters {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
 
         val outputStateCount = requestMessage["outputStateCount"]?.toInt() ?: 0

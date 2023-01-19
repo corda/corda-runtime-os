@@ -2,15 +2,23 @@ package net.corda.ledger.common.testkit
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 
-val cpkPackageSummaryListExample = listOf(
+fun cpkPackageSummaryListExample(seed: String? = "123CBA") = listOf(
     CordaPackageSummaryImpl(
-        "MockCpk",
-        "1",
-        "",
-        "0101010101010101010101010101010101010101010101010101010101010101"),
+        "$seed-cpk1",
+        "signerSummaryHash1",
+        "1.0",
+        "$seed-fileChecksum1"
+    ),
     CordaPackageSummaryImpl(
-        "MockCpk",
-        "3",
-        "",
-        "0303030303030303030303030303030303030303030303030303030303030303")
+        "$seed-cpk2",
+        "signerSummaryHash2",
+        "2.0",
+        "$seed-fileChecksum2"
+    ),
+    CordaPackageSummaryImpl(
+        "$seed-cpk3",
+        "signerSummaryHash3",
+        "3.0",
+        "$seed-fileChecksum3"
+    )
 )
