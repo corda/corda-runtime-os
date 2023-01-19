@@ -178,7 +178,7 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, aliceId, chipId)
 
-                eventually(30.seconds) {
+                eventually(20.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
                     val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
@@ -230,7 +230,7 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, receiverId, senderId)
 
-                eventually(30.seconds) {
+                eventually(20.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
                     val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
@@ -269,7 +269,7 @@ class P2PLayerEndToEndTest {
             val hostMarkerReader = host.listenForMarkers(hostMarkers)
 
             host.sendMessages(numberOfMessages, receiverId, senderId)
-            eventually(30.seconds) {
+            eventually(20.seconds) {
                 val messagesWithProcessedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }.map { it.key }.toSet()
                 val messagesWithReceivedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }.map { it.key }.toSet()
                 assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
@@ -315,7 +315,7 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, aliceId, chipId, EXPIRED_TTL)
 
-                eventually(30.seconds) {
+                eventually(20.seconds) {
                     val markers = hostAMarkers.filter { it.topic == P2P_OUT_MARKERS }.map { (it.value as AppMessageMarker).marker }
                     assertThat(hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }.map { it.key })
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
@@ -704,7 +704,7 @@ class P2PLayerEndToEndTest {
             publishConfig()
             publishNetworkMapAndIdentityKeys(otherHost)
 
-            eventually(30.seconds) {
+            eventually(20.seconds) {
                 assertThat(linkManager.isRunning).isTrue
                 assertThat(gateway.isRunning).isTrue
             }
