@@ -27,4 +27,4 @@ dependencies {
     runtimeOnly project(":libs:sandbox-internal")
 }
 
-description 'Flow Worker Processor'
+description 'Verification Processor'

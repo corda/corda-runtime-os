@@ -5,6 +5,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
 import net.corda.v5.ledger.utxo.StateAndRef
 
+// TODO this file will be removed with CORE-9385 (duplicate created in ledger-verification)
 
 private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)
 
