@@ -7,9 +7,11 @@ import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
+import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.kotlin.any
@@ -19,7 +21,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.never
 import java.time.Clock
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 
 class StateAndEventConsumerImplTest {
@@ -258,18 +262,66 @@ class StateAndEventConsumerImplTest {
     }
 
     @Test
-    fun `test repartition during poll returns false`() {
+    fun `repartition during reset poll interval throws exception and resumes correct partitions`() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
-        val consumer = StateAndEventConsumerImpl(
-            config, eventConsumer, stateConsumer, StateAndEventPartitionState
-                (mutableMapOf(), mutableMapOf(), true), stateAndEventListener
+        val partitionIdBeingSynced = mutableMapOf(0 to 10L, 2 to 10L)
+        val pausedEventTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
+        val assignedEventTopicPartitions = setOf(
+            CordaTopicPartition(TOPIC, 0),
+            CordaTopicPartition(TOPIC, 1),
+            CordaTopicPartition(TOPIC, 2),
+            CordaTopicPartition(TOPIC, 3)
+        )
+        val assignedEventTopicPartitionsAfterRebalance = setOf(
+            CordaTopicPartition(TOPIC, 0),
+            CordaTopicPartition(TOPIC, 1),
+            CordaTopicPartition(TOPIC, 3),
+            CordaTopicPartition(TOPIC, 4)
         )
 
-        assertThat(consumer.resetPollInterval()).isFalse
+        whenever(eventConsumer.paused())
+            .thenReturn(pausedEventTopicPartitions)
+        whenever(eventConsumer.assignment())
+            .thenReturn(assignedEventTopicPartitions)
+            .thenReturn(assignedEventTopicPartitionsAfterRebalance)
+
+        val stateAndEventPartitionState =
+            StateAndEventPartitionState<String, String>(mutableMapOf(), partitionIdBeingSynced, false)
+        val consumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            stateAndEventPartitionState,
+            stateAndEventListener
+        )
+
+        doAnswer {
+            stateAndEventPartitionState.dirty = true
+            emptyList<String>()
+        }.whenever(eventConsumer).poll(any())
+
+        assertThatThrownBy {
+            consumer.resetPollInterval()
+        }.isInstanceOf(StateAndEventConsumer.RebalanceInProgressException::class.java)
+
+        val eventConsumerOrder = inOrder(eventConsumer)
+        eventConsumerOrder.verify(eventConsumer, times(1)).assignment()
+        eventConsumerOrder.verify(eventConsumer, times(1)).paused()
+        eventConsumerOrder.verify(eventConsumer, times(1))
+            .pause(assignedEventTopicPartitions - pausedEventTopicPartitions)
+        eventConsumerOrder.verify(eventConsumer, times(1)).poll(any())
+        eventConsumerOrder.verify(eventConsumer, times(1)).assignment()
+        eventConsumerOrder.verify(eventConsumer, times(1)).resume(listOf(CordaTopicPartition(TOPIC, 3)))
+
+        val stateConsumerOrder = inOrder(stateConsumer)
+        stateConsumerOrder.verify(stateConsumer, times(1)).assignment()
+        stateConsumerOrder.verify(stateConsumer, times(1)).paused()
+        stateConsumerOrder.verify(stateConsumer, never()).poll(any())
+        stateConsumerOrder.verify(stateConsumer, never()).resume(any())
     }
 
     @Test
-    fun usesCorrectPartitionAssignmentsWhenPausingAndResumingEventConsumerWhileWaitingForFutureToComplete() {
+    fun `uses correct partition assignment when pausing and resuming event consume while waiting for future to complete`() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
         val pausedTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0))
         val assignedTopicPartitions =
@@ -302,6 +354,69 @@ class StateAndEventConsumerImplTest {
         verify(eventConsumer, times(1)).resume(assignedTopicPartitionsAfterRebalance - pausedTopicPartitions)
         verify(stateConsumer, atLeast(1)).poll(any())
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
+    }
+
+    @Test
+    fun `repartition during wait for future to finish throws exception and resumes correct partitions`() {
+        val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
+        val partitionIdBeingSynced = mutableMapOf(0 to 10L, 2 to 10L)
+        val pausedEventTopicPartitions = setOf(CordaTopicPartition(TOPIC, 0), CordaTopicPartition(TOPIC, 1))
+        val assignedEventTopicPartitions = setOf(
+            CordaTopicPartition(TOPIC, 0),
+            CordaTopicPartition(TOPIC, 1),
+            CordaTopicPartition(TOPIC, 2),
+            CordaTopicPartition(TOPIC, 3)
+        )
+        val assignedEventTopicPartitionsAfterRebalance = setOf(
+            CordaTopicPartition(TOPIC, 0),
+            CordaTopicPartition(TOPIC, 1),
+            CordaTopicPartition(TOPIC, 3),
+            CordaTopicPartition(TOPIC, 4)
+        )
+
+        whenever(eventConsumer.paused())
+            .thenReturn(pausedEventTopicPartitions)
+        whenever(eventConsumer.assignment())
+            .thenReturn(assignedEventTopicPartitions)
+            .thenReturn(assignedEventTopicPartitionsAfterRebalance)
+
+        val stateAndEventPartitionState =
+            StateAndEventPartitionState<String, String>(mutableMapOf(), partitionIdBeingSynced, false)
+        val consumer = StateAndEventConsumerImpl(
+            config,
+            eventConsumer,
+            stateConsumer,
+            stateAndEventPartitionState,
+            stateAndEventListener
+        )
+
+        doAnswer {
+            stateAndEventPartitionState.dirty = true
+            emptyList<String>()
+        }.whenever(eventConsumer).poll(any())
+
+        val latch = CountDownLatch(1)
+        assertThatThrownBy {
+            val future = consumer.waitForFunctionToFinish({
+                while (latch.count > 0) {
+                    Thread.sleep(10)
+                }
+            }, Duration.ofDays(1).toMillis(), "test ")
+
+            assertThat(future.isCancelled).isTrue()
+        }.isInstanceOf(StateAndEventConsumer.RebalanceInProgressException::class.java)
+
+        val eventConsumerOrder = inOrder(eventConsumer)
+        eventConsumerOrder.verify(eventConsumer, times(1)).assignment()
+        eventConsumerOrder.verify(eventConsumer, times(1)).paused()
+        eventConsumerOrder.verify(eventConsumer, times(1))
+            .pause(assignedEventTopicPartitions - pausedEventTopicPartitions)
+        eventConsumerOrder.verify(eventConsumer, times(1)).poll(any())
+        eventConsumerOrder.verify(eventConsumer, times(1)).assignment()
+        eventConsumerOrder.verify(eventConsumer, times(1)).resume(listOf(CordaTopicPartition(TOPIC, 3)))
+
+        verify(stateConsumer, never()).poll(any())
+        verify(stateAndEventListener, never()).onPartitionSynced(any())
     }
 
     private fun setupMocks(): Mocks {

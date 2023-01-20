@@ -37,6 +37,7 @@ import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.orm.JpaEntitiesRegistry
@@ -114,6 +115,8 @@ class DBProcessorImpl @Activate constructor(
     private val groupParametersFactory: GroupParametersFactory,
     @Reference(service = MembershipGroupPolicyValidator::class)
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
+    @Reference(service = AllowedCertificatesReaderWriterService::class)
+    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -161,6 +164,7 @@ class DBProcessorImpl @Activate constructor(
         ::groupParametersWriterService,
         ::groupParametersReaderService,
         ::membershipGroupPolicyValidator,
+        ::allowedCertificatesReaderWriterService,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
@@ -179,6 +183,7 @@ class DBProcessorImpl @Activate constructor(
         cordaAvroSerializationFactory,
         entitiesRegistry,
         groupParametersFactory,
+        allowedCertificatesReaderWriterService,
     )
 
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split

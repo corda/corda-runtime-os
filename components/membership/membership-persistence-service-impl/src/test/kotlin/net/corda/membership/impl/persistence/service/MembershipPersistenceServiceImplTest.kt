@@ -21,6 +21,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -62,6 +63,7 @@ class MembershipPersistenceServiceImplTest {
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+        LifecycleCoordinatorName.forComponent<AllowedCertificatesReaderWriterService>(),
     )
     private val lifecycleHandlerCaptor: KArgumentCaptor<LifecycleEventHandler> = argumentCaptor()
 
@@ -106,6 +108,7 @@ class MembershipPersistenceServiceImplTest {
             virtualNodeInfoReadService,
             keyEncodingService,
             platformInfoProvider,
+            mock()
         )
         verify(coordinatorFactory).createCoordinator(any(), any())
     }

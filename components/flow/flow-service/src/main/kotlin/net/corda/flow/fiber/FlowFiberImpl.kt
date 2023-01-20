@@ -15,7 +15,7 @@ import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import java.io.Serializable
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 

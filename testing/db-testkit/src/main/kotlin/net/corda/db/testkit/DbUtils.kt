@@ -15,10 +15,12 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 object DbUtils {
+    private const val POSTGRES_HOST_PROPERTY = "postgresHost"
+    private const val POSTGRES_PORT_PROPERTY = "postgresPort"
 
-    private val logger: Logger = LoggerFactory.getLogger("DbUtils")
+    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    val isInMemory = System.getProperty("postgresPort").isNullOrBlank()
+    val isInMemory = System.getProperty(POSTGRES_PORT_PROPERTY).isNullOrBlank()
 
     /**
      * Returns Postgres DB name
@@ -49,7 +51,7 @@ object DbUtils {
         showSql: Boolean = true,
         rewriteBatchedInserts: Boolean = false
     ): EntityManagerConfiguration {
-        val port = System.getProperty("postgresPort")
+        val port = System.getProperty(POSTGRES_PORT_PROPERTY)
         return if (!port.isNullOrBlank()) {
             val ds = createPostgresDataSource(dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts)
             DbEntityManagerConfiguration(ds, showSql, true, DdlManage.NONE)
@@ -78,9 +80,9 @@ object DbUtils {
         createSchema: Boolean = false,
         rewriteBatchedInserts: Boolean = false
     ): CloseableDataSource {
-        val port = System.getProperty("postgresPort")
+        val port = System.getProperty(POSTGRES_PORT_PROPERTY)
         val postgresDb = getPostgresDatabase()
-        val host = getPropertyNonBlank("postgresHost", "localhost")
+        val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY, "localhost")
         var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
 
         val factory = PostgresDataSourceFactory()
@@ -109,12 +111,12 @@ object DbUtils {
         dbPassword: String? = null,
         schemaName: String? = null
     ): Config {
-        val port = System.getProperty("postgresPort")
+        val port = System.getProperty(POSTGRES_PORT_PROPERTY)
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
         if (!port.isNullOrBlank()) {
             val postgresDb = getPostgresDatabase()
-            val host = getPropertyNonBlank("postgresHost", "localhost")
+            val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY, "localhost")
             var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
             if (!schemaName.isNullOrBlank()) {
                 jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
