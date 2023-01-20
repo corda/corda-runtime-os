@@ -288,6 +288,15 @@ class MemberProcessorTestUtils {
             publishConf(ConfigKeys.MEMBERSHIP_CONFIG, membershipConfig.root().render())
         fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
+        fun Publisher.publishGatewayConfig() =
+            publishConf(
+                ConfigKeys.P2P_GATEWAY_CONFIG,
+                """
+            sslConfig {
+                tlsType: "ONE_WAY"
+            }
+        """
+            )
 
         private fun getSampleGroupPolicy(fileName: String): String {
             val url = this::class.java.getResource(fileName)

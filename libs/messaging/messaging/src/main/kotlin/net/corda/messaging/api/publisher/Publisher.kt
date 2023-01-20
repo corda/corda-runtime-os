@@ -1,5 +1,6 @@
 package net.corda.messaging.api.publisher
 
+import net.corda.lifecycle.Resource
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.CompletableFuture
 
@@ -7,7 +8,7 @@ import java.util.concurrent.CompletableFuture
  * Interface for publishing records to topics. Consumer libraries will not implement this interface.
  * Publisher instances can be created via the [PublisherFactory].
  */
-interface Publisher : AutoCloseable {
+interface Publisher : Resource {
 
     /**
      * Start the publisher.
