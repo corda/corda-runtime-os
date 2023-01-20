@@ -160,9 +160,9 @@ class UtxoFinalityFlow(
         transaction: UtxoSignedTransactionInternal
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val notary = transaction.notary
-        log.trace { "Finding pluggable notary client flow for $notary to notarise transaction $transactionId" }
-        val notarizationFlow = pluggableNotaryClientFlowFactory.create(transaction.notary, transaction)
+        val notarizationFlow = pluggableNotaryClientFlowFactory.create(notary, transaction)
 
+        // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
         if (log.isTraceEnabled) {
             log.trace(
                 "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
