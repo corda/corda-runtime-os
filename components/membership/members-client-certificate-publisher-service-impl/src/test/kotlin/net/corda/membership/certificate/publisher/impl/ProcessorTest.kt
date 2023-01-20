@@ -16,7 +16,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
 internal class ProcessorTest {
-    private val processor = Processor()
+    private val processor = MemberInfoProcessor()
 
     @Nested
     inner class OnNextTests {

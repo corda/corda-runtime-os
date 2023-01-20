@@ -9,7 +9,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.P2P.Companion.P2P_MTLS_MEMBER_CLIENT_CERTIFICATE_SUBJECT
 
-internal class Processor : DurableProcessor<String, PersistentMemberInfo> {
+internal class MemberInfoProcessor : DurableProcessor<String, PersistentMemberInfo> {
     override val keyClass = String::class.java
     override val valueClass = PersistentMemberInfo::class.java
 
@@ -20,7 +20,7 @@ internal class Processor : DurableProcessor<String, PersistentMemberInfo> {
     }
 
     private fun Record<String, PersistentMemberInfo>.toRecord(): Record<String, ClientCertificateSubject> {
-        val value = this.value?.value()
+        val value = this.value?.toClientCertificateSubject()
         val key = this.key
         return Record(
             P2P_MTLS_MEMBER_CLIENT_CERTIFICATE_SUBJECT,
@@ -36,7 +36,7 @@ internal class Processor : DurableProcessor<String, PersistentMemberInfo> {
         return status.value == MEMBER_STATUS_ACTIVE
     }
 
-    private fun PersistentMemberInfo.value(): ClientCertificateSubject? {
+    private fun PersistentMemberInfo.toClientCertificateSubject(): ClientCertificateSubject? {
         if (!this.isActive()) {
             return null
         }

@@ -166,6 +166,26 @@ class MembersClientCertificatePublisherImplTest {
     }
 
     @Test
+    fun `ConfigChangedEvent will close the subscription if MUTUAL TLS is disable`() {
+        val gatewayConfiguration = mock<SmartConfig> {
+            on { getConfig("sslConfig") } doReturn mock
+            on { getString(P2PParameters.TLS_TYPE) } doReturn TlsType.ONE_WAY.toString()
+        }
+        val configEvent = ConfigChangedEvent(
+            keys = emptySet(),
+            config = mapOf(ConfigKeys.P2P_GATEWAY_CONFIG to gatewayConfiguration)
+        )
+
+        handler.firstValue.processEvent(configEvent, coordinator)
+
+        verify(coordinator).closeManagedResources(
+            argThat {
+                size == 1
+            }
+        )
+    }
+
+    @Test
     fun `ConfigChangedEvent will set state to up if MUTUAL TLS is disable`() {
         val gatewayConfiguration = mock<SmartConfig> {
             on { getConfig("sslConfig") } doReturn mock

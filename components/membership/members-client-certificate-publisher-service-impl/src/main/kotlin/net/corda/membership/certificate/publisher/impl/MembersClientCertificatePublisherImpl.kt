@@ -87,6 +87,12 @@ class MembersClientCertificatePublisherImpl @Activate constructor(
                 }
                 if (tlsType == TlsType.MUTUAL) {
                     startSubscription(event)
+                } else {
+                    coordinator.closeManagedResources(
+                        setOf(
+                            SUBSCRIPTION_RESOURCE_NAME,
+                        )
+                    )
                 }
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
@@ -110,7 +116,7 @@ class MembersClientCertificatePublisherImpl @Activate constructor(
                     groupName = SUBSCRIPTION_GROUP_NAME,
                     Schemas.Membership.MEMBER_LIST_TOPIC,
                 ),
-                processor = Processor(),
+                processor = MemberInfoProcessor(),
                 messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
                 partitionAssignmentListener = null,
             ).also {
