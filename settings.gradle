@@ -37,7 +37,7 @@ pluginManagement {
     }
 
     Properties cordaInternalDependencies = new Properties()
-    file("./cordaInternalDependencies.properties").withInputStream { cordaInternalDependencies.load(it) }
+    file("./cordaInternal.properties").withInputStream { cordaInternalDependencies.load(it) }
 
     plugins {
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
