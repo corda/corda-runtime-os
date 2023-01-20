@@ -21,8 +21,8 @@ class ResponseFactoryImpl @Activate constructor(
     private val externalEventResponseFactory: ExternalEventResponseFactory
 ) : ResponseFactory {
 
-    companion object{
-        val log = contextLogger()
+    private companion object{
+        private val log = contextLogger()
     }
 
     override fun successResponse(
