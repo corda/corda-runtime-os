@@ -13,7 +13,10 @@ dependencies {
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:layered-property-map')
     implementation project(':components:membership:certificates-client')
+    implementation project(':components:membership:membership-persistence-client')
+    implementation project(':components:membership:membership-group-read')
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:crypto:crypto-client')
