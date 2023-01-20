@@ -165,11 +165,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         // The incoming changelogs will not be marked deleted
         changelogsExtractedFromCpi.forEach { require(!it.isDeleted) }
 
-        log.info(
-            "Persisting new changelogs for CPKs: " +
-                    changelogsExtractedFromCpi.joinToString { "(${it.id.cpkFileChecksum}, ${it.id.filePath})" }
-        )
         changelogsExtractedFromCpi.forEach { changelogEntity ->
+            log.info("Persisting changelog and audit for CPK: ${changelogEntity.id.cpkFileChecksum}, ${changelogEntity.id.filePath})")
             em.merge(changelogEntity) // merging ensures any existing changelogs have isDeleted set to false
             em.persist(
                 CpkDbChangeLogAuditEntity(
