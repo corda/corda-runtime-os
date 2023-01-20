@@ -183,7 +183,7 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
         whenever(entityManager.criteriaBuilder).doReturn(criteriaBuilder)
         whenever(entityManager.createQuery(queryBuilder)).doReturn(mock())
 
-        entityManager.getAllAllowedSubjects()
+        getAllAllowedSubjects(entityManager)
 
         verify(entityManager).createQuery(queryBuilder)
     }

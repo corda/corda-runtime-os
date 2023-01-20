@@ -33,13 +33,13 @@ internal class MgmAllowedCertificateSubjectsReconciler(
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
 
-        internal fun EntityManager.getAllAllowedSubjects(): Stream<MutualTlsAllowedClientCertificateEntity> {
-            val criteriaBuilder = this.criteriaBuilder
+        internal fun getAllAllowedSubjects(em: EntityManager): Stream<MutualTlsAllowedClientCertificateEntity> {
+            val criteriaBuilder = em.criteriaBuilder
             val queryBuilder = criteriaBuilder.createQuery(MutualTlsAllowedClientCertificateEntity::class.java)
             val root = queryBuilder.from(MutualTlsAllowedClientCertificateEntity::class.java)
             val query = queryBuilder
                 .select(root)
-            return this.createQuery(query)
+            return em.createQuery(query)
                 .resultStream
         }
     }
@@ -88,8 +88,7 @@ internal class MgmAllowedCertificateSubjectsReconciler(
 
     private fun getAllAllowedSubjects(reconciliationContext: ReconciliationContext):
         Stream<VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject>> {
-        return reconciliationContext.getOrCreateEntityManager()
-            .getAllAllowedSubjects()
+        return getAllAllowedSubjects(reconciliationContext.getOrCreateEntityManager())
             .map { entity ->
                 val subject = AllowedCertificateSubject(entity.subject)
                 object : VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject> {
