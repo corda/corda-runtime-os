@@ -7,7 +7,7 @@ plugins {
 Properties constants = new Properties()
 file("$rootDir/../gradle.properties").withInputStream { InputStream input -> constants.load(input) }
 Properties cordaInternalDependencies = new Properties()
-file("$projectDir/../cordaInternalDependencies.properties").withInputStream { InputStream input -> cordaInternalDependencies.load(input) }
+file("$projectDir/../cordaInternal.properties").withInputStream { InputStream input -> cordaInternalDependencies.load(input) }
 def bndVersion = constants.getProperty('bndVersion')
 def artifactoryContextUrl = constants.getProperty('artifactoryContextUrl')
 def jibCoreVersion = constants.getProperty('jibCoreVersion')

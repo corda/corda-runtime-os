@@ -4,7 +4,7 @@ import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 buildscript {
 
     Properties cordaInternalDependencies = new Properties()
-    file("$projectDir/cordaInternalDependencies.properties").withInputStream { InputStream input -> cordaInternalDependencies.load(input) }
+    file("$projectDir/cordaInternal.properties").withInputStream { InputStream input -> cordaInternalDependencies.load(input) }
     ext{
         cordaApiVersion = cordaInternalDependencies.getProperty("cordaApiVersion")
         pluginHostVersion = cordaInternalDependencies.getProperty("pluginHostVersion")
