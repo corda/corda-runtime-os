@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Timeout
 import net.corda.test.util.waitWhile
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.never
+import org.mockito.kotlin.doThrow
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -504,7 +505,7 @@ class StateAndEventSubscriptionImplTest {
     }
 
     @Test
-    fun `repartition during batch processing stops processing and doesn't publish outputs`() {
+    fun `repartition during batch processing stops the batch, does not resume consumers and does not publish outputs`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(0)
         val records = mutableListOf<CordaConsumerRecord<String, String>>()
         records.add(CordaConsumerRecord(TOPIC, 1, 1, "key1", "value1", 1))
@@ -519,7 +520,8 @@ class StateAndEventSubscriptionImplTest {
                     mutableListOf()
             }
         }.whenever(eventConsumer).poll(any())
-        doAnswer { true }.whenever(stateAndEventConsumer).resetPollInterval()
+        doThrow(StateAndEventConsumer.RebalanceInProgressException("test"))
+            .whenever(stateAndEventConsumer).resetPollInterval()
 
         val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             config,
@@ -539,10 +541,11 @@ class StateAndEventSubscriptionImplTest {
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && callCount <= 1 }
         subscription.close()
 
+        verify(eventConsumer, never()).resume(any())
+        verify(stateAndEventConsumer.stateConsumer, never()).resume(any())
         verify(producer, never()).beginTransaction()
         verify(producer, never()).sendRecords(any())
         verify(producer, never()).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, never()).commitTransaction()
-
     }
 }
