@@ -2,6 +2,7 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -18,7 +19,7 @@ import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
-import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
+import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -57,9 +58,10 @@ class CryptoFlowOpsTransformerImpl(
         return createRequest(
             requestId = UUID.randomUUID().toString(),
             tenantId = tenantId,
-            request = FilterMyKeysFlowQuery(
+            request = ByIdsFlowQuery(
                 candidateKeys.map {
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it))
+                    val keyBytes = keyEncodingService.encodeAsByteArray(it)
+                    publicKeyIdFromBytes(keyBytes)
                 }
             ),
             flowExternalEventContext = flowExternalEventContext
@@ -91,7 +93,7 @@ class CryptoFlowOpsTransformerImpl(
     override fun inferRequestType(response: FlowOpsResponse): Class<*>? {
         return when (response.getContextValue(REQUEST_OP_KEY)) {
             SignFlowCommand::class.java.simpleName -> SignFlowCommand::class.java
-            FilterMyKeysFlowQuery::class.java.simpleName -> FilterMyKeysFlowQuery::class.java
+            ByIdsFlowQuery::class.java.simpleName -> ByIdsFlowQuery::class.java
             else -> null
         }
     }
@@ -105,7 +107,7 @@ class CryptoFlowOpsTransformerImpl(
         }
         return when (inferRequestType(response)) {
             SignFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
-            FilterMyKeysFlowQuery::class.java -> transformCryptoSigningKeys(response)
+            ByIdsFlowQuery::class.java -> transformCryptoSigningKeys(response)
             else -> throw IllegalArgumentException(
                 "Unknown request type: $REQUEST_OP_KEY=${response.getContextValue(REQUEST_OP_KEY)}"
             )
