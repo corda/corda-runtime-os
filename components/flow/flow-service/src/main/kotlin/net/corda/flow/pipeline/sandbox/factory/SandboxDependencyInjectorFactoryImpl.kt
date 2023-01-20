@@ -56,7 +56,11 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
                             }
                     }.toMap().let { singletons ->
                         SandboxDependencyInjectorImpl(singletons) {
-                            references.forEach(bundleContext::ungetService)
+                            try {
+                                references.forEach(bundleContext::ungetService)
+                            } catch (e: IllegalStateException) {
+                                logger.debug("{} already unloaded", sandboxGroupContext)
+                            }
                         }
                     }
             } ?: SandboxDependencyInjectorImpl(emptyMap()) {}
