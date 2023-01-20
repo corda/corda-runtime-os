@@ -179,6 +179,7 @@ class MembershipPersistenceRPCProcessorTest {
             virtualNodeInfoReadService,
             keyEncodingService,
             platformInfoProvider,
+            mock(),
         )
         responseFuture = CompletableFuture()
         rqContext = MembershipRequestContext(
