@@ -6,12 +6,12 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.RPCRequestDataImpl
-import net.corda.flow.fiber.RPCStartedFlow
+import net.corda.flow.fiber.RestRequestBodyImpl
+import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
@@ -30,17 +30,17 @@ class FlowFactoryImpl @Activate constructor(
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         return try {
-            val flowClass: Class<RPCStartableFlow> =
+            val flowClass: Class<ClientStartableFlow> =
                 uncheckedCast(
                     sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                         startFlowEvent.startContext.flowClassName,
-                        RPCStartableFlow::class.java
+                        ClientStartableFlow::class.java
                     )
                 )
             val logic = flowClass.getDeclaredConstructor().newInstance()
-            val args = RPCRequestDataImpl(flowFiberService)
+            val args = RestRequestBodyImpl(flowFiberService)
 
-            RPCStartedFlow(logic, args)
+            ClientStartedFlow(logic, args)
         } catch (e: Exception) {
             throw FlowFatalException(
                 "Could not create ${startFlowEvent.startContext.flowClassName} for " +

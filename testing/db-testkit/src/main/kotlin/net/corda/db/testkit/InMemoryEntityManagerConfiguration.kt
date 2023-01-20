@@ -6,12 +6,9 @@ import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
 
 open class InMemoryEntityManagerConfiguration(dbName: String) : EntityManagerConfiguration {
-    private val ds by lazy {
+    override val dataSource: CloseableDataSource by lazy {
         InMemoryDataSourceFactory().create(dbName)
     }
-
-    override val dataSource: CloseableDataSource
-        get() = ds
 
     override val ddlManage: DdlManage
         get() = DdlManage.UPDATE

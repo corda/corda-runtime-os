@@ -7,7 +7,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.defaultComponentGroups
 import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.ledger.common.testkit.signatureWithMetadataExample
+import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -25,7 +25,7 @@ fun UtxoSignedTransactionFactory.createExample(
             List(UtxoComponentGroup.values().size - defaultComponentGroups.size) { emptyList() }
 ):UtxoSignedTransaction {
     val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator, componentGroups)
-    return create(wireTransaction, listOf(signatureWithMetadataExample))
+    return create(wireTransaction, listOf(getSignatureWithMetadataExample()))
 }
 
 @Suppress("LongParameterList")
@@ -36,20 +36,21 @@ fun getUtxoSignedTransactionExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     transactionSignatureService: TransactionSignatureService,
-    utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
+    utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    cpkPackageSeed: String? = null
 ): UtxoSignedTransaction {
     val wireTransaction = getWireTransactionExample(
         digestService,
         merkleTreeProvider,
         jsonMarshallingService,
         jsonValidator,
-        metadata = utxoTransactionMetadataExample
+        metadata = utxoTransactionMetadataExample(cpkPackageSeed)
     )
     return UtxoSignedTransactionImpl(
         serializationService,
         transactionSignatureService,
         utxoLedgerTransactionFactory,
         wireTransaction,
-        listOf(signatureWithMetadataExample)
+        listOf(getSignatureWithMetadataExample())
     )
 }

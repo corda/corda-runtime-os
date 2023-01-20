@@ -25,7 +25,8 @@ class ConsensualSignedTransactionKryoSerializerTest: ConsensualLedgerTest() {
                 DigitalSignatureAndMetadata::class.java,
                 consensualSignedTransactionExample.signatures[0].by::class.java,
                 emptyMap<String, String>()::class.java,
-                DigitalSignature.WithKey::class.java
+                DigitalSignature.WithKey::class.java,
+                mapOf("" to "")::class.java
             )
         )
         val bytes = serializer.serialize(consensualSignedTransactionExample)

@@ -10,6 +10,8 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.getPrivacySalt
+import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
@@ -471,28 +473,8 @@ class UtxoPersistenceServiceImplTest {
         createdTs: Instant = TEST_CLOCK.instant(),
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
-        val cpks = listOf(
-            CordaPackageSummaryImpl(
-                "$seed-cpk1",
-                "signerSummaryHash1",
-                "1.0",
-                "$seed-fileChecksum1"
-            ),
-            CordaPackageSummaryImpl(
-                "$seed-cpk2",
-                "signerSummaryHash2",
-                "2.0",
-                "$seed-fileChecksum2"
-            ),
-            CordaPackageSummaryImpl(
-                "$seed-cpk3",
-                "signerSummaryHash3",
-                "3.0",
-                "$seed-fileChecksum3"
-            )
-        )
         val transactionMetadata = transactionMetadataExample(
-            cpkMetadata = cpks,
+            cpkPackageSeed = seed,
             numberOfComponentGroups = UtxoComponentGroup.values().size
         )
         val componentGroupLists: List<List<ByteArray>> = listOf(
@@ -515,27 +497,14 @@ class UtxoPersistenceServiceImplTest {
             listOf("group9_component1".toByteArray())
 
         )
-        val privacySalt = PrivacySaltImpl(Random.nextBytes(32))
         val wireTransaction = wireTransactionFactory.create(
             componentGroupLists,
-            privacySalt
+            getPrivacySalt()
         )
         val publicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }
             .generateKeyPair().public
-        val signatures = listOf(
-            DigitalSignatureAndMetadata(
-                DigitalSignature.WithKey(
-                    publicKey,
-                    "signature".toByteArray(),
-                    mapOf("contextKey1" to "contextValue1")
-                ),
-                DigitalSignatureMetadata(
-                    createdTs,
-                    mapOf("propertyKey1" to "propertyValue1")
-                )
-            )
-        )
+        val signatures = listOf(getSignatureWithMetadataExample(publicKey, createdTs))
         return SignedTransactionContainer(wireTransaction, signatures)
     }
 

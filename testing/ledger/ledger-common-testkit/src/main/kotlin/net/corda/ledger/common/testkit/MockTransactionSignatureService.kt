@@ -7,7 +7,7 @@ import java.security.PublicKey
 
 private class MockTransactionSignatureService: TransactionSignatureService {
     override fun sign(transactionId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata =
-        signatureWithMetadataExample
+        getSignatureWithMetadataExample()
 
     override fun verifySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {}
     override fun verifyNotarySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {}
