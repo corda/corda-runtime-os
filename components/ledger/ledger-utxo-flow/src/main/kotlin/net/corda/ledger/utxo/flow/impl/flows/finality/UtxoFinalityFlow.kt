@@ -162,10 +162,14 @@ class UtxoFinalityFlow(
         val notary = transaction.notary
         log.trace { "Finding pluggable notary client flow for $notary to notarise transaction $transactionId" }
         val notarizationFlow = pluggableNotaryClientFlowFactory.create(transaction.notary, transaction)
-        log.trace {
-            "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with notary" +
-                    notary
+
+        if (log.isTraceEnabled) {
+            log.trace(
+                "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
+                        "notary $notary"
+            )
         }
+
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
@@ -174,10 +178,14 @@ class UtxoFinalityFlow(
             log.warn(message)
             throw e
         }
-        log.trace {
-            "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of " +
-                    "transaction $transactionId"
+
+        if (log.isTraceEnabled) {
+            log.trace(
+                "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
+                        transactionId
+            )
         }
+
         if (notarySignatures.isEmpty()) {
             val message = "Notary $notary did not return any signatures after requesting notarization of transaction $transactionId"
             log.warn(message)
@@ -194,9 +202,13 @@ class UtxoFinalityFlow(
                 throw e
             }
         }
-        log.debug {
-            "Successfully notarized transaction $transactionId using notary $notary and received ${notarySignatures.size} signature(s)"
+
+        if (log.isDebugEnabled) {
+            log.debug(
+                "Successfully notarized transaction $transactionId using notary $notary and received ${notarySignatures.size} signature(s)"
+            )
         }
+
         return notarizedTransaction to notarySignatures
     }
 
