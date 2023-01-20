@@ -181,6 +181,15 @@ class Schemas {
     }
 
     /**
+     * Verification Message schema
+     */
+    class Verification {
+        companion object {
+            const val VERIFICATION_LEDGER_PROCESSOR_TOPIC = "verification.ledger.processor"
+        }
+    }
+
+    /**
      * Virtual Node schema
      */
     class VirtualNode {

@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "CordaPackageSummary",
+  "namespace": "net.corda.ledger.utxo.contract.verification",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "Name of the package."
+    },
+    {
+      "name": "version",
+      "type": "string",
+      "doc": "Version of the package."
+    },
+    {
+      "name": "signerSummaryHash",
+      "type": ["null", "string"],
+      "doc": "The signer summary hash."
+    },
+    {
+      "name": "fileChecksum",
+      "type": "string",
+      "doc": "The checksum of the package file."
+    }
+  ]
+}

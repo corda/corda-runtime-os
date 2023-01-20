@@ -1,0 +1,39 @@
+{
+  "type": "record",
+  "name": "VerifyContractsRequest",
+  "doc": "Make a request for contracts verification of a ledger transaction.",
+  "namespace": "net.corda.ledger.utxo.contract.verification",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ({@link java.time.Instant}) in milliseconds when the record was created."
+    },
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The holding identity of the user making the request."
+    },
+    {
+      "name": "transaction",
+      "type": "bytes",
+      "doc": "The serialized transaction"
+    },
+    {
+      "name": "cpkMetadata",
+      "type": {
+        "type": "array",
+        "items": "net.corda.ledger.utxo.contract.verification.CordaPackageSummary"
+      },
+      "doc": "Metadata of Corda packages."
+    },
+    {
+      "name": "flowExternalEventContext",
+      "type": "net.corda.data.flow.event.external.ExternalEventContext",
+      "doc": "The context of the external event that this request was sent from."
+    }
+  ]
+}
