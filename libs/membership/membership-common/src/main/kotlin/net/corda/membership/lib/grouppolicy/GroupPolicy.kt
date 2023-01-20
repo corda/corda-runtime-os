@@ -7,6 +7,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
+import net.corda.v5.base.types.MemberX500Name
 import kotlin.jvm.Throws
 
 interface MGMGroupPolicy : GroupPolicy
@@ -160,6 +161,11 @@ interface GroupPolicy {
          */
         @get:Throws(BadGroupPolicyException::class)
         val tlsType: TlsType
+
+        /**
+         * The MGM client certificate subject (mutual TLS only).
+         */
+        val mgmClientCertificateSubject: MemberX500Name?
     }
 
     /**

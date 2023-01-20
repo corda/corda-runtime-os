@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl.grouppolicy.v1
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -80,6 +81,7 @@ fun buildP2PParameters(
     tlsPkiOverride: String? = TlsPkiMode.STANDARD.toString(),
     tlsVersionOverride: String? = VERSION_1_3.toString(),
     protocolModeOverride: String? = AUTH_ENCRYPT.toString(),
+    mgmClientCertificateSubject: String? = null,
 ) = mutableMapOf<String, Any>().apply {
     sessionPkiOverride?.let { put(SESSION_PKI, it) }
     sessionTrustRootOverride?.let { put(SESSION_TRUST_ROOTS, it) }
@@ -87,6 +89,7 @@ fun buildP2PParameters(
     tlsPkiOverride?.let { put(TLS_PKI, it) }
     tlsVersionOverride?.let { put(TLS_VERSION, it) }
     protocolModeOverride?.let { put(PROTOCOL_MODE, it) }
+    mgmClientCertificateSubject?.let { put(MGM_CLIENT_CERTIFICATE_SUBJECT, it) }
     put(TLS_TYPE, ONE_WAY.groupPolicyName)
 }
 

@@ -13,18 +13,12 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowO
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.toBase58
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
 import net.corda.v5.membership.MemberInfo
-import java.security.PublicKey
-
-// TODO CORE-7285 This should be in the crypto library. Is there an alternative?
-/** Return the Base58 representation of the serialised public key. */
-@Suspendable
-fun PublicKey.toBase58String(): String = this.encoded.toBase58()
 
 /**
  * Verifies that the correct notarisation request was signed by the counterparty.
@@ -42,8 +36,8 @@ fun validateRequestSignature(notarisationRequest: NotarisationRequest,
 
     if (requestingParty.owningKey != digitalSignature.by) {
         throw IllegalStateException(
-            "Expected a signature by ${requestingParty.owningKey.toBase58String()}, " +
-                    "but received by ${digitalSignature.by.toBase58String()}}"
+            "Expected a signature by ${requestingParty.owningKey.publicKeyId()}, " +
+                    "but received by ${digitalSignature.by.publicKeyId()}}"
         )
     }
 

@@ -6,8 +6,8 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -18,7 +18,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 
 @InitiatingFlow("hello")
-class HelloFlow : RPCStartableFlow {
+class HelloFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var signatureSpecService: SignatureSpecService
@@ -48,7 +48,7 @@ class HelloFlow : RPCStartableFlow {
     lateinit var signatureVerificationService: DigitalSignatureVerificationService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         val name = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService).name
         val greeting = flowEngine.subFlow(object : SubFlow<String> {
             @Suspendable
