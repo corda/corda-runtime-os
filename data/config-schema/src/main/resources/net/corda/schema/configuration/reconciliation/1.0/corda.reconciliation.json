@@ -47,6 +47,13 @@
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 120000
+    },
+    "mtlsMgmAllowedCertificateSubjectsIntervalMs": {
+      "description": "Interval in ms between aligning Kafka MGM allowed client certificate subjects state with DB MGM allowed client certificate subjects state.",
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 2147483647,
+      "default": 120000
     }
   }
 }

@@ -32,6 +32,9 @@
             <column name="subject" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
         <addPrimaryKey columnNames="subject" constraintName="vnode_mtls_allowed_certificate_pk" tableName="vnode_mtls_allowed_certificate"/>
 
