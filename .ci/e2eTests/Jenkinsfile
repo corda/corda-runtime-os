@@ -108,11 +108,11 @@ pipeline {
         stage('check out') {
             steps {
                 script {
-                    println "CommitID to checkOut ${env.CORDA_REVISION}"
+                    println "CommitID to checkOut ${env.COMMIT_TO_CHECKOUT}"
 
-                    println "CommitID to checkOut ${COMMIT_TO_CHECKOUT}"
+                    println "CommitID to checkOut ${BRANCH_NAME}"
 
-                    def commitID = params.COMMIT_TO_CHECKOUT ?: env.CORDA_REVISION
+                    def commitID = params.COMMIT_TO_CHECKOUT ?: env.BRANCH_NAME
                     println "CommitID to checkOut $commitID"
                     checkout([$class: 'GitSCM', branches: [[name: "*/${commitID}"]], extensions: [],
                         userRemoteConfigs: [[credentialsId: 'corda-jenkins-ci02', url: 'https://github.com/corda/corda-runtime-os.git']]])
