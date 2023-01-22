@@ -56,12 +56,26 @@ pipeline {
         CORDA_REVISION = "${env.GIT_COMMIT}"
         GRADLE_PERFORMANCE_TUNING = "--max-workers=4 --parallel -Dscan.tag.combined-worker --build-cache -Si"
     }
+
+    parameters {
+        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: env.GIT_COMMIT, description: 'Commit ID to check out of SCM')
+    }
+
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timestamps()
+        skipDefaultCheckout()
     }
+
     stages {
-		  //stage create DB - see shared pipline
+        stage('check out') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: "*/${params.COMMIT_TO_CHECKOUT}"]], extensions: [],
+                    userRemoteConfigs: [[credentialsId: 'corda-jenkins-ci02', url: 'https://github.com/corda/corda-runtime-os.git']]])
+            }
+        }
+		  
+        //stage create DB - see shared pipline
         stage('create DBs') {
             environment {
                 KUBECONFIG = credentials('e2e-tests-credentials')

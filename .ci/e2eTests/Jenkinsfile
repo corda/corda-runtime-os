@@ -65,7 +65,7 @@ pipeline {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
         choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
         booleanParam(name: 'KEEP_NS', defaultValue: false, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
-        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: env.GIT_COMMIT description: 'Commit ID to check out of SCM')
+        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: env.GIT_COMMIT, description: 'Commit ID to check out of SCM')
     }
 
     environment {
