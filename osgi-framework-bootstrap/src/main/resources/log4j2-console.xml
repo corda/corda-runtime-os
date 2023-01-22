@@ -12,12 +12,14 @@
 
         <logger name="net.corda.ledger.utxo.flow.impl" level="debug" additivity="false">
             <AppenderRef ref="Console" level="debug"/>
-            <AppenderRef ref="App" level="debug"/>
         </logger>
 
         <logger name="net.corda.ledger.utxo.flow.impl.flows.finality" level="trace" additivity="false">
             <AppenderRef ref="Console" level="trace"/>
-            <AppenderRef ref="App" level="trace"/>
+        </logger>
+
+        <logger name="com.r3.corda.notary.plugin.nonvalidating" level="trace" additivity="false">
+            <AppenderRef ref="Console" level="trace"/>
         </logger>
 
         <!-- log warn only for these 3rd party libs -->
