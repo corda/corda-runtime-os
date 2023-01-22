@@ -61,6 +61,13 @@ pipeline {
         }
     }
 
+    parameters {
+        string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
+        choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
+        booleanParam(name: 'KEEP_NS', defaultValue: false, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
+        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: '', description: 'Commit ID to check out of SCM - leave blan to take HEAD of current brabranchcnh ')
+    }
+
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         BASE_IMAGE = getBaseImage(params.BUILD_REV, architectureTag)
@@ -90,13 +97,6 @@ pipeline {
         E2E_WORKER_ARCH = "${e2eArchitecture}"
     }
 
-    parameters {
-        string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
-        choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
-        booleanParam(name: 'KEEP_NS', defaultValue: false, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
-        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: env.CORDA_REVISION, description: 'Commit ID to check out of SCM')
-    }
-
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timeout(time: 45, unit: 'MINUTES')
@@ -107,8 +107,11 @@ pipeline {
     stages {
         stage('check out') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: "*/${params.COMMIT_TO_CHECKOUT}"]], extensions: [],
-                    userRemoteConfigs: [[credentialsId: 'corda-jenkins-ci02', url: 'https://github.com/corda/corda-runtime-os.git']]])
+                script {
+                    def commitID = params.COMMIT_TO_CHECKOUT ?: env.CORDA_REVISION
+                    checkout([$class: 'GitSCM', branches: [[name: "*/${commitID}"]], extensions: [],
+                        userRemoteConfigs: [[credentialsId: 'corda-jenkins-ci02', url: 'https://github.com/corda/corda-runtime-os.git']]])
+                }
             }
         }
         stage ('Create namespace') {
