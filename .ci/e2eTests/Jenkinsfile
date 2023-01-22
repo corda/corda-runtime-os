@@ -65,6 +65,7 @@ pipeline {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
         choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
         booleanParam(name: 'KEEP_NS', defaultValue: false, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
+        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: env.GIT_COMMIT description: 'Commit ID to check out of SCM')
     }
 
     environment {
@@ -100,9 +101,16 @@ pipeline {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timeout(time: 45, unit: 'MINUTES')
         timestamps()
+        skipDefaultCheckout()
     }
 
     stages {
+        stage('check out') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: "*/${params.COMMIT_TO_CHECKOUT}"]], extensions: [],
+                    userRemoteConfigs: [[credentialsId: 'corda-jenkins-ci02', url: 'https://github.com/corda/corda-runtime-os.git']]])
+            }
+        }
         stage ('Create namespace') {
             steps {
                 sh '''\
