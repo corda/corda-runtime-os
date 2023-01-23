@@ -127,20 +127,31 @@ internal class VirtualNodeEntity(
     }
 
     fun toVirtualNodeInfo(): VirtualNodeInfo {
+        println("Converting to VirtualNodeInfo")
+        println(holdingIdentity.x500Name)
+        println(insertTimestamp)
+
+        println(vaultDDLConnectionId.toString())
+        println(vaultDMLConnectionId.toString())
+        println(cryptoDDLConnectionId.toString())
+        println(cryptoDMLConnectionId.toString())
+        println(uniquenessDDLConnectionId.toString())
+        println(uniquenessDMLConnectionId.toString())
+
         return VirtualNodeInfo(
             holdingIdentity.toHoldingIdentity(),
             CpiIdentifier(cpiName, cpiVersion, SecureHash.parse(cpiSignerSummaryHash)),
-            this.vaultDDLConnectionId,
-            this.vaultDMLConnectionId!!,
-            this.cryptoDDLConnectionId,
-            this.cryptoDMLConnectionId!!,
-            this.uniquenessDDLConnectionId,
-            this.uniquenessDMLConnectionId!!,
+            vaultDDLConnectionId,
+            vaultDMLConnectionId!!,
+            cryptoDDLConnectionId,
+            cryptoDMLConnectionId!!,
+            uniquenessDDLConnectionId,
+            uniquenessDMLConnectionId!!,
             holdingIdentity.hsmConnectionId,
-            this.flowP2pOperationalStatus,
-            this.flowStartOperationalStatus,
-            this.flowOperationalStatus,
-            this.vaultDbOperationalStatus,
+            flowP2pOperationalStatus,
+            flowStartOperationalStatus,
+            flowOperationalStatus,
+            vaultDbOperationalStatus,
             entityVersion,
             insertTimestamp!!,
             isDeleted
