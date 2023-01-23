@@ -88,22 +88,10 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_metadata" columnNames="cpk_name, cpk_version, cpk_signer_summary_hash" constraintName="cpk_metadata_pk"
+        <addPrimaryKey tableName="cpk_metadata" columnNames="file_checksum" constraintName="cpk_metadata_pk"
                        schemaName="${schema.name}"/>
 
-        <addUniqueConstraint tableName="cpk_metadata" columnNames="file_checksum" constraintName="db_cpk_metadata_uc1"
-                             schemaName="${schema.name}"/>
-
         <createTable tableName="cpk_file" schemaName="${schema.name}">
-            <column name="cpk_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_signer_summary_hash" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -123,28 +111,16 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_file" columnNames="cpk_name, cpk_version, cpk_signer_summary_hash" constraintName="cpk_file_pk"
+        <addPrimaryKey tableName="cpk_file" columnNames="file_checksum" constraintName="cpk_file_pk"
                        schemaName="${schema.name}"/>
 
-        <addForeignKeyConstraint baseTableName="cpk_file" baseColumnNames="cpk_name, cpk_version, cpk_signer_summary_hash"
-                                 referencedTableName="cpk_metadata" referencedColumnNames="cpk_name, cpk_version, cpk_signer_summary_hash"
+        <addForeignKeyConstraint baseTableName="cpk_file" baseColumnNames="file_checksum"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
                                  constraintName="FK_cpk_file_cpk_metadata"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
-        <addUniqueConstraint tableName="cpk_file" columnNames="file_checksum" constraintName="db_cpk_file_uc1"
-                             schemaName="${schema.name}"/>
-
         <createTable tableName="cpk_db_change_log" schemaName="${schema.name}">
-            <column name="cpk_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_signer_summary_hash" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="cpk_file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -152,9 +128,6 @@
                 <constraints nullable="false"/>
             </column>
             <column name="content" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="changeset_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <!-- audit -->
@@ -170,23 +143,17 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_name, cpk_version, cpk_signer_summary_hash, file_path"
+        <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_file_checksum, file_path"
                        constraintName="cpk_db_change_log_pk" schemaName="${schema.name}"/>
 
-        <addForeignKeyConstraint baseTableName="cpk_db_change_log" baseColumnNames="cpk_name, cpk_version, cpk_signer_summary_hash"
-                                 referencedTableName="cpk_metadata" referencedColumnNames="cpk_name, cpk_version, cpk_signer_summary_hash"
+        <addForeignKeyConstraint baseTableName="cpk_db_change_log" baseColumnNames="cpk_file_checksum"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
                                  constraintName="FK_cpk_db_change_log_cpk_metadata"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
         <!-- Append only audit table. Unlike cpk_db_change_logs which will be updated during CPI update process. -->
         <createTable tableName="cpk_db_change_log_audit" schemaName="${schema.name}">
-            <column name="cpk_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_signer_summary_hash" type="VARCHAR(255)">
+            <column name="id" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="cpk_file_checksum" type="VARCHAR(255)">
@@ -198,12 +165,6 @@
             <column name="content" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column name="changeset_id" type="UUID">
-                <constraints nullable="false"/>
-            </column>
-            <column name="entity_version" type="INT">
-                <constraints nullable="false"/>
-            </column>
             <column name="is_deleted" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
@@ -213,7 +174,7 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="cpk_name, cpk_version, cpk_signer_summary_hash, cpk_file_checksum, changeset_id, entity_version, file_path"
+        <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="id"
                        constraintName="cpk_db_change_log_audit_pk" schemaName="${schema.name}"/>
 
         <createTable tableName="cpi_cpk" schemaName="${schema.name}">
@@ -224,15 +185,6 @@
                 <constraints nullable="false"/>
             </column>
             <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_signer_summary_hash" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="cpk_file_checksum" type="VARCHAR(255)">
@@ -263,8 +215,8 @@
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
-        <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpk_name, cpk_version, cpk_signer_summary_hash"
-                                 referencedTableName="cpk_metadata" referencedColumnNames="cpk_name, cpk_version, cpk_signer_summary_hash"
+        <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpk_file_checksum"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
                                  constraintName="FK_cpi_cpk_cpk_metadata"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
