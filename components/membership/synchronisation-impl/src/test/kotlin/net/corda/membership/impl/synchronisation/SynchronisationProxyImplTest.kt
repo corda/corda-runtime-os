@@ -10,7 +10,7 @@ import net.corda.data.membership.command.synchronisation.member.ProcessMembershi
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -98,7 +98,7 @@ class SynchronisationProxyImplTest {
     private val subHandle: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
     private val testConfig =
-        SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
+        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
     private var coordinatorIsRunning = false
     private var coordinatorStatus: KArgumentCaptor<LifecycleStatus> = argumentCaptor()

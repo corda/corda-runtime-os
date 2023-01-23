@@ -12,8 +12,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
-class SmartConfigFactoryFactoryTest {
-    private val secretsServiceConfig = ConfigFactory.parseMap(mapOf(SmartConfigFactoryFactory.SECRET_SERVICE_TYPE to "duck"))
+class SmartConfigFactoryTest {
+    private val secretsServiceConfig = ConfigFactory.parseMap(mapOf(SmartConfigFactory.SECRET_SERVICE_TYPE to "duck"))
     private val mockSecretsServiceFactory1 = mock< SecretsServiceFactory> {
         on { type } doReturn ("donald")
     }
@@ -25,9 +25,7 @@ class SmartConfigFactoryFactoryTest {
 
     @Test
     fun `when create, choose matching secrets provider from list`() {
-        val cff = SmartConfigFactoryFactory(
-            mock { on { findAll() } doReturn listOf(mockSecretsServiceFactory1, mockSecretsServiceFactory2)})
-        val cf = cff.create(secretsServiceConfig)
+        val cf = SmartConfigFactory.createWith(secretsServiceConfig, listOf(mockSecretsServiceFactory1, mockSecretsServiceFactory2))
         val config = ConfigFactory.parseMap(
             mapOf(SmartConfig.SECRET_KEY to mapOf(
                 "fred" to "jon"
@@ -40,18 +38,17 @@ class SmartConfigFactoryFactoryTest {
 
     @Test
     fun `when create and no matching secrets provider, throw`() {
-        val cff = SmartConfigFactoryFactory(
-            mock { on { findAll() } doReturn listOf(mockSecretsServiceFactory1)})
         assertThrows<SecretsConfigurationException> {
-            cff.create(
-                ConfigFactory.parseMap(mapOf(SmartConfigFactoryFactory.SECRET_SERVICE_TYPE to "micky"))
+            SmartConfigFactory.createWith(
+                ConfigFactory.parseMap(mapOf(SmartConfigFactory.SECRET_SERVICE_TYPE to "micky")),
+                listOf(mockSecretsServiceFactory1)
             )
         }
     }
 
     @Test
     fun `when createWithoutSecurityServices used masked`() {
-        val cf = SmartConfigFactoryFactory.createWithoutSecurityServices()
+        val cf = SmartConfigFactory.createWithoutSecurityServices()
         val config = ConfigFactory.parseMap(
             mapOf(SmartConfig.SECRET_KEY to mapOf(
                 "fred" to "jon"

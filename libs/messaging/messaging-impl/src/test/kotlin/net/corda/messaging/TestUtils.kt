@@ -2,7 +2,7 @@ package net.corda.messaging
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.SubscriptionType
@@ -15,7 +15,7 @@ const val GROUP = "group"
 internal fun createResolvedSubscriptionConfig(type: SubscriptionType): ResolvedSubscriptionConfig {
     val config = ConfigFactory.empty()
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("test"))
-    val messageBusConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(config)
+    val messageBusConfig = SmartConfigFactory.createWithoutSecurityServices().create(config)
     return ResolvedSubscriptionConfig(
         type,
         TOPIC,

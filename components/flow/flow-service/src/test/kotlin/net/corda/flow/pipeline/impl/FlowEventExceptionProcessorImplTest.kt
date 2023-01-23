@@ -18,7 +18,7 @@ import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -40,7 +41,7 @@ class FlowEventExceptionProcessorImplTest {
 
     private val flowConfig = ConfigFactory.empty()
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(2))
-    private val smartFlowConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(flowConfig)
+    private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
     private val inputEvent = Wakeup()
     private val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
     private val converterResponse = StateAndEventProcessor.Response<Checkpoint>(
@@ -248,6 +249,51 @@ class FlowEventExceptionProcessorImplTest {
         val eventError = FlowEventException("error")
         val eventResult = target.process(eventError, context)
         assertEmptyDLQdResult(eventResult)
+    }
+
+    @Test
+    fun `flow fatal exception with false doesExist confirms flow checkpoint not called`() {
+        val flowCheckpoint = mock<FlowCheckpoint>()
+        whenever(flowCheckpoint.doesExist).thenReturn(false)
+
+        val error = FlowFatalException("error")
+        val flowStatusUpdate = FlowStatus()
+        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
+
+        whenever(
+            flowMessageFactory.createFlowFailedStatusMessage(
+                flowCheckpoint,
+                FlowProcessingExceptionTypes.FLOW_FAILED,
+                error.message
+            )
+        ).thenReturn(flowStatusUpdate)
+        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+        target.process(error, context)
+
+        verify(flowCheckpoint, times(0)).flowStartContext
+    }
+
+    @Test
+    fun `flow fatal exception with true doesExist confirms flow checkpoint is called`() {
+        val flowCheckpoint = mock<FlowCheckpoint>()
+        whenever(flowCheckpoint.doesExist).thenReturn(true)
+        val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
+
+        val error = FlowFatalException("error")
+        val flowStatusUpdate = FlowStatus()
+        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
+
+        whenever(
+            flowMessageFactory.createFlowFailedStatusMessage(
+                flowCheckpoint,
+                FlowProcessingExceptionTypes.FLOW_FAILED,
+                error.message
+            )
+        ).thenReturn(flowStatusUpdate)
+        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+        target.process(error, context)
+
+        verify(flowCheckpoint, times(1)).flowStartContext
     }
 
     private fun assertEmptyDLQdResult(result: StateAndEventProcessor.Response<Checkpoint>) {

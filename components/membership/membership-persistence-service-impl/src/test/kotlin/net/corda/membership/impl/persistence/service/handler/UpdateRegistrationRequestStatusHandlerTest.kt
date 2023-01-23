@@ -100,6 +100,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
     )
     private lateinit var updateRegistrationRequestStatusHandler: UpdateRegistrationRequestStatusHandler
 

@@ -13,7 +13,6 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
@@ -64,6 +63,7 @@ import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -141,7 +141,7 @@ class P2PLayerEndToEndTest {
         }
     }
 
-    private val bootstrapConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val bootstrapConfig = SmartConfigFactory.createWithoutSecurityServices()
         .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
 
     @Test

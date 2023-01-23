@@ -2,7 +2,7 @@ package net.corda.libs.configuration.validation.impl
 
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
@@ -148,11 +148,11 @@ class ConfigurationValidatorImplTest {
     private fun loadData(dataResource: String): SmartConfig {
         val data = loadResource(dataResource).bufferedReader().readText()
         val rawConfig = ConfigFactory.parseString(data)
-        return SmartConfigFactoryFactory.createWithoutSecurityServices().create(rawConfig)
+        return SmartConfigFactory.createWithoutSecurityServices().create(rawConfig)
     }
 
     private fun emptyConfig() : SmartConfig {
-        return SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
+        return SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
     }
 
     private fun createSchemaValidator(): ConfigurationValidator {

@@ -19,8 +19,8 @@ import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -227,7 +227,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
      */
     private fun validateRequestedConfig(request: UpdateConfigParameters) = try {
         val config = request.config.escapedJson
-        val smartConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString(config))
+        val smartConfig = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString(config))
         val updatedConfig = validator.validate(
             request.section,
             Version(request.schemaVersion.major, request.schemaVersion.minor),

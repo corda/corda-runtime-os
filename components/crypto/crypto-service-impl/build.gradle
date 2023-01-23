@@ -8,6 +8,7 @@ description 'Crypto service components'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")

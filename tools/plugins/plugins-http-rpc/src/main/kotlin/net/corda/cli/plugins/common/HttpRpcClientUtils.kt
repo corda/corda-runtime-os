@@ -48,7 +48,7 @@ object HttpRpcClientUtils {
                 return onAlreadyExists(ex)
             } catch (ex: Exception) {
                 lastException = ex
-                logger.warn("""Cannot perform operation "$operationName" yet""", ex)
+                logger.warn("""Cannot perform operation "$operationName" yet""")
                 val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
                 Thread.sleep(sleep.coerceAtMost(remaining))
                 sleep *= 2
