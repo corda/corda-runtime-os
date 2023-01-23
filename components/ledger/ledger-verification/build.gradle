@@ -36,8 +36,6 @@ dependencies {
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(":libs:serialization:json-validator")
 
-    // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
-    //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
     runtimeOnly project(':libs:crypto:merkle-impl')
 
     implementation 'net.corda:corda-config-schema'
