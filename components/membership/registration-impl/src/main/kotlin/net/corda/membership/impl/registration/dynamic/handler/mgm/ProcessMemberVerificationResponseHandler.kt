@@ -16,8 +16,8 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.lib.impl.approval.RegistrationRuleImpl
-import net.corda.membership.lib.impl.approval.RegistrationRulesEngineImpl
+import net.corda.membership.lib.approval.RegistrationRule
+import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -126,9 +126,9 @@ internal class ProcessMemberVerificationResponseHandler(
         val activeMemberInfo = null
 
         val rules = membershipQueryClient.getApprovalRules(mgm, ApprovalRuleType.STANDARD).getOrThrow()
-            .map { RegistrationRuleImpl(it.ruleRegex.toRegex()) }
+            .map { RegistrationRule.Impl(it.ruleRegex.toRegex()) }
 
-        return with(RegistrationRulesEngineImpl(rules)) {
+        return with(RegistrationRulesEngine.Impl(rules)) {
             if (requiresManualApproval(proposedMemberInfo, activeMemberInfo)) {
                 RegistrationStatus.PENDING_MANUAL_APPROVAL
             } else {

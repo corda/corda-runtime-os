@@ -1,6 +1,7 @@
 package net.corda.membership.lib.impl.approval
 
 import net.corda.membership.lib.approval.RegistrationRule
+import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -34,7 +35,7 @@ class RegistrationRulesEngineTest {
     private val proposedMemberInfo = mock<MemberInfo> {
         on { memberProvidedContext } doReturn memberContext2
     }
-    private val rulesEngine = RegistrationRulesEngineImpl(listOf(rule, knownFalseRule))
+    private val rulesEngine = RegistrationRulesEngine.Impl(listOf(rule, knownFalseRule))
 
     @Test
     fun `returns true if any rule evaluates to true`() {
@@ -59,7 +60,7 @@ class RegistrationRulesEngineTest {
         val capturedDiff = argumentCaptor<Collection<String>>()
         whenever(rule.evaluate(capturedDiff.capture())).doReturn(true)
 
-        RegistrationRulesEngineImpl(listOf(rule)).requiresManualApproval(proposedMemberInfo, activeMemberInfo)
+        RegistrationRulesEngine.Impl(listOf(rule)).requiresManualApproval(proposedMemberInfo, activeMemberInfo)
 
         with(capturedDiff.firstValue) {
             assertThat(size).isEqualTo(1)
@@ -72,7 +73,7 @@ class RegistrationRulesEngineTest {
         val capturedDiff = argumentCaptor<Collection<String>>()
         whenever(rule.evaluate(capturedDiff.capture())).doReturn(true)
 
-        RegistrationRulesEngineImpl(listOf(rule)).requiresManualApproval(proposedMemberInfo, null)
+        RegistrationRulesEngine.Impl(listOf(rule)).requiresManualApproval(proposedMemberInfo, null)
 
         with(capturedDiff.firstValue) {
             assertThat(size).isEqualTo(2)

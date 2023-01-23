@@ -8,4 +8,12 @@ interface RegistrationRule {
     val ruleRegex: Regex
 
     fun evaluate(memberInfoKeys: Collection<String>): Boolean
+
+    class Impl(override val ruleRegex: Regex) : RegistrationRule {
+
+        override fun evaluate(memberInfoKeys: Collection<String>) =
+            memberInfoKeys.any {
+                ruleRegex.containsMatchIn(it)
+            }
+    }
 }

@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl.approval
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.approval.RegistrationRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -15,14 +16,14 @@ class RegistrationRuleTest {
     @Test
     fun `evaluates to true if one or more input keys matches regex`() {
         assertThat(
-            RegistrationRuleImpl(REGEX_STRING.toRegex()).evaluate(listOf(PARTY_NAME, PARTY_SESSION_KEY))
+            RegistrationRule.Impl(REGEX_STRING.toRegex()).evaluate(listOf(PARTY_NAME, PARTY_SESSION_KEY))
         ).isTrue
     }
 
     @Test
     fun `evaluates to false if none of the input keys matches regex`() {
         assertThat(
-            RegistrationRuleImpl(REGEX_STRING.toRegex()).evaluate(listOf(PARTY_NAME, GROUP_ID))
+            RegistrationRule.Impl(REGEX_STRING.toRegex()).evaluate(listOf(PARTY_NAME, GROUP_ID))
         ).isFalse
     }
 
