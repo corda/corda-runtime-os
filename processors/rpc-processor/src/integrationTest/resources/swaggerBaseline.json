@@ -3440,17 +3440,9 @@
         }
       },
       "CpkMetadata" : {
-        "required" : [ "dependencies", "hash", "id", "libraries", "mainBundle", "timestamp", "type" ],
+        "required" : [ "hash", "id", "libraries", "mainBundle", "timestamp", "type" ],
         "type" : "object",
         "properties" : {
-          "dependencies" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/CpkIdentifier"
-            }
-          },
           "hash" : {
             "type" : "string",
             "nullable" : false,

@@ -130,7 +130,6 @@ class UpsertCpiTests {
             manifest = CpkManifest(CpkFormatVersion(1, 0)),
             mainBundle = "main-bundle",
             libraries = emptyList(),
-            dependencies = emptyList(),
             cordappManifest = cordappManifest,
             type = CpkType.UNKNOWN,
             fileChecksum = fileChecksum,

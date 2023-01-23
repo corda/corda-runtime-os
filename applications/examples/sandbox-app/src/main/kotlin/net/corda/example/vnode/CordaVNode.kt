@@ -22,7 +22,7 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
@@ -84,7 +84,7 @@ class CordaVNode @Activate constructor(
         private val smartConfig: SmartConfig
 
         init {
-            val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+            val configFactory = SmartConfigFactory.createWithoutSecurityServices()
 
             val config = ConfigFactory.empty()
                 .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))

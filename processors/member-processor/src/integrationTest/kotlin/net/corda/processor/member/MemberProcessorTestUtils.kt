@@ -11,10 +11,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
-import net.corda.libs.configuration.secret.SecretsServiceFactory
-import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
@@ -49,11 +46,9 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 class MemberProcessorTestUtils {
     companion object {
@@ -85,22 +80,20 @@ class MemberProcessorTestUtils {
         private const val KEY_SCHEME = "corda.key.scheme"
 
         fun makeMembershipConfig() : SmartConfig =
-            SmartConfigFactoryFactory.createWithoutSecurityServices().create(
+            SmartConfigFactory.createWithoutSecurityServices().create(
                 ConfigFactory.empty()
                     .withValue(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
                         ConfigValueFactory.fromAnyRef(100L))
             )
 
-        private val smartConfigFactory: SmartConfigFactory = SmartConfigFactoryFactory(object : SecretsServiceFactoryResolver {
-            override fun findAll() = listOf(EncryptionSecretsServiceFactory())
-        })
-            .create(
+        private val smartConfigFactory: SmartConfigFactory = SmartConfigFactory.createWith(
             ConfigFactory.parseString(
                 """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase
             ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
         """.trimIndent()
-            )
+            ),
+            listOf(EncryptionSecretsServiceFactory())
         )
 
         fun makeCryptoConfig(): SmartConfig = smartConfigFactory.createDefaultCryptoConfig(

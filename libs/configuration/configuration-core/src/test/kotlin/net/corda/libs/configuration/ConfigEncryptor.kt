@@ -5,8 +5,6 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 
 class ConfigEncryptor {
     /** NOTE: this isn't really a test, but an easy way to generate encrypted configuration.
@@ -27,10 +25,10 @@ class ConfigEncryptor {
             EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to passphrase
         )
 
-        val configFactory = SmartConfigFactoryFactory(mock() {
-            on { findAll() } doReturn listOf(EncryptionSecretsServiceFactory())
-        })
-            .create(ConfigFactory.parseMap(secretsConfig))
+        val configFactory = SmartConfigFactory.createWith(
+            ConfigFactory.parseMap(secretsConfig),
+            listOf(EncryptionSecretsServiceFactory())
+        )
         val config = configFactory.create(configSection)
 
         println("Config section:")

@@ -2,10 +2,10 @@ package net.corda.applications.workers.p2p.linkmanager
 
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.applications.workers.workercommon.WorkerMonitor
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
@@ -32,8 +32,8 @@ class LinkManagerWorker @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
-    @Reference(service = SmartConfigFactoryFactory::class)
-    val smartConfigFactoryFactory: SmartConfigFactoryFactory,
+    @Reference(service = SecretsServiceFactoryResolver::class)
+    val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
 ) : Application {
 
     private companion object {
@@ -51,7 +51,7 @@ class LinkManagerWorker @Activate constructor(
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config = WorkerHelpers.getBootstrapConfig(
-            smartConfigFactoryFactory,
+            secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator()
         )

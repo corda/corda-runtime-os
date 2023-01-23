@@ -26,12 +26,8 @@ object Helpers {
         mainBundle: String,
         name: String,
         version: String,
-        fileChecksum: SecureHash = SecureHash("ALGO", "1234567890ABCDEF".toByteArray())
-    ): CpkMetadata =
-        mockCpkMetadata(mainBundle, emptyList(), name, version, fileChecksum)
-
-    private fun mockCpkMetadata(mainBundle: String, dependencies: List<CpkIdentifier>, name:String, version:String,
-                                fileChecksum: SecureHash): CpkMetadata {
+        fileChecksum: SecureHash = SecureHash("ALGO", "1234567890ABCDEF".toByteArray()),
+    ): CpkMetadata {
         val cordappManifest = CordappManifest(name, version, 1, 1,
             CordappType.WORKFLOW, "", "", 0, "", mock())
         return CpkMetadata(
@@ -39,7 +35,6 @@ object Helpers {
             CpkManifest(CpkFormatVersion(1, 0)),
             mainBundle,
             emptyList(),
-            dependencies,
             cordappManifest,
             CpkType.CORDA_API,
             fileChecksum,

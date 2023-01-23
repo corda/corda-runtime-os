@@ -90,7 +90,7 @@ class UtxoFinalityFlow(
                 CordaRuntimeException(message)
             }
 
-            log.debug { "Received ${signatures.size} signatures from ${session.counterparty} for transaction $transactionId" }
+            log.debug { "Received ${signatures.size} signature(s) from ${session.counterparty} for transaction $transactionId" }
 
             signatures.forEach { signature ->
                 transaction = verifyAndAddSignature(transaction, signature)
@@ -149,6 +149,7 @@ class UtxoFinalityFlow(
                 it !in signatures                                   // These came from that party
             }
         }.toMap()
+        log.trace { "Sending updated signatures to counterparties for transaction $transactionId" }
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
         log.debug { "Sent updated signatures to counterparties for transaction $transactionId" }
     }
@@ -158,10 +159,19 @@ class UtxoFinalityFlow(
     private fun notarize(
         transaction: UtxoSignedTransactionInternal
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
-        val notarisationFlow = pluggableNotaryClientFlowFactory.create(transaction.notary, transaction)
+        val notary = transaction.notary
+        val notarizationFlow = pluggableNotaryClientFlowFactory.create(notary, transaction)
+
+        // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
+        if (log.isTraceEnabled) {
+            log.trace(
+                "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
+                        "notary $notary"
+            )
+        }
 
         val notarySignatures = try {
-            flowEngine.subFlow(notarisationFlow)
+            flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
             val message = "Notarization failed with ${e.message}."
             flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
@@ -169,13 +179,19 @@ class UtxoFinalityFlow(
             throw e
         }
 
+        if (log.isTraceEnabled) {
+            log.trace(
+                "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
+                        transactionId
+            )
+        }
+
         if (notarySignatures.isEmpty()) {
-            val message = "Notary has not returned any signatures."
+            val message = "Notary $notary did not return any signatures after requesting notarization of transaction $transactionId"
             log.warn(message)
             flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
             throw CordaRuntimeException(message)
         }
-
         var notarizedTransaction = transaction
         notarySignatures.forEach { signature ->
             notarizedTransaction = try {
@@ -185,6 +201,12 @@ class UtxoFinalityFlow(
                 flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
                 throw e
             }
+        }
+
+        if (log.isDebugEnabled) {
+            log.debug(
+                "Successfully notarized transaction $transactionId using notary $notary and received ${notarySignatures.size} signature(s)"
+            )
         }
 
         return notarizedTransaction to notarySignatures
