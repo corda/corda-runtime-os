@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.verification.events
+package net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory

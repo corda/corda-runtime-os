@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.verification
+package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -6,7 +6,7 @@ import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.ledger.utxo.data.transaction.ContractVerificationResult
 import net.corda.ledger.utxo.data.transaction.ContractVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.flow.impl.verification.events.VerifyContractsExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.VerifyContractsExternalEventFactory
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -24,7 +24,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 
-class UtxoLedgerVerificationServiceImplTest {
+class UtxoLedgerTransactionVerifierComponentTest {
 
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
@@ -33,12 +33,12 @@ class UtxoLedgerVerificationServiceImplTest {
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
-    private lateinit var utxoLedgerVerificationService: UtxoLedgerVerificationService
+    private lateinit var utxoLedgerTransactionVerifier: UtxoLedgerTransactionVerifierComponent
     private val argumentCaptor = argumentCaptor<Class<VerifyContractsExternalEventFactory>>()
 
     @BeforeEach
     fun setup() {
-        utxoLedgerVerificationService = UtxoLedgerVerificationServiceImpl(
+        utxoLedgerTransactionVerifier = UtxoLedgerTransactionVerifierComponent(
             externalEventExecutor,
             serializationService
         )
@@ -67,7 +67,7 @@ class UtxoLedgerVerificationServiceImplTest {
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
 
         assertDoesNotThrow {
-            utxoLedgerVerificationService.verifyContracts(transaction)
+            utxoLedgerTransactionVerifier.verifyContracts(transaction)
         }
 
         verify(serializationService).serialize(any())
@@ -97,7 +97,7 @@ class UtxoLedgerVerificationServiceImplTest {
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
 
         val exception = assertThrows<ContractVerificationException> {
-            utxoLedgerVerificationService.verifyContracts(transaction)
+            utxoLedgerTransactionVerifier.verifyContracts(transaction)
         }
         assertThat(exception.transactionId).isEqualTo(transactionId)
         assertThat(exception.failureReasons).isEqualTo(expectedObj.failureReasons)
