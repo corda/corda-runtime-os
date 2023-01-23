@@ -2,7 +2,7 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.admin.DbChange
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangelog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.InputStream
 
@@ -13,7 +13,7 @@ import java.io.InputStream
  * @constructor Create empty Virtual node db change log
  */
 class VirtualNodeDbChangeLog(
-    private val changeLogs: List<CpkDbChangelog>,
+    private val changeLogs: List<CpkDbChangeLog>,
 ) : DbChange {
     companion object {
         // To get going we assume the master changelog file for a CPK is XML and has this name
