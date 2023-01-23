@@ -35,7 +35,8 @@
           "RUNNING",
           "RETRYING",
           "COMPLETED",
-          "FAILED"
+          "FAILED",
+          "KILLED"
         ]
       }
     },
@@ -48,6 +49,11 @@
       "name": "error",
       "type": ["null", "net.corda.data.ExceptionEnvelope"],
       "doc": "Optional error message, this will be set if the flow status is 'FAILED'"
+    },
+    {
+      "name": "processingTerminatedReason",
+      "type": ["null", "string"],
+      "doc": "Optional message indicating reasoning why processing a flow has been terminated."
     },
     {
       "name": "createdTimestamp",
