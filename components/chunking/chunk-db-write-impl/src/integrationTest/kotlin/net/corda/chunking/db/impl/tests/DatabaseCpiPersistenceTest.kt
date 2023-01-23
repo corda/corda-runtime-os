@@ -161,7 +161,6 @@ internal class DatabaseCpiPersistenceTest {
             manifest = cpkManifest,
             mainBundle = "main-bundle",
             libraries = emptyList(),
-            dependencies = emptyList(),
             cordappManifest = cordappManifest,
             type = CpkType.UNKNOWN,
             fileChecksum = fileChecksum ?: newRandomSecureHash(),
