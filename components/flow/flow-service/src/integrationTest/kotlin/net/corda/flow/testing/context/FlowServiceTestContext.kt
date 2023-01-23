@@ -155,7 +155,6 @@ class FlowServiceTestContext @Activate constructor(
             CpkManifest(CpkFormatVersion(0, 0)),
             "",
             listOf(),
-            listOf(),
             cordAppManifest,
             CpkType.UNKNOWN,
             cpkChecksum,
