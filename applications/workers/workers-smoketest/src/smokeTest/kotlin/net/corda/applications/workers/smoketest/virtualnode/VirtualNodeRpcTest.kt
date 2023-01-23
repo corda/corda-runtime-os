@@ -336,7 +336,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val vnodesWithStates: List<Pair<String, String>> = vNodeList().toJson()["virtualNodes"].map {
-                it["holdingIdentity"]["shortHash"].textValue() to it["flow_p2p_operational_status"].textValue()
+                it["holdingIdentity"]["shortHash"].textValue() to it["flowP2pOperationalStatus"].textValue()
             }
 
             val (vnodeId, oldState) = vnodesWithStates.last()
@@ -353,10 +353,10 @@ class VirtualNodeRpcTest {
                             val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
                                 virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
                             }
-                            vNodeInfo["flow_p2p_operational_status"].textValue() == "INACTIVE" &&
-                                    vNodeInfo["flow_start_operational_status"].textValue() == "INACTIVE" &&
-                                    vNodeInfo["flow_operational_status"].textValue() == "INACTIVE" &&
-                                    vNodeInfo["vault_db_operational_status"].textValue() == "INACTIVE"
+                            vNodeInfo["flowP2pOperationalStatus"].textValue() == "INACTIVE" &&
+                                    vNodeInfo["flowStartOperationalStatus"].textValue() == "INACTIVE" &&
+                                    vNodeInfo["flowOperationalStatus"].textValue() == "INACTIVE" &&
+                                    vNodeInfo["vaultDbOperationalStatus"].textValue() == "INACTIVE"
                         } else {
                             false
                         }
@@ -378,10 +378,10 @@ class VirtualNodeRpcTest {
                             val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
                                 virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
                             }
-                            vNodeInfo["flow_p2p_operational_status"].textValue() == oldState &&
-                                    vNodeInfo["flow_start_operational_status"].textValue() == oldState &&
-                                    vNodeInfo["flow_operational_status"].textValue() == oldState &&
-                                    vNodeInfo["vault_db_operational_status"].textValue() == oldState
+                            vNodeInfo["flowP2pOperationalStatus"].textValue() == oldState &&
+                                    vNodeInfo["flowStartOperationalStatus"].textValue() == oldState &&
+                                    vNodeInfo["flowOperationalStatus"].textValue() == oldState &&
+                                    vNodeInfo["vaultDbOperationalStatus"].textValue() == oldState
                         } else {
                             false
                         }

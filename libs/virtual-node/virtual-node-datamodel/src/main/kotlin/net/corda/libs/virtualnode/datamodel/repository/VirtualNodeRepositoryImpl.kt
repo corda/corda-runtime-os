@@ -71,7 +71,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             ?: throw CordaRuntimeException("Could not find holding identity")
 
         val virtualNodeEntityKey = hie.holdingIdentityShortHash
-        val foundVNode = entityManager.find(VirtualNodeEntity::class.java, virtualNodeEntityKey).apply {
+        val foundVNode = entityManager.find(VirtualNodeEntity::class.java, virtualNodeEntityKey)?.apply {
             this.update(
                 vaultDDLConnectionId = vaultDDLConnectionId,
                 vaultDMLConnectionId = vaultDMLConnectionId,
