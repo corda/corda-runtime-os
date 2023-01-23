@@ -4,8 +4,8 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.getRequestBodyAs
@@ -22,7 +22,7 @@ import net.corda.v5.base.util.contextLogger
 import net.cordapp.testing.testflows.messages.MessageFlowInput
 
 @InitiatingFlow(protocol = "flowDevProtocol")
-class MessagingFlow : RPCStartableFlow {
+class MessagingFlow : ClientStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -41,7 +41,7 @@ class MessagingFlow : RPCStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         log.info("Hello world is starting... [${flowEngine.flowId}]")
         val input = requestBody.getRequestBodyAs<MessageFlowInput>(jsonMarshallingService)
         val counterparty = MemberX500Name.parse(input.counterparty.toString())

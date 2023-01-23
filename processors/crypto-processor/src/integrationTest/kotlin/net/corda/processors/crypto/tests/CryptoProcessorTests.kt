@@ -80,6 +80,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -160,28 +161,30 @@ class CryptoProcessorTests {
 
         private val vnodeIdentity =
             createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", UUID.randomUUID().toString())
-
         private val vnodeId: String = vnodeIdentity.shortHash.value
-
-        private val clusterDb = TestDbInfo.createConfig()
-
-        private val cryptoDb = TestDbInfo(
-            name = CordaDb.Crypto.persistenceUnitName,
-            schemaName = DbSchema.CRYPTO
-        )
-
         private val vnodeDb = TestDbInfo(
             name = VirtualNodeDbType.CRYPTO.getConnectionName(vnodeIdentity.shortHash),
             schemaName = "vnode_crypto"
         )
 
-        private lateinit var connectionIds: Map<String, UUID>
+        private val vnodeIdentity2 =
+            createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", UUID.randomUUID().toString())
+        private val vnodeId2: String = vnodeIdentity2.shortHash.value
+        private val vnodeDb2 = TestDbInfo(
+            name = VirtualNodeDbType.CRYPTO.getConnectionName(vnodeIdentity2.shortHash),
+            schemaName = "vnode_crypto"
+        )
 
+        private val clusterDb = TestDbInfo.createConfig()
+        private val cryptoDb = TestDbInfo(
+            name = CordaDb.Crypto.persistenceUnitName,
+            schemaName = DbSchema.CRYPTO
+        )
         private val boostrapConfig = makeBootstrapConfig(clusterDb.config)
-
         private val messagingConfig = makeMessagingConfig()
-
         private val cryptoConfig = makeCryptoConfig()
+
+        private lateinit var connectionIds: Map<String, UUID>
 
         private lateinit var tracker: TestDependenciesTracker
 
@@ -272,7 +275,12 @@ class CryptoProcessorTests {
                 "vnode-crypto",
                 CryptoEntities.classes
             ).close()
-            connectionIds = addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb)
+            databaseInstaller.setupDatabase(
+                vnodeDb2,
+                "vnode-crypto",
+                CryptoEntities.classes
+            ).close()
+            connectionIds = addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb, vnodeDb2)
             configEmf.close()
         }
 
@@ -327,6 +335,20 @@ class CryptoProcessorTests {
                     timestamp = Instant.now()
                 )
             )
+            publisher.publishVirtualNodeInfo(
+                VirtualNodeInfo(
+                    holdingIdentity = vnodeIdentity2,
+                    cpiIdentifier = CpiIdentifier(
+                        name = "cpi",
+                        version = "1",
+                        signerSummaryHash = TestRandom.secureHash()
+                    ),
+                    cryptoDmlConnectionId = connectionIds.getValue(vnodeDb2.name),
+                    uniquenessDmlConnectionId = UUID.randomUUID(),
+                    vaultDmlConnectionId = UUID.randomUUID(),
+                    timestamp = Instant.now()
+                )
+            )
         }
 
         private fun startDependencies() {
@@ -369,6 +391,8 @@ class CryptoProcessorTests {
                     hsmRegistrationClient.assignSoftHSM(vnodeId, it)
                 }
             }
+
+            hsmRegistrationClient.assignSoftHSM(vnodeId2, CryptoConsts.Categories.LEDGER)
         }
 
         @JvmStatic
@@ -805,4 +829,29 @@ class CryptoProcessorTests {
             )
         }
     }
+
+    @Test
+    fun `filterMyKeys filters and returns keys owned by the specified vnode`() {
+        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1")
+        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2")
+
+        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1")
+        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2")
+        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3")
+
+        val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
+        val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
+        val allKeys = vnodeKeys + vnode2Keys
+
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+    }
+
+    private fun generateLedgerKey(tenantId: String, keyAlias: String): PublicKey =
+        opsClient.generateKeyPair(
+            tenantId = tenantId,
+            category = CryptoConsts.Categories.LEDGER,
+            alias = keyAlias,
+            scheme = ECDSA_SECP256R1_CODE_NAME
+        )
 }

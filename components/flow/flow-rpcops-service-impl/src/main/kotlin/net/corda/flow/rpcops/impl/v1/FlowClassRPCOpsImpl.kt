@@ -92,7 +92,7 @@ class FlowClassRPCOpsImpl @Activate constructor(
 
     private fun getFlowClassesFromCPI(cpiMeta: CpiMetadata): StartableFlowsResponse {
         val flowClasses = cpiMeta.cpksMetadata.flatMap {
-            it.cordappManifest.rpcStartableFlows
+            it.cordappManifest.clientStartableFlows
         }
         return StartableFlowsResponse(flowClasses)
     }

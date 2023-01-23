@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
@@ -57,7 +57,7 @@ class PermissionStorageWriterServiceEventHandlerTest {
         entityManagerFactoryFactory,
     )
 
-    private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val config = configFactory.create(
         ConfigFactory.empty()
             .withValue(

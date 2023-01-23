@@ -11,7 +11,7 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -120,7 +120,7 @@ class MemberRegistrationIntegrationTest {
         lateinit var testVirtualNodeInfoReadService: TestVirtualNodeInfoReadService
 
         val logger = contextLogger()
-        val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+        val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
             .create(
                 ConfigFactory.parseString(
                     """

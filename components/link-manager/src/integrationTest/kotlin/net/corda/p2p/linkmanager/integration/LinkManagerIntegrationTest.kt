@@ -11,7 +11,6 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
@@ -122,7 +121,7 @@ class LinkManagerIntegrationTest {
             .withValue(LinkManagerConfiguration.REVOCATION_CHECK_KEY, ConfigValueFactory.fromAnyRef(RevocationCheckMode.OFF.toString()))
     }
 
-    private val bootstrapConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val bootstrapConfig = SmartConfigFactory.createWithoutSecurityServices()
         .create(
             ConfigFactory.empty()
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))

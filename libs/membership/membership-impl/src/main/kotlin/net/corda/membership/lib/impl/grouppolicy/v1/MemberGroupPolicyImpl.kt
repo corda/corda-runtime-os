@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl.grouppolicy.v1
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -37,9 +38,11 @@ import net.corda.membership.lib.impl.grouppolicy.getMandatoryStringMap
 import net.corda.membership.lib.impl.grouppolicy.getMissingCertError
 import net.corda.membership.lib.impl.grouppolicy.getMissingKeyError
 import net.corda.membership.lib.impl.grouppolicy.getOptionalJsonNode
+import net.corda.membership.lib.impl.grouppolicy.getOptionalString
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringList
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringMap
 import net.corda.membership.lib.impl.grouppolicy.validatePemCert
+import net.corda.v5.base.types.MemberX500Name
 
 class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
 
@@ -162,6 +165,11 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
                 )
             }
         }
+
+        override val mgmClientCertificateSubject: MemberX500Name?
+            get() = p2pParameters.getOptionalString(MGM_CLIENT_CERTIFICATE_SUBJECT)?.let {
+                MemberX500Name.parse(it)
+            }
 
         override val protocolMode = p2pParameters.getMandatoryEnum(PROTOCOL_MODE) {
             when (it.lowercase()) {

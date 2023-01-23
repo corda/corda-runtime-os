@@ -15,7 +15,7 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -100,7 +100,7 @@ class MessageBusIntegrationTests {
 
         val logger = contextLogger()
 
-        val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+        val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
             .create(
                 ConfigFactory.parseString(
                     """

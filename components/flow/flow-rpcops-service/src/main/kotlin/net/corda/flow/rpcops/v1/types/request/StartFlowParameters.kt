@@ -7,10 +7,10 @@ import net.corda.httprpc.JsonObject
  *
  * @param clientRequestId Client provided flow identifier
  * @param flowClassName Fully qualified class name of the flow to start.
- * @param requestData Optional start arguments string passed to the flow. Defaults to empty string.
+ * @param requestBody Optional start arguments string passed to the flow. Defaults to empty string.
  */
 data class StartFlowParameters(
     val clientRequestId: String,
     val flowClassName: String,
-    val requestData: JsonObject
+    val requestBody: JsonObject
 )

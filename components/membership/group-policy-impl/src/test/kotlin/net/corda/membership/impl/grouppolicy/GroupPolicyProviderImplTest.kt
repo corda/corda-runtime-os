@@ -8,7 +8,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
@@ -233,7 +233,7 @@ class GroupPolicyProviderImplTest {
     private fun postConfigChangedEvent() = postEvent(
         ConfigChangedEvent(
             setOf(MESSAGING_CONFIG),
-            mapOf(MESSAGING_CONFIG to SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.empty()))
+            mapOf(MESSAGING_CONFIG to SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty()))
         )
     )
 

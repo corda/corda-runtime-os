@@ -11,17 +11,20 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.db.internal.reconcile.db.ConfigReconciler
 import net.corda.processors.db.internal.reconcile.db.CpiReconciler
 import net.corda.processors.db.internal.reconcile.db.GroupParametersReconciler
+import net.corda.processors.db.internal.reconcile.db.MgmAllowedCertificateSubjectsReconciler
 import net.corda.processors.db.internal.reconcile.db.VirtualNodeReconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_GROUP_PARAMS_INTERVAL_MS
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_MTLS_MGM_ALLOWED_LIST_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_VNODE_INFO_INTERVAL_MS
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
@@ -45,6 +48,7 @@ class Reconcilers constructor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     groupParametersFactory: GroupParametersFactory,
+    allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) : AutoCloseable {
     private val cpiReconciler = CpiReconciler(
         coordinatorFactory,
@@ -79,12 +83,22 @@ class Reconcilers constructor(
         groupParametersWriterService,
         groupParametersReaderService,
     )
+    private val mgmAllowedCertificateSubjectsReconciler = MgmAllowedCertificateSubjectsReconciler(
+        coordinatorFactory,
+        dbConnectionManager,
+        virtualNodeInfoReadService,
+        jpaEntitiesRegistry,
+        reconcilerFactory,
+        allowedCertificatesReaderWriterService,
+        allowedCertificatesReaderWriterService,
+    )
 
     override fun close() {
         cpiReconciler.close()
         vnodeReconciler.close()
         configReconciler.close()
         groupParametersReconciler.close()
+        mgmAllowedCertificateSubjectsReconciler.close()
     }
 
     /**
@@ -100,6 +114,10 @@ class Reconcilers constructor(
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_VNODE_INFO_INTERVAL_MS, vnodeReconciler::updateInterval)
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_CONFIG_INTERVAL_MS, configReconciler::updateInterval)
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_GROUP_PARAMS_INTERVAL_MS, groupParametersReconciler::updateInterval)
+        smartConfig.updateIntervalWhenKeyIs(
+            RECONCILIATION_MTLS_MGM_ALLOWED_LIST_INTERVAL_MS,
+            mgmAllowedCertificateSubjectsReconciler::updateInterval,
+        )
     }
 
     /** Convenience function to correctly set the interval when the key actually exists in the config */

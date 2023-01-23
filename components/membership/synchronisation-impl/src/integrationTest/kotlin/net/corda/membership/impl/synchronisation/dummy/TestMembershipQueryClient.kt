@@ -3,6 +3,8 @@ package net.corda.membership.impl.synchronisation.dummy
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -98,6 +100,16 @@ class TestMembershipQueryClientImpl @Activate constructor(
     }
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun getApprovalRules(
+        viewOwningIdentity: HoldingIdentity,
+        ruleType: ApprovalRuleType
+    ): MembershipQueryResult<Collection<ApprovalRuleDetails>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
