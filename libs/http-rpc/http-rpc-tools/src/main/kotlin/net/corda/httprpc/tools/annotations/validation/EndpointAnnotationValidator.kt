@@ -1,13 +1,13 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import java.lang.reflect.Method
 
 /**
  * Validates that every method has no more than one HTTP RPC endpoint annotation.
  */
-internal class EndpointAnnotationValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
+internal class EndpointAnnotationValidator(private val clazz: Class<out RestResource>) : HttpRpcValidator {
 
     companion object {
         fun error(method: Method) = "Only one of HttpRpc endpoint annotations can be applied on method ${method.name}."

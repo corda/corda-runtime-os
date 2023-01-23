@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
 import net.corda.httprpc.tools.annotations.validation.utils.endpointPath
 import net.corda.httprpc.tools.annotations.validation.utils.endpointType
@@ -11,7 +11,7 @@ import java.lang.reflect.Method
  * Validates that two or more endpoints in the same class do not have the same name,
  * as it would create a path name clash in the server.
  */
-internal class EndpointNameConflictValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
+internal class EndpointNameConflictValidator(private val clazz: Class<out RestResource>) : HttpRpcValidator {
 
     companion object {
         fun error(path: String?, type: EndpointType, method: Method): String =

@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.permission
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
@@ -23,7 +23,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionRespon
             "and create new permissions.",
     path = "permission"
 )
-interface PermissionEndpoint : RpcOps {
+interface PermissionEndpoint : RestResource {
 
     /**
      * Create a permission entity in the RBAC permission system.

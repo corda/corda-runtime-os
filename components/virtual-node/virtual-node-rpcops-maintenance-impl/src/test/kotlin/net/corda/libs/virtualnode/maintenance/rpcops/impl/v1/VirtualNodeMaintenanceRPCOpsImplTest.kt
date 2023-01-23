@@ -55,7 +55,7 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         @Test
         fun `verify coordinator is started on start`() {
             val vnodeMaintenanceRpcOps =
-                VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
             vnodeMaintenanceRpcOps.start()
 
             verify(mockCoordinator).start()
@@ -64,7 +64,7 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         @Test
         fun `verify coordinator is stopped on stop`() {
             val vnodeMaintenanceRpcOps =
-                VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
             vnodeMaintenanceRpcOps.stop()
 
             verify(mockCoordinator).stop()
@@ -73,7 +73,7 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         @Test
         fun `verify coordinator isRunning defers to the coordinator`() {
             val vnodeMaintenanceRpcOps =
-                VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
             vnodeMaintenanceRpcOps.isRunning
 
             verify(mockCoordinator).isRunning
@@ -83,7 +83,7 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         @Test
         fun `verify exception throw if forceCpiUpload is performed while coordinator is not running`() {
             val vnodeMaintenanceRpcOps =
-                VirtualNodeMaintenanceRPCOpsImpl(mockDownCoordinatorFactory, mock(), mock(), mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockDownCoordinatorFactory, mock(), mock(), mock())
             assertThrows<IllegalStateException> {
                 vnodeMaintenanceRpcOps.forceCpiUpload(mock())
             }
@@ -111,7 +111,7 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         @Test
         fun `verify forceCpiUpload performs call to uploadCpi on cpiUploadManager`() {
             val vnodeRpcOps =
-                VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mockCpiUploadRPCOpsService, mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mockCpiUploadRPCOpsService, mock())
             vnodeRpcOps.forceCpiUpload(mockUpload)
 
             verify(mockCpiUploadRPCOpsService.cpiUploadManager)

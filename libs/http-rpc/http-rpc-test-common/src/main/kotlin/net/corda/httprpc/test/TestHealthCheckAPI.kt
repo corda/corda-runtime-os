@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
@@ -20,7 +20,7 @@ import java.util.Date
 import java.util.UUID
 
 @HttpRpcResource(name = "HealthCheckAPI", description = "Health Check", path = "health/")
-interface TestHealthCheckAPI : RpcOps {
+interface TestHealthCheckAPI : RestResource {
 
     @HttpRpcGET(path = "sanity", title = "Sanity", description = "Sanity endpoint")
     fun void(): String

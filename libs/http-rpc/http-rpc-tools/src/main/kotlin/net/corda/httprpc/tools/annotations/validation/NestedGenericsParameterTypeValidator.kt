@@ -1,12 +1,12 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 
-class NestedGenericsParameterTypeValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
+class NestedGenericsParameterTypeValidator(private val clazz: Class<out RestResource>) : HttpRpcValidator {
 
     companion object {
         fun error(method: Method) = "Method \"${method.name}\" has nested generic parameter types. " +

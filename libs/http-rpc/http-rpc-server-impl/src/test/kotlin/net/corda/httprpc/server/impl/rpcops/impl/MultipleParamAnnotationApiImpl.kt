@@ -1,9 +1,9 @@
 package net.corda.httprpc.server.impl.rpcops.impl
 
 import net.corda.httprpc.server.impl.rpcops.MultipleParamAnnotationApi
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.PluggableRestResource
 
-class MultipleParamAnnotationApiImpl : MultipleParamAnnotationApi, PluggableRPCOps<MultipleParamAnnotationApi> {
+class MultipleParamAnnotationApiImpl : MultipleParamAnnotationApi, PluggableRestResource<MultipleParamAnnotationApi> {
 
     override val targetInterface: Class<MultipleParamAnnotationApi>
         get() = MultipleParamAnnotationApi::class.java

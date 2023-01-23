@@ -5,7 +5,7 @@ import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.models.ResponseBody
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.reflect.jvm.javaGetter
@@ -15,7 +15,7 @@ class JavalinRouteProviderImplTest {
     @Test
     fun `httpGetRoutes withPathParameter parameterTranslatedSuccessfully`() {
 
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             fun foo() {}
             override val protocolVersion: Int
                 get() = 1
@@ -47,7 +47,7 @@ class JavalinRouteProviderImplTest {
     @Test
     fun `httpGetRoutes NoAuthRequired routeInfoReturnedSuccessfully`() {
 
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }

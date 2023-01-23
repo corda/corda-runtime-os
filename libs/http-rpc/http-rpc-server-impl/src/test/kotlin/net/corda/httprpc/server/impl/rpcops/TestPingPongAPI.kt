@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl.rpcops
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -9,7 +9,7 @@ import net.corda.httprpc.annotations.HttpRpcResource
     name = "API",
     description = "Health Check"
 )
-interface TestPingPongAPI : RpcOps {
+interface TestPingPongAPI : RestResource {
 
     @HttpRpcPOST
     fun ping(

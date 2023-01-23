@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.annotations.validation.utils.asPathParam
@@ -14,7 +14,7 @@ import java.lang.reflect.Parameter
 /**
  * Validates that every method path parameter is present in the endpoint path.
  */
-internal class PathParameterInURLPathValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
+internal class PathParameterInURLPathValidator(private val clazz: Class<out RestResource>) : HttpRpcValidator {
     override fun validate(): HttpRpcValidationResult =
         clazz.endpoints.fold(HttpRpcValidationResult()) { total, method ->
             total + validateParameters(method, method.parameters.asList())

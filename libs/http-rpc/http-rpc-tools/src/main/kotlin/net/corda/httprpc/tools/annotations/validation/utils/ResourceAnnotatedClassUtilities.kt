@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation.utils
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
@@ -14,7 +14,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import kotlin.reflect.full.createInstance
 
-internal val Class<out RpcOps>.endpoints: List<Method>
+internal val Class<out RestResource>.endpoints: List<Method>
     get() = this.methods.filter { method ->
         method.annotations.any { annotation ->
             annotation.isRpcEndpointAnnotation()
