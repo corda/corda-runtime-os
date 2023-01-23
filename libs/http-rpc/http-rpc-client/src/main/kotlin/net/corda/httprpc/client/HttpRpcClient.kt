@@ -18,13 +18,15 @@ import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.concurrent.scheduleAtFixedRate
 
 /**
- * [HttpRpcClient] is meant to run outside of Corda Node JVM and provide connectivity to a node using the HTTP-RPC protocol.
- * Since Corda Node can expose multiple RPC interfaces through HTTP, it is required to specify which [RestResource] interface should be used.
+ * [HttpRpcClient] is meant to run outside of Corda Node JVM and provide connectivity to a node using the HTTP-RPC
+ * protocol. Since Corda Node can expose multiple RPC interfaces through HTTP, it is required to specify which
+ * [RestResource] interface should be used.
  *
  * @property baseAddress The base address of the server.
  * @property rpcOpsClass The [RestResource] interface for which the proxy will be created.
  * @property clientConfig The configuration for the client to use.
- * @property healthCheckInterval The interval on which health check calls to the server will happen, ensuring connectivity.
+ * @property healthCheckInterval The interval on which health check calls to the server will happen, ensuring
+ *                               connectivity.
  */
 @Suppress("LongParameterList")
 class HttpRpcClient<I : RestResource> internal constructor(
@@ -53,7 +55,8 @@ class HttpRpcClient<I : RestResource> internal constructor(
 
         private const val defaultHealthCheckInterval = 10000L
 
-        private fun <I : RestResource> defaultProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I =
+        private fun <I : RestResource> defaultProxyGenerator(
+            rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I =
             uncheckedCast(Proxy.newProxyInstance(rpcOpsClass.classLoader, arrayOf(rpcOpsClass), proxyHandler))
 
         private fun <T> Logger.logElapsedTime(label: String, body: () -> T): T = logElapsedTime(label, this, body)
@@ -111,8 +114,8 @@ class HttpRpcClient<I : RestResource> internal constructor(
                         get() = this@HttpRpcClient.serverProtocolVersion!!
                 }.also {
                     connectionEventDistributor.connectionOpt = it
-                    // Up above we made a successful call to `ops.protocolVersion` so we are in position to notify listeners that connection
-                    // is active.
+                    // Up above we made a successful call to `ops.protocolVersion` so we are in position to notify
+                    // listeners that connection is active.
                     connectionEventDistributor.onConnect()
                     healthCheckTimer = schedulePeriodicHealthCheck()
                 }

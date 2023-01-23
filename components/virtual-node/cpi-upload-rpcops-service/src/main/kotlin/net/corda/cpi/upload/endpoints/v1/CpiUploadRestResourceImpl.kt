@@ -115,7 +115,8 @@ class CpiUploadRestResourceImpl @Activate constructor(
 
     private fun requireRunning() {
         if (!isRunning) {
-            throw IllegalStateException("${CpiUploadRestResource::class.java.simpleName} is not running! Its status is: ${coordinator.status}")
+            throw IllegalStateException(
+                "${CpiUploadRestResource::class.java.simpleName} is not running! Its status is: ${coordinator.status}")
         }
     }
 }

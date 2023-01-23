@@ -21,7 +21,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class HttpRpcClientTest {
-    private inline fun <reified I : RestResource> mockProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I {
+    private inline fun <reified I : RestResource> mockProxyGenerator(
+        rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I {
         assertNotNull(proxyHandler)
         assertNotNull(rpcOpsClass)
         return mock<I>().also {
@@ -29,7 +30,8 @@ class HttpRpcClientTest {
         }
     }
 
-    private inline fun <reified I : RestResource> mockErrorProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I {
+    private inline fun <reified I : RestResource> mockErrorProxyGenerator(
+        rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I {
         assertNotNull(proxyHandler)
         assertNotNull(rpcOpsClass)
         return mock<I>().also {
@@ -78,7 +80,8 @@ class HttpRpcClientTest {
         val exception = assertThrows<IllegalArgumentException> {
             client.start()
         }
-        assertEquals("Requested minimum protocol version (4) is higher than the server's supported protocol version (2)", exception.message)
+        assertEquals("Requested minimum protocol version (4) is higher than the server's supported protocol " +
+                "version (2)", exception.message)
     }
 
     @Test
