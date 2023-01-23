@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "ClientCertificateSubject",
+  "namespace": "net.corda.data.p2p.mtls",
+  "fields": [
+    {
+      "doc": "The subject",
+      "name": "subject",
+      "type": "string"
+    }
+  ]
+}

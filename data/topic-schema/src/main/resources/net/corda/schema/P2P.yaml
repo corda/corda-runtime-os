@@ -58,6 +58,19 @@ topics:
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
+  P2PMtlsMemberClientCertificateSubject:
+    name: p2p.mtls.member.client.certificate.subject
+    consumers:
+      - link-manager
+    producers:
+      - membership
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
   P2PMgmAllowedClientCertificateSubjects:
     name: p2p.mgm.allowed.client.certificate.subjects
     consumers:

@@ -136,6 +136,7 @@ class Schemas {
             const val GATEWAY_TLS_CERTIFICATES = "gateway.tls.certs"
             const val GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC = "gateway.revocation.request"
             val GATEWAY_REVOCATION_CHECK_RESPONSE_TOPIC = getRPCResponseTopic(GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC)
+            const val P2P_MTLS_MEMBER_CLIENT_CERTIFICATE_SUBJECT_TOPIC = "p2p.mtls.member.client.certificate.subject"
         }
     }
 
