@@ -26,7 +26,7 @@ internal class QueryPreAuthTokenHandler(persistenceHandlerServices: PersistenceH
                 }
                 predicates.add(inStatus)
             }
-            request.ownerX500Name?.let { predicates.add(criteriaBuilder.equal(root.get<String>("x500Name"), it)) }
+            request.ownerX500Name?.let { predicates.add(criteriaBuilder.equal(root.get<String>("ownerX500Name"), it)) }
 
             @Suppress("SpreadOperator")
             val query = criteriaQuery.select(root).where(*predicates.toTypedArray())
