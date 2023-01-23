@@ -1,6 +1,6 @@
 package net.corda.httprpc.client
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.client.connect.HttpRpcClientProxyHandler
 import net.corda.httprpc.test.TestHealthCheckAPI
@@ -21,7 +21,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class HttpRpcClientTest {
-    private inline fun <reified I : RpcOps> mockProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I {
+    private inline fun <reified I : RestResource> mockProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I {
         assertNotNull(proxyHandler)
         assertNotNull(rpcOpsClass)
         return mock<I>().also {
@@ -29,7 +29,7 @@ class HttpRpcClientTest {
         }
     }
 
-    private inline fun <reified I : RpcOps> mockErrorProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I {
+    private inline fun <reified I : RestResource> mockErrorProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I {
         assertNotNull(proxyHandler)
         assertNotNull(rpcOpsClass)
         return mock<I>().also {

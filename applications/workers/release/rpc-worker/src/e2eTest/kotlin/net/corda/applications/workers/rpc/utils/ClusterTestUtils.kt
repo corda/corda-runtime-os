@@ -7,19 +7,19 @@ import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.client.exceptions.RequestErrorException
-import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
+import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.packaging.testutils.TestUtils
-import net.corda.membership.httprpc.v1.CertificatesRpcOps
-import net.corda.membership.httprpc.v1.HsmRpcOps
-import net.corda.membership.httprpc.v1.KeysRpcOps
-import net.corda.membership.httprpc.v1.MGMRpcOps
-import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
-import net.corda.membership.httprpc.v1.NetworkRpcOps
+import net.corda.membership.httprpc.v1.CertificatesRestResource
+import net.corda.membership.httprpc.v1.HsmRestResource
+import net.corda.membership.httprpc.v1.KeysRestResource
+import net.corda.membership.httprpc.v1.MGMRestResource
+import net.corda.membership.httprpc.v1.MemberRegistrationRestResource
+import net.corda.membership.httprpc.v1.NetworkRestResource
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
@@ -62,7 +62,7 @@ fun E2eCluster.uploadCpi(
     ).write(keystore.readAllBytes())
 
     // first upload certificate to corda
-    clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
+    clusterHttpClientFor(CertificatesRestResource::class.java).use { client ->
         with(client.start().proxy) {
             val pem = TestUtils.ROOT_CA.toPem().toByteArray()
 
@@ -79,7 +79,7 @@ fun E2eCluster.uploadCpi(
     }
 
     // then build and upload cpi
-    return clusterHttpClientFor(CpiUploadRPCOps::class.java).use { client ->
+    return clusterHttpClientFor(CpiUploadRestResource::class.java).use { client ->
         with(client.start().proxy) {
             // Check if MGM CPI was already uploaded in previous run. Current validation only allows one MGM CPI.
             if (isMgm) {
@@ -142,7 +142,7 @@ fun E2eCluster.createVirtualNode(
     member: E2eClusterMember,
     cpiCheckSum: String
 ) {
-    clusterHttpClientFor(VirtualNodeRPCOps::class.java)
+    clusterHttpClientFor(VirtualNodeRestResource::class.java)
         .use { client ->
             client.start().proxy.createVirtualNode(
                 VirtualNodeRequest(
@@ -165,7 +165,7 @@ fun E2eCluster.keyExists(
     tenantId: String,
     cat: String
 ): Boolean {
-    return clusterHttpClientFor(KeysRpcOps::class.java)
+    return clusterHttpClientFor(KeysRestResource::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -190,7 +190,7 @@ fun E2eCluster.generateKeyPairIfNotExists(
     tenantId: String,
     cat: String
 ): String {
-    return clusterHttpClientFor(KeysRpcOps::class.java)
+    return clusterHttpClientFor(KeysRestResource::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -224,7 +224,7 @@ fun E2eCluster.assignSoftHsm(
     holdingId: String,
     cat: String
 ): HsmAssociationInfo {
-    return clusterHttpClientFor(HsmRpcOps::class.java)
+    return clusterHttpClientFor(HsmRestResource::class.java)
         .use { client ->
             client.start().proxy.assignSoftHsm(holdingId, cat)
         }
@@ -234,7 +234,7 @@ fun E2eCluster.register(
     holdingId: String,
     context: Map<String, String>
 ): RegistrationRequestProgress {
-    return clusterHttpClientFor(MemberRegistrationRpcOps::class.java)
+    return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
         .use { client ->
             val proxy = client.start().proxy
             proxy.startRegistration(
@@ -259,7 +259,7 @@ fun E2eCluster.register(
 fun E2eCluster.generateGroupPolicy(
     holdingId: String
 ): String {
-    return clusterHttpClientFor(MGMRpcOps::class.java).use { client ->
+    return clusterHttpClientFor(MGMRestResource::class.java).use { client ->
         client.start().proxy.generateGroupPolicy(holdingId)
     }
 }
@@ -270,7 +270,7 @@ fun E2eCluster.setUpNetworkIdentity(
     useClusterLevelSessionKeyAndCert: Boolean? = null,
     sessionCertificateChainAlias: String? = null
 ) {
-    clusterHttpClientFor(NetworkRpcOps::class.java).use { client ->
+    clusterHttpClientFor(NetworkRestResource::class.java).use { client ->
         client.start().proxy.setupHostedIdentities(
             holdingId,
             HostedIdentitySetupRequest(
@@ -289,7 +289,7 @@ fun E2eCluster.disableGatewayCLRChecks() {
     val revocationCheck = "revocationCheck"
     val mode = "mode"
     val modeOff = "OFF"
-    clusterHttpClientFor(ConfigRPCOps::class.java).use { client ->
+    clusterHttpClientFor(ConfigRestResource::class.java).use { client ->
         val proxy = client.start().proxy
         val configResponse = proxy.get(GATEWAY_CONFIG)
         val config = ObjectMapper().readTree(
@@ -312,7 +312,7 @@ fun E2eCluster.disableLinkManagerCLRChecks() {
     val revocationCheck = "revocationCheck"
     val mode = "mode"
     val modeOff = "OFF"
-    clusterHttpClientFor(ConfigRPCOps::class.java).use { client ->
+    clusterHttpClientFor(ConfigRestResource::class.java).use { client ->
         val proxy = client.start().proxy
         val configResponse = proxy.get(LINK_MANAGER_CONFIG)
         val config = ObjectMapper().readTree(

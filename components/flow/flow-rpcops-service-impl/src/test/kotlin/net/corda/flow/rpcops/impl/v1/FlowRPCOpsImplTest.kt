@@ -6,7 +6,7 @@ import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
-import net.corda.flow.rpcops.v1.FlowRpcOps
+import net.corda.flow.rpcops.v1.FlowRestResource
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.exception.BadRequestException
@@ -146,8 +146,8 @@ class FlowRPCOpsImplTest {
         ).thenReturn(true)
     }
 
-    private fun createFlowRpcOps(initialise: Boolean = true): FlowRpcOps {
-        return FlowRPCOpsImpl(
+    private fun createFlowRpcOps(initialise: Boolean = true): FlowRestResource {
+        return FlowRestResourceImpl(
             virtualNodeInfoReadService,
             flowStatusCacheService,
             publisherFactory,

@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.flow.rpcops.FlowStatusCacheService
-import net.corda.flow.rpcops.v1.FlowRpcOps
+import net.corda.flow.rpcops.v1.FlowRestResource
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -65,7 +65,7 @@ class LifecycleTestContext {
 class FlowRPCOpsServiceImplTest {
     private val configurationReadService = mock<ConfigurationReadService>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
-    private val flowRpcOps = mock<FlowRpcOps>()
+    private val flowRpcOps = mock<FlowRestResource>()
     private val flowStatusCacheService = mock<FlowStatusCacheService>()
 
     private val lifecycleTestContext = LifecycleTestContext()

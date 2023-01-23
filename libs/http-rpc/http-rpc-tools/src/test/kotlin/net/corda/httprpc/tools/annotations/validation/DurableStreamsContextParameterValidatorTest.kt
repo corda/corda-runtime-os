@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
@@ -17,7 +17,7 @@ class DurableStreamsContextParameterValidatorTest {
     fun `validate with POST Endpoint DurableStreamsReturnType Context BodyParameter errorListContainsMessage`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -41,7 +41,7 @@ class DurableStreamsContextParameterValidatorTest {
     fun `validate with POST Endpoint DurableStreamsReturnType Context Query OR Path Parameter errorListEmpty`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -66,7 +66,7 @@ class DurableStreamsContextParameterValidatorTest {
     fun `validate with GET Endpoint DurableStreamsReturnType Context BodyParameter errorListEmpty`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -88,7 +88,7 @@ class DurableStreamsContextParameterValidatorTest {
     fun `validate with POST Endpoint DurableStreamsReturnType BodyParameter isNotCalledContext errorListEmpty`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 

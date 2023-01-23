@@ -1,9 +1,9 @@
 package net.corda.httprpc.server.impl.rpcops.impl
 
 import net.corda.httprpc.server.impl.rpcops.TestDuplicateProtocolVersionAPI
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.PluggableRestResource
 
-internal class TestDuplicateProtocolVersionAPIImpl : TestDuplicateProtocolVersionAPI, PluggableRPCOps<TestDuplicateProtocolVersionAPI> {
+internal class TestDuplicateProtocolVersionAPIImpl : TestDuplicateProtocolVersionAPI, PluggableRestResource<TestDuplicateProtocolVersionAPI> {
 
     override val targetInterface: Class<TestDuplicateProtocolVersionAPI>
         get() = TestDuplicateProtocolVersionAPI::class.java

@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -13,7 +13,7 @@ class EndpointAnnotationValidatorTest {
     fun `validate withMultipleEndpointVerbsInSameFunction errorListContainsMessage`() {
         @Suppress("unused")
         @HttpRpcResource
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 

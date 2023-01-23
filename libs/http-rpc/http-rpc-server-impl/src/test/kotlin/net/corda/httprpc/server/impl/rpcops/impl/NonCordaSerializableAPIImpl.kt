@@ -2,9 +2,9 @@ package net.corda.httprpc.server.impl.rpcops.impl
 
 import net.corda.httprpc.server.impl.rpcops.NonCordaSerializableAPI
 import net.corda.httprpc.server.impl.rpcops.NonCordaSerializableClass
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.PluggableRestResource
 
-class NonCordaSerializableAPIImpl : NonCordaSerializableAPI, PluggableRPCOps<NonCordaSerializableAPI> {
+class NonCordaSerializableAPIImpl : NonCordaSerializableAPI, PluggableRestResource<NonCordaSerializableAPI> {
     override val targetInterface: Class<NonCordaSerializableAPI>
         get() = NonCordaSerializableAPI::class.java
 

@@ -1,6 +1,6 @@
 package net.corda.httprpc.client.connect
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.HttpRpcConnection
 import net.corda.httprpc.client.HttpRpcConnectionListener
 import net.corda.httprpc.client.auth.credentials.CredentialsProvider
@@ -13,12 +13,12 @@ import java.util.concurrent.atomic.AtomicBoolean
  * [HttpRpcConnectionListenerDistributor] is responsible for distributing connection
  * and disconnection events to interested listeners ([HttpRpcConnectionListener]).
  */
-class HttpRpcConnectionListenerDistributor<I : RpcOps>
+class HttpRpcConnectionListenerDistributor<I : RestResource>
     (private val listeners: Iterable<HttpRpcConnectionListener<I>>, private val credentialsProvider: CredentialsProvider) {
     companion object {
         private val log = contextLogger()
 
-        private data class HttpRpcConnectionContextImpl<I : RpcOps>(
+        private data class HttpRpcConnectionContextImpl<I : RestResource>(
             override val credentialsProvider: CredentialsProvider,
             override val connectionOpt: HttpRpcConnection<I>?,
             override val throwableOpt: Throwable?

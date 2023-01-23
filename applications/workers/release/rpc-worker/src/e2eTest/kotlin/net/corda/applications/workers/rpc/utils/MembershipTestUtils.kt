@@ -3,7 +3,7 @@ package net.corda.applications.workers.rpc.utils
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.membership.httprpc.v1.MemberLookupRpcOps
+import net.corda.membership.httprpc.v1.MemberLookupRestResource
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.minutes
@@ -164,7 +164,7 @@ fun E2eCluster.assertMemberInMemberList(
 fun E2eCluster.lookupMembers(
     holdingId: String
 ): List<RpcMemberInfo> {
-    return clusterHttpClientFor(MemberLookupRpcOps::class.java)
+    return clusterHttpClientFor(MemberLookupRestResource::class.java)
         .use { client ->
             client.start().proxy.lookup(holdingId).members
         }

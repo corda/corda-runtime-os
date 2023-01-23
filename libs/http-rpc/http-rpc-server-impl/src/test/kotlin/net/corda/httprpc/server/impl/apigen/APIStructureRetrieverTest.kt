@@ -10,8 +10,8 @@ import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.httprpc.server.impl.rpcops.impl.TestRPCAPIAnnotatedImpl
 import net.corda.httprpc.server.impl.rpcops.impl.TestRPCAPIImpl
-import net.corda.httprpc.test.CalendarRPCOps
-import net.corda.httprpc.test.CalendarRPCOpsImpl
+import net.corda.httprpc.test.CalendarRestResource
+import net.corda.httprpc.test.CalendarRestResourceImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -25,7 +25,7 @@ internal class APIStructureRetrieverTest {
     @Test
     @Suppress("ComplexMethod")
     fun `structure withSimpleClass shouldSucceed`() {
-        val retriever = APIStructureRetriever(listOf(CalendarRPCOpsImpl()))
+        val retriever = APIStructureRetriever(listOf(CalendarRestResourceImpl()))
 
         val resources = retriever.structure
 
@@ -55,11 +55,11 @@ internal class APIStructureRetrieverTest {
                 with(responseBody) {
                     assertEquals("", description)
                     assertEquals(FiniteDurableReturnResult::class.java, type)
-                    assertEquals(listOf(GenericParameterizedType(CalendarRPCOps.CalendarDay::class.java)), parameterizedTypes)
+                    assertEquals(listOf(GenericParameterizedType(CalendarRestResource.CalendarDay::class.java)), parameterizedTypes)
                 }
                 with(invocationMethod) {
-                    assertEquals(CalendarRPCOps::daysOfTheYear.javaMethod, method)
-                    assertEquals(CalendarRPCOpsImpl::class.java, instance::class.java)
+                    assertEquals(CalendarRestResource::daysOfTheYear.javaMethod, method)
+                    assertEquals(CalendarRestResourceImpl::class.java, instance::class.java)
                 }
             }
         }

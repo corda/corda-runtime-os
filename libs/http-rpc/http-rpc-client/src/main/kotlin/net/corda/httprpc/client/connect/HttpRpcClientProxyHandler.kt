@@ -1,6 +1,6 @@
 package net.corda.httprpc.client.connect
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
@@ -36,7 +36,7 @@ import net.corda.httprpc.response.ResponseEntity
  * @property client The client to use for the remote calls.
  * @property rpcOpsClass The proxied interface class.
  */
-internal class HttpRpcClientProxyHandler<I : RpcOps>(
+internal class HttpRpcClientProxyHandler<I : RestResource>(
     private val client: RemoteClient,
     private val authenticationConfig: AuthenticationConfig,
     private val rpcOpsClass: Class<I>

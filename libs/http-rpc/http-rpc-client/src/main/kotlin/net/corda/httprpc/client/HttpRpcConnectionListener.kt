@@ -1,13 +1,13 @@
 package net.corda.httprpc.client
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.auth.credentials.CredentialsProvider
 
 /**
  * Can be attached to [HttpRpcClient] to be informed about connection and disconnection events.
  */
-interface HttpRpcConnectionListener<I : RpcOps> {
-    interface HttpRpcConnectionContext<I : RpcOps> {
+interface HttpRpcConnectionListener<I : RestResource> {
+    interface HttpRpcConnectionContext<I : RestResource> {
         val credentialsProvider: CredentialsProvider
         val connectionOpt: HttpRpcConnection<I>?
         val throwableOpt: Throwable?

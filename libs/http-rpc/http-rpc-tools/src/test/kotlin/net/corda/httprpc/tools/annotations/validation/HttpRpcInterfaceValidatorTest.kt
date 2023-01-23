@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 internal class HttpRpcInterfaceValidatorTest {
     @Test
     fun `validate withMultipleErrors errorListContainsAllMessages`() {
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -28,7 +28,7 @@ internal class HttpRpcInterfaceValidatorTest {
     @Test
     fun `validateMultiple withMultipleErrors errorListContainsAllMessages`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -39,7 +39,7 @@ internal class HttpRpcInterfaceValidatorTest {
         }
 
         @HttpRpcResource(path = "testinterface")
-        class TestInterface2 : RpcOps {
+        class TestInterface2 : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -58,7 +58,7 @@ internal class HttpRpcInterfaceValidatorTest {
     @Test
     fun `validate withNoErrors errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 

@@ -6,7 +6,7 @@ import net.corda.httprpc.client.connect.stream.HttpRpcFiniteDurableCursorClientB
 import net.corda.httprpc.client.processing.WebRequest
 import net.corda.httprpc.client.processing.WebResponse
 import net.corda.httprpc.client.processing.encodeParam
-import net.corda.httprpc.test.CalendarRPCOps
+import net.corda.httprpc.test.CalendarRestResource
 import net.corda.httprpc.test.CustomSerializationAPI
 import net.corda.httprpc.test.CustomString
 import net.corda.httprpc.test.TestHealthCheckAPI
@@ -103,7 +103,7 @@ internal class HttpRpcClientProxyHandlerTest {
 
     @Test
     fun `should not call client and return querycursorbuilder when the call is a durablestream call`() {
-        val result = testHealthCheckApiProxyHandler.invoke(Any(), CalendarRPCOps::daysOfTheYear.javaMethod!!, arrayOf(2020))
+        val result = testHealthCheckApiProxyHandler.invoke(Any(), CalendarRestResource::daysOfTheYear.javaMethod!!, arrayOf(2020))
 
         verify(client, times(0)).call<Any>(
             any(),

@@ -1,6 +1,6 @@
 package net.corda.httprpc.client
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.client.connect.HttpRpcClientProxyHandler
 import net.corda.httprpc.client.connect.HttpRpcConnectionListenerDistributor
@@ -19,15 +19,15 @@ import kotlin.concurrent.scheduleAtFixedRate
 
 /**
  * [HttpRpcClient] is meant to run outside of Corda Node JVM and provide connectivity to a node using the HTTP-RPC protocol.
- * Since Corda Node can expose multiple RPC interfaces through HTTP, it is required to specify which [RpcOps] interface should be used.
+ * Since Corda Node can expose multiple RPC interfaces through HTTP, it is required to specify which [RestResource] interface should be used.
  *
  * @property baseAddress The base address of the server.
- * @property rpcOpsClass The [RpcOps] interface for which the proxy will be created.
+ * @property rpcOpsClass The [RestResource] interface for which the proxy will be created.
  * @property clientConfig The configuration for the client to use.
  * @property healthCheckInterval The interval on which health check calls to the server will happen, ensuring connectivity.
  */
 @Suppress("LongParameterList")
-class HttpRpcClient<I : RpcOps> internal constructor(
+class HttpRpcClient<I : RestResource> internal constructor(
     private val baseAddress: String,
     private val rpcOpsClass: Class<I>,
     private val clientConfig: HttpRpcClientConfig,
@@ -53,7 +53,7 @@ class HttpRpcClient<I : RpcOps> internal constructor(
 
         private const val defaultHealthCheckInterval = 10000L
 
-        private fun <I : RpcOps> defaultProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I =
+        private fun <I : RestResource> defaultProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I =
             uncheckedCast(Proxy.newProxyInstance(rpcOpsClass.classLoader, arrayOf(rpcOpsClass), proxyHandler))
 
         private fun <T> Logger.logElapsedTime(label: String, body: () -> T): T = logElapsedTime(label, this, body)
