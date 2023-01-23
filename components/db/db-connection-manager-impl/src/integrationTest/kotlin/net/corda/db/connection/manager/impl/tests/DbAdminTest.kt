@@ -11,7 +11,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.DbUtils.getPostgresDatabase
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -38,17 +38,15 @@ class DbAdminTest {
     private val entityManagerFactory: EntityManagerFactory
 
     private companion object {
-        val resolver = object: SecretsServiceFactoryResolver {
-            override fun findAll() = listOf(EncryptionSecretsServiceFactory())
-        }
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
-        private val configFactory = SmartConfigFactoryFactory(resolver).create(
+        private val configFactory = SmartConfigFactory.createWith(
             ConfigFactory.parseString(
                 """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=key
             ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
         """.trimIndent()
-            )
+            ),
+            listOf(EncryptionSecretsServiceFactory())
         )
     }
 

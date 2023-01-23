@@ -26,7 +26,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -109,7 +109,7 @@ class MembershipQueryClientImplTest {
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(emptyList())
 
     private val testConfig =
-        SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
+        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
     private fun postStartEvent() {
         lifecycleEventCaptor.firstValue.processEvent(StartEvent(), coordinator)

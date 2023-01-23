@@ -33,7 +33,6 @@ import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -457,7 +456,7 @@ class FlowServiceTestContext @Activate constructor(
     private fun getFlowEventProcessor(): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
         val cfg = ConfigFactory.parseMap(testConfig)
         return eventProcessorFactory.create(
-            SmartConfigFactoryFactory.createWithoutSecurityServices()
+            SmartConfigFactory.createWithoutSecurityServices()
                 .create(cfg)
         )
     }

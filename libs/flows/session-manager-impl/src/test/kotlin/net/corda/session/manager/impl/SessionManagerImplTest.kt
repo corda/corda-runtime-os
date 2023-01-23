@@ -10,7 +10,7 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
@@ -27,7 +27,7 @@ class SessionManagerImplTest {
     private val testConfig = ConfigFactory.empty()
         .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
         .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(testHeartbeatTimeout))
-    private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val testSmartConfig = configFactory.create(testConfig)
 
     @Test

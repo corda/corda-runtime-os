@@ -10,14 +10,14 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.logge
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.applications.workers.workercommon.WorkerMonitor
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.processors.uniqueness.UniquenessProcessor
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -43,8 +43,8 @@ class DBWorker @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
-    @Reference(service = SmartConfigFactoryFactory::class)
-    val smartConfigFactoryFactory: SmartConfigFactoryFactory,
+    @Reference(service = SecretsServiceFactoryResolver::class)
+    val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
 ) : Application {
 
     private companion object {
@@ -66,7 +66,7 @@ class DBWorker @Activate constructor(
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val config = getBootstrapConfig(
-            smartConfigFactoryFactory,
+            secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig)
