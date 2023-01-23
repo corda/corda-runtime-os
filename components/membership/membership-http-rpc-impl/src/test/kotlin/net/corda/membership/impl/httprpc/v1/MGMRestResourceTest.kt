@@ -33,6 +33,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.regex.PatternSyntaxException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -197,6 +198,19 @@ class MGMRestResourceTest {
         fun `addGroupApprovalRule throws bad request for duplicate rule`() {
             startService()
             whenever(mgmOpsClient.addApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
+
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
+            }
+
+            stopService()
+        }
+
+        @Test
+        fun `addGroupApprovalRule throws bad request for invalid regex syntax`() {
+            startService()
+            whenever(mgmOpsClient.addApprovalRule(any(), any())).doThrow(mock<PatternSyntaxException>())
 
 
             assertThrows<BadRequestException> {

@@ -5,6 +5,7 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
@@ -15,15 +16,20 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.impl.approval.RegistrationRuleImpl
+import net.corda.membership.lib.impl.approval.RegistrationRulesEngineImpl
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PENDING_AUTO_APPROVAL
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 
 @Suppress("LongParameterList")
@@ -33,6 +39,8 @@ internal class ProcessMemberVerificationResponseHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val memberTypeChecker: MemberTypeChecker,
     private val membershipConfig: SmartConfig,
+    private val membershipQueryClient: MembershipQueryClient,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
@@ -66,17 +74,19 @@ internal class ProcessMemberVerificationResponseHandler(
             if (!memberTypeChecker.isMgm(mgm)) {
                 throw CordaRuntimeException("Member ${mgm.x500Name} is not an MGM and can not process member's registration.")
             }
+
+            val status = getApprovalType(mgm.toCorda(), member.toCorda())
             membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
                 registrationId,
-                RegistrationStatus.PENDING_AUTO_APPROVAL
+                status
             )
             val persistStatusMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = mgm,
                 destination = member,
                 content = SetOwnRegistrationStatus(
                     registrationId,
-                    RegistrationStatus.PENDING_AUTO_APPROVAL
+                    status
                 ),
                 minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL)
             )
@@ -104,5 +114,26 @@ internal class ProcessMemberVerificationResponseHandler(
             RegistrationState(registrationId, member, mgm),
             messages,
         )
+    }
+
+    private fun getApprovalType(mgm: HoldingIdentity, member: HoldingIdentity): RegistrationStatus {
+        val proposedMemberInfo = with(membershipGroupReaderProvider.getGroupReader(mgm)) {
+            lookup(member.x500Name) ?: throw CordaRuntimeException(
+                "Could not read the proposed MemberInfo for registration request submitted by ${member.x500Name}."
+            )
+        }
+        // TODO Get active MemberInfo from MembershipGroupReader after implementing re-registration.
+        val activeMemberInfo = null
+
+        val rules = membershipQueryClient.getApprovalRules(mgm, ApprovalRuleType.STANDARD).getOrThrow()
+            .map { RegistrationRuleImpl(it.ruleRegex.toRegex()) }
+
+        return with(RegistrationRulesEngineImpl(rules)) {
+            if (requiresManualApproval(proposedMemberInfo, activeMemberInfo)) {
+                RegistrationStatus.PENDING_MANUAL_APPROVAL
+            } else {
+                RegistrationStatus.PENDING_AUTO_APPROVAL
+            }
+        }
     }
 }
