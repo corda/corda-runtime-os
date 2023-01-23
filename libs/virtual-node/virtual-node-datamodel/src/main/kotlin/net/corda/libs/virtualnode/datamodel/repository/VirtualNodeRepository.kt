@@ -14,5 +14,6 @@ interface VirtualNodeRepository {
     fun find(entityManager: EntityManager, holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
     fun put(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CpiIdentifier)
     fun updateVirtualNodeState(entityManager: EntityManager, holdingIdentityShortHash: String, newState: VirtualNodeState): VirtualNodeInfo
+    fun otherGroupsExists(entityManager: EntityManager, groupId: String): Boolean
 }
 

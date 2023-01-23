@@ -75,6 +75,17 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         }
     }
 
+    override fun otherGroupsExists(entityManager: EntityManager, groupId: String): Boolean {
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val queryBuilder = criteriaBuilder.createQuery(HoldingIdentityEntity::class.java)
+        val root = queryBuilder.from(HoldingIdentityEntity::class.java)
+        val otherGroupPredicate = criteriaBuilder.notEqual(root.get<String>("mgmGroupId"), groupId)
+        val query = queryBuilder.where(otherGroupPredicate)
+        val limitQuery = entityManager.createQuery(query).setMaxResults(1)
+        val otherGroup = limitQuery.resultList
+        return otherGroup.isNotEmpty()
+    }
+
     override fun updateVirtualNodeState(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,

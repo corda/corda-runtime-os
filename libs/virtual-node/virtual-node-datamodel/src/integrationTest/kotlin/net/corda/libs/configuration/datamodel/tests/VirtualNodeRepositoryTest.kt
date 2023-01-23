@@ -5,6 +5,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.datamodel.tests.VNodeTestUtils.newVNode
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
@@ -20,9 +21,12 @@ import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
@@ -193,5 +197,62 @@ class VirtualNodeRepositoryTest {
 
         assertThat(changedEntity).isNotNull
         assertThat(changedEntity!!.state).isEqualTo(VirtualNodeState.IN_MAINTENANCE)
+    }
+
+    @Nested
+    inner class OtherGroupsExistsTest {
+        @AfterEach
+        @BeforeEach
+        fun cleanUp() {
+            entityManagerFactory.createEntityManager().use { em ->
+                em.transaction {
+                    em.createQuery("DELETE FROM HoldingIdentityEntity").executeUpdate()
+                }
+            }
+        }
+        @Test
+        fun `it return false if only the group exists`() {
+            repeat(5) {
+                newVNode(
+                    entityManagerFactory,
+                    "Test CPI ${UUID.randomUUID()}",
+                    "1.0-${Instant.now().toEpochMilli()}",
+                    TestRandom.secureHash().toString(),
+                    "groupId",
+                )
+            }
+
+            val otherGroupsExists = entityManagerFactory.createEntityManager().use {
+                VirtualNodeRepositoryImpl().otherGroupsExists(it, "groupId")
+            }
+
+            assertThat(otherGroupsExists).isFalse
+        }
+
+        @Test
+        fun `it return false if no entity exists`() {
+            val otherGroupsExists = entityManagerFactory.createEntityManager().use {
+                VirtualNodeRepositoryImpl().otherGroupsExists(it, "groupId")
+            }
+
+            assertThat(otherGroupsExists).isFalse
+        }
+
+        @Test
+        fun `it return true if other group exists`() {
+            newVNode(
+                entityManagerFactory,
+                "Test CPI ${UUID.randomUUID()}",
+                "1.0-${Instant.now().toEpochMilli()}",
+                TestRandom.secureHash().toString(),
+                "groupId",
+            )
+
+            val otherGroupsExists = entityManagerFactory.createEntityManager().use {
+                VirtualNodeRepositoryImpl().otherGroupsExists(it, "groupId-2")
+            }
+
+            assertThat(otherGroupsExists).isTrue
+        }
     }
 }

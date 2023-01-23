@@ -19,12 +19,14 @@ internal object VNodeTestUtils {
         entityManagerFactory: EntityManagerFactory,
         name: String,
         version: String,
-        hash: String): VirtualNodeEntity {
+        hash: String,
+        groupId: String = "dummy"
+    ): VirtualNodeEntity {
 
         println("Creating VNode for testing: $name, $version, $hash")
 
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentity = newHoldingIdentityEntity(name)
+        val holdingIdentity = newHoldingIdentityEntity(name, groupId)
         val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash, VirtualNodeState.ACTIVE.name)
 
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -50,10 +52,14 @@ internal object VNodeTestUtils {
             "test connection",
             "{}")
 
-    fun newHoldingIdentityEntity(id: String): HoldingIdentityEntity {
+    fun newHoldingIdentityEntity(
+        id: String,
+        groupId: String = "dummy"
+    ): HoldingIdentityEntity {
         val hi = HoldingIdentity(
             MemberX500Name.parse("C=GB,L=London,O=$id"),
-            "dummy")
+            groupId,
+        )
         return HoldingIdentityEntity(
             holdingIdentityShortHash = hi.shortHash.value,
             holdingIdentityFullHash = hi.fullHash,

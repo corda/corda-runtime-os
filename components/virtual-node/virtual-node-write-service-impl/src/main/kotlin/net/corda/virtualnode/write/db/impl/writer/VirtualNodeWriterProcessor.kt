@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -27,6 +28,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.common.exception.AnotherGroupExistsMutualTlsException
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
@@ -35,6 +37,7 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -87,15 +90,35 @@ internal class VirtualNodeWriterProcessor(
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
+    private val configurationGetService: ConfigurationGetService,
     private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi,
     private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl(),
-    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
+    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
         private val logger = contextLogger()
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         val systemTerminatorTag = "${VAULT.name}-system-final"
+    }
+
+    private fun isMutualTlsSingleGroup(
+        groupId: String,
+        entityManager: EntityManager,
+        respFuture: CompletableFuture<VirtualNodeManagementResponse>,
+    ): Boolean {
+        val tlsType = TlsType.getClusterType(configurationGetService::getSmartConfig)
+        return if ((tlsType == TlsType.MUTUAL) &&
+            (virtualNodeRepository.otherGroupsExists(entityManager, groupId))
+        ) {
+            handleException(
+                respFuture,
+                AnotherGroupExistsMutualTlsException()
+            )
+            false
+        } else {
+            true
+        }
     }
 
     @Suppress("ReturnCount", "ComplexMethod")
@@ -143,6 +166,9 @@ internal class VirtualNodeWriterProcessor(
             measureTimeMillis {
                 val emf = dbConnectionManager.getClusterEntityManagerFactory()
                 emf.use { em ->
+                    if (!isMutualTlsSingleGroup(groupId, em, respFuture,)) {
+                        return
+                    }
                     if (virtualNodeRepository.find(em, holdingId.shortHash) != null) {
                         handleException(
                             respFuture,

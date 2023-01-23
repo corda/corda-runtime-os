@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl
 
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
@@ -35,6 +36,8 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = GroupPolicyParser::class)
     private val groupPolicyParser: GroupPolicyParser,
+    @Reference(service = ConfigurationGetService::class)
+    private val configurationGetService: ConfigurationGetService,
 ) : VirtualNodeWriteService {
     private val coordinator = let {
         val vnodeWriterFactory = VirtualNodeWriterFactory(
@@ -43,7 +46,9 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             dbConnectionManager,
             dbAdmin,
             schemaMigrator,
-            groupPolicyParser)
+            groupPolicyParser,
+            configurationGetService,
+        )
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)
     }

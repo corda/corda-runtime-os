@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.crypto.SecureHash
@@ -19,6 +20,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.virtualnode.common.exception.AnotherGroupExistsMutualTlsException
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
@@ -31,6 +33,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
@@ -49,6 +52,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -64,7 +68,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.security.PublicKey
 import java.sql.Connection
 import java.time.Instant
 import java.util.UUID
@@ -123,6 +126,14 @@ class VirtualNodeWriterProcessorTests {
             -1,
             clock.instant()
         )
+
+    private val gatewayConfiguration = mock<SmartConfig> {
+        on { getConfig("sslConfig") } doReturn mock
+        on { getString("tlsType") } doReturn "ONE_WAY"
+    }
+    private val configurationGetService = mock<ConfigurationGetService> {
+        on { getSmartConfig(ConfigKeys.P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
+    }
 
     private val vnodeCreationReq =
         VirtualNodeCreateRequest(
@@ -207,10 +218,6 @@ class VirtualNodeWriterProcessorTests {
         on { getMgmInfo(any(), eq(mgmGroupPolicy)) } doReturn mgmMemberInfo
     }
 
-    private val defaultKey: PublicKey = mock {
-        on { encoded } doReturn "1234".toByteArray()
-    }
-
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
 
     /** Returns a mock [Publisher]. */
@@ -253,7 +260,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            configurationGetService = configurationGetService,
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -278,7 +286,8 @@ class VirtualNodeWriterProcessorTests {
                     clock,
                     getChangelogs = { _, _ -> listOf(changeLog) },
                     holdingIdentityRepository = holdingIdentityRepositoryMock(),
-                    virtualNodeRepository = virtualNodeRepositoryMock()
+                    virtualNodeRepository = virtualNodeRepositoryMock(),
+                    configurationGetService = configurationGetService,
                 )
 
                 processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
@@ -307,7 +316,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            configurationGetService = configurationGetService,
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -356,7 +366,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            configurationGetService = configurationGetService,
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -408,7 +419,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            configurationGetService = configurationGetService,
         )
 
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), mgmVnodeCreationReq))
@@ -456,7 +468,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            configurationGetService = configurationGetService,
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -480,7 +493,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            configurationGetService = configurationGetService,
         )
         val resp = processRequest(
             processor,
@@ -508,7 +522,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            configurationGetService = configurationGetService,
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), request))
 
@@ -687,7 +702,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            configurationGetService = configurationGetService,
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -723,11 +739,68 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = vnodeRepo
+            virtualNodeRepository = vnodeRepo,
+            configurationGetService = configurationGetService,
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
+    }
+
+    @Test
+    fun `isMutualTlsSingleGroup will throw an exception with mutual TLS if another group exists`() {
+        whenever(gatewayConfiguration.getString("tlsType")).doReturn("MUTUAL")
+        val virtualNodeRepository = mock<VirtualNodeRepository>() {
+            on { otherGroupsExists(any(), any()) }.doReturn(true)
+        }
+        val entityRepository = mock<VirtualNodeEntityRepository>().apply {
+            whenever(getCpiMetadataByChecksum(any())).thenReturn(cpiMetaData)
+        }
+        val processor = VirtualNodeWriterProcessor(
+            getPublisher(),
+            connectionManager,
+            entityRepository,
+            vNodeFactory,
+            groupPolicyParser,
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
+            configurationGetService = configurationGetService,
+        )
+
+        val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
+
+        val failure = resp.responseType as? VirtualNodeManagementResponseFailure
+        assertThat(failure?.exception?.errorType)
+            .isEqualTo(AnotherGroupExistsMutualTlsException::class.java.canonicalName)
+    }
+
+    @Test
+    fun `isMutualTlsSingleGroup will not throw an exception with mutual TLS if no other group exists`() {
+        whenever(gatewayConfiguration.getString("tlsType")).doReturn("MUTUAL")
+        val virtualNodeRepository = mock<VirtualNodeRepository>() {
+            on { otherGroupsExists(any(), any()) }.doReturn(false)
+        }
+        val entityRepository = mock<VirtualNodeEntityRepository>().apply {
+            whenever(getCpiMetadataByChecksum(any())).thenReturn(cpiMetaData)
+        }
+        val processor = VirtualNodeWriterProcessor(
+            getPublisher(),
+            connectionManager,
+            entityRepository,
+            vNodeFactory,
+            groupPolicyParser,
+            clock,
+            getChangelogs = { _, _ -> listOf() },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
+            configurationGetService = configurationGetService,
+        )
+
+        val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
+
+        assertThat(resp.responseType).isInstanceOf(VirtualNodeCreateResponse::class.java)
     }
 
     @Test
@@ -757,7 +830,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepository,
-            virtualNodeRepository = vnodeRepo
+            virtualNodeRepository = vnodeRepo,
+            configurationGetService = configurationGetService,
         )
         val resp = processRequest(
             processor,
