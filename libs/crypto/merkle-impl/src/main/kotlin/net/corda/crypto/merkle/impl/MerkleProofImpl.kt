@@ -27,20 +27,22 @@ class MerkleProofImpl(
      * It recreates the routes towards the root element from the items in the leaves to be proven with using
      * the proof's hashes when they are needed.
      */
-    override fun verify(root: SecureHash, digest: MerkleTreeHashDigest): Boolean {
+    override fun calculateRoot(digest: MerkleTreeHashDigest): SecureHash? {
         if (digest !is MerkleTreeHashDigestProvider) {
-            throw CordaRuntimeException("An instance of MerkleTreeHashDigestProvider is required when " +
-                "verifying a Merkle root, but received ${digest.javaClass.name} instead.")
+            throw CordaRuntimeException(
+                "An instance of MerkleTreeHashDigestProvider is required when " +
+                        "verifying a Merkle root, but received ${digest.javaClass.name} instead."
+            )
         }
 
         if (leaves.isEmpty()) {
-            return false
+            return null
         }
         if (leaves.any { it.index < 0 || it.index >= treeSize }) {
-            return false
+            return null
         }
         if (leaves.map { it.index }.toSet().size != leaves.size) {
-            return false
+            return null
         }
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
@@ -49,7 +51,7 @@ class MerkleProofImpl(
         var currentSize = treeSize
         while (currentSize > 1) {
             if (nodeHashes.isEmpty()) {
-                return false
+                return null
             }
             --treeDepth
             val newItems = mutableListOf<Pair<Int, SecureHash>>()
@@ -70,7 +72,7 @@ class MerkleProofImpl(
                         }
                     }
                     if (hashIndex >= hashes.size) {                 // We'll need one more hash to continue. So if
-                        return false                                // we do not have more, the proof is incorrect.
+                        return null                                 // we do not have more, the proof is incorrect.
                     }
                                                                     // We pair the current element with a
                                                                     // hash from the proof
@@ -94,13 +96,16 @@ class MerkleProofImpl(
             nodeHashes = newItems
         }
         if (hashIndex != hashes.size) {
-            return false
+            return null
         }
         if (nodeHashes.size != 1) {
-            return false
+            return null
         }
-        return nodeHashes.single().second == root
+        return nodeHashes.single().second
     }
+
+    override fun verify(root: SecureHash, digest: MerkleTreeHashDigest) =
+        calculateRoot(digest) == root
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

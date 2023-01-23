@@ -138,6 +138,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             val uniquenessResult = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
+                txDetails.metadata,
                 txDetails.inputs.map { it.toString() },
                 txDetails.references.map { it.toString() },
                 txDetails.numOutputs,
@@ -197,6 +198,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             "Notary component could not be found on the transaction"
         }
 
+        requireNotNull(filteredTx.metadata) {
+            "Metadata component could not be found on the transaction"
+        }
+
         requireNotNull(filteredTx.timeWindow) {
             "Time window component could not be found on the transaction"
         }
@@ -215,6 +220,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
         return NonValidatingNotaryTransactionDetails(
             filteredTx.id,
+            filteredTx.metadata,
             outputStates.size,
             filteredTx.timeWindow!!,
             inputStates.values.values.toList(),

@@ -68,9 +68,9 @@ class TransactionMetadataImpl (private val properties: LinkedHashMap<String, Any
         )
     }
 
-    override fun getDigestSettings(): LinkedHashMap<String, Any> {
+    override fun getDigestSettings(): LinkedHashMap<String, String> {
         @Suppress("UNCHECKED_CAST")
-        return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, Any>
+        return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, String>
     }
 
     override fun getSchemaVersion(): Int {

@@ -11,6 +11,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
@@ -96,6 +97,8 @@ class ConsensualSignedTransactionBase(
         )
 
     override val id = ledgerTransaction.id
+    override val metadata: TransactionMetadata
+        get() = TransactionMetadataImpl()
 
     internal fun addSignature(
         publicKey: PublicKey,

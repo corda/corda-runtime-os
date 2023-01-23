@@ -102,7 +102,7 @@ class WireTransactionFactoryImpl @Activate constructor(
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
                     "${WireTransactionDigestSettings.defaultValues}"
         }
-        return jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetadataImpl::class.java)
+        return metadata
     }
 
     private fun getSchema(path: String) =

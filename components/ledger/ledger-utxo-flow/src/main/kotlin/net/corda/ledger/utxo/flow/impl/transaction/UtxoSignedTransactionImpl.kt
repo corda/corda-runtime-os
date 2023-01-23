@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -76,7 +76,7 @@ data class UtxoSignedTransactionImpl(
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter {
             try {
-                transactionSignatureService.verifySignature(id, it)
+                transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
                 false
@@ -91,7 +91,7 @@ data class UtxoSignedTransactionImpl(
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter {
             try {
-                transactionSignatureService.verifySignature(id, it)
+                transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
                 throw TransactionVerificationException(
