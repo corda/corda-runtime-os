@@ -20,10 +20,6 @@
       "type": { "type": "array", "items": "string" }
     },
     {
-      "name": "dependencies",
-      "type": { "type": "array", "items": "net.corda.data.packaging.CpkIdentifier" }
-    },
-    {
       "name": "corDappManifest",
       "type": "net.corda.data.packaging.CorDappManifest"
     },
