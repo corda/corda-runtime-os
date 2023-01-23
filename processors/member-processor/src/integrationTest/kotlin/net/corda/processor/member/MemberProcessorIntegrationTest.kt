@@ -17,6 +17,7 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
+import net.corda.membership.certificate.publisher.MembersClientCertificatePublisher
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -51,6 +52,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagi
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMembershipConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeCryptoConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishDefaultCryptoConf
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishGatewayConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
@@ -101,6 +103,9 @@ class MemberProcessorIntegrationTest {
 
         @InjectService(timeout = 5000L)
         lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+
+        @InjectService(timeout = 5000L)
+        lateinit var membersClientCertificatePublisher: MembersClientCertificatePublisher
 
         @InjectService(timeout = 5000L)
         lateinit var memberProcessor: MemberProcessor
@@ -187,6 +192,7 @@ class MemberProcessorIntegrationTest {
             memberProcessor.start(boostrapConfig)
             membershipGroupReaderProvider.start()
             hsmRegistrationClient.start()
+            membersClientCertificatePublisher.start()
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<MemberProcessorIntegrationTest>(),
                 coordinatorFactory,
@@ -195,6 +201,7 @@ class MemberProcessorIntegrationTest {
                     LifecycleCoordinatorName.forComponent<MemberProcessor>(),
                     LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
                     LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                    LifecycleCoordinatorName.forComponent<MembersClientCertificatePublisher>(),
                     LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
                 )
             ).also { it.startAndWait() }
@@ -202,6 +209,7 @@ class MemberProcessorIntegrationTest {
             publisher.publishMessagingConf(messagingConfig)
             publisher.publishMembershipConf(membershipConfig)
             publisher.publishDefaultCryptoConf(cryptoConfig)
+            publisher.publishGatewayConfig()
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
                 cpiInfoReader,
