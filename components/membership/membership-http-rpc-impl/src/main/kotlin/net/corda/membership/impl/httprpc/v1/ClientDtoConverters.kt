@@ -2,16 +2,12 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
-import net.corda.membership.client.dto.PreAuthTokenDto
-import net.corda.membership.client.dto.PreAuthTokenStatusDTO
 import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
-import net.corda.membership.httprpc.v1.types.response.PreAuthToken
-import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
@@ -59,19 +55,4 @@ fun RegistrationStatusDto.fromDto() = when (this) {
     RegistrationStatusDto.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
     RegistrationStatusDto.DECLINED -> RegistrationStatus.DECLINED
     RegistrationStatusDto.APPROVED -> RegistrationStatus.APPROVED
-}
-
-fun PreAuthTokenDto.fromDto() = PreAuthToken(
-    this.id,
-    this.ownerX500Name,
-    this.ttl,
-    this.status.fromDto(),
-    this.remarks
-)
-
-fun PreAuthTokenStatusDTO.fromDto() = when(this) {
-    PreAuthTokenStatusDTO.AUTO_INVALIDATED -> PreAuthTokenStatus.AUTO_INVALIDATED
-    PreAuthTokenStatusDTO.AVAILABLE -> PreAuthTokenStatus.AVAILABLE
-    PreAuthTokenStatusDTO.CONSUMED -> PreAuthTokenStatus.CONSUMED
-    PreAuthTokenStatusDTO.REVOKED -> PreAuthTokenStatus.REVOKED
 }

@@ -9,6 +9,7 @@ import javax.persistence.Table
 
 @Entity
 @Table(name = DbSchema.VNODE_PRE_AUTH_TOKENS)
+@Suppress("LongParameterList")
 class PreAuthTokenEntity (
     /**
      * A unique ID for the pre auth token.
@@ -26,15 +27,18 @@ class PreAuthTokenEntity (
     @Column(name = "status", nullable = false)
     var status: String,
 
-    @Column(name = "remark")
-    var remark: String
+    @Column(name = "creation_remark", updatable = false)
+    val creationRemark: String?,
+
+    @Column(name = "removal_remark")
+    var removalRemark: String?
 )  {
 
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
         if (other == null) return false
         if (other !is PreAuthTokenEntity) return false
-        return other.tokenId == this.tokenId && other.status == this.status
+        return other.tokenId == this.tokenId
     }
 
     override fun hashCode(): Int {

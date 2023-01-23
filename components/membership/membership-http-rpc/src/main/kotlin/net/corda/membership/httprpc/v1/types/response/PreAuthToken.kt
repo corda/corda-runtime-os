@@ -8,9 +8,10 @@ import java.time.Instant
 data class PreAuthToken(
     val id: String,
     val ownerX500Name: String,
-    val ttl: Instant,
+    val ttl: Instant?,
     val status: PreAuthTokenStatus,
-    val remarks: String?
+    val creationRemark: String?,
+    val removalRemark: String?
 )
 
 enum class PreAuthTokenStatus {

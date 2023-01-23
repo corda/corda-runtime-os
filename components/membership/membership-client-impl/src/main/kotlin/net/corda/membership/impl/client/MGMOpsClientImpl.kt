@@ -24,8 +24,6 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
-import net.corda.membership.client.dto.PreAuthTokenDto
-import net.corda.membership.client.dto.PreAuthTokenStatusDTO
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -101,18 +99,18 @@ class MGMOpsClientImpl @Activate constructor(
         fun generatePreAuthToken(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name,
-            ttl: Int,
+            ttl: Instant?,
             remarks: String?
-        ): PreAuthTokenDto
+        ): PreAuthToken
 
         fun getPreAuthTokens(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name?,
             preAuthTokenId: UUID?,
             viewInactive: Boolean
-        ): Collection<PreAuthTokenDto>
+        ): Collection<PreAuthToken>
 
-        fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String? = null): PreAuthTokenDto
+        fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String? = null): PreAuthToken
         fun addApprovalRule(
             holdingIdentityShortHash: ShortHash,
             ruleParams: ApprovalRuleParams
@@ -173,7 +171,7 @@ class MGMOpsClientImpl @Activate constructor(
     override fun generatePreAuthToken(
         holdingIdentityShortHash: ShortHash,
         ownerX500Name: MemberX500Name,
-        ttl: Int,
+        ttl: Instant?,
         remarks: String?
     ) = impl.generatePreAuthToken(holdingIdentityShortHash, ownerX500Name, ttl, remarks)
 
@@ -291,7 +289,7 @@ class MGMOpsClientImpl @Activate constructor(
         override fun generatePreAuthToken(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name,
-            ttl: Int,
+            ttl: Instant?,
             remarks: String?
         ) = throw IllegalStateException(ERROR_MSG)
 
@@ -374,20 +372,14 @@ class MGMOpsClientImpl @Activate constructor(
         override fun generatePreAuthToken(
             holdingIdentityShortHash: ShortHash,
             ownerX500Name: MemberX500Name,
-            ttl: Int,
+            ttl: Instant?,
             remarks: String?
-        ): PreAuthTokenDto {
+        ): PreAuthToken {
             val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
             val tokenId = UUID.randomUUID()
-            membershipPersistenceClient.generatePreAuthToken(mgmHoldingIdentity, UUID.randomUUID(), ownerX500Name, ttl, remarks)
+            membershipPersistenceClient.generatePreAuthToken(mgmHoldingIdentity, tokenId, ownerX500Name, ttl, remarks)
                 .getOrThrow()
-            return PreAuthTokenDto(
-                tokenId.toString(),
-                ownerX500Name.toString(),
-                Instant.ofEpochMilli(ttl.toLong()),
-                PreAuthTokenStatusDTO.AVAILABLE,
-                remarks
-            )
+            return PreAuthToken(tokenId.toString(), ownerX500Name.toString(), ttl, PreAuthTokenStatus.AVAILABLE, remarks, null)
         }
 
         override fun getPreAuthTokens(
@@ -395,20 +387,21 @@ class MGMOpsClientImpl @Activate constructor(
             ownerX500Name: MemberX500Name?,
             preAuthTokenId: UUID?,
             viewInactive: Boolean
-        ): Collection<PreAuthTokenDto> {
+        ): Collection<PreAuthToken> {
             val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
             return membershipQueryClient.queryPreAuthTokens(
                 mgmHoldingIdentity,
                 ownerX500Name,
                 preAuthTokenId,
                 viewInactive
-            ).getOrThrow().map { it.toDto() }
+            ).getOrThrow()
         }
 
-        override fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String?): PreAuthTokenDto {
+        override fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String?): PreAuthToken {
             val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
-            return membershipPersistenceClient.revokePreAuthToken(mgmHoldingIdentity, preAuthTokenId, remarks).getOrThrow().toDto()
+            return membershipPersistenceClient.revokePreAuthToken(mgmHoldingIdentity, preAuthTokenId, remarks).getOrThrow()
         }
+
         override fun addApprovalRule(
             holdingIdentityShortHash: ShortHash, ruleParams: ApprovalRuleParams
         ): ApprovalRuleDetails =
@@ -432,16 +425,6 @@ class MGMOpsClientImpl @Activate constructor(
             ).getOrThrow()
 
         override fun close() = rpcSender.close()
-
-        private fun PreAuthToken.toDto(): PreAuthTokenDto =
-            PreAuthTokenDto(this.id, this.ownerX500Name, Instant.ofEpochMilli(this.ttl), this.status.toDto(), this.remark)
-
-        private fun PreAuthTokenStatus.toDto(): PreAuthTokenStatusDTO = when(this) {
-            PreAuthTokenStatus.AVAILABLE -> PreAuthTokenStatusDTO.AVAILABLE
-            PreAuthTokenStatus.REVOKED -> PreAuthTokenStatusDTO.REVOKED
-            PreAuthTokenStatus.CONSUMED -> PreAuthTokenStatusDTO.CONSUMED
-            PreAuthTokenStatus.AUTO_INVALIDATED -> PreAuthTokenStatusDTO.AUTO_INVALIDATED
-        }
 
         @Suppress("SpreadOperator")
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): String =

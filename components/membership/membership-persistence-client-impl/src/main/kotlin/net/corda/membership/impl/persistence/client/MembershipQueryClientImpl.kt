@@ -272,7 +272,7 @@ class MembershipQueryClientImpl(
                 )
             }
             else -> {
-                MembershipQueryResult.Failure("Failed to retrieve list of allowed certificates.")
+                MembershipQueryResult.Failure("Failed to query for pre auth tokens.")
             }
         }
     }

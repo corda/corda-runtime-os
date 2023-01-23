@@ -11,17 +11,26 @@ import net.corda.virtualnode.toCorda
 internal class RevokePreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices)
     : BasePersistenceHandler<RevokePreAuthToken, RevokePreAuthTokenResponse>(persistenceHandlerServices) {
 
+    companion object {
+        fun PreAuthTokenEntity.toAvro(): PreAuthToken {
+            return PreAuthToken(
+                this.tokenId,
+                this.ownerX500Name,
+                this.ttl,
+                PreAuthTokenStatus.valueOf(this.status),
+                this.creationRemark,
+                this.removalRemark
+            )
+        }
+    }
+
     override fun invoke(context: MembershipRequestContext, request: RevokePreAuthToken): RevokePreAuthTokenResponse {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val token = em.find(PreAuthTokenEntity::class.java, request.tokenId)
             token.status = PreAuthTokenStatus.REVOKED.toString()
-            token.remark = request.remark
+            token.removalRemark = request.remark
             em.merge(token)
             RevokePreAuthTokenResponse(token.toAvro())
         }
-    }
-
-    private fun PreAuthTokenEntity.toAvro(): PreAuthToken {
-        return PreAuthToken(this.tokenId, this.ownerX500Name, this.ttl.toEpochMilli(), PreAuthTokenStatus.valueOf(this.status), this.remark)
     }
 }

@@ -1,6 +1,7 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -100,7 +101,7 @@ interface MembershipQueryClient : Lifecycle {
      * @param mgmHoldingIdentity The holding identity of the MGM.
      * @param ownerX500Name The X500 name of the member to query for.
      * @param preAuthTokenId The token ID to query for.
-     * @param viewInactive Return in tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
+     * @param viewInactive Return tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
      * [PreAuthTokenStatus.AUTO_INVALIDATED] as well as [PreAuthTokenStatus.AVAILABLE].
      */
     fun queryPreAuthTokens(

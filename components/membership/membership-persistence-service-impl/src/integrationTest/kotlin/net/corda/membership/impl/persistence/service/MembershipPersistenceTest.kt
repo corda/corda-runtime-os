@@ -290,7 +290,7 @@ class MembershipPersistenceTest {
                 mgmHoldingIdentity: HoldingIdentity,
                 preAuthTokenId: UUID,
                 ownerX500Name: MemberX500Name,
-                ttl: Int,
+                ttl: Instant?,
                 remarks: String?
             )= safeCall {
                 membershipPersistenceClient.generatePreAuthToken(
@@ -305,7 +305,7 @@ class MembershipPersistenceTest {
             ) = safeCall {
                 membershipPersistenceClient.revokePreAuthToken(mgmHoldingIdentity, preAuthTokenId, remarks)
             }
-            
+
             override fun addApprovalRule(
                 viewOwningIdentity: HoldingIdentity,
                 ruleParams: ApprovalRuleParams

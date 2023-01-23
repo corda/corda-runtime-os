@@ -16,9 +16,10 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRpcOps
-import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
+import net.corda.membership.httprpc.v1.types.response.PreAuthToken
+import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -31,7 +32,13 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.UUID
+import java.time.Duration
+import java.time.Instant
+import java.time.format.DateTimeParseException
+import java.util.*
+import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
+
 
 @Component(service = [PluggableRPCOps::class])
 class MGMRpcOpsImpl @Activate constructor(
@@ -59,7 +66,7 @@ class MGMRpcOpsImpl @Activate constructor(
         fun mutualTlsListClientCertificate(
             holdingIdentityShortHash: String,
         ): Collection<String>
-        fun generatePreAuthToken(holdingIdentityShortHash: String, ownerX500Name: String, ttl: Int, remarks: String?): PreAuthToken
+        fun generatePreAuthToken(holdingIdentityShortHash: String, ownerX500Name: String, ttl: String?, remarks: String?): PreAuthToken
         fun getPreAuthTokens(
             holdingIdentityShortHash: String,
             ownerX500Name: String?,
@@ -119,7 +126,7 @@ class MGMRpcOpsImpl @Activate constructor(
     override fun mutualTlsListClientCertificate(holdingIdentityShortHash: String) =
         impl.mutualTlsListClientCertificate(holdingIdentityShortHash)
 
-    override fun generatePreAuthToken(holdingIdentityShortHash: String, ownerX500Name: String, ttl: Int, remarks: String?) =
+    override fun generatePreAuthToken(holdingIdentityShortHash: String, ownerX500Name: String, ttl: String?, remarks: String?) =
         impl.generatePreAuthToken(holdingIdentityShortHash, ownerX500Name, ttl, remarks)
 
     override fun getPreAuthTokens(
@@ -184,7 +191,7 @@ class MGMRpcOpsImpl @Activate constructor(
         override fun generatePreAuthToken(
             holdingIdentityShortHash: String,
             ownerX500Name: String,
-            ttl: Int,
+            ttl: String?,
             remarks: String?
         ): PreAuthToken {
             throw ServiceUnavailableException(
@@ -306,7 +313,7 @@ class MGMRpcOpsImpl @Activate constructor(
         override fun generatePreAuthToken(
             holdingIdentityShortHash: String,
             ownerX500Name: String,
-            ttl: Int,
+            ttl: String?,
             remarks: String?
         ): PreAuthToken {
             val ownerX500 = try {
@@ -320,13 +327,26 @@ class MGMRpcOpsImpl @Activate constructor(
                 )
             }
 
+            val ttlAsInstant =  ttl?.let{
+                Instant.now() + try {
+                    Duration.parse(ttl)
+                } catch (e: DateTimeParseException) {
+                    throw InvalidInputDataException(
+                        details = mapOf(
+                            "ttl" to ttl
+                        ),
+                        message = "ttl is not a valid ISO-8061 duration: ${e.message}",
+                    )
+                }
+            }
+
             return try {
                 mgmOpsClient.generatePreAuthToken(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     ownerX500,
-                    ttl,
+                    ttlAsInstant,
                     remarks
-                ).fromDto()
+                ).fromAvro()
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
                     details = mapOf(
@@ -371,7 +391,7 @@ class MGMRpcOpsImpl @Activate constructor(
                     ownerX500,
                     tokenId,
                     viewInactive
-                ).map { it.fromDto() }
+                ).map { it.fromAvro() }
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
                     details = mapOf(
@@ -397,7 +417,7 @@ class MGMRpcOpsImpl @Activate constructor(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     tokenId,
                     remarks
-                ).fromDto()
+                ).fromAvro()
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
                     details = mapOf(
@@ -454,5 +474,15 @@ class MGMRpcOpsImpl @Activate constructor(
                 ),
                 message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
             )
+
+        private fun AvroPreAuthToken.fromAvro(): PreAuthToken =
+            PreAuthToken(this.id, this.ownerX500Name, this.ttl, status.fromAvro(), this.creationRemark, this.removalRemark)
+
+        private fun AvroPreAuthTokenStatus.fromAvro(): PreAuthTokenStatus = when(this) {
+            AvroPreAuthTokenStatus.AVAILABLE -> PreAuthTokenStatus.AVAILABLE
+            AvroPreAuthTokenStatus.REVOKED -> PreAuthTokenStatus.REVOKED
+            AvroPreAuthTokenStatus.CONSUMED -> PreAuthTokenStatus.CONSUMED
+            AvroPreAuthTokenStatus.AUTO_INVALIDATED -> PreAuthTokenStatus.AUTO_INVALIDATED
+        }
     }
 }

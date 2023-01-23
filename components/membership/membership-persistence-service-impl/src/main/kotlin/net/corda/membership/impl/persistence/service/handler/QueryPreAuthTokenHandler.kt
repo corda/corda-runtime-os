@@ -3,58 +3,34 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
-import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.membership.datamodel.PreAuthTokenEntity
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler.Companion.toAvro
 import net.corda.virtualnode.toCorda
+import javax.persistence.criteria.Predicate
 
 internal class QueryPreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices) :
     BasePersistenceHandler<QueryPreAuthToken, PreAuthTokenQueryResponse>(persistenceHandlerServices) {
 
     override fun invoke(context: MembershipRequestContext, request: QueryPreAuthToken): PreAuthTokenQueryResponse {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            if (request.tokenId != null) {
-                val token = em.find(PreAuthTokenEntity::class.java, request.tokenId)?.toAvro() ?:
-                    throw MembershipPersistenceException("Could not find pre auth token with id ${request.tokenId}.")
-                if (!request.statuses.contains(token.status)) {
-                    PreAuthTokenQueryResponse(emptyList())
-                } else if (request.ownerX500Name != token.ownerX500Name) {
-                    PreAuthTokenQueryResponse(emptyList())
-                } else {
-                    PreAuthTokenQueryResponse(listOf(token))
+            val criteriaBuilder = em.criteriaBuilder
+            val criteriaQuery = criteriaBuilder.createQuery(PreAuthTokenEntity::class.java)
+            val root = criteriaQuery.from(PreAuthTokenEntity::class.java)
+
+            val predicates = mutableListOf<Predicate>()
+            request.tokenId?.let { predicates.add(criteriaBuilder.equal(root.get<String>("tokenId"), it)) }
+            request.statuses?.let { requestPreAuthTokenStatuses ->
+                val inStatus = criteriaBuilder.`in`(root.get<String>("status"))
+                requestPreAuthTokenStatuses.forEach { requestPreAuthTokenStatus ->
+                    inStatus.value(requestPreAuthTokenStatus.toString())
                 }
-            } else if (request.ownerX500Name != null && request.statuses != null) {
-                val result = em.createQuery(
-                    "SELECT t FROM ${PreAuthTokenEntity::class.java.simpleName} t WHERE t.ownerX500Name = :x500Name" +
-                        " AND t.status IN (:statuses)",
-                    PreAuthTokenEntity::class.java
-                )
-                    .setParameter("x500Name", request.ownerX500Name)
-                    .setParameter("statuses", request.statuses.map { it.toString() })
-                PreAuthTokenQueryResponse(result.resultList.map { it.toAvro() })
-            } else if (request.ownerX500Name != null) {
-                val result = em.createQuery(
-                    "SELECT t FROM ${PreAuthTokenEntity::class.java.simpleName} t WHERE t.ownerX500Name = :x500Name",
-                    PreAuthTokenEntity::class.java
-                )
-                    .setParameter("x500Name", request.ownerX500Name)
-                PreAuthTokenQueryResponse(result.resultList.map { it.toAvro() })
-            } else if (request.statuses != null) {
-                val result = em.createQuery(
-                    "SELECT t FROM ${PreAuthTokenEntity::class.java.simpleName} t WHERE t.status IN (:statuses)",
-                    PreAuthTokenEntity::class.java
-                )
-                    .setParameter("statuses", request.statuses.map { it.toString() })
-                PreAuthTokenQueryResponse(result.resultList.map { it.toAvro() })
-            } else {
-                PreAuthTokenQueryResponse(emptyList())
+                predicates.add(inStatus)
             }
+            request.ownerX500Name?.let { predicates.add(criteriaBuilder.equal(root.get<String>("x500Name"), it)) }
+
+            @Suppress("SpreadOperator")
+            val query = criteriaQuery.select(root).where(*predicates.toTypedArray())
+            PreAuthTokenQueryResponse(em.createQuery(query).resultList.map { it.toAvro() })
         }
     }
-
-    private fun PreAuthTokenEntity.toAvro(): PreAuthToken {
-        return PreAuthToken(this.tokenId, this.ownerX500Name, this.ttl.toEpochMilli(), PreAuthTokenStatus.valueOf(this.status), this.remark)
-    }
-
 }

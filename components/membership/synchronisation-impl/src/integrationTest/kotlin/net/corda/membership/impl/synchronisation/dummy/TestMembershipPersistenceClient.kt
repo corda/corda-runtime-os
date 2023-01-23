@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.time.Instant
 import java.util.*
 
 /**
@@ -174,7 +175,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,
         ownerX500Name: MemberX500Name,
-        ttl: Int,
+        ttl: Instant?,
         remarks: String?
     ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 

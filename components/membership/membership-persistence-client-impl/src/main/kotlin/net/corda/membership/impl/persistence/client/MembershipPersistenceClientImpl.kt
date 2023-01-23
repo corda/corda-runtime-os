@@ -50,9 +50,10 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 import java.util.UUID
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [MembershipPersistenceClient::class])
 class MembershipPersistenceClientImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -308,12 +309,12 @@ class MembershipPersistenceClientImpl(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,
         ownerX500Name: MemberX500Name,
-        ttl: Int,
+        ttl: Instant?,
         remarks: String?
     ): MembershipPersistenceResult<Unit> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
-            AddPreAuthToken(preAuthTokenId.toString(), ownerX500Name.toString(), ttl.toLong(), remarks)
+            AddPreAuthToken(preAuthTokenId.toString(), ownerX500Name.toString(), ttl, remarks)
         ).execute()
 
         return when (val payload = result.payload) {

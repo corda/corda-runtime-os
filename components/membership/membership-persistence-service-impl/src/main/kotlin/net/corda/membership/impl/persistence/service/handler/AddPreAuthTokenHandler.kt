@@ -5,20 +5,20 @@ import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.virtualnode.toCorda
-import java.time.Instant
 
 internal class AddPreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices) :
     BasePersistenceHandler<AddPreAuthToken, Unit>(persistenceHandlerServices) {
 
-    override fun invoke(context: MembershipRequestContext, request: AddPreAuthToken): Unit {
+    override fun invoke(context: MembershipRequestContext, request: AddPreAuthToken) {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             em.persist(
                 PreAuthTokenEntity(
                     request.tokenId,
                     request.ownerX500Name,
-                    Instant.ofEpochMilli(request.ttl),
+                    request.ttl,
                     PreAuthTokenStatus.AVAILABLE.toString(),
-                    request.remark
+                    creationRemark = request.remark,
+                    removalRemark = null
                 )
             )
         }

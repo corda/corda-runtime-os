@@ -106,12 +106,13 @@ interface MGMRpcOps : RpcOps {
     ): Collection<String>
 
     /**
-<<<<<<< HEAD
      * Generate a preAuthToken.
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM.
      * @param ownerX500Name The X500 name of the member to preauthorize.
-     * @param ttl A (time-to-live) unix timestamp (in milliseconds) after which this token will become invalid. Defaults to infinity.
+     * @param ttl A (time-to-live) how long after which this token will become invalid. If unset then the token if valid forever.
+     * The duration must be specified using the ISO-8601 duration format PnDTnHnMn.nS, where n is an integer, D is days, H is hours and M is
+     * minutes. Some examples PT15M (15 minutes), P4D (4 days), P1DT2H2M (1 day 2 hours and 2 minutes).
      * @param remarks Some optional remarks.
      */
     @HttpRpcPOST(
@@ -123,7 +124,7 @@ interface MGMRpcOps : RpcOps {
         @HttpRpcRequestBodyParameter
         ownerX500Name: String,
         @HttpRpcRequestBodyParameter(required = false)
-        ttl: Int = Int.MAX_VALUE,
+        ttl: String? = null,
         @HttpRpcRequestBodyParameter(required = false)
         remarks: String? = null,
     ): PreAuthToken
@@ -134,7 +135,7 @@ interface MGMRpcOps : RpcOps {
      * @param holdingIdentityShortHash The holding identity ID of the MGM.
      * @param ownerX500Name The X500 name of the member to query for.
      * @param preAuthTokenId The token ID to query for.
-     * @param viewInactive Return in tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
+     * @param viewInactive Return tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
      * [PreAuthTokenStatus.AUTO_INVALIDATED] as well as [PreAuthTokenStatus.AVAILABLE].
      */
     @HttpRpcGET(

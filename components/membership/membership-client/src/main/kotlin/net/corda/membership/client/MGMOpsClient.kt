@@ -2,12 +2,13 @@ package net.corda.membership.client
 
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.client.dto.PreAuthTokenDto
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
+import java.time.Instant
 import java.util.UUID
 import kotlin.jvm.Throws
 
@@ -52,9 +53,9 @@ interface MGMOpsClient : Lifecycle {
     fun generatePreAuthToken(
         holdingIdentityShortHash: ShortHash,
         ownerX500Name: MemberX500Name,
-        ttl: Int,
+        ttl: Instant?,
         remarks: String?,
-    ): PreAuthTokenDto
+    ): PreAuthToken
 
     /**
      * Query for preAuthTokens.
@@ -70,7 +71,7 @@ interface MGMOpsClient : Lifecycle {
         ownerX500Name: MemberX500Name?,
         preAuthTokenId: UUID?,
         viewInactive: Boolean
-    ): Collection<PreAuthTokenDto>
+    ): Collection<PreAuthToken>
 
     /**
      * Revoke a preAuthToken.
@@ -83,7 +84,7 @@ interface MGMOpsClient : Lifecycle {
         holdingIdentityShortHash: ShortHash,
         preAuthTokenId: UUID,
         remarks: String?
-    ): PreAuthTokenDto
+    ): PreAuthToken
 
     /**
      * Adds an approval rule to be applied to future registration requests.
