@@ -3,8 +3,8 @@ package net.corda.simulator
 import net.corda.simulator.runtime.persistence.GreetingEntity
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
@@ -17,7 +17,7 @@ class PersistenceTest {
 
     companion object {
 
-        class PersistingFlow: RPCStartableFlow {
+        class PersistingFlow: ClientStartableFlow {
             @CordaInject
             private lateinit var persistenceService: PersistenceService
 
@@ -25,7 +25,7 @@ class PersistenceTest {
             private lateinit var jsonMarshallingService: JsonMarshallingService
 
             @Suspendable
-            override fun call(requestBody: RPCRequestData): String {
+            override fun call(requestBody: RestRequestBody): String {
                 val greeting = requestBody.getRequestBodyAs(jsonMarshallingService, String::class.java)
                 val entity = GreetingEntity(UUID.randomUUID(), greeting)
                 persistenceService.persist(entity)
@@ -33,7 +33,7 @@ class PersistenceTest {
             }
         }
 
-        class QueryingFlow: RPCStartableFlow {
+        class QueryingFlow: ClientStartableFlow {
             @CordaInject
             private lateinit var persistenceService: PersistenceService
 
@@ -41,7 +41,7 @@ class PersistenceTest {
             private lateinit var jsonMarshallingService: JsonMarshallingService
 
             @Suspendable
-            override fun call(requestBody: RPCRequestData): String {
+            override fun call(requestBody: RestRequestBody): String {
                 val uuid = requestBody.getRequestBodyAs(jsonMarshallingService, String::class.java)
                 val id = UUID.fromString(uuid)
                 return persistenceService.find(GreetingEntity::class.java, id)?.greeting ?: "Not found"

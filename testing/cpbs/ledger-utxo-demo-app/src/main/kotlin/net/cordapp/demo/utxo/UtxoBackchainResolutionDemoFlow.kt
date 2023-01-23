@@ -3,8 +3,8 @@ package net.cordapp.demo.utxo
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -29,7 +29,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 @InitiatingFlow("utxo-backchain-resolution-protocol")
-class UtxoBackchainResolutionDemoFlow : RPCStartableFlow {
+class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
 
     @BelongsToContract(TestContract::class)
@@ -65,7 +65,7 @@ class UtxoBackchainResolutionDemoFlow : RPCStartableFlow {
 
     @Suppress("DEPRECATION", "LongMethod")
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         log.info("UTXO backchain resolution demo flow starting!!...")
         try {
             val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)

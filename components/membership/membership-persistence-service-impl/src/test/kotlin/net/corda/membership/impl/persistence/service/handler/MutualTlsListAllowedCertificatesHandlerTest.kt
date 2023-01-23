@@ -26,6 +26,7 @@ import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Order
 import javax.persistence.criteria.Path
+import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
 
 class MutualTlsListAllowedCertificatesHandlerTest {
@@ -67,23 +68,28 @@ class MutualTlsListAllowedCertificatesHandlerTest {
     @Test
     fun `invoke will return all the subjects`() {
         val path = mock<Path<String>>()
+        val isDeletedPath = mock<Path<Boolean>>()
         val order = mock<Order>()
         val root = mock<Root<MutualTlsAllowedClientCertificateEntity>> {
             on { get<String>("subject") } doReturn path
+            on { get<Boolean>("isDeleted") } doReturn isDeletedPath
         }
+        val equalsPredicate = mock<Predicate>()
         val criteriaQuery = mock<CriteriaQuery<MutualTlsAllowedClientCertificateEntity>> {
             on { from(MutualTlsAllowedClientCertificateEntity::class.java) } doReturn root
             on { select(root) } doReturn mock
+            on { where(equalsPredicate) } doReturn mock
             on { orderBy(order) } doReturn mock
         }
         val criteriaBuilder = mock<CriteriaBuilder> {
             on { createQuery(MutualTlsAllowedClientCertificateEntity::class.java) } doReturn criteriaQuery
             on { asc(path) } doReturn order
+            on { equal(isDeletedPath, false)} doReturn equalsPredicate
         }
         val query = mock<TypedQuery<MutualTlsAllowedClientCertificateEntity>> {
             on { resultList } doReturn
                     listOf("subject 1", "subject 2")
-                        .map { MutualTlsAllowedClientCertificateEntity(it) }
+                        .map { MutualTlsAllowedClientCertificateEntity(it, false) }
         }
         whenever(entityManager.criteriaBuilder).doReturn(criteriaBuilder)
         whenever(entityManager.createQuery(criteriaQuery)).doReturn(query)

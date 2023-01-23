@@ -3,7 +3,7 @@ package net.corda.messaging.utils
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 
 /**
- * Divide a list of [events] into batches such that 1 key does not have more then one entry per batch
+ * Divide a list of [events] into batches such that 1 key does not have more than one entry per batch
  */
 fun<K: Any, E : Any> getEventsByBatch(events: List<CordaConsumerRecord<K, E>>): List<List<CordaConsumerRecord<K, E>>> {
     if (events.isEmpty()) {

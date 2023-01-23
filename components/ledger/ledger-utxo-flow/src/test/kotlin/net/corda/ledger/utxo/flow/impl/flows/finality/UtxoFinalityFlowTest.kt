@@ -32,10 +32,13 @@ import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.MemberInfo
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -94,6 +97,8 @@ class UtxoFinalityFlowTest {
 
     private val pluggableNotaryClientFlow = mock<PluggableNotaryClientFlow>()
     private val ledgerTransaction = mock<UtxoLedgerTransaction>()
+
+    private val payloadCaptor = argumentCaptor<Payload<*>>()
 
     @BeforeEach
     fun beforeEach() {
@@ -353,9 +358,12 @@ class UtxoFinalityFlowTest {
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf())
 
+        doNothing().whenever(flowMessaging).sendAll(payloadCaptor.capture(), eq(sessions))
+
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessage("Notary has not returned any signatures.")
+            .hasMessageContaining("Notary")
+            .hasMessageContaining("did not return any signatures after requesting notarization of transaction")
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
@@ -379,7 +387,10 @@ class UtxoFinalityFlowTest {
             )
         )
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
-        verify(flowMessaging).sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>("Notary has not returned any signatures."), sessions)
+        verify(flowMessaging).sendAll(any<Payload.Failure<*>>(), eq(sessions))
+        assertThat((payloadCaptor.firstValue as Payload.Failure<*>).message)
+            .contains("Notary")
+            .contains("did not return any signatures after requesting notarization of transaction")
     }
 
     @Test

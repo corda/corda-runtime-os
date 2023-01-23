@@ -26,6 +26,9 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.ShortHash
@@ -64,7 +67,7 @@ class CertificatesClientImplTest {
     private var retrieveCertificates: ((ShortHash?, CertificateUsage, String) -> String?)? = null
     private val mockHostedIdentityEntryFactory = mockConstruction(HostedIdentityEntryFactory::class.java) { _, settings ->
         @Suppress("UNCHECKED_CAST")
-        retrieveCertificates = settings.arguments()[4] as? ((ShortHash?, CertificateUsage, String) -> String?)
+        retrieveCertificates = settings.arguments()[5] as? ((ShortHash?, CertificateUsage, String) -> String?)
     }
     private val shortHash = ShortHash.of("AF77BF2471F3")
 
@@ -72,6 +75,10 @@ class CertificatesClientImplTest {
         coordinatorFactory,
         publisherFactory,
         configurationReadService,
+        mock(),
+        mock(),
+        mock(),
+        mock(),
         mock(),
         mock(),
         mock(),
@@ -295,6 +302,9 @@ class CertificatesClientImplTest {
                         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                         LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
+                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                     )
                 )
             }

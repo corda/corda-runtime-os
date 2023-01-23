@@ -9,7 +9,7 @@ import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.messaging.SimFlowContextProperties
 import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.testutils.createMember
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.persistence.PersistenceService
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -50,7 +50,7 @@ class SimulatedVirtualNodeBaseTest {
     fun `should instantiate flow, inject services and call flow`() {
         // Given a virtual node with dependencies
         val flowManager = mock<FlowManager>()
-        val flow = mock<RPCStartableFlow>()
+        val flow = mock<ClientStartableFlow>()
         val contextProperties = SimFlowContextProperties(emptyMap())
         whenever(flowFactory.createInitiatingFlow(any(), any())).thenReturn(flow)
 

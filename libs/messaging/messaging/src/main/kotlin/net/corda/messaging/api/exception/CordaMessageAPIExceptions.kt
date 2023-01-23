@@ -20,7 +20,7 @@ open class CordaMessageAPIIntermittentException(message: String?, exception: Exc
 /**
  * Only thrown from a producer. In this case the error is not fatal in the way [CordaMessageAPIFatalException] is, but
  * the producer must be closed and re-instantiated. Re-using the producer when this is thrown is not an option and
- * results in undefined behaviour. Sub class of [CordaMessageAPIIntermittentException] so if you are resetting the
+ * results in undefined behaviour. Subclass of [CordaMessageAPIIntermittentException] so if you are resetting the
  * producer on all intermittent exceptions you don't need to handle this explicitly.
  */
 class CordaMessageAPIProducerRequiresReset(message: String?, exception: Exception? = null) :
