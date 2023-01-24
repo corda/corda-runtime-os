@@ -8,7 +8,7 @@ import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 
 /**
- * Maintenance RPC operations for virtual node management.
+ * Maintenance Rest operations for virtual node management.
  *
  * Some of them could be highly disruptive, so great care should be taken when using them.
  */

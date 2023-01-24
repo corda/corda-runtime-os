@@ -13,7 +13,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 
-/** RPC operations for virtual node management. */
+/** Rest operations for virtual node management. */
 @HttpRestResource(
     name = "Virtual Node API",
     description = "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes.",

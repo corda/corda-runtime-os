@@ -6,7 +6,7 @@ import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.HttpRestResource
 
-/** RPC operations for getting flow information from a vNode. */
+/** Rest operations for getting flow information from a vNode. */
 @HttpRestResource(
     name = "Flow Info API",
     description = "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked " +

@@ -14,7 +14,7 @@ import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfig
 
-/** RPC operations for flow management. */
+/** Rest operations for flow management. */
 @HttpRestResource(
     name = "Flow Management API",
     description = "The Flow Management API consists of a number of endpoints used to interact with flows.",

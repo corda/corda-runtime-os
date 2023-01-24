@@ -12,7 +12,7 @@ import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 
-/** RPC operations for cluster configuration management. */
+/** Rest operations for cluster configuration management. */
 @HttpRestResource(
     name = "Configuration API",
     description = "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters.",
