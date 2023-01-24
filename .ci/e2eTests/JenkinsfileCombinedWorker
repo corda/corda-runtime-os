@@ -70,8 +70,14 @@ pipeline {
     stages {
         stage('check out') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: "*/${params.COMMIT_TO_CHECKOUT}"]], extensions: [],
-                    userRemoteConfigs: [[credentialsId: 'corda-jenkins-ci02', url: 'https://github.com/corda/corda-runtime-os.git']]])
+                script {
+                    if (params.COMMIT_TO_CHECKOUT && !changeRequest()) {
+                        echo "CommitID to checkOut ${params.COMMIT_TO_CHECKOUT}"
+                        sh 'git checkout "$COMMIT_TO_CHECKOUT"'
+                    } else {
+                        echo "checking out Head revision of ${env.BRANCH_NAME}"
+                    }
+                }
             }
         }
 		  
