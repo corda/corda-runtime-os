@@ -1,4 +1,4 @@
-package net.corda.libs.virtualnode.datamodel
+package net.corda.libs.virtualnode.datamodel.entities
 
 import java.io.Serializable
 import java.time.Instant

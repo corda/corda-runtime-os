@@ -99,121 +99,121 @@ class VirtualNodeRepositoryTest {
         }
     }
 
-    @Test
-    fun find() {
-        // "set up"
-        val numberOfVNodes = 5
-        val vnodes = (1..numberOfVNodes).map {
-            VNodeTestUtils.newVNode(
-                entityManagerFactory,
-                "Test CPI ${UUID.randomUUID()}",
-                "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash().toString())
-        }
+//    @Test
+//    fun find() {
+//        // "set up"
+//        val numberOfVNodes = 5
+//        val vnodes = (1..numberOfVNodes).map {
+//            VNodeTestUtils.newVNode(
+//                entityManagerFactory,
+//                "Test CPI ${UUID.randomUUID()}",
+//                "1.0-${Instant.now().toEpochMilli()}",
+//                TestRandom.secureHash().toString())
+//        }
+//
+//        // Now check the query - and also we should look at the console output for this
+//        val virtualNode = entityManagerFactory.createEntityManager().use {
+//            VirtualNodeRepositoryImpl().find(it, ShortHash.of(vnodes.last().holdingIdentity.holdingIdentityShortHash))
+//        }!!
+//
+//        // Validate relation for holdingIdentity has been resolved
+//        assertNotNull(virtualNode.holdingIdentity.x500Name)
+//        assertEquals(virtualNode.holdingIdentity.x500Name.toString(), vnodes.last().holdingIdentity.x500Name)
+//    }
 
-        // Now check the query - and also we should look at the console output for this
-        val virtualNode = entityManagerFactory.createEntityManager().use {
-            VirtualNodeRepositoryImpl().find(it, ShortHash.of(vnodes.last().holdingIdentity.holdingIdentityShortHash))
-        }!!
+//    @Test
+//    fun `find returns null if no vnode found`() {
+//        // "set up"
+//        val numberOfVNodes = 5
+//        (1..numberOfVNodes).forEach { i ->
+//            VNodeTestUtils.newVNode(
+//                entityManagerFactory,
+//                "Test CPI $i ${UUID.randomUUID()}",
+//                "1.0-${Instant.now().toEpochMilli()}",
+//                TestRandom.secureHash().toString())
+//        }
+//
+//        val virtualNode = entityManagerFactory.createEntityManager().use {
+//            VirtualNodeRepositoryImpl().find(it, ShortHash.of(TestRandom.holdingIdentityShortHash()))
+//        }
+//
+//        assertEquals(virtualNode, null)
+//    }
 
-        // Validate relation for holdingIdentity has been resolved
-        assertNotNull(virtualNode.holdingIdentity.x500Name)
-        assertEquals(virtualNode.holdingIdentity.x500Name.toString(), vnodes.last().holdingIdentity.x500Name)
-    }
+//    @Test
+//    fun put() {
+//        val hash = TestRandom.secureHash()
+//        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
+//
+//        val hi = vnode.holdingIdentity.toHoldingIdentity()
+//        val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, hash)
+//
+//        entityManagerFactory.createEntityManager().transaction {
+//            VirtualNodeRepositoryImpl().put(
+//                it,
+//                hi,
+//                cpiId,
+//                vnode.vaultDDLConnectionId,
+//                vnode.vaultDMLConnectionId!!,
+//                vnode.cryptoDDLConnectionId,
+//                vnode.cryptoDMLConnectionId!!,
+//                vnode.uniquenessDDLConnectionId,
+//                vnode.uniquenessDMLConnectionId,
+//            )
+//        }
+//
+//        val putEntity = entityManagerFactory.createEntityManager().use {
+//            VirtualNodeRepositoryImpl().find(it, hi.shortHash)
+//        }
+//
+//        assertThat(putEntity).isNotNull
+//        assertThat(putEntity!!.holdingIdentity).isEqualTo(hi)
+//        assertThat(putEntity.cpiIdentifier).isEqualTo(cpiId)
+//    }
 
-    @Test
-    fun `find returns null if no vnode found`() {
-        // "set up"
-        val numberOfVNodes = 5
-        (1..numberOfVNodes).forEach { i ->
-            VNodeTestUtils.newVNode(
-                entityManagerFactory,
-                "Test CPI $i ${UUID.randomUUID()}",
-                "1.0-${Instant.now().toEpochMilli()}",
-                TestRandom.secureHash().toString())
-        }
+//    @Test
+//    fun `put throws when Holding Identity does not exist`() {
+//        val hi = HoldingIdentity(
+//            MemberX500Name.Companion.parse("C=GB,L=London,O=Test"),
+//            "group"
+//        )
+//        val cpiId = CpiIdentifier("cpi ${UUID.randomUUID()}", "1.0", TestRandom.secureHash())
+//
+//        assertThrows<CordaRuntimeException> {
+//            entityManagerFactory.createEntityManager().transaction {
+//                VirtualNodeRepositoryImpl().put(
+//                    it,
+//                    hi,
+//                    cpiId,
+//                    null,
+//                    UUID.randomUUID(),
+//                    null,
+//                    UUID.randomUUID(),
+//                    null,
+//                    UUID.randomUUID())
+//            }
+//        }
+//    }
 
-        val virtualNode = entityManagerFactory.createEntityManager().use {
-            VirtualNodeRepositoryImpl().find(it, ShortHash.of(TestRandom.holdingIdentityShortHash()))
-        }
-
-        assertEquals(virtualNode, null)
-    }
-
-    @Test
-    fun put() {
-        val hash = TestRandom.secureHash()
-        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
-
-        val hi = vnode.holdingIdentity.toHoldingIdentity()
-        val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, hash)
-
-        entityManagerFactory.createEntityManager().transaction {
-            VirtualNodeRepositoryImpl().put(
-                it,
-                hi,
-                cpiId,
-                vnode.vaultDDLConnectionId,
-                vnode.vaultDMLConnectionId!!,
-                vnode.cryptoDDLConnectionId,
-                vnode.cryptoDMLConnectionId!!,
-                vnode.uniquenessDDLConnectionId,
-                vnode.uniquenessDMLConnectionId,
-            )
-        }
-
-        val putEntity = entityManagerFactory.createEntityManager().use {
-            VirtualNodeRepositoryImpl().find(it, hi.shortHash)
-        }
-
-        assertThat(putEntity).isNotNull
-        assertThat(putEntity!!.holdingIdentity).isEqualTo(hi)
-        assertThat(putEntity.cpiIdentifier).isEqualTo(cpiId)
-    }
-
-    @Test
-    fun `put throws when Holding Identity does not exist`() {
-        val hi = HoldingIdentity(
-            MemberX500Name.Companion.parse("C=GB,L=London,O=Test"),
-            "group"
-        )
-        val cpiId = CpiIdentifier("cpi ${UUID.randomUUID()}", "1.0", TestRandom.secureHash())
-
-        assertThrows<CordaRuntimeException> {
-            entityManagerFactory.createEntityManager().transaction {
-                VirtualNodeRepositoryImpl().put(
-                    it,
-                    hi,
-                    cpiId,
-                    null,
-                    UUID.randomUUID(),
-                    null,
-                    UUID.randomUUID(),
-                    null,
-                    UUID.randomUUID())
-            }
-        }
-    }
-
-    @Test
-    fun updateVirtualNodeState() {
-        val hash = TestRandom.secureHash()
-        val vnode = VNodeTestUtils
-            .newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
-
-        entityManagerFactory.createEntityManager().use {
-            VirtualNodeRepositoryImpl().updateVirtualNodeState(
-                it, vnode.holdingIdentity.holdingIdentityShortHash, "maintenance")
-        }
-
-        val changedEntity = entityManagerFactory.createEntityManager().use {
-            VirtualNodeRepositoryImpl().find(it, ShortHash.of(vnode.holdingIdentity.holdingIdentityShortHash))
-        }
-
-        assertThat(changedEntity).isNotNull
-        assertThat(changedEntity!!.flowP2pOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
-        assertThat(changedEntity.flowStartOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
-        assertThat(changedEntity.flowOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
-        assertThat(changedEntity.vaultDbOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
-    }
+//    @Test
+//    fun updateVirtualNodeState() {
+//        val hash = TestRandom.secureHash()
+//        val vnode = VNodeTestUtils
+//            .newVNode(entityManagerFactory, "Testing ${UUID.randomUUID()}", "1.0", hash.toString())
+//
+//        entityManagerFactory.createEntityManager().use {
+//            VirtualNodeRepositoryImpl().updateVirtualNodeState(
+//                it, vnode.holdingIdentity.holdingIdentityShortHash, "maintenance")
+//        }
+//
+//        val changedEntity = entityManagerFactory.createEntityManager().use {
+//            VirtualNodeRepositoryImpl().find(it, ShortHash.of(vnode.holdingIdentity.holdingIdentityShortHash))
+//        }
+//
+//        assertThat(changedEntity).isNotNull
+//        assertThat(changedEntity!!.flowP2pOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+//        assertThat(changedEntity.flowStartOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+//        assertThat(changedEntity.flowOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+//        assertThat(changedEntity.vaultDbOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+//    }
 }

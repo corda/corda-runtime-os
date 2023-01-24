@@ -3,7 +3,7 @@ package net.corda.libs.virtualnode.datamodel.entities
 import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VIRTUAL_NODE_DB_TABLE
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.VirtualNodeOperationEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.OperationalStatus
@@ -130,13 +130,22 @@ internal class VirtualNodeEntity(
         println("Converting to VirtualNodeInfo")
         println(holdingIdentity.x500Name)
         println(insertTimestamp)
-
+        println(holdingIdentity.toHoldingIdentity())
+        println(CpiIdentifier(cpiName, cpiVersion, SecureHash.parse(cpiSignerSummaryHash)))
         println(vaultDDLConnectionId.toString())
         println(vaultDMLConnectionId.toString())
         println(cryptoDDLConnectionId.toString())
         println(cryptoDMLConnectionId.toString())
         println(uniquenessDDLConnectionId.toString())
         println(uniquenessDMLConnectionId.toString())
+        println(holdingIdentity.hsmConnectionId)
+        println(flowP2pOperationalStatus)
+        println(flowStartOperationalStatus)
+        println(flowOperationalStatus)
+        println(vaultDbOperationalStatus)
+        println(entityVersion)
+        println(insertTimestamp!!)
+        println(isDeleted)
 
         return VirtualNodeInfo(
             holdingIdentity.toHoldingIdentity(),
