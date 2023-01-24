@@ -3,7 +3,6 @@ package net.corda.libs.virtualnode.datamodel.entities
 import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VIRTUAL_NODE_DB_TABLE
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.OperationalStatus
