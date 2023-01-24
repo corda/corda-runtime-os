@@ -65,7 +65,7 @@ pipeline {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
         choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
         booleanParam(name: 'KEEP_NS', defaultValue: false, description: 'Determines if the k8s Namespace is to be preserved or deleted at the end of the build.')
-        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: '', description: 'Commit ID to check out of SCM - leave blan to take HEAD of current brabranchcnh ')
+        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: '', description: 'Commit ID to check out of SCM - leave blank to take head of current branch')
     }
 
     environment {
@@ -107,7 +107,7 @@ pipeline {
         stage('check out') {
             steps {
                 script {
-                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null) {
+                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null) {  // CHANGE_ID only populated in PRs
                         echo "Checking out commit ID from upstream job ${params.COMMIT_TO_CHECKOUT}"
                         sh 'git checkout "$COMMIT_TO_CHECKOUT"'
                     } else {

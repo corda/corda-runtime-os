@@ -58,7 +58,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: env.CORDA_REVISION, description: 'Commit ID to check out of SCM')
+        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: '', description: 'Commit ID to check out of SCM - leave blank to take head of current branch')
     }
 
     options {
@@ -70,7 +70,7 @@ pipeline {
         stage('check out') {
             steps {
                 script {
-                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null) {
+                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null) { // CHANGE_ID only populated in PRs
                         echo "Checking out commit ID from upstream job ${params.COMMIT_TO_CHECKOUT}"
                         sh 'git checkout "$COMMIT_TO_CHECKOUT"'
                     } else {
