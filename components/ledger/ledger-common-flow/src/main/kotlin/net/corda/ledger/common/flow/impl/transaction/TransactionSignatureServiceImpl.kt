@@ -62,7 +62,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     }
 
     override fun verifySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {
-        val signatureSpec = checkSignatureSpecCompatibility(signatureWithMetadata)
+        val signatureSpec = checkAndGetSignatureSpec(signatureWithMetadata)
 
         val signedData = SignableData(transactionId, signatureWithMetadata.metadata)
         digitalSignatureVerificationService.verify(
@@ -73,7 +73,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         )
     }
 
-    private fun checkSignatureSpecCompatibility(signatureWithMetadata: DigitalSignatureAndMetadata): SignatureSpec {
+    private fun checkAndGetSignatureSpec(signatureWithMetadata: DigitalSignatureAndMetadata): SignatureSpec {
         val signatureSpec = signatureWithMetadata.metadata.signatureSpec
 
         val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
@@ -113,7 +113,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         )
         // End of Copy
 
-        val signatureSpec = checkSignatureSpecCompatibility(signatureWithMetadata)
+        val signatureSpec = checkAndGetSignatureSpec(signatureWithMetadata)
 
         digitalSignatureVerificationService.verify(
             publicKey = signatureWithMetadata.by,
