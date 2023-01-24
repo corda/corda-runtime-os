@@ -134,6 +134,7 @@ class QueryPreAuthTokenHandlerTest {
         handler.invoke(context, QueryPreAuthToken())
 
         verify(query).select(root)
+        @Suppress("SpreadOperator")
         verify(query).where(*emptyArray())
     }
 
