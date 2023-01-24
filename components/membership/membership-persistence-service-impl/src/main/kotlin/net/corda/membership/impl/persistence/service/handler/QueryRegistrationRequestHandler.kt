@@ -15,7 +15,6 @@ internal class QueryRegistrationRequestHandler(persistenceHandlerServices: Persi
     ): RegistrationRequestQueryResponse {
         val shortHash = context.holdingIdentity.toCorda().shortHash
         return transaction(shortHash) { em ->
-
             val criteriaBuilder = em.criteriaBuilder
             val queryBuilder = criteriaBuilder.createQuery(RegistrationRequestEntity::class.java)
             val root = queryBuilder.from(RegistrationRequestEntity::class.java)
