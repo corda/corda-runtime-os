@@ -33,7 +33,7 @@ class HttpRpcServerAzureAdTest {
         @BeforeAll
         @JvmStatic
         fun warmUp() {
-            AzureAdMock.generateUserToken()
+            AzureAdMock.create().close()
         }
     }
 
