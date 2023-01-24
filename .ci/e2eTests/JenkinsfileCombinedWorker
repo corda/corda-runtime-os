@@ -64,7 +64,6 @@ pipeline {
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timestamps()
-        skipDefaultCheckout()
     }
 
     stages {
