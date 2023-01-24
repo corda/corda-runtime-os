@@ -4,7 +4,7 @@ import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class HttpRestResourceTest {
+class RestResourceTest {
 
     @Test
     fun `path from class name will be converted to lowercase`() {

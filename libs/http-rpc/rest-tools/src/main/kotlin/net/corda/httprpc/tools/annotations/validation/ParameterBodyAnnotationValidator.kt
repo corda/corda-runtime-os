@@ -10,7 +10,7 @@ import java.lang.reflect.Method
 /**
  * Validates that every method annotated with [HttpGET], [HttpDELETE] or [HttpWS] does not contain a body.
  */
-internal class ParameterBodyAnnotationValidator(private val clazz: Class<out RestResource>) : HttpRpcValidator {
+internal class ParameterBodyAnnotationValidator(private val clazz: Class<out RestResource>) : RestValidator {
     override fun validate(): RestValidationResult =
         clazz.methods.fold(RestValidationResult()) { total, method ->
             total + if (method.annotations.any { it is HttpGET || it is HttpDELETE || it is HttpWS }) {

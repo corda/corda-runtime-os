@@ -13,6 +13,6 @@ internal class ResourceAnnotationValidator(private val clazz: Class<out RestReso
     }
 
     override fun validate(): RestValidationResult =
-        clazz.annotations.find { annotation -> annotation is HttpRestResource }?.let { HttpRpcValidationResult() }
+        clazz.annotations.find { annotation -> annotation is HttpRestResource }?.let { RestValidationResult() }
             ?: RestValidationResult(listOf(error))
 }
