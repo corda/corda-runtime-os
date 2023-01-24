@@ -4,28 +4,27 @@ import java.util.UUID
 import kotlin.text.Typography.quote
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import net.corda.applications.workers.smoketest.FlowStatus
-import net.corda.applications.workers.smoketest.GROUP_ID
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
-import net.corda.applications.workers.smoketest.RpcSmokeTestInput
+import net.corda.e2etest.utilities.FlowStatus
+import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
+import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
+import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.TEST_NOTARY_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_NOTARY_CPI_NAME
-import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
-import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.configWithDefaultsNode
 import net.corda.applications.workers.smoketest.getConfig
-import net.corda.applications.workers.smoketest.getFlowClasses
-import net.corda.applications.workers.smoketest.getHoldingIdShortHash
-import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
-import net.corda.applications.workers.smoketest.getRpcFlowResult
-import net.corda.applications.workers.smoketest.registerMember
-import net.corda.applications.workers.smoketest.startRpcFlow
-import net.corda.applications.workers.smoketest.toJsonString
+import net.corda.e2etest.utilities.getFlowClasses
+import net.corda.e2etest.utilities.getHoldingIdShortHash
+import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
+import net.corda.e2etest.utilities.getRpcFlowResult
+import net.corda.e2etest.utilities.registerMember
+import net.corda.e2etest.utilities.startRpcFlow
+import net.corda.e2etest.utilities.toJsonString
 import net.corda.applications.workers.smoketest.updateConfig
 import net.corda.applications.workers.smoketest.waitForConfigurationChange
+import net.corda.e2etest.utilities.GROUP_ID
+import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -33,7 +32,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -53,7 +51,7 @@ class FlowTests {
     companion object {
         private val testRunUniqueId = UUID.randomUUID()
         private val applicationCpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
-        private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
+        private val notaryCpiName = "${net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
@@ -105,10 +103,15 @@ class FlowTests {
         internal fun beforeAll() {
             // Upload test flows if not already uploaded
             conditionallyUploadCordaPackage(
-                applicationCpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
+                applicationCpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList
+            )
             // Upload notary server CPB
             conditionallyUploadCordaPackage(
-                notaryCpiName, TEST_NOTARY_CPB_LOCATION, GROUP_ID, staticMemberList)
+                notaryCpiName,
+                TEST_NOTARY_CPB_LOCATION,
+                GROUP_ID,
+                staticMemberList
+            )
 
             // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, applicationCpiName)

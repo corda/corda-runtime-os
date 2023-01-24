@@ -4,8 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import java.io.IOException
 import java.time.Duration
 import kong.unirest.UnirestException
-import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
-import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
+import net.corda.e2etest.utilities.cluster
+import net.corda.e2etest.utilities.toJson
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -22,7 +23,11 @@ fun JsonNode.configWithDefaultsNode(): JsonNode =
  */
 fun getConfig(section: String): JsonNode {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            net.corda.e2etest.utilities.CLUSTER_URI,
+            net.corda.e2etest.utilities.USERNAME,
+            net.corda.e2etest.utilities.PASSWORD
+        )
 
         assertWithRetryIgnoringExceptions {
             command { getConfig(section) }
@@ -38,7 +43,11 @@ fun getConfig(section: String): JsonNode {
  */
 fun updateConfig(config: String, section: String) {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            net.corda.e2etest.utilities.CLUSTER_URI,
+            net.corda.e2etest.utilities.USERNAME,
+            net.corda.e2etest.utilities.PASSWORD
+        )
 
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
@@ -74,7 +83,11 @@ fun updateConfig(config: String, section: String) {
 fun waitForConfigurationChange(section: String, key: String, value: String, expectServiceToBeDown: Boolean = true, timeout: Duration = Duration
     .ofMinutes(1)) {
     cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            net.corda.e2etest.utilities.CLUSTER_URI,
+            net.corda.e2etest.utilities.USERNAME,
+            net.corda.e2etest.utilities.PASSWORD
+        )
 
         if (expectServiceToBeDown) {
             // Wait for the service to become unavailable

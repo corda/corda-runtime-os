@@ -1,26 +1,23 @@
 package net.corda.applications.workers.smoketest.websocket
 
 import java.util.UUID
-import net.corda.applications.workers.smoketest.GROUP_ID
-import net.corda.applications.workers.smoketest.RpcSmokeTestInput
-import net.corda.applications.workers.smoketest.SMOKE_TEST_CLASS_NAME
+import net.corda.e2etest.utilities.RpcSmokeTestInput
+import net.corda.e2etest.utilities.SMOKE_TEST_CLASS_NAME
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.CLUSTER_URI
-import net.corda.applications.workers.smoketest.USERNAME
-import net.corda.applications.workers.smoketest.PASSWORD
 import net.corda.applications.workers.smoketest.CODE_SIGNER_CERT
-import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
-import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
-import net.corda.applications.workers.smoketest.getFlowClasses
-import net.corda.applications.workers.smoketest.getHoldingIdShortHash
-import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
-import net.corda.applications.workers.smoketest.startRpcFlow
-import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
-import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.getFlowClasses
+import net.corda.e2etest.utilities.getHoldingIdShortHash
+import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
+import net.corda.e2etest.utilities.startRpcFlow
+import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebSocketHandler
 import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsocketClient
 import net.corda.applications.workers.smoketest.websocket.client.useWebsocketConnection
+import net.corda.e2etest.utilities.GROUP_ID
+import net.corda.e2etest.utilities.cluster
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -49,7 +46,11 @@ class FlowStatusFeedSmokeTest {
         fun beforeAll() {
             // Certificate upload can be slow in the combined worker, especially after it has just started up.
             cluster {
-                endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+                endpoint(
+                    net.corda.e2etest.utilities.CLUSTER_URI,
+                    net.corda.e2etest.utilities.USERNAME,
+                    net.corda.e2etest.utilities.PASSWORD
+                )
                 assertWithRetry {
                     timeout(Duration.ofSeconds(100))
                     interval(Duration.ofSeconds(1))
@@ -59,7 +60,12 @@ class FlowStatusFeedSmokeTest {
             }
 
             // Upload test flows if not already uploaded
-            conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
+            conditionallyUploadCordaPackage(
+                cpiName,
+                TEST_CPB_LOCATION,
+                GROUP_ID,
+                staticMemberList
+            )
 
             // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)

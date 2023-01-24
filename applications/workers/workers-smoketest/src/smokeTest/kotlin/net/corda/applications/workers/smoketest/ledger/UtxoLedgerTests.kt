@@ -2,17 +2,15 @@ package net.corda.applications.workers.smoketest.ledger
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.applications.workers.smoketest.GROUP_ID
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
-import net.corda.applications.workers.smoketest.TEST_NOTARY_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_NOTARY_CPI_NAME
-import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
-import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
-import net.corda.applications.workers.smoketest.getHoldingIdShortHash
-import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
-import net.corda.applications.workers.smoketest.registerMember
-import net.corda.applications.workers.smoketest.startRpcFlow
+import net.corda.e2etest.utilities.GROUP_ID
+import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
+import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
+import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.getHoldingIdShortHash
+import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
+import net.corda.e2etest.utilities.registerMember
+import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -36,7 +34,7 @@ class UtxoLedgerTests {
 
     private val testRunUniqueId = UUID.randomUUID()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
-    private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
+    private val notaryCpiName = "${net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
     private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
@@ -57,8 +55,18 @@ class UtxoLedgerTests {
 
     @BeforeAll
     fun beforeAll() {
-        conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
-        conditionallyUploadCordaPackage(notaryCpiName, TEST_NOTARY_CPB_LOCATION, GROUP_ID, staticMemberList)
+        conditionallyUploadCordaPackage(
+            cpiName,
+            TEST_CPB_LOCATION,
+            GROUP_ID,
+            staticMemberList
+        )
+        conditionallyUploadCordaPackage(
+            notaryCpiName,
+            TEST_NOTARY_CPB_LOCATION,
+            GROUP_ID,
+            staticMemberList
+        )
 
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)

@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest.virtualnode.helpers
+package net.corda.e2etest.utilities
 
 import java.io.FileNotFoundException
 import java.net.URI

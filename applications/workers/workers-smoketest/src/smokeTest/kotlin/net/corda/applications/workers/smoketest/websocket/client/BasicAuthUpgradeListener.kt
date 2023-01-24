@@ -1,7 +1,7 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
 import java.util.Base64
-import net.corda.applications.workers.smoketest.contextLogger
+import net.corda.e2etest.utilities.contextLogger
 import org.eclipse.jetty.websocket.api.UpgradeRequest
 import org.eclipse.jetty.websocket.api.UpgradeResponse
 import org.eclipse.jetty.websocket.client.io.UpgradeListener

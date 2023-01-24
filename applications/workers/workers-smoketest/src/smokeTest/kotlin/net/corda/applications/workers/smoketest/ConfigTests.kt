@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest
 
+import net.corda.e2etest.utilities.toJsonString
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig

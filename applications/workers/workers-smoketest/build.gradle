@@ -66,6 +66,7 @@ dependencies {
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     smokeTestImplementation project(':testing:test-utilities')
+    smokeTestImplementation project(':testing:e2e-test-utilities')
 
     smokeTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
