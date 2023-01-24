@@ -45,6 +45,9 @@ class LedgerUniquenessCheckerClientServiceImplTest {
 
         val notaryServiceCompositeKey = mock<CompositeKey> {
             on { leafKeys } doReturn setOf(aliceNotaryVNodeKey, bobNotaryVNodeKey, charlieNotaryVNodeKey)
+            on { isFulfilledBy(eq(setOf(aliceNotaryVNodeKey))) } doReturn true
+            on { isFulfilledBy(eq(setOf(bobNotaryVNodeKey))) } doReturn true
+            on { isFulfilledBy(eq(setOf(charlieNotaryVNodeKey))) } doReturn true
         }
     }
 

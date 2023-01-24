@@ -150,12 +150,12 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
 
         // We need to make sure there's at least one key we can sign with
         require(selectedSigningKey != null) {
-            "Could not find any keys associated with the the notary service's public key."
+            "Could not find any keys associated with the notary service's public key."
         }
 
         // We double check that the selected key is actually part of the notary service key
         require(notaryServiceKey.isFulfilledBy(selectedSigningKey)) {
-            "The notary key selected for signing is not associated with notary service key."
+            "The notary key selected for signing is not associated with the notary service key."
         }
 
         return selectedSigningKey
