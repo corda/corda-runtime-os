@@ -42,6 +42,8 @@ class VerificationSandboxServiceImpl @Activate constructor(
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileChecksums: Set<SecureHash>): SandboxGroupContext {
+        // TODO We should verify the CPK's are contract only as part of platform verify of the request (CORE-9379)
+
         if (!sandboxService.hasCpks(cpkFileChecksums)) {
             // TODO Retries when CPKs not available (CORE-9382)
 
@@ -66,6 +68,9 @@ class VerificationSandboxServiceImpl @Activate constructor(
 
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
+
+        // TODO What services do we end up with? We want only verification side of crypto, serialization (AMQP and maybe
+        //  JSON, but not kryo). Need to review what is reachable from this sandbox. (CORE-9379)
 
         logger.info("Initialising Verification Sandbox for $holdingIdentity")
 
