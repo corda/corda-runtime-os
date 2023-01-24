@@ -1,10 +1,9 @@
 package net.corda.httprpc.test.utils
 
 import net.corda.v5.base.util.contextLogger
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
 import java.io.Closeable
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLConnection
@@ -40,12 +39,30 @@ internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLSt
                 }
             }
         }
+
+        private class TestHttpURLConnection(private val entryValue: String) : HttpURLConnection(null) {
+            override fun getInputStream(): InputStream {
+                return ByteArrayInputStream(entryValue.toByteArray())
+            }
+
+            override fun getResponseCode(): Int {
+                return 200
+            }
+
+            override fun connect() {
+            }
+
+            override fun disconnect() {
+            }
+
+            override fun usingProxy(): Boolean {
+                return false
+            }
+        }
     }
 
     private val dummyContent: Map<String, HttpURLConnection> = content.map {
-        val urlConnection = mock<HttpURLConnection>()
-        whenever(urlConnection.inputStream).thenReturn(ByteArrayInputStream(it.value.toByteArray()))
-        whenever(urlConnection.responseCode).thenReturn(200)
+        val urlConnection = TestHttpURLConnection(it.value)
         it.key to urlConnection
     }.toMap()
 
