@@ -20,15 +20,11 @@ internal class QueryRegistrationRequestHandler(persistenceHandlerServices: Persi
             val root = queryBuilder.from(RegistrationRequestEntity::class.java)
             val query = queryBuilder
                 .select(root)
-                .where(
-                    criteriaBuilder.and(
-                        criteriaBuilder.equal(root.get<String>("registrationId"), request.registrationRequestId),
-                    )
-                ).orderBy()
+                .where(criteriaBuilder.equal(root.get<String>("registrationId"), request.registrationRequestId))
             val details =
                 em.createQuery(query)
                     .resultList
-                    .firstOrNull()
+                    .singleOrNull()
                     ?.toDetails()
             RegistrationRequestQueryResponse(details)
         }
