@@ -21,7 +21,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
-import kotlin.test.fail
 
 
 class HttpRpcServerAzureAdTest {
@@ -75,7 +74,6 @@ class HttpRpcServerAzureAdTest {
             log.info("Remote call performed")
             assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
         }
-        fail("Deliberate failure to capture logs")
     }
 
     @Test
