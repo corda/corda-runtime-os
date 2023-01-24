@@ -71,8 +71,11 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         UtxoLedgerTransactionVerifier(utxoLedgerTransactionFactory.create(wireTransaction)).verify(utxoTransactionBuilder.notary!!)
 
-        val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
-
+        val signaturesWithMetadata =
+            transactionSignatureService.sign(
+                wireTransaction.id,
+                utxoTransactionBuilder.signatories.toSet()
+            )
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,

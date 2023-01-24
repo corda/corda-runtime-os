@@ -26,7 +26,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
-import java.security.PublicKey
 import java.time.Instant
 
 @Suppress("LongParameterList")
@@ -56,8 +55,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
      */
     @Suspendable
     override fun create(
-        consensualTransactionBuilder: ConsensualTransactionBuilder,
-        signatories: Iterable<PublicKey>
+        consensualTransactionBuilder: ConsensualTransactionBuilder
     ): ConsensualSignedTransaction {
         val metadata: TransactionMetadata = transactionMetadataFactory.create(consensualMetadata())
         ConsensualTransactionMetadataVerifier(metadata).verify()
@@ -67,14 +65,16 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
 
         verifyTransaction(wireTransaction)
 
-        val signaturesWithMetaData = signatories.map {
-            transactionSignatureService.sign(wireTransaction.id, it)
-        }
+        val signaturesWithMetadata =
+            transactionSignatureService.sign(
+                wireTransaction.id,
+                consensualTransactionBuilder.states.flatMap { it.participants }.toSet()
+            )
         return ConsensualSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
             wireTransaction,
-            signaturesWithMetaData
+            signaturesWithMetadata
         )
     }
 

@@ -48,17 +48,21 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val digestService: DigestService,
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
     @Suspendable
-    override fun sign(transactionId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
-        val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
-        requireNotNull(signatureSpec) { "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})" }
-        val signatureMetadata = getSignatureMetadata(signatureSpec)
-        val signableData = SignableData(transactionId, signatureMetadata)
-        val signature = signingService.sign(
-            serializationService.serialize(signableData).bytes,
-            publicKey,
-            signatureSpec
-        )
-        return DigitalSignatureAndMetadata(signature, signatureMetadata)
+    override fun sign(transactionId: SecureHash, publicKeys: Set<PublicKey>): List<DigitalSignatureAndMetadata> {
+        return signingService.findMySigningKeys(publicKeys).values.filterNotNull().map { publicKey ->
+            val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
+            requireNotNull(signatureSpec) {
+                "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"
+            }
+            val signatureMetadata = getSignatureMetadata(signatureSpec)
+            val signableData = SignableData(transactionId, signatureMetadata)
+            val signature = signingService.sign(
+                serializationService.serialize(signableData).bytes,
+                publicKey,
+                signatureSpec
+            )
+            DigitalSignatureAndMetadata(signature, signatureMetadata)
+        }
     }
 
     override fun verifySignature(transactionId: SecureHash, signatureWithMetadata: DigitalSignatureAndMetadata) {

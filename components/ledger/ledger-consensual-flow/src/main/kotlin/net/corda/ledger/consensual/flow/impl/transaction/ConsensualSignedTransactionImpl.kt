@@ -34,27 +34,22 @@ class ConsensualSignedTransactionImpl(
     override fun toLedgerTransaction(): ConsensualLedgerTransaction =
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializationService)
 
-    @Suspendable
-    override fun sign(publicKey: PublicKey): Pair<ConsensualSignedTransactionInternal, DigitalSignatureAndMetadata> {
-        val newSignature = transactionSignatureService.sign(id, publicKey)
-        return Pair(
-            ConsensualSignedTransactionImpl(
-                serializationService,
-                transactionSignatureService,
-                wireTransaction,
-            signatures + newSignature
-            ),
-            newSignature
-        )
-    }
-
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransactionInternal =
         ConsensualSignedTransactionImpl(serializationService, transactionSignatureService,
             wireTransaction, signatures + signature)
 
     @Suspendable
     override fun addMissingSignatures(): Pair<ConsensualSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
-        TODO("Not implemented yet")
+        val newSignatures = transactionSignatureService.sign(id, getMissingSignatories())
+        return Pair(
+            ConsensualSignedTransactionImpl(
+                serializationService,
+                transactionSignatureService,
+                wireTransaction,
+                signatures + newSignatures
+            ),
+            newSignatures
+        )
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {

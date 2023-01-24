@@ -62,10 +62,9 @@ class ConsensualDemoFlow : ClientStartableFlow {
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
 
-            @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
 

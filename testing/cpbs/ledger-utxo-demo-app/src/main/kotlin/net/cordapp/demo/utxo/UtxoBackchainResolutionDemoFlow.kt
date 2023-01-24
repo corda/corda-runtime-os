@@ -63,7 +63,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
-    @Suppress("DEPRECATION", "LongMethod")
+    @Suppress("LongMethod")
     @Suspendable
     override fun call(requestBody: RestRequestBody): String {
         log.info("UTXO backchain resolution demo flow starting!!...")
@@ -96,7 +96,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addOutputState(testState)
                 .addOutputState(testState)
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx2 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -106,7 +106,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addInputState(StateRef(signedTransaction.id, 0))
                 .addInputState(StateRef(signedTransaction.id, 1))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx3 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -116,7 +116,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addInputState(StateRef(signedTransaction.id, 2))
                 .addInputState(StateRef(signedTransaction.id, 3))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx4 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -125,7 +125,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addSignatories(listOf(myInfo.ledgerKeys.first()))
                 .addInputState(StateRef(signedTransaction.id, 4))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx5 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -134,7 +134,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addSignatories(listOf(myInfo.ledgerKeys.first()))
                 .addInputState(StateRef(tx2.id, 1))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx6 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -144,7 +144,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addInputState(StateRef(tx4.id, 0))
                 .addInputState(StateRef(tx5.id, 0))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx7 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -153,7 +153,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addSignatories(listOf(myInfo.ledgerKeys.first()))
                 .addInputState(StateRef(tx3.id, 0))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx8 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -164,7 +164,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addInputState(StateRef(tx7.id, 0))
                 .addOutputState(testState)
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx9 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -173,7 +173,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addSignatories(listOf(myInfo.ledgerKeys.first()))
                 .addInputState(StateRef(tx8.id, 0))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx10 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -182,7 +182,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addSignatories(listOf(myInfo.ledgerKeys.first()))
                 .addInputState(StateRef(tx8.id, 1))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val tx11 = utxoLedgerService.getTransactionBuilder()
                 .setNotary(Party(members.first().name, members.first().ledgerKeys.first()))
@@ -192,7 +192,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
                 .addInputState(StateRef(tx9.id, 0))
                 .addInputState(StateRef(tx10.id, 0))
                 .addOutputState(testState)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             /*
                     tx5
@@ -208,7 +208,21 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
              */
 
             for (session in sessions) {
-                session.send(listOf(signedTransaction.id, tx2.id, tx3.id, tx4.id, tx5.id, tx6.id, tx7.id, tx8.id, tx9.id, tx10.id, tx11.id))
+                session.send(
+                    listOf(
+                        signedTransaction.id,
+                        tx2.id,
+                        tx3.id,
+                        tx4.id,
+                        tx5.id,
+                        tx6.id,
+                        tx7.id,
+                        tx8.id,
+                        tx9.id,
+                        tx10.id,
+                        tx11.id
+                    )
+                )
             }
 
             utxoLedgerService.finalize(signedTransaction, emptyList())
@@ -244,7 +258,6 @@ class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
     lateinit var utxoLedgerService: UtxoLedgerService
 
 
-    @Suppress("DEPRECATION")
     @Suspendable
     override fun call(session: FlowSession) {
         val txs = session.receive<List<SecureHash>>()
