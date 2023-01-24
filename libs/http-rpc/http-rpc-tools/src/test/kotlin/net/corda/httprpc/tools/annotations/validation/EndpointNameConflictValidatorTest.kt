@@ -1,10 +1,10 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.tools.annotations.validation.EndpointNameConflictValidator.Companion.error
 import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
 import org.assertj.core.api.Assertions.assertThat
@@ -16,13 +16,13 @@ class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate withEndpointNameConflictOnSamePath errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpRpcGET("/test")
+            @HttpGET("/test")
             @Suppress("unused")
             abstract fun test()
 
-            @HttpRpcGET("/test")
+            @HttpGET("/test")
             @Suppress("unused")
             abstract fun test2()
         }
@@ -34,13 +34,13 @@ class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate withEndpointNameConflictOnDifferentMethodType errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpRpcGET("/test")
+            @HttpGET("/test")
             @Suppress("unused")
             abstract fun test()
 
-            @HttpRpcPOST("/test")
+            @HttpPOST("/test")
             @Suppress("unused")
             abstract fun test2()
         }
@@ -52,12 +52,12 @@ class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate withEndpointNameConflictOnMissingEndpointAnnotation errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
             @Suppress("unused")
             abstract fun test()
 
-            @HttpRpcPOST("/test")
+            @HttpPOST("/test")
             @Suppress("unused")
             abstract fun test2()
         }
@@ -69,19 +69,19 @@ class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate withEndpointNameConflictOnOverload errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpRpcGET(path = "test")
+            @HttpGET(path = "test")
             @Suppress("unused")
             abstract fun test()
 
-            @HttpRpcGET(path = "test")
+            @HttpGET(path = "test")
             @Suppress("unused")
-            abstract fun test(@HttpRpcQueryParameter foo: String)
+            abstract fun test(@RestQueryParameter foo: String)
 
-            @HttpRpcGET(path = "test")
+            @HttpGET(path = "test")
             @Suppress("unused")
-            abstract fun test(@HttpRpcQueryParameter foo: Int, @HttpRpcQueryParameter bar: String = "")
+            abstract fun test(@RestQueryParameter foo: Int, @RestQueryParameter bar: String = "")
         }
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
@@ -92,13 +92,13 @@ class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate withEndpointNameConflictOnSamePathWithDefaultName errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpRpcGET
+            @HttpGET
             @Suppress("unused")
             abstract fun test()
 
-            @HttpRpcGET("")
+            @HttpGET("")
             abstract fun test2()
         }
 
@@ -109,21 +109,21 @@ class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate withEndpointNameConflictWithCapitalization errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpRpcGET("teSt")
+            @HttpGET("teSt")
             @Suppress("unused")
             abstract fun teSt()
 
-            @HttpRpcGET("tEst")
+            @HttpGET("tEst")
             @Suppress("unused")
             abstract fun test2()
 
-            @HttpRpcGET("test")
+            @HttpGET("test")
             @Suppress("unused")
             abstract fun test3()
 
-            @HttpRpcGET("TEST")
+            @HttpGET("TEST")
             @Suppress("unused")
             abstract fun test4()
         }
@@ -139,13 +139,13 @@ class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate withEndpointNameConflictOnSamePathWithStaticMethod errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpRpcGET("Getprotocolversion")
+            @HttpGET("Getprotocolversion")
             @Suppress("unused")
             abstract fun test()
 
-            @HttpRpcPOST("Getprotocolversion")
+            @HttpPOST("Getprotocolversion")
             @Suppress("unused")
             abstract fun test2()
         }
@@ -158,21 +158,21 @@ class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate double GET and POST with default path`() {
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpRpcGET
+            @HttpGET
             @Suppress("unused")
             abstract fun test()
 
-            @HttpRpcGET
+            @HttpGET
             @Suppress("unused")
             abstract fun test2()
 
-            @HttpRpcPOST
+            @HttpPOST
             @Suppress("unused")
             abstract fun test3()
 
-            @HttpRpcPOST
+            @HttpPOST
             @Suppress("unused")
             abstract fun test4()
         }

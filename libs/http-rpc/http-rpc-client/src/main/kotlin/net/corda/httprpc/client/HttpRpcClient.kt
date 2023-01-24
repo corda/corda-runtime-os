@@ -23,7 +23,7 @@ import kotlin.concurrent.scheduleAtFixedRate
  * [RestResource] interface should be used.
  *
  * @property baseAddress The base address of the server.
- * @property rpcOpsClass The [RestResource] interface for which the proxy will be created.
+ * @property restResource The [RestResource] interface for which the proxy will be created.
  * @property clientConfig The configuration for the client to use.
  * @property healthCheckInterval The interval on which health check calls to the server will happen, ensuring
  *                               connectivity.
@@ -31,7 +31,7 @@ import kotlin.concurrent.scheduleAtFixedRate
 @Suppress("LongParameterList")
 class HttpRpcClient<I : RestResource> internal constructor(
     private val baseAddress: String,
-    private val rpcOpsClass: Class<I>,
+    private val restResource: Class<I>,
     private val clientConfig: HttpRpcClientConfig,
     private val healthCheckInterval: Long,
     private val proxyGenerator: (rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>) -> I
@@ -92,10 +92,10 @@ class HttpRpcClient<I : RestResource> internal constructor(
         log.trace { "Start." }
         return log.logElapsedTime("Http Rpc client") {
             val proxyHandler = HttpRpcClientProxyHandler(
-                RemoteUnirestClient(baseAddress, clientConfig.enableSSL), clientConfig.authenticationConfig, rpcOpsClass
+                RemoteUnirestClient(baseAddress, clientConfig.enableSSL), clientConfig.authenticationConfig, restResource
             )
             try {
-                ops = proxyGenerator(rpcOpsClass, proxyHandler)
+                ops = proxyGenerator(restResource, proxyHandler)
                 serverProtocolVersion = ops.protocolVersion
                 if (serverProtocolVersion!! < clientConfig.minimumServerProtocolVersion) {
                     throw IllegalArgumentException(

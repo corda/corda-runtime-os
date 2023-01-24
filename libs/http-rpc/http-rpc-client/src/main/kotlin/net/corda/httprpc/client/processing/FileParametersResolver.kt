@@ -1,7 +1,7 @@
 package net.corda.httprpc.client.processing
 
 import java.io.InputStream
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
@@ -67,8 +67,8 @@ private fun Method.extractHttpFileUploadLists(methodArguments: Array<out Any?>):
 }
 
 private fun getFieldNameFromAnnotationOrParameter(it: Pair<Parameter, Any?>): String {
-    val name = if (it.first.annotations.any { annotation -> annotation is HttpRpcRequestBodyParameter }) {
-        it.first.getAnnotation(HttpRpcRequestBodyParameter::class.java).name(it.first)
+    val name = if (it.first.annotations.any { annotation -> annotation is RestRequestBodyParameter }) {
+        it.first.getAnnotation(RestRequestBodyParameter::class.java).name(it.first)
     } else {
         it.first.name
     }

@@ -1,8 +1,8 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.tools.annotations.validation.utils.endpoints
 import java.lang.reflect.Parameter
 
@@ -45,14 +45,14 @@ internal class ParameterClassTypeValidator(private val clazz: Class<out RestReso
     private fun getPathParameters(parameters: List<Parameter>) =
         parameters.filter {
             it.annotations.any { annotation ->
-                annotation is HttpRpcPathParameter
+                annotation is RestPathParameter
             }
         }
 
     private fun getQueryParameters(parameters: List<Parameter>) =
         parameters.filter {
             it.annotations.any { annotation ->
-                annotation is HttpRpcQueryParameter
+                annotation is RestQueryParameter
             }
         }
 }

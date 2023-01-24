@@ -1,9 +1,9 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import java.io.InputStream
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
@@ -37,9 +37,9 @@ internal object ParametersTransformerFactory {
     fun create(param: KParameter) =
         param.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }.let {
             when (it) {
-                is HttpRpcPathParameter -> PathParametersTransformer(param, it)
-                is HttpRpcQueryParameter -> QueryParametersTransformer(param, it)
-                is HttpRpcRequestBodyParameter -> BodyParametersTransformer(param, it)
+                is RestPathParameter -> PathParametersTransformer(param, it)
+                is RestQueryParameter -> QueryParametersTransformer(param, it)
+                is RestRequestBodyParameter -> BodyParametersTransformer(param, it)
                 else -> BodyParametersTransformer(param, null)
             }
         }
@@ -47,7 +47,7 @@ internal object ParametersTransformerFactory {
 
 private class PathParametersTransformer(
     private val parameter: KParameter,
-    private val annotation: HttpRpcPathParameter
+    private val annotation: RestPathParameter
 ) : ParametersTransformer {
     private companion object {
         private val log = contextLogger()
@@ -71,7 +71,7 @@ private class PathParametersTransformer(
 
 private class QueryParametersTransformer(
     private val parameter: KParameter,
-    private val annotation: HttpRpcQueryParameter
+    private val annotation: RestQueryParameter
 ) : ParametersTransformer {
     private companion object {
         private val log = contextLogger()
@@ -96,7 +96,7 @@ private class QueryParametersTransformer(
 @VisibleForTesting
 internal class BodyParametersTransformer(
     private val parameter: KParameter,
-    private val annotation: HttpRpcRequestBodyParameter?
+    private val annotation: RestRequestBodyParameter?
 ) : ParametersTransformer {
     private companion object {
         private val log = contextLogger()
@@ -109,13 +109,13 @@ internal class BodyParametersTransformer(
                 log.trace { "Transform body parameter \"${parameter.name}\" completed. Result:\n$it" }
             }
         } else {
-            transformWithAnnotation(HttpRpcRequestBodyParameter::class.createInstance()).also {
+            transformWithAnnotation(RestRequestBodyParameter::class.createInstance()).also {
                 log.trace { "Transform body parameter  \"${parameter.name}\" without explicit annotation completed. Result:\n$it" }
             }
         }
     }
 
-    private fun transformWithAnnotation(annotation: HttpRpcRequestBodyParameter): EndpointParameter {
+    private fun transformWithAnnotation(annotation: RestRequestBodyParameter): EndpointParameter {
         val classType = parameter.type.jvmErasure.java
         val parameterizedTypes = parameter.getParameterizedTypes()
         return EndpointParameter(
@@ -141,7 +141,7 @@ private class BodyParametersExplicitTransformer(private val name: String, privat
 
     override fun transform(): EndpointParameter {
         log.trace("Transform explicit body parameter \"${name}\"")
-        return with(HttpRpcRequestBodyParameter::class.createInstance()) {
+        return with(RestRequestBodyParameter::class.createInstance()) {
             EndpointParameter(
                 id = this@BodyParametersExplicitTransformer.name,
                 name = this@BodyParametersExplicitTransformer.name,

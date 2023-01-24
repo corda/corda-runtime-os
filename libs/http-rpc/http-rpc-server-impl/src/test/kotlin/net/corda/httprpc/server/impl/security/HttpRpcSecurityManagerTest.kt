@@ -27,7 +27,7 @@ class HttpRpcSecurityManagerTest {
     private val subject: AuthorizingSubject = mock()
     private val password = "password"
     private val userAlice = User("Alice", password, setOf("ALL"))
-    private val userBob = User("Bob", password, setOf("InvokeRpc:net.corda.httprpc.server.security.TestRPCOps#dummy2"))
+    private val userBob = User("Bob", password, setOf("InvokeRpc:net.corda.httprpc.server.security.TestRestResource#dummy2"))
     private val securityManager = SecurityManagerRPCImpl(setOf(authenticationProvider1, authenticationProvider2))
 
     private companion object {
@@ -40,7 +40,7 @@ class HttpRpcSecurityManagerTest {
 
         private fun methodFullName(clazz: Class<*>, methodName: String): String {
             require(clazz.isInterface) { "Must be an interface: $clazz" }
-            require(RestResource::class.java.isAssignableFrom(clazz)) { "Must be assignable from RPCOps: $clazz" }
+            require(RestResource::class.java.isAssignableFrom(clazz)) { "Must be assignable from TestRestResource: $clazz" }
             return clazz.name + "#" + methodName
         }
     }

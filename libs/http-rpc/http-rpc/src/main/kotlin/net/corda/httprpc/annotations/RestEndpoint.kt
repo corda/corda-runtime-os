@@ -9,10 +9,10 @@ import net.corda.httprpc.response.ResponseEntity
  * an HTTP Endpoint.
  */
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class HttpRpcEndpoint
+annotation class RestEndpoint
 
 /**
- * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a POST endpoint by the HTTP RPC
+ * Marks a function of an @[HttpRestResource] annotated interface to be exposed as a POST endpoint by the REST
  * generated web service.
  *
  * - If an endpoint successfully creates a resource, it should return a [ResponseEntity] with [ResponseCode.CREATED] (status code 201).
@@ -24,15 +24,15 @@ annotation class HttpRpcEndpoint
  * [ResponseCode.NO_CONTENT] (status code 204) is returned, unless an exception is thrown.
  *
  * @property path The relative path of the endpoint within its resource.
- *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
+ *           Defaults to an empty string, meaning that path of the enclosing [HttpRestResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@HttpRpcEndpoint
-annotation class HttpRpcPOST(
+@RestEndpoint
+annotation class HttpPOST(
     val path: String = "",
     val title: String = "",
     val description: String = "",
@@ -40,7 +40,7 @@ annotation class HttpRpcPOST(
 )
 
 /**
- * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a PUT endpoint by the HTTP RPC
+ * Marks a function of an @[HttpRestResource] annotated interface to be exposed as a PUT endpoint by the REST
  * generated web service.
  *
  * - If an endpoint successfully creates a resource, it should return a [ResponseEntity] with [ResponseCode.CREATED] (status code 201).
@@ -52,15 +52,15 @@ annotation class HttpRpcPOST(
  * [ResponseCode.NO_CONTENT] (status code 204) is returned, unless an exception is thrown.
  *
  * @property path The relative path of the endpoint within its resource.
- *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
+ *           Defaults to an empty string, meaning that path of the enclosing [HttpRestResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@HttpRpcEndpoint
-annotation class HttpRpcPUT(
+@RestEndpoint
+annotation class HttpPUT(
     val path: String = "",
     val title: String = "",
     val description: String = "",
@@ -68,8 +68,8 @@ annotation class HttpRpcPUT(
 )
 
 /**
- * Marks a function or a property getter of an @[HttpRpcResource] annotated interface to be exposed as a `GET`
- * endpoint by the HTTP RPC generated web service.
+ * Marks a function or a property getter of an @[HttpRestResource] annotated interface to be exposed as a `GET`
+ * endpoint by the REST generated web service.
  *
  * - Successful invocation of a GET API should return the representation of the requested resource.
  * - By default an endpoint does not need to return a [ResponseEntity], the return type will be converted to the response payload with
@@ -77,15 +77,15 @@ annotation class HttpRpcPUT(
  * - If a resource cannot be found it should throw a [ResourceNotFoundException].
  *
  * @property path The relative path of the endpoint within its resource.
- *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
+ *           Defaults to an empty string, meaning that path of the enclosing [HttpRestResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
  */
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER)
 @Retention(AnnotationRetention.RUNTIME)
-@HttpRpcEndpoint
-annotation class HttpRpcGET(
+@RestEndpoint
+annotation class HttpGET(
     val path: String = "",
     val title: String = "",
     val description: String = "",
@@ -93,8 +93,8 @@ annotation class HttpRpcGET(
 )
 
 /**
- * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a `DELETE`
- * endpoint by the HTTP RPC generated web service.
+ * Marks a function of an @[HttpRestResource] annotated interface to be exposed as a `DELETE`
+ * endpoint by the REST generated web service.
  *
  * - If an endpoint successfully deletes a resource, it should return either a [ResponseEntity] with [ResponseCode.OK] (status code 200) and
  * response payload containing a representation of the status, or a [ResponseCode.NO_CONTENT] and no response payload.
@@ -103,15 +103,15 @@ annotation class HttpRpcGET(
  * The response payload for such an endpoint should contain a representation of the status of the request.
  *
  * @property path The relative path of the endpoint within its resource.
- *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
+ *           Defaults to an empty string, meaning that path of the enclosing [HttpRestResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@HttpRpcEndpoint
-annotation class HttpRpcDELETE(
+@RestEndpoint
+annotation class HttpDELETE(
     val path: String = "",
     val title: String = "",
     val description: String = "",
@@ -119,25 +119,25 @@ annotation class HttpRpcDELETE(
 )
 
 /**
- * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a Websocket
- * endpoint by the HTTP RPC generated web service.
+ * Marks a function of an @[HttpRestResource] annotated interface to be exposed as a Websocket
+ * endpoint by the REST generated web service.
  *
  * @property path The relative path of the endpoint within its resource.
- *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
+ *           Defaults to an empty string, meaning that path of the enclosing [HttpRestResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@HttpRpcEndpoint
-annotation class HttpRpcWS(
+@RestEndpoint
+annotation class HttpWS(
     val path: String = "",
     val title: String = "",
     val description: String = "",
     val responseDescription: String = ""
 )
 
-fun Annotation.isRpcEndpointAnnotation(): Boolean {
-    return this.annotationClass.annotations.any { it is HttpRpcEndpoint }
+fun Annotation.isRestEndpointAnnotation(): Boolean {
+    return this.annotationClass.annotations.any { it is RestEndpoint }
 }

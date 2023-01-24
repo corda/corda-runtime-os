@@ -1,20 +1,20 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class ResourceNameConflictValidatorTest {
     @Test
     fun `validate withResourceDuplicateNames errorListContainsMessage`() {
-        @HttpRpcResource(path = "test")
+        @HttpRestResource(path = "test")
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }
 
-        @HttpRpcResource(path = "test")
+        @HttpRestResource(path = "test")
         class TestInterface2 : RestResource {
             override val protocolVersion: Int
                 get() = 1
@@ -32,13 +32,13 @@ class ResourceNameConflictValidatorTest {
 
     @Test
     fun `validate withResourceDuplicateDefaultNames errorListContainsMessage`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }
 
-        @HttpRpcResource(path = "TestInterface")
+        @HttpRestResource(path = "TestInterface")
         class TestInterface2 : RestResource {
             override val protocolVersion: Int
                 get() = 1
@@ -56,13 +56,13 @@ class ResourceNameConflictValidatorTest {
 
     @Test
     fun `validate withResourceDuplicateCapitalizedNames errorListContainsMessage`() {
-        @HttpRpcResource(path = "test")
+        @HttpRestResource(path = "test")
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
         }
 
-        @HttpRpcResource(path = "Test")
+        @HttpRestResource(path = "Test")
         class TestInterface2 : RestResource {
             override val protocolVersion: Int
                 get() = 1

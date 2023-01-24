@@ -1,24 +1,24 @@
 package net.corda.httprpc.tools.annotations.extensions
 
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.javaMethod
 
-class HttpRpcEndpointTest {
+class RestEndpointTest {
 
     @Test
     fun `path from GET method name will be converted to lowercase`() {
 
         abstract class TestClass {
-            @HttpRpcGET
+            @HttpGET
             abstract fun sampleGetMethod(): String
         }
 
-        val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpRpcGET>()!!.path(it.javaMethod!!) }
+        val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpGET>()!!.path(it.javaMethod!!) }
 
         assertNull(endpointPath)
     }
@@ -27,13 +27,13 @@ class HttpRpcEndpointTest {
     fun `path from HttpRpcGET annotation will be converted to lowercase`() {
 
         abstract class TestClass {
-            @HttpRpcGET(
+            @HttpGET(
                 path = "SampleGetMethodPath",
             )
             abstract fun sampleGetMethod(): String
         }
 
-        val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpRpcGET>()!!.path(it.javaMethod!!) }
+        val endpointPath = TestClass::sampleGetMethod.let { it.findAnnotation<HttpGET>()!!.path(it.javaMethod!!) }
 
         assertEquals("samplegetmethodpath", endpointPath)
     }
@@ -42,11 +42,11 @@ class HttpRpcEndpointTest {
     fun `path from POST method name will be converted to lowercase`() {
 
         abstract class TestClass {
-            @HttpRpcPOST
+            @HttpPOST
             abstract fun samplePostMethod(): String
         }
 
-        val endpointPath = TestClass::samplePostMethod.let { it.findAnnotation<HttpRpcPOST>()!!.path() }
+        val endpointPath = TestClass::samplePostMethod.let { it.findAnnotation<HttpPOST>()!!.path() }
 
         assertNull(endpointPath)
     }
@@ -55,13 +55,13 @@ class HttpRpcEndpointTest {
     fun `path from HttpRpcPOST annotation will be converted to lowercase`() {
 
         abstract class TestClass {
-            @HttpRpcPOST(
+            @HttpPOST(
                 path = "samplePostMethodPath",
             )
             abstract fun samplePostMethod(): String
         }
 
-        val endpointPath = TestClass::samplePostMethod.let { it.findAnnotation<HttpRpcPOST>()!!.path() }
+        val endpointPath = TestClass::samplePostMethod.let { it.findAnnotation<HttpPOST>()!!.path() }
 
         assertEquals("samplepostmethodpath", endpointPath)
     }

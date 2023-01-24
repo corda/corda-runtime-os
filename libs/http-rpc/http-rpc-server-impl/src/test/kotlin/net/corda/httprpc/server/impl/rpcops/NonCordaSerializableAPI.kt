@@ -1,12 +1,12 @@
 package net.corda.httprpc.server.impl.rpcops
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource(path = "nonCordaSerializable")
+@HttpRestResource(path = "nonCordaSerializable")
 interface NonCordaSerializableAPI : RestResource {
-  @HttpRpcPOST
+  @HttpPOST
   fun call(data: NonCordaSerializableClass): String
 }
 

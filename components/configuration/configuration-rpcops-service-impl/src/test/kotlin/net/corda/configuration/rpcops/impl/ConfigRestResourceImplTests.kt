@@ -42,7 +42,7 @@ data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 /**
  * Tests of [ConfigRestResourceImpl].
  */
-class ConfigRPCOpsImplTests {
+class ConfigRestResourceImplTests {
     companion object {
         private const val actor = "test_principal"
         private const val invalidConfigError = "Invalid config"

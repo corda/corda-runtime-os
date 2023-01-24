@@ -1,28 +1,28 @@
 package net.corda.httprpc.tools.annotations.extensions
 
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class HttpRpcResourceTest {
+class HttpRestResourceTest {
 
     @Test
     fun `path from class name will be converted to lowercase`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestClass
 
-        val resourcePath = TestClass::class.java.let { it.getAnnotation(HttpRpcResource::class.java).path(it) }
+        val resourcePath = TestClass::class.java.let { it.getAnnotation(HttpRestResource::class.java).path(it) }
         assertEquals("testclass", resourcePath)
     }
 
     @Test
     fun `path from HttpRpcResource annotation will be converted to lowercase`() {
-        @HttpRpcResource(
+        @HttpRestResource(
             path = "TestClassPath/"
         )
         class TestClass
 
-        val resourcePath = TestClass::class.java.let { it.getAnnotation(HttpRpcResource::class.java).path(it) }
+        val resourcePath = TestClass::class.java.let { it.getAnnotation(HttpRestResource::class.java).path(it) }
         assertEquals("testclasspath/", resourcePath)
     }
 }

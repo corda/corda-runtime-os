@@ -1,37 +1,37 @@
 package net.corda.httprpc.test
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcDELETE
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPUT
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpDELETE
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpPUT
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource(name = "TestEntity", description = "RESTful operations on Test Entity", path = "testEntity/")
+@HttpRestResource(name = "TestEntity", description = "RESTful operations on Test Entity", path = "testEntity/")
 interface TestEntityRestResource : RestResource {
 
     data class CreationParams(val name: String, val amount: Int)
 
-    @HttpRpcPOST
-    fun create(@HttpRpcRequestBodyParameter creationParams: CreationParams): String
+    @HttpPOST
+    fun create(@RestRequestBodyParameter creationParams: CreationParams): String
 
-    @HttpRpcGET(path = "{id}")
-    fun getUsingPath(@HttpRpcPathParameter id: String): String
+    @HttpGET(path = "{id}")
+    fun getUsingPath(@RestPathParameter id: String): String
 
-    @HttpRpcGET
-    fun getUsingQuery(@HttpRpcQueryParameter query: String): String
+    @HttpGET
+    fun getUsingQuery(@RestQueryParameter query: String): String
 
     data class UpdateParams(val id: String, val name: String, val amount: Int)
 
-    @HttpRpcPUT
-    fun update(@HttpRpcRequestBodyParameter updateParams: UpdateParams): String
+    @HttpPUT
+    fun update(@RestRequestBodyParameter updateParams: UpdateParams): String
 
-    @HttpRpcDELETE(path = "{id}")
-    fun deleteUsingPath(@HttpRpcPathParameter id: String): String
+    @HttpDELETE(path = "{id}")
+    fun deleteUsingPath(@RestPathParameter id: String): String
 
-    @HttpRpcDELETE
-    fun deleteUsingQuery(@HttpRpcQueryParameter query: String): String
+    @HttpDELETE
+    fun deleteUsingQuery(@RestQueryParameter query: String): String
 }

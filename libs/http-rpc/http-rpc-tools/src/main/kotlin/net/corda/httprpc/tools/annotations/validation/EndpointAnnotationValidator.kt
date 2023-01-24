@@ -1,7 +1,7 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.isRpcEndpointAnnotation
+import net.corda.httprpc.annotations.isRestEndpointAnnotation
 import java.lang.reflect.Method
 
 /**
@@ -15,7 +15,7 @@ internal class EndpointAnnotationValidator(private val clazz: Class<out RestReso
 
     override fun validate(): HttpRpcValidationResult =
         clazz.methods.fold(HttpRpcValidationResult()) { total, method ->
-            total + method.annotations.count { annotation -> annotation.isRpcEndpointAnnotation() }.run {
+            total + method.annotations.count { annotation -> annotation.isRestEndpointAnnotation() }.run {
                 when (this) {
                     1 -> HttpRpcValidationResult(listOf())
                     0 -> HttpRpcValidationResult(listOf())

@@ -1,19 +1,19 @@
 package net.corda.httprpc.server.impl.rpcops
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource(
+@HttpRestResource(
     name = "API",
     description = "Health Check"
 )
 interface TestPingPongAPI : RestResource {
 
-    @HttpRpcPOST
+    @HttpPOST
     fun ping(
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "Data",
             required = false
         ) data: PingPongData?

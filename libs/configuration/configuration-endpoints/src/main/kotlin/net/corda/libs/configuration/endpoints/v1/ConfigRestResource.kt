@@ -1,11 +1,11 @@
 package net.corda.libs.configuration.endpoints.v1
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPUT
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPUT
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
@@ -13,7 +13,7 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 
 /** RPC operations for cluster configuration management. */
-@HttpRpcResource(
+@HttpRestResource(
     name = "Configuration API",
     description = "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters.",
     path = "config"
@@ -27,7 +27,7 @@ interface ConfigRestResource : RestResource {
      * @throws ConfigRPCOpsServiceException If the updated configuration could not be published.
      * @throws HttpApiException If the request returns an exceptional response.
      */
-    @HttpRpcPUT(
+    @HttpPUT(
         title = "Update cluster configuration",
         description = "This method updates a section of the cluster configuration.",
         responseDescription = """
@@ -40,7 +40,7 @@ interface ConfigRestResource : RestResource {
                 for which no configuration has yet been stored."""
     )
     fun updateConfig(
-        @HttpRpcRequestBodyParameter(description = """
+        @RestRequestBodyParameter(description = """
             Details of the updated configuration. Includes:
             - `section`: the section of the configuration to be updated.
             - `config`: the updated configuration in JSON or HOCON format.
@@ -56,7 +56,7 @@ interface ConfigRestResource : RestResource {
      * @param section the top level section of cluster configuration to return.
      * @throws ResourceNotFoundException when the config [section] does not exist
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "{section}",
         title = "Get Configuration.",
         description = "This method returns the 'active' configuration for the given section, " +
@@ -64,7 +64,7 @@ interface ConfigRestResource : RestResource {
         responseDescription = "The configuration for the given section"
     )
     fun get(
-        @HttpRpcPathParameter(description = "Section name for the configuration.")
+        @RestPathParameter(description = "Section name for the configuration.")
         section: String
     ): GetConfigResponse
 }

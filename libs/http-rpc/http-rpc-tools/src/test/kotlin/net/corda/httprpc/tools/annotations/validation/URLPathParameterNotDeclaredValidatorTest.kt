@@ -1,9 +1,9 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -11,13 +11,13 @@ import org.junit.jupiter.api.Test
 class URLPathParameterNotDeclaredValidatorTest {
     @Test
     fun `validate withPathParamWithCustomNameExisting errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET(path = "abc/{foo}/def")
-            fun test(@HttpRpcPathParameter(name = "foo") foo2: String) {
+            @HttpGET(path = "abc/{foo}/def")
+            fun test(@RestPathParameter(name = "foo") foo2: String) {
                 foo2.lowercase()
             }
         }
@@ -29,13 +29,13 @@ class URLPathParameterNotDeclaredValidatorTest {
 
     @Test
     fun `validate withPathParamWithDefaultNameExisting errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET(path = "abc/{foo2}/def")
-            fun test(@HttpRpcPathParameter foo2: String) {
+            @HttpGET(path = "abc/{foo2}/def")
+            fun test(@RestPathParameter foo2: String) {
                 foo2.lowercase()
             }
         }
@@ -47,13 +47,13 @@ class URLPathParameterNotDeclaredValidatorTest {
 
     @Test
     fun `validate withPathParamNotExisting errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET(path = "abc/{param}/def")
-            fun test(@HttpRpcPathParameter foo2: String) {
+            @HttpGET(path = "abc/{param}/def")
+            fun test(@RestPathParameter foo2: String) {
                 foo2.lowercase()
             }
         }
@@ -65,12 +65,12 @@ class URLPathParameterNotDeclaredValidatorTest {
 
     @Test
     fun `validate withMultiplePathParamsNotExisting errorListContainsAllErrors`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET(path = "abc/{param}/{param2}/def")
+            @HttpGET(path = "abc/{param}/{param2}/def")
             fun test() {
             }
         }
@@ -82,13 +82,13 @@ class URLPathParameterNotDeclaredValidatorTest {
 
     @Test
     fun `validate withPathParamsWithDifferentCase errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET(path = "abc/{FOO2}/def")
-            fun test(@HttpRpcPathParameter foo2: String) {
+            @HttpGET(path = "abc/{FOO2}/def")
+            fun test(@RestPathParameter foo2: String) {
                 foo2.lowercase()
             }
         }

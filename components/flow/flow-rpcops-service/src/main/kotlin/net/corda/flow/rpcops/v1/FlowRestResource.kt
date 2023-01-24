@@ -4,18 +4,18 @@ import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.httprpc.annotations.HttpRpcWS
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.httprpc.annotations.HttpWS
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfig
 
 /** RPC operations for flow management. */
-@HttpRpcResource(
+@HttpRestResource(
     name = "Flow Management API",
     description = "The Flow Management API consists of a number of endpoints used to interact with flows.",
     path = "flow"
@@ -33,7 +33,7 @@ interface FlowRestResource : RestResource {
      */
     fun initialise(config: SmartConfig, onFatalError: () -> Unit)
 
-    @HttpRpcPOST(
+    @HttpPOST(
         path = "{holdingIdentityShortHash}",
         title = "Start Flow",
         description = "This method starts a new instance for the specified flow for the specified holding identity.",
@@ -50,9 +50,9 @@ interface FlowRestResource : RestResource {
             """
     )
     fun startFlow(
-        @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = """
                 Information required to start a flow for this holdingId, including:
                 clientRequestId: a client provided flow identifier
@@ -64,7 +64,7 @@ interface FlowRestResource : RestResource {
         startFlow: StartFlowParameters
     ): ResponseEntity<FlowStatusResponse>
 
-    @HttpRpcGET(
+    @HttpGET(
         path = "{holdingIdentityShortHash}/{clientRequestId}",
         title = "Get Flow Status",
         description = "This method gets the current status of the specified flow instance.",
@@ -81,13 +81,13 @@ interface FlowRestResource : RestResource {
             """
     )
     fun getFlowStatus(
-        @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String,
-        @HttpRpcPathParameter(description = "Client provided flow identifier")
+        @RestPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
     ): FlowStatusResponse
 
-    @HttpRpcGET(
+    @HttpGET(
         path = "{holdingIdentityShortHash}",
         title = "Get Multiple Flow Status",
         description = "This method returns an array containing the statuses of all flows running for a specified " +
@@ -105,11 +105,11 @@ interface FlowRestResource : RestResource {
             """
     )
     fun getMultipleFlowStatus(
-        @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String
     ): FlowStatusResponses
 
-    @HttpRpcWS(
+    @HttpWS(
         path = "{holdingIdentityShortHash}/{clientRequestId}",
         title = "Get status updates for a flow via websockets.",
         description = "Gets a stream of status updates for a given flow.",
@@ -117,9 +117,9 @@ interface FlowRestResource : RestResource {
     )
     fun registerFlowStatusUpdatesFeed(
         channel: DuplexChannel,
-        @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String,
-        @HttpRpcPathParameter(description = "Client provided flow identifier")
+        @RestPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
     )
 }

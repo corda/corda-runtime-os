@@ -1,36 +1,36 @@
 package net.corda.httprpc.test
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
 data class SomeInfo(val id: String, val number: Int)
 
-@HttpRpcResource(name = "NullabilityRestResource", description = "NullabilityRestResource", path = "nullability/")
+@HttpRestResource(name = "NullabilityRestResource", description = "NullabilityRestResource", path = "nullability/")
 interface NullabilityRestResource : RestResource {
 
-    @HttpRpcPOST(path = "postTakesNullableReturnsNullable")
+    @HttpPOST(path = "postTakesNullableReturnsNullable")
     fun postTakesNullableReturnsNullable(
-        @HttpRpcRequestBodyParameter(name = "someInfo")
+        @RestRequestBodyParameter(name = "someInfo")
         someInfo: SomeInfo?
     ): SomeInfo?
 
-    @HttpRpcPOST(path = "postTakesInfoReturnsNullable")
+    @HttpPOST(path = "postTakesInfoReturnsNullable")
     fun postTakesInfoReturnsNullable(
-        @HttpRpcRequestBodyParameter(name = "someInfo")
+        @RestRequestBodyParameter(name = "someInfo")
         someInfo: SomeInfo
     ): SomeInfo?
 
-    @HttpRpcPOST(path = "postTakesNullableReturnsInfo")
+    @HttpPOST(path = "postTakesNullableReturnsInfo")
     fun postTakesNullableReturnsInfo(
-        @HttpRpcRequestBodyParameter(name = "someInfo")
+        @RestRequestBodyParameter(name = "someInfo")
         someInfo: SomeInfo?
     ): SomeInfo
 
-    @HttpRpcPOST(path = "postTakesNullableStringReturnsNullableString")
+    @HttpPOST(path = "postTakesNullableStringReturnsNullableString")
     fun postTakesNullableStringReturnsNullableString(
-        @HttpRpcRequestBodyParameter(name = "input")
+        @RestRequestBodyParameter(name = "input")
         input: String?
     ): String?
 }

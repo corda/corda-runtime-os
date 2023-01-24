@@ -43,7 +43,7 @@ class HttpRpcClientTest {
     fun `should start health checking server after start is called`() {
         val client = HttpRpcClient(
             baseAddress = "",
-            rpcOpsClass = TestHealthCheckAPI::class.java,
+            restResource = TestHealthCheckAPI::class.java,
             clientConfig = HttpRpcClientConfig()
                 .minimumServerProtocolVersion(1),
             healthCheckInterval = 100,
@@ -70,7 +70,7 @@ class HttpRpcClientTest {
     fun `instantiating a client with higher minimum server protocol version throws exception`() {
         val client = HttpRpcClient(
             baseAddress = "",
-            rpcOpsClass = TestHealthCheckAPI::class.java,
+            restResource = TestHealthCheckAPI::class.java,
             clientConfig = HttpRpcClientConfig()
                 .minimumServerProtocolVersion(4),
             healthCheckInterval = 100,
@@ -88,7 +88,7 @@ class HttpRpcClientTest {
     fun `instantiating a client with equal minimum server protocol version doesn't throw exception`() {
         val client = HttpRpcClient(
             baseAddress = "",
-            rpcOpsClass = TestHealthCheckAPI::class.java,
+            restResource = TestHealthCheckAPI::class.java,
             clientConfig = HttpRpcClientConfig()
                 .minimumServerProtocolVersion(2),
             healthCheckInterval = 100,
@@ -105,7 +105,7 @@ class HttpRpcClientTest {
     fun `connecting listener to the client and then starting it makes messages be transmitted successfully`() {
         val client = HttpRpcClient(
             baseAddress = "",
-            rpcOpsClass = TestHealthCheckAPI::class.java,
+            restResource = TestHealthCheckAPI::class.java,
             clientConfig = HttpRpcClientConfig()
                 .minimumServerProtocolVersion(1),
             healthCheckInterval = 100,
@@ -132,7 +132,7 @@ class HttpRpcClientTest {
     fun `connecting listener to the client after starting it makes messages to be transmitted successfully`() {
         val client = HttpRpcClient(
             baseAddress = "",
-            rpcOpsClass = TestHealthCheckAPI::class.java,
+            restResource = TestHealthCheckAPI::class.java,
             clientConfig = HttpRpcClientConfig()
                 .minimumServerProtocolVersion(1),
             healthCheckInterval = 100,
@@ -154,7 +154,7 @@ class HttpRpcClientTest {
     fun `connecting listener to the client and then starting it but failing to connect makes error messages be transmitted successfully`() {
         val client = HttpRpcClient(
             baseAddress = "",
-            rpcOpsClass = TestHealthCheckAPI::class.java,
+            restResource = TestHealthCheckAPI::class.java,
             clientConfig = HttpRpcClientConfig()
                 .minimumServerProtocolVersion(1),
             healthCheckInterval = 100,

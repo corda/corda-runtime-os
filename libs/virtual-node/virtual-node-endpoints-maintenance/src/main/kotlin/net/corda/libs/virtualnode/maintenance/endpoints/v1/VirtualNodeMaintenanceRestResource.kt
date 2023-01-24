@@ -2,9 +2,9 @@ package net.corda.libs.virtualnode.maintenance.endpoints.v1
 
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 
 /**
@@ -12,7 +12,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
  *
  * Some of them could be highly disruptive, so great care should be taken when using them.
  */
-@HttpRpcResource(
+@HttpRestResource(
     name = "Virtual Node Maintenance API",
     description = "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management." +
             "Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them.",
@@ -27,7 +27,7 @@ interface VirtualNodeMaintenanceRestResource : RestResource {
      * stored CPI record.
      * The plugin purges any sandboxes running an overwritten version of a CPI.
      */
-    @HttpRpcPOST(
+    @HttpPOST(
         path = "forceCpiUpload",
         title = "This method force uploads a CPI file.",
         description = "Even if CPI with the same metadata has already been uploaded, " +
@@ -37,7 +37,7 @@ interface VirtualNodeMaintenanceRestResource : RestResource {
     )
     fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRestResource.CpiUploadResponse
 
-    @HttpRpcPOST(
+    @HttpPOST(
         path = "{virtualNodeShortId}/vault-schema/force-resync",
         title = "Resync the virtual node vault",
         description = "Rollback the virtual node database for the given virtual node short ID. Then apply current CPI " +
@@ -46,7 +46,7 @@ interface VirtualNodeMaintenanceRestResource : RestResource {
         responseDescription = "A list of the shortIDs or the exception encountered"
     )
     fun resyncVirtualNodeDb(
-        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to rollback")
+        @RestPathParameter(description = "Short ID of the virtual node instance to rollback")
         virtualNodeShortId: String
     )
 }

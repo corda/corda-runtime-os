@@ -9,20 +9,20 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource(path = "customjson")
+@HttpRestResource(path = "customjson")
 interface CustomSerializationAPI : RestResource {
-    @HttpRpcPOST(path = "print")
-    fun printString(@HttpRpcRequestBodyParameter s: CustomString): CustomString
+    @HttpPOST(path = "print")
+    fun printString(@RestRequestBodyParameter s: CustomString): CustomString
 
-    @HttpRpcPOST(path = "printcustommarshal")
-    fun printCustomMarshalString(@HttpRpcRequestBodyParameter s: CustomMarshalString): CustomMarshalString
+    @HttpPOST(path = "printcustommarshal")
+    fun printCustomMarshalString(@RestRequestBodyParameter s: CustomMarshalString): CustomMarshalString
 
-    @HttpRpcPOST(path = "unsafe")
-    fun printUnsafeString(@HttpRpcRequestBodyParameter s: CustomUnsafeString): CustomUnsafeString
+    @HttpPOST(path = "unsafe")
+    fun printUnsafeString(@RestRequestBodyParameter s: CustomUnsafeString): CustomUnsafeString
 }
 
 @JsonSerialize(using = CustomSerializer::class)
