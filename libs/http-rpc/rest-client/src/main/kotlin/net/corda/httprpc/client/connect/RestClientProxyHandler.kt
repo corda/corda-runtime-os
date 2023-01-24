@@ -85,9 +85,9 @@ internal class RestClientProxyHandler<I : RestResource>(
             checkServerProtocolVersion(method)
         }
 
-        val resourcePath = restResourceClass.getAnnotation(RestResource::class.java)?.path(restResourceClass)
+        val resourcePath = restResourceClass.getAnnotation(HttpRestResource::class.java)?.path(restResourceClass)
             ?: throw UnsupportedOperationException(
-                "REST client proxy can not make remote calls for interfaces not annotated with HttpRpcResource."
+                "REST client proxy can not make remote calls for interfaces not annotated with HttpRestResource."
             )
 
         val rawPath = joinResourceAndEndpointPaths(resourcePath, method.endpointPath).lowercase()
