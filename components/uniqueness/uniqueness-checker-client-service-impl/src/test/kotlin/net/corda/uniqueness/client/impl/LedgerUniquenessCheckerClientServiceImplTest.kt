@@ -90,7 +90,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
     }
 
     @Test
-    fun `Signing is successful when the provided notary service key is a simple key and the selected key does not match`() {
+    fun `Signing is unsuccessful when the provided notary service key is a simple key and the selected key does not match`() {
         val exception = assertThrows<IllegalArgumentException> {
             createClientService(
                 currentVNodeNotaryKey = aliceNotaryVNodeKey
@@ -107,7 +107,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
         }
 
         assertThat(exception).hasStackTraceContaining(
-            "The notary key selected for signing is not part of the notary service key."
+            "The notary key selected for signing is not associated with the notary service key."
         )
     }
 
@@ -171,7 +171,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
         }
 
         assertThat(exception).hasStackTraceContaining(
-            "The notary key selected for signing is not part of the notary service key."
+            "The notary key selected for signing is not associated with the notary service key."
         )
     }
 
@@ -190,7 +190,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
         }
 
         assertThat(exception).hasStackTraceContaining(
-            "Could not find any keys that belongs to the notary service's public key."
+            "Could not find any keys associated with the notary service's public key."
         )
     }
 

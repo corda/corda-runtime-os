@@ -16,7 +16,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.containsAny
+import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
@@ -141,19 +141,21 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
 
     // TODO CORE-9469 The key selection here will be replaced with the Crypto API once it is finished.
     private fun selectNotaryVNodeSigningKey(notaryServiceKey: PublicKey): PublicKey {
-        val signingKeys = signingService.findMySigningKeys(setOf(notaryServiceKey))
-
-        // We need to make sure there's at least one key we can sign with
-        require(signingKeys.any { it.value != null }) {
-            "Could not find any keys that belongs to the notary service's public key."
-        }
 
         // We select the first key that is not null
-        val selectedSigningKey = signingKeys.values.filterNotNull().first()
+        val selectedSigningKey = signingService
+            .findMySigningKeys(setOf(notaryServiceKey)).values
+            .filterNotNull()
+            .firstOrNull()
+
+        // We need to make sure there's at least one key we can sign with
+        require(selectedSigningKey != null) {
+            "Could not find any keys associated with the the notary service's public key."
+        }
 
         // We double check that the selected key is actually part of the notary service key
-        require(notaryServiceKey.containsAny(setOf(selectedSigningKey))) {
-            "The notary key selected for signing is not part of the notary service key."
+        require(notaryServiceKey.isFulfilledBy(selectedSigningKey)) {
+            "The notary key selected for signing is not associated with notary service key."
         }
 
         return selectedSigningKey
