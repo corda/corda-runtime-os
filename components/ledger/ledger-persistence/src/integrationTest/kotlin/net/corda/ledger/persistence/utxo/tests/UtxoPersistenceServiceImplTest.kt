@@ -39,6 +39,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.PrivacySalt

@@ -4,6 +4,7 @@ import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
+// TODO this will be removed with CORE-9385 (duplicate created in ledger-verification)
 class UtxoLedgerTransactionContractVerifier(private val transaction: UtxoLedgerTransaction) {
     private val failureReasons = mutableListOf<ContractVerificationFailure>()
 

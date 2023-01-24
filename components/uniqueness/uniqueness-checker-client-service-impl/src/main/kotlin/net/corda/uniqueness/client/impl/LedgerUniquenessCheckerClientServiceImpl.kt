@@ -129,9 +129,9 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
                 sig,
                 DigitalSignatureMetadata(
                     Instant.now(),
+                    SignatureSpec.ECDSA_SHA256,
                     mapOf(
-                        "platformVersion" to memberLookup.myInfo().platformVersion.toString(),
-                        "signatureSpec" to SignatureSpec.ECDSA_SHA256.signatureName
+                        "platformVersion" to memberLookup.myInfo().platformVersion.toString()
                     )
                 )
             ),
