@@ -5,6 +5,7 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.DigitalSignature;
 import net.corda.v5.crypto.SecureHash;
+import net.corda.v5.crypto.SignatureSpec;
 import net.corda.v5.ledger.common.Party;
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction;
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction;
@@ -111,7 +112,8 @@ public class AbstractMockTestHarness {
 
     private DigitalSignatureAndMetadata createDigitalSignature(PublicKey signatory) {
         DigitalSignature.WithKey signature = new DigitalSignature.WithKey(signatory, new byte[]{0}, Map.of());
-        DigitalSignatureMetadata metadata = new DigitalSignatureMetadata(minInstant, Map.of());
+        DigitalSignatureMetadata metadata =
+                new DigitalSignatureMetadata(minInstant, new SignatureSpec("dummySignatureName"), Map.of());
 
         return new DigitalSignatureAndMetadata(signature, metadata);
     }

@@ -1,5 +1,6 @@
 package net.corda.v5.crypto
 
+import net.corda.v5.base.annotations.CordaSerializable
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 
@@ -12,6 +13,7 @@ import java.security.spec.PSSParameterSpec
  * When used for signing the [signatureName] must match the corresponding key scheme, e.g. you cannot use
  * "SHA256withECDSA" with "RSA" keys.
  */
+@CordaSerializable
 open class SignatureSpec(
     /**
      * The signature-scheme name as required to create [java.security.Signature] objects (e.g. "SHA256withECDSA").
