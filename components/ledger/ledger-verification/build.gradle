@@ -1,0 +1,94 @@
+import aQute.bnd.gradle.Bundle
+
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger verification'
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+
+    implementation project(':libs:crypto:cipher-suite')
+    implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-consensual-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(":libs:serialization:json-validator")
+
+    runtimeOnly project(':libs:crypto:merkle-impl')
+
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-ledger-common'
+    implementation 'net.corda:corda-ledger-consensual'
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
+
+    testImplementation project(':libs:ledger:ledger-utxo-data')
+    testImplementation project(':testing:db-testkit')
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:registry")
+
+    testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    // IMPORTANT: do NOT include cpbs (or cpks) as dependencies of the integration test.
+    // This would cause OSGi to load the bundle twice (once as part of the test) and again
+    // as part of the CPB loading.  This introduces *two* unique instances of classes in the CPKs (remember
+    // the class is unique by name **and** classloader).
+
+    // IMPORTANT:  do NOT attempt to use mockito-kotlin in the integration tests.
+    // It's not an OSGi bundle, so you will get errors (despite Intellij appearing to allow you to use it).
+
+    integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
+    integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':libs:ledger:ledger-common-data')
+    integrationTestImplementation project(':libs:serialization:serialization-amqp')
+    integrationTestImplementation project(':libs:serialization:serialization-internal')
+    integrationTestImplementation project(':testing:db-message-bus-testkit')
+    integrationTestImplementation project(':testing:ledger:ledger-common-testkit')
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:test-utilities')
+
+    // needed to import serialization libs
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+
+    integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
+    integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}

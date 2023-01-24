@@ -13,7 +13,7 @@ import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.models.ResponseBody
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.httprpc.tools.annotations.validation.HttpRpcInterfaceValidator
+import net.corda.httprpc.tools.annotations.validation.RestInterfaceValidator
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
@@ -89,7 +89,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         try {
             log.trace { "Validate resource classes: ${this.joinToString(",")}." }
             return this.apply {
-                val result = HttpRpcInterfaceValidator.validate(this)
+                val result = RestInterfaceValidator.validate(this)
                 if (result.errors.isNotEmpty()) {
                     throw IllegalArgumentException(
                         "Errors when validate resource classes:\n${

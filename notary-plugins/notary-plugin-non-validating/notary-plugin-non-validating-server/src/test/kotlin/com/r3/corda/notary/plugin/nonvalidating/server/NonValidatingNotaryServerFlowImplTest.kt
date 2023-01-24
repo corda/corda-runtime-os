@@ -19,6 +19,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -72,7 +73,7 @@ class NonValidatingNotaryServerFlowImplTest {
         /* Uniqueness Client Service */
         val uniquenessCheckResponseSignature = DigitalSignatureAndMetadata(
             mock(),
-            DigitalSignatureMetadata(Instant.now(), emptyMap())
+            DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
 
         /* Services */

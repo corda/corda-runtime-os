@@ -15,6 +15,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
+import net.corda.processors.verification.VerificationProcessor
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,6 +28,8 @@ import picocli.CommandLine.Mixin
 class FlowWorker @Activate constructor(
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
+    @Reference(service = VerificationProcessor::class)
+    private val verificationProcessor: VerificationProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
@@ -45,7 +48,7 @@ class FlowWorker @Activate constructor(
         private val logger = contextLogger()
     }
 
-    /** Parses the arguments, then initialises and starts the [flowProcessor]. */
+    /** Parses the arguments, then initialises and starts the [flowProcessor] and [verificationProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
@@ -68,11 +71,13 @@ class FlowWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator())
 
         flowProcessor.start(config)
+        verificationProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Flow worker stopping.")
         flowProcessor.stop()
+        verificationProcessor.stop()
         workerMonitor.stop()
     }
 }

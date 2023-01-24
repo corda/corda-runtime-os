@@ -8,7 +8,6 @@ import net.corda.v5.base.util.contextLogger
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.StringReader
-import java.util.UUID
 import javax.xml.stream.XMLInputFactory
 import javax.xml.stream.XMLStreamException
 import javax.xml.stream.events.XMLEvent
@@ -61,13 +60,13 @@ class LiquibaseExtractorHelpers {
      * For the given [Cpk] extract all Liquibase scripts that exist and convert
      * them into entities that we can persist to the database.
      */
-    fun getEntities(cpk: Cpk, inputStream: InputStream, changesetID: UUID): List<CpkDbChangeLogEntity> {
+    fun getEntities(cpk: Cpk, inputStream: InputStream): List<CpkDbChangeLogEntity> {
         log.info("Processing ${cpk.metadata.cpkId} for Liquibase files")
         val entities = mutableListOf<CpkDbChangeLogEntity>()
         JarWalker.walk(inputStream) { path, it ->
             if (!isMigrationFile(path)) return@walk
             val content = validateXml(path, it) ?: return@walk
-            entities.add(createEntity(cpk, path, content, changesetID))
+            entities.add(createEntity(cpk, path, content))
         }
         log.info("Processing ${cpk.metadata.cpkId} for Liquibase files finished")
         return entities
@@ -108,9 +107,8 @@ class LiquibaseExtractorHelpers {
     /**
      * Create db entity containing the Liquibase script for the given [Cpk]
      */
-    private fun createEntity(cpk: Cpk, path: String, xmlContent: String, changesetID: UUID): CpkDbChangeLogEntity {
-        val cpkId = cpk.metadata.cpkId
-        val id = CpkDbChangeLogKey(cpkId.name, cpkId.version, cpkId.signerSummaryHash.toString(), path)
-        return CpkDbChangeLogEntity(id, cpk.metadata.fileChecksum.toString(), xmlContent, changesetID)
+    private fun createEntity(cpk: Cpk, path: String, xmlContent: String): CpkDbChangeLogEntity {
+        val id = CpkDbChangeLogKey(cpk.metadata.fileChecksum.toString(), path)
+        return CpkDbChangeLogEntity(id, xmlContent)
     }
 }

@@ -21,6 +21,7 @@ const val CODE_SIGNER_CERT = "/cordadevcodesign.pem"
 // The CPB and CPI used in smoke tests
 const val TEST_CPI_NAME = "test-cordapp"
 const val TEST_CPB_LOCATION = "/META-INF/test-cordapp.cpb"
+const val TEST_CPB_WITHOUT_CHANGELOGS_LOCATION = "/META-INF/cpi-without-changelogs/test-cordapp.cpb"
 const val TEST_NOTARY_CPI_NAME = "test-notary-server-cordapp"
 const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-server.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/test-cordapp.cpb"

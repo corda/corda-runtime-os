@@ -2,14 +2,13 @@ package net.corda.virtualnode.write.db.impl.tests
 
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import java.util.UUID
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 
 class VirtualNodeDbChangeLogImplementationTest  {
     // It hardly seems worth bringing in a template system for one expansion, so we'll just do string replacement on _INCLUDETARGET_
@@ -51,8 +50,8 @@ class VirtualNodeDbChangeLogImplementationTest  {
             }
         val lbm = LiquibaseSchemaMigratorImpl()
         val primaryContent = primaryTemplate.replace("_INCLUDETARGET_", includeElement)
-        val primary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/db.changelog-master.xml"), "42", primaryContent, fakeId)
-        val secondary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/dogs-migration-v1.0.xml"), "42", secondaryContent, fakeId)
+        val primary = CpkDbChangeLog("migration/db.changelog-master.xml", primaryContent)
+        val secondary = CpkDbChangeLog("migration/dogs-migration-v1.0.xml", secondaryContent)
         val cl = VirtualNodeDbChangeLog(listOf(primary, secondary))
         assertThat(cl.masterChangeLogFiles.size).isEqualTo(1)
         if (failureText != null) {

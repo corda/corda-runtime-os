@@ -98,11 +98,11 @@ class CpiValidatorImpl(
         )
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
-        val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
+        val changelogsExtractedFromCpi = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity =
-            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, cpkDbChangeLogEntities, log)
+            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, changelogsExtractedFromCpi, log)
 
         publisher.update(requestId, "Notifying flow workers")
         val cpiMetadata = CpiMetadata(
