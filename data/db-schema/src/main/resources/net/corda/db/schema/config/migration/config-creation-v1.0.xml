@@ -222,6 +222,70 @@
             <column name="mgm_group_id" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
+            <column name="hsm_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="holding_identity_id" constraintName="holding_identity_pk" tableName="holding_identity"
+                       schemaName="${schema.name}"/>
+
+        <createTable tableName="virtual_node_operation" schemaName="${schema.name}">
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_timestamp" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="latest_update_timestamp" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+            <column name="heartbeat_timestamp" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+            <column name="state" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="errors" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="id" constraintName="virtual_node_operation_pk" tableName="virtual_node_operation"
+                       schemaName="${schema.name}"/>
+
+        <createTable tableName="virtual_node" schemaName="${schema.name}">
+            <column name="holding_identity_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name = "flow_p2p_operational_status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name = "flow_start_operational_status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name = "flow_operational_status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name = "vault_db_operational_status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
             <column name="vault_ddl_connection_id" type="UUID">
                 <constraints nullable="true"/>
             </column>
@@ -238,60 +302,10 @@
                 <constraints nullable="true"/>
             </column>
             <column name="uniqueness_dml_connection_id" type="UUID">
-            <constraints nullable="true"/>
-            </column>
-            <column name="hsm_connection_id" type="UUID">
                 <constraints nullable="true"/>
             </column>
-        </createTable>
-        <addPrimaryKey columnNames="holding_identity_id" constraintName="holding_identity_pk" tableName="holding_identity"
-                       schemaName="${schema.name}"/>
-        <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="vault_ddl_connection_id"
-                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__holding_identity__vault_ddl_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-        <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="vault_dml_connection_id"
-                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__holding_identity__vault_dml_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-        <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="crypto_ddl_connection_id"
-                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__holding_identity__crypto_ddl_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-        <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="crypto_dml_connection_id"
-                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__holding_identity__crypto_dml_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-        <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="uniqueness_ddl_connection_id"
-                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__holding_identity__uniqueness_ddl_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-        <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="uniqueness_dml_connection_id"
-                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__holding_identity__uniqueness_dml_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-
-        <createTable tableName="vnode_instance" schemaName="${schema.name}">
-            <column name="holding_identity_id" type="VARCHAR(12)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name = "state" type="VARCHAR(255)">
-                <constraints nullable="false"/>
+            <column name="operation_in_progress" type="VARCHAR(255)">
+                <constraints nullable="true"/>
             </column>
             <!-- audit -->
             <column name="entity_version" type="INT">
@@ -304,11 +318,47 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="holding_identity_id, cpi_name, cpi_version, cpi_signer_summary_hash"
-                       constraintName="vnode_instance_pk" tableName="vnode_instance" schemaName="${schema.name}"/>
-        <addForeignKeyConstraint baseTableName="vnode_instance" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash"
+        <addPrimaryKey tableName="virtual_node" columnNames="holding_identity_id"
+                       constraintName="virtual_node_pk" schemaName="${schema.name}"/>
+
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash"
                                  referencedTableName="cpi" referencedColumnNames="name, version, signer_summary_hash"
-                                 constraintName="FK_vnode_instance_cpi"
+                                 constraintName="FK_virtual_node_cpi"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="vault_ddl_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__vault_ddl_connection_id"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="vault_dml_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__vault_dml_connection_id"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="crypto_ddl_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__crypto_ddl_connection_id"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="crypto_dml_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__crypto_dml_connection_id"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="uniqueness_ddl_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__uniqueness_ddl_connection_id"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="uniqueness_dml_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__virtual_node__uniqueness_dml_connection_id"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="operation_in_progress"
+                                 referencedTableName="virtual_node_operation" referencedColumnNames="id"
+                                 constraintName="FK__virtual_node_operation"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
         <createTable tableName="cluster_certificate" schemaName="${schema.name}">

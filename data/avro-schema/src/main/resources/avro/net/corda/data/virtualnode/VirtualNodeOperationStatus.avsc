@@ -1,0 +1,70 @@
+{
+  "type": "record",
+  "name": "VirtualNodeOperationStatus",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "ID of this Virtual Node CPI upgrade request."
+    },
+    {
+      "name": "virtualNodeShortHash",
+      "type": "string",
+      "doc": "Identifier of the virtual node this operation is on."
+    },
+    {
+      "name": "actor",
+      "type": "string",
+      "doc": "ID of RPC user that requested the virtual node creation."
+    },
+    {
+      "name": "operationData",
+      "doc": "The operation specific data.",
+      "type": [
+        "net.corda.data.virtualnode.VirtualNodeUpgradeOperationStatus"
+      ]
+    },
+    {
+      "name": "requestTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the request."
+    },
+    {
+      "name": "latestUpdateTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the latest update to the request."
+    },
+    {
+      "name": "heartbeatTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the latest heartbeat."
+    },
+    {
+      "name": "state",
+      "type": {
+        "type": "enum",
+        "name": "AsynchronousOperationState",
+        "symbols": ["IN_PROGRESS", "COMPLETED", "ABORTED", "EXPIRED"],
+        "doc": "Status of an asynchronous request."
+      }
+    },
+    {
+      "name": "errors",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.ExceptionEnvelope"
+      },
+      "doc": "List of any errors that occurred."
+    }
+  ]
+}

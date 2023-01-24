@@ -48,9 +48,20 @@
       "doc": "ID of HSM connection. Null value means that HSM is not used."
     },
     {
-      "name": "virtualNodeState",
-      "type": "string",
-      "doc": "The current maintenance state of the virtual node."
+      "name": "flowP2pOperationalStatus",
+      "type": "string"
+    },
+    {
+      "name": "flowStartOperationalStatus",
+      "type": "string"
+    },
+    {
+      "name": "flowOperationalStatus",
+      "type": "string"
+    },
+    {
+      "name": "vaultDbOperationalStatus",
+      "type": "string"
     },
     {
       "name": "version",

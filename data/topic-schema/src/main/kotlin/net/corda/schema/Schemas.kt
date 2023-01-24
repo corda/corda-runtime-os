@@ -197,6 +197,8 @@ class Schemas {
     class VirtualNode {
         companion object {
             const val VIRTUAL_NODE_INFO_TOPIC = "virtual.node.info"
+            const val VIRTUAL_NODE_ASYNC_REQUEST_TOPIC = "virtual.node.async.request"
+            const val VIRTUAL_NODE_OPERATION_STATUS_TOPIC = "virtual.node.operation.status"
             const val VIRTUAL_NODE_CREATION_REQUEST_TOPIC = "virtual.node.creation.request"
             val VIRTUAL_NODE_CREATION_REQUEST_RESPONSE_TOPIC = getRPCResponseTopic(VIRTUAL_NODE_CREATION_REQUEST_TOPIC)
             const val CPI_INFO_TOPIC = "cpi.info"

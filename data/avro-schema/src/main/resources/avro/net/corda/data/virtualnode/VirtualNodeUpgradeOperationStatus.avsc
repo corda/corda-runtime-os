@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "VirtualNodeUpgradeOperationStatus",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "originalCpiFileChecksum",
+      "type": "string",
+      "doc": "The original checksum of the CPI file."
+    },
+    {
+      "name": "targetCpiFileChecksum",
+      "type": "string",
+      "doc": "The request target checksum of the CPI file to upgrade this virtual node."
+    },
+    {
+      "name": "virtualNodeShortId",
+      "type": "string",
+      "doc": "The short hash of the virtual node / holding identity that this operation applies to."
+    },
+    {
+      "name": "stage",
+      "type": "string",
+      "doc": "Current stage of the upgrade process."
+    }
+  ]
+}

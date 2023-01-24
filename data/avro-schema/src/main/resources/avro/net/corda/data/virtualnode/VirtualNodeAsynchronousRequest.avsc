@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "VirtualNodeAsynchronousRequest",
+  "doc": "Virtual node asynchronous request wrapper",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ({@link java.time.Instant}) in milliseconds when the record was created."
+    },
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "This request identifier."
+    },
+    {
+      "name": "request",
+      "doc": "The operation specific request.",
+      "type": [
+        "net.corda.data.virtualnode.VirtualNodeUpgradeRequest"
+      ]
+    }
+  ]
+}
