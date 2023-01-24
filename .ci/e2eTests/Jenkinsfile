@@ -101,29 +101,18 @@ pipeline {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timeout(time: 45, unit: 'MINUTES')
         timestamps()
-        skipDefaultCheckout()
     }
 
     stages {
         stage('check out') {
             steps {
                 script {
-                    def commitID
-
-                    if (changeRequest() && params.COMMIT_TO_CHECKOUT != null) {
-                        println "checking out ${params.COMMIT_TO_CHECKOUT}"
-                        commitID = params.COMMIT_TO_CHECKOUT
-                    } else if (changeRequest() && params.COMMIT_TO_CHECKOUT == null) {
-                        println "checking out ${env.CHANGE_TARGET}"
-                        commitID = env.CHANGE_TARGET
+                    if (params.COMMIT_TO_CHECKOUT && !changeRequest()) {
+                        echo "CommitID to checkOut ${params.COMMIT_TO_CHECKOUT}"
+                        sh 'git checkout "$COMMIT_TO_CHECKOUT"'
                     } else {
-                        println "checking out ${env.BRANCH_NAME}"
-                        commitID = env.BRANCH_NAME
+                        echo "checking out Head revision of ${env.BRANCH_NAME}"
                     }
-
-                    println "CommitID to checkOut $commitID"
-                    checkout([$class: 'GitSCM', branches: [[name: "*/${commitID}"]], extensions: [],
-                        userRemoteConfigs: [[credentialsId: 'corda-jenkins-ci02', url: 'https://github.com/corda/corda-runtime-os.git']]])
                 }
             }
         }
