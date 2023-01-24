@@ -7,13 +7,16 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
@@ -21,11 +24,11 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
@@ -46,11 +49,6 @@ import java.security.KeyStore
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
-import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.libs.configuration.SmartConfigFactoryFactory
-import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
-import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
-import net.corda.p2p.gateway.messaging.TlsType
 
 open class TestBase {
     companion object {
@@ -127,7 +125,7 @@ open class TestBase {
         tlsType = TlsType.ONE_WAY,
     )
 
-    protected val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    protected val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
 

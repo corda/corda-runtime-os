@@ -45,6 +45,7 @@ class MemberProcessorImplTest {
             mock(),
             mock(),
             mock(),
+            mock(),
         )
 
         verify(lifecycleCoordinatorFactory).createCoordinator(any(), any(), any())

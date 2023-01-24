@@ -32,7 +32,6 @@ import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -196,7 +195,7 @@ class SynchronisationIntegrationTest {
         }
         val clock: Clock = TestClock(Instant.ofEpochSecond(100))
         val logger = contextLogger()
-        val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+        val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
             .create(
                 ConfigFactory.parseString(
                     """

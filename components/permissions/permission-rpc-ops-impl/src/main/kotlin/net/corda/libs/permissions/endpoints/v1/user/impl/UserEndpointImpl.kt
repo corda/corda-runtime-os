@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
@@ -34,13 +34,13 @@ import org.osgi.service.component.annotations.Reference
 /**
  * An RPC Ops endpoint for User operations.
  */
-@Component(service = [PluggableRPCOps::class])
+@Component(service = [PluggableRestResource::class])
 class UserEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionManagementService::class)
     private val permissionManagementService: PermissionManagementService,
-) : UserEndpoint, PluggableRPCOps<UserEndpoint>, Lifecycle {
+) : UserEndpoint, PluggableRestResource<UserEndpoint>, Lifecycle {
 
     private companion object {
         val logger = contextLogger()

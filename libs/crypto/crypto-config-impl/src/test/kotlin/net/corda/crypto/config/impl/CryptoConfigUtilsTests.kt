@@ -1,13 +1,11 @@
 package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
-import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import org.assertj.core.api.Assertions.assertThat
@@ -26,15 +24,14 @@ class CryptoConfigUtilsTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            configFactory = SmartConfigFactoryFactory(object: SecretsServiceFactoryResolver {
-                override fun findAll() = listOf(EncryptionSecretsServiceFactory())
-            }).create(
+            configFactory = SmartConfigFactory.createWith(
                 ConfigFactory.parseString(
                     """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=key
             ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
         """.trimIndent()
-                )
+                ),
+                listOf(EncryptionSecretsServiceFactory())
             )
         }
     }

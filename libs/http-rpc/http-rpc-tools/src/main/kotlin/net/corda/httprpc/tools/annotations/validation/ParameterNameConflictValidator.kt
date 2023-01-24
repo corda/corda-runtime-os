@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
@@ -12,7 +12,7 @@ import java.lang.reflect.Parameter
 /**
  * Validates that parameter names of same-type parameters in the same method do not clash.
  */
-internal class ParameterNameConflictValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
+internal class ParameterNameConflictValidator(private val clazz: Class<out RestResource>) : HttpRpcValidator {
     override fun validate(): HttpRpcValidationResult =
         clazz.endpoints.fold(HttpRpcValidationResult()) { total, method ->
             total + validateSameTypeParameters(method.parameters.asList())

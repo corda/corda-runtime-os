@@ -2,10 +2,12 @@ package net.corda.libs.configuration.osgitest
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsService
 import net.corda.libs.configuration.secret.SecretsServiceFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,12 +40,20 @@ class MI5Factory : SecretsServiceFactory {
 }
 
 @ExtendWith(ServiceExtension::class)
-class SmartConfigFactoryFactoryTest {
+class SmartConfigFactoryAndSecretsServiceFactoryResolverTest {
     companion object {
         private const val INJECT_TIMEOUT = 10000L
 
         @InjectService(timeout = INJECT_TIMEOUT)
-        lateinit var smartConfigFactoryFactory: SmartConfigFactoryFactory
+        lateinit var secretsServiceFactoryResolver: SecretsServiceFactoryResolver
+    }
+
+    @Test
+    fun `OsgiSecretsServiceFactoryResolver should resolve all implementations`() {
+        assertThat(secretsServiceFactoryResolver.findAll().map { it.javaClass.name })
+            .containsExactlyInAnyOrder(
+                MI5Factory::class.java.name,
+                EncryptionSecretsServiceFactory::class.java.name)
     }
 
     @Test
@@ -52,7 +62,8 @@ class SmartConfigFactoryFactoryTest {
             EncryptionSecretsServiceFactory.SECRET_SALT_KEY to "salt",
             EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to "pass"
         )
-        val configFactory = smartConfigFactoryFactory.create(ConfigFactory.parseMap(secretsConfig))
+        val configFactory = SmartConfigFactory.createWith(
+            ConfigFactory.parseMap(secretsConfig), secretsServiceFactoryResolver.findAll())
         val secretConfig = configFactory.makeSecret("hello")
 
         // NOTE: a bit a "hacky" way of validating, but if we return a config object here that contains the correct
@@ -67,8 +78,9 @@ class SmartConfigFactoryFactoryTest {
 
     @Test
     fun `when config supplies type MI5, use dummy secrets service`() {
-        val secretsConfig = mapOf(SmartConfigFactoryFactory.SECRET_SERVICE_TYPE to "MI5", "spy" to "007")
-        val configFactory = smartConfigFactoryFactory.create(ConfigFactory.parseMap(secretsConfig))
+        val secretsConfig = mapOf(SmartConfigFactory.SECRET_SERVICE_TYPE to "MI5", "spy" to "007")
+        val configFactory = SmartConfigFactory.createWith(
+            ConfigFactory.parseMap(secretsConfig), secretsServiceFactoryResolver.findAll())
         val secretConfig = configFactory.makeSecret("bond")
 
         val typeSafeConfig = ConfigFactory.parseString(secretConfig.root().render())

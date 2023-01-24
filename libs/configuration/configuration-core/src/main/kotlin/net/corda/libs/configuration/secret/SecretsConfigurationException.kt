@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.secret
 
-import net.corda.v5.base.exceptions.CordaRuntimeException
-
+/**
+ * Exception thrown to indicate a problem with using configuration items that are marked as secrets.
+ */
 class SecretsConfigurationException(message: String, cause: Throwable? = null):
-    CordaRuntimeException(message, cause)
+    Exception(message, cause)

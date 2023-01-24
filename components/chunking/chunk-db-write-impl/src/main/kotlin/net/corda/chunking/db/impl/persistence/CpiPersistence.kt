@@ -24,19 +24,19 @@ interface CpiPersistence {
      *
      * @param cpi a [Cpi] object
      * @param cpiFileName the original CPI file name
-     * @param checksum the checksum of the CPI file
+     * @param cpiFileChecksum the checksum of the CPI file
      * @param requestId the request id for the CPI that is being uploaded
      * @param groupId the group id from the group policy file
-     * @param cpkDbChangeLogEntities the list of entities containing Liquibase scripts for all cpks of the given cpi
+     * @param changelogsExtractedFromCpi the list of entities containing Liquibase scripts for all cpks of the given cpi
      */
     @Suppress("LongParameterList")
     fun persistMetadataAndCpks(
         cpi: Cpi,
         cpiFileName: String,
-        checksum: SecureHash,
+        cpiFileChecksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
+        changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity
 
     /**
@@ -44,19 +44,19 @@ interface CpiPersistence {
      *
      * @param cpi a [Cpi] object
      * @param cpiFileName the original CPI file name
-     * @param checksum the checksum of the CPI file
+     * @param cpiFileChecksum the checksum of the CPI file
      * @param requestId the request id for the CPI that is being uploaded
      * @param groupId the group id from the group policy file
-     * @param cpkDbChangeLogEntities the list of entities containing Liquibase scripts for all cpks of the given cpi
+     * @param changelogsExtractedFromCpi the list of entities containing Liquibase scripts for all cpks of the given cpi
      */
     @Suppress("LongParameterList")
     fun updateMetadataAndCpks(
         cpi: Cpi,
         cpiFileName: String,
-        checksum: SecureHash,
+        cpiFileChecksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
+        changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity
 
     /**

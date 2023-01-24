@@ -3,16 +3,16 @@ package net.corda.httprpc.client
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.HttpRpcServerImpl
-import net.corda.httprpc.test.CalendarRPCOps
-import net.corda.httprpc.test.CalendarRPCOpsImpl
+import net.corda.httprpc.test.CalendarRestResource
+import net.corda.httprpc.test.CalendarRestResourceImpl
 import net.corda.httprpc.test.CustomSerializationAPI
 import net.corda.httprpc.test.CustomSerializationAPIImpl
 import net.corda.httprpc.test.CustomString
-import net.corda.httprpc.test.NumberSequencesRPCOps
-import net.corda.httprpc.test.NumberSequencesRPCOpsImpl
+import net.corda.httprpc.test.NumberSequencesRestResource
+import net.corda.httprpc.test.NumberSequencesRestResourceImpl
 import net.corda.httprpc.test.NumberTypeEnum
-import net.corda.httprpc.test.TestEntityRpcOps
-import net.corda.httprpc.test.TestEntityRpcOpsImpl
+import net.corda.httprpc.test.TestEntityRestResource
+import net.corda.httprpc.test.TestEntityRestResourceImpl
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.test.util.eventually
@@ -58,9 +58,9 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 listOf(
                     TestHealthCheckAPIImpl(),
                     CustomSerializationAPIImpl(),
-                    NumberSequencesRPCOpsImpl(),
-                    CalendarRPCOpsImpl(),
-                    TestEntityRpcOpsImpl(),
+                    NumberSequencesRestResourceImpl(),
+                    CalendarRestResourceImpl(),
+                    TestEntityRestResourceImpl(),
                     TestFileUploadImpl()
                 ),
                 ::securityManager,
@@ -192,7 +192,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     fun `start client against server with accepted protocol version and infinite durable streams call succeeds`() {
         val client = HttpRpcClient(
             baseAddress = "http://localhost:${server.port}/api/v1/",
-            NumberSequencesRPCOps::class.java,
+            NumberSequencesRestResource::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
                 .minimumServerProtocolVersion(1)
@@ -247,7 +247,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     fun `start client against server with accepted protocol version and finite durable streams call succeeds`() {
         val client = HttpRpcClient(
             baseAddress = "http://localhost:${server.port}/api/v1/",
-            CalendarRPCOps::class.java,
+            CalendarRestResource::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
                 .minimumServerProtocolVersion(1)
@@ -261,24 +261,24 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 val cursor = this.daysOfTheYear(2020).build()
                 with(cursor.poll(100, 100.seconds)) {
                     assertEquals(100, values.size)
-                    assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.WEDNESDAY, "2020-01-01"), values.first())
-                    assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.THURSDAY, "2020-04-09"), values.last())
+                    assertEquals(CalendarRestResource.CalendarDay(DayOfWeek.WEDNESDAY, "2020-01-01"), values.first())
+                    assertEquals(CalendarRestResource.CalendarDay(DayOfWeek.THURSDAY, "2020-04-09"), values.last())
                     assertFalse(this.isLastResult)
                     // no commit
                 }
 
                 with(cursor.poll(300, 100.seconds)) {
                     assertEquals(300, values.size)
-                    assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.WEDNESDAY, "2020-01-01"), values.first())
-                    assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.MONDAY, "2020-10-26"), values.last())
+                    assertEquals(CalendarRestResource.CalendarDay(DayOfWeek.WEDNESDAY, "2020-01-01"), values.first())
+                    assertEquals(CalendarRestResource.CalendarDay(DayOfWeek.MONDAY, "2020-10-26"), values.last())
                     assertFalse(this.isLastResult)
                     cursor.commit(this)
                 }
 
                 with(cursor.poll(100, 100.seconds)) {
                     assertEquals(66, values.size)
-                    assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.TUESDAY, "2020-10-27"), values.first())
-                    assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.THURSDAY, "2020-12-31"), values.last())
+                    assertEquals(CalendarRestResource.CalendarDay(DayOfWeek.TUESDAY, "2020-10-27"), values.first())
+                    assertEquals(CalendarRestResource.CalendarDay(DayOfWeek.THURSDAY, "2020-12-31"), values.last())
                     assertTrue(this.isLastResult)
                     cursor.commit(this)
                 }
@@ -335,7 +335,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     fun `operations on TestEntity`() {
         val client = HttpRpcClient(
             baseAddress = "http://localhost:${server.port}/api/v1/",
-            TestEntityRpcOps::class.java,
+            TestEntityRestResource::class.java,
             HttpRpcClientConfig()
                 .enableSSL(false)
                 .minimumServerProtocolVersion(1)
@@ -349,14 +349,14 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
             with(connection.proxy) {
 
                 SoftAssertions.assertSoftly {
-                    it.assertThat(create(TestEntityRpcOps.CreationParams("TestName", 20)))
+                    it.assertThat(create(TestEntityRestResource.CreationParams("TestName", 20)))
                         .isEqualTo("Created using: CreationParams(name=TestName, amount=20)")
 
                     it.assertThat(getUsingPath("MyId")).isEqualTo("Retrieved using id: MyId")
 
                     it.assertThat(getUsingQuery("MyQuery")).isEqualTo("Retrieved using query: MyQuery")
 
-                    it.assertThat(update(TestEntityRpcOps.UpdateParams("myId", "TestName", 20)))
+                    it.assertThat(update(TestEntityRestResource.UpdateParams("myId", "TestName", 20)))
                         .isEqualTo("Updated using params: UpdateParams(id=myId, name=TestName, amount=20)")
 
                     it.assertThat(deleteUsingPath("MyId")).isEqualTo("Deleted using id: MyId")

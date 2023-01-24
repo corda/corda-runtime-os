@@ -33,7 +33,6 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -146,7 +145,7 @@ class MembershipP2PIntegrationTest {
         const val MEMBER_CONTEXT_KEY = "key"
         const val MEMBER_CONTEXT_VALUE = "value"
 
-        val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+        val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
             .create(
                 ConfigFactory.parseString(
                     """

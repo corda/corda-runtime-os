@@ -1,7 +1,7 @@
 package net.corda.httprpc.annotations
 
 /**
- * Marks an interface extending `RpcOps` to be exposed as an HTTP resource.
+ * Marks an interface extending `RestResource` to be exposed as an HTTP resource.
  *
  * @property name The name of the resource, used for documentation. Defaults to the class name.
  * @property description The description of the resource, used for documentation. Defaults to empty string.

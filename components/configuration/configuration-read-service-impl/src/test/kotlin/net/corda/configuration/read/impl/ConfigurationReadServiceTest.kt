@@ -3,7 +3,7 @@ package net.corda.configuration.read.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
@@ -36,10 +36,10 @@ internal class ConfigurationReadServiceTest {
 
 
 
-    private val bootConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
         .create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
 
-    private val messagingConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val messagingConfig = SmartConfigFactory.createWithoutSecurityServices()
         .create(ConfigFactory.parseString(MESSAGING_CONFIG_STRING))
 
     @Test

@@ -2,7 +2,7 @@ package net.corda.httprpc.test
 
 import java.io.InputStream
 import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
@@ -10,7 +10,7 @@ import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
 @HttpRpcResource(name = "TestFileUploadAPI", path = "fileupload/")
-interface TestFileUploadAPI : RpcOps {
+interface TestFileUploadAPI : RestResource {
 
     @HttpRpcPOST(path = "upload")
     fun upload(@HttpRpcRequestBodyParameter file: InputStream): String

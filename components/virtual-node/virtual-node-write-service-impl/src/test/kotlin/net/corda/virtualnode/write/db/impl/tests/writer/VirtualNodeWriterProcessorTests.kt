@@ -18,8 +18,6 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.virtualnode.common.exception.AnotherGroupExistsMutualTlsException
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
@@ -48,7 +46,6 @@ import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
@@ -75,6 +72,7 @@ import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
 
 /** Tests of [VirtualNodeWriterProcessor]. */
 class VirtualNodeWriterProcessorTests {
@@ -98,7 +96,7 @@ class VirtualNodeWriterProcessorTests {
         ByteBuffer.wrap("\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000".toByteArray())
     )
     private val cpiIdentifier = CpiIdentifier("dummy_name", "dummy_version", secureHash)
-    val summaryHash = net.corda.v5.crypto.SecureHash.parse("SHA-256:0000000000000000")
+    private val summaryHash = net.corda.v5.crypto.SecureHash.parse("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData =
         CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicy)
@@ -258,7 +256,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock(),
             configurationGetService = configurationGetService,
@@ -270,34 +268,35 @@ class VirtualNodeWriterProcessorTests {
 
     @Test
     fun `runs empty CPI DB Migrations`() {
-        val fakeId = UUID.randomUUID()
-        val changeLog = mock<CpkDbChangeLogEntity> {
-            on { id } doReturn CpkDbChangeLogKey("alpha", "1", "0", "stuff.xml")
-            on { changesetId } doReturn fakeId
+        val changelog = cpkDbChangeLog {
+            fileChecksum("alpha")
+            filePath("stuff.xml")
         }
-        Mockito.mockConstruction(VirtualNodeDbChangeLog::class.java).use { vndcl ->
-            Mockito.mockConstruction(LiquibaseSchemaMigratorImpl::class.java).use { liquibaseSchemaMigratorImpl ->
-                val processor = VirtualNodeWriterProcessor(
-                    getPublisher(),
-                    connectionManager,
-                    vNodeRepo,
-                    vNodeFactory,
-                    groupPolicyParser,
-                    clock,
-                    getChangelogs = { _, _ -> listOf(changeLog) },
-                    holdingIdentityRepository = holdingIdentityRepositoryMock(),
-                    virtualNodeRepository = virtualNodeRepositoryMock(),
-                    configurationGetService = configurationGetService,
+
+        Mockito.mockConstruction(LiquibaseSchemaMigratorImpl::class.java).use { liquibaseSchemaMigratorImpl ->
+            val processor = VirtualNodeWriterProcessor(
+                getPublisher(),
+                connectionManager,
+                vNodeRepo,
+                vNodeFactory,
+                groupPolicyParser,
+                clock,
+                getCurrentChangelogsForCpi = { _, _, _, _ -> listOf(changelog) },
+                holdingIdentityRepository = holdingIdentityRepositoryMock(),
+                configurationGetService = configurationGetService,
+                virtualNodeRepository = virtualNodeRepositoryMock()
+            )
+
+            processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
+
+            assertThat(liquibaseSchemaMigratorImpl.constructed().size).isEqualTo(1)
+            verify(liquibaseSchemaMigratorImpl.constructed().first())
+                .updateDb(
+                    any(),
+                    argThat { dbChange -> dbChange.masterChangeLogFiles.isEmpty() },
+                    eq<String?>("alpha")
                 )
 
-                processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
-
-                assertEquals(vndcl.constructed().size, 1)
-                assertEquals(liquibaseSchemaMigratorImpl.constructed().size, 1)
-                verify(liquibaseSchemaMigratorImpl.constructed().first()).updateDb(any(), argThat { dbChange ->
-                    dbChange.masterChangeLogFiles.isEmpty()
-                }, eq(fakeId?.toString()))
-            }
         }
     }
 
@@ -314,7 +313,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock(),
             configurationGetService = configurationGetService,
@@ -364,7 +363,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock(),
             configurationGetService = configurationGetService,
@@ -417,7 +416,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock(),
             configurationGetService = configurationGetService,
@@ -466,7 +465,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock(),
             configurationGetService = configurationGetService,
@@ -491,7 +490,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock(),
             configurationGetService = configurationGetService,
@@ -520,7 +519,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock(),
             configurationGetService = configurationGetService,
@@ -700,7 +699,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock(),
             configurationGetService = configurationGetService,
@@ -737,7 +736,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = vnodeRepo,
             configurationGetService = configurationGetService,
@@ -763,7 +762,6 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepository,
             configurationGetService = configurationGetService,
@@ -792,7 +790,6 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepository,
             configurationGetService = configurationGetService,
@@ -828,7 +825,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getChangelogs = { _, _ -> listOf() },
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepository,
             virtualNodeRepository = vnodeRepo,
             configurationGetService = configurationGetService,

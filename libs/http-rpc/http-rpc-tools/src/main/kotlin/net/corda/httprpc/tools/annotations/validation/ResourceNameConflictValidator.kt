@@ -1,13 +1,13 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.tools.annotations.extensions.path
 
 /**
  * Validates that multiple classes do not have the same resource path.
  */
-internal class ResourceNameConflictValidator(private val classes: List<Class<out RpcOps>>) : HttpRpcValidator {
+internal class ResourceNameConflictValidator(private val classes: List<Class<out RestResource>>) : HttpRpcValidator {
     override fun validate(): HttpRpcValidationResult {
         val resourceNames = mutableSetOf<String>()
         return classes.filter {

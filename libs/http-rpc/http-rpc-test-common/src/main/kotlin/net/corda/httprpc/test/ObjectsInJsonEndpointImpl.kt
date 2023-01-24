@@ -1,10 +1,10 @@
 package net.corda.httprpc.test
 
 import net.corda.httprpc.JsonObject
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.PluggableRestResource
 import net.corda.v5.base.util.contextLogger
 
-class ObjectsInJsonEndpointImpl : ObjectsInJsonEndpoint, PluggableRPCOps<ObjectsInJsonEndpoint> {
+class ObjectsInJsonEndpointImpl : ObjectsInJsonEndpoint, PluggableRestResource<ObjectsInJsonEndpoint> {
 
     companion object {
         val log = contextLogger()

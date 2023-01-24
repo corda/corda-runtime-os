@@ -3,8 +3,8 @@ package net.corda.components.rpc.internal
 import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.PluggableRestResource
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
 import net.corda.httprpc.server.config.models.HttpRpcContext
@@ -51,7 +51,7 @@ internal class HttpRpcGatewayEventHandler(
     private val httpRpcServerFactory: HttpRpcServerFactory,
     private val rbacSecurityManagerService: RBACSecurityManagerService,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
-    private val dynamicRpcOpsProvider: Supplier<List<PluggableRPCOps<out RpcOps>>>,
+    private val dynamicRestResourcesProvider: Supplier<List<PluggableRestResource<out RestResource>>>,
     private val tempPathProvider: PathProvider = TempPathProvider()
 ) : LifecycleEventHandler {
 
@@ -106,7 +106,7 @@ internal class HttpRpcGatewayEventHandler(
                     )
                 }
 
-                val numberOfRpcOps = dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>()
+                val numberOfRpcOps = dynamicRestResourcesProvider.get().filterIsInstance<Lifecycle>()
                     .map {
                         log.info("Starting: ${it.javaClass.simpleName}")
                         it.start()
@@ -160,7 +160,7 @@ internal class HttpRpcGatewayEventHandler(
                 permissionManagementService.stop()
                 rbacSecurityManagerService.stop()
 
-                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach {
+                dynamicRestResourcesProvider.get().filterIsInstance<Lifecycle>().forEach {
                     log.info("Stopping: ${it.javaClass.simpleName}")
                     it.stop()
                 }
@@ -211,9 +211,9 @@ internal class HttpRpcGatewayEventHandler(
         val multiPartDir = tempPathProvider.getOrCreate(config, MULTI_PART_DIR)
 
         log.info("Starting HTTP RPC Server.")
-        val rpcOps = dynamicRpcOpsProvider.get()
+        val rpcOps = dynamicRestResourcesProvider.get()
         server = httpRpcServerFactory.createHttpRpcServer(
-            rpcOpsImpls = rpcOps,
+            restResourceImpls = rpcOps,
             rpcSecurityManagerSupplier = rbacSecurityManagerService::securityManager,
             httpRpcSettings = httpRpcSettings,
             multiPartDir = multiPartDir

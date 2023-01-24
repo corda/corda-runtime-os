@@ -6,7 +6,7 @@ import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSchemeProvider
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.server.impl.context.ContextUtils
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertSame
@@ -40,7 +40,7 @@ class HttpRpcSecurityManagerTest {
 
         private fun methodFullName(clazz: Class<*>, methodName: String): String {
             require(clazz.isInterface) { "Must be an interface: $clazz" }
-            require(RpcOps::class.java.isAssignableFrom(clazz)) { "Must be assignable from RPCOps: $clazz" }
+            require(RestResource::class.java.isAssignableFrom(clazz)) { "Must be assignable from RPCOps: $clazz" }
             return clazz.name + "#" + methodName
         }
     }
@@ -117,31 +117,31 @@ class HttpRpcSecurityManagerTest {
         whenever(authenticationProvider1.authenticate(UsernamePasswordAuthenticationCredentials(userBob.username, password))).thenReturn(
             subject
         )
-        whenever(subject.isPermitted(methodFullName(TestRpcOps::class.java.getMethod("dummy2")))).thenReturn(true)
+        whenever(subject.isPermitted(methodFullName(TestRestResource::class.java.getMethod("dummy2")))).thenReturn(true)
 
         val authenticatedBob = securityManager.authenticate(UsernamePasswordAuthenticationCredentials(userBob.username, password))
 
         assertThrows(ForbiddenResponse::class.java) {
-            authorize(authenticatedBob, TestRpcOps::class.java.getMethod("dummy"))
+            authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy"))
         }
 
         assertDoesNotThrow {
-            authorize(authenticatedBob, TestRpcOps::class.java.getMethod("dummy2"))
+            authorize(authenticatedBob, TestRestResource::class.java.getMethod("dummy2"))
         }
     }
 
     @Test
     fun `isPermitted_authenticatedUserAndPermittedAll_shouldBeAuthorizedToEveryMethod`() {
-        whenever(subject.isPermitted(methodFullName(TestRpcOps::class.java.getMethod("dummy")))).thenReturn(true)
-        whenever(subject.isPermitted(methodFullName(TestRpcOps::class.java.getMethod("dummy2")))).thenReturn(true)
+        whenever(subject.isPermitted(methodFullName(TestRestResource::class.java.getMethod("dummy")))).thenReturn(true)
+        whenever(subject.isPermitted(methodFullName(TestRestResource::class.java.getMethod("dummy2")))).thenReturn(true)
 
         val authenticatedAlice = securityManager.authenticate(UsernamePasswordAuthenticationCredentials(userAlice.username, password))
 
         assertDoesNotThrow {
-            authorize(authenticatedAlice, TestRpcOps::class.java.getMethod("dummy"))
+            authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy"))
         }
         assertDoesNotThrow {
-            authorize(authenticatedAlice, TestRpcOps::class.java.getMethod("dummy2"))
+            authorize(authenticatedAlice, TestRestResource::class.java.getMethod("dummy2"))
         }
     }
 

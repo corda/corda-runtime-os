@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -12,7 +12,7 @@ class URLPathParameterNotDeclaredValidatorTest {
     @Test
     fun `validate withPathParamWithCustomNameExisting errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -30,7 +30,7 @@ class URLPathParameterNotDeclaredValidatorTest {
     @Test
     fun `validate withPathParamWithDefaultNameExisting errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -48,7 +48,7 @@ class URLPathParameterNotDeclaredValidatorTest {
     @Test
     fun `validate withPathParamNotExisting errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -66,7 +66,7 @@ class URLPathParameterNotDeclaredValidatorTest {
     @Test
     fun `validate withMultiplePathParamsNotExisting errorListContainsAllErrors`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -83,7 +83,7 @@ class URLPathParameterNotDeclaredValidatorTest {
     @Test
     fun `validate withPathParamsWithDifferentCase errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
+        class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 

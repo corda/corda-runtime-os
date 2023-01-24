@@ -23,10 +23,8 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
-import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
+import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.AnotherGroupExistsMutualTlsException
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
@@ -65,6 +63,8 @@ import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
 import javax.sql.DataSource
 import kotlin.system.measureTimeMillis
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.findChangelogEntitiesForGivenCpkFileChecksums
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -78,7 +78,7 @@ import kotlin.system.measureTimeMillis
  * @property groupPolicyParser Parses group policy JSON strings and returns MemberInfo structures
  * @property clock A clock instance used to add timestamps to what the records we publish. This is configurable rather
  *           than always simply the system wall clock time so that we can control everything in tests.
- * @property getChangelogs an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
+ * @property getCurrentChangelogsForCpi an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
  *           Takes an EntityManager (since that lets us continue a transaction) and a CpiIdentifier as a parameter and
  *           returns a list of CpkDbChangeLogEntity.
  */
@@ -91,7 +91,8 @@ internal class VirtualNodeWriterProcessor(
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
     private val configurationGetService: ConfigurationGetService,
-    private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi,
+    private val getCurrentChangelogsForCpi: (EntityManager, String, String, String) -> List<CpkDbChangeLogEntity> =
+        ::findCurrentCpkChangeLogsForCpi,
     private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
@@ -219,7 +220,7 @@ internal class VirtualNodeWriterProcessor(
                 return
             } else {
                 measureTimeMillis {
-                    runCpiMigrations(cpiMetadata, vaultDb)
+                    runCpiMigrations(cpiMetadata, vaultDb, holdingId.shortHash.value)
                 }.also {
                     logger.debug {"[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
                             "${currentTimeMillis() - startMillis} ms"}
@@ -267,22 +268,22 @@ internal class VirtualNodeWriterProcessor(
     ) {
         val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
         val shortHashes = em.use {
-            dbResetRequest.holdingIdentityShortHashes.map { shortHashString ->
-                val shortHash = ShortHash.Companion.of(shortHashString)
+            dbResetRequest.holdingIdentityShortHashes.map { currentVNodeShortHash ->
+                val shortHash = ShortHash.Companion.of(currentVNodeShortHash)
                 // Open a TX to find the connection information we need for the virtual nodes vault as it may live on
                 //  another database.
                 it.transaction { tx ->
                     // Retrieve virtual node info
                     val virtualNodeInfo = virtualNodeRepository.find(tx, shortHash)
                     if(null == virtualNodeInfo) {
-                            logger.warn("Could not find the virtual node: $shortHashString")
+                            logger.warn("Could not find the virtual node: $currentVNodeShortHash")
                             respFuture.complete(
                                 VirtualNodeManagementResponse(
                                     instant,
                                     VirtualNodeManagementResponseFailure(
                                         ExceptionEnvelope(
                                             VirtualNodeNotFoundException::class.java.name,
-                                            "Could not find the virtual node: $shortHashString"
+                                            "Could not find the virtual node: $currentVNodeShortHash"
                                         )
                                     )
                                 )
@@ -290,35 +291,66 @@ internal class VirtualNodeWriterProcessor(
                             return
                         }
 
-                    // Retrieve CPI metadata
                     val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
-                        // Look up the tags(UUIDs) of the applied changelog entries
-                        val appliedVersions: Set<UUID> = getAppliedVersions(
+                        // changelog tags are the CPK file checksum the changelog belongs to
+                        val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
                             tx,
                             dataSource,
                             systemTerminatorTag
                         )
-                        // Look up all audit entries that correspond to the UUID set that we just got
-                        val migrationSet = findDbChangeLogAuditForCpi(tx, virtualNodeInfo.cpiIdentifier, appliedVersions)
-                        // Attempt to rollback the acquired changes
-                        rollbackVirtualNodeDb(
-                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
-                            migrationSet,
-                            systemTerminatorTag
-                        )
+
+                        logger.info("CPK file checksums of currently applied changelogs on vault schema for virtual node " +
+                                "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString() }]")
+
+                        val changesetsToRollback = findChangelogEntitiesForGivenCpkFileChecksums(tx, cpkChecksumsOfAppliedChangelogs)
+
+                        changesetsToRollback.forEach { (cpkFileChecksum, changelogs) ->
+                            logger.info(
+                                "Virtual node '$currentVNodeShortHash' attempting to roll back the following changelogs for CPK " +
+                                        "'$cpkFileChecksum' [${changelogs.joinToString { it.id.filePath }}]"
+                            )
+                            rollbackVirtualNodeDb(
+                                dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
+                                changelogs,
+                                systemTerminatorTag
+                            )
+                            logger.info("Migrations for CPK '$cpkFileChecksum' successfully rolled back.")
+                        }
                     }
-                    logger.info("Finished rolling back previous migrations, attempting to apply new ones")
-                    // Attempt to apply the changes from the current CPI
-                    val changelogs = getChangelogs(em, cpiMetadata.id)
-                    dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
-                        runCpiResyncMigrations(
-                            dataSource,
-                            changelogs
-                        )
+
+                    val changelogsToRun = getCurrentChangelogsForCpi(
+                        em,
+                        cpiMetadata.id.name,
+                        cpiMetadata.id.version,
+                        cpiMetadata.id.signerSummaryHash.toString()
+                    )
+                        .groupBy { it.id.cpkFileChecksum }
+
+                    changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
+                        try {
+                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use {
+                                runCpkResyncMigrations(it, cpkFileChecksum, changelogsForThisCpk)
+                            }
+                        } catch (e: Exception) {
+                            logger.warn(
+                                "Error from liquibase API while running resync migrations for CPI ${cpiMetadata.id.name} - changelogs: [" +
+                                        "${changelogsForThisCpk.joinToString { it.id.cpkFileChecksum + ", " + it.id.filePath }}]", e)
+                            respFuture.complete(
+                                VirtualNodeManagementResponse(
+                                    instant,
+                                    VirtualNodeManagementResponseFailure(
+                                        ExceptionEnvelope(
+                                            VirtualNodeWriteServiceException::class.java.name,
+                                            e.message
+                                        )
+                                    )
+                                )
+                            )
+                        }
                     }
                 }
                 shortHash.value
@@ -335,10 +367,11 @@ internal class VirtualNodeWriterProcessor(
 
     private fun rollbackVirtualNodeDb(
         dataSource: CloseableDataSource,
-        changelogs: List<CpkDbChangeLogAuditEntity>,
+        changelogs: List<CpkDbChangeLogEntity>,
         tagToRollbackTo: String
     ) {
-        val dbChange = VirtualNodeDbChangeLog(changelogs)
+        val changelogDtos = changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) }
+        val dbChange = VirtualNodeDbChangeLog(changelogDtos)
         val connection = dataSource.connection
         LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
     }
@@ -535,41 +568,45 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
-    private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb) =
-        // we could potentially do one transaction per CPK; it seems more useful to blow up the
-        // who migration if any CPK fails though, so that they can be iterative developed and repeated
-        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
-            val changelogs = getChangelogs(it, cpiMetadata.id)
-            changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
-                val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
-                logger.info("Doing ${cpkChangelogs.size} migrations for $cpkName")
-                val dbChange = VirtualNodeDbChangeLog(cpkChangelogs)
-                val changesetId = cpkChangelogs.first().changesetId
+    private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb, virtualNodeShortHash: String) {
+        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
+            // every changelog here is from a CPK currently associated with the given CPI.
+            val changelogsPerCpk: Map<String, List<CpkDbChangeLogEntity>> = getCurrentChangelogsForCpi(
+                em,
+                cpiMetadata.id.name,
+                cpiMetadata.id.version,
+                cpiMetadata.id.signerSummaryHash.toString()
+            )
+                .groupBy { it.id.cpkFileChecksum }
+
+            changelogsPerCpk.forEach { (cpkFileChecksum, changeLogs) ->
+                logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
+                val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
                 try {
-                    vaultDb.runCpiMigrations(dbChange, changesetId.toString())
+                    vaultDb.runCpiMigrations(allChangeLogsForCpk, cpkFileChecksum)
                 } catch (e: Exception) {
-                    logger.error("Virtual node liquibase DB migration failure on CPK $cpkName with error $e")
-                    throw VirtualNodeWriteServiceException(
-                        "Error running virtual node DB migration for CPI liquibase migrations",
-                        e
-                    )
+                    val msg =
+                        "CPI migrations failed for virtual node '$virtualNodeShortHash`. Failure occurred running CPI migrations on " +
+                                "CPK with file checksum $cpkFileChecksum."
+                    logger.warn(msg, e)
+                    throw VirtualNodeWriteServiceException(msg, e)
                 }
-                logger.info("Completed ${cpkChangelogs.size} migrations for $cpkName")
+                logger.info("Successfully completed ${changeLogs.size} migrations for CPK with file checksum $cpkFileChecksum.")
             }
         }
+    }
 
-    private fun runCpiResyncMigrations(dataSource: CloseableDataSource, changelogs: List<CpkDbChangeLogEntity>) {
-        changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
-            val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
-            val newChangeSetId = cpkChangelogs.first().changesetId
-            logger.info("Applying change logs from $cpkName at $newChangeSetId")
-            val connection = dataSource.connection
-            LiquibaseSchemaMigratorImpl().updateDb(
-                connection,
-                VirtualNodeDbChangeLog(cpkChangelogs),
-                tag = newChangeSetId.toString()
-            )
-        }
+    private fun runCpkResyncMigrations(dataSource: CloseableDataSource, cpkFileChecksum: String, changelogs: List<CpkDbChangeLogEntity>) {
+        if (changelogs.isEmpty()) return
+
+        logger.info("Preparing to run ${changelogs.size} resync migrations for CPK '$cpkFileChecksum'.")
+
+        LiquibaseSchemaMigratorImpl().updateDb(
+            dataSource.connection,
+            VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) }),
+            tag = cpkFileChecksum
+        )
+        logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")
     }
 
     private fun createVirtualNodeRecord(
@@ -645,7 +682,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getAppliedVersions(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): Set<UUID> = (
+    private fun getAppliedChangelogTags(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): Set<String> = (
         em.createNativeQuery(
             "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
                 "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
@@ -654,7 +691,7 @@ internal class VirtualNodeWriterProcessor(
             .setParameter("systemTerminatorTag", systemTerminatorTag)
             .resultList
             .toSet() as Set<String>
-        ).map { UUID.fromString(it) }.toSet()
+        ).toSet()
 
     private fun sendSuccessfulResponse(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,

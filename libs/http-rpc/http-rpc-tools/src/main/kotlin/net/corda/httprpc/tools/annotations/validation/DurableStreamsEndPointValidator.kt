@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
@@ -10,7 +10,7 @@ import java.lang.reflect.Method
  * Validates that durable stream methods are POST or PUT. This is required, as an implicit DurableStreamContext parameter
  * will be added to the call.
  */
-internal class DurableStreamsEndPointValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
+internal class DurableStreamsEndPointValidator(private val clazz: Class<out RestResource>) : HttpRpcValidator {
 
     companion object {
         val error = "Methods returning DurableCursorBuilder or FiniteDurableCursorBuilder " +

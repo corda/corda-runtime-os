@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcResource
 import org.junit.jupiter.api.Assertions
@@ -13,7 +13,7 @@ class NestedGenericsParameterTypeValidatorTest {
     fun `method returns nested generic types errorListContainsMessage`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -30,7 +30,7 @@ class NestedGenericsParameterTypeValidatorTest {
     fun `method returns non nested generic types errorList is Empty`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -46,7 +46,7 @@ class NestedGenericsParameterTypeValidatorTest {
     fun `method does not return generic types errorList is Empty`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 

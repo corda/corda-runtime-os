@@ -1,0 +1,27 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'net.corda.plugins.cordapp-cpk2'
+}
+
+description 'Cart test bundle'
+
+// IMPORTANT:  We must set the group to anything other than `net.corda`.
+// This is so that we can link this into a CPB without the corda gradle plugin refusing.
+// `net.corda` is reserved for Corda "system" bundles.
+group 'com.r3.testing'
+
+cordapp {
+    targetPlatformVersion platformVersion.toInteger()
+    contract {
+        name 'CPK with schema to test force upload with CPI with duplicate CPK'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-base'
+
+    cordaProvided 'javax.persistence:javax.persistence-api'
+}

@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -15,7 +15,7 @@ class DurableStreamsEndPointValidatorTest {
     fun `validate with GET Endpoint DurableStreamsReturnType errorListContainsMessage`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -33,7 +33,7 @@ class DurableStreamsEndPointValidatorTest {
     fun `validate with GET Endpoint FiniteDurableStreamsReturnType errorListContainsMessage`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
@@ -51,7 +51,7 @@ class DurableStreamsEndPointValidatorTest {
     fun `validate with POST Endpoint DurableStreamsReturnType errorList Is Empty`() {
         @Suppress("unused")
         @HttpRpcResource
-        abstract class TestInterface : RpcOps {
+        abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 

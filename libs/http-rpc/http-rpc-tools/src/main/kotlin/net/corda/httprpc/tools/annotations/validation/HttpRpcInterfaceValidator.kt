@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 
 /**
  * This class is responsible for applying validations to an interface or list of interfaces that are expected to be exposed via HTTP RPC.
@@ -10,11 +10,11 @@ object HttpRpcInterfaceValidator {
     /**
      * Validates an interface
      *
-     * @param rpcOpsInterface An interface class extending [RpcOps]
+     * @param rpcOpsInterface An interface class extending [RestResource]
      * @return A validation result, containing a list of the errors. The validation was successful if the error list is empty.
      */
     @JvmStatic
-    fun <T : RpcOps> validate(rpcOpsInterface: Class<T>): HttpRpcValidationResult =
+    fun <T : RestResource> validate(rpcOpsInterface: Class<T>): HttpRpcValidationResult =
         listOf(
             ResourceAnnotationValidator(rpcOpsInterface),
             EndpointAnnotationValidator(rpcOpsInterface),
@@ -33,16 +33,16 @@ object HttpRpcInterfaceValidator {
     /**
      * Validates an interface
      *
-     * @param rpcOpsInterfaces A list of interface classes extending [RpcOps][net.corda.core.messaging.RpcOps]
+     * @param restResourceInterfaces A list of interface classes extending [RestResource][net.corda.core.messaging.RestResource]
      * @return A validation result, containing a list of the errors. The validation was successful if the error list is empty.
      */
     @JvmStatic
-    fun validate(rpcOpsInterfaces: List<Class<out RpcOps>>): HttpRpcValidationResult =
+    fun validate(restResourceInterfaces: List<Class<out RestResource>>): HttpRpcValidationResult =
         listOf(
-            ResourceNameConflictValidator(rpcOpsInterfaces)
+            ResourceNameConflictValidator(restResourceInterfaces)
         ).fold(HttpRpcValidationResult()) { total, nextValidation ->
             total + nextValidation.validate()
-        } + rpcOpsInterfaces.fold(HttpRpcValidationResult()) { total, nextClass -> total + validate(nextClass) }
+        } + restResourceInterfaces.fold(HttpRpcValidationResult()) { total, nextClass -> total + validate(nextClass) }
 }
 
 /**

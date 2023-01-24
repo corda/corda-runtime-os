@@ -25,7 +25,6 @@ object TestCatalogue {
                         CpkManifest(CpkFormatVersion(0, 0)),
                         "",
                         listOf(),
-                        listOf(),
                         CordappManifest(
                             "",
                             "",

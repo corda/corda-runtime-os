@@ -2,7 +2,6 @@ package net.corda.applications.workers.crypto
 
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
@@ -10,9 +9,10 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
@@ -43,8 +43,8 @@ class CryptoWorker @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
-    @Reference(service = SmartConfigFactoryFactory::class)
-    val smartConfigFactoryFactory: SmartConfigFactoryFactory,
+    @Reference(service = SecretsServiceFactoryResolver::class)
+    val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
 ) : Application {
 
     private companion object {
@@ -81,7 +81,7 @@ class CryptoWorker @Activate constructor(
         params: CryptoWorkerParams,
         configurationValidatorFactory: ConfigurationValidatorFactory
     ): SmartConfig = getBootstrapConfig(
-        smartConfigFactoryFactory,
+        secretsServiceFactoryResolver,
         params.defaultParams,
         configurationValidatorFactory.createConfigValidator(),
         listOf(

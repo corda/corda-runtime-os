@@ -29,7 +29,6 @@ internal fun net.corda.libs.packaging.core.CpkMetadata.toEndpointType() =
         this.cpkId.toEndpointType(),
         this.mainBundle,
         this.libraries,
-        this.dependencies.map { cpkIdentifier -> cpkIdentifier.toEndpointType() },
         this.type.toString(),
         this.fileChecksum.toString(),
         this.timestamp
