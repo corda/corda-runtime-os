@@ -95,7 +95,10 @@ class SimConsensualLedgerService(
         val bytesToSign = serializer.format(signedTransaction.toLedgerTransaction().states).toByteArray()
         val signatures = publicKeys.map {
             val signature = signingService.sign(bytesToSign, it, SignatureSpec.ECDSA_SHA256)
-            DigitalSignatureAndMetadata(signature, DigitalSignatureMetadata(Instant.now(), mapOf()))
+            DigitalSignatureAndMetadata(
+                signature,
+                DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
+            )
         }
         return signatures
     }

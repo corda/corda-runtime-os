@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.test.LifecycleRPCOpsImpl
+import net.corda.httprpc.test.LifecycleRestResourceImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.multipartDir
@@ -18,7 +18,7 @@ import kotlin.test.assertEquals
 class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
     companion object {
 
-        val lifecycleRPCOpsImpl = LifecycleRPCOpsImpl()
+        val lifecycleRPCOpsImpl = LifecycleRestResourceImpl()
 
         @BeforeAll
         @JvmStatic

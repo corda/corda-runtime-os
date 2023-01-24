@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.data.transaction
 
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Attachment
@@ -8,14 +9,13 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.PublicKey
 
 class UtxoLedgerTransactionImpl(
     private val wrappedWireTransaction: WrappedUtxoWireTransaction,
     override val inputStateAndRefs: List<StateAndRef<*>>,
     override val referenceStateAndRefs: List<StateAndRef<*>>
-) : UtxoLedgerTransaction {
+) : UtxoLedgerTransactionInternal {
 
     override val id: SecureHash
         get() = wrappedWireTransaction.id
@@ -43,6 +43,9 @@ class UtxoLedgerTransactionImpl(
 
     override val outputStateAndRefs: List<StateAndRef<*>>
         get() = wrappedWireTransaction.outputStateAndRefs
+
+    override val wireTransaction: WireTransaction
+        get() = wrappedWireTransaction.wireTransaction
 
     override fun getAttachment(id: SecureHash): Attachment {
         return attachments.singleOrNull { it.id == id }

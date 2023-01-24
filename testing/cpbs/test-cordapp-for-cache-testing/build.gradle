@@ -21,4 +21,5 @@ dependencies {
     cordaProvided 'net.corda:corda-application'
 
     cordapp project(':testing:bundles:testing-fish')
+    cordapp project(':testing:bundles:cpk-for-duplicate-changelog-testing')
 }

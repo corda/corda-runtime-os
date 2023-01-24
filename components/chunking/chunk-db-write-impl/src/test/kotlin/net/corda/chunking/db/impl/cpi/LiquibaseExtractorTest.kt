@@ -51,12 +51,9 @@ internal class LiquibaseExtractorTest {
         assertThat(entities.size).isEqualTo(expectedLiquibaseFileCount)
 
         entities.forEach {
-            assertThat(it.id.cpkSignerSummaryHash.isNotEmpty()).isTrue
-            assertThat(it.id.cpkName.isNotEmpty()).isTrue
-            assertThat(it.id.cpkVersion.isNotEmpty()).isTrue
+            assertThat(it.id.cpkFileChecksum.isNotEmpty()).isTrue
             assertThat(it.id.filePath.isNotEmpty()).isTrue
             assertThat(it.content.isNotEmpty()).isTrue
-            assertThat(it.fileChecksum.isNotEmpty()).isTrue
 
             //  Cursory check of XML -
             assertThat(it.content).contains("<?xml")

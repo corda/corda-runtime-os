@@ -1,8 +1,8 @@
 package net.corda.applications.workers.rpc.http
 
-import net.corda.httprpc.RpcOps
-import net.corda.httprpc.client.HttpRpcClient
-import net.corda.httprpc.client.config.HttpRpcClientConfig
+import net.corda.httprpc.RestResource
+import net.corda.httprpc.client.RestClient
+import net.corda.httprpc.client.config.RestClientConfig
 import java.util.concurrent.atomic.AtomicInteger
 
 class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAddress: String) : TestToolkit {
@@ -32,9 +32,9 @@ class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAdd
     override val uniqueName: String
         get() = "$uniqueNamePrefix-${counter.incrementAndGet()}-${System.currentTimeMillis()}"
 
-    override fun <I : RpcOps> httpClientFor(rpcOpsClass: Class<I>, userName: String, password: String): HttpRpcClient<I> {
-        return HttpRpcClient(
-            baseAddress, rpcOpsClass, HttpRpcClientConfig()
+    override fun <I : RestResource> httpClientFor(rpcOpsClass: Class<I>, userName: String, password: String): RestClient<I> {
+        return RestClient(
+            baseAddress, rpcOpsClass, RestClientConfig()
                 .enableSSL(true)
                 .minimumServerProtocolVersion(1)
                 .username(userName)

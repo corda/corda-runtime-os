@@ -2,8 +2,8 @@ package net.corda.components.rpc.internal
 
 import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.PluggableRestResource
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.KeyStoreInfo
@@ -61,9 +61,9 @@ internal class HttpRpcGatewayEventHandlerTest {
         whenever(it.create()).thenReturn(sslCertReadService)
     }
 
-    private interface MockEndpoint : PluggableRPCOps<MockEndpoint>, Lifecycle
+    private interface MockEndpoint : PluggableRestResource<MockEndpoint>, Lifecycle
     private val endpoint = mock<MockEndpoint>()
-    private val rpcOps: List<PluggableRPCOps<out RpcOps>> = listOf(endpoint)
+    private val restResources: List<PluggableRestResource<out RestResource>> = listOf(endpoint)
 
     private val handler = HttpRpcGatewayEventHandler(
         permissionManagementService,
@@ -71,7 +71,7 @@ internal class HttpRpcGatewayEventHandlerTest {
         httpRpcServerFactory,
         rbacSecurityManagerService,
         sslCertReadServiceFactory,
-        ::rpcOps,
+        ::restResources,
         tempPathProvider
     )
 
