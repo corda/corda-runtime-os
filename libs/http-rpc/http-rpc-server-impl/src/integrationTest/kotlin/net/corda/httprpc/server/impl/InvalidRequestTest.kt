@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
+import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
@@ -39,7 +39,9 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
                 20000L
             )
             server = HttpRpcServerImpl(
-                listOf(TestHealthCheckAPIImpl(), TestJavaPrimitivesRPCopsImpl()),
+                listOf(TestHealthCheckAPIImpl(),
+                    TestJavaPrimitivesRestResourceImpl()
+                ),
                 ::securityManager,
                 httpRpcSettings,
                 multipartDir,

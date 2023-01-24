@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl.apigen
 
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.server.impl.rpcops.impl.TestDuplicateProtocolVersionAPIImpl
-import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
+import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
@@ -101,7 +101,7 @@ internal class APIStructureRetrieverTest {
 
     @Test
     fun `retrieve Java class should succeed`() {
-        val retriever = APIStructureRetriever(listOf(TestJavaPrimitivesRPCopsImpl()))
+        val retriever = APIStructureRetriever(listOf(TestJavaPrimitivesRestResourceImpl()))
         val resources = retriever.structure
         assertEquals(1, resources.size)
     }

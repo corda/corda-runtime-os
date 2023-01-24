@@ -3,7 +3,7 @@ package net.corda.httprpc.server.apigen.test;
 import net.corda.httprpc.PluggableRestResource;
 import org.jetbrains.annotations.NotNull;
 
-public class TestJavaPrimitivesRPCopsImpl implements TestJavaPrimitivesRestResource, PluggableRestResource<TestJavaPrimitivesRestResource> {
+public class TestJavaPrimitivesRestResourceImpl implements TestJavaPrimitivesRestResource, PluggableRestResource<TestJavaPrimitivesRestResource> {
   @Override
   public Integer negateInt(Integer number) {
     return -number;

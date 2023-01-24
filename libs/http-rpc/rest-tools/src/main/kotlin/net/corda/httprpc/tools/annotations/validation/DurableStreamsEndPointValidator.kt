@@ -1,8 +1,8 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import java.lang.reflect.Method
 
@@ -14,12 +14,12 @@ internal class DurableStreamsEndPointValidator(private val clazz: Class<out Rest
 
     companion object {
         val error = "Methods returning DurableCursorBuilder or FiniteDurableCursorBuilder " +
-                "can only be exposed via ${HttpRpcPOST::class.simpleName} or ${HttpRpcPUT::class.simpleName}."
+                "can only be exposed via ${HttpPOST::class.simpleName} or ${HttpPUT::class.simpleName}."
     }
 
     override fun validate(): RestValidationResult =
         clazz.methods.fold(RestValidationResult()) { total, method ->
-            total + if (method.annotations.none { it is HttpRpcPOST || it is HttpRpcPUT }) {
+            total + if (method.annotations.none { it is HttpPOST || it is HttpPUT }) {
                 validateReturnTypeOnWrongMethod(method)
             } else RestValidationResult()
         }

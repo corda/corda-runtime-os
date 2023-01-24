@@ -10,7 +10,7 @@ package net.corda.httprpc.annotations
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class HttpRpcResource(
+annotation class HttpRestResource(
     val name: String = "",
     val description: String = "",
     val path: String = ""

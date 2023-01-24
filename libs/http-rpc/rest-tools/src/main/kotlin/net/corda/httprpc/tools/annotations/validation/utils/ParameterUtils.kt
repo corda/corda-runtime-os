@@ -1,8 +1,8 @@
 package net.corda.httprpc.tools.annotations.validation.utils
 
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.isDuplexChannel
@@ -18,18 +18,18 @@ val String.asPathParam
     get() = "{$this}"
 
 fun Parameter.isPathOrQueryParameter() =
-    this.annotations.any { annotation -> annotation is HttpRpcPathParameter || annotation is HttpRpcQueryParameter }
+    this.annotations.any { annotation -> annotation is RestPathParameter || annotation is RestQueryParameter }
 
-fun Parameter.isBodyParameter() = (this.annotations.any { it is HttpRpcRequestBodyParameter } || !this.isPathOrQueryParameter())
+fun Parameter.isBodyParameter() = (this.annotations.any { it is RestRequestBodyParameter } || !this.isPathOrQueryParameter())
         && !this.type.isDuplexChannel()
 
 @Suppress("ComplexMethod")
 fun getParameterName(parameter: Parameter) =
     parameter.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }?.let {
         when (it) {
-            is HttpRpcPathParameter -> it.name(parameter).lowercase()
-            is HttpRpcQueryParameter -> it.name(parameter).lowercase()
-            is HttpRpcRequestBodyParameter -> it.name(parameter).lowercase()
+            is RestPathParameter -> it.name(parameter).lowercase()
+            is RestQueryParameter -> it.name(parameter).lowercase()
+            is RestRequestBodyParameter -> it.name(parameter).lowercase()
             else -> throw IllegalArgumentException("Unknown parameter type")
         }
-    } ?: HttpRpcRequestBodyParameter::class.createInstance().name(parameter).lowercase()
+    } ?: RestRequestBodyParameter::class.createInstance().name(parameter).lowercase()

@@ -1,12 +1,12 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.httprpc.annotations.HttpRpcWS
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.httprpc.annotations.HttpWS
 import net.corda.httprpc.ws.DuplexChannel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -14,22 +14,22 @@ import org.junit.jupiter.api.Test
 class ParameterBodyAnnotationValidatorTest {
     @Test
     fun `validate withInvalidBodyAnnotation errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
-            fun test(@HttpRpcRequestBodyParameter foo: String) {
+            @HttpGET
+            fun test(@RestRequestBodyParameter foo: String) {
                 foo.lowercase()
             }
 
-            @HttpRpcGET
+            @HttpGET
             fun testWithImplicitBodyParam(foo: String) {
                 foo.lowercase()
             }
 
-            @HttpRpcWS
+            @HttpWS
             fun testWithImplicitBodyParamWS(channel: DuplexChannel, foo: String) {
                 foo.lowercase()
                 channel.close()
@@ -44,25 +44,25 @@ class ParameterBodyAnnotationValidatorTest {
 
     @Test
     fun `validate withManyBodyParametersAnnotations errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
-            fun test(@HttpRpcRequestBodyParameter foo: String, @HttpRpcRequestBodyParameter bar: String) {
+            @HttpPOST
+            fun test(@RestRequestBodyParameter foo: String, @RestRequestBodyParameter bar: String) {
                 foo.lowercase()
                 bar.lowercase()
             }
 
-            @HttpRpcPOST
+            @HttpPOST
             fun testWithImplicitBodyParam(foo: String, bar: String) {
                 foo.lowercase()
                 bar.lowercase()
             }
 
-            @HttpRpcWS
-            fun testWithImplicitQueryParamWS(channel: DuplexChannel, @HttpRpcQueryParameter foo: String) {
+            @HttpWS
+            fun testWithImplicitQueryParamWS(channel: DuplexChannel, @RestQueryParameter foo: String) {
                 foo.lowercase()
                 channel.close()
             }

@@ -23,6 +23,7 @@ import kotlin.concurrent.scheduleAtFixedRate
  * [RestResource] interface should be used.
  *
  * @property baseAddress The base address of the server.
+ * @property restResource The [RestResource] interface for which the proxy will be created.
  * @property restResourceClass The [RestResource] interface for which the proxy will be created.
  * @property clientConfig The configuration for the client to use.
  * @property healthCheckInterval The interval on which health check calls to the server will happen, ensuring

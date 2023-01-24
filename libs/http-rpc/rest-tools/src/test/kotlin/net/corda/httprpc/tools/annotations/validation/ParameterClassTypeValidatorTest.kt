@@ -1,23 +1,23 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class ParameterClassTypeValidatorTest {
     @Test
     fun `validate withInvalidParamClassTypes errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
-            fun test(@HttpRpcPathParameter bar: List<String>, @HttpRpcQueryParameter foo: List<String>) {
+            @HttpPOST
+            fun test(@RestPathParameter bar: List<String>, @RestQueryParameter foo: List<String>) {
                 bar.isNotEmpty()
                 foo.isNotEmpty()
             }
@@ -30,13 +30,13 @@ class ParameterClassTypeValidatorTest {
 
     @Test
     fun `validate withValidParamClassTypes errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
-            fun test(@HttpRpcPathParameter bar: Boolean, @HttpRpcQueryParameter foo: Double) {
+            @HttpPOST
+            fun test(@RestPathParameter bar: Boolean, @RestQueryParameter foo: Double) {
                 !bar
                 foo + 1.0
             }

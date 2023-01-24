@@ -1,7 +1,7 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.isRpcEndpointAnnotation
+import net.corda.httprpc.annotations.isRestEndpointAnnotation
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
@@ -15,7 +15,7 @@ class NestedGenericsParameterTypeValidator(private val clazz: Class<out RestReso
 
     override fun validate(): RestValidationResult =
         clazz.methods.fold(RestValidationResult()) { total, method ->
-            total + if (method.annotations.any { it.isRpcEndpointAnnotation() }) {
+            total + if (method.annotations.any { it.isRestEndpointAnnotation() }) {
                 validateTypeNotNestedGenerics(method)
             } else RestValidationResult()
         }
