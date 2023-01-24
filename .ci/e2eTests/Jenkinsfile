@@ -107,7 +107,7 @@ pipeline {
         stage('check out') {
             steps {
                 script {
-                    if (params.COMMIT_TO_CHECKOUT && !changeRequest()) {
+                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID != null) {
                         echo "CommitID to checkOut ${params.COMMIT_TO_CHECKOUT}"
                         sh 'git checkout "$COMMIT_TO_CHECKOUT"'
                     } else {
