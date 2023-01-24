@@ -5,13 +5,13 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
 import java.util.*
-import javax.persistence.Column
 import javax.persistence.EntityManagerFactory
 
 internal object VNodeTestUtils {
@@ -19,13 +19,15 @@ internal object VNodeTestUtils {
         entityManagerFactory: EntityManagerFactory,
         name: String,
         version: String,
-        hash: String): VirtualNodeEntity {
+        hash: String,
+        virtualNodeOperationEntity: VirtualNodeOperationEntity? = null,
+        holdingIdentityEntity: HoldingIdentityEntity? = null
+    ): VirtualNodeEntity {
 
         println("Creating VNode for testing: $name, $version, $hash")
 
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentity = newHoldingIdentityEntity(name)
-        println(holdingIdentity.x500Name)
+        val holdingIdentity = holdingIdentityEntity ?: newHoldingIdentityEntity(name)
         val virtualNode = VirtualNodeEntity(
             holdingIdentity.holdingIdentityShortHash,
             holdingIdentity,
@@ -37,7 +39,8 @@ internal object VNodeTestUtils {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
-            UUID.randomUUID()
+            UUID.randomUUID(),
+            operationInProgress = virtualNodeOperationEntity
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -47,7 +50,6 @@ internal object VNodeTestUtils {
             em.persist(newDbConnection(virtualNode.vaultDMLConnectionId!!, DbPrivilege.DML))
             em.persist(newDbConnection(virtualNode.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
             em.persist(newDbConnection(virtualNode.uniquenessDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(holdingIdentity)
         }
 
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }

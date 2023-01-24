@@ -10,8 +10,8 @@ import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
-import net.corda.libs.virtualnode.datamodel.VirtualNodeOperationEntity
-import net.corda.libs.virtualnode.datamodel.VirtualNodeOperationState
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -95,30 +95,10 @@ class VirtualNodeEntitiesIntegrationTest {
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val hash = TestRandom.secureHash().toString()
 
-        val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
-        val entity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash)
 
-        entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
-        }
-
-        val virtualNode = VirtualNodeEntity(entity.holdingIdentityShortHash, entity, name, version, hash)
-
-        val holdingIdentityEntity = entityManagerFactory.createEntityManager()
-            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, entity.holdingIdentityShortHash) }
-
-        entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(cpiMetadata)
-            em.persist(virtualNode)
-        }
-
-        val key = holdingIdentityEntity.holdingIdentityShortHash
-        assertThat(virtualNode == entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, key))
+        assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
+            .isEqualTo(vnodeEntity)
     }
 
     @Test
@@ -127,32 +107,17 @@ class VirtualNodeEntitiesIntegrationTest {
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val hash = TestRandom.secureHash().toString()
 
-        val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
+
         val holdingIdentityEntity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
 
         entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
+            em.persist(holdingIdentityEntity)
         }
 
-        val virtualNode = VirtualNodeEntity(holdingIdentityEntity.holdingIdentityShortHash, holdingIdentityEntity, name, version, hash)
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash, holdingIdentityEntity = holdingIdentityEntity)
 
-        // Persist holding identity...
-        entityManagerFactory.createEntityManager().transaction { em -> em.persist(holdingIdentityEntity) }
-
-        // Now persist the virtual node but use the merge operation because we've
-        // already persisted the holding identity (i.e. REST end-point - "create holding identity")
-        entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(cpiMetadata)
-            em.merge(virtualNode)
-        }
-
-        val key = holdingIdentityEntity.holdingIdentityShortHash
-        assertThat(virtualNode == entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, key))
+        assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
+            .isEqualTo(vnodeEntity)
     }
 
     @Test
@@ -161,33 +126,21 @@ class VirtualNodeEntitiesIntegrationTest {
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val hash = TestRandom.secureHash().toString()
 
-        val cpiMetadata = VNodeTestUtils.newCpiMetadataEntity(name, version, hash)
-        val entity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
-        val operationEntity = VirtualNodeOperationEntity(entity.holdingIdentityShortHash, "request-id", "data", VirtualNodeOperationState.IN_PROGRESS, Instant.now())
+        val rand = UUID.randomUUID()
+        val virtualNodeOperationEntity = VirtualNodeOperationEntity(
+            rand.toString(),
+            "req-$rand",
+            "some-data",
+            VirtualNodeOperationState.IN_PROGRESS,
+            Instant.now()
+        )
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash, virtualNodeOperationEntity)
 
-        entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(UUID.randomUUID(), DbPrivilege.DML))
-        }
-
-        val virtualNode = VirtualNodeEntity(entity.holdingIdentityShortHash, entity, name, version, hash, operationInProgress = operationEntity)
-
-        entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(cpiMetadata)
-            em.persist(virtualNode)
-        }
-
-        val holdingIdentityEntity = entityManagerFactory.createEntityManager()
-            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, entity.holdingIdentityShortHash) }
-
-        val key = holdingIdentityEntity.holdingIdentityShortHash
-        val foundVirtualNode = entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, key)
-        assertThat(virtualNode == foundVirtualNode)
-        assertThat(operationEntity == foundVirtualNode.operationInProgress)
-        assertThat(operationEntity == entityManagerFactory.createEntityManager().find(VirtualNodeOperationEntity::class.java, key))
+        val foundEntity = entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId)
+        val operationEntity =
+            entityManagerFactory.createEntityManager().find(VirtualNodeOperationEntity::class.java, rand)
+        assertThat(foundEntity).isEqualTo(vnodeEntity)
+        assertThat(foundEntity.operationInProgress).isEqualTo(virtualNodeOperationEntity)
+        assertThat(operationEntity).isEqualTo(virtualNodeOperationEntity)
     }
 }
