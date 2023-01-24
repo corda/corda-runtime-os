@@ -13,6 +13,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -97,7 +98,7 @@ class SimConsensualLedgerServiceTest {
         val sessions = publicKeys.minus(publicKeys[0]).map {
             val signature = DigitalSignatureAndMetadata(
                 toSignature(it).signature,
-                DigitalSignatureMetadata(Instant.now(), mapOf())
+                DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
             )
             val flowSession = mock<FlowSession>()
             whenever(flowSession.receive<Any>(any())).thenReturn(listOf(signature), Unit)
@@ -217,7 +218,7 @@ class SimConsensualLedgerServiceTest {
 
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
         DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
-        DigitalSignatureMetadata(Instant.now(), mapOf())
+        DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
     )
 
     data class NameConsensualState(val name: String, override val participants: List<PublicKey>) : ConsensualState {

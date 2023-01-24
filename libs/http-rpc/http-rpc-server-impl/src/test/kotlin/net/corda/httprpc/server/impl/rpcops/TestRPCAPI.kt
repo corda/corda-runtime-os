@@ -1,11 +1,11 @@
 package net.corda.httprpc.server.impl.rpcops
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 
-interface TestRPCAPI : RpcOps {
+interface TestRPCAPI : RestResource {
   fun void(): String
 }
 
-interface TestRPCAPIAnnotated : RpcOps {
+interface TestRPCAPIAnnotated : RestResource {
   fun void(): String
 }

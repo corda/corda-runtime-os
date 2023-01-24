@@ -3,7 +3,7 @@ package net.corda.configuration.rpcops.impl
 import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
+import net.corda.configuration.rpcops.impl.v1.ConfigRestResourceImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
@@ -16,7 +16,7 @@ import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
+import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -40,7 +40,7 @@ import org.mockito.kotlin.whenever
 data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 
 /**
- * Tests of [ConfigRPCOpsImpl].
+ * Tests of [ConfigRestResourceImpl].
  */
 class ConfigRPCOpsImplTests {
     companion object {
@@ -263,7 +263,7 @@ class ConfigRPCOpsImplTests {
         )).isEqualTo(configRPCOps.get(configSection))
     }
 
-    /** Returns a [ConfigRPCOps] where the RPC sender returns [future] in response to any RPC requests.
+    /** Returns a [ConfigRestResource] where the RPC sender returns [future] in response to any RPC requests.
      * @param future to return for any rpc requests
      * @param failValidation Set to true to cause the validator to fail validation for a request
      * @return RPCSender and ConfigRPCOpsInternal
@@ -271,7 +271,7 @@ class ConfigRPCOpsImplTests {
     private fun getConfigRPCOps(
         future: CompletableFuture<ConfigurationManagementResponse> = successFuture,
         failValidation: Boolean = false
-    ): Pair<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>, ConfigRPCOpsImpl> {
+    ): Pair<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>, ConfigRestResourceImpl> {
 
         val rpcSender = mock<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>>().apply {
             whenever(sendRequest(any())).thenReturn(future)
@@ -293,6 +293,6 @@ class ConfigRPCOpsImplTests {
             whenever(createConfigValidator()).thenReturn(validator)
         }
 
-        return rpcSender to ConfigRPCOpsImpl(mock(), mock(), publisherFactory, validatorFactory, configurationGetService)
+        return rpcSender to ConfigRestResourceImpl(mock(), mock(), publisherFactory, validatorFactory, configurationGetService)
     }
 }

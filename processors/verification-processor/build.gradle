@@ -1,0 +1,30 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'net.corda:corda-base'
+
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:ledger:ledger-verification")
+
+    runtimeOnly "net.corda:corda-avro-schema"
+
+    runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    runtimeOnly project(":libs:sandbox-internal")
+}
+
+description 'Verification Processor'

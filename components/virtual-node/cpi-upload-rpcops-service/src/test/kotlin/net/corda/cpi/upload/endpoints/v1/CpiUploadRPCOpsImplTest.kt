@@ -24,7 +24,7 @@ import net.corda.httprpc.exception.InvalidInputDataException
 import org.junit.jupiter.api.assertThrows
 
 class CpiUploadRPCOpsImplTest {
-    private lateinit var cpiUploadRPCOpsImpl: CpiUploadRPCOpsImpl
+    private lateinit var cpiUploadRPCOpsImpl: CpiUploadRestResourceImpl
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var cpiUploadRPCOpsService: CpiUploadRPCOpsService
     private lateinit var cpiInfoReadService: CpiInfoReadService
@@ -46,7 +46,7 @@ class CpiUploadRPCOpsImplTest {
         }
         cpiUploadRPCOpsService = mock()
         cpiInfoReadService = mock()
-        cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService, cpiInfoReadService)
+        cpiUploadRPCOpsImpl = CpiUploadRestResourceImpl(coordinatorFactory, cpiUploadRPCOpsService, cpiInfoReadService)
         cpiUploadManager = mock()
         val mockStatus = mock<UploadStatus>()
         whenever(mockStatus.message).thenReturn(EXPECTED_MESSAGE)

@@ -1,6 +1,6 @@
 package net.corda.httprpc.client.connect
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.HttpRpcConnectionListener
 import net.corda.httprpc.client.auth.credentials.CredentialsProvider
 import net.corda.httprpc.test.TestHealthCheckAPI
@@ -16,13 +16,13 @@ import org.mockito.kotlin.whenever
 internal class HttpRpcConnectionListenerDistributorTest {
     private val credentialsProvider: CredentialsProvider = mock()
 
-    private fun <I : RpcOps> mockListener() = mock<HttpRpcConnectionListener<I>>().also {
+    private fun <I : RestResource> mockListener() = mock<HttpRpcConnectionListener<I>>().also {
         doNothing().whenever(it).onConnect(argThat { this.credentialsProvider == credentialsProvider })
         doNothing().whenever(it).onDisconnect(argThat { this.credentialsProvider == credentialsProvider })
         doNothing().whenever(it).onPermanentFailure(argThat { this.credentialsProvider == credentialsProvider })
     }
 
-    private fun <I : RpcOps> mockErrorListener() = mock<HttpRpcConnectionListener<I>>().also {
+    private fun <I : RestResource> mockErrorListener() = mock<HttpRpcConnectionListener<I>>().also {
         doThrow(RuntimeException()).whenever(it).onConnect(argThat { this.credentialsProvider == credentialsProvider })
         doThrow(RuntimeException()).whenever(it).onDisconnect(argThat { this.credentialsProvider == credentialsProvider })
         doThrow(RuntimeException()).whenever(it).onPermanentFailure(argThat { this.credentialsProvider == credentialsProvider })

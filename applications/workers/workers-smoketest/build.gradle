@@ -13,6 +13,10 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
+    cpiWithoutChangelogs {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 sourceSets {
@@ -61,6 +65,7 @@ dependencies {
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
+    cpiWithoutChangelogs project(path: ':testing:cpbs:test-cordapp-without-changelogs', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
@@ -87,11 +92,20 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
         rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "\$1\$3"
     }
 
+    // These CPBs need to have the same name as the main test-cordapp because they test force-upload to overwrite existing CPIs.
     // Put the test-cordapp-for-cache-testing cpb into a different folder
     def cpiForFlowCacheTest = configurations.cpiForFlowCacheTest
     def cacheTestingDir = "META-INF" + File.separator + "cache-invalidation-testing"
     from(cpiForFlowCacheTest) {
         into cacheTestingDir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
+    }
+
+    // Put the test-cordapp-without-changelogs cpb into a different folder
+    def cpiWithoutChangelogsTest = configurations.cpiWithoutChangelogs
+    def dirForCpiWithoutChangelogs = "META-INF" + File.separator + "cpi-without-changelogs"
+    from(cpiWithoutChangelogsTest) {
+        into dirForCpiWithoutChangelogs
         rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
     }
 }

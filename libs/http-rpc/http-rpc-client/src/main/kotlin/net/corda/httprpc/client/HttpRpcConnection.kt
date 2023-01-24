@@ -1,6 +1,6 @@
 package net.corda.httprpc.client
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.v5.base.annotations.DoNotImplement
 
 /**
@@ -8,7 +8,7 @@ import net.corda.v5.base.annotations.DoNotImplement
  * The [proxy] object can be used to make remote calls using the interface methods.
  */
 @DoNotImplement
-interface HttpRpcConnection<out I : RpcOps> {
+interface HttpRpcConnection<out I : RestResource> {
     val proxy: I
     val serverProtocolVersion: Int
 }

@@ -2,7 +2,7 @@ package net.corda.applications.workers.rpc.utils
 
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.kafka.KafkaTestToolKit
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.HttpRpcClient
 
 interface E2eCluster {
@@ -19,9 +19,9 @@ interface E2eCluster {
     val uniqueName: String
 
     /**
-     * Creates the [HttpRpcClient] for a given [RpcOps] class.
+     * Creates the [HttpRpcClient] for a given [RestResource] class.
      */
-    fun <I : RpcOps> clusterHttpClientFor(
+    fun <I : RestResource> clusterHttpClientFor(
         rpcOpsClass: Class<I>,
         userName: String = AdminPasswordUtil.adminUser
     ): HttpRpcClient<I>
@@ -56,7 +56,7 @@ private class E2eClusterImpl(
     override val uniqueName: String
         get() = testToolkit.uniqueName
 
-    override fun <I : RpcOps> clusterHttpClientFor(
+    override fun <I : RestResource> clusterHttpClientFor(
         rpcOpsClass: Class<I>,
         userName: String
     ): HttpRpcClient<I> = testToolkit.httpClientFor(rpcOpsClass, userName, clusterConfig.rpcPassword)

@@ -1,9 +1,9 @@
 package net.corda.httprpc.server.apigen.test;
 
-import net.corda.httprpc.PluggableRPCOps;
+import net.corda.httprpc.PluggableRestResource;
 import org.jetbrains.annotations.NotNull;
 
-public class TestJavaPrimitivesRPCopsImpl implements TestJavaPrimitivesRpcOps, PluggableRPCOps<TestJavaPrimitivesRpcOps> {
+public class TestJavaPrimitivesRPCopsImpl implements TestJavaPrimitivesRestResource, PluggableRestResource<TestJavaPrimitivesRestResource> {
   @Override
   public Integer negateInt(Integer number) {
     return -number;
@@ -31,8 +31,8 @@ public class TestJavaPrimitivesRPCopsImpl implements TestJavaPrimitivesRpcOps, P
 
   @NotNull
   @Override
-  public Class<TestJavaPrimitivesRpcOps> getTargetInterface() {
-    return TestJavaPrimitivesRpcOps.class;
+  public Class<TestJavaPrimitivesRestResource> getTargetInterface() {
+    return TestJavaPrimitivesRestResource.class;
   }
 
   @Override

@@ -1,0 +1,27 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda HTTP REST tools'
+
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+    implementation project(':libs:http-rpc:http-rpc')
+    implementation project(':libs:http-rpc:http-rpc-common')
+
+    compileOnly "org.osgi:osgi.annotation"
+}
+
+tasks.named("jacocoTestCoverageVerification", JacocoCoverageVerification) {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.7
+            }
+        }
+    }
+}
