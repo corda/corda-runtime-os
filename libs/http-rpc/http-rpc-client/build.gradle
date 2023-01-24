@@ -16,7 +16,7 @@ dependencies {
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
     implementation "net.corda:corda-crypto"
 
-    api project(":libs:http-rpc:http-rpc")
+    api project(":libs:http-rpc:rest")
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:http-rpc:rest-tools")
     implementation project(":libs:http-rpc:json-serialization")
