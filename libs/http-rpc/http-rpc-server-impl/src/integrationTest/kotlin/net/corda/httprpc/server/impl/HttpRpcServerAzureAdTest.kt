@@ -18,6 +18,7 @@ import net.corda.httprpc.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -26,8 +27,14 @@ import kotlin.test.fail
 
 class HttpRpcServerAzureAdTest {
 
-    private companion object {
-        val log = contextLogger()
+    companion object {
+        private val log = contextLogger()
+
+        @BeforeAll
+        @JvmStatic
+        fun warmUp() {
+            AzureAdMock.generateUserToken()
+        }
     }
 
     private lateinit var httpRpcServer: HttpRpcServer

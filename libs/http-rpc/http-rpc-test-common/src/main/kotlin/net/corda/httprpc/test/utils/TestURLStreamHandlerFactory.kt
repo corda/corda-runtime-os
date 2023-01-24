@@ -1,5 +1,6 @@
 package net.corda.httprpc.test.utils
 
+import net.corda.v5.base.util.contextLogger
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
@@ -14,12 +15,16 @@ import java.util.Hashtable
 internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLStreamHandlerFactory, Closeable {
     companion object {
         const val PROTOCOL = "mock"
+        private val log = contextLogger()
 
         @Suppress("TooGenericExceptionThrown")
         private fun forceSetURLStreamHandlerFactory(factory: URLStreamHandlerFactory?) {
             try {
                 URL.setURLStreamHandlerFactory(factory)
             } catch (e: Error) {
+                log.info("Forcefully setting handler factory due to: ${e.message}")
+                // Working around the fact that factory may have already been set once
+                // by using reflection to force assign the value
                 try {
                     val factoryField = URL::class.java.getDeclaredField("factory")
                     factoryField.isAccessible = true
@@ -57,10 +62,14 @@ internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLSt
     }
 
     fun register() {
+        log.info("Register start")
         forceSetURLStreamHandlerFactory(this)
+        log.info("Register end")
     }
 
     override fun close() {
+        log.info("Close start")
         forceSetURLStreamHandlerFactory(null)
+        log.info("Close end")
     }
 }

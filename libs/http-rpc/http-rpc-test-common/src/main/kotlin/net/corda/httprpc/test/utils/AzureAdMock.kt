@@ -32,6 +32,8 @@ object AzureAdMock {
     )
     private val signer = RSASSASigner(keySet.keys.first().toRSAKey())
 
+    private val keySetJson = ObjectMapper().writeValueAsString(keySet.toPublicJWKSet().toJSONObject())
+
     fun generateUserToken(): String {
         val jwt = SignedJWT(
             JWSHeader.Builder(JWSAlgorithm.RS256).keyID(keyId).build(), JWTClaimsSet.Builder().audience(clientId)
@@ -60,7 +62,7 @@ object AzureAdMock {
         val streamHandler = TestURLStreamHandlerFactory(
             mapOf(
                 oidcMetadataUrl to oidcMetadata,
-                jwksUrl to ObjectMapper().writeValueAsString(keySet.toPublicJWKSet().toJSONObject())
+                jwksUrl to keySetJson
             )
         )
         streamHandler.register()
