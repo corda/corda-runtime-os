@@ -1,19 +1,17 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
 import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
-import java.time.Duration
-import java.time.temporal.ChronoUnit
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.CODE_SIGNER_CERT
+import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.ClusterBuilder
+import net.corda.e2etest.utilities.GROUP_ID
+import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJson
-import net.corda.e2etest.utilities.assertWithRetry
-import net.corda.e2etest.utilities.GROUP_ID
-import net.corda.e2etest.utilities.cluster
 import net.corda.httprpc.ResponseCode.CONFLICT
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
@@ -22,6 +20,8 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**

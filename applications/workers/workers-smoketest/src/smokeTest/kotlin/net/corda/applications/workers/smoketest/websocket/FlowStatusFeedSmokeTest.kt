@@ -1,23 +1,22 @@
 package net.corda.applications.workers.smoketest.websocket
 
-import java.util.UUID
-import net.corda.e2etest.utilities.RpcSmokeTestInput
-import net.corda.e2etest.utilities.SMOKE_TEST_CLASS_NAME
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.CODE_SIGNER_CERT
+import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebSocketHandler
+import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsocketClient
+import net.corda.applications.workers.smoketest.websocket.client.useWebsocketConnection
+import net.corda.e2etest.utilities.CODE_SIGNER_CERT
+import net.corda.e2etest.utilities.GROUP_ID
+import net.corda.e2etest.utilities.RpcSmokeTestInput
+import net.corda.e2etest.utilities.SMOKE_TEST_CLASS_NAME
+import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getFlowClasses
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.startRpcFlow
-import net.corda.e2etest.utilities.assertWithRetry
-import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebSocketHandler
-import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsocketClient
-import net.corda.applications.workers.smoketest.websocket.client.useWebsocketConnection
-import net.corda.e2etest.utilities.GROUP_ID
-import net.corda.e2etest.utilities.cluster
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.time.Duration
+import java.util.UUID
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class FlowStatusFeedSmokeTest {
