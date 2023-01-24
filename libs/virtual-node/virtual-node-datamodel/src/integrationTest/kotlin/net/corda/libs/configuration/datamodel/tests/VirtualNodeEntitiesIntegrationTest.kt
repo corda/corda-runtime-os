@@ -138,7 +138,7 @@ class VirtualNodeEntitiesIntegrationTest {
 
         val foundEntity = entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId)
         val operationEntity =
-            entityManagerFactory.createEntityManager().find(VirtualNodeOperationEntity::class.java, rand)
+            entityManagerFactory.createEntityManager().find(VirtualNodeOperationEntity::class.java, rand.toString())
         assertThat(foundEntity).isEqualTo(vnodeEntity)
         assertThat(foundEntity.operationInProgress).isEqualTo(virtualNodeOperationEntity)
         assertThat(operationEntity).isEqualTo(virtualNodeOperationEntity)
