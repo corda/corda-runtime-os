@@ -2,10 +2,10 @@ package net.corda.httprpc.server.impl
 
 import kong.unirest.HttpStatus
 import net.corda.httprpc.security.read.RPCSecurityManager
-import net.corda.httprpc.server.HttpRpcServer
+import net.corda.httprpc.server.RestServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
-import net.corda.httprpc.server.config.models.HttpRpcContext
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestContext
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.AzureAdMock
@@ -23,37 +23,37 @@ import kotlin.test.assertEquals
 
 
 class HttpRpcServerAzureAdTest {
-    private lateinit var httpRpcServer: HttpRpcServer
+    private lateinit var restServer: RestServer
     private lateinit var client: TestHttpClient
     private lateinit var securityManager: RPCSecurityManager
 
     @BeforeEach
     fun setUp() {
         securityManager = FakeSecurityManager()
-        val httpRpcSettings = HttpRpcSettings(
+        val restServerSettings = RestServerSettings(
             NetworkHostAndPort("localhost", 0),
-            HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description"),
+            RestContext("1", "api", "RestContext test title ", "RestContext test description"),
             null,
             SsoSettings(
                 AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))
             ),
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
             20000L
         )
-        httpRpcServer = HttpRpcServerImpl(
+        restServer = HttpRpcServerImpl(
             listOf(TestHealthCheckAPIImpl()),
             ::securityManager,
-            httpRpcSettings,
+            restServerSettings,
             multipartDir,
             true
         ).apply { start() }
-        client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcServer.port}/" +
-                "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+        client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${restServer.port}/" +
+                "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
     }
 
     @AfterEach
     fun tearDown() {
-        httpRpcServer.close()
+        restServer.close()
     }
 
     @Test

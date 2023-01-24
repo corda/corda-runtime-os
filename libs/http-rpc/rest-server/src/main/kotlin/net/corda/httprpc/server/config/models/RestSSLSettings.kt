@@ -2,9 +2,9 @@ package net.corda.httprpc.server.config.models
 
 import java.nio.file.Path
 
-data class HttpRpcSSLSettings(
+data class RestSSLSettings(
     val keyStorePath: Path,
     val keyStorePassword: String
 ) {
-    override fun toString() = "HttpRpcSSLSettings(keyStorePath=$keyStorePath)"
+    override fun toString() = "RestSSLSettings(keyStorePath=$keyStorePath)"
 }

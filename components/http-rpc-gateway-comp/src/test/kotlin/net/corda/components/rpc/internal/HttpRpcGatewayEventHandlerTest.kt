@@ -4,8 +4,8 @@ import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.server.HttpRpcServer
-import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.server.RestServer
+import net.corda.httprpc.server.factory.RestServerFactory
 import net.corda.httprpc.ssl.KeyStoreInfo
 import net.corda.httprpc.ssl.SslCertReadService
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
@@ -37,7 +37,7 @@ internal class HttpRpcGatewayEventHandlerTest {
 
     private val registration = mock<RegistrationHandle>()
     private val coordinator = mock<LifecycleCoordinator>()
-    private val server = mock<HttpRpcServer>()
+    private val server = mock<RestServer>()
     private val sslCertReadService = mock<SslCertReadService>()
     private val rpcConfig = mock<SmartConfig>().also {
         whenever(it.getString(ConfigKeys.REST_ADDRESS)).thenReturn("localhost:0")
@@ -49,8 +49,8 @@ internal class HttpRpcGatewayEventHandlerTest {
     }
 
     private val configurationReadService = mock<ConfigurationReadService>()
-    private val httpRpcServerFactory = mock<HttpRpcServerFactory>().also {
-        whenever(it.createHttpRpcServer(any(), any(), any(), any(), eq(false))).thenReturn(mock())
+    private val restServerFactory = mock<RestServerFactory>().also {
+        whenever(it.createRestServer(any(), any(), any(), any(), eq(false))).thenReturn(mock())
     }
     private val rbacSecurityManagerService = mock<RBACSecurityManagerService>()
     private val sslCertReadServiceFactory = mock<SslCertReadServiceFactory>().also {
@@ -68,7 +68,7 @@ internal class HttpRpcGatewayEventHandlerTest {
     private val handler = HttpRpcGatewayEventHandler(
         permissionManagementService,
         configurationReadService,
-        httpRpcServerFactory,
+        restServerFactory,
         rbacSecurityManagerService,
         sslCertReadServiceFactory,
         ::restResources,
@@ -109,7 +109,7 @@ internal class HttpRpcGatewayEventHandlerTest {
 
         handler.processEvent(RegistrationStatusChangeEvent(registration, LifecycleStatus.UP), coordinator)
 
-        verify(httpRpcServerFactory).createHttpRpcServer(any(), any(), any(), any(), eq(false))
+        verify(restServerFactory).createRestServer(any(), any(), any(), any(), eq(false))
 
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }

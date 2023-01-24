@@ -4,13 +4,9 @@ import net.corda.utilities.NetworkHostAndPort
 import java.nio.file.Path
 
 /**
- * Interface that provides a way to retrieve HTTP RPC config values, agnostic of particular config providing implementation.
+ * Interface that provides a way to retrieve REST server config values, agnostic of particular config providing implementation.
  */
-interface HttpRpcSettingsProvider {
-    /**
-     * @return whether the HTTP RPC functionality is enabled and the server is accessible.
-     */
-    fun isHttpRpcEnabled(): Boolean
+interface RestServerSettingsProvider {
 
     /**
      * @return the API version

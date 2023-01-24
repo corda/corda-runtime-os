@@ -2,10 +2,10 @@ package net.corda.httprpc.server.config.models
 
 import net.corda.utilities.NetworkHostAndPort
 
-data class HttpRpcSettings(
+data class RestServerSettings(
     val address: NetworkHostAndPort,
-    val context: HttpRpcContext,
-    val ssl: HttpRpcSSLSettings?,
+    val context: RestContext,
+    val ssl: RestSSLSettings?,
     val sso: SsoSettings? = null,
     /**
      * The maximum content length in bytes accepted for POST requests

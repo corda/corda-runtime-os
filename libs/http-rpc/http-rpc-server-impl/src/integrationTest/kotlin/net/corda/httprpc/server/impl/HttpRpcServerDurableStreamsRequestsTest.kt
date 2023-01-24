@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl
 
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.server.impl.utils.compact
 import net.corda.httprpc.test.CalendarRestResourceImpl
 import net.corda.httprpc.test.CustomSerializationAPIImpl
@@ -24,17 +24,17 @@ class HttpRpcServerDurableStreamsRequestsTest : HttpRpcServerTestBase() {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  0),
-                context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
+            val restServerSettings = RestServerSettings(NetworkHostAndPort("localhost",  0),
+                context, null, null, RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
             server = HttpRpcServerImpl(
                 listOf(NumberSequencesRestResourceImpl(), CalendarRestResourceImpl(), TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
                 { FakeSecurityManager() } ,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
 
         }
 
