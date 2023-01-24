@@ -49,6 +49,10 @@ data class UtxoTransactionBuilderImpl(
         return copy(signatories = this.signatories + signatories)
     }
 
+    override fun addSignatories(vararg signatories: PublicKey): UtxoTransactionBuilder {
+        return addSignatories(signatories.toList())
+    }
+
     override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
         return copy(inputStateRefs = inputStateRefs + stateRef)
     }

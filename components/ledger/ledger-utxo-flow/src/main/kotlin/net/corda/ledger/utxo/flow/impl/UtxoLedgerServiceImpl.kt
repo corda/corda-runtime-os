@@ -74,19 +74,19 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
-        return UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal)
+        return UtxoFilteredTransactionBuilderImpl(
+            utxoFilteredTransactionFactory,
+            signedTransaction as UtxoSignedTransactionInternal
+        )
     }
 
     @Suspendable
-    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
+    override fun <T : ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
         return utxoLedgerStateQueryService.findUnconsumedStatesByType(stateClass)
     }
 
     @Suspendable
-    override fun finalize(
-        signedTransaction: UtxoSignedTransaction,
-        sessions: List<FlowSession>
-    ): UtxoSignedTransaction {
+    override fun finalize(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>): UtxoSignedTransaction {
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
@@ -102,10 +102,12 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun receiveFinality(
-        session: FlowSession,
-        validator: UtxoTransactionValidator
-    ): UtxoSignedTransaction {
+    override fun receiveFinality(session: FlowSession): UtxoSignedTransaction {
+        return receiveFinality(session) {}
+    }
+
+    @Suspendable
+    override fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
         val utxoReceiveFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 UtxoReceiveFinalityFlow(session, validator)
