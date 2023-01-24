@@ -6,4 +6,4 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  * Another group exists in the cluster in mutual TLS mode
  */
 class AnotherGroupExistsMutualTlsException :
-    CordaRuntimeException("Another group already exists in the cluster in mutual TLS.")
+    CordaRuntimeException("Another group already exists in the cluster configured in mutual TLS mode.")
