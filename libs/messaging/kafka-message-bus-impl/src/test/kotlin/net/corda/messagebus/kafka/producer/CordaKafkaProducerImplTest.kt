@@ -20,7 +20,7 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.InvalidProducerEpochException
 import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.errors.TimeoutException
-import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -188,8 +188,10 @@ class CordaKafkaProducerImplTest {
     @Test
     fun testTryCommitTransactionRetry() {
         whenever(producer.commitTransaction()).thenThrow(TimeoutException()).thenThrow(InterruptException(""))
-        assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.commitTransaction() }
+        val exception = assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.commitTransaction() }
         verify(producer, times(2)).commitTransaction()
+        assertNotNull(exception.cause)
+        assertInstanceOf(InterruptException::class.java, exception.cause)
     }
 
     @Test
