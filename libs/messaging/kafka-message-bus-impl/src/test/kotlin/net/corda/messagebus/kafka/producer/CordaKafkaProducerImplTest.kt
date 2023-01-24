@@ -20,7 +20,9 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.InvalidProducerEpochException
 import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.errors.TimeoutException
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
