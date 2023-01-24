@@ -1,6 +1,6 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.tools.annotations.validation.utils.endpoints
@@ -9,7 +9,7 @@ import java.lang.reflect.Parameter
 /**
  * Validates that every method path and query parameter is one of the expected types.
  */
-internal class ParameterClassTypeValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
+internal class ParameterClassTypeValidator(private val clazz: Class<out RestResource>) : HttpRpcValidator {
     private val allowedPathParameterTypes = setOf(
         Int::class.java, Integer::class.java,
         Long::class.java, Long::class.javaObjectType,

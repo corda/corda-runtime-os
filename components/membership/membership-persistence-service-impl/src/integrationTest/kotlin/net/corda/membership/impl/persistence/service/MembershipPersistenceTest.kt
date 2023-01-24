@@ -25,7 +25,7 @@ import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
@@ -60,6 +60,7 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -187,6 +188,9 @@ class MembershipPersistenceTest {
 
         @InjectService(timeout = 5000)
         lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
+
+        @InjectService(timeout = 5000)
+        lateinit var allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService
 
         @InjectService(timeout = 5000)
         lateinit var keyEncodingService: KeyEncodingService
@@ -351,7 +355,7 @@ class MembershipPersistenceTest {
 //        private val vnodeDbInfo = TestDbInfo("vnode_vault_$holdingIdentityShortHash", DbSchema.VNODE)
         private val clusterDbInfo = TestDbInfo.createConfig()
 
-        private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+        private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
         private val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         private val dbConfig = smartConfigFactory.create(clusterDbInfo.config)
 
@@ -400,6 +404,7 @@ class MembershipPersistenceTest {
 
             membershipPersistenceService.startAndWait()
             membershipPersistenceClientWrapper.startAndWait()
+            allowedCertificatesReaderWriterService.start()
 
             eventually {
                 logger.info("Waiting for required services to start...")

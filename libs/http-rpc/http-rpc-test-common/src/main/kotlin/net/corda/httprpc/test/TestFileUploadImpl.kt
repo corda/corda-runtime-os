@@ -2,10 +2,10 @@ package net.corda.httprpc.test
 
 import java.io.InputStream
 import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.test.utils.ChecksumUtil
 
-class TestFileUploadImpl : TestFileUploadAPI, PluggableRPCOps<TestFileUploadAPI> {
+class TestFileUploadImpl : TestFileUploadAPI, PluggableRestResource<TestFileUploadAPI> {
 
     override fun upload(file: InputStream): String {
         return ChecksumUtil.generateChecksum(file)

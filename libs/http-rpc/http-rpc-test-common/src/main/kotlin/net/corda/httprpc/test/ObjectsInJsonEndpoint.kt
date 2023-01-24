@@ -1,7 +1,7 @@
 package net.corda.httprpc.test
 
 import net.corda.httprpc.JsonObject
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -11,7 +11,7 @@ import net.corda.httprpc.annotations.HttpRpcResource
     description = "RESTful operations with json objects in payloads",
     path = "objects-in-json-endpoint"
 )
-interface ObjectsInJsonEndpoint : RpcOps {
+interface ObjectsInJsonEndpoint : RestResource {
 
     data class RequestWithJsonObject(val id: String, val obj: JsonObject)
     data class ResponseWithJsonObject(val id: String, val obj: JsonObject)

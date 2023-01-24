@@ -2,27 +2,27 @@ package net.corda.processors.rpc
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
-import net.corda.flow.rpcops.v1.FlowClassRpcOps
-import net.corda.flow.rpcops.v1.FlowRpcOps
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
+import net.corda.flow.rpcops.v1.FlowClassRestResource
+import net.corda.flow.rpcops.v1.FlowRestResource
+import net.corda.httprpc.PluggableRestResource
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
-import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
+import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
-import net.corda.membership.httprpc.v1.CertificatesRpcOps
-import net.corda.membership.httprpc.v1.HsmRpcOps
-import net.corda.membership.httprpc.v1.KeysRpcOps
-import net.corda.membership.httprpc.v1.MGMRpcOps
-import net.corda.membership.httprpc.v1.MemberLookupRpcOps
-import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
-import net.corda.membership.httprpc.v1.NetworkRpcOps
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
+import net.corda.membership.httprpc.v1.CertificatesRestResource
+import net.corda.membership.httprpc.v1.HsmRestResource
+import net.corda.membership.httprpc.v1.KeysRestResource
+import net.corda.membership.httprpc.v1.MGMRestResource
+import net.corda.membership.httprpc.v1.MemberLookupRestResource
+import net.corda.membership.httprpc.v1.MemberRegistrationRestResource
+import net.corda.membership.httprpc.v1.NetworkRestResource
 import net.corda.processors.rpc.diff.diff
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
@@ -44,27 +44,27 @@ class OpenApiCompatibilityTest {
         private val logger = contextLogger()
 
         private val importantRpcOps = setOf(
-            CertificatesRpcOps::class.java, // P2P
-            HsmRpcOps::class.java, // P2P
-            KeysRpcOps::class.java, // P2P
-            ConfigRPCOps::class.java, // Flow
-            FlowRpcOps::class.java, // Flow
-            FlowClassRpcOps::class.java, // Flow
-            CpiUploadRPCOps::class.java, // Packaging
-            VirtualNodeRPCOps::class.java, // Packaging
-            MemberLookupRpcOps::class.java, // MGM
-            MemberRegistrationRpcOps::class.java, // MGM
-            MGMRpcOps::class.java, // MGM
-            NetworkRpcOps::class.java, // MGM
+            CertificatesRestResource::class.java, // P2P
+            HsmRestResource::class.java, // P2P
+            KeysRestResource::class.java, // P2P
+            ConfigRestResource::class.java, // Flow
+            FlowRestResource::class.java, // Flow
+            FlowClassRestResource::class.java, // Flow
+            CpiUploadRestResource::class.java, // Packaging
+            VirtualNodeRestResource::class.java, // Packaging
+            MemberLookupRestResource::class.java, // MGM
+            MemberRegistrationRestResource::class.java, // MGM
+            MGMRestResource::class.java, // MGM
+            NetworkRestResource::class.java, // MGM
             PermissionEndpoint::class.java, // RPC
             RoleEndpoint::class.java, // RPC
             UserEndpoint::class.java, // RPC
-            VirtualNodeMaintenanceRPCOps::class.java // RPC
+            VirtualNodeMaintenanceRestResource::class.java // RPC
         )
 
-        // `cardinality` is not equal to `importantRpcOps.size` as there might be some test RpcOps as well
-        @InjectService(service = PluggableRPCOps::class, cardinality = 16, timeout = 10_000)
-        lateinit var dynamicRpcOps: List<RpcOps>
+        // `cardinality` is not equal to `importantRpcOps.size` as there might be some test RestResource as well
+        @InjectService(service = PluggableRestResource::class, cardinality = 16, timeout = 10_000)
+        lateinit var dynamicRpcOps: List<RestResource>
 
         @InjectService(service = HttpRpcServerFactory::class, timeout = 10_000)
         lateinit var httpServerFactory: HttpRpcServerFactory
@@ -72,9 +72,9 @@ class OpenApiCompatibilityTest {
 
     @Test
     fun test() {
-        val allOps = dynamicRpcOps.map { (it as PluggableRPCOps<*>).targetInterface }.sortedBy { it.name }
+        val allOps = dynamicRpcOps.map { (it as PluggableRestResource<*>).targetInterface }.sortedBy { it.name }
         assertThat(allOps.filterNot {
-            it.name.contains("HelloRpcOps") // the only test, i.e. not important RPC Ops we have
+            it.name.contains("HelloRestResource") // the only test, i.e. not important RPC Ops we have
         }.toSet()).isEqualTo(importantRpcOps)
 
         logger.info("RPC Ops discovered: ${allOps.map { it.simpleName }}")
@@ -123,7 +123,7 @@ class OpenApiCompatibilityTest {
         )
 
         val server = httpServerFactory.createHttpRpcServer(
-            dynamicRpcOps.map { it as PluggableRPCOps<out RpcOps> }.sortedBy { it.targetInterface.name },
+            dynamicRpcOps.map { it as PluggableRestResource<out RestResource> }.sortedBy { it.targetInterface.name },
             { FakeSecurityManager() }, httpRpcSettings, multipartDir, devMode = true
         ).apply { start() }
 

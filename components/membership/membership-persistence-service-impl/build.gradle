@@ -23,6 +23,7 @@ dependencies {
     implementation project(':components:db:db-connection-manager')
     implementation project(':components:membership:membership-persistence-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:membership:mtls-mgm-allowed-list-reader-writer')
 
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:lifecycle:lifecycle')

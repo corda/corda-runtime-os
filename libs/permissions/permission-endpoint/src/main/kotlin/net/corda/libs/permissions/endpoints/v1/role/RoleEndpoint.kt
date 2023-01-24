@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.role
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
@@ -22,7 +22,7 @@ import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
             "create new roles and add and delete permissions from roles.",
     path = "role"
 )
-interface RoleEndpoint : RpcOps {
+interface RoleEndpoint : RestResource {
 
     /**
      * Get all the roles available in RBAC permission system.

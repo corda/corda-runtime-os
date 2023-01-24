@@ -3,9 +3,8 @@ package net.corda.db.testkit
 import com.typesafe.config.ConfigFactory
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
-import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.orm.EntityManagerConfiguration
 
 /**
@@ -18,15 +17,14 @@ class TestDbInfo(
     rewriteBatchedInserts: Boolean = false
 ) {
     companion object {
-        private val configFactory = SmartConfigFactoryFactory(object: SecretsServiceFactoryResolver {
-            override fun findAll() = listOf(EncryptionSecretsServiceFactory())
-        }).create(
+        private val configFactory = SmartConfigFactory.createWith(
             ConfigFactory.parseString(
                 """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=key
             ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
         """.trimIndent()
-            )
+            ),
+            listOf(EncryptionSecretsServiceFactory())
         )
 
         fun createConfig() = TestDbInfo(name = CordaDb.CordaCluster.persistenceUnitName)

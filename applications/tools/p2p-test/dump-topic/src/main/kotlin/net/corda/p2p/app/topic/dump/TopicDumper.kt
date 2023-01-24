@@ -3,7 +3,7 @@ package net.corda.p2p.app.topic.dump
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -147,7 +147,7 @@ internal class TopicDumper(
             "localhost:9092"
         }
         logger.info("Connecting to ${parsedMessagingParams["${BootConfig.BOOT_KAFKA_COMMON}.bootstrap.servers"]}")
-        val kafkaConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(
+        val kafkaConfig = SmartConfigFactory.createWithoutSecurityServices().create(
             ConfigFactory.parseMap(parsedMessagingParams)
                 .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))

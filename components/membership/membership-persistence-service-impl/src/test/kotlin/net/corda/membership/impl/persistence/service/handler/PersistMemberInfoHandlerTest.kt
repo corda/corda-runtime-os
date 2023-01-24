@@ -116,6 +116,7 @@ class PersistMemberInfoHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
     )
     private lateinit var persistMemberInfoHandler: PersistMemberInfoHandler
 

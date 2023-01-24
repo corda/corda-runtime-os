@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
@@ -31,7 +31,7 @@ class ConfigProcessorTest {
     @Captor
     val eventCaptor: ArgumentCaptor<LifecycleEvent> = ArgumentCaptor.forClass(LifecycleEvent::class.java)
 
-    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val configMerger: ConfigMerger = mock {
         on { getMessagingConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig }
         on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty()  }
@@ -132,6 +132,6 @@ class ConfigProcessorTest {
     }
 
     private fun String.toSmartConfig(): SmartConfig {
-        return SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString(this))
+        return SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString(this))
     }
 }

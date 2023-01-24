@@ -19,6 +19,9 @@ internal class MutualTlsListAllowedCertificatesHandler(
             val root = queryBuilder.from(MutualTlsAllowedClientCertificateEntity::class.java)
             val query = queryBuilder
                 .select(root)
+                .where(
+                    criteriaBuilder.equal(root.get<Boolean>("isDeleted"), false),
+                )
                 .orderBy(criteriaBuilder.asc(root.get<String>("subject")))
             val subjects = em.createQuery(query)
                 .resultList

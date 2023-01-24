@@ -105,6 +105,7 @@ class PersistRegistrationRequestHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
     )
     private lateinit var persistRegistrationRequestHandler: PersistRegistrationRequestHandler
 

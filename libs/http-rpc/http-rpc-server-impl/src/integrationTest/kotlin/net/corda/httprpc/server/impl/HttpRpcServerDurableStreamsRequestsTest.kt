@@ -2,9 +2,9 @@ package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.utils.compact
-import net.corda.httprpc.test.CalendarRPCOpsImpl
+import net.corda.httprpc.test.CalendarRestResourceImpl
 import net.corda.httprpc.test.CustomSerializationAPIImpl
-import net.corda.httprpc.test.NumberSequencesRPCOpsImpl
+import net.corda.httprpc.test.NumberSequencesRestResourceImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.FakeSecurityManager
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
@@ -27,7 +27,7 @@ class HttpRpcServerDurableStreamsRequestsTest : HttpRpcServerTestBase() {
             val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  0),
                 context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
             server = HttpRpcServerImpl(
-                listOf(NumberSequencesRPCOpsImpl(), CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
+                listOf(NumberSequencesRestResourceImpl(), CalendarRestResourceImpl(), TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
                 { FakeSecurityManager() } ,
                 httpRpcSettings,
                 multipartDir,

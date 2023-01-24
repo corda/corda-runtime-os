@@ -59,6 +59,7 @@ import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegi
 import net.corda.membership.impl.persistence.service.handler.UpdateRegistrationRequestStatusHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
@@ -76,6 +77,7 @@ internal class MembershipPersistenceRPCProcessor(
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     keyEncodingService: KeyEncodingService,
     platformInfoProvider: PlatformInfoProvider,
+    allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) : RPCResponderProcessor<MembershipPersistenceRequest, MembershipPersistenceResponse> {
 
     private companion object {
@@ -91,6 +93,7 @@ internal class MembershipPersistenceRPCProcessor(
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        allowedCertificatesReaderWriterService,
     )
     private val handlerFactories: Map<Class<*>, () -> PersistenceHandler<out Any, out Any>> = mapOf(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },

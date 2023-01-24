@@ -2,7 +2,7 @@ package net.corda.applications.workers.rpc.http
 
 import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminPassword
 import net.corda.applications.workers.rpc.utils.AdminPasswordUtil.adminUser
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.HttpRpcClient
 
 /**
@@ -16,9 +16,9 @@ interface TestToolkit {
     val uniqueName: String
 
     /**
-     * Creates the [HttpRpcClient] for a given [RpcOps] class.
+     * Creates the [HttpRpcClient] for a given [RestResource] class.
      */
-    fun <I : RpcOps> httpClientFor(
+    fun <I : RestResource> httpClientFor(
         rpcOpsClass: Class<I>,
         userName: String = adminUser,
         password: String = adminPassword

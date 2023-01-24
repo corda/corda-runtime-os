@@ -48,7 +48,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
                     TestHealthCheckAPIImpl(),
                     TestJavaPrimitivesRPCopsImpl(),
                     CustomSerializationAPIImpl(),
-                    TestEntityRpcOpsImpl(),
+                    TestEntityRestResourceImpl(),
                     TestFileUploadImpl()
                 ),
                 ::securityManager,

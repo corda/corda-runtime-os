@@ -73,6 +73,20 @@ fun JsonNode.getOptionalStringMap(
     }
 }
 
+fun JsonNode.getOptionalString(
+    key: String
+): String? {
+    if (!hasNonNull(key)) {
+        return null
+    }
+    return get(key).run {
+        if (!isTextual) {
+            throw BadGroupPolicyException(getBadTypeError(key, "Object"))
+        }
+        textValue()
+    }
+}
+
 fun JsonNode.getMandatoryStringMap(
     key: String
 ) = getOptionalStringMap(key) ?: throw BadGroupPolicyException(getMissingKeyError(key))

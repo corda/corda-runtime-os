@@ -1,6 +1,6 @@
 package net.corda.cli.plugins.common
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.HttpRpcClient
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
@@ -14,7 +14,7 @@ object HttpRpcClientUtils {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val errOut: Logger = LoggerFactory.getLogger("SystemErr")
 
-    fun <I : RpcOps> HttpRpcCommand.createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
+    fun <I : RestResource> HttpRpcCommand.createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
         val localTargetUrl = if(targetUrl.endsWith("/")) {
             targetUrl.dropLast(1)
         } else {
@@ -48,7 +48,7 @@ object HttpRpcClientUtils {
                 return onAlreadyExists(ex)
             } catch (ex: Exception) {
                 lastException = ex
-                logger.warn("""Cannot perform operation "$operationName" yet""", ex)
+                logger.warn("""Cannot perform operation "$operationName" yet""")
                 val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
                 Thread.sleep(sleep.coerceAtMost(remaining))
                 sleep *= 2

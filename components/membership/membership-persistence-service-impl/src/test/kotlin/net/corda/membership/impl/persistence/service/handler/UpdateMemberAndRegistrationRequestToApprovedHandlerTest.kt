@@ -107,6 +107,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
     )
     private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
 

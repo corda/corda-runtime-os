@@ -10,7 +10,6 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.TypedQuery
 import net.corda.libs.cpi.datamodel.CpkFileEntity
-import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.eq
 
@@ -61,7 +60,6 @@ class DBCpkStorageTest {
     fun `get cpk data by checksum uses named query`() {
         val bytes = "sometext".toByteArray()
         val cpkFileAsList = CpkFileEntity(
-            CpkKey("name", "1", "ssh"),
             "SHA-256:1234567890",
             bytes
         )

@@ -18,8 +18,8 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import net.corda.httprpc.durablestream.api.isFiniteDurableStreamsMethod
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.PluggableRestResource
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcWS
@@ -35,11 +35,11 @@ import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.kotlinFunction
 
 /**
- * [APIStructureRetriever] scans through the class, method and parameter annotations of the passed [PluggableRPCOps] list,
+ * [APIStructureRetriever] scans through the class, method and parameter annotations of the passed [PluggableRestResource] list,
  * generating a list of [Resource].
  */
 @Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown")
-internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
+internal class APIStructureRetriever(private val opsImplList: List<PluggableRestResource<*>>) {
     private companion object {
         private val log = contextLogger()
     }
@@ -48,7 +48,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
 
     private val delegationTargetsMap by lazy { retrieveImplMap() }
 
-    private fun retrieveImplMap(): Map<Class<out RpcOps>, PluggableRPCOps<*>> {
+    private fun retrieveImplMap(): Map<Class<out RestResource>, PluggableRestResource<*>> {
         try {
             log.trace { "Retrieve implementations by target interface map." }
             return opsImplList.mapNotNull { opsImpl ->
@@ -85,7 +85,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         }
     }
 
-    private fun List<Class<out RpcOps>>.validated(): List<Class<out RpcOps>> {
+    private fun List<Class<out RestResource>>.validated(): List<Class<out RestResource>> {
         try {
             log.trace { "Validate resource classes: ${this.joinToString(",")}." }
             return this.apply {
@@ -108,7 +108,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         }
     }
 
-    private fun retrieveTargetInterface(impl: PluggableRPCOps<*>): Class<out RpcOps>? {
+    private fun retrieveTargetInterface(impl: PluggableRestResource<*>): Class<out RestResource>? {
         try {
             log.trace { "Retrieve target interface for implementation \"${impl::class.java.name}\"." }
             return impl.targetInterface.takeIf { it.annotations.any { annotation -> annotation is HttpRpcResource } }
@@ -126,7 +126,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         }
     }
 
-    private fun retrieveEndpoints(clazz: Class<out RpcOps>): List<Endpoint> {
+    private fun retrieveEndpoints(clazz: Class<out RestResource>): List<Endpoint> {
         try {
             log.trace { "Retrieve endpoints." }
             val methods = clazz.methods
@@ -147,7 +147,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
             method.toEndpoint()
         }
 
-    private fun getImplicitGETEndpoints(methods: Array<Method>, clazz: Class<out RpcOps>) =
+    private fun getImplicitGETEndpoints(methods: Array<Method>, clazz: Class<out RestResource>) =
         methods.filter {
             isImplicitlyExposedGETMethod(it)
         }.map { method ->
@@ -335,7 +335,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         ).also { log.trace { """"Method "$name" to WS endpoint completed.""" } }
     }
 
-    private fun Method.getInvocationMethod(clazz: Class<out RpcOps>? = null): InvocationMethod {
+    private fun Method.getInvocationMethod(clazz: Class<out RestResource>? = null): InvocationMethod {
         try {
             log.debug { "Get invocation method for \"${this.name}\"." }
             return InvocationMethod(

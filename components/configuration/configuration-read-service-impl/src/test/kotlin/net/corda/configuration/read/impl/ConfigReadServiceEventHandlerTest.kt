@@ -3,7 +3,7 @@ package net.corda.configuration.read.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadException
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.ErrorEvent
@@ -37,7 +37,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 internal class ConfigReadServiceEventHandlerTest {
-    private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
 
     @Captor
     val lifecycleEventCaptor: ArgumentCaptor<LifecycleEvent> = ArgumentCaptor.forClass(LifecycleEvent::class.java)
@@ -53,7 +53,7 @@ internal class ConfigReadServiceEventHandlerTest {
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
-    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("start" to 1)))
     @BeforeEach
     fun setUp() {

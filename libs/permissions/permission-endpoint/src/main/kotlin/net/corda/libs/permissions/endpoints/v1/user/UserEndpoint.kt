@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user
 
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
@@ -24,7 +24,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
             "assign roles to users and remove roles from users.",
     path = "user"
 )
-interface UserEndpoint : RpcOps {
+interface UserEndpoint : RestResource {
 
     /**
      * Create a user in the RBAC permission system.

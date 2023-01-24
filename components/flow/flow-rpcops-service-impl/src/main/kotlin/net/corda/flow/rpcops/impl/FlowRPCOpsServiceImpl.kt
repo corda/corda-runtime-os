@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.flow.rpcops.FlowStatusCacheService
-import net.corda.flow.rpcops.v1.FlowRpcOps
+import net.corda.flow.rpcops.v1.FlowRestResource
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
@@ -32,8 +32,8 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = FlowRpcOps::class)
-    private val flowRpcOps: FlowRpcOps,
+    @Reference(service = FlowRestResource::class)
+    private val flowRpcOps: FlowRestResource,
     @Reference(service = FlowStatusCacheService::class)
     private val flowStatusCacheService: FlowStatusCacheService,
     @Reference(service = LifecycleCoordinatorFactory::class)

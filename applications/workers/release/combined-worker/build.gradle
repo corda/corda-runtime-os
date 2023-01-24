@@ -27,10 +27,13 @@ osgiRun {
 quasar {
     excludeLocations = [ 'PERSISTENCE/*', 'VERIFICATION/*' ]
     excludePackages.addAll([
+            'com.zaxxer.hikari**',
+            'liquibase**',
+            'net.corda.membership**',
             'org.eclipse.jetty**',
             'org.hibernate**',
             'org.jboss.logging',
-            'net.corda.membership**'
+            'org.postgresql**'
     ])
 }
 

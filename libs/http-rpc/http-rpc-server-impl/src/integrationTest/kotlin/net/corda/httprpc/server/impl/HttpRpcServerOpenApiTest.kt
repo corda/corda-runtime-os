@@ -13,8 +13,8 @@ import io.swagger.v3.oas.models.media.StringSchema
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
 import net.corda.httprpc.server.impl.utils.compact
-import net.corda.httprpc.test.CalendarRPCOpsImpl
-import net.corda.httprpc.test.TestEntityRpcOpsImpl
+import net.corda.httprpc.test.CalendarRestResourceImpl
+import net.corda.httprpc.test.TestEntityRestResourceImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.utilities.NetworkHostAndPort
@@ -30,7 +30,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import net.corda.httprpc.test.NullabilityRPCOpsImpl
+import net.corda.httprpc.test.NullabilityRestResourceImpl
 import net.corda.httprpc.test.ObjectsInJsonEndpointImpl
 import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
@@ -53,11 +53,11 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
                 listOf(
-                    CalendarRPCOpsImpl(),
+                    CalendarRestResourceImpl(),
                     TestHealthCheckAPIImpl(),
-                    TestEntityRpcOpsImpl(),
+                    TestEntityRestResourceImpl(),
                     TestFileUploadImpl(),
-                    NullabilityRPCOpsImpl(),
+                    NullabilityRestResourceImpl(),
                     ObjectsInJsonEndpointImpl()
                 ),
                 ::securityManager,

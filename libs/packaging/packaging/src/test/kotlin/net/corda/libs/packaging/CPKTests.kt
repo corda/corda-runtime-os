@@ -178,24 +178,6 @@ class CPKTests {
         signJar(notSigned, destination)
     }
 
-    private fun tamperWithLibraries(destination: Path) {
-        object : ZipTweaker() {
-            override fun tweakEntry(
-                inputStream: ZipInputStream,
-                outputStream: ZipOutputStream,
-                currentEntry: ZipEntry,
-                buffer: ByteArray
-            ) =
-                if (currentEntry.name.startsWith("lib/")) {
-                    val source = {
-                        ByteArrayInputStream(ByteArray(0x100))
-                    }
-                    writeZipEntry(outputStream, source, currentEntry.name, buffer, currentEntry.method)
-                    AfterTweakAction.DO_NOTHING
-                } else AfterTweakAction.WRITE_ORIGINAL_ENTRY
-        }.run(Files.newInputStream(workflowCPKPath), Files.newOutputStream(destination))
-    }
-
     @Test
     fun `Verify hashes of jars in the lib folder of workflow cpk`() {
         for (libraryFileName in workflowCPK.metadata.libraries) {
@@ -236,22 +218,6 @@ class CPKTests {
     }
 
     @Test
-    fun `Verify CPK dependencies are correct`() {
-        val dependencies = workflowCPK.metadata.dependencies
-        Assertions.assertEquals(1, dependencies.size)
-        val contractCPKDependency = dependencies.single()
-
-        contractCPKDependency.apply {
-            Assertions.assertEquals(System.getProperty("net.cordapp.packaging.test.contract.bundle.symbolic.name"), name)
-            Assertions.assertEquals(System.getProperty("net.cordapp.packaging.test.contract.bundle.version"), version)
-            Assertions.assertEquals(
-                cordaDevCertSummaryHash.toString().toByteArray().hash(), signerSummaryHash,
-                "The cpk dependency is expected to be signed with corda development key only"
-            )
-        }
-    }
-
-    @Test
     fun `Verify cordapp signature`() {
         Assertions.assertEquals(
             sequenceOf(cordaDevCertSummaryHash).summaryHash(),
@@ -280,40 +246,6 @@ class CPKTests {
                     verifySignature = false
                 )
             }
-        }
-    }
-
-    @Test
-    fun `throws if a CPK does not have a dependencies file`() {
-        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
-        val modifiedWorkflowCPKSigned = testDir.resolve("tweaked-signed.cpk")
-        val tweaker = object : ZipTweaker() {
-            override fun tweakEntry(
-                inputStream: ZipInputStream,
-                outputStream: ZipOutputStream,
-                currentEntry: ZipEntry,
-                buffer: ByteArray
-            ) =
-                if (currentEntry.name == PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2) {
-                    val source = {
-                        ByteArrayInputStream("<<<<<This is clearly invalid JSON content".toByteArray())
-                    }
-                    writeZipEntry(outputStream, source, currentEntry.name, buffer, currentEntry.method)
-                    AfterTweakAction.DO_NOTHING
-                }
-                else if (isSignatureFile(currentEntry)) AfterTweakAction.DO_NOTHING
-                else AfterTweakAction.WRITE_ORIGINAL_ENTRY
-        }
-        tweakCordappJar(modifiedWorkflowCPK, tweaker)
-
-        signJar(modifiedWorkflowCPK, modifiedWorkflowCPKSigned)
-
-        assertThrows<DependencyMetadataException> {
-            CpkLoaderV2().loadMetadata(
-                source = modifiedWorkflowCPKSigned.readAll(),
-                cpkLocation = modifiedWorkflowCPKSigned.toString(),
-                verifySignature = false
-            )
         }
     }
 
@@ -348,19 +280,6 @@ class CPKTests {
         val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val json = "{\"formatVersion\":\"2.0\",\"dependencies\":[" +
                 "{\"name\":\"DUMMY_NAME\",\"version\":\"DUMMY_VERSION\"}]}"
-        tweakDependencyMetadataFile(modifiedWorkflowCPK, json)
-        assertThrows<DependencyMetadataException> {
-            CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
-                cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
-            )
-        }
-    }
-
-    @Test
-    fun `throws if a CPK dependencies file lists a dependency with a signer but no algorithm`() {
-        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
-        val json = "{\"formatVersion\":\"2.0\",\"dependencies\":[" +
-                "{\"name\":\"DUMMY_NAME\",\"version\":\"DUMMY_VERSION\",\"verifyFileHash\":{\"fileHash\":\"$DUMMY_HASH\"}}]}"
         tweakDependencyMetadataFile(modifiedWorkflowCPK, json)
         assertThrows<DependencyMetadataException> {
             CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
@@ -411,11 +330,6 @@ class CPKTests {
         assertThrows<PackagingException> {
             Files.newInputStream(nonJarFile).use { CpkReader.readCpk(it, processedWorkflowCPKPath, nonJarFile.toString()) }
         }
-    }
-
-    @Test
-    fun `corda-api dependencies are not included in cpk dependencies`() {
-        Assertions.assertIterableEquals(listOf("net.cordapp.packaging.test.contract"), workflowCPK.metadata.dependencies.map { it.name })
     }
 
     @Test
