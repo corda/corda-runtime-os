@@ -6,6 +6,7 @@ import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.membership.datamodel.PreAuthTokenEntity
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 
 internal class RevokePreAuthTokenHandler(persistenceHandlerServices: PersistenceHandlerServices)
@@ -26,7 +27,14 @@ internal class RevokePreAuthTokenHandler(persistenceHandlerServices: Persistence
 
     override fun invoke(context: MembershipRequestContext, request: RevokePreAuthToken): RevokePreAuthTokenResponse {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val token = em.find(PreAuthTokenEntity::class.java, request.tokenId)
+            val token = em.find(PreAuthTokenEntity::class.java, request.tokenId) ?:
+                throw MembershipPersistenceException("Pre Auth Token with ID '${request.tokenId}' does not exist.")
+            if (token.status != PreAuthTokenStatus.AVAILABLE.toString()) {
+                throw MembershipPersistenceException(
+                    "Pre Auth Token with ID '${request.tokenId}' cannot be revoked because it has status ${token.status}."
+                )
+            }
+
             token.status = PreAuthTokenStatus.REVOKED.toString()
             token.removalRemark = request.remark
             em.merge(token)
