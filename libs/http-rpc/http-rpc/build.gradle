@@ -2,7 +2,7 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
-description 'Corda HTTP RPC API'
+description 'Corda REST API'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"

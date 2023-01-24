@@ -1,24 +1,24 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class ParameterNameConflictValidatorTest {
     @Test
     fun `validate withSameParamNames errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
-            fun test(@HttpRpcQueryParameter(name = "foo") foo1: String, @HttpRpcQueryParameter(name = "foo") foo2: String) {
+            @HttpGET
+            fun test(@RestQueryParameter(name = "foo") foo1: String, @RestQueryParameter(name = "foo") foo2: String) {
                 foo1.lowercase()
                 foo2.lowercase()
             }
@@ -32,13 +32,13 @@ class ParameterNameConflictValidatorTest {
 
     @Test
     fun `validate withSameParamNamesInDefault errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
-            fun test(@HttpRpcQueryParameter(name = "foo") foo1: String, @HttpRpcQueryParameter foo: String) {
+            @HttpGET
+            fun test(@RestQueryParameter(name = "foo") foo1: String, @RestQueryParameter foo: String) {
                 foo1.lowercase()
                 foo.lowercase()
             }
@@ -52,16 +52,16 @@ class ParameterNameConflictValidatorTest {
 
     @Test
     fun `validate withSameParamNamesWithCapitalization errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
+            @HttpGET
             fun test(
-                @HttpRpcQueryParameter(name = "foo") foo1: String,
-                @HttpRpcQueryParameter Foo: String,
-                @HttpRpcQueryParameter(name = "FOO") foo2: String
+                @RestQueryParameter(name = "foo") foo1: String,
+                @RestQueryParameter Foo: String,
+                @RestQueryParameter(name = "FOO") foo2: String
             ) {
                 Foo.lowercase()
                 foo1.lowercase()
@@ -77,13 +77,13 @@ class ParameterNameConflictValidatorTest {
 
     @Test
     fun `validate withSameParamNamesInDifferentTypes errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
-            fun test(@HttpRpcQueryParameter(name = "foo") foo1: String, @HttpRpcPathParameter(name = "foo") foo2: String) {
+            @HttpGET
+            fun test(@RestQueryParameter(name = "foo") foo1: String, @RestPathParameter(name = "foo") foo2: String) {
                 foo1.lowercase()
                 foo2.lowercase()
             }
@@ -97,13 +97,13 @@ class ParameterNameConflictValidatorTest {
 
     @Test
     fun `validate withSameParamNamesInBody errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
-            fun test(foO: String, @HttpRpcRequestBodyParameter(name = "Foo") foo2: String) {
+            @HttpGET
+            fun test(foO: String, @RestRequestBodyParameter(name = "Foo") foo2: String) {
                 foO.lowercase()
                 foo2.lowercase()
             }

@@ -8,4 +8,4 @@ package net.corda.httprpc.annotations
  */
 @Target(AnnotationTarget.FUNCTION)
 @MustBeDocumented
-annotation class RPCSinceVersion(val version: Int)
+annotation class RestSinceVersion(val version: Int)

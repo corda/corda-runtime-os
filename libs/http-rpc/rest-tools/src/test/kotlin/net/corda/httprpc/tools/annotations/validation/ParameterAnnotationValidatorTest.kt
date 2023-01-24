@@ -1,23 +1,23 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class ParameterAnnotationValidatorTest {
     @Test
     fun `validate withInvalidAnnotation errorListContainsError`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
-            fun test(foo: String, @HttpRpcQueryParameter @HttpRpcRequestBodyParameter bar: String) {
+            @HttpPOST
+            fun test(foo: String, @RestQueryParameter @RestRequestBodyParameter bar: String) {
                 foo.lowercase()
                 bar.lowercase()
             }
@@ -30,12 +30,12 @@ class ParameterAnnotationValidatorTest {
 
     @Test
     fun `validate withNoAnnotation errorListIsEmpty`() {
-        @HttpRpcResource
+        @HttpRestResource
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
+            @HttpPOST
             fun test(foo: String, bar: String) {
                 foo.lowercase()
                 bar.lowercase()

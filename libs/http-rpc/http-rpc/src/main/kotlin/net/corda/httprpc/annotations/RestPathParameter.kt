@@ -11,7 +11,7 @@ package net.corda.httprpc.annotations
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class HttpRpcPathParameter(
+annotation class RestPathParameter(
     val name: String = "",
     val description: String = ""
 )

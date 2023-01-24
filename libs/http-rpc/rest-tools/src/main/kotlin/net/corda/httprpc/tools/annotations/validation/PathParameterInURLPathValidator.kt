@@ -1,7 +1,7 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.annotations.validation.utils.asPathParam
 import net.corda.httprpc.tools.annotations.validation.utils.endpointPath
@@ -43,7 +43,7 @@ internal class PathParameterInURLPathValidator(private val clazz: Class<out Rest
 
     @Suppress("ComplexMethod")
     private fun getParameterName(parameter: Parameter): String? =
-        parameter.annotations.single { it is HttpRpcPathParameter }?.let { annotation ->
-            (annotation as HttpRpcPathParameter).name(parameter)
+        parameter.annotations.single { it is RestPathParameter }?.let { annotation ->
+            (annotation as RestPathParameter).name(parameter)
         }
 }

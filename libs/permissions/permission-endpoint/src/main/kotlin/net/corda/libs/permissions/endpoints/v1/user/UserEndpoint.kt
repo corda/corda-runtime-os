@@ -1,14 +1,14 @@
 package net.corda.libs.permissions.endpoints.v1.user
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcDELETE
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPUT
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpDELETE
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpPUT
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
@@ -17,7 +17,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 /**
  * User endpoint exposes HTTP endpoints for management of Users in the RBAC permission system.
  */
-@HttpRpcResource(
+@HttpRestResource(
     name = "RBAC User API",
     description = "The RBAC User API consists of a number of endpoints enabling user management in the RBAC " +
             "(role-based access control) permission system. You can get details of specified users, create new users, " +
@@ -29,7 +29,7 @@ interface UserEndpoint : RestResource {
     /**
      * Create a user in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "This method creates a new user.",
+    @HttpPOST(description = "This method creates a new user.",
         responseDescription = """
             A newly created user with the following attributes:
             id: Unique server generated identifier for the user
@@ -47,7 +47,7 @@ interface UserEndpoint : RestResource {
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account""")
     fun createUser(
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = """
                 Details of the user to be created with the following parameters:
                 enabled: If true, the user account is enabled; false, the account is disabled
@@ -65,7 +65,7 @@ interface UserEndpoint : RestResource {
     /**
      * Get a user by loginName in the RBAC permission system.
      */
-    @HttpRpcGET(description = "This method returns a user based on the specified login name.",
+    @HttpGET(description = "This method returns a user based on the specified login name.",
         responseDescription = """
             A newly created user with the following attributes:
             id: Unique server generated identifier for the user
@@ -83,14 +83,14 @@ interface UserEndpoint : RestResource {
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account""")
     fun getUser(
-        @HttpRpcQueryParameter(description = "The login name of the user to be returned")
+        @RestQueryParameter(description = "The login name of the user to be returned")
         loginName: String
     ): UserResponseType
 
     /**
      * Assign a Role to a User in the RBAC permission system.
      */
-    @HttpRpcPUT(path = "{loginName}/role/{roleId}",
+    @HttpPUT(path = "{loginName}/role/{roleId}",
         description = "This method assigns a specified role to a specified user.",
         responseDescription = """
             A newly created user with the following attributes:
@@ -109,16 +109,16 @@ interface UserEndpoint : RestResource {
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account""")
     fun addRole(
-        @HttpRpcPathParameter(description = "The login name of the user")
+        @RestPathParameter(description = "The login name of the user")
         loginName: String,
-        @HttpRpcPathParameter(description = "The ID of the role to assign to the user")
+        @RestPathParameter(description = "The ID of the role to assign to the user")
         roleId: String
     ): ResponseEntity<UserResponseType>
 
     /**
      * Un-assign a Role from a User in the RBAC permission system.
      */
-    @HttpRpcDELETE(path = "{loginName}/role/{roleId}",
+    @HttpDELETE(path = "{loginName}/role/{roleId}",
         description = "This method removes the specified role from the specified user.",
         responseDescription = """
             A newly created user with the following attributes:
@@ -137,16 +137,16 @@ interface UserEndpoint : RestResource {
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account""")
     fun removeRole(
-        @HttpRpcPathParameter(description = "The login name of the user")
+        @RestPathParameter(description = "The login name of the user")
         loginName: String,
-        @HttpRpcPathParameter(description = "The ID of the role to remove from the user")
+        @RestPathParameter(description = "The ID of the role to remove from the user")
         roleId: String
     ): ResponseEntity<UserResponseType>
 
     /**
      * Get a summary of a user's permissions.
      */
-    @HttpRpcGET(path = "{loginName}/permissionSummary",
+    @HttpGET(path = "{loginName}/permissionSummary",
         description = "This method returns a summary of the user's permissions.",
         responseDescription = """
             enabled: If true, the user account is enabled; false, the account is disabled
@@ -155,7 +155,7 @@ interface UserEndpoint : RestResource {
             permissions: An array of one or more permissions associated with the user
         """)
     fun getPermissionSummary(
-        @HttpRpcPathParameter(description = "The login name of the user")
+        @RestPathParameter(description = "The login name of the user")
         loginName: String
     ): UserPermissionSummaryResponseType
 }

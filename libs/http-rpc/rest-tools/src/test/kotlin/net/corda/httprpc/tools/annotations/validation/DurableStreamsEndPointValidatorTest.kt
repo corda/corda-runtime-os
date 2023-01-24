@@ -1,9 +1,9 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.durablestream.api.DurableCursorBuilder
 import net.corda.httprpc.durablestream.api.FiniteDurableCursorBuilder
 import org.junit.jupiter.api.Assertions
@@ -14,12 +14,12 @@ class DurableStreamsEndPointValidatorTest {
     @Test
     fun `validate with GET Endpoint DurableStreamsReturnType errorListContainsMessage`() {
         @Suppress("unused")
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
+            @HttpGET
             abstract fun test(): DurableCursorBuilder<String>
         }
 
@@ -32,12 +32,12 @@ class DurableStreamsEndPointValidatorTest {
     @Test
     fun `validate with GET Endpoint FiniteDurableStreamsReturnType errorListContainsMessage`() {
         @Suppress("unused")
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcGET
+            @HttpGET
             abstract fun test(): FiniteDurableCursorBuilder<String>
         }
 
@@ -50,12 +50,12 @@ class DurableStreamsEndPointValidatorTest {
     @Test
     fun `validate with POST Endpoint DurableStreamsReturnType errorList Is Empty`() {
         @Suppress("unused")
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
+            @HttpPOST
             abstract fun test(): DurableCursorBuilder<String>
         }
 

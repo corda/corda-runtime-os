@@ -10,7 +10,7 @@ package net.corda.httprpc.annotations
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class HttpRpcQueryParameter(
+annotation class RestQueryParameter(
     val name: String = "",
     val description: String = "",
     val required: Boolean = true,

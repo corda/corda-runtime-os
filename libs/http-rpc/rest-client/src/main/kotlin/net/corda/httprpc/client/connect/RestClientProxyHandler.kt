@@ -1,13 +1,13 @@
 package net.corda.httprpc.client.connect
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcDELETE
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPUT
-import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.httprpc.annotations.RPCSinceVersion
-import net.corda.httprpc.annotations.isRpcEndpointAnnotation
+import net.corda.httprpc.annotations.HttpDELETE
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpPUT
+import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.httprpc.annotations.RestSinceVersion
+import net.corda.httprpc.annotations.isRestEndpointAnnotation
 import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
 import net.corda.httprpc.client.connect.remote.RemoteClient
@@ -61,7 +61,7 @@ internal class RestClientProxyHandler<I : RestResource>(
         if (serverProtocolVersion == null) {
             log.warn("Server protocol version is not set in the proxy, can not verify server version compatibility.")
         } else {
-            val sinceVersion = method.getAnnotation(RPCSinceVersion::class.java)?.version ?: 0
+            val sinceVersion = method.getAnnotation(RestSinceVersion::class.java)?.version ?: 0
             if (sinceVersion > serverProtocolVersion) {
                 throw UnsupportedOperationException(
                     "Method $method was added in protocol version '$sinceVersion' " +
@@ -76,7 +76,7 @@ internal class RestClientProxyHandler<I : RestResource>(
         log.trace { """Invoke "${method.name}".""" }
         val isExemptFromChecks = method.isStaticallyExposedGet()
         if (!isExemptFromChecks) {
-            if (method.annotations.none { it.isRpcEndpointAnnotation() }) {
+            if (method.annotations.none { it.isRestEndpointAnnotation() }) {
                 throw UnsupportedOperationException(
                     "REST client proxy can not make remote calls for functions not annotated or known as implicitly exposed."
                 )
@@ -85,9 +85,9 @@ internal class RestClientProxyHandler<I : RestResource>(
             checkServerProtocolVersion(method)
         }
 
-        val resourcePath = restResourceClass.getAnnotation(HttpRpcResource::class.java)?.path(restResourceClass)
+        val resourcePath = restResourceClass.getAnnotation(HttpRestResource::class.java)?.path(restResourceClass)
             ?: throw UnsupportedOperationException(
-                "REST client proxy can not make remote calls for interfaces not annotated with HttpRpcResource."
+                "REST client proxy can not make remote calls for interfaces not annotated with HttpRestResource."
             )
 
         val rawPath = joinResourceAndEndpointPaths(resourcePath, method.endpointPath).lowercase()
@@ -131,12 +131,12 @@ internal class RestClientProxyHandler<I : RestResource>(
 
     private val Method.endpointPath: String?
         get() =
-            this.annotations.singleOrNull { it.isRpcEndpointAnnotation() }.let {
+            this.annotations.singleOrNull { it.isRestEndpointAnnotation() }.let {
                 when (it) {
-                    is HttpRpcGET -> it.path(this)
-                    is HttpRpcPOST -> it.path()
-                    is HttpRpcPUT -> it.path()
-                    is HttpRpcDELETE -> it.path()
+                    is HttpGET -> it.path(this)
+                    is HttpPOST -> it.path()
+                    is HttpPUT -> it.path()
+                    is HttpDELETE -> it.path()
                     else -> if (isStaticallyExposedGet()) {
                         this.name
                     } else {

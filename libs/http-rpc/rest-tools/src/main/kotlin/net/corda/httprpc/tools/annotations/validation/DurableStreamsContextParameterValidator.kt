@@ -1,8 +1,8 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.tools.annotations.validation.utils.getParameterName
 import net.corda.httprpc.tools.annotations.validation.utils.isBodyParameter
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
@@ -21,7 +21,7 @@ class DurableStreamsContextParameterValidator(private val clazz: Class<out RestR
 
     override fun validate(): RestValidationResult =
         clazz.methods.fold(RestValidationResult()) { total, method ->
-            total + if (method.annotations.any { it is HttpRpcPOST || it is HttpRpcPUT }) {
+            total + if (method.annotations.any { it is HttpPOST || it is HttpPUT }) {
                 validateBodyParameterOnPOST(method)
             } else RestValidationResult()
         }
