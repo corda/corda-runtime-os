@@ -7,6 +7,7 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.custom.AlgorithmParameterSpecSerializer
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
 import net.corda.internal.serialization.amqp.custom.BigIntegerSerializer
 import net.corda.internal.serialization.amqp.custom.BitSetSerializer
@@ -21,12 +22,14 @@ import net.corda.internal.serialization.amqp.custom.InstantSerializer
 import net.corda.internal.serialization.amqp.custom.LocalDateSerializer
 import net.corda.internal.serialization.amqp.custom.LocalDateTimeSerializer
 import net.corda.internal.serialization.amqp.custom.LocalTimeSerializer
+import net.corda.internal.serialization.amqp.custom.MGF1ParameterSpecSerializer
 import net.corda.internal.serialization.amqp.custom.MonthDaySerializer
 import net.corda.internal.serialization.amqp.custom.MonthSerializer
 import net.corda.internal.serialization.amqp.custom.OffsetDateTimeSerializer
 import net.corda.internal.serialization.amqp.custom.OffsetTimeSerializer
 import net.corda.internal.serialization.amqp.custom.OpaqueBytesSubSequenceSerializer
 import net.corda.internal.serialization.amqp.custom.OptionalSerializer
+import net.corda.internal.serialization.amqp.custom.PSSParameterSpecSerializer
 import net.corda.internal.serialization.amqp.custom.PairSerializer
 import net.corda.internal.serialization.amqp.custom.PeriodSerializer
 import net.corda.internal.serialization.amqp.custom.StackTraceElementSerializer
@@ -143,5 +146,8 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(MonthSerializer(), this)
         register(PairSerializer(), this)
         register(UnitSerializer(), this)
+        register(AlgorithmParameterSpecSerializer(), this)
+        register(PSSParameterSpecSerializer(), this)
+        register(MGF1ParameterSpecSerializer(), this)
     }
 }
