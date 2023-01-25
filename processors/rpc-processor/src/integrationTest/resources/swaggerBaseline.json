@@ -2281,6 +2281,186 @@
         }
       }
     },
+    "/mgm/{holdingidentityshorthash}/preauthtoken" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "get_mgm__holdingidentityshorthash__preauthtoken",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "ownerx500name",
+          "in" : "query",
+          "description" : "",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "preauthtokenid",
+          "in" : "query",
+          "description" : "",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "viewinactive",
+          "in" : "query",
+          "description" : "",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/PreAuthToken"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "post_mgm__holdingidentityshorthash__preauthtoken",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GeneratePreAuthTokenWrapperRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PreAuthToken"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/preauthtoken/revoke/{preauthtokenid}" : {
+      "put" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "put_mgm__holdingidentityshorthash__preauthtoken_revoke__preauthtokenid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "preauthtokenid",
+          "in" : "path",
+          "description" : "",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "remarks" : {
+                    "type" : "string",
+                    "nullable" : true,
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "required" : false
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PreAuthToken"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/network/getprotocolversion" : {
       "get" : {
         "tags" : [ "Network API" ],
@@ -3663,6 +3843,29 @@
         "description" : "GenerateCsrWrapperRequest",
         "nullable" : false
       },
+      "GeneratePreAuthTokenWrapperRequest" : {
+        "required" : [ "ownerX500Name" ],
+        "type" : "object",
+        "properties" : {
+          "ownerX500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "remarks" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ttl" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "description" : "GeneratePreAuthTokenWrapperRequest",
+        "nullable" : false
+      },
       "GetCPIsResponse" : {
         "required" : [ "cpis" ],
         "type" : "object",
@@ -3971,6 +4174,44 @@
             "type" : "string",
             "nullable" : true,
             "example" : "string"
+          }
+        }
+      },
+      "PreAuthToken" : {
+        "required" : [ "id", "ownerX500Name", "status" ],
+        "type" : "object",
+        "properties" : {
+          "creationRemark" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "ownerX500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "removalRemark" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "status" : {
+            "type" : "object",
+            "nullable" : false,
+            "example" : "REVOKED",
+            "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
+          },
+          "ttl" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
           }
         }
       },
