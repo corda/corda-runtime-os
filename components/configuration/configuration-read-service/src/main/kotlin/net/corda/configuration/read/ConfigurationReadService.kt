@@ -67,12 +67,14 @@ interface ConfigurationReadService : Lifecycle {
      * This should be called by the application, providing enough initial configuration to connect to the message bus
      * and retrieve the full configuration. Other services will not need to call this.
      *
-     * Calling this multiple times will result in an error. An error is also thrown if the configuration does not allow
-     * the configuration read service to access the full configuration.
+     * Calling this multiple times with different bootstrap configurations will result in an error later on, when
+     * the BootstrapConfigProvided event is processed. However, calling this multiple times with identical
+     * bootstrap configurations is harmless (and is simply logged at debug level).
+     * An error is also thrown later if the configuration does not allow the configuration read service to
+     * access the full configuration.
      *
-     * @param config The bootstrap configuration to connect to the message bus.
-     * @throws ConfigurationException If the bootstrap configuration is provided after a connection has been
-     *                                established, or if the configuration does not allow access.
+     *  @param config The bootstrap configuration to connect to the message bus.
+     *  @throws ConfigurationException If the bootstrap configuration is provided after a connection has been
      */
     fun bootstrapConfig(config: SmartConfig)
 }
