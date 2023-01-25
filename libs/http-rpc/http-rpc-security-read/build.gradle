@@ -12,5 +12,5 @@ dependencies {
     implementation "net.corda:corda-base"
     api project(":libs:lifecycle:lifecycle")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    api project(":libs:http-rpc:http-rpc-common")
+    api project(":libs:http-rpc:rest-common")
 }

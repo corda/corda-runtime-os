@@ -11,7 +11,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:http-rpc:rest')
     implementation project(":libs:http-rpc:rest-tools")
-    implementation project(":libs:http-rpc:http-rpc-common")
+    implementation project(":libs:http-rpc:rest-common")
     implementation project(":libs:utilities")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"

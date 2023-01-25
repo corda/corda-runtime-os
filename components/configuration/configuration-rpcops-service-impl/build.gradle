@@ -16,7 +16,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-endpoints')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:http-rpc:rest')
-    implementation project(':libs:http-rpc:http-rpc-common')
+    implementation project(':libs:http-rpc:rest-common')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(":libs:utilities")
