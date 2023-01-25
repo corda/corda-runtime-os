@@ -6,10 +6,10 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.configWithDefaultsNode
-import net.corda.applications.workers.smoketest.getConfig
-import net.corda.applications.workers.smoketest.updateConfig
-import net.corda.applications.workers.smoketest.waitForConfigurationChange
+import net.corda.e2etest.utilities.configWithDefaultsNode
+import net.corda.e2etest.utilities.getConfig
+import net.corda.e2etest.utilities.updateConfig
+import net.corda.e2etest.utilities.waitForConfigurationChange
 import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED

@@ -1,15 +1,9 @@
-package net.corda.applications.workers.smoketest
+package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
 import java.io.IOException
 import java.time.Duration
 import kong.unirest.UnirestException
-import net.corda.e2etest.utilities.CLUSTER_URI
-import net.corda.e2etest.utilities.PASSWORD
-import net.corda.e2etest.utilities.USERNAME
-import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
-import net.corda.e2etest.utilities.cluster
-import net.corda.e2etest.utilities.toJson
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
