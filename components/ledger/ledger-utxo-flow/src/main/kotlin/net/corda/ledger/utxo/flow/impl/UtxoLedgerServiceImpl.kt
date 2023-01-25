@@ -1,5 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
@@ -11,10 +13,16 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.NotaryLookup
+import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -44,8 +52,20 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = UtxoLedgerPersistenceService::class)
     private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
     @Reference(service = UtxoLedgerStateQueryService::class)
-    private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService
+    private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = FlowSandboxService::class)
+    private val flowSandboxGroupService: FlowSandboxService,
+    @Reference(service = NotaryLookup::class)
+    private val notaryLookup: NotaryLookup
+
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
 
     @Suspendable
     override fun getTransactionBuilder(): UtxoTransactionBuilder =
@@ -88,17 +108,46 @@ class UtxoLedgerServiceImpl @Activate constructor(
         sessions: List<FlowSession>
     ): UtxoSignedTransaction {
         /*
-        Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
+         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
         */
         val utxoFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                UtxoFinalityFlow(signedTransaction as UtxoSignedTransactionInternal, sessions)
+                UtxoFinalityFlow(
+                    signedTransaction as UtxoSignedTransactionInternal,
+                    sessions,
+                    getPluggableNotaryClientFlow(signedTransaction.notary)
+                )
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
         return flowEngine.subFlow(utxoFinalityFlow)
+    }
+
+    private fun getPluggableNotaryClientFlow(notary: Party): Class<PluggableNotaryClientFlow> {
+
+        val protocolName =
+            notaryLookup.notaryServices.firstOrNull { it.name == notary.name }?.pluginClass ?: throw CordaRuntimeException(
+                "Plugin class not found for notary service ${notary.name}" +
+                        ". This means that no notary service matching this name has been registered " +
+                        "on the network."
+            )
+
+        val sandboxGroupContext = currentSandboxGroupContext.get()
+
+        val flowName = flowSandboxGroupService
+            .get(sandboxGroupContext.virtualNodeContext.holdingIdentity)
+            .protocolStore
+            .initiatorForProtocol(protocolName, supportedVersions = listOf(1))
+
+        log.info("Initiator for protocol $protocolName is: $flowName")
+
+        @Suppress("UNCHECKED_CAST")
+        return (sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(flowName) as? Class<PluggableNotaryClientFlow>) ?: throw FlowFatalException(
+            "Notary client flow class $flowName is invalid because does not inherit from " +
+                    "${PluggableNotaryClientFlow::class.simpleName}."
+        )
     }
 
     @Suspendable

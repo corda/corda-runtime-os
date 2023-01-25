@@ -44,7 +44,10 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         utxoSignedTransactionFactory,
         flowEngine,
         mockUtxoLedgerPersistenceService,
-        mockUtxoLedgerStateQueryService
+        mockUtxoLedgerStateQueryService,
+        mock(),
+        mock(),
+        mock()
     )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,

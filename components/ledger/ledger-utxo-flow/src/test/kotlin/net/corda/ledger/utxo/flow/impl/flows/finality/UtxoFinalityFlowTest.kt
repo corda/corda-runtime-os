@@ -5,7 +5,6 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -31,7 +30,6 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -62,7 +60,6 @@ class UtxoFinalityFlowTest {
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
-    private val pluggableNotaryClientFlowFactory = mock<PluggableNotaryClientFlowFactory>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -147,10 +144,6 @@ class UtxoFinalityFlowTest {
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
-
-        whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(
-            pluggableNotaryClientFlow
-        )
 
         // Composite key containing both of the notary VNode keys
         whenever(notaryServiceKey.leafKeys).thenReturn(setOf(publicKeyNotaryVNode1, publicKeyNotaryVNode2))
@@ -703,13 +696,16 @@ class UtxoFinalityFlowTest {
     }
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
-        val flow = UtxoFinalityFlow(signedTransaction, sessions)
+        val flow = UtxoFinalityFlow(
+            signedTransaction,
+            sessions,
+            mock()
+        )
         flow.memberLookup = memberLookup
         flow.transactionSignatureService = transactionSignatureService
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging
         flow.persistenceService = persistenceService
-        flow.pluggableNotaryClientFlowFactory = pluggableNotaryClientFlowFactory
         flow.flowEngine = flowEngine
         flow.call()
     }

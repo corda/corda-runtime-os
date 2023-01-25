@@ -33,7 +33,7 @@ import kotlin.IllegalStateException
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
 // TODO CORE-7292 What is the best way to define the protocol
-@InitiatedBy(protocol = "non-validating-notary")
+@InitiatedBy(protocol = "net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {

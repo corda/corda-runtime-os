@@ -24,6 +24,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
         flowName: String,
         flowClass: Class<*>,
         initiatorToProtocol: MutableMap<String, List<FlowProtocol>>,
+        protocolToInitiator: MutableMap<FlowProtocol, String>,
         protocolToResponder: MutableMap<FlowProtocol, String>
     ) {
         when {
@@ -32,6 +33,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
                 val versions = flowClass.getAnnotation(InitiatingFlow::class.java).version
                 val protocols = versions.map { FlowProtocol(protocol, it) }
                 initiatorToProtocol[flowName] = protocols
+                protocolToInitiator[protocols.single()] = flowName
             }
 
             flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {
@@ -60,14 +62,15 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
         cpiMetadata: CpiMetadata
     ): FlowProtocolStore {
         val initiatorToProtocol = mutableMapOf<String, List<FlowProtocol>>()
+        val protocolToInitiator = mutableMapOf<FlowProtocol, String>()
         val protocolToResponder = mutableMapOf<FlowProtocol, String>()
 
         cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.flows }.forEach { flow ->
             logger.trace { "Reading flow $flow for protocols" }
             val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
-            extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
+            extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToInitiator, protocolToResponder)
         }
 
-        return FlowProtocolStoreImpl(initiatorToProtocol, protocolToResponder)
+        return FlowProtocolStoreImpl(initiatorToProtocol, protocolToInitiator, protocolToResponder)
     }
 }

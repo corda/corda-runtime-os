@@ -95,6 +95,7 @@ class SessionEventHandlerTest {
             .thenReturn(
                 FlowProtocolStoreImpl(
                     mapOf(INITIATING_FLOW_NAME to listOf(PROTOCOL)),
+                    mapOf(PROTOCOL to INITIATING_FLOW_NAME),
                     mapOf(PROTOCOL to INITIATED_FLOW_NAME)
                 )
             )
@@ -144,7 +145,7 @@ class SessionEventHandlerTest {
         val sessionEvent = createSessionInit()
 
         whenever(sandboxGroupContext.protocolStore)
-            .thenReturn(FlowProtocolStoreImpl(mapOf(), mapOf()))
+            .thenReturn(FlowProtocolStoreImpl(mapOf(), mapOf(), mapOf()))
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(sessionEvent)
 
         val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)

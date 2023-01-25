@@ -10,7 +10,24 @@ import net.corda.flow.pipeline.FlowEventContext
 interface FlowProtocolStore {
 
     /**
-     * Find the responder flow class name for the given set of received protocol versions.
+     * Find the initiating flow class name for the given protocol name and protocol versions.
+     *
+     * This will select the initiating flow class that supports the highest version provided on
+     * input.
+     *
+     * @param protocolName The name of the protocol that the initiating flow must implement
+     * @param supportedVersions The versions of the protocol to search for. If multiple versions are
+     *                          supplied and available, the highest version will be selected.
+     * @return The name of the intiating flow class to be invoked.
+     * @throws FlowFatalException if there are no initiating flows that match the provided inputs.
+     */
+    fun initiatorForProtocol(
+        protocolName: String,
+        supportedVersions: Collection<Int>
+    ): String
+
+    /**
+     * Find the responder flow class name for the given protocol name and protocol versions.
      *
      * This will select the responder flow class that supports the highest version provided on input.
      *
@@ -36,4 +53,5 @@ interface FlowProtocolStore {
      * @throws FlowFatalException if there are no protocols supported for this initiating flow
      */
     fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>>
+
 }

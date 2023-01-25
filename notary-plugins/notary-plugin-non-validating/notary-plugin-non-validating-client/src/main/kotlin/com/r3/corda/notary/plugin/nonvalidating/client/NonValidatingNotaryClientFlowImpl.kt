@@ -26,7 +26,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
  * send-and-receive logic and it will also initiate the server side of the non-validating notary.
  */
 // TODO CORE-7292 What is the best way to define the protocol
-@InitiatingFlow(protocol = "non-validating-notary")
+@InitiatingFlow(protocol = "net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryClientFlowImpl(
     private val stx: UtxoSignedTransaction,
     private val notary: Party
