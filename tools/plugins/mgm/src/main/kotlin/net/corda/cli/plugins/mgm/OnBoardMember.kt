@@ -182,8 +182,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
             .replace('=', '_')
     }
     private fun createCpi(cpbFile: File, cpiFile: File) {
-        println("Using the cpb file is not recommended." +
-                " It is advised to create CPI using the package create-cpi command.")
+        println(
+            "Using the cpb file is not recommended." +
+                " It is advised to create CPI using the package create-cpi command."
+        )
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
         creator.cpbFileName = cpbFile.absolutePath
@@ -194,6 +196,23 @@ class OnBoardMember : Runnable, BaseOnboard() {
         creator.outputFileName = cpiFile.absolutePath
         creator.signingOptions = createDefaultSingingOptions()
         creator.run()
+    }
+
+    private fun allowClientCertificate() {
+        val access = json.readTree(mtlsMgmAccessFile)
+        val mgmCordaClusterName = access.get("cordaClusterName").asText()
+        if (mgmCordaClusterName == cordaClusterName) {
+            // No need to allow a certificate in the same cluster
+            return
+        }
+        val holdingId = access.get("holdingId").asText()
+        val url = urlFromClusterName(mgmCordaClusterName)
+        val rpcPassword = rpcPasswordFromClusterName(mgmCordaClusterName)
+        Unirest
+            .put("$url/mgm/$holdingId/mutual-tls/allowed-client-certificate-subjects/$certificateSubject")
+            .basicAuth("admin", rpcPassword)
+            .asJson()
+            .bodyOrThrow()
     }
 
     private val ledgerKeyId by lazy {
@@ -216,11 +235,16 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
         setupClient()
 
+        configureGateway()
+
         createTlsKeyIdNeeded()
+
+        if (mtls) {
+            allowClientCertificate()
+        }
 
         setupNetwork()
 
-        disableClrChecks()
         println("Provided registration context: ")
         println(registrationContext)
 
@@ -229,8 +253,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (waitForFinalStatus) {
             println("Member $x500Name was onboarded.")
         } else {
-            println("Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                    "MGM may need to approve your request manually.")
+            println(
+                "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                    "MGM may need to approve your request manually."
+            )
         }
     }
 }
