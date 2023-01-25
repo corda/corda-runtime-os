@@ -11,7 +11,7 @@ import java.time.Instant
  * @param registrationStatus Status of registration request.
  * @param memberInfoSubmitted Information sent to the MGM for registration.
  */
-data class RegistrationRequestStatus(
+data class RpcRegistrationRequestStatus(
     val registrationId: String,
     val registrationSent: Instant?,
     val registrationUpdated: Instant?,

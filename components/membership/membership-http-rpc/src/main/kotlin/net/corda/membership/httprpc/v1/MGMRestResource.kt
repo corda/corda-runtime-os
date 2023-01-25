@@ -15,6 +15,7 @@ import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RpcRegistrationRequestStatus
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -337,7 +338,7 @@ interface MGMRestResource : RestResource {
      * @param viewHistoric Optional. Set this to 'true' to view both in-progress and completed (historic) requests.
      * Defaults to 'false' (in-progress requests only).
      *
-     * @return Registration requests as a collection of [RegistrationRequestStatus].
+     * @return Registration requests as a collection of [RpcRegistrationRequestStatus].
      */
     @HttpGET(
         path = "{mgmHoldingIdentityShortHash}/requests/",
@@ -358,5 +359,5 @@ interface MGMRestResource : RestResource {
             default = "false"
         )
         viewHistoric: Boolean = false
-    ): Collection<RegistrationRequestStatus>
+    ): Collection<RpcRegistrationRequestStatus>
 }

@@ -25,7 +25,7 @@ import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RpcRegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -33,6 +33,7 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
@@ -138,7 +139,7 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             requestingMemberX500Name: String?,
             viewHistoric: Boolean,
-        ): Collection<RegistrationRequestStatus>
+        ): Collection<RpcRegistrationRequestStatus>
     }
 
     override val protocolVersion = 1
@@ -466,8 +467,8 @@ class MGMRestResourceImpl internal constructor(
             )
         }.map { it.toRpc() }
 
-        private fun net.corda.membership.lib.registration.RegistrationRequestStatus.toRpc() =
-            RegistrationRequestStatus(
+        private fun RegistrationRequestStatus.toRpc() =
+            RpcRegistrationRequestStatus(
                 registrationId,
                 registrationSent,
                 registrationLastModified,
