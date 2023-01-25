@@ -5,32 +5,23 @@ plugins {
 
 description 'E2E test utilities'
 
-// @todo review dependencies
 dependencies {
-    // NO CORDA DEPENDENCIES!!
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
+//    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+//    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
     // Avoid having the schema names and keys scattered across projects
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
 
     implementation "com.konghq:unirest-java:$unirestVersion"
-    implementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     implementation project(':testing:test-utilities')
 
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation "org.assertj:assertj-core:$assertjVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     implementation project(':components:flow:flow-rpcops-service')
     implementation project(':tools:plugins:package')
     implementation project(":testing:packaging-test-utilities")
-    implementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-
-    runtimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
