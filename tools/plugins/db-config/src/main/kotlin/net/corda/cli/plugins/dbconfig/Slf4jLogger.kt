@@ -28,63 +28,43 @@ class Slf4jLogger(private val logger: Logger) : liquibase.logging.core.AbstractL
     }
 
     override fun severe(message: String?) {
-        if (logger.isErrorEnabled) {
-            logger.error(message)
-        }
+        logger.error(message)
     }
 
     override fun severe(message: String?, e: Throwable?) {
-        if (logger.isErrorEnabled) {
-            logger.error(message, e)
-        }
+        logger.error(message, e)
     }
 
     override fun warning(message: String?) {
-        if (logger.isWarnEnabled) {
-            logger.warn(message)
-        }
+        logger.warn(message)
     }
 
     override fun warning(message: String?, e: Throwable?) {
-        if (logger.isWarnEnabled) {
-            logger.warn(message, e)
-        }
+        logger.warn(message, e)
     }
     
     override fun info(message: String?) {
-        if (logger.isInfoEnabled) {
-            logger.info(message)
-        }
+        logger.info(message)
     }
 
     override fun info(message: String?, e: Throwable?) {
-        if (logger.isInfoEnabled) {
-            logger.info(message, e)
-        }
+        logger.info(message, e)
     }
 
     override fun config(message: String?) {
-        if (logger.isInfoEnabled) {
-            logger.info(message)
-        }
+        logger.info(message)
     }
     
     override fun config(message: String?, e: Throwable?) {
-        if (logger.isInfoEnabled) {
-            logger.info(message, e)
-        }
+        logger.info(message, e)
     }
     
     override fun fine(message: String?) {
-        if (logger.isDebugEnabled) {
-            logger.debug(message)
-        }
+        logger.debug(message)
     }
 
     override fun fine(message: String?, e: Throwable?) {
-        if (logger.isDebugEnabled) {
-            logger.debug(message, e)
-        }
+        logger.debug(message, e)
     }
 
 }
