@@ -9,12 +9,16 @@ import com.nimbusds.jose.jwk.KeyUse
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
+import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
 
 object AzureAdMock {
+
+    private val log = LoggerFactory.getLogger(AzureAdMock::class.java)
+
     const val username = "user@test.com"
     const val clientId = "client"
     const val tenantId = "tenant"
@@ -31,6 +35,8 @@ object AzureAdMock {
             .generate()
     )
     private val signer = RSASSASigner(keySet.keys.first().toRSAKey())
+
+    private val keySetJson = ObjectMapper().writeValueAsString(keySet.toPublicJWKSet().toJSONObject())
 
     fun generateUserToken(): String {
         val jwt = SignedJWT(
@@ -57,13 +63,16 @@ object AzureAdMock {
     }
 
     fun create(): Closeable {
+        log.info("Stream handler create start")
         val streamHandler = TestURLStreamHandlerFactory(
             mapOf(
                 oidcMetadataUrl to oidcMetadata,
-                jwksUrl to ObjectMapper().writeValueAsString(keySet.toPublicJWKSet().toJSONObject())
+                jwksUrl to keySetJson
             )
         )
+        log.info("Stream handler create end")
         streamHandler.register()
+        log.info("Stream handler registered")
         return streamHandler
     }
 }

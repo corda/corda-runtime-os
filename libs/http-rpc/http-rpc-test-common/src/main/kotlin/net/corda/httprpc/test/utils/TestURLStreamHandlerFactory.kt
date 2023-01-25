@@ -1,9 +1,9 @@
 package net.corda.httprpc.test.utils
 
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
+import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.io.Closeable
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLConnection
@@ -14,12 +14,16 @@ import java.util.Hashtable
 internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLStreamHandlerFactory, Closeable {
     companion object {
         const val PROTOCOL = "mock"
+        private val log = contextLogger()
 
         @Suppress("TooGenericExceptionThrown")
         private fun forceSetURLStreamHandlerFactory(factory: URLStreamHandlerFactory?) {
             try {
                 URL.setURLStreamHandlerFactory(factory)
             } catch (e: Error) {
+                log.info("Forcefully setting handler factory due to: ${e.message}")
+                // Working around the fact that factory may have already been set once
+                // by using reflection to force assign the value
                 try {
                     val factoryField = URL::class.java.getDeclaredField("factory")
                     factoryField.isAccessible = true
@@ -35,12 +39,30 @@ internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLSt
                 }
             }
         }
+
+        private class TestHttpURLConnection(private val entryValue: String) : HttpURLConnection(null) {
+            override fun getInputStream(): InputStream {
+                return ByteArrayInputStream(entryValue.toByteArray())
+            }
+
+            override fun getResponseCode(): Int {
+                return 200
+            }
+
+            override fun connect() {
+            }
+
+            override fun disconnect() {
+            }
+
+            override fun usingProxy(): Boolean {
+                return false
+            }
+        }
     }
 
     private val dummyContent: Map<String, HttpURLConnection> = content.map {
-        val urlConnection = mock<HttpURLConnection>()
-        whenever(urlConnection.inputStream).thenReturn(ByteArrayInputStream(it.value.toByteArray()))
-        whenever(urlConnection.responseCode).thenReturn(200)
+        val urlConnection = TestHttpURLConnection(it.value)
         it.key to urlConnection
     }.toMap()
 
@@ -57,10 +79,14 @@ internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLSt
     }
 
     fun register() {
+        log.info("Register start")
         forceSetURLStreamHandlerFactory(this)
+        log.info("Register end")
     }
 
     override fun close() {
+        log.info("Close start")
         forceSetURLStreamHandlerFactory(null)
+        log.info("Close end")
     }
 }
