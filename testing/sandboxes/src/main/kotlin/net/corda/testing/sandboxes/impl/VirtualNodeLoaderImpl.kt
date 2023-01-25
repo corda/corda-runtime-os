@@ -59,7 +59,6 @@ class VirtualNodeLoaderImpl @Activate constructor(
             UUID.randomUUID(),
             null,
             timestamp = Instant.now(),
-            state = VirtualNodeInfo.DEFAULT_INITIAL_STATE // Leaving as a constant value as this is just for testing
         ).also(::put)
     }
 

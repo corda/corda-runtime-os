@@ -33,7 +33,13 @@ data class VirtualNodeInfo(
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
     /** Current state of the virtual node instance */
-    val state: VirtualNodeState = DEFAULT_INITIAL_STATE,
+    val flowP2pOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
+    /** Current state of the virtual node instance */
+    val flowStartOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
+    /** Current state of the virtual node instance */
+    val flowOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
+    /** Current state of the virtual node instance */
+    val vaultDbOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */
@@ -42,7 +48,7 @@ data class VirtualNodeInfo(
     val isDeleted: Boolean = false,
 ) {
     companion object {
-        val DEFAULT_INITIAL_STATE = VirtualNodeState.ACTIVE
+        val DEFAULT_INITIAL_STATE = OperationalStatus.ACTIVE
     }
 }
 
@@ -61,7 +67,10 @@ fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
             uniquenessDdlConnectionId?.let{ uniquenessDdlConnectionId.toString() },
             uniquenessDmlConnectionId.toString(),
             hsmConnectionId?.let { hsmConnectionId.toString() },
-            state.name,
+            flowP2pOperationalStatus.toString(),
+            flowStartOperationalStatus.toString(),
+            flowOperationalStatus.toString(),
+            vaultDbOperationalStatus.toString(),
             version,
             timestamp
         )
@@ -79,16 +88,17 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         uniquenessDdlConnectionId?.let { UUID.fromString(uniquenessDdlConnectionId) },
         UUID.fromString(uniquenessDmlConnectionId),
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
-        VirtualNodeState.valueOf(virtualNodeState),
+        OperationalStatus.valueOf(flowP2pOperationalStatus),
+        OperationalStatus.valueOf(flowStartOperationalStatus),
+        OperationalStatus.valueOf(flowOperationalStatus),
+        OperationalStatus.valueOf(vaultDbOperationalStatus),
         version,
         timestamp,
         false
     )
 }
 
-enum class VirtualNodeState {
+enum class OperationalStatus {
     ACTIVE,
-    INACTIVE,
-    IN_MAINTENANCE,
-    DRAINING
+    INACTIVE
 }
