@@ -62,18 +62,11 @@ dependencies {
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
 
-//    smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
-//    smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(':testing:e2e-test-utilities')
 
-//    smokeTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-//    smokeTestImplementation "org.apache.commons:commons-text:$commonsTextVersion"
-//    smokeTestImplementation "org.assertj:assertj-core:$assertjVersion"
-//    smokeTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     smokeTestImplementation project(':components:flow:flow-rpcops-service')
-//    smokeTestImplementation project(':tools:plugins:package')
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
     smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"

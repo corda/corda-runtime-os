@@ -6,10 +6,6 @@ plugins {
 description 'E2E test utilities'
 
 dependencies {
-//    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
-//    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
-
-    // Avoid having the schema names and keys scattered across projects
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
 
     implementation "com.konghq:unirest-java:$unirestVersion"
