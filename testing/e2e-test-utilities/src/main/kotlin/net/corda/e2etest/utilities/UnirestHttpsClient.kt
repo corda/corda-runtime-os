@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest.virtualnode.helpers
+package net.corda.e2etest.utilities
 
 import kong.unirest.MultipartBody
 import kong.unirest.Unirest
@@ -10,7 +10,8 @@ import org.apache.http.ssl.SSLContexts
 import java.net.URI
 import javax.net.ssl.SSLContext
 
-class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  : HttpsClient {
+class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  :
+    HttpsClient {
     init {
         addSslParams()
     }

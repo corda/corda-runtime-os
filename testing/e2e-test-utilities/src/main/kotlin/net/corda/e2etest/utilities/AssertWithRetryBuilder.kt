@@ -1,8 +1,8 @@
-package net.corda.applications.workers.smoketest.virtualnode.helpers
+package net.corda.e2etest.utilities
 
-import java.time.Duration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.fail
+import java.time.Duration
 
 /** "Private args" that are only exposed in here */
 class AssertWithRetryArgs {
@@ -101,6 +101,7 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
  *          condition { it.code == 200 }
  *      }
  */
+@Suppress("ComplexMethod", "NestedBlockDepth")
 fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> Unit): SimpleResponse {
     val args = AssertWithRetryArgs()
 

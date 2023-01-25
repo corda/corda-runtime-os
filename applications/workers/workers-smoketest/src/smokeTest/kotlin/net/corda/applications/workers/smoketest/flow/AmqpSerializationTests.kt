@@ -1,15 +1,15 @@
 package net.corda.applications.workers.smoketest.flow
 
-import net.corda.applications.workers.smoketest.GROUP_ID
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
-import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
-import net.corda.applications.workers.smoketest.getHoldingIdShortHash
-import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
-import net.corda.applications.workers.smoketest.registerMember
-import net.corda.applications.workers.smoketest.startRpcFlow
+import net.corda.e2etest.utilities.GROUP_ID
+import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
+import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.getHoldingIdShortHash
+import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
+import net.corda.e2etest.utilities.registerMember
+import net.corda.e2etest.utilities.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
@@ -34,7 +34,12 @@ class AmqpSerializationTests {
         @JvmStatic
         internal fun beforeAll() {
             // Upload test flows if not already uploaded
-            conditionallyUploadCordaPackage(cpiName, TEST_CPB_LOCATION, GROUP_ID, staticMemberList)
+            conditionallyUploadCordaPackage(
+                cpiName,
+                TEST_CPB_LOCATION,
+                GROUP_ID,
+                staticMemberList
+            )
 
             // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
