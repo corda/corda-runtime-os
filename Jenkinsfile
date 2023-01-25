@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@ronanb/CORE-9006/ensure-correct-commit-ID-used') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',

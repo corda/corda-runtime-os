@@ -111,7 +111,11 @@ pipeline {
                         echo "Checking out commit ID from upstream job ${params.COMMIT_TO_CHECKOUT}"
                         sh 'git checkout "$COMMIT_TO_CHECKOUT"'
                     } else {
-                        echo "Checking out Head revision of ${env.BRANCH_NAME} and merging into ${env.CHANGE_TARGET}"
+                        if (env.CHANGE_ID) {
+                            echo "Checking out head revision of ${env.BRANCH_NAME} and merging into ${env.CHANGE_TARGET}"
+                        } else {
+                            echo "Checking out head revision of ${env.BRANCH_NAME}"
+                        }
                     }
                 }
             }
