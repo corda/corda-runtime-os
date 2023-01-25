@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
-import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.config.RestServerSettingsProvider
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.impl.apigen.processing.JavalinRouteProviderImpl
@@ -34,7 +34,7 @@ class HttpRpcServerTest {
 
     @Test
     fun `start server with ssl option but without ssl password specified throws illegal argument exception`() {
-        val configProvider = mock(HttpRpcSettingsProvider::class.java)
+        val configProvider = mock(RestServerSettingsProvider::class.java)
         doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
         doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
@@ -62,7 +62,7 @@ class HttpRpcServerTest {
 
     @Test
     fun `start server with ssl disabled but without dev mode enabled throws unsupported operation exception`() {
-        val configProvider = mock(HttpRpcSettingsProvider::class.java)
+        val configProvider = mock(RestServerSettingsProvider::class.java)
         doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
         doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
@@ -90,7 +90,7 @@ class HttpRpcServerTest {
 
     @Test
     fun `OpenApi Json of discovered RPCOps should be deserializable to OpenApi object`() {
-        val configProvider = mock(HttpRpcSettingsProvider::class.java)
+        val configProvider = mock(RestServerSettingsProvider::class.java)
         doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
         doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
@@ -113,7 +113,7 @@ class HttpRpcServerTest {
 
     @Test
     fun `start server with duplicate HttpRpcParameter throws exception`() {
-        val configProvider = mock(HttpRpcSettingsProvider::class.java)
+        val configProvider = mock(RestServerSettingsProvider::class.java)
         doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
         doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()

@@ -1,3 +1,3 @@
-# HTTP RPC Server
+# REST Server
 
 Defines common interfaces for HTTP Server.

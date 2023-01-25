@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.config.models
 
-data class HttpRpcContext(
+data class RestContext(
     val version: String,
     val basePath: String,
     val title: String,

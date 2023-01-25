@@ -5,14 +5,14 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.server.HttpRpcServer
+import net.corda.httprpc.server.RestServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
-import net.corda.httprpc.server.config.models.HttpRpcContext
-import net.corda.httprpc.server.config.models.HttpRpcSSLSettings
-import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.config.models.HttpRpcSettings.Companion.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+import net.corda.httprpc.server.config.models.RestContext
+import net.corda.httprpc.server.config.models.RestSSLSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
+import net.corda.httprpc.server.config.models.RestServerSettings.Companion.MAX_CONTENT_LENGTH_DEFAULT_VALUE
 import net.corda.httprpc.server.config.models.SsoSettings
-import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.server.factory.RestServerFactory
 import net.corda.httprpc.ssl.SslCertReadService
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.libs.configuration.SmartConfig
@@ -48,7 +48,7 @@ import java.util.function.Supplier
 internal class HttpRpcGatewayEventHandler(
     private val permissionManagementService: PermissionManagementService,
     private val configurationReadService: ConfigurationReadService,
-    private val httpRpcServerFactory: HttpRpcServerFactory,
+    private val restServerFactory: RestServerFactory,
     private val rbacSecurityManagerService: RBACSecurityManagerService,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
     private val dynamicRestResourcesProvider: Supplier<List<PluggableRestResource<out RestResource>>>,
@@ -64,7 +64,7 @@ internal class HttpRpcGatewayEventHandler(
     }
 
     @VisibleForTesting
-    internal var server: HttpRpcServer? = null
+    internal var server: RestServer? = null
 
     @VisibleForTesting
     internal var sslCertReadService: SslCertReadService? = null
@@ -194,15 +194,15 @@ internal class HttpRpcGatewayEventHandler(
             it.getOrCreateKeyStore()
         }
 
-        val httpRpcSettings = HttpRpcSettings(
+        val restServerSettings = RestServerSettings(
             address = NetworkHostAndPort.parse(config.getString(REST_ADDRESS)),
-            context = HttpRpcContext(
+            context = RestContext(
                 version = "1",
                 basePath = "/api",
                 description = config.getString(REST_CONTEXT_DESCRIPTION),
                 title = config.getString(REST_CONTEXT_TITLE)
             ),
-            ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
+            ssl = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
             sso = config.retrieveSsoOptions(),
             maxContentLength = config.retrieveMaxContentLength(),
             webSocketIdleTimeoutMs = config.getInt(REST_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS).toLong()
@@ -212,10 +212,10 @@ internal class HttpRpcGatewayEventHandler(
 
         log.info("Starting HTTP RPC Server.")
         val rpcOps = dynamicRestResourcesProvider.get()
-        server = httpRpcServerFactory.createHttpRpcServer(
+        server = restServerFactory.createRestServer(
             restResourceImpls = rpcOps,
-            rpcSecurityManagerSupplier = rbacSecurityManagerService::securityManager,
-            httpRpcSettings = httpRpcSettings,
+            restSecurityManagerSupplier = rbacSecurityManagerService::securityManager,
+            restServerSettings = restServerSettings,
             multiPartDir = multiPartDir
         ).also { it.start() }
     }
