@@ -48,8 +48,8 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val digestService: DigestService,
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
     @Suspendable
-    override fun sign(transactionId: SecureHash, publicKeys: Set<PublicKey>): List<DigitalSignatureAndMetadata> {
-        return signingService.findMySigningKeys(publicKeys).values.filterNotNull().map { publicKey ->
+    override fun sign(transactionId: SecureHash, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata> {
+        return signingService.findMySigningKeys(publicKeys.toSet()).values.filterNotNull().map { publicKey ->
             val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
             requireNotNull(signatureSpec) {
                 "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"

@@ -8,7 +8,7 @@ import java.security.PublicKey
 
 interface TransactionSignatureService {
     @Suspendable
-    fun sign(transactionId: SecureHash, publicKeys: Set<PublicKey>): List<DigitalSignatureAndMetadata>
+    fun sign(transactionId: SecureHash, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata>
 
     /**
      * The underlying verification service signals the verification failures with different exceptions.

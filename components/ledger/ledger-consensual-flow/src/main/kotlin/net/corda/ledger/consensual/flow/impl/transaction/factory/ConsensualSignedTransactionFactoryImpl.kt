@@ -69,7 +69,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         val signaturesWithMetadata =
             transactionSignatureService.sign(
                 wireTransaction.id,
-                consensualTransactionBuilder.states.flatMap { it.participants }.toSet()
+                consensualTransactionBuilder.states.flatMap { it.participants }
             )
         if (signaturesWithMetadata.isEmpty()){
             throw CordaRuntimeException("None of the required keys were available to sign the transaction.")

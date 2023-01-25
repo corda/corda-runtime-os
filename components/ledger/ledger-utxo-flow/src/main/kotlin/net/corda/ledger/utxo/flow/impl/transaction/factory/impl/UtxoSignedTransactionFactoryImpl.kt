@@ -75,7 +75,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val signaturesWithMetadata =
             transactionSignatureService.sign(
                 wireTransaction.id,
-                utxoTransactionBuilder.signatories.toSet()
+                utxoTransactionBuilder.signatories
             )
         if (signaturesWithMetadata.isEmpty()){
             throw CordaRuntimeException("None of the required keys were available to sign the transaction")
