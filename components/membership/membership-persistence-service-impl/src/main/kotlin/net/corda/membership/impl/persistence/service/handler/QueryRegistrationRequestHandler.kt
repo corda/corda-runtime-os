@@ -24,7 +24,7 @@ internal class QueryRegistrationRequestHandler(persistenceHandlerServices: Persi
             val details =
                 em.createQuery(query)
                     .resultList
-                    .singleOrNull()
+                    .firstOrNull()
                     ?.toDetails()
             RegistrationRequestQueryResponse(details)
         }
