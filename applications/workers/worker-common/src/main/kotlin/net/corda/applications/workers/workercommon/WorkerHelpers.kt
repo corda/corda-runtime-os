@@ -54,7 +54,14 @@ class WorkerHelpers {
 
         /**
          * Uses [smartConfigFactory] to create a `SmartConfig` containing the instance ID, topic prefix, additional
-         * params in the [defaultParams], and any [extraParams].
+         * params in the [defaultParams], and any [extraParams]. Check that the configuration matches the schema,
+         * but do not fill in defaults.
+         *
+         * This is typically called during the startup of a worker. The config object is then passed in to the
+         * [start] method of a Corda component, e.g. the processor object that goes with the worker component.
+         * For the most part, processors will then post a [BootConfigEvent] to their lifecycle coordinator with
+         * this boot configuration as a field in the event, which will eventually cause the parameters
+         * passed in here to be end up contributing towards a merged configuration.
          */
         fun getBootstrapConfig(
             secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
@@ -93,6 +100,22 @@ class WorkerHelpers {
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
             validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
+
+            // we now know bootConfig has:
+            //
+            // 1. parameters passed directly in on the command line
+            // 2. INSTANCE_ID and TOPIC_PREFIX set indirectly via the command line
+            //
+            // Also, boot config has been validated; all the keys in it are declared in the JSON schema and are of
+            // the types specified in the schema
+            //
+            // However, bootConfig does not:
+            //  - have database configuration records applied
+            //  - have unspecified fields filled in with defaults from the schema.
+            //
+            // This is handled later, via the lifecycle coordinator and the domino logic,
+            // based on the requirements graph.
+            //
             return bootConfig
         }
 
