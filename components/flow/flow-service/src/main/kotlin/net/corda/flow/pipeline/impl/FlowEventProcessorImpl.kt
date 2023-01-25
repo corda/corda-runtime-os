@@ -77,14 +77,14 @@ class FlowEventProcessorImpl(
         val flowTimeout = (config.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
         return try {
             flowEventContextConverter.convert(
-                    pipeline
-                        .eventPreProcessing()
-                        .runOrContinue(flowTimeout)
-                        .setCheckpointSuspendedOn()
-                        .setWaitingFor()
-                        .requestPostProcessing()
-                        .globalPostProcessing()
-                        .context
+                pipeline
+                    .eventPreProcessing()
+                    .runOrContinue(flowTimeout)
+                    .setCheckpointSuspendedOn()
+                    .setWaitingFor()
+                    .requestPostProcessing()
+                    .globalPostProcessing()
+                    .context
             )
         } catch (e: FlowTransientException) {
             flowEventExceptionProcessor.process(e, pipeline.context)

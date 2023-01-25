@@ -22,6 +22,7 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -172,8 +173,17 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
     override fun process(exception: FlowMarkedForKillException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint> {
         return withEscalation {
-            val now = Instant.now()
+            val exceptionHandlingStartTime = Instant.now()
             val checkpoint = context.checkpoint
+
+            if (!checkpoint.doesExist) {
+                return@withEscalation flowEventContextConverter.convert(
+                    context.copy(
+                        outputRecords = createFlowKilledStatusRecord(checkpoint, exception.message),
+                        sendToDlq = false
+                    )
+                )
+            }
 
             val activeSessionIds = checkpoint.sessions.filterNot { sessionState ->
                 sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR
@@ -182,22 +192,22 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             if (activeSessionIds.isNotEmpty()) {
                 checkpoint.putSessionStates(
                     flowSessionManager.sendErrorMessages(
-                        context.checkpoint, activeSessionIds, exception, now
+                        context.checkpoint, activeSessionIds, exception, exceptionHandlingStartTime
                     )
                 )
             }
+            val cleanupEvents = createCleanupEventsForSessions(
+                getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
+                checkpoint.sessions.filterNot { it.hasScheduledCleanup }
+            )
+            val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message)
 
             checkpoint.markDeleted()
 
-            val cleanupEvents = createCleanupEventsForSessions(
-                getScheduledCleanupExpiryTime(context, now),
-                checkpoint.sessions.filterNot { it.hasScheduledCleanup }
-            )
-            val statusRecord = createFlowKilledStatusRecord(context, exception.message)
-
             flowEventContextConverter.convert(
                 context.copy(
-                    outputRecords = cleanupEvents + statusRecord, sendToDlq = false // killed flows do not go to DLQ
+                    outputRecords = cleanupEvents + statusRecord,
+                    sendToDlq = false // killed flows do not go to DLQ
                 )
             )
         }
@@ -226,9 +236,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             }
     }
 
-    private fun createFlowKilledStatusRecord(context: FlowEventContext<*>, message: String?): List<Record<*, *>> {
-        return createStatusRecord(context.checkpoint.flowId) {
-            flowMessageFactory.createFlowKilledStatusMessage(context.checkpoint, message)
+    private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, message: String?): List<Record<*, *>> {
+        return createStatusRecord(checkpoint.flowId) {
+            flowMessageFactory.createFlowKilledStatusMessage(checkpoint, message)
         }
     }
 

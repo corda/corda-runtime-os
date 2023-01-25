@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.lang.IllegalArgumentException
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -119,6 +120,8 @@ class FlowToBeKilledExceptionProcessingTest {
         val exception = FlowMarkedForKillException("reasoning")
         val contextCapture = argumentCaptor<FlowEventContext<*>>()
 
+        whenever(checkpoint.doesExist).thenReturn(true)
+
         // The first call returns all sessions.
         whenever(checkpoint.sessions)
             .thenReturn(allFlowSessions)
@@ -169,6 +172,8 @@ class FlowToBeKilledExceptionProcessingTest {
 
     @Test
     fun `processing MarkedForKillException removes retries and external events from output records`() {
+        whenever(checkpoint.doesExist).thenReturn(true)
+
         val externalEventState = ExternalEventState()
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
         whenever(checkpoint.inRetryState).thenReturn(true)
@@ -201,5 +206,56 @@ class FlowToBeKilledExceptionProcessingTest {
         assertThat(killContext.outputRecords)
             .withFailMessage("Output records should contain the flow killed status record")
             .contains(flowKilledStatusRecord)
+    }
+
+    @Test
+    fun `processing MarkedForKillException when checkpoint does not exist only outputs flow killed status record`() {
+        whenever(checkpoint.doesExist).thenReturn(false)
+
+        val testContext = buildFlowEventContext(checkpoint, Any())
+        val exception = FlowMarkedForKillException("reasoning")
+        val contextCapture = argumentCaptor<FlowEventContext<*>>()
+
+        whenever(flowMessageFactory.createFlowKilledStatusMessage(any(), any())).thenReturn(flowKilledStatus)
+        whenever(flowRecordFactory.createFlowStatusRecord(flowKilledStatus)).thenReturn(flowKilledStatusRecord)
+
+        whenever(flowEventContextConverter.convert(contextCapture.capture())).thenReturn(mockResponse)
+
+        val response = target.process(exception, testContext)
+
+        assertThat(response).isEqualTo(mockResponse)
+
+        val killContext = contextCapture.firstValue
+        assertThat(killContext.outputRecords)
+            .withFailMessage("Output records should only have flow status record")
+            .hasSize(1)
+
+        assertThat(killContext.outputRecords)
+            .withFailMessage("Output records should contain the flow killed status record")
+            .contains(flowKilledStatusRecord)
+    }
+
+    @Test
+    fun `error processing MarkedForKillException falls back to null state record, empty response events and marked for DLQ`() {
+        val testContext = buildFlowEventContext(checkpoint, Any())
+        val exception = FlowMarkedForKillException("reasoning")
+        val fallbackFailureResponse = StateAndEventProcessor.Response(
+            null, emptyList(), true
+        )
+
+        whenever(checkpoint.doesExist).thenReturn(true)
+
+        // The first call returns all sessions.
+        whenever(checkpoint.sessions)
+            .thenReturn(allFlowSessions)
+            .thenReturn(allFlowSessionsAfterErrorsSent)
+
+        // simulating exception thrown during processing of the flow session
+        whenever(flowSessionManager.sendErrorMessages(eq(checkpoint), eq(activeFlowSessionIds), eq(exception), any()))
+            .thenThrow(IllegalArgumentException("some error message while sending errors to peers"))
+
+        val response = target.process(exception, testContext)
+
+        assertThat(response).isEqualTo(fallbackFailureResponse)
     }
 }
