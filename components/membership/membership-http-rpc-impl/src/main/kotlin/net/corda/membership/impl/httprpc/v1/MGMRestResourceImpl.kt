@@ -24,6 +24,8 @@ import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
@@ -33,7 +35,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Duration
-import java.time.Instant
 import java.time.format.DateTimeParseException
 import java.util.*
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -41,14 +42,27 @@ import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenS
 
 
 @Component(service = [PluggableRestResource::class])
-class MGMRestResourceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class MGMRestResourceImpl internal constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = MGMOpsClient::class)
     private val mgmOpsClient: MGMOpsClient,
-    @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
+    private val clock: Clock = UTCClock(),
 ) : MGMRestResource, PluggableRestResource<MGMRestResource>, Lifecycle {
+
+    @Activate constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = MGMOpsClient::class)
+        mgmOpsClient: MGMOpsClient,
+        @Reference(service = ConfigurationGetService::class)
+        configurationGetService: ConfigurationGetService,
+    ) : this(
+        coordinatorFactory,
+        mgmOpsClient,
+        configurationGetService,
+        UTCClock()
+    )
+
     companion object {
         private val logger: Logger = contextLogger()
     }
@@ -328,7 +342,7 @@ class MGMRestResourceImpl @Activate constructor(
             }
 
             val ttlAsInstant =  ttl?.let{
-                Instant.now() + try {
+                clock.instant() + try {
                     Duration.parse(ttl)
                 } catch (e: DateTimeParseException) {
                     throw InvalidInputDataException(

@@ -26,6 +26,7 @@ dependencies {
     implementation project(':libs:membership:certificates-common')
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:utilities")
 
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-membership"
