@@ -31,7 +31,6 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
-import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
