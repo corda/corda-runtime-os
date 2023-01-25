@@ -3,8 +3,8 @@ package net.corda.httprpc.tools.annotations.validation
 import net.corda.httprpc.RestResource
 
 /**
- * This class is responsible for applying validations to an interface or list of interfaces that are expected to be exposed via HTTP RPC.
- * Interfaces that pass this validation successfully should be able to generate their HTTP RPC model with no errors.
+ * This class is responsible for applying validations to an interface or list of interfaces that are expected to be exposed via REST.
+ * Interfaces that pass this validation successfully should be able to generate their HTTP Rest model with no errors.
  */
 object RestInterfaceValidator {
     /**

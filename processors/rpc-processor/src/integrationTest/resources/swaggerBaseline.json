@@ -3493,7 +3493,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3632,7 +3631,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -3918,7 +3916,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3962,7 +3959,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4045,7 +4041,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
@@ -4371,7 +4366,7 @@
         }
       },
       "VirtualNodeInfo" : {
-        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "state", "uniquenessDmlConnectionId", "vaultDmlConnectionId" ],
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "flowOperationalStatus", "flowP2pOperationalStatus", "flowStartOperationalStatus", "holdingIdentity", "uniquenessDmlConnectionId", "vaultDbOperationalStatus", "vaultDmlConnectionId" ],
         "type" : "object",
         "properties" : {
           "cpiIdentifier" : {
@@ -4387,17 +4382,27 @@
             "nullable" : false,
             "example" : "string"
           },
+          "flowOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "flowP2pOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "flowStartOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
           "holdingIdentity" : {
             "$ref" : "#/components/schemas/HoldingIdentity"
           },
           "hsmConnectionId" : {
             "type" : "string",
             "nullable" : true,
-            "example" : "string"
-          },
-          "state" : {
-            "type" : "string",
-            "nullable" : false,
             "example" : "string"
           },
           "uniquenessDdlConnectionId" : {
@@ -4409,6 +4414,11 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          },
+          "vaultDbOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "vaultDdlConnectionId" : {
             "type" : "string",

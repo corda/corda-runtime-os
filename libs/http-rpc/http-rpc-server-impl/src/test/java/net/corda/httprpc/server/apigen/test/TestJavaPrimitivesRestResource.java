@@ -1,65 +1,65 @@
 package net.corda.httprpc.server.apigen.test;
 
 import net.corda.httprpc.RestResource;
-import net.corda.httprpc.annotations.HttpRpcGET;
-import net.corda.httprpc.annotations.HttpRpcPOST;
-import net.corda.httprpc.annotations.HttpRpcPathParameter;
-import net.corda.httprpc.annotations.HttpRpcQueryParameter;
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter;
-import net.corda.httprpc.annotations.HttpRpcResource;
+import net.corda.httprpc.annotations.HttpGET;
+import net.corda.httprpc.annotations.HttpPOST;
+import net.corda.httprpc.annotations.RestPathParameter;
+import net.corda.httprpc.annotations.RestQueryParameter;
+import net.corda.httprpc.annotations.RestRequestBodyParameter;
+import net.corda.httprpc.annotations.HttpRestResource;
 
-@HttpRpcResource(
+@HttpRestResource(
     name = "API",
     description = "Java Test",
     path = "java"
 )
 public interface TestJavaPrimitivesRestResource extends RestResource {
 
-  @HttpRpcPOST(
+  @HttpPOST(
       path = "negateInteger",
       title = "Negate Integer",
       description = "Negate an Integer"
   )
   Integer negateInt(
-      @HttpRpcRequestBodyParameter(
+      @RestRequestBodyParameter(
           description = "Int",
           required = false
       ) Integer number
   );
 
-  @HttpRpcPOST(
+  @HttpPOST(
       path = "negatePrimitiveInteger",
       title = "Negate Integer",
       description = "Negate an Integer"
   )
   int negatePrimitiveInt(
-      @HttpRpcRequestBodyParameter(
+      @RestRequestBodyParameter(
           description = "int",
           required = false
       ) int number
   );
 
-  @HttpRpcGET(
+  @HttpGET(
       path = "negate_long",
       title = "Negate Long",
       description = "Negate a Long value"
   )
-  Long negateLong(@HttpRpcQueryParameter Long number);
+  Long negateLong(@RestQueryParameter Long number);
 
-  @HttpRpcGET(
+  @HttpGET(
       path = "negate_boolean",
       title = "Negate Boolean",
       description = "Negate a Boolean value"
   )
-  Boolean negateBoolean(@HttpRpcQueryParameter Boolean bool);
+  Boolean negateBoolean(@RestQueryParameter Boolean bool);
 
-  @HttpRpcGET(
+  @HttpGET(
       path = "reverse/{text}",
       title = "Reverse Text",
       description = "Reverse a text"
   )
   String reverse(
-      @HttpRpcPathParameter(
+      @RestPathParameter(
           name = "text",
           description = "The text to reverse"
       ) String text

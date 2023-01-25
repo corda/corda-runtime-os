@@ -8,7 +8,7 @@ import java.io.InputStream
  *
  * To add file upload to an [RestResource] endpoint, declare a parameter with this type on the function with the
  * request body annotation
- * [net.corda.httprpc.annotations.HttpRpcRequestBodyParameter].
+ * [net.corda.httprpc.annotations.RestRequestBodyParameter].
  *
  * Alternatively, if the extra metadata is not necessary and only the file content is required, you can use declare
  * a parameter of type
@@ -16,15 +16,15 @@ import java.io.InputStream
  *
  * Example usage:
  * ```
- * @HttpRpcPOST(path = "fileUpload")
- * fun fileUpload(@HttpRpcRequestBodyParameter file: HttpFileUpload): String
+ * @HttpPOST(path = "fileUpload")
+ * fun fileUpload(@RestRequestBodyParameter file: HttpFileUpload): String
  *
- * @HttpRpcPOST(path = "multiFileUpload")
- * fun multiFileUpload(@HttpRpcRequestBodyParameter file1: HttpFileUpload,
- *                     @HttpRpcRequestBodyParameter file2: HttpFileUpload): String
+ * @HttpPOST(path = "multiFileUpload")
+ * fun multiFileUpload(@RestRequestBodyParameter file1: HttpFileUpload,
+ *                     @RestRequestBodyParameter file2: HttpFileUpload): String
  *
- * @HttpRpcPOST(path = "fileUploadUsingInputStream")
- * fun fileUploadUsingInputStream(@HttpRpcRequestBodyParameter file: InputStream): String
+ * @HttpPOST(path = "fileUploadUsingInputStream")
+ * fun fileUploadUsingInputStream(@RestRequestBodyParameter file: InputStream): String
  * ```
  */
 class HttpFileUpload(

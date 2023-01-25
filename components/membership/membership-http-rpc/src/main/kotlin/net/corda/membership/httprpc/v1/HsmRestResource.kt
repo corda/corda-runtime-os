@@ -1,10 +1,10 @@
 package net.corda.membership.httprpc.v1
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
 
 /**
@@ -12,7 +12,7 @@ import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
  * allows you to assign a hardware-backed or soft HSM to a tenant, and retrieve HSM information if one is already
  * assigned to the specified tenant.
  */
-@HttpRpcResource(
+@HttpRestResource(
     name = "HSM API",
     description = "The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys.",
     path = "hsm"
@@ -37,7 +37,7 @@ interface HsmRestResource : RestResource {
      *
      * @return Information on the assigned HSM, or null if no HSM is assigned.
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "{tenantId}/{category}",
         description = "This method retrieves information on the HSM of the specified category assigned to the tenant.",
         responseDescription = """
@@ -51,10 +51,10 @@ interface HsmRestResource : RestResource {
                 value of 0 means the association is active"""
     )
     fun assignedHsm(
-        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
                 " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
+        @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
                 " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         category: String
     ): HsmAssociationInfo?
@@ -77,7 +77,7 @@ interface HsmRestResource : RestResource {
      *
      * @return Information on the newly assigned HSM.
      */
-    @HttpRpcPOST(
+    @HttpPOST(
         path = "soft/{tenantId}/{category}",
         description = "This method enables you to assign a soft HSM to the tenant for the specified category.",
         responseDescription = """
@@ -91,10 +91,10 @@ interface HsmRestResource : RestResource {
                 value of 0 means the association is active"""
     )
     fun assignSoftHsm(
-        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
                 " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
+        @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
                 " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         category: String
     ): HsmAssociationInfo
@@ -116,7 +116,7 @@ interface HsmRestResource : RestResource {
      *
      * @return Information on the newly assigned HSM.
      */
-    @HttpRpcPOST(
+    @HttpPOST(
         path = "{tenantId}/{category}",
         description = "This method enables you to assign a hardware-backed HSM to the tenant for the specified " +
                 "category.",
@@ -131,10 +131,10 @@ interface HsmRestResource : RestResource {
                 value of 0 means the association is active"""
     )
     fun assignHsm(
-        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+        @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
                 " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
+        @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
                 " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         category: String
     ): HsmAssociationInfo

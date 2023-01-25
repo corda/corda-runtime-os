@@ -2,19 +2,19 @@ package net.corda.membership.httprpc.v1
 
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPUT
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpPUT
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
 /**
  * The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you
  * to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate
  * authority (CA).
  */
-@HttpRpcResource(
+@HttpRestResource(
     name = "Certificates API",
     description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
         "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
@@ -45,24 +45,24 @@ interface CertificatesRestResource : RestResource {
      * @param alias The unique alias under which the certificate chain will be stored.
      * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
      */
-    @HttpRpcPUT(
+    @HttpPUT(
         path = "cluster/{usage}",
         description = "This method imports a certificate chain for a cluster."
     )
     fun importCertificateChain(
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "The unique alias under which the certificate chain will be stored",
             required = true,
         )
         alias: String,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "A valid certificate chain in PEM format obtained from a certificate authority",
             required = true,
             name = "certificate"
@@ -96,28 +96,28 @@ interface CertificatesRestResource : RestResource {
      * @param alias The unique alias under which the certificate chain will be stored.
      * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
      */
-    @HttpRpcPUT(
+    @HttpPUT(
         path = "vnode/{holdingIdentityId}/{usage}",
         description = "This method imports a certificate chain for a virtual node."
     )
     fun importCertificateChain(
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate holding identity ID",
         )
         holdingIdentityId: String?,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "The unique alias under which the certificate chain will be stored",
             required = true,
         )
         alias: String,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "A valid certificate chain in PEM format obtained from a certificate authority",
             required = true,
             name = "certificate"
@@ -135,13 +135,13 @@ interface CertificatesRestResource : RestResource {
      *     * 'code-signer' for a certificate of the code signing service
      * @return A list of the cluster level certificates aliases in the usage.
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "cluster/{usage}",
         description = "This method gets the certificate chain aliases for a cluster.",
         responseDescription = "The cluster level certificates aliases in the usage.",
     )
     fun getCertificateAliases(
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
@@ -164,20 +164,20 @@ interface CertificatesRestResource : RestResource {
      * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
      * @return A list of the virtual node certificates aliases in the usage.
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "vnode/{holdingIdentityId}/{usage}",
         description = "This method gets the certificate chain aliases for a virtual node.",
         responseDescription = "The virtual node certificates aliases in the usage.",
     )
     fun getCertificateAliases(
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate holding identity ID",
         )
         holdingIdentityId: String?,
@@ -194,20 +194,20 @@ interface CertificatesRestResource : RestResource {
      * @param alias The unique certificate chain alias
      * @return The certificate in PEM format.
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "cluster/{usage}/{alias}",
         description = "This method gets the certificate chain in PEM format for a cluster.",
         responseDescription = "The certificate in PEM format.",
     )
     fun getCertificateChain(
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate chain unique alias."
         )
         alias: String,
@@ -229,24 +229,24 @@ interface CertificatesRestResource : RestResource {
      * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
      * @return The certificate in PEM format.
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "vnode/{holdingIdentityId}/{usage}/{alias}",
         description = "This method gets the certificate chain in PEM format for a virtual node.",
         responseDescription = "The certificate in PEM format.",
     )
     fun getCertificateChain(
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
                 "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate holding identity ID",
         )
         holdingIdentityId: String?,
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The certificate chain unique alias."
         )
         alias: String,
@@ -276,30 +276,30 @@ interface CertificatesRestResource : RestResource {
      * @return The CSR in PEM format.
      */
     @Suppress("LongParameterList")
-    @HttpRpcPOST(
+    @HttpPOST(
         path = "{tenantId}/{keyId}",
         description = "This method enables you to generate a certificate signing request (CSR) for a tenant.",
         responseDescription = "The CSR in PEM format.",
     )
     fun generateCsr(
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
                 " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API"
         )
         tenantId: String,
-        @HttpRpcPathParameter(description = "Identifier of the public key that will be included in the certificate")
+        @RestPathParameter(description = "Identifier of the public key that will be included in the certificate")
         keyId: String,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "The X.500 name that will be the subject associated with the request",
             required = true,
         )
         x500Name: String,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "Used to specify additional subject names",
             required = false,
         )
         subjectAlternativeNames: List<String>?,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "Used to add additional attributes to the CSR; for example, signature spec",
             required = false,
         )
