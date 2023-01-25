@@ -5,11 +5,11 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeState
 import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManagerFactory
@@ -19,23 +19,39 @@ internal object VNodeTestUtils {
         entityManagerFactory: EntityManagerFactory,
         name: String,
         version: String,
-        hash: String): VirtualNodeEntity {
+        hash: String,
+        virtualNodeOperationEntity: VirtualNodeOperationEntity? = null,
+        holdingIdentityEntity: HoldingIdentityEntity? = null
+    ): VirtualNodeEntity {
 
         println("Creating VNode for testing: $name, $version, $hash")
 
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentity = newHoldingIdentityEntity(name)
-        val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash, VirtualNodeState.ACTIVE.name)
+        val holdingIdentity = holdingIdentityEntity ?: newHoldingIdentityEntity(name)
+        val virtualNode = VirtualNodeEntity(
+            holdingIdentity.holdingIdentityShortHash,
+            holdingIdentity,
+            name,
+            version,
+            hash,
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            operationInProgress = virtualNodeOperationEntity
+        )
 
         entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(newDbConnection(holdingIdentity.cryptoDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(newDbConnection(holdingIdentity.cryptoDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(newDbConnection(holdingIdentity.vaultDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(newDbConnection(holdingIdentity.vaultDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(newDbConnection(holdingIdentity.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(newDbConnection(holdingIdentity.uniquenessDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(holdingIdentity)
+            em.persist(newDbConnection(virtualNode.cryptoDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(newDbConnection(virtualNode.cryptoDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(newDbConnection(virtualNode.vaultDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(newDbConnection(virtualNode.vaultDMLConnectionId!!, DbPrivilege.DML))
+            em.persist(newDbConnection(virtualNode.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
+            em.persist(newDbConnection(virtualNode.uniquenessDMLConnectionId!!, DbPrivilege.DML))
         }
+
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }
         entityManagerFactory.createEntityManager().transaction { em -> return em.merge(virtualNode) }
     }
@@ -59,12 +75,6 @@ internal object VNodeTestUtils {
             holdingIdentityFullHash = hi.fullHash,
             x500Name = hi.x500Name.toString(),
             mgmGroupId = hi.groupId,
-            vaultDDLConnectionId = UUID.randomUUID(),
-            vaultDMLConnectionId = UUID.randomUUID(),
-            cryptoDDLConnectionId = UUID.randomUUID(),
-            cryptoDMLConnectionId = UUID.randomUUID(),
-            uniquenessDDLConnectionId = UUID.randomUUID(),
-            uniquenessDMLConnectionId = UUID.randomUUID(),
             hsmConnectionId = UUID.randomUUID()
         )
     }

@@ -1,6 +1,7 @@
 package net.corda.libs.virtualnode.endpoints.v1.types
 
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
+import net.corda.virtualnode.OperationalStatus
 
 /**
  * This class is serialized and returned as JSON in the REST api
@@ -31,5 +32,8 @@ data class VirtualNodeInfo(
     val uniquenessDdlConnectionId: String? = null,
     val uniquenessDmlConnectionId: String,
     val hsmConnectionId: String? = null,
-    val state: String,
+    val flowP2pOperationalStatus: OperationalStatus,
+    val flowStartOperationalStatus: OperationalStatus,
+    val flowOperationalStatus: OperationalStatus,
+    val vaultDbOperationalStatus: OperationalStatus,
 )

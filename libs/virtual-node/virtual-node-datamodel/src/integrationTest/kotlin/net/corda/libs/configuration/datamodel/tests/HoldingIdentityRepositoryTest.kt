@@ -64,12 +64,6 @@ class HoldingIdentityRepositoryTest {
     fun find() {
         val holdingIdentity = entityManagerFactory.createEntityManager().transaction { em ->
             val hi = VNodeTestUtils.newHoldingIdentityEntity("Fred")
-            em.persist(VNodeTestUtils.newDbConnection(hi.cryptoDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.cryptoDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(hi.vaultDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.vaultDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(hi.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.uniquenessDMLConnectionId!!, DbPrivilege.DML))
             em.persist(hi)
             hi
         }
@@ -86,12 +80,6 @@ class HoldingIdentityRepositoryTest {
     fun `find returns null when not in DB`() {
         entityManagerFactory.createEntityManager().transaction { em ->
             val hi = VNodeTestUtils.newHoldingIdentityEntity("Jon")
-            em.persist(VNodeTestUtils.newDbConnection(hi.cryptoDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.cryptoDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(hi.vaultDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.vaultDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(hi.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.uniquenessDMLConnectionId!!, DbPrivilege.DML))
             em.persist(hi)
             hi
         }
@@ -107,25 +95,10 @@ class HoldingIdentityRepositoryTest {
     fun put() {
         val hi = VNodeTestUtils.newHoldingIdentityEntity("Merinda")
 
-        entityManagerFactory.createEntityManager().transaction { em ->
-            em.persist(VNodeTestUtils.newDbConnection(hi.cryptoDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.cryptoDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(hi.vaultDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.vaultDMLConnectionId!!, DbPrivilege.DML))
-            em.persist(VNodeTestUtils.newDbConnection(hi.uniquenessDDLConnectionId!!, DbPrivilege.DDL))
-            em.persist(VNodeTestUtils.newDbConnection(hi.uniquenessDMLConnectionId!!, DbPrivilege.DML))
-        }
-
         entityManagerFactory.createEntityManager().transaction {
             HoldingIdentityRepositoryImpl().put(
                 it,
                 hi.toHoldingIdentity(),
-                hi.vaultDDLConnectionId,
-                hi.vaultDMLConnectionId!!,
-                hi.cryptoDDLConnectionId,
-                hi.cryptoDMLConnectionId!!,
-                hi.uniquenessDDLConnectionId,
-                hi.uniquenessDMLConnectionId,
             )
         }
     }
