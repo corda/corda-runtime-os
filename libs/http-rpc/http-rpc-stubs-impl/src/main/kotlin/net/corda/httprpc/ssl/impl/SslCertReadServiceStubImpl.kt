@@ -10,7 +10,7 @@ import java.nio.file.Path
 
 class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslCertReadService {
 
-    constructor() : this(createDirectory = { Files.createTempDirectory("http-rpc-ssl") })
+    constructor() : this(createDirectory = { Files.createTempDirectory("rest-ssl") })
 
     internal companion object {
         @VisibleForTesting

@@ -14,7 +14,7 @@ class SslCertReadServiceStubImplTest {
 
     private val service = SslCertReadServiceStubImpl(
         createDirectory = {
-            Files.createTempDirectory("http-rpc-ssl").also {
+            Files.createTempDirectory("rest-ssl").also {
                 this.tempDirectoryPath = it
             }
         }

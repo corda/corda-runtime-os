@@ -1,6 +1,6 @@
-# HTTP RPC Stub Implementations
+# Rest Stub Implementations
 
-Contains stub implementations of the HTTP RPC APIs for APIs that cannot currently have their read implementations created.
+Contains stub implementations of the Rest APIs for APIs that cannot currently have their read implementations created.
 
 This module will be deleted once the real implementations are added.
 
