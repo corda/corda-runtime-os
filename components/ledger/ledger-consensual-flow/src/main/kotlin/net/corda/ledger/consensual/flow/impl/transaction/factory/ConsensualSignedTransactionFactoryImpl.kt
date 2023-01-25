@@ -18,6 +18,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -70,6 +71,9 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
                 wireTransaction.id,
                 consensualTransactionBuilder.states.flatMap { it.participants }.toSet()
             )
+        if (signaturesWithMetadata.isEmpty()){
+            throw CordaRuntimeException("None of the required keys were available to sign the transaction.")
+        }
         return ConsensualSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
