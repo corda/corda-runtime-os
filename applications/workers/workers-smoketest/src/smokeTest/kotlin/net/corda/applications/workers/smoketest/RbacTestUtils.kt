@@ -1,10 +1,10 @@
 package net.corda.applications.workers.smoketest
 
+import java.time.Instant
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.cluster
-import java.time.Instant
 
 object RbacTestUtils {
 

@@ -2,6 +2,8 @@ package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.databind.JsonNode
 import kong.unirest.UnirestException
+import java.io.IOException
+import java.time.Duration
 import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.toJson
@@ -9,8 +11,6 @@ import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.fail
-import java.io.IOException
-import java.time.Duration
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()

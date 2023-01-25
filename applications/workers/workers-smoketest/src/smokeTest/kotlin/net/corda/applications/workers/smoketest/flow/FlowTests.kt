@@ -1,5 +1,7 @@
 package net.corda.applications.workers.smoketest.flow
 
+import java.util.UUID
+import kotlin.text.Typography.quote
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
@@ -36,8 +38,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.UUID
-import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
 //The flow tests must go last as one test updates the messaging config which is highly disruptive to subsequent test runs. The real
