@@ -2,13 +2,13 @@ package net.corda.libs.cpiupload.endpoints.v1
 
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource(
+@HttpRestResource(
     name = "CPI API",
     description = "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) " +
             "files in the Corda cluster.",
@@ -27,14 +27,14 @@ interface CpiUploadRestResource : RestResource {
      *
      * Please note that this method will not close [HttpFileUpload.content] input stream, the caller must close it.
      */
-    @HttpRpcPOST(
+    @HttpPOST(
         title = "CPI upload",
         description = "This method uses the POST method to upload a Corda Package Installer (CPI) file to the " +
                 "Corda cluster.",
         responseDescription = "The ID for the CPI upload request"
     )
     fun cpi(
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "The CPI file to be uploaded.",
             required = true
         )
@@ -54,13 +54,13 @@ interface CpiUploadRestResource : RestResource {
      * @param id Request ID returned from the [cpi] method.
      * @return A status object that is converted to .json on the client side `{status: OK}`.
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "status/{id}",
         title = "CPI upload status",
         description = "The status endpoint uses the GET method to return status information for the CPI upload with the " +
                 "given request ID.")
     fun status(
-        @HttpRpcPathParameter(
+        @RestPathParameter(
             description = "The ID returned from the CPI upload request."
         )
         id: String,
@@ -71,7 +71,7 @@ interface CpiUploadRestResource : RestResource {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
-    @HttpRpcGET(
+    @HttpGET(
         title = "CPI info",
         description = "The GET method returns a list of all CPIs uploaded to the cluster.",
         responseDescription = "Details of all of the CPIs uploaded to the cluster."

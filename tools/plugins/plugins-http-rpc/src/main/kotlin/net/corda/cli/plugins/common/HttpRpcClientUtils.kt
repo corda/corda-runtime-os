@@ -1,8 +1,8 @@
 package net.corda.cli.plugins.common
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.client.HttpRpcClient
-import net.corda.httprpc.client.config.HttpRpcClientConfig
+import net.corda.httprpc.client.RestClient
+import net.corda.httprpc.client.config.RestClientConfig
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -14,16 +14,16 @@ object HttpRpcClientUtils {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val errOut: Logger = LoggerFactory.getLogger("SystemErr")
 
-    fun <I : RestResource> HttpRpcCommand.createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
+    fun <I : RestResource> HttpRpcCommand.createHttpRpcClient(rpcOps: KClass<I>): RestClient<I> {
         val localTargetUrl = if(targetUrl.endsWith("/")) {
             targetUrl.dropLast(1)
         } else {
             targetUrl
         }
-        return HttpRpcClient(
+        return RestClient(
             baseAddress = "$localTargetUrl/api/v1/",
             rpcOps.java,
-            HttpRpcClientConfig()
+            RestClientConfig()
                 .enableSSL(true)
                 .minimumServerProtocolVersion(minimumServerProtocolVersion)
                 .username(username)

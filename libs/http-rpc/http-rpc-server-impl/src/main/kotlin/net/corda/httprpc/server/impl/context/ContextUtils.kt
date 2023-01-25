@@ -8,9 +8,9 @@ import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.security.Actor
 import net.corda.httprpc.security.AuthorizingSubject
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.security.InvocationContext
-import net.corda.httprpc.security.RpcAuthContext
+import net.corda.httprpc.security.RestAuthContext
 import net.corda.httprpc.security.rpcContext
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.context.ClientRequestContext.Companion.METHOD_SEPARATOR
@@ -66,7 +66,7 @@ internal object ContextUtils {
 
         try {
             return securityManager.authenticate(credentials).also {
-                val rpcAuthContext = RpcAuthContext(
+                val restAuthContext = RestAuthContext(
                     InvocationContext(
                         Actor.service(
                             this::javaClass.toString(),
@@ -74,7 +74,7 @@ internal object ContextUtils {
                         )
                     ), it
                 )
-                CURRENT_RPC_CONTEXT.set(rpcAuthContext)
+                CURRENT_REST_CONTEXT.set(restAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }
         } catch (e: FailedLoginException) {

@@ -17,7 +17,7 @@ import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
@@ -137,7 +137,7 @@ class FlowRestResourceImpl @Activate constructor(
             throw InvalidInputDataException(msg, details)
         }
 
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         if (!permissionValidationService.permissionValidator.authorizeUser(principal,

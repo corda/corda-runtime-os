@@ -1,0 +1,12 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Corda REST API'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    implementation "net.corda:corda-base"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}

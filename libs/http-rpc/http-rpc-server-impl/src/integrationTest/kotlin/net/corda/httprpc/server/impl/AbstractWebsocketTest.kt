@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl
 
 import io.javalin.core.util.Header
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
@@ -35,9 +35,9 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
 
     protected abstract val log: Logger
 
-    protected abstract val httpRpcSettings: HttpRpcSettings
+    protected abstract val restServerSettings: RestServerSettings
 
-    // We cannot use `httpRpcSettings.port` as when it is assigned to 0 a free port will be allocated during
+    // We cannot use `restServerSettings.port` as when it is assigned to 0 a free port will be allocated during
     // webserver start-up
     protected abstract val port: Int
 
@@ -102,8 +102,8 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
         val range = 50
 
         val uri = URI(
-            "$wsProtocol://${httpRpcSettings.address.host}:$port/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed/$start?range=$range"
+            "$wsProtocol://${restServerSettings.address.host}:$port/" +
+                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/health/counterfeed/$start?range=$range"
         )
 
         log.info("Connecting to: $uri")
@@ -119,7 +119,7 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
         assertThat(list).isEqualTo(expectedContent)
 
         assertThat(securityManager.checksExecuted).hasSize(1)
-            .allMatch { it.action == "WS:/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/" +
+            .allMatch { it.action == "WS:/${restServerSettings.context.basePath}/v${restServerSettings.context.version}/" +
                     "health/counterfeed/{start}?range=$range" }
     }
 
@@ -174,8 +174,8 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
         }
 
         val uri = URI(
-            "$wsProtocol://${httpRpcSettings.address.host}:$port/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed/100"
+            "$wsProtocol://${restServerSettings.address.host}:$port/" +
+                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/health/counterfeed/100"
         )
 
         log.info("Connecting to: $uri")

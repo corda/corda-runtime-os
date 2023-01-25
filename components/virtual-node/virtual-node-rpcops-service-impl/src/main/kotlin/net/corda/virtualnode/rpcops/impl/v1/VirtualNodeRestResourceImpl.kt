@@ -15,7 +15,7 @@ import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
@@ -40,6 +40,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -209,7 +210,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         )
         validateX500Name(request.x500Name)
 
-        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val actor = CURRENT_REST_CONTEXT.get().principal
         val rpcRequest = with(request) {
             VirtualNodeManagementRequest(
                 instant,
@@ -241,7 +242,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
                         uniquenessDdlConnectionId,
                         uniquenessDmlConnectionId,
                         hsmConnectionId,
-                        virtualNodeState
+                        OperationalStatus.ACTIVE,
+                        OperationalStatus.ACTIVE,
+                        OperationalStatus.ACTIVE,
+                        OperationalStatus.ACTIVE,
                     )
                 }
             }
@@ -259,7 +263,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
     ): ChangeVirtualNodeStateResponse {
         val instant = clock.instant()
         // Lookup actor to keep track of which RPC user triggered an update
-        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val actor = CURRENT_REST_CONTEXT.get().principal
         logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
@@ -281,7 +285,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
                 resolvedResponse.run {
-                    ChangeVirtualNodeStateResponse(holdingIdentityShortHash, virtualNodeState)
+                    ChangeVirtualNodeStateResponse(holdingIdentityShortHash, newState)
                 }
             }
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
@@ -314,7 +318,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             uniquenessDdlConnectionId?.toString(),
             uniquenessDmlConnectionId.toString(),
             hsmConnectionId.toString(),
-            state.name
+            flowP2pOperationalStatus,
+            flowStartOperationalStatus,
+            flowOperationalStatus,
+            vaultDbOperationalStatus,
         )
 
     private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =

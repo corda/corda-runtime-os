@@ -10,7 +10,7 @@ import io.swagger.v3.oas.models.media.NumberSchema
 import io.swagger.v3.oas.models.media.ObjectSchema
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.media.StringSchema
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
 import net.corda.httprpc.server.impl.utils.compact
 import net.corda.httprpc.test.CalendarRestResourceImpl
@@ -39,12 +39,12 @@ import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
-        private val httpRpcSettings = HttpRpcSettings(
+        private val restServerSettings = RestServerSettings(
             NetworkHostAndPort("localhost", 0),
             context,
             null,
             null,
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
             20000L
         )
 
@@ -61,12 +61,12 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
                     ObjectsInJsonEndpointImpl()
                 ),
                 ::securityManager,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
         }
 
         @AfterAll
@@ -498,7 +498,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
 
     @Test
     fun `GET swagger UI dependencies should return non empty result`() {
-        val baseClient = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/")
+        val baseClient = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/")
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version
         val swagger = baseClient.call(GET, WebRequest<Any>("api/v1/swagger"))
         val swaggerUIBundleJS = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))

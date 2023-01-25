@@ -67,7 +67,7 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    private enum class FlowStates { START_REQUESTED, RUNNING, RETRYING, COMPLETED, FAILED }
+    private enum class FlowStates { START_REQUESTED, RUNNING, RETRYING, COMPLETED, FAILED, KILLED }
 
     private fun generateRequestId(identifyingTest: String): String {
         return "$identifyingTest-${UUID.randomUUID()}"

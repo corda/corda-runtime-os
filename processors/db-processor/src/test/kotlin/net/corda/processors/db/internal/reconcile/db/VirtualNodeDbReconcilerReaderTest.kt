@@ -41,13 +41,16 @@ class VirtualNodeDbReconcilerReaderTest {
             whenever(it.holdingIdentity).then { mockHoldingIdentity }
             whenever(it.timestamp).then { timestamp }
             whenever(it.version).then { entityVersion }
-            whenever(it.state).then { VirtualNodeInfo.DEFAULT_INITIAL_STATE.name }
             whenever(it.vaultDmlConnectionId).then { vaultDmlConnectionId }
             whenever(it.vaultDdlConnectionId).then { vaultDdlConnectionId }
             whenever(it.cryptoDmlConnectionId).then { cryptoDmlConnectionId }
             whenever(it.cryptoDdlConnectionId).then { cryptoDdlConnectionId }
             whenever(it.uniquenessDmlConnectionId).then { uniquenessDmlConnectionId }
             whenever(it.uniquenessDdlConnectionId).then { uniquenessDdlConnectionId }
+            whenever(it.flowP2pOperationalStatus).then { VirtualNodeInfo.DEFAULT_INITIAL_STATE }
+            whenever(it.flowStartOperationalStatus).then { VirtualNodeInfo.DEFAULT_INITIAL_STATE }
+            whenever(it.flowOperationalStatus).then { VirtualNodeInfo.DEFAULT_INITIAL_STATE }
+            whenever(it.vaultDbOperationalStatus).then { VirtualNodeInfo.DEFAULT_INITIAL_STATE }
             whenever(it.hsmConnectionId).then { null }
         }
     }

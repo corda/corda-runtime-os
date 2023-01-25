@@ -266,6 +266,8 @@ allprojects {
         systemProperty 'postgresPort', postgresPort
         systemProperty 'postgresUser', postgresUser
         systemProperty 'postgresPassword', postgresPassword
+        systemProperty 'org.slf4j.simpleLogger.showDateTime', true
+        systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
 
         shouldRunAfter tasks.named('test', Test)
     }

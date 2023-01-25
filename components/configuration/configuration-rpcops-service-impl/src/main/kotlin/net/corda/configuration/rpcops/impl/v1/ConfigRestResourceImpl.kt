@@ -17,7 +17,7 @@ import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.SmartConfigFactory
@@ -164,7 +164,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
     override fun updateConfig(request: UpdateConfigParameters): ResponseEntity<UpdateConfigResponse> {
         validateRequestedConfig(request)
 
-        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val actor = CURRENT_REST_CONTEXT.get().principal
         val rpcRequest = request.run {
             ConfigurationManagementRequest(
                 section,

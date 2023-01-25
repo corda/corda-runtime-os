@@ -49,7 +49,6 @@ import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import java.lang.System.currentTimeMillis
@@ -364,7 +363,7 @@ internal class VirtualNodeWriterProcessor(
                 virtualNodeRepository.updateVirtualNodeState(
                     entityManager,
                     stateChangeRequest.holdingIdentityShortHash,
-                    VirtualNodeState.valueOf(stateChangeRequest.newState)
+                    stateChangeRequest.newState
                 )
             }
 
@@ -392,7 +391,10 @@ internal class VirtualNodeWriterProcessor(
                 instant,
                 VirtualNodeStateChangeResponse(
                     stateChangeRequest.holdingIdentityShortHash,
-                    stateChangeRequest.newState
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
                 )
             )
             respFuture.complete(response)
@@ -490,14 +492,17 @@ internal class VirtualNodeWriterProcessor(
                     holdingIdentityRepository.put(
                         entityManager,
                         holdingIdentity,
+                    )
+                    virtualNodeRepository.put(
+                        entityManager,
+                        holdingIdentity,
+                        cpiId,
                         dbConnections.vaultDdlConnectionId,
                         dbConnections.vaultDmlConnectionId,
                         dbConnections.cryptoDdlConnectionId,
                         dbConnections.cryptoDmlConnectionId,
                         dbConnections.uniquenessDdlConnectionId,
-                        dbConnections.uniquenessDmlConnectionId,
-                    )
-                    virtualNodeRepository.put(entityManager, holdingIdentity, cpiId)
+                        dbConnections.uniquenessDmlConnectionId,)
                     dbConnections
                 }
         } catch (e: Exception) {
@@ -602,7 +607,6 @@ internal class VirtualNodeWriterProcessor(
                 uniquenessDdlConnectionId,
                 uniquenessDmlConnectionId,
                 timestamp = clock.instant(),
-                state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
             )
                 .toAvro()
         }
@@ -686,6 +690,9 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.uniquenessDdlConnectionId?.toString(),
                 dbConnections.uniquenessDmlConnectionId.toString(),
                 null,
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
                 VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
             )
         )

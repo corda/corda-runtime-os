@@ -21,33 +21,12 @@ class HoldingIdentityRepositoryImpl: HoldingIdentityRepository {
     override fun put(
         entityManager: EntityManager,
         holdingIdentity: HoldingIdentity,
-        vaultDdlConnectionId: UUID?,
-        vaultDmlConnectionId: UUID,
-        cryptoDdlConnectionId: UUID?,
-        cryptoDmlConnectionId: UUID,
-        uniquenessDdlConnectionId: UUID?,
-        uniquenessDmlConnectionId: UUID?
     ) {
-        val entity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentity.shortHash.value)?.apply {
-            update(
-                vaultDdlConnectionId,
-                vaultDmlConnectionId,
-                cryptoDdlConnectionId,
-                cryptoDmlConnectionId,
-                uniquenessDdlConnectionId,
-                uniquenessDmlConnectionId
-            )
-        } ?: HoldingIdentityEntity(
+        val entity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentity.shortHash.value) ?: HoldingIdentityEntity(
             holdingIdentity.shortHash.value,
             holdingIdentity.fullHash,
             holdingIdentity.x500Name.toString(),
             holdingIdentity.groupId,
-            vaultDdlConnectionId,
-            vaultDmlConnectionId,
-            cryptoDdlConnectionId,
-            cryptoDmlConnectionId,
-            uniquenessDdlConnectionId,
-            uniquenessDmlConnectionId,
             null
         )
         entityManager.persist(entity)

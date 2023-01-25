@@ -14,7 +14,7 @@ dependencies {
     implementation "net.corda:corda-rbac-schema"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    api project(":libs:http-rpc:http-rpc")
+    api project(":libs:http-rpc:rest")
     implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:lifecycle:lifecycle")
 

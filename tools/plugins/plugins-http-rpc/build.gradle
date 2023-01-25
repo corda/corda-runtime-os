@@ -15,5 +15,5 @@ dependencies {
     compileOnly "net.corda:corda-base"
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
 
-    api project(':libs:http-rpc:http-rpc-client')
+    api project(':libs:http-rpc:rest-client')
 }

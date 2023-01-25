@@ -5,8 +5,8 @@ import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
 import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_ORIGIN
 import io.javalin.core.util.Header.CACHE_CONTROL
 import io.javalin.core.util.Header.WWW_AUTHENTICATE
-import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRestResourceImpl
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.toExample
 import net.corda.httprpc.test.*
 import net.corda.httprpc.tools.HttpVerb.DELETE
@@ -35,29 +35,29 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(
+            val restServerSettings = RestServerSettings(
                 NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
                 20000L
             )
             server = HttpRpcServerImpl(
                 listOf(
                     TestHealthCheckAPIImpl(),
-                    TestJavaPrimitivesRPCopsImpl(),
+                    TestJavaPrimitivesRestResourceImpl(),
                     CustomSerializationAPIImpl(),
                     TestEntityRestResourceImpl(),
                     TestFileUploadImpl()
                 ),
                 ::securityManager,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
         }
 
         @AfterAll

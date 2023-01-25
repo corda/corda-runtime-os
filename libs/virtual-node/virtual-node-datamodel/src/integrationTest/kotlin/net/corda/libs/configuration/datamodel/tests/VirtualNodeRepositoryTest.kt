@@ -16,8 +16,8 @@ import net.corda.test.util.TestRandom
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.VirtualNodeState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
@@ -149,7 +149,17 @@ class VirtualNodeRepositoryTest {
         val cpiId = CpiIdentifier(vnode.cpiName, vnode.cpiVersion, hash)
 
         entityManagerFactory.createEntityManager().transaction {
-            VirtualNodeRepositoryImpl().put(it, hi, cpiId)
+            VirtualNodeRepositoryImpl().put(
+                it,
+                hi,
+                cpiId,
+                vnode.vaultDDLConnectionId,
+                vnode.vaultDMLConnectionId!!,
+                vnode.cryptoDDLConnectionId,
+                vnode.cryptoDMLConnectionId!!,
+                vnode.uniquenessDDLConnectionId,
+                vnode.uniquenessDMLConnectionId,
+            )
         }
 
         val putEntity = entityManagerFactory.createEntityManager().use {
@@ -171,7 +181,16 @@ class VirtualNodeRepositoryTest {
 
         assertThrows<CordaRuntimeException> {
             entityManagerFactory.createEntityManager().transaction {
-                VirtualNodeRepositoryImpl().put(it, hi, cpiId)
+                VirtualNodeRepositoryImpl().put(
+                    it,
+                    hi,
+                    cpiId,
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID())
             }
         }
     }
@@ -184,7 +203,7 @@ class VirtualNodeRepositoryTest {
 
         entityManagerFactory.createEntityManager().use {
             VirtualNodeRepositoryImpl().updateVirtualNodeState(
-                it, vnode.holdingIdentity.holdingIdentityShortHash, VirtualNodeState.IN_MAINTENANCE)
+                it, vnode.holdingIdentity.holdingIdentityShortHash, "maintenance")
         }
 
         val changedEntity = entityManagerFactory.createEntityManager().use {
@@ -192,6 +211,9 @@ class VirtualNodeRepositoryTest {
         }
 
         assertThat(changedEntity).isNotNull
-        assertThat(changedEntity!!.state).isEqualTo(VirtualNodeState.IN_MAINTENANCE)
+        assertThat(changedEntity!!.flowP2pOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+        assertThat(changedEntity.flowStartOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+        assertThat(changedEntity.flowOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
+        assertThat(changedEntity.vaultDbOperationalStatus).isEqualTo(OperationalStatus.INACTIVE)
     }
 }

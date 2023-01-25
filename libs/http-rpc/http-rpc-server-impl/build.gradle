@@ -10,10 +10,10 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     implementation project(":osgi-framework-api")
 
-    implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:http-rpc:rest")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:utilities")
-    implementation project(":libs:http-rpc:http-rpc-tools")
+    implementation project(":libs:http-rpc:rest-tools")
     implementation project(':libs:http-rpc:http-rpc-security-read')
     implementation project(':libs:http-rpc:json-serialization')
     implementation project(':libs:metrics')
@@ -22,7 +22,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
 
-    implementation project(":libs:http-rpc:http-rpc-server")
+    implementation project(":libs:http-rpc:rest-server")
     implementation "net.corda:corda-crypto"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
@@ -45,7 +45,7 @@ dependencies {
     }
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation project(":libs:http-rpc:http-rpc-common")
+    implementation project(":libs:http-rpc:rest-common")
 
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 

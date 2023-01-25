@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.httprpc.durablestream.DurableStreamContext
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
@@ -41,7 +41,7 @@ internal class MethodInvokerTest {
 
     @Test
     fun `invoke durableStreamsMethodInvoker withContextNotSet throws`() {
-        CURRENT_RPC_CONTEXT.remove()
+        CURRENT_REST_CONTEXT.remove()
         assertThatThrownBy { invoker.invokeDurableStreamMethod(DurableStreamContext(1L, 1)) }
             .isInstanceOf(FailedLoginException::class.java)
             .hasMessage("Missing authentication context.")

@@ -2,8 +2,8 @@ package net.corda.httprpc.server.impl
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRestResourceImpl
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
@@ -30,24 +30,26 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(
+            val restServerSettings = RestServerSettings(
                 NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
                 20000L
             )
             server = HttpRpcServerImpl(
-                listOf(TestHealthCheckAPIImpl(), TestJavaPrimitivesRPCopsImpl()),
+                listOf(TestHealthCheckAPIImpl(),
+                    TestJavaPrimitivesRestResourceImpl()
+                ),
                 ::securityManager,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
-                        "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+                TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                        "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
         }
 
         @AfterAll
