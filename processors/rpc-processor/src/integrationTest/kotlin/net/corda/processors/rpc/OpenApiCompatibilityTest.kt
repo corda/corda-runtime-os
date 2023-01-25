@@ -6,9 +6,9 @@ import net.corda.flow.rpcops.v1.FlowClassRestResource
 import net.corda.flow.rpcops.v1.FlowRestResource
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.server.config.models.HttpRpcContext
-import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.server.config.models.RestContext
+import net.corda.httprpc.server.config.models.RestServerSettings
+import net.corda.httprpc.server.factory.RestServerFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -66,8 +66,8 @@ class OpenApiCompatibilityTest {
         @InjectService(service = PluggableRestResource::class, cardinality = 16, timeout = 10_000)
         lateinit var dynamicRpcOps: List<RestResource>
 
-        @InjectService(service = HttpRpcServerFactory::class, timeout = 10_000)
-        lateinit var httpServerFactory: HttpRpcServerFactory
+        @InjectService(service = RestServerFactory::class, timeout = 10_000)
+        lateinit var httpServerFactory: RestServerFactory
     }
 
     @Test
@@ -106,25 +106,25 @@ class OpenApiCompatibilityTest {
     }
 
     private fun computeExistingSwagger(): Pair<String, OpenAPI> {
-        val context = HttpRpcContext(
+        val context = RestContext(
             "1",
             "api",
             "Corda HTTP RPC API",
             "All the endpoints for publicly visible Open API calls"
         )
         val serverAddress = NetworkHostAndPort("localhost", 0)
-        val httpRpcSettings = HttpRpcSettings(
+        val restServerSettings = RestServerSettings(
             serverAddress,
             context,
             null,
             null,
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
             20000L
         )
 
-        val server = httpServerFactory.createHttpRpcServer(
+        val server = httpServerFactory.createRestServer(
             dynamicRpcOps.map { it as PluggableRestResource<out RestResource> }.sortedBy { it.targetInterface.name },
-            { FakeSecurityManager() }, httpRpcSettings, multipartDir, devMode = true
+            { FakeSecurityManager() }, restServerSettings, multipartDir, devMode = true
         ).apply { start() }
 
         val url = "http://${serverAddress.host}:${server.port}/${context.basePath}/v${context.version}/swagger.json"

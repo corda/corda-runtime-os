@@ -11,7 +11,7 @@ import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
-import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.config.RestServerSettingsProvider
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.apigen.processing.RouteProvider
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
@@ -51,7 +51,7 @@ import java.util.LinkedList
 internal class HttpRpcServerInternal(
     private val resourceProvider: RouteProvider,
     private val securityManager: HttpRpcSecurityManager,
-    private val configurationsProvider: HttpRpcSettingsProvider,
+    private val configurationsProvider: RestServerSettingsProvider,
     private val openApiInfoProvider: OpenApiInfoProvider,
     multiPartDir: Path,
     private val webSocketCloserService: WebSocketCloserService

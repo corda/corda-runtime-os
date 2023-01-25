@@ -3,10 +3,10 @@ package net.corda.httprpc.server.impl
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.security.read.RPCSecurityManager
-import net.corda.httprpc.server.HttpRpcServer
-import net.corda.httprpc.server.config.HttpRpcSettingsProvider
-import net.corda.httprpc.server.config.impl.HttpRpcObjectSettingsProvider
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.RestServer
+import net.corda.httprpc.server.config.RestServerSettingsProvider
+import net.corda.httprpc.server.config.impl.RestServerObjectSettingsProvider
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.impl.apigen.processing.JavalinRouteProviderImpl
@@ -29,10 +29,10 @@ import kotlin.concurrent.write
 class HttpRpcServerImpl(
     restResourceImpls: List<PluggableRestResource<out RestResource>>,
     rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>,
-    httpRpcSettings: HttpRpcSettings,
+    restServerSettings: RestServerSettings,
     multiPartDir: Path,
     devMode: Boolean
-) : HttpRpcServer {
+) : RestServer {
     private companion object {
         private val log = contextLogger()
     }
@@ -42,12 +42,12 @@ class HttpRpcServerImpl(
     private val startStopLock = ReentrantReadWriteLock()
 
     private val resources = getResources(restResourceImpls)
-    private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
+    private val httpRpcObjectConfigProvider = RestServerObjectSettingsProvider(restServerSettings, devMode)
 
     private val httpRpcServerInternal = HttpRpcServerInternal(
         JavalinRouteProviderImpl(
-            httpRpcSettings.context.basePath,
-            httpRpcSettings.context.version,
+            restServerSettings.context.basePath,
+            restServerSettings.context.version,
             resources
         ),
         SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManagerSupplier)),
@@ -97,7 +97,7 @@ class HttpRpcServerImpl(
     }
 
     private fun createAuthenticationProviders(
-        settings: HttpRpcSettingsProvider,
+        settings: RestServerSettingsProvider,
         rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
     ): Set<AuthenticationProvider> {
         val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(rpcSecurityManagerSupplier))

@@ -1,8 +1,8 @@
 package net.corda.libs.permissions.endpoints.v1.role.impl
 
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
-import net.corda.httprpc.security.RpcAuthContext
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
+import net.corda.httprpc.security.RestAuthContext
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
@@ -43,10 +43,10 @@ internal class RoleEndpointImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        val authContext = mock<RpcAuthContext>().apply {
+        val authContext = mock<RestAuthContext>().apply {
             whenever(principal).thenReturn("anRpcUser")
         }
-        CURRENT_RPC_CONTEXT.set(authContext)
+        CURRENT_REST_CONTEXT.set(authContext)
     }
 
     @Test

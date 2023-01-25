@@ -3,8 +3,8 @@ package net.corda.libs.permissions.endpoints.v1.user.impl
 import java.lang.IllegalArgumentException
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
-import net.corda.httprpc.security.RpcAuthContext
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
+import net.corda.httprpc.security.RestAuthContext
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -76,10 +76,10 @@ internal class UserEndpointImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        val authContext = mock<RpcAuthContext>().apply {
+        val authContext = mock<RestAuthContext>().apply {
             whenever(principal).thenReturn("anRpcUser")
         }
-        CURRENT_RPC_CONTEXT.set(authContext)
+        CURRENT_REST_CONTEXT.set(authContext)
     }
 
     @Test

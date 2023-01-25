@@ -5,7 +5,7 @@ import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
@@ -34,7 +34,7 @@ class HelloRestResourceImpl : HelloRestResource, PluggableRestResource<HelloRest
     override val protocolVersion = 99
 
     override fun greet(addressee: String): String {
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
         return "Hello, $addressee! (from $principal)".also { log.info(it) }
     }
