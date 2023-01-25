@@ -16,13 +16,20 @@ import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
+import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.fail
 
 
 class HttpRpcServerAzureAdTest {
+
+    companion object {
+        private val log = contextLogger()
+    }
+
     private lateinit var restServer: RestServer
     private lateinit var client: TestHttpClient
     private lateinit var securityManager: RPCSecurityManager
@@ -58,10 +65,14 @@ class HttpRpcServerAzureAdTest {
 
     @Test
     fun `Authentication is successful with AzureAd access token`() {
-        AzureAdMock.create().use {
+        log.info("Starting: Authentication is successful with AzureAd access token")
+        val mock = AzureAdMock.create()
+        log.info("Mock created")
+        mock.use {
             val token = AzureAdMock.generateUserToken()
+            log.info("Token generated")
             val getPathResponse = client.call(HttpVerb.GET, WebRequest<Any>("health/sanity"), token)
-
+            log.info("Remote call performed")
             assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
         }
     }
