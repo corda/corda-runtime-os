@@ -11,7 +11,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
-    implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:http-rpc:rest")
     api project(":libs:http-rpc:ssl-cert-read")
     implementation project(":libs:http-rpc:http-rpc-security-read")
     implementation project(":libs:http-rpc:rest-common")

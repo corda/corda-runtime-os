@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl
 
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.multipartDir
@@ -15,12 +15,12 @@ class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
 
         val log = contextLogger()
 
-        private val httpRpcSettings = HttpRpcSettings(
+        private val restServerSettings = RestServerSettings(
             NetworkHostAndPort("localhost", 0),
             context,
             null,
             null,
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
             20000L
         )
 
@@ -33,12 +33,12 @@ class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
                     TestHealthCheckAPIImpl()
                 ),
                 ::securityManager,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
         }
 
         @AfterAll
@@ -57,7 +57,7 @@ class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
 
     override val log = HttpRpcServerWebsocketTest.log
 
-    override val httpRpcSettings = HttpRpcServerWebsocketTest.httpRpcSettings
+    override val restServerSettings = HttpRpcServerWebsocketTest.restServerSettings
 
     override val port: Int
         get() = server.port

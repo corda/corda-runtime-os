@@ -1,7 +1,7 @@
 package net.corda.httprpc.client
 
 import net.corda.httprpc.client.config.RestClientConfig
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.server.impl.HttpRpcServerImpl
 import net.corda.httprpc.test.CalendarRestResource
 import net.corda.httprpc.test.CalendarRestResourceImpl
@@ -46,12 +46,12 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
         @JvmStatic
         @Suppress("Unused")
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(
+            val restServerSettings = RestServerSettings(
                 NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
                 20000L
             )
             server = HttpRpcServerImpl(
@@ -64,7 +64,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
                     TestFileUploadImpl()
                 ),
                 ::securityManager,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }

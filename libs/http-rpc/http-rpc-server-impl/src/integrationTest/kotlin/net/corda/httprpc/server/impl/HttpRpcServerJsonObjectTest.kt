@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl
 
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.test.CustomNonSerializableString
 import net.corda.httprpc.test.CustomUnsafeString
 import net.corda.httprpc.test.ObjectsInJsonEndpointImpl
@@ -21,12 +21,12 @@ class HttpRpcServerJsonObjectTest : HttpRpcServerTestBase() {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(
+            val restServerSettings = RestServerSettings(
                 NetworkHostAndPort("localhost", 0),
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
                 20000L
             )
             server = HttpRpcServerImpl(
@@ -34,12 +34,12 @@ class HttpRpcServerJsonObjectTest : HttpRpcServerTestBase() {
                     ObjectsInJsonEndpointImpl()
                 ),
                 ::securityManager,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${server.port}/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
         }
 
         @AfterAll

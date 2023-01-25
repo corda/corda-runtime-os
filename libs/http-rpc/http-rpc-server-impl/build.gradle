@@ -10,7 +10,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     implementation project(":osgi-framework-api")
 
-    implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:http-rpc:rest")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:utilities")
     implementation project(":libs:http-rpc:rest-tools")
@@ -22,7 +22,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
 
-    implementation project(":libs:http-rpc:http-rpc-server")
+    implementation project(":libs:http-rpc:rest-server")
     implementation "net.corda:corda-crypto"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"

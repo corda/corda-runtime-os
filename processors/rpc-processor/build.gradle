@@ -71,8 +71,8 @@ dependencies {
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
 
-    integrationTestImplementation project(':libs:http-rpc:http-rpc')
-    integrationTestImplementation project(':libs:http-rpc:http-rpc-server')
+    integrationTestImplementation project(':libs:http-rpc:rest')
+    integrationTestImplementation project(':libs:http-rpc:rest-server')
     integrationTestImplementation project(':libs:http-rpc:rest-tools')
 
     integrationTestImplementation project(':components:membership:membership-http-rpc')
