@@ -4,6 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.libs.configuration.SmartConfig
@@ -79,4 +80,16 @@ interface FlowEventExceptionProcessor {
      * @return The updated response.
      */
     fun process(exception: FlowPlatformException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
+
+    /**
+     * Processes a [FlowMarkedForKillException] and provides the pipeline response for killing the flow and erroring all sessions.
+     *
+     * Invoked when this exception is thrown from the pipeline.
+     *
+     * @param exception The [FlowMarkedForKillException] thrown during processing
+     * @param context The context of flow event which will be killed
+     *
+     * @return The context updated to kill the flow
+     */
+    fun process(exception: FlowMarkedForKillException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 }
