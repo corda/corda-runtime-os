@@ -4,11 +4,16 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.contract.verification.CordaPackageSummary
+import net.corda.ledger.utxo.contract.verification.VerificationResult
 import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
-import net.corda.ledger.verification.processor.ResponseFactory
+import net.corda.ledger.utxo.contract.verification.VerifyContractsRequestRedelivery
+import net.corda.ledger.utxo.contract.verification.VerifyContractsResponse
+import net.corda.ledger.verification.exceptions.NotReadyException
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.crypto.SecureHash
@@ -16,6 +21,7 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
@@ -30,7 +36,7 @@ class VerificationRequestProcessorTest {
 
     private val verificationSandboxService = mock<VerificationSandboxService>()
     private val verificationRequestHandler = mock<VerificationRequestHandler>()
-    private val responseFactory = mock<ResponseFactory>()
+    private val externalEventResponseFactory = mock<ExternalEventResponseFactory>()
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
     private val cpkChecksums = setOf(SecureHash.parse(CPK_CHECKSUM))
     private val sandbox = mock<SandboxGroupContext>()
@@ -38,7 +44,7 @@ class VerificationRequestProcessorTest {
     private val verificationRequestProcessor = VerificationRequestProcessor(
         verificationSandboxService,
         verificationRequestHandler,
-        responseFactory
+        externalEventResponseFactory
     )
 
     @BeforeEach
@@ -52,47 +58,71 @@ class VerificationRequestProcessorTest {
     }
 
     @Test
-    fun `value should be of type VerifyContractsRequest`() {
-        assertThat(verificationRequestProcessor.valueClass).isEqualTo(VerifyContractsRequest::class.java)
+    fun `state value should be of type VerifyContractsRequestRedelivery`() {
+        assertThat(verificationRequestProcessor.stateValueClass).isEqualTo(VerifyContractsRequestRedelivery::class.java)
+    }
+
+    @Test
+    fun `event value should be of type VerifyContractsRequest`() {
+        assertThat(verificationRequestProcessor.eventValueClass).isEqualTo(VerifyContractsRequest::class.java)
     }
 
     @Test
     fun `successful response messages`() {
-        val request1 = createRequest("r1")
-        val requestRecord1 = Record("", "1", request1)
-        val responseRecord1 = Record("", "1", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request1)).thenReturn(responseRecord1)
+        val state = null
+        val request = createRequest("r1")
+        val event = Record("", "1", request)
+        val response = VerifyContractsResponse(VerificationResult.VERIFIED, listOf())
+        val responseRecord = Record("", "1", FlowEvent())
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenReturn(response)
+        whenever(externalEventResponseFactory.success(request.flowExternalEventContext, response))
+            .thenReturn(responseRecord)
 
-        val request2 = createRequest("r2")
-        val requestRecord2 = Record("", "2", request2)
-        val responseRecord2 = Record("", "2", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request2)).thenReturn(responseRecord2)
+        val result = verificationRequestProcessor.onNext(state, event)
 
-        val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
-
-        assertThat(results).containsOnly(responseRecord1, responseRecord2)
+        val expectedResponse = StateAndEventProcessor.Response<VerifyContractsRequestRedelivery>(
+            null,
+            listOf(responseRecord)
+        )
+        assertThat(result).isEqualTo(expectedResponse)
     }
 
     @Test
     fun `failed request returns failure response back to the flow`() {
-        // Success response for request 1
-        val request1 = createRequest("r1")
-        val requestRecord1 = Record("", "1", request1)
-        val responseRecord1 = Record("", "1", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request1)).thenReturn(responseRecord1)
-
-        // Failure response for request 2
-        val request2 = createRequest("r2")
-        val requestRecord2 = Record("", "2", request2)
+        val state = null
+        val request = createRequest("r1")
+        val event = Record("", "1", request)
         val failureResponseRecord = Record("", "3", FlowEvent())
-        val request2Response = IllegalStateException()
-        whenever(verificationRequestHandler.handleRequest(sandbox, request2)).thenThrow(request2Response)
-        whenever(responseFactory.errorResponse(request2.flowExternalEventContext, request2Response))
+        val requestResponse = IllegalStateException()
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenThrow(requestResponse)
+        whenever(externalEventResponseFactory.platformError(request.flowExternalEventContext, requestResponse))
             .thenReturn(failureResponseRecord)
 
-        val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
+        val result = verificationRequestProcessor.onNext(state, event)
 
-        assertThat(results).containsOnly(responseRecord1, failureResponseRecord)
+        val expectedResponse = StateAndEventProcessor.Response<VerifyContractsRequestRedelivery>(
+            null,
+            listOf(failureResponseRecord)
+        )
+        assertThat(result).isEqualTo(expectedResponse)
+    }
+
+    @Test
+    fun `failure to retrieve CPKs results with redelivery state`() {
+        val state = null
+        val request = createRequest("r1")
+        val event = Record("", "1", request)
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).doAnswer { throw NotReadyException("CPKs not found") }
+
+        val result = verificationRequestProcessor.onNext(state, event)
+
+        assertThat(result).isNotNull
+        val resultState = result.updatedState
+        assertThat(resultState).isNotNull
+        assertThat(resultState!!.redeliveryNumber).isEqualTo(1)
+        assertThat(resultState.scheduledDelivery).isAfter(resultState.timestamp)
+        assertThat(resultState.request).isEqualTo(request)
+        assertThat(result.responseEvents).isEmpty()
     }
 
     private fun createRequest(requestId: String): VerifyContractsRequest {

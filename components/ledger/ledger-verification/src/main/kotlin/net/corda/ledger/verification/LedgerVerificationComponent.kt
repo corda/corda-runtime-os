@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
+import net.corda.ledger.utxo.contract.verification.VerifyContractsRequestRedelivery
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
@@ -17,7 +18,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -45,7 +46,8 @@ class LedgerVerificationComponent @Activate constructor(
     private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory
 ) : Lifecycle {
     private var configHandle: Resource? = null
-    private var verificationProcessorSubscription: Subscription<String, VerifyContractsRequest>? = null
+    private var verificationProcessorSubscription:
+            StateAndEventSubscription<String, VerifyContractsRequestRedelivery, VerifyContractsRequest>? = null
 
     companion object {
         private val logger = contextLogger()

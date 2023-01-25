@@ -9,25 +9,20 @@ import net.corda.ledger.utxo.data.transaction.ContractVerificationResult
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.ledger.verification.processor.ResponseFactory
 import net.corda.ledger.verification.processor.VerificationRequestHandler
-import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
 
-class VerificationRequestHandlerImpl(private val responseFactory: ResponseFactory): VerificationRequestHandler {
+class VerificationRequestHandlerImpl: VerificationRequestHandler {
 
-    override fun handleRequest(sandbox: SandboxGroupContext, request: VerifyContractsRequestAvro): Record<*, *> {
+    override fun handleRequest(sandbox: SandboxGroupContext, request: VerifyContractsRequestAvro): VerifyContractsResponseAvro {
         val serializationService = sandbox.getSandboxSingletonService<SerializationService>()
         val ledgerTransaction = request.getLedgerTransaction(serializationService)
         val verificationResult = verifyTransactionContracts(ledgerTransaction)
-        return responseFactory.successResponse(
-            request.flowExternalEventContext,
-            verificationResult.toAvro()
-        )
+        return verificationResult.toAvro()
     }
 
     private fun ContractVerificationResult.toAvro() =

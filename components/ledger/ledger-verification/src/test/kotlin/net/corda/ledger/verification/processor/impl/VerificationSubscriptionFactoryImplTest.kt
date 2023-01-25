@@ -1,9 +1,10 @@
 package net.corda.ledger.verification.processor.impl
 
 import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
+import net.corda.ledger.utxo.contract.verification.VerifyContractsRequestRedelivery
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Verification.Companion.VERIFICATION_LEDGER_PROCESSOR_TOPIC
@@ -20,22 +21,22 @@ internal class VerificationSubscriptionFactoryImplTest {
         val subscriptionFactory = mock<SubscriptionFactory>()
         val config = mock<SmartConfig>()
 
-        val expectedSubscription = mock<Subscription<String, VerifyContractsRequest>>()
+        val expectedSubscription = mock<StateAndEventSubscription<String, VerifyContractsRequestRedelivery, VerifyContractsRequest>>()
         val expectedSubscriptionConfig = SubscriptionConfig(
             "verification.ledger.processor",
             VERIFICATION_LEDGER_PROCESSOR_TOPIC
         )
 
         whenever(
-            subscriptionFactory.createDurableSubscription(
+            subscriptionFactory.createStateAndEventSubscription(
                 eq(expectedSubscriptionConfig),
-                any<DurableProcessor<String, VerifyContractsRequest>>(),
+                any<StateAndEventProcessor<String, VerifyContractsRequestRedelivery, VerifyContractsRequest>>(),
                 eq(config),
-                eq(null)
+                any()
             )
         ).thenReturn(expectedSubscription)
 
-        val target = VerificationSubscriptionFactoryImpl(subscriptionFactory, mock(), mock())
+        val target = VerificationSubscriptionFactoryImpl(subscriptionFactory, mock(), mock(), mock())
 
         val result = target.create(config)
 
