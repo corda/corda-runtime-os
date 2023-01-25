@@ -18,7 +18,7 @@ dependencies {
 
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:http-rpc:rest")
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:http-rpc:rest-tools")
     implementation project(":libs:http-rpc:http-rpc-security-read")
