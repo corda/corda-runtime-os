@@ -13,6 +13,8 @@ import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -48,6 +50,10 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
     private val connectionId = UUID(0, 0)
     private val virtualNodeInfo = mock<VirtualNodeInfo> {
         on { vaultDmlConnectionId } doReturn connectionId
+        on { holdingIdentity } doReturn HoldingIdentity(
+            MemberX500Name.parse("C=GB, CN=Alice, O=Alice Corp, L=LDN"),
+            "Group ID"
+        )
     }
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getAll() } doReturn listOf(virtualNodeInfo)
@@ -156,16 +162,22 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
             .anySatisfy {
                 assertThat(it.value.subject).isEqualTo("subject 1")
                 assertThat(it.key.subject).isEqualTo("subject 1")
+                assertThat(it.value.groupId).isEqualTo("Group ID")
+                assertThat(it.key.groupId).isEqualTo("Group ID")
                 assertThat(it.isDeleted).isFalse
             }
             .anySatisfy {
                 assertThat(it.value.subject).isEqualTo("subject 2")
                 assertThat(it.key.subject).isEqualTo("subject 2")
+                assertThat(it.value.groupId).isEqualTo("Group ID")
+                assertThat(it.key.groupId).isEqualTo("Group ID")
                 assertThat(it.isDeleted).isTrue
             }
             .anySatisfy {
                 assertThat(it.value.subject).isEqualTo("subject 3")
                 assertThat(it.key.subject).isEqualTo("subject 3")
+                assertThat(it.value.groupId).isEqualTo("Group ID")
+                assertThat(it.key.groupId).isEqualTo("Group ID")
                 assertThat(it.isDeleted).isFalse
             }
     }

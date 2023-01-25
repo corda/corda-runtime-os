@@ -160,12 +160,15 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
         }
     }
 
+    private fun AllowedCertificateSubject.key(): String
+        = "${this.groupId};${this.subject}"
+
     override fun put(recordKey: AllowedCertificateSubject, recordValue: AllowedCertificateSubject) {
         coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
             listOf(
                 Record(
                     topic = P2P_MGM_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
-                    key = recordKey.subject,
+                    key = recordKey.key(),
                     value = recordValue,
                 )
             )
@@ -179,7 +182,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
             listOf(
                 Record(
                     topic = P2P_MGM_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
-                    key = recordKey.subject,
+                    key = recordKey.key(),
                     value = null,
                 )
             )

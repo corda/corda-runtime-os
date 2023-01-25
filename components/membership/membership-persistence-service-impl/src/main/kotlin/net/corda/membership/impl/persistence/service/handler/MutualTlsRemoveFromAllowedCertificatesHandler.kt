@@ -22,7 +22,7 @@ internal class MutualTlsRemoveFromAllowedCertificatesHandler(
                 )
             )
         }
-        val entry = AllowedCertificateSubject(request.subject)
+        val entry = AllowedCertificateSubject(request.subject, context.holdingIdentity.groupId)
         allowedCertificatesReaderWriterService.remove(
             entry,
         )

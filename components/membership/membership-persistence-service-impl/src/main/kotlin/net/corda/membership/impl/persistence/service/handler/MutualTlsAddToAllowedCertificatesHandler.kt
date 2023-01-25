@@ -23,7 +23,7 @@ internal class MutualTlsAddToAllowedCertificatesHandler(
             )
         }
 
-        val entry = AllowedCertificateSubject(request.subject)
+        val entry = AllowedCertificateSubject(request.subject, context.holdingIdentity.groupId)
         allowedCertificatesReaderWriterService.put(
             entry,
             entry,

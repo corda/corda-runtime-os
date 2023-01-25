@@ -40,13 +40,12 @@ class AllowedCertificatesReaderWriterServiceImplTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
     val name = mock<LifecycleCoordinatorName>()
     private val coordinator = mock<LifecycleCoordinator> {
-        on { createManagedResource(any(), any<()->Resource>()) } doAnswer {
-            val function : ()->Resource = it.getArgument(1)
+        on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
+            val function: () -> Resource = it.getArgument(1)
             function.invoke()
             Unit
         }
         on { name } doReturn name
-
     }
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
@@ -54,24 +53,29 @@ class AllowedCertificatesReaderWriterServiceImplTest {
     private val compactedSubscription = mock<CompactedSubscription<String, AllowedCertificateSubject>>()
     private val processor = argumentCaptor<CompactedProcessor<String, AllowedCertificateSubject>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
-        on { createCompactedSubscription(
-            any(),
-            processor.capture(),
-            any()
-        ) } doReturn compactedSubscription
+        on {
+            createCompactedSubscription(
+                any(),
+                processor.capture(),
+                any()
+            )
+        } doReturn compactedSubscription
     }
     private val messagingConfig = mock<SmartConfig>()
-    private val configChangedEvent = mock<ConfigChangedEvent>() {
+    private val configChangedEvent = mock<ConfigChangedEvent> {
         on { config } doReturn mapOf(ConfigKeys.MESSAGING_CONFIG to messagingConfig)
     }
     private val configurationReadService = mock<ConfigurationReadService>()
     private val publisher = mock<Publisher>()
-    private val publisherFactory= mock<PublisherFactory> {
+    private val publisherFactory = mock<PublisherFactory> {
         on { createPublisher(any(), eq(messagingConfig)) } doReturn publisher
     }
 
     private val impl = AllowedCertificatesReaderWriterServiceImpl(
-        coordinatorFactory, subscriptionFactory, configurationReadService, publisherFactory
+        coordinatorFactory,
+        subscriptionFactory,
+        configurationReadService,
+        publisherFactory
     )
 
     @Nested
@@ -107,9 +111,13 @@ class AllowedCertificatesReaderWriterServiceImplTest {
 
         @Test
         fun `child up will wait for config`() {
-            handler.firstValue.processEvent(RegistrationStatusChangeEvent(
-                mock(), LifecycleStatus.UP
-            ), coordinator)
+            handler.firstValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
 
             verify(configurationReadService).registerComponentForUpdates(
                 coordinator,
@@ -122,18 +130,26 @@ class AllowedCertificatesReaderWriterServiceImplTest {
 
         @Test
         fun `child down will set the status to down`() {
-            handler.firstValue.processEvent(RegistrationStatusChangeEvent(
-                mock(), LifecycleStatus.DOWN
-            ), coordinator)
+            handler.firstValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.DOWN
+                ),
+                coordinator
+            )
 
             verify(coordinator).updateStatus(LifecycleStatus.DOWN)
         }
 
         @Test
         fun `child down will close the resource`() {
-            handler.firstValue.processEvent(RegistrationStatusChangeEvent(
-                mock(), LifecycleStatus.DOWN
-            ), coordinator)
+            handler.firstValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.DOWN
+                ),
+                coordinator
+            )
 
             verify(coordinator).closeManagedResources(argThat { size == 1 })
         }
@@ -162,6 +178,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
                 eq(messagingConfig),
             )
         }
+
         @Test
         fun `config changed event will start the subscription`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
@@ -202,10 +219,11 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         fun startMe() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
         }
+
         @Test
         fun `onNext will add item to list`() {
             processor.firstValue.onNext(
-                Record("topic", "key", AllowedCertificateSubject("subject")),
+                Record("topic", "key", AllowedCertificateSubject("subject", "group")),
                 null,
                 emptyMap()
             )
@@ -217,19 +235,21 @@ class AllowedCertificatesReaderWriterServiceImplTest {
                     assertThat(it.isDeleted).isFalse
                     assertThat(it.key.subject).isEqualTo("subject")
                     assertThat(it.value.subject).isEqualTo("subject")
+                    assertThat(it.key.groupId).isEqualTo("group")
+                    assertThat(it.value.groupId).isEqualTo("group")
                 }
         }
 
         @Test
         fun `onNext will remove old data`() {
             processor.firstValue.onNext(
-                Record("topic", "key", AllowedCertificateSubject("subject")),
+                Record("topic", "key", AllowedCertificateSubject("subject", "group")),
                 null,
                 emptyMap()
             )
             processor.firstValue.onNext(
                 Record("topic", "key", null),
-                AllowedCertificateSubject("subject"),
+                AllowedCertificateSubject("subject", "group"),
                 emptyMap()
             )
 
@@ -241,7 +261,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         @Test
         fun `onNext will not remove old data if null`() {
             processor.firstValue.onNext(
-                Record("topic", "key", AllowedCertificateSubject("subject")),
+                Record("topic", "key", AllowedCertificateSubject("subject", "group")),
                 null,
                 emptyMap()
             )
@@ -260,38 +280,43 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         fun `onSnapshot will add all the data`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "one" to AllowedCertificateSubject("subject 1"),
-                    "two" to AllowedCertificateSubject("subject 2"),
+                    "one" to AllowedCertificateSubject("subject 1", "group 1"),
+                    "two" to AllowedCertificateSubject("subject 2", "group 2"),
                 )
             )
 
             val records = impl.getAllVersionedRecords()?.toList()
-
 
             assertThat(records).hasSize(2)
                 .anySatisfy {
                     assertThat(it.isDeleted).isFalse
                     assertThat(it.key.subject).isEqualTo("subject 1")
                     assertThat(it.value.subject).isEqualTo("subject 1")
+                    assertThat(it.key.groupId).isEqualTo("group 1")
+                    assertThat(it.value.groupId).isEqualTo("group 1")
                 }
                 .anySatisfy {
                     assertThat(it.isDeleted).isFalse
                     assertThat(it.key.subject).isEqualTo("subject 2")
                     assertThat(it.value.subject).isEqualTo("subject 2")
+                    assertThat(it.key.groupId).isEqualTo("group 2")
+                    assertThat(it.value.groupId).isEqualTo("group 2")
                 }
         }
+
         @Test
         fun `onSnapshot will set the state to up`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "one" to AllowedCertificateSubject("subject 1"),
-                    "two" to AllowedCertificateSubject("subject 2"),
+                    "one" to AllowedCertificateSubject("subject 1", "group"),
+                    "two" to AllowedCertificateSubject("subject 2", "group"),
                 )
             )
 
             verify(coordinator).updateStatus(LifecycleStatus.UP)
         }
     }
+
     @Nested
     inner class WriterTests {
         @BeforeEach
@@ -302,25 +327,29 @@ class AllowedCertificatesReaderWriterServiceImplTest {
 
         @Test
         fun `put will publish the record`() {
-            impl.put(AllowedCertificateSubject("subject"), AllowedCertificateSubject("subject"))
+            impl.put(AllowedCertificateSubject("subject", "group"), AllowedCertificateSubject("subject", "group"))
 
-            verify(publisher).publish(argThat {
-                size == 1 &&
-                        first().key  == "subject" &&
-                        (first().value as? AllowedCertificateSubject)?.subject == "subject"
-            })
+            verify(publisher).publish(
+                argThat {
+                    size == 1 &&
+                        first().key == "group;subject" &&
+                        (first().value as? AllowedCertificateSubject)?.subject == "subject" &&
+                        (first().value as? AllowedCertificateSubject)?.groupId == "group"
+                }
+            )
         }
 
         @Test
         fun `remove will publish the record`() {
-            impl.remove(AllowedCertificateSubject("subject"))
+            impl.remove(AllowedCertificateSubject("subject", "group"))
 
-            verify(publisher).publish(argThat {
-                size == 1 &&
+            verify(publisher).publish(
+                argThat {
+                    size == 1 &&
                         first().value == null &&
-                        first().key == "subject"
-            })
+                        first().key == "group;subject"
+                }
+            )
         }
     }
-
 }

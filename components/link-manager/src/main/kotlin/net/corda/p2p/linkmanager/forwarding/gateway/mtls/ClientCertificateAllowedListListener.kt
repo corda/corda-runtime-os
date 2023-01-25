@@ -46,25 +46,26 @@ internal class ClientCertificateAllowedListListener(
             oldValue: AllowedCertificateSubject?,
             currentData: Map<String, AllowedCertificateSubject>,
         ) {
-            if (newRecord.value != null) {
+            val newValue = newRecord.value
+            if (newValue != null) {
                 clientCertificateSourceManager.addSource(
-                    newRecord.key,
-                    ClientCertificateSourceManager.MgmAllowedListSource
+                    newValue.subject,
+                    ClientCertificateSourceManager.MgmAllowedListSource(newValue.groupId)
                 )
-            } else {
+            } else if (oldValue != null) {
                 clientCertificateSourceManager.removeSource(
-                    newRecord.key,
-                    ClientCertificateSourceManager.MgmAllowedListSource
+                    oldValue.subject,
+                    ClientCertificateSourceManager.MgmAllowedListSource(oldValue.groupId)
                 )
             }
         }
 
         override fun onSnapshot(currentData: Map<String, AllowedCertificateSubject>) {
             ready.complete(Unit)
-            currentData.keys.forEach { key ->
+            currentData.values.forEach { value ->
                 clientCertificateSourceManager.addSource(
-                    key,
-                    ClientCertificateSourceManager.MgmAllowedListSource
+                    value.subject,
+                    ClientCertificateSourceManager.MgmAllowedListSource(value.groupId)
                 )
             }
         }

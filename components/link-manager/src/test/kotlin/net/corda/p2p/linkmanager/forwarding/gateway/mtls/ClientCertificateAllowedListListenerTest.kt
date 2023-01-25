@@ -18,6 +18,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 
 class ClientCertificateAllowedListListenerTest {
     private val coordinator = mock<LifecycleCoordinator>()
@@ -63,8 +64,8 @@ class ClientCertificateAllowedListListenerTest {
         processor.firstValue.onNext(
             Record(
                 "topic",
-                "subject",
-                AllowedCertificateSubject("subject")
+                "key",
+                AllowedCertificateSubject("subject", "group")
             ),
             null,
             emptyMap(),
@@ -72,38 +73,51 @@ class ClientCertificateAllowedListListenerTest {
 
         verify(clientCertificateSourceManager).addSource(
             "subject",
-            ClientCertificateSourceManager.MgmAllowedListSource
+            ClientCertificateSourceManager.MgmAllowedListSource("group")
         )
     }
 
     @Test
-    fun `onNext will remove source if not removed`() {
+    fun `onNext will remove source if removed`() {
         processor.firstValue.onNext(
             Record(
                 "topic",
-                "subject",
+                "key",
                 null,
             ),
-            AllowedCertificateSubject("subject"),
+            AllowedCertificateSubject("subject", "group"),
             emptyMap(),
         )
 
         verify(clientCertificateSourceManager).removeSource(
             "subject",
-            ClientCertificateSourceManager.MgmAllowedListSource
+            ClientCertificateSourceManager.MgmAllowedListSource("group")
         )
     }
 
     @Test
-    fun `onSnapshot will add all the subjects`() {
-        val subjects = (1..4).map { "subject-$it" }
-        processor.firstValue.onSnapshot(
-            subjects.associateWith { AllowedCertificateSubject(it) }
+    fun `onNext will do nothing if no value and no previous value`() {
+        processor.firstValue.onNext(
+            Record(
+                "topic",
+                "key",
+                null,
+            ),
+            null,
+            emptyMap(),
         )
 
-        subjects.forEach {
+        verifyNoInteractions(clientCertificateSourceManager)
+    }
+
+    @Test
+    fun `onSnapshot will add all the subjects`() {
+        val snapshot = (1..4).associate { "key-$it" to AllowedCertificateSubject("subject-$it", "group-it") }
+        processor.firstValue.onSnapshot(snapshot)
+
+        snapshot.values.forEach {
             verify(clientCertificateSourceManager)
-                .addSource(it, ClientCertificateSourceManager.MgmAllowedListSource)
+                .addSource(it.subject, ClientCertificateSourceManager.MgmAllowedListSource(it.groupId))
         }
     }
 }

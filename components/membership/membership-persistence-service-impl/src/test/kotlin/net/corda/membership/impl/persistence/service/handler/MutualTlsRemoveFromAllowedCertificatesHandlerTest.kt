@@ -82,6 +82,6 @@ class MutualTlsRemoveFromAllowedCertificatesHandlerTest {
             request,
         )
 
-        verify(writerToKafka).remove(AllowedCertificateSubject(request.subject))
+        verify(writerToKafka).remove(AllowedCertificateSubject(request.subject, holdingIdentity.groupId))
     }
 }

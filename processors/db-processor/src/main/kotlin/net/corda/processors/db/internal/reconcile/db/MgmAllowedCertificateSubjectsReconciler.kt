@@ -88,9 +88,10 @@ internal class MgmAllowedCertificateSubjectsReconciler(
 
     private fun getAllAllowedSubjects(reconciliationContext: ReconciliationContext):
         Stream<VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject>> {
-        return getAllAllowedSubjects(reconciliationContext.getOrCreateEntityManager())
+        val context = reconciliationContext as? VirtualNodeReconciliationContext ?: return Stream.empty()
+        return getAllAllowedSubjects(context.getOrCreateEntityManager())
             .map { entity ->
-                val subject = AllowedCertificateSubject(entity.subject)
+                val subject = AllowedCertificateSubject(entity.subject, context.virtualNodeInfo.holdingIdentity.groupId)
                 object : VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject> {
                     override val version = 1
                     override val isDeleted = entity.isDeleted

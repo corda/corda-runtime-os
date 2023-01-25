@@ -8,7 +8,9 @@ internal class ClientCertificateSourceManager(
 ) {
     sealed interface KnownCertificateSource
 
-    object MgmAllowedListSource : KnownCertificateSource
+    data class MgmAllowedListSource(
+        val groupId: String,
+    ) : KnownCertificateSource
 
     data class GroupPolicySource(
         val holdingIdentity: HoldingIdentity,

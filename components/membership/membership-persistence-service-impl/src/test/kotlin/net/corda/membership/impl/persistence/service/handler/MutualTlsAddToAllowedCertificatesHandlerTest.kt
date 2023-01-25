@@ -83,8 +83,8 @@ class MutualTlsAddToAllowedCertificatesHandlerTest {
         )
 
         verify(writerToKafka).put(
-            AllowedCertificateSubject(request.subject),
-            AllowedCertificateSubject(request.subject),
+            AllowedCertificateSubject(request.subject, holdingIdentity.groupId),
+            AllowedCertificateSubject(request.subject, holdingIdentity.groupId),
         )
     }
 }
