@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -27,6 +28,7 @@ class UtxoSignedTransactionKryoSerializerTest: UtxoLedgerTest() {
                 emptyMap<String, String>()::class.java,
                 emptyList<String>()::class.java,
                 DigitalSignature.WithKey::class.java,
+                SignatureSpec::class.java,
                 mapOf("" to "")::class.java
             )
         )

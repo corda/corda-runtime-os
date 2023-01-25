@@ -1,16 +1,16 @@
 package net.corda.httprpc.server.impl.rpcops
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource
+@HttpRestResource
 interface MultipleParamAnnotationApi : RestResource {
     override val protocolVersion: Int
         get() = 1
 
-    @HttpRpcPOST
-    fun test(@HttpRpcQueryParameter @HttpRpcRequestBodyParameter twoAnnotations: String)
+    @HttpPOST
+    fun test(@RestQueryParameter @RestRequestBodyParameter twoAnnotations: String)
 }

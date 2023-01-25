@@ -81,18 +81,18 @@ class HttpRpcServerImpl(
     }
 
     private fun getResources(restResourceImpls: List<PluggableRestResource<out RestResource>>): List<Resource> {
-        log.debug { "Get resources for RPCOps implementations of ${restResourceImpls.joinToString()}." }
-        log.trace { "Generating resource model for http rpc" }
+        log.debug { "Get resources for RestResource implementations of ${restResourceImpls.joinToString()}." }
+        log.trace { "Generating resource model for http rest" }
         val resources = try {
             APIStructureRetriever(restResourceImpls).structure
         } catch (e: Exception) {
-            "Error during Get resources for RPCOps implementations of ${restResourceImpls.joinToString()}".let { msg ->
+            "Error during Get resources for RestResource implementations of ${restResourceImpls.joinToString()}".let { msg ->
                 log.error("$msg: ${e.message}")
                 throw Exception(msg, e)
             }
         }
-        log.debug { "Http RPC resources count: ${resources.size}" }
-        log.debug { "Get resources for RPCOps implementations of ${restResourceImpls.joinToString()} completed." }
+        log.debug { "Http RestResource count: ${resources.size}" }
+        log.debug { "Get resources for RestResource implementations of ${restResourceImpls.joinToString()} completed." }
         return resources
     }
 

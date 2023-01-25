@@ -1,8 +1,8 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.reflect.jvm.javaMethod
@@ -12,12 +12,12 @@ class NestedGenericsParameterTypeValidatorTest {
     @Test
     fun `method returns nested generic types errorListContainsMessage`() {
         @Suppress("unused")
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
+            @HttpPOST
             abstract fun test(param: List<List<String>>)
         }
 
@@ -29,12 +29,12 @@ class NestedGenericsParameterTypeValidatorTest {
     @Test
     fun `method returns non nested generic types errorList is Empty`() {
         @Suppress("unused")
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
+            @HttpPOST
             abstract fun test(param: List<String>)
         }
 
@@ -45,12 +45,12 @@ class NestedGenericsParameterTypeValidatorTest {
     @Test
     fun `method does not return generic types errorList is Empty`() {
         @Suppress("unused")
-        @HttpRpcResource
+        @HttpRestResource
         abstract class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
 
-            @HttpRpcPOST
+            @HttpPOST
             abstract fun test(param: String)
         }
 

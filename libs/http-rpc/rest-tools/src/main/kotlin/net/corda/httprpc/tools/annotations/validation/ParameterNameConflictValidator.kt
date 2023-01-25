@@ -1,9 +1,9 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
 import net.corda.httprpc.tools.annotations.validation.utils.endpoints
 import net.corda.httprpc.tools.annotations.validation.utils.getParameterName
@@ -44,9 +44,9 @@ internal class ParameterNameConflictValidator(private val clazz: Class<out RestR
     private fun getParameterType(param: Parameter): String =
         param.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }?.let {
             when (it) {
-                is HttpRpcPathParameter -> "PATH"
-                is HttpRpcQueryParameter -> "QUERY"
-                is HttpRpcRequestBodyParameter -> "BODY"
+                is RestPathParameter -> "PATH"
+                is RestQueryParameter -> "QUERY"
+                is RestRequestBodyParameter -> "BODY"
                 else -> throw IllegalArgumentException("Unknown parameter type")
             }
         } ?: "BODY"

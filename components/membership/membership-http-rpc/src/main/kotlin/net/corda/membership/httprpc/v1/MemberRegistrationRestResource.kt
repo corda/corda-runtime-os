@@ -1,11 +1,11 @@
 package net.corda.membership.httprpc.v1
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
@@ -16,7 +16,7 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
  * request that needs to be approved by the MGM for that group. This API allows you to start the registration process
  * for a holding identity, and check the status of a previously created registration request.
  */
-@HttpRpcResource(
+@HttpRestResource(
     name = "Member Registration API",
     description = "The Member Registration API consists of a number of endpoints which manage holding identities'" +
             " participation in membership groups. To participate in a membership group, the holding identity is" +
@@ -43,7 +43,7 @@ interface MemberRegistrationRestResource : RestResource {
      *
      * @return [RegistrationRequestProgress] to indicate the status of the request at time of submission.
      */
-    @HttpRpcPOST(
+    @HttpPOST(
         path = "{holdingIdentityShortHash}",
         description = "This method starts the registration process for a holding identity.",
         responseDescription = """
@@ -57,9 +57,9 @@ interface MemberRegistrationRestResource : RestResource {
         """
     )
     fun startRegistration(
-        @HttpRpcPathParameter(description = "The holding identity ID of the requesting virtual node")
+        @RestPathParameter(description = "The holding identity ID of the requesting virtual node")
         holdingIdentityShortHash: String,
-        @HttpRpcRequestBodyParameter(
+        @RestRequestBodyParameter(
             description = "The request sent during registration which contains the requested registration action" +
                     " (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process."
         )
@@ -81,7 +81,7 @@ interface MemberRegistrationRestResource : RestResource {
      * @return List of [RegistrationRequestStatus] to indicate the last known statuses of all registration requests made
      * by [holdingIdentityShortHash].
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "{holdingIdentityShortHash}",
         description = "This method checks the statuses of all registration requests for a specified holding identity.",
         responseDescription = """
@@ -97,7 +97,7 @@ interface MemberRegistrationRestResource : RestResource {
         """
     )
     fun checkRegistrationProgress(
-        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
+        @RestPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
         holdingIdentityShortHash: String
     ): List<RegistrationRequestStatus>
 
@@ -118,7 +118,7 @@ interface MemberRegistrationRestResource : RestResource {
      * @return [RegistrationRequestStatus] to indicate the last known status of the specified registration request made
      * by [holdingIdentityShortHash].
      */
-    @HttpRpcGET(
+    @HttpGET(
         path = "{holdingIdentityShortHash}/{registrationRequestId}",
         description = "This method checks the status of the specified registration request for a holding identity.",
         responseDescription = """
@@ -134,9 +134,9 @@ interface MemberRegistrationRestResource : RestResource {
         """
     )
     fun checkSpecificRegistrationProgress(
-        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
+        @RestPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
         holdingIdentityShortHash: String,
-        @HttpRpcPathParameter(description = "The ID of the registration request")
+        @RestPathParameter(description = "The ID of the registration request")
         registrationRequestId: String,
     ): RegistrationRequestStatus?
 }

@@ -7,6 +7,6 @@ package net.corda.httprpc
  */
 interface RestResource {
 
-    /** Returns the RPC protocol version. Exists since version 0 so guaranteed to be present. */
+    /** Returns the HTTP Rest protocol version. Exists since version 0 so guaranteed to be present. */
     val protocolVersion: Int
 }

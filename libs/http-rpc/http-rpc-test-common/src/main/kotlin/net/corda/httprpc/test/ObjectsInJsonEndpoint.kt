@@ -2,11 +2,11 @@ package net.corda.httprpc.test
 
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource(
+@HttpRestResource(
     name = "ObjectsInJsonEndpoint",
     description = "RESTful operations with json objects in payloads",
     path = "objects-in-json-endpoint"
@@ -17,18 +17,18 @@ interface ObjectsInJsonEndpoint : RestResource {
     data class ResponseWithJsonObject(val id: String, val obj: JsonObject)
     data class ResponseWithJsonObjectNullable(val id: String, val obj: JsonObject?)
 
-    @HttpRpcPOST(path = "create-with-one-object")
-    fun createWithOneObject(@HttpRpcRequestBodyParameter creationObject: RequestWithJsonObject): ResponseWithJsonObject
+    @HttpPOST(path = "create-with-one-object")
+    fun createWithOneObject(@RestRequestBodyParameter creationObject: RequestWithJsonObject): ResponseWithJsonObject
 
-    @HttpRpcPOST(path = "create-with-individual-params")
+    @HttpPOST(path = "create-with-individual-params")
     fun createWithIndividualParams(
-        @HttpRpcRequestBodyParameter id: String,
-        @HttpRpcRequestBodyParameter obj: JsonObject
+        @RestRequestBodyParameter id: String,
+        @RestRequestBodyParameter obj: JsonObject
     ): ResponseWithJsonObject
 
-    @HttpRpcPOST(path = "nullable-json-object-in-request")
+    @HttpPOST(path = "nullable-json-object-in-request")
     fun nullableJsonObjectInRequest(
-        @HttpRpcRequestBodyParameter id: String,
-        @HttpRpcRequestBodyParameter obj: JsonObject?
+        @RestRequestBodyParameter id: String,
+        @RestRequestBodyParameter obj: JsonObject?
     ): ResponseWithJsonObjectNullable
 }
