@@ -75,7 +75,6 @@ class HttpRpcServerAzureAdTest {
             log.info("Remote call performed")
             assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
         }
-        fail("Deliberate failure to capture logs")
     }
 
     @Test
