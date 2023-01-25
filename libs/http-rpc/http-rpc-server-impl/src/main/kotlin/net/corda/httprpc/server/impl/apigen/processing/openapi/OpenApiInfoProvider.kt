@@ -12,7 +12,7 @@ import io.swagger.v3.oas.models.security.SecurityScheme
 import io.swagger.v3.oas.models.servers.Server
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.SchemaModelContextHolder
-import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.config.RestServerSettingsProvider
 import net.corda.httprpc.server.impl.internal.SwaggerUIRenderer
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.v5.base.util.contextLogger
@@ -20,11 +20,11 @@ import net.corda.v5.base.util.trace
 
 /**
  * [OpenApiInfoProvider] is responsible for providing OpenAPI related values
- * from the given list of [Resource] and the [HttpRpcSettingsProvider].
+ * from the given list of [Resource] and the [RestServerSettingsProvider].
  */
 internal class OpenApiInfoProvider(
     private val resources: List<Resource>,
-    private val configurationsProvider: HttpRpcSettingsProvider
+    private val configurationsProvider: RestServerSettingsProvider
 ) {
 
     internal companion object {

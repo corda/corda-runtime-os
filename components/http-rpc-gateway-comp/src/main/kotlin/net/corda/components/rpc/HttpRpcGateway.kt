@@ -6,7 +6,7 @@ import net.corda.components.rpc.internal.HttpRpcGatewayEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.server.factory.RestServerFactory
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -37,8 +37,8 @@ class HttpRpcGateway @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
-    @Reference(service = HttpRpcServerFactory::class)
-    httpRpcServerFactory: HttpRpcServerFactory,
+    @Reference(service = RestServerFactory::class)
+    restServerFactory: RestServerFactory,
     @Reference(service = RBACSecurityManagerService::class)
     rbacSecurityManagerService: RBACSecurityManagerService,
     @Reference(service = SslCertReadServiceFactory::class)
@@ -64,7 +64,7 @@ class HttpRpcGateway @Activate constructor(
     private val handler = HttpRpcGatewayEventHandler(
         permissionManagementService,
         configurationReadService,
-        httpRpcServerFactory,
+        restServerFactory,
         rbacSecurityManagerService,
         sslCertReadServiceFactory,
         ::dynamicRestResources

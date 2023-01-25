@@ -2,27 +2,27 @@ package net.corda.httprpc.server.impl.factory
 
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.server.impl.HttpRpcServerImpl
-import net.corda.httprpc.server.HttpRpcServer
-import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.server.RestServer
+import net.corda.httprpc.server.config.models.RestServerSettings
+import net.corda.httprpc.server.factory.RestServerFactory
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
 import org.osgi.service.component.annotations.Component
 import java.nio.file.Path
 import java.util.function.Supplier
 
-@Component(immediate = true, service = [HttpRpcServerFactory::class])
+@Component(immediate = true, service = [RestServerFactory::class])
 @Suppress("Unused")
-class HttpRpcServerFactoryImpl : HttpRpcServerFactory {
+class HttpRpcServerFactoryImpl : RestServerFactory {
 
-    override fun createHttpRpcServer(
+    override fun createRestServer(
         restResourceImpls: List<PluggableRestResource<out RestResource>>,
-        rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>,
-        httpRpcSettings: HttpRpcSettings,
+        restSecurityManagerSupplier: Supplier<RPCSecurityManager>,
+        restServerSettings: RestServerSettings,
         multiPartDir: Path,
         devMode: Boolean
-    ): HttpRpcServer {
+    ): RestServer {
 
-        return HttpRpcServerImpl(restResourceImpls, rpcSecurityManagerSupplier, httpRpcSettings, multiPartDir, devMode = devMode)
+        return HttpRpcServerImpl(restResourceImpls, restSecurityManagerSupplier, restServerSettings, multiPartDir, devMode = devMode)
     }
 }

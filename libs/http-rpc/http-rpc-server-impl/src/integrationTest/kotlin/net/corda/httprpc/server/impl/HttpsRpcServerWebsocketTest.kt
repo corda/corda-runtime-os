@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl
 
-import net.corda.httprpc.server.config.models.HttpRpcSSLSettings
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestSSLSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.ssl.impl.SslCertReadServiceStubImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
@@ -24,7 +24,7 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
             Files.createTempDirectory("HttpsRpcServerWebsocketTest")
         }
 
-        lateinit var httpRpcSettings: HttpRpcSettings
+        lateinit var restServerSettings: RestServerSettings
 
         @BeforeAll
         @JvmStatic
@@ -32,14 +32,14 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
         fun setUpBeforeClass() {
             //System.setProperty("javax.net.debug", "all")
             val keyStoreInfo = sslService.getOrCreateKeyStore()
-            val sslConfig = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
+            val sslConfig = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
 
-            httpRpcSettings = HttpRpcSettings(
+            restServerSettings = RestServerSettings(
                 NetworkHostAndPort("localhost", 0),
                 context,
                 sslConfig,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
                 20000L
             )
 
@@ -48,12 +48,12 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
                     TestHealthCheckAPIImpl()
                 ),
                 ::securityManager,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl(
-                "https://${httpRpcSettings.address.host}:${server.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/",
+                "https://${restServerSettings.address.host}:${server.port}/${restServerSettings.context.basePath}/v${restServerSettings.context.version}/",
                 true
             )
         }
@@ -74,7 +74,7 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
 
     override val log = LOG
 
-    override val httpRpcSettings = HttpsRpcServerWebsocketTest.httpRpcSettings
+    override val restServerSettings = HttpsRpcServerWebsocketTest.restServerSettings
 
     override val port: Int
         get() = server.port

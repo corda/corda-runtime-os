@@ -1,16 +1,16 @@
 package net.corda.httprpc.server.impl.config.models
 
 import net.corda.httprpc.server.config.models.AzureAdSettings
-import net.corda.httprpc.server.config.models.HttpRpcContext
-import net.corda.httprpc.server.config.models.HttpRpcSSLSettings
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestContext
+import net.corda.httprpc.server.config.models.RestSSLSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.utilities.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
 
-class HttpRpcSettingsTest {
+class RestServerSettingsTest {
 
     private companion object {
         const val clientId = "client"
@@ -20,10 +20,10 @@ class HttpRpcSettingsTest {
 
     @Test
     fun `Sensitive data should be omitted`() {
-        val httpRpcSettingsStr = HttpRpcSettings(
+        val restServerSettingsStr = RestServerSettings(
             NetworkHostAndPort("localhost", 8080),
-            HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description"),
-            HttpRpcSSLSettings(Path.of("path"), "pwd"),
+            RestContext("1", "api", "RestContext test title ", "RestContext test description"),
+            RestSSLSettings(Path.of("path"), "pwd"),
             SsoSettings(
                 AzureAdSettings(
                     clientId,
@@ -32,14 +32,14 @@ class HttpRpcSettingsTest {
                     trustedIssuers = listOf(issuer)
                 )
             ),
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
             20000L
         )
             .toString()
 
-        assertFalse(httpRpcSettingsStr.contains("keyStorePassword", true))
-        assertFalse(httpRpcSettingsStr.contains("pwd", true))
-        assertFalse(httpRpcSettingsStr.contains("clientSecret", true))
-        assertFalse(httpRpcSettingsStr.contains("secretValue", true))
+        assertFalse(restServerSettingsStr.contains("keyStorePassword", true))
+        assertFalse(restServerSettingsStr.contains("pwd", true))
+        assertFalse(restServerSettingsStr.contains("clientSecret", true))
+        assertFalse(restServerSettingsStr.contains("secretValue", true))
     }
 }

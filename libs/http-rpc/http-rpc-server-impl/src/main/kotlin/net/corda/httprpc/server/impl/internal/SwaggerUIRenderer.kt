@@ -6,14 +6,14 @@ import io.javalin.http.Handler
 import io.javalin.http.InternalServerErrorResponse
 import net.corda.v5.base.util.contextLogger
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider.Companion.jsonPath
-import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.config.RestServerSettingsProvider
 import org.osgi.framework.FrameworkUtil
 
 /**
  * [SwaggerUIRenderer] is responsible for rendering the swagger html.
  *
  */
-internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSettingsProvider) : Handler {
+internal class SwaggerUIRenderer(private val configurationProvider: RestServerSettingsProvider) : Handler {
 
     private companion object {
         private val log = contextLogger()

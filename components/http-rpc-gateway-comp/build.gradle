@@ -23,7 +23,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:http-rpc:rest')
     implementation project(':libs:http-rpc:ssl-cert-read')
-    implementation project(':libs:http-rpc:http-rpc-server')
+    implementation project(':libs:http-rpc:rest-server')
     implementation project(":libs:utilities")
 
     implementation project(":osgi-framework-api")
