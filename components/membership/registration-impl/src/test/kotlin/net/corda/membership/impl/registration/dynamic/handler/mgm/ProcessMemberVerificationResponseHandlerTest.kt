@@ -166,15 +166,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         )
         assertThat(capturedStatus.firstValue.newStatus).isEqualTo(RegistrationStatus.PENDING_MANUAL_APPROVAL)
 
-        assertThat(result.outputStates).hasSize(2)
-            .contains(record)
-            .anyMatch {
-                val key = it.key
-                val value = it.value
-                key == "$REGISTRATION_ID-${mgm.toCorda().shortHash}" &&
-                        value is RegistrationCommand &&
-                        value.command is ApproveRegistration
-            }
+        assertThat(result.outputStates).hasSize(1)
         with(result.updatedState) {
             assertThat(this?.registeringMember).isEqualTo(member)
             assertThat(this?.mgm).isEqualTo(mgm)

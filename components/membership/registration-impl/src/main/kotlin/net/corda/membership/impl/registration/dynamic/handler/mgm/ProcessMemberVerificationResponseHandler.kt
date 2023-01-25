@@ -90,13 +90,17 @@ internal class ProcessMemberVerificationResponseHandler(
                 ),
                 minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL)
             )
-            listOf(
-                persistStatusMessage,
+            val approveRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
                     "$registrationId-${mgm.toCorda().shortHash}",
                     RegistrationCommand(ApproveRegistration())
                 )
+            } else null
+
+            listOfNotNull(
+                persistStatusMessage,
+                approveRecord,
             )
         } catch (e: Exception) {
             logger.warn("Could not process member verification response for registration request: '$registrationId'", e)

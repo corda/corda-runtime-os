@@ -268,7 +268,7 @@ class MGMRestResourceImpl @Activate constructor(
             } catch (e: MembershipPersistenceException) {
                 throw BadRequestException("${e.message}")
             } catch (e: PatternSyntaxException) {
-                throw BadRequestException("The regular expression's syntax is invalid.")
+                throw BadRequestException("The regular expression's (${ruleInfo.ruleRegex}) syntax is invalid.")
             }
         }
 
