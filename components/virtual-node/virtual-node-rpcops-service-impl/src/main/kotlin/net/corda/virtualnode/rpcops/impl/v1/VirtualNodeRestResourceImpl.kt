@@ -45,7 +45,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
@@ -251,20 +250,12 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
 
     /**
      * Virtual node upgrade request ID deterministically generated using the virtual node identifier, current CPI file checksum
-     * and target CPI file checksum. We only need the first 12 characters. This provides a level of idempotency preventing the
-     * same upgrade from triggering more than once.
+     * and target CPI file checksum. This provides a level of idempotency preventing the same upgrade from triggering more than once.
      */
     private fun generateUpgradeRequestId(
-        virtualNodeShortId: String,
-        currentCpiFileChecksum: String,
-        targetCpiFileChecksum: String
+        virtualNodeShortId: String, currentCpiFileChecksum: String, targetCpiFileChecksum: String
     ): String {
-        return SecureHash(
-            "SHA-256",
-            (virtualNodeShortId + currentCpiFileChecksum + targetCpiFileChecksum).toByteArray()
-        )
-            .toHexString()
-            .take(12)
+        return virtualNodeShortId.take(12) + currentCpiFileChecksum.take(12) + targetCpiFileChecksum.take(12)
     }
 
     private fun sendAsync(key: String, request: VirtualNodeAsynchronousRequest) {

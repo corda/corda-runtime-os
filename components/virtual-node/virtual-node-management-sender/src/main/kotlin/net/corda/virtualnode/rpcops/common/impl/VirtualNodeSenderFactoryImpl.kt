@@ -26,7 +26,7 @@ class VirtualNodeSenderFactoryImpl @Activate constructor(
      *
      * @property timeout is a [Duration]. Defines how long to wait before assuming something went wrong in a given request
      * @property messagingConfig is a [SmartConfig]. This is the config for the given RPCSender to be created
-     * @property asyncPublisherConfig is a [PublisherConfig]. This is the config for the publisher for asynchronous
+     * @property asyncPublisherConfig is a [PublisherConfig]. This is the config for the publishing for asynchronous requests
      * @throws CordaRuntimeException If the updated sender cannot not be created.
      * @return [VirtualNodeSender] is a wrapper object around a sender, and the accompanying timeout
      * @see VirtualNodeSender

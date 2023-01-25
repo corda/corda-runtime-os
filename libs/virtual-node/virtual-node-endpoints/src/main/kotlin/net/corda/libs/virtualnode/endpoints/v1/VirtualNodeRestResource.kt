@@ -92,7 +92,7 @@ interface VirtualNodeRestResource : RestResource {
      * Asynchronous endpoint to upgrade a virtual node's CPI.
      */
     @HttpPUT(
-        path = "{virtualNodeShortId}/cpi/{cpiFileChecksum}",
+        path = "{virtualNodeShortId}/cpi/{targetCpiFileChecksum}",
         title = "Upgrade a virtual node's CPI.",
         description = "This method upgrades a virtual node's CPI.",
         responseDescription = "Identifier for the request."

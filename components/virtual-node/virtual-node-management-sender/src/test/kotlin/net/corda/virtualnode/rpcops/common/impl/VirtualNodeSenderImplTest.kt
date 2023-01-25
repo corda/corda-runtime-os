@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 internal class VirtualNodeSenderImplTest {
     private val duration = Duration.ofMillis(1000)
     private val mockResponse = mock<VirtualNodeManagementResponse>()
-    private val synchronousRpcSender = mock<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>> {
+    private val rpcSender = mock<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>> {
         whenever(it.sendRequest(any())) doReturn CompletableFuture<VirtualNodeManagementResponse>().completeAsync {
             mockResponse
         }
@@ -28,13 +28,13 @@ internal class VirtualNodeSenderImplTest {
     private val asyncOperationPublisher = mock<Publisher> {
         whenever(it.publish(any())).thenReturn(emptyList())
     }
-    private val senderWrapper = VirtualNodeSenderImpl(duration, synchronousRpcSender, asyncOperationPublisher)
+    private val senderWrapper = VirtualNodeSenderImpl(duration, rpcSender, asyncOperationPublisher)
 
     @Test
     fun `test sendAndReceive passes request to sendRequest`() {
         val req = mock<VirtualNodeManagementRequest>()
         senderWrapper.sendAndReceive(req)
-        verify(synchronousRpcSender).sendRequest(eq(req))
+        verify(rpcSender).sendRequest(eq(req))
     }
 
     @Test
@@ -48,6 +48,6 @@ internal class VirtualNodeSenderImplTest {
     @Test
     fun `test close cleans up sender`() {
         senderWrapper.close()
-        verify(synchronousRpcSender).close()
+        verify(rpcSender).close()
     }
 }
