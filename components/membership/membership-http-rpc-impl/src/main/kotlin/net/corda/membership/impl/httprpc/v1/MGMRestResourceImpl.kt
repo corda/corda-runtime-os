@@ -24,12 +24,16 @@ import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
+import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
@@ -129,6 +133,12 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             ruleId: String
         )
+
+        fun viewRegistrationRequests(
+            holdingIdentityShortHash: String,
+            requestingMemberX500Name: String?,
+            viewHistoric: Boolean,
+        ): Collection<RegistrationRequestStatus>
     }
 
     override val protocolVersion = 1
@@ -205,6 +215,10 @@ class MGMRestResourceImpl internal constructor(
 
     override fun deletePreAuthGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String) =
         impl.deletePreAuthGroupApprovalRule(holdingIdentityShortHash, ruleId)
+
+    override fun viewRegistrationRequests(
+        holdingIdentityShortHash: String, requestingMemberX500Name: String?, viewHistoric: Boolean
+    ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestingMemberX500Name, viewHistoric)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -284,6 +298,10 @@ class MGMRestResourceImpl internal constructor(
             preAuthTokenId: String,
             remarks: String?
         ): PreAuthToken = throwNotRunningException()
+
+        override fun viewRegistrationRequests(
+            holdingIdentityShortHash: String, requestingMemberX500Name: String?, viewHistoric: Boolean
+        ): Collection<RegistrationRequestStatus> = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
@@ -435,6 +453,27 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             ruleId: String
         ) = deleteGroupApprovalRule(holdingIdentityShortHash, ruleId, PREAUTH)
+
+        override fun viewRegistrationRequests(
+            holdingIdentityShortHash: String,
+            requestingMemberX500Name: String?,
+            viewHistoric: Boolean,
+        ) = handleCommonErrors(holdingIdentityShortHash) {
+            mgmOpsClient.viewRegistrationRequests(
+                ShortHash.parseOrThrow(holdingIdentityShortHash),
+                requestingMemberX500Name,
+                viewHistoric,
+            )
+        }.map { it.toRpc() }
+
+        private fun net.corda.membership.lib.registration.RegistrationRequestStatus.toRpc() =
+            RegistrationRequestStatus(
+                registrationId,
+                registrationSent,
+                registrationLastModified,
+                RegistrationStatus.valueOf(status.name),
+                MemberInfoSubmitted(memberContext.toMap())
+            )
 
         private fun deleteGroupApprovalRule(
             holdingIdentityShortHash: String,

@@ -63,6 +63,23 @@ interface MembershipQueryClient : Lifecycle {
     ): MembershipQueryResult<List<RegistrationRequestStatus>>
 
     /**
+     * MGM query for registration requests submitted by members for joining the membership group.
+     *
+     * @param mgmHoldingIdentity The holding identity of the MGM.
+     * @param requestingMemberX500Name Optional. X.500 name of the requesting member.
+     * @param viewHistoric Optional. Set this to 'true' to view both in-progress and completed (historic) requests.
+     * Defaults to 'false' (in-progress requests only).
+     *
+     * @return A query result with the collection of request statuses [RegistrationRequestStatus] if the query
+     * executed successfully. Returns an empty [Collection] if no requests have been submitted.
+     */
+    fun queryRegistrationRequests(
+        mgmHoldingIdentity: HoldingIdentity,
+        requestingMemberX500Name: String?,
+        viewHistoric: Boolean
+    ): MembershipQueryResult<Collection<RegistrationRequestStatus>>
+
+    /**
      * Query for members signatures.
      *
      * @param viewOwningIdentity The holding identity whose view is being requested.

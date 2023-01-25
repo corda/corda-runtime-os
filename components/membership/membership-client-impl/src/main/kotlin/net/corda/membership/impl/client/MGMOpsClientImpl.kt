@@ -26,6 +26,7 @@ import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -120,6 +121,12 @@ class MGMOpsClientImpl @Activate constructor(
                 Collection<ApprovalRuleDetails>
 
         fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType)
+
+        fun viewRegistrationRequests(
+            holdingIdentityShortHash: ShortHash,
+            requestingMemberX500Name: String?,
+            viewHistoric: Boolean,
+        ): Collection<RegistrationRequestStatus>
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -194,6 +201,10 @@ class MGMOpsClientImpl @Activate constructor(
 
     override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
         impl.deleteApprovalRule(holdingIdentityShortHash, ruleId, ruleType)
+
+    override fun viewRegistrationRequests(
+        holdingIdentityShortHash: ShortHash, requestingMemberX500Name: String?, viewHistoric: Boolean
+    ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestingMemberX500Name, viewHistoric)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -271,6 +282,10 @@ class MGMOpsClientImpl @Activate constructor(
 
         override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
             throw IllegalStateException(ERROR_MSG)
+
+        override fun viewRegistrationRequests(
+            holdingIdentityShortHash: ShortHash, requestingMemberX500Name: String?, viewHistoric: Boolean
+        ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
             holdingIdentityShortHash: ShortHash,
@@ -423,6 +438,15 @@ class MGMOpsClientImpl @Activate constructor(
                 mgmHoldingIdentity(holdingIdentityShortHash),
                 ruleId,
                 ruleType
+            ).getOrThrow()
+
+        override fun viewRegistrationRequests(
+            holdingIdentityShortHash: ShortHash, requestingMemberX500Name: String?, viewHistoric: Boolean
+        ): Collection<RegistrationRequestStatus> =
+            membershipQueryClient.queryRegistrationRequests(
+                mgmHoldingIdentity(holdingIdentityShortHash),
+                requestingMemberX500Name,
+                viewHistoric,
             ).getOrThrow()
 
         override fun close() = rpcSender.close()

@@ -14,6 +14,7 @@ import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -318,4 +319,44 @@ interface MGMRestResource : RestResource {
         @RestPathParameter(description = "The ID of the group approval rule to be deleted.")
         ruleId: String
     )
+
+    /**
+     * The [viewRegistrationRequests] method enables you to view registration requests submitted for joining the
+     * membership group. The requests may be optionally filtered by the X.500 name of the requesting member, and/or by
+     * the status of the request (historic or in-progress).
+     *
+     * Example usage:
+     * ```
+     * mgmOps.viewRegistrationRequests("58B6030FABDD")
+     * mgmOps.viewRegistrationRequests("58B6030FABDD", "O=Alice, L=London, C=GB")
+     * mgmOps.viewRegistrationRequests("58B6030FABDD", "O=Alice, L=London, C=GB", true)
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestingMemberX500Name Optional. X.500 name of the requesting member.
+     * @param viewHistoric Optional. Set this to 'true' to view both in-progress and completed (historic) requests.
+     * Defaults to 'false' (in-progress requests only).
+     *
+     * @return Registration requests as a collection of [RegistrationRequestStatus].
+     */
+    @HttpGET(
+        path = "{mgmHoldingIdentityShortHash}/requests/",
+    )
+    fun viewRegistrationRequests(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+        @RestQueryParameter(
+            description = "X.500 name of the requesting member",
+            required = false
+        )
+        requestingMemberX500Name: String? = null,
+        @RestQueryParameter(
+            description = "Include completed (historic) requests if set to 'true'",
+            required = false,
+            default = "false"
+        )
+        viewHistoric: Boolean = false
+    ): Collection<RegistrationRequestStatus>
 }

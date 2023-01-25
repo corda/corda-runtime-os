@@ -82,6 +82,15 @@ class TestMembershipQueryClientImpl @Activate constructor(
         }
     }
 
+    override fun queryRegistrationRequests(
+        mgmHoldingIdentity: HoldingIdentity, requestingMemberX500Name: String?, viewHistoric: Boolean
+    ): MembershipQueryResult<Collection<RegistrationRequestStatus>> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>

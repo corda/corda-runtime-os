@@ -14,6 +14,7 @@ import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryRegistrationRequestsMGM
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
@@ -181,6 +182,21 @@ class MembershipQueryClientImpl(
                 logger.warn(err)
                 MembershipQueryResult.Failure(err)
             }
+        }
+    }
+
+    override fun queryRegistrationRequests(
+        mgmHoldingIdentity: HoldingIdentity, requestingMemberX500Name: String?, viewHistoric: Boolean
+    ): MembershipQueryResult<Collection<RegistrationRequestStatus>> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            QueryRegistrationRequestsMGM(requestingMemberX500Name, viewHistoric)
+        ).execute()
+        return when (val payload = result.payload) {
+            is RegistrationRequestsQueryResponse -> MembershipQueryResult.Success(
+                payload.registrationRequests.map { it.toStatus() }
+            )
+            else -> MembershipQueryResult.Failure("Failed to retrieve registration requests.")
         }
     }
 
