@@ -17,6 +17,14 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
+    upgradeTestingCpiV1 {
+        canBeConsumed = false
+        transitive = false
+    }
+    upgradeTestingCpiV2 {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 sourceSets {
@@ -66,6 +74,8 @@ dependencies {
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
     cpiWithoutChangelogs project(path: ':testing:cpbs:test-cordapp-without-changelogs', configuration: 'cordaCPB')
+    upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
+    upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
@@ -107,6 +117,21 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
     from(cpiWithoutChangelogsTest) {
         into dirForCpiWithoutChangelogs
         rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
+    }
+
+    // Put the test cordapp for upgrade testing (v1) into a folder
+    def upgradeTestingCpiV1 = configurations.upgradeTestingCpiV1
+    def upgradeTestingCpiV1Dir = "META-INF" + File.separator + "upgrade-testing-v1"
+    from(upgradeTestingCpiV1) {
+        into upgradeTestingCpiV1Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
+    }
+    // Put the test cordapp for upgrade testing (v2) into a folder
+    def upgradeTestingCpiV2 = configurations.upgradeTestingCpiV2
+    def upgradeTestingCpiV2Dir = "META-INF" + File.separator + "upgrade-testing-v2"
+    from(upgradeTestingCpiV2) {
+        into upgradeTestingCpiV2Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
     }
 }
 

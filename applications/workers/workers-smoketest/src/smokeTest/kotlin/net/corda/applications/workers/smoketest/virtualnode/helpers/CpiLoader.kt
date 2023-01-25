@@ -17,15 +17,21 @@ object CpiLoader {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
     }
 
-    fun get(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String) =
-        cpbToCpi(getInputStream(resourceName), groupId, staticMemberNames, cpiName)
+    fun get(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String, cpiVersion: String) =
+        cpbToCpi(getInputStream(resourceName), groupId, staticMemberNames, cpiName, cpiVersion)
 
     fun getRawResource(resourceName: String) = getInputStream(resourceName)
 
     /** Returns a new input stream
      * Don't use this method when we have actual CPIs
      */
-    private fun cpbToCpi(inputStream: InputStream, groupId: String, staticMemberNames: List<String>, cpiNameValue: String): InputStream {
+    private fun cpbToCpi(
+        inputStream: InputStream,
+        groupId: String,
+        staticMemberNames: List<String>,
+        cpiNameValue: String,
+        cpiVersionValue: String
+    ): InputStream {
 
         val tempDirectory = createTempDirectory()
         try {
@@ -53,7 +59,7 @@ object CpiLoader {
             CreateCpiV2().apply {
                 cpbFileName = cpbPath.toString()
                 cpiName = cpiNameValue
-                cpiVersion = "1.0.0.0-SNAPSHOT"
+                cpiVersion = cpiVersionValue
                 cpiUpgrade = false
                 groupPolicyFileName = groupPolicyPath.toString()
                 outputFileName = cpiPath.toString()

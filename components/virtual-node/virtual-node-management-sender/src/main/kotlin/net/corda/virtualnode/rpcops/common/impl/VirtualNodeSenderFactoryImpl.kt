@@ -1,6 +1,7 @@
 package net.corda.virtualnode.rpcops.common.impl
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -25,17 +26,21 @@ class VirtualNodeSenderFactoryImpl @Activate constructor(
      *
      * @property timeout is a [Duration]. Defines how long to wait before assuming something went wrong in a given request
      * @property messagingConfig is a [SmartConfig]. This is the config for the given RPCSender to be created
+     * @property asyncPublisherConfig is a [PublisherConfig]. This is the config for the publisher for asynchronous
      * @throws CordaRuntimeException If the updated sender cannot not be created.
      * @return [VirtualNodeSender] is a wrapper object around a sender, and the accompanying timeout
      * @see VirtualNodeSender
      */
-    override fun createSender(timeout: Duration, messagingConfig: SmartConfig): VirtualNodeSender {
+    override fun createSender(
+        timeout: Duration, messagingConfig: SmartConfig, asyncPublisherConfig: PublisherConfig
+    ): VirtualNodeSender {
         try {
             return VirtualNodeSenderImpl(
                 timeout,
                 publisherFactory.createRPCSender(SENDER_CONFIG, messagingConfig).apply {
                     start()
-                }
+                },
+                publisherFactory.createPublisher(asyncPublisherConfig, messagingConfig)
             )
         } catch (e: Exception) {
             logger.error("Exception was thrown while attempting to set up the sender or its timeout: $e")

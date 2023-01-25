@@ -3,7 +3,9 @@ package net.corda.virtualnode.rpcops.impl.v1
 import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
@@ -11,11 +13,14 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
+import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
+import net.corda.httprpc.asynchronous.v1.AsyncResponse
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
@@ -33,12 +38,14 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.ClockFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
@@ -47,13 +54,15 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import net.corda.virtualnode.rpcops.impl.v1.ExceptionTranslator.Companion.translate
+import net.corda.virtualnode.rpcops.impl.validation.impl.VirtualNodeValidationServiceImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
-// Primary constructor is for test. This is until a clock service is available
 internal class VirtualNodeRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -63,6 +72,8 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = VirtualNodeSenderFactory::class)
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = ClockFactory::class)
     private var clockFactory: ClockFactory
 ) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
@@ -74,9 +85,14 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_ASYNC_OPERATION_CLIENT"
     }
 
     private val clock = clockFactory.createUTCClock()
+    private val virtualNodeValidationService = VirtualNodeValidationServiceImpl(
+        virtualNodeInfoReadService,
+        cpiInfoReadService
+    )
 
     // Http RPC values
     override val targetInterface: Class<VirtualNodeRestResource> = VirtualNodeRestResource::class.java
@@ -129,7 +145,9 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
-                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
+                        virtualNodeSenderFactory.createSender(
+                            duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
+                        )
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
@@ -191,6 +209,73 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             throw ResourceNotFoundException("VirtualNode with shortHash $holdingIdentityShortHash could not be found.")
         }
         return virtualNode.toEndpointType()
+    }
+
+    override fun upgradeVirtualNode(virtualNodeShortId: String, targetCpiFileChecksum: String): ResponseEntity<AsyncResponse> {
+        val currentVirtualNode = virtualNodeValidationService.validateAndGetVirtualNode(virtualNodeShortId)
+        val currentCpi = requireNotNull(cpiInfoReadService.get(currentVirtualNode.cpiIdentifier)) {
+            "Current CPI ${currentVirtualNode.cpiIdentifier} associated with virtual node $virtualNodeShortId was not found."
+        }
+        val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
+        virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
+
+        val requestId = sendAsynchronousRequest(
+            Instant.now(),
+            virtualNodeShortId,
+            currentCpi.fileChecksum.toHexString(),
+            targetCpi.fileChecksum.toHexString(),
+            CURRENT_REST_CONTEXT.get().principal
+        )
+
+        return ResponseEntity.accepted(AsyncResponse(requestId))
+    }
+
+    private fun sendAsynchronousRequest(
+        requestTime: Instant,
+        virtualNodeShortId: String,
+        currentCpiFileChecksum: String,
+        targetCpiFileChecksum: String,
+        actor: String
+    ): String {
+        val requestId = generateUpgradeRequestId(virtualNodeShortId, currentCpiFileChecksum, targetCpiFileChecksum)
+
+        sendAsync(
+            virtualNodeShortId,
+            VirtualNodeAsynchronousRequest(
+                requestTime, requestId, VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor)
+            )
+        )
+
+        return requestId
+    }
+
+    /**
+     * Virtual node upgrade request ID deterministically generated using the virtual node identifier, current CPI file checksum
+     * and target CPI file checksum. We only need the first 12 characters. This provides a level of idempotency preventing the
+     * same upgrade from triggering more than once.
+     */
+    private fun generateUpgradeRequestId(
+        virtualNodeShortId: String,
+        currentCpiFileChecksum: String,
+        targetCpiFileChecksum: String
+    ): String {
+        return SecureHash(
+            "SHA-256",
+            (virtualNodeShortId + currentCpiFileChecksum + targetCpiFileChecksum).toByteArray()
+        )
+            .toHexString()
+            .take(12)
+    }
+
+    private fun sendAsync(key: String, request: VirtualNodeAsynchronousRequest) {
+        if (!isRunning) throw IllegalStateException(
+            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+        )
+
+        val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
+            ?: throw IllegalStateException("Sender not initialized, check component status for ${this.javaClass.name}")
+
+        return sender.sendAsync(key, request)
     }
 
     /**

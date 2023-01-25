@@ -3,7 +3,6 @@ package net.corda.virtualnode.write.db
 import net.corda.lifecycle.Lifecycle
 
 /**
- * Receives virtual node creation requests via RPC, creates the corresponding virtual node, persists it in the cluster
- * database, and publishes it to Kafka.
+ * A service responsible for handling virtual node write requests, from both RPC and asynchronous message patterns.
  */
 interface VirtualNodeWriteService : Lifecycle

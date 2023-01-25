@@ -29,10 +29,11 @@ class ClusterBuilder {
         resourceName: String,
         groupId: String,
         staticMemberNames: List<String>,
-        cpiName: String
+        cpiName: String,
+        cpiVersion: String
     ): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
-        return CpiLoader.get(resourceName, groupId, staticMemberNames, cpiName).use {
+        return CpiLoader.get(resourceName, groupId, staticMemberNames, cpiName, cpiVersion).use {
             client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
         }
     }
@@ -66,20 +67,32 @@ class ClusterBuilder {
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun cpiUpload(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String) =
-        uploadCpiResource("/api/v1/cpi/", resourceName, groupId, staticMemberNames, cpiName)
+    fun cpiUpload(
+        resourceName: String,
+        groupId: String,
+        staticMemberNames: List<String>,
+        cpiName: String,
+        cpiVersion: String = "1.0.0.0-SNAPSHOT"
+    ) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId, staticMemberNames, cpiName, cpiVersion)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
         put("/api/v1/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun forceCpiUpload(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String) =
+    fun forceCpiUpload(
+        resourceName: String,
+        groupId: String,
+        staticMemberNames: List<String>,
+        cpiName: String,
+        cpiVersion: String = "1.0.0.0-SNAPSHOT"
+    ) =
         uploadCpiResource(
             "/api/v1/maintenance/virtualnode/forcecpiupload/",
             resourceName,
             groupId,
             staticMemberNames,
-            cpiName
+            cpiName,
+            cpiVersion
         )
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
@@ -113,6 +126,10 @@ class ClusterBuilder {
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
+
+    /** Trigger upgrade of a virtual node's CPI to the given  */
+    fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
+        put("/api/v1/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
 
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")

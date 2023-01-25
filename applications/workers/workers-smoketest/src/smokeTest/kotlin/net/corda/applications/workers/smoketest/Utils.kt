@@ -25,6 +25,9 @@ const val TEST_CPB_WITHOUT_CHANGELOGS_LOCATION = "/META-INF/cpi-without-changelo
 const val TEST_NOTARY_CPI_NAME = "test-notary-server-cordapp"
 const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-server.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/test-cordapp.cpb"
+const val VNODE_UPGRADE_TEST_CPI_NAME = "upgrade-testing-cordapp"
+const val VNODE_UPGRADE_TEST_CPI_V1 = "/META-INF/upgrade-testing-v1/upgrade-testing-cordapp.cpb"
+const val VNODE_UPGRADE_TEST_CPI_V2 = "/META-INF/upgrade-testing-v2/upgrade-testing-cordapp.cpb"
 
 val CLUSTER_URI = URI(System.getProperty("rpcHost"))
 

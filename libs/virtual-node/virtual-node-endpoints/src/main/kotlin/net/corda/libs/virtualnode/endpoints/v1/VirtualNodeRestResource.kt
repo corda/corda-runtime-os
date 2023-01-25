@@ -7,6 +7,8 @@ import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.httprpc.asynchronous.v1.AsyncResponse
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
@@ -85,4 +87,20 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String
     ): VirtualNodeInfo
+
+    /**
+     * Asynchronous endpoint to upgrade a virtual node's CPI.
+     */
+    @HttpPUT(
+        path = "{virtualNodeShortId}/cpi/{cpiFileChecksum}",
+        title = "Upgrade a virtual node's CPI.",
+        description = "This method upgrades a virtual node's CPI.",
+        responseDescription = "Identifier for the request."
+    )
+    fun upgradeVirtualNode(
+        @RestPathParameter(description = "Short ID of the virtual node instance to update")
+        virtualNodeShortId: String,
+        @RestPathParameter(description = "The file checksum of the CPI to upgrade to.")
+        targetCpiFileChecksum: String
+    ): ResponseEntity<AsyncResponse>
 }
