@@ -101,6 +101,7 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
  *          condition { it.code == 200 }
  *      }
  */
+@Suppress("ComplexMethod", "NestedBlockDepth")
 fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> Unit): SimpleResponse {
     val args = AssertWithRetryArgs()
 
