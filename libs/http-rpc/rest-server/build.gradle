@@ -9,7 +9,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:http-rpc:http-rpc')
+    implementation project(':libs:http-rpc:rest')
     implementation project(":libs:http-rpc:rest-tools")
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:utilities")
