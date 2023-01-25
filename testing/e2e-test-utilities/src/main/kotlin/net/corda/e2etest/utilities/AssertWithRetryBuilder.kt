@@ -1,8 +1,8 @@
 package net.corda.e2etest.utilities
 
-import java.time.Duration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.fail
+import java.time.Duration
 
 /** "Private args" that are only exposed in here */
 class AssertWithRetryArgs {

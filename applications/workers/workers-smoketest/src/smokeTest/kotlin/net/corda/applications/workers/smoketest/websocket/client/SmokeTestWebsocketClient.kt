@@ -1,8 +1,5 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
-import java.net.URI
-import java.time.Duration
-import java.util.LinkedList
 import net.corda.e2etest.utilities.PASSWORD
 import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.contextLogger
@@ -18,6 +15,9 @@ import org.eclipse.jetty.websocket.api.StatusCode
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.WebSocketClient
+import java.net.URI
+import java.time.Duration
+import java.util.LinkedList
 
 fun useWebsocketConnection(
     path: String,

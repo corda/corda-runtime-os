@@ -2,14 +2,14 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.net.URI
 import java.time.Duration
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 const val USERNAME = "admin"
 val PASSWORD = System.getenv("INITIAL_ADMIN_USER_PASSWORD") ?: "admin"

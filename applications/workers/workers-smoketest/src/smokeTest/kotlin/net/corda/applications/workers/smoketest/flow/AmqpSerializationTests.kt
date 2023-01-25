@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.flow
 
-import java.util.UUID
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.e2etest.utilities.GROUP_ID
@@ -15,6 +14,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import java.util.UUID
 
 @Suppress("Unused")
 class AmqpSerializationTests {

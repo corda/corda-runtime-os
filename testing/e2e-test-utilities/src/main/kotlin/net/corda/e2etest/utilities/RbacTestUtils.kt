@@ -1,8 +1,8 @@
 package net.corda.e2etest.utilities
 
-import java.time.Instant
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import java.time.Instant
 
 object RbacTestUtils {
 

@@ -1,8 +1,5 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
-import java.time.Duration
-import java.time.temporal.ChronoUnit
-import java.util.UUID
 import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
@@ -27,6 +24,9 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 /**
  * Any 'unordered' tests are run *last*

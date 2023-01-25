@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.ledger
 
-import java.util.UUID
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.e2etest.utilities.GROUP_ID
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
