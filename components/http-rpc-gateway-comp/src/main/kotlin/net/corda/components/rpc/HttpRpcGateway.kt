@@ -4,8 +4,8 @@ import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.components.rpc.HttpRpcGateway.Companion.INTERNAL_PLUGGABLE_RPC_OPS
 import net.corda.components.rpc.internal.HttpRpcGatewayEventHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.PluggableRestResource
+import net.corda.httprpc.RestResource
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.lifecycle.Lifecycle
@@ -27,7 +27,7 @@ import org.osgi.service.component.annotations.ReferencePolicy
     reference = [
         Reference(
             name = INTERNAL_PLUGGABLE_RPC_OPS,
-            service = PluggableRPCOps::class,
+            service = PluggableRestResource::class,
             cardinality = ReferenceCardinality.MULTIPLE,
             policy = ReferencePolicy.DYNAMIC
         )
@@ -58,7 +58,7 @@ class HttpRpcGateway @Activate constructor(
          }
     }
 
-    private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>
+    private val dynamicRestResources: List<PluggableRestResource<out RestResource>>
         get() = componentContext.fetchServices(INTERNAL_PLUGGABLE_RPC_OPS)
 
     private val handler = HttpRpcGatewayEventHandler(
@@ -67,7 +67,7 @@ class HttpRpcGateway @Activate constructor(
         httpRpcServerFactory,
         rbacSecurityManagerService,
         sslCertReadServiceFactory,
-        ::dynamicRpcOps
+        ::dynamicRestResources
     )
 
     private var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGateway>(handler)

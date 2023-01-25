@@ -24,7 +24,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -67,7 +66,7 @@ class FlowMapperServiceIntegrationTest {
     lateinit var publisherFactory: PublisherFactory
 
     // no secrets needed -> empty config
-    private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory

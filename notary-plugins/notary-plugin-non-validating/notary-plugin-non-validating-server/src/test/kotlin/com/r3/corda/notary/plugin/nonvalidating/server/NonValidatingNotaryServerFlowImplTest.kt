@@ -17,7 +17,9 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -71,7 +73,7 @@ class NonValidatingNotaryServerFlowImplTest {
         /* Uniqueness Client Service */
         val uniquenessCheckResponseSignature = DigitalSignatureAndMetadata(
             mock(),
-            DigitalSignatureMetadata(Instant.now(), emptyMap())
+            DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
 
         /* Services */
@@ -318,6 +320,10 @@ class NonValidatingNotaryServerFlowImplTest {
             on { id } doReturn txId
         }
 
+        val mockNotaryCompositeKey = mock<CompositeKey> {
+            on { leafKeys } doReturn setOf(mock(), mock(), mock())
+        }
+
         val paramOrDefaultSession = flowSession ?: mock {
             on { receive(NonValidatingNotarisationPayload::class.java) } doReturn NonValidatingNotarisationPayload(
                 filteredTx,
@@ -328,7 +334,8 @@ class NonValidatingNotaryServerFlowImplTest {
                         emptyMap()
                     ),
                     DUMMY_PLATFORM_VERSION
-                )
+                ),
+                mockNotaryCompositeKey
             )
             on { send(any()) } doAnswer {
                 responseFromServer.add(it.arguments.first() as NotarisationResponse)
@@ -364,11 +371,11 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     private fun mockThrowErrorUniquenessCheckClientService() = mock<LedgerUniquenessCheckerClientService> {
-        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any() )} doThrow
+        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any() )} doThrow
                 IllegalArgumentException("Uniqueness checker cannot be reached")
     }
 
     private fun mockUniquenessClientService(response: LedgerUniquenessCheckResponse) = mock<LedgerUniquenessCheckerClientService> {
-        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any() )} doReturn response
+        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any() )} doReturn response
     }
 }

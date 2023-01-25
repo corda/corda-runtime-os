@@ -1,11 +1,11 @@
 package net.corda.httprpc.server.impl.rpcops
 
-import net.corda.httprpc.RpcOps
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.RestResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource
-interface TestDuplicateProtocolVersionAPI : RpcOps {
-    @HttpRpcGET(path = "getProtocolVersion")
+@HttpRestResource
+interface TestDuplicateProtocolVersionAPI : RestResource {
+    @HttpGET(path = "getProtocolVersion")
     fun test(): String
 }

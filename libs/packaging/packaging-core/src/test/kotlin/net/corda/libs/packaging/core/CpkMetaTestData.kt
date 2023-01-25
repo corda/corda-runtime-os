@@ -51,7 +51,6 @@ object CpkMetaTestData {
             cpkManifest,
             "mainBundle.jar",
             listOf("library.jar"),
-            listOf(cpkDependencyId),
             cordappManifest,
             cpkType,
             SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),

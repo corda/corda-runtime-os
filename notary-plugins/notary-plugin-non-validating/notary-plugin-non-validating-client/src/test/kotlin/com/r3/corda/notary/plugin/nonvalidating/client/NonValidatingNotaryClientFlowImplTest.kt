@@ -11,6 +11,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -42,7 +43,7 @@ class NonValidatingNotaryClientFlowImplTest {
         val mockRequestSignature = mock<DigitalSignature.WithKey>()
         val dummyUniquenessSignature = DigitalSignatureAndMetadata(
             mock(),
-            DigitalSignatureMetadata(Instant.now(), emptyMap())
+            DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
 
         /* State Refs */
@@ -59,10 +60,10 @@ class NonValidatingNotaryClientFlowImplTest {
         }
 
         val txId = SecureHashUtils.randomSecureHash()
-
         val mockUtxoTx = mock<UtxoSignedTransaction> {
             on { toLedgerTransaction() } doReturn mockLedgerTransaction
             on { id } doReturn txId
+            on { notary } doReturn Party(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"), mock())
         }
     }
 

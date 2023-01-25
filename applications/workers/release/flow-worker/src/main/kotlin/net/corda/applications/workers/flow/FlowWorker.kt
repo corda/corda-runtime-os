@@ -2,19 +2,20 @@ package net.corda.applications.workers.flow
 
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.applications.workers.workercommon.WorkerMonitor
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
+import net.corda.processors.verification.VerificationProcessor
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,6 +28,8 @@ import picocli.CommandLine.Mixin
 class FlowWorker @Activate constructor(
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
+    @Reference(service = VerificationProcessor::class)
+    private val verificationProcessor: VerificationProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
@@ -37,15 +40,15 @@ class FlowWorker @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
-    @Reference(service = SmartConfigFactoryFactory::class)
-    val smartConfigFactoryFactory: SmartConfigFactoryFactory,
+    @Reference(service = SecretsServiceFactoryResolver::class)
+    val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
 ) : Application {
 
     private companion object {
         private val logger = contextLogger()
     }
 
-    /** Parses the arguments, then initialises and starts the [flowProcessor]. */
+    /** Parses the arguments, then initialises and starts the [flowProcessor] and [verificationProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
@@ -63,16 +66,18 @@ class FlowWorker @Activate constructor(
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config = getBootstrapConfig(
-            smartConfigFactoryFactory,
+            secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator())
 
         flowProcessor.start(config)
+        verificationProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Flow worker stopping.")
         flowProcessor.stop()
+        verificationProcessor.stop()
         workerMonitor.stop()
     }
 }

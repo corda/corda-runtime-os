@@ -13,8 +13,6 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
@@ -65,6 +63,7 @@ import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -142,7 +141,7 @@ class P2PLayerEndToEndTest {
         }
     }
 
-    private val bootstrapConfig = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val bootstrapConfig = SmartConfigFactory.createWithoutSecurityServices()
         .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
 
     @Test
@@ -179,7 +178,7 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, aliceId, chipId)
 
-                eventually(10.seconds) {
+                eventually(20.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
                     val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
@@ -231,7 +230,7 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, receiverId, senderId)
 
-                eventually(10.seconds) {
+                eventually(20.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
                     val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
@@ -270,7 +269,7 @@ class P2PLayerEndToEndTest {
             val hostMarkerReader = host.listenForMarkers(hostMarkers)
 
             host.sendMessages(numberOfMessages, receiverId, senderId)
-            eventually(10.seconds) {
+            eventually(20.seconds) {
                 val messagesWithProcessedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }.map { it.key }.toSet()
                 val messagesWithReceivedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }.map { it.key }.toSet()
                 assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
@@ -316,7 +315,7 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, aliceId, chipId, EXPIRED_TTL)
 
-                eventually(10.seconds) {
+                eventually(20.seconds) {
                     val markers = hostAMarkers.filter { it.topic == P2P_OUT_MARKERS }.map { (it.value as AppMessageMarker).marker }
                     assertThat(hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }.map { it.key })
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
@@ -705,7 +704,7 @@ class P2PLayerEndToEndTest {
             publishConfig()
             publishNetworkMapAndIdentityKeys(otherHost)
 
-            eventually(30.seconds) {
+            eventually(20.seconds) {
                 assertThat(linkManager.isRunning).isTrue
                 assertThat(gateway.isRunning).isTrue
             }

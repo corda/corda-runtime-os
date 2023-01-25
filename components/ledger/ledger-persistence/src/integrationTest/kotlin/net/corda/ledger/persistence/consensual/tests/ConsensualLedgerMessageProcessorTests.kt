@@ -12,16 +12,14 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.persistence.EntityResponse
-import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.ledger.common.testkit.signatureWithMetadataExample
-import net.corda.ledger.common.testkit.transactionMetadataExample
-import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.createExample
+import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
@@ -65,7 +63,7 @@ import java.util.UUID
  * Rather than creating a new serializer in these tests from scratch,
  * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
  */
-@ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class ConsensualLedgerMessageProcessorTests {
     companion object {
@@ -153,16 +151,14 @@ class ConsensualLedgerMessageProcessorTests {
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
-        val wireTransaction = getWireTransactionExample(
+        val wireTransactionFactory: WireTransactionFactory = ctx.getSandboxSingletonService()
+        val wireTransaction = wireTransactionFactory.createExample(
             ctx.getSandboxSingletonService(),
-            ctx.getSandboxSingletonService(),
-            ctx.getSandboxSingletonService(),
-            ctx.getSandboxSingletonService(),
-            metadata = transactionMetadataExample(numberOfComponentGroups = ConsensualComponentGroup.values().size),
+            ctx.getSandboxSingletonService()
         )
         return SignedTransactionContainer(
             wireTransaction,
-            listOf(signatureWithMetadataExample)
+            listOf(getSignatureWithMetadataExample())
         )
     }
 

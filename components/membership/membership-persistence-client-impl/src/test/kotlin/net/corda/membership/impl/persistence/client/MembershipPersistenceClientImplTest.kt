@@ -7,11 +7,15 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
+import net.corda.data.membership.db.request.command.DeleteApprovalRule
+import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
@@ -19,12 +23,14 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
+import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.layeredpropertymap.toAvro
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -36,6 +42,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -72,6 +79,11 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class MembershipPersistenceClientImplTest {
+    private companion object {
+        const val RULE_ID = "rule-id"
+        const val RULE_REGEX = "rule-regex"
+        const val RULE_LABEL = "rule-label"
+    }
 
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
 
@@ -132,7 +144,7 @@ class MembershipPersistenceClientImplTest {
     private val memberInfoFactory = mock<MemberInfoFactory>()
 
     private val testConfig =
-        SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
+        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
     private fun postStartEvent() {
         lifecycleEventCaptor.firstValue.processEvent(StartEvent(), coordinator)
@@ -669,6 +681,121 @@ class MembershipPersistenceClientImplTest {
             assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
             assertThat(notary?.memberContext?.items).containsExactly(KeyValuePair("a", "b"))
             assertThat(notary?.mgmContext?.items).containsExactly(KeyValuePair("c", "d"))
+        }
+    }
+
+    @Nested
+    inner class AddApprovalRuleTests {
+        @Test
+        fun `addApprovalRule returns the correct result`() {
+            postConfigChangedEvent()
+            val expectedResult = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
+            mockPersistenceResponse(
+                PersistApprovalRuleResponse(expectedResult),
+            )
+
+            val result = membershipPersistenceClient.addApprovalRule(
+                ourHoldingIdentity,
+                ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+            )
+
+            assertThat(result.getOrThrow()).isEqualTo(expectedResult)
+        }
+
+        @Test
+        fun `addApprovalRule returns error in case of failure`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistenceFailedResponse("Placeholder error"),
+            )
+
+            val result = membershipPersistenceClient.addApprovalRule(
+                ourHoldingIdentity,
+                ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+            )
+
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `addApprovalRule returns failure for unexpected result`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                null,
+            )
+
+            val result = membershipPersistenceClient.addApprovalRule(
+                ourHoldingIdentity,
+                ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+            )
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<ApprovalRuleDetails>("Unexpected response: null"))
+        }
+
+        @Test
+        fun `addApprovalRule sends the correct data`() {
+            postConfigChangedEvent()
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.addApprovalRule(
+                ourHoldingIdentity,
+                ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+            )
+
+            val sentRequest = (argument.firstValue.request as? PersistApprovalRule)!!
+            assertThat(sentRequest.rule).isEqualTo(RULE_REGEX)
+            assertThat(sentRequest.ruleType).isEqualTo(ApprovalRuleType.STANDARD)
+            assertThat(sentRequest.label).isEqualTo(RULE_LABEL)
+        }
+    }
+
+    @Nested
+    inner class DeleteApprovalRuleTests {
+        @Test
+        fun `deleteApprovalRule returns the correct ID`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                DeleteApprovalRuleResponse(),
+            )
+
+            val result = membershipPersistenceClient.deleteApprovalRule(
+                ourHoldingIdentity,
+                RULE_ID
+            )
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.success())
+        }
+
+        @Test
+        fun `deleteApprovalRule returns error in case of failure`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistenceFailedResponse("Placeholder error"),            )
+
+            val result = membershipPersistenceClient.deleteApprovalRule(
+                ourHoldingIdentity,
+                RULE_ID
+            )
+
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `deleteApprovalRule sends the correct data`() {
+            postConfigChangedEvent()
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.deleteApprovalRule(
+                ourHoldingIdentity,
+                RULE_ID
+            )
+
+            val sentRequest = (argument.firstValue.request as? DeleteApprovalRule)!!
+            assertThat(sentRequest.ruleId).isEqualTo(RULE_ID)
         }
     }
 

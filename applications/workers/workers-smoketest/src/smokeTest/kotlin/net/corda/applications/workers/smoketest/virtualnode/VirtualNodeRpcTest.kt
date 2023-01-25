@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.util.UUID
+import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCATION
 
 /**
  * Any 'unordered' tests are run *last*
@@ -335,11 +336,11 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val vnodesWithStates: List<Pair<String, String>> = vNodeList().toJson()["virtualNodes"].map {
-                it["holdingIdentity"]["shortHash"].textValue() to it["state"].textValue()
+                it["holdingIdentity"]["shortHash"].textValue() to it["flowP2pOperationalStatus"].textValue()
             }
 
             val (vnodeId, oldState) = vnodesWithStates.last()
-            val newState = "IN_MAINTENANCE"
+            val newState = "maintenance"
 
             updateVirtualNodeState(vnodeId, newState)
 
@@ -347,10 +348,22 @@ class VirtualNodeRpcTest {
                 timeout(Duration.of(60, ChronoUnit.SECONDS))
                 command { vNodeList() }
                 condition {
-                    it.code == 200 &&
-                            it.toJson()["virtualNodes"].single { virtualNode ->
+                    try {
+                        if (it.code == 200) {
+                            val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
                                 virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
-                            }["state"].textValue() == newState
+                            }
+                            vNodeInfo["flowP2pOperationalStatus"].textValue() == "INACTIVE" &&
+                                    vNodeInfo["flowStartOperationalStatus"].textValue() == "INACTIVE" &&
+                                    vNodeInfo["flowOperationalStatus"].textValue() == "INACTIVE" &&
+                                    vNodeInfo["vaultDbOperationalStatus"].textValue() == "INACTIVE"
+                        } else {
+                            false
+                        }
+                    } catch (e: Exception) {
+                        println("Failed, repsonse: $it")
+                        false
+                    }
                 }
             }
 
@@ -360,10 +373,22 @@ class VirtualNodeRpcTest {
                 timeout(Duration.of(60, ChronoUnit.SECONDS))
                 command { vNodeList() }
                 condition {
-                    it.code == 200 &&
-                            it.toJson()["virtualNodes"].single { virtualNode ->
+                    try {
+                        if (it.code == 200) {
+                            val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
                                 virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
-                            }["state"].textValue() == oldState
+                            }
+                            vNodeInfo["flowP2pOperationalStatus"].textValue() == oldState &&
+                                    vNodeInfo["flowStartOperationalStatus"].textValue() == oldState &&
+                                    vNodeInfo["flowOperationalStatus"].textValue() == oldState &&
+                                    vNodeInfo["vaultDbOperationalStatus"].textValue() == oldState
+                        } else {
+                            false
+                        }
+                    } catch (e: Exception) {
+                        println("Failed, repsonse: $it")
+                        false
+                    }
                 }
             }
         }
@@ -427,7 +452,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(90)
-    fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
+    fun `can force upload the CPI with a new set of CPKs`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -460,7 +485,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(92)
-    fun `Can sync DB and persist fish`() {
+    fun `can sync the virtual node's DB and run a flow on the force uploaded CPI to persist a fish entity`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             // Status 204 indicates a non-error but no response data
@@ -471,8 +496,46 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(93)
+    fun `can force upload the CPI with CPKs that have no changelogs`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
+
+            val requestId = forceCpiUpload(TEST_CPB_WITHOUT_CHANGELOGS_LOCATION, GROUP_ID, staticMemberList, cpiName)
+                .let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+            }
+
+            eventually(Duration.ofSeconds(120)) {
+                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
+            }
+        }
+    }
+
+    @Test
+    @Order(94)
+    fun `can force-sync the virtual node's vault for a CPI with no changelogs`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
+
+            val className = "net.cordapp.testing.smoketests.virtualnode.NoChangelogFlow"
+            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+            val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+
+            assertThat(flowStatus.flowResult).isEqualTo("NO_CHANGELOG_FLOW_COMPLETE")
+        }
+    }
+
+    @Test
     @Order(100)
-    fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
+    fun `can force upload the original CPI back again and run a flow that does not interact with the database`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -497,7 +560,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(101)
-    fun `Can sync DB again and persist dog`() {
+    fun `can sync the vault DB again and run a flow from the original CPI that persists a dog entity`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)

@@ -1990,6 +1990,135 @@
         }
       }
     },
+    "/mgm/{holdingidentityshorthash}/approval/rules" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method retrieves the set of rules the group is currently configured with",
+        "operationId" : "get_mgm__holdingidentityshorthash__approval_rules",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Collection of group approval rules",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApprovalRuleInfo"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method adds a rule to the set of group approval rules.",
+        "operationId" : "post_mgm__holdingidentityshorthash__approval_rules",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApprovalRuleRequestParams"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Details of the newly persisted approval rule",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApprovalRuleInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/approval/rules/{ruleid}" : {
+      "delete" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method deletes a previously added group approval rule.",
+        "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules__ruleid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "ruleid",
+          "in" : "path",
+          "description" : "The ID of the group approval rule to be deleted",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the group approval rule to be deleted",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
@@ -3083,6 +3212,44 @@
   },
   "components" : {
     "schemas" : {
+      "ApprovalRuleInfo" : {
+        "required" : [ "ruleId", "ruleRegex" ],
+        "type" : "object",
+        "properties" : {
+          "ruleId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "ruleLabel" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ruleRegex" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "ApprovalRuleRequestParams" : {
+        "required" : [ "ruleRegex" ],
+        "type" : "object",
+        "properties" : {
+          "ruleLabel" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ruleRegex" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "The approval rule information including the regular expression associated with the rule, and an optional label describing the rule"
+      },
       "BulkCreatePermissionsRequestType" : {
         "required" : [ "permissionsToCreate", "roleIds" ],
         "type" : "object",
@@ -3273,17 +3440,9 @@
         }
       },
       "CpkMetadata" : {
-        "required" : [ "dependencies", "hash", "id", "libraries", "mainBundle", "timestamp", "type" ],
+        "required" : [ "hash", "id", "libraries", "mainBundle", "timestamp", "type" ],
         "type" : "object",
         "properties" : {
-          "dependencies" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/CpkIdentifier"
-            }
-          },
           "hash" : {
             "type" : "string",
             "nullable" : false,
@@ -3334,7 +3493,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3473,7 +3631,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -3759,7 +3916,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3803,7 +3959,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3886,7 +4041,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
@@ -3996,7 +4150,7 @@
         }
       },
       "StartFlowParameters" : {
-        "required" : [ "clientRequestId", "flowClassName", "requestData" ],
+        "required" : [ "clientRequestId", "flowClassName", "requestBody" ],
         "type" : "object",
         "properties" : {
           "clientRequestId" : {
@@ -4009,7 +4163,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "requestData" : {
+          "requestBody" : {
             "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
@@ -4029,7 +4183,7 @@
             } ]
           }
         },
-        "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestData: optional start arguments string passed to the flow; defaults to an empty string\n            "
+        "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestBody: optional start arguments string passed to the flow; defaults to an empty string\n            "
       },
       "StartableFlowsResponse" : {
         "required" : [ "flowClassNames" ],
@@ -4212,7 +4366,7 @@
         }
       },
       "VirtualNodeInfo" : {
-        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "state", "uniquenessDmlConnectionId", "vaultDmlConnectionId" ],
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "flowOperationalStatus", "flowP2pOperationalStatus", "flowStartOperationalStatus", "holdingIdentity", "uniquenessDmlConnectionId", "vaultDbOperationalStatus", "vaultDmlConnectionId" ],
         "type" : "object",
         "properties" : {
           "cpiIdentifier" : {
@@ -4228,17 +4382,27 @@
             "nullable" : false,
             "example" : "string"
           },
+          "flowOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "flowP2pOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "flowStartOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
           "holdingIdentity" : {
             "$ref" : "#/components/schemas/HoldingIdentity"
           },
           "hsmConnectionId" : {
             "type" : "string",
             "nullable" : true,
-            "example" : "string"
-          },
-          "state" : {
-            "type" : "string",
-            "nullable" : false,
             "example" : "string"
           },
           "uniquenessDdlConnectionId" : {
@@ -4250,6 +4414,11 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          },
+          "vaultDbOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "vaultDdlConnectionId" : {
             "type" : "string",

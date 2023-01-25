@@ -126,11 +126,15 @@ class MemberInfoExtension {
         /**
          * Notary role properties
          */
+        const val NOTARY_KEYS = "corda.notary.keys"
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
         const val NOTARY_SERVICE_PLUGIN = "corda.notary.service.plugin"
         const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
+
+        /** Key name for TLS certificate subject. */
+        const val TLS_CERTIFICATE_SUBJECT = "corda.tls.certificate.subject"
 
         /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
         @JvmStatic
@@ -243,5 +247,12 @@ class MemberInfoExtension {
                     SecureHash.parse(it)
                 }
             )
+
+        /**
+         * Return a list of current and previous (rotated) notary keys. Key at index 0 is always the latest
+         * added notary key. Might be an empty list if the member is not a notary VNode.
+         */
+        @JvmStatic
+        val MemberInfo.notaryKeys: List<PublicKey> get() = memberProvidedContext.parseList(NOTARY_KEYS)
     }
 }

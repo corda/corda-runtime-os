@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
+// TODO Move this class to VerificationProcessor and replace it here with UtxoLedgerTransactionVerifierComponent (CORE-9385)
 class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransaction): UtxoTransactionVerifier()  {
 
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!

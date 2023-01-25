@@ -15,7 +15,7 @@ import javax.persistence.Table
  * A role can be associated with many groups and many roles can be associated with a group.
  */
 @Entity
-@Table(name = "rpc_role_group_rel", schema = DbSchema.RPC_RBAC)
+@Table(name = "rbac_role_group_rel", schema = DbSchema.RBAC)
 class RoleGroupAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

@@ -105,9 +105,8 @@ class UpsertCpiTests {
             .joinToString("")
     }
 
-    private val random = Random(Instant.now().epochSecond)
-
     private fun newRandomSecureHash(): SecureHash {
+        val random = Random()
         return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
     }
 
@@ -130,7 +129,6 @@ class UpsertCpiTests {
             manifest = CpkManifest(CpkFormatVersion(1, 0)),
             mainBundle = "main-bundle",
             libraries = emptyList(),
-            dependencies = emptyList(),
             cordappManifest = cordappManifest,
             type = CpkType.UNKNOWN,
             fileChecksum = fileChecksum,
@@ -146,6 +144,7 @@ class UpsertCpiTests {
         val metadata = mock<CpiMetadata>().also {
             whenever(it.cpiId).thenReturn(cpiId)
             whenever(it.groupPolicy).thenReturn("{}")
+            whenever(it.fileChecksum).thenReturn(newRandomSecureHash())
         }
 
         val cpi = mock<Cpi>().also {

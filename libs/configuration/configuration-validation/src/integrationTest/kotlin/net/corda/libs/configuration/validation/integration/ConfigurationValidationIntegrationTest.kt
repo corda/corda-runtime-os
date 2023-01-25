@@ -3,7 +3,6 @@ package net.corda.libs.configuration.validation.integration
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -15,7 +14,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SANDBOX_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SECRETS_CONFIG
 import net.corda.schema.configuration.MessagingConfig
@@ -88,7 +87,7 @@ class ConfigurationValidationIntegrationTest {
         FLOW_CONFIG,
         P2P_LINK_MANAGER_CONFIG,
         P2P_GATEWAY_CONFIG,
-        RPC_CONFIG,
+        REST_CONFIG,
         SANDBOX_CONFIG,
         RECONCILIATION_CONFIG,
         SECRETS_CONFIG,
@@ -125,6 +124,6 @@ class ConfigurationValidationIntegrationTest {
         val url =
             FrameworkUtil.getBundle(this::class.java).getResource(resource)
                 ?: throw IllegalArgumentException("Failed to find $resource")
-        return SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseURL(url))
+        return SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseURL(url))
     }
 }

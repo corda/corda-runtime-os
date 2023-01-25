@@ -2,54 +2,54 @@ package net.corda.httprpc.test
 
 import java.io.InputStream
 import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.RpcOps
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.RestResource
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRestResource
 
-@HttpRpcResource(name = "TestFileUploadAPI", path = "fileupload/")
-interface TestFileUploadAPI : RpcOps {
+@HttpRestResource(name = "TestFileUploadAPI", path = "fileupload/")
+interface TestFileUploadAPI : RestResource {
 
-    @HttpRpcPOST(path = "upload")
-    fun upload(@HttpRpcRequestBodyParameter file: InputStream): String
+    @HttpPOST(path = "upload")
+    fun upload(@RestRequestBodyParameter file: InputStream): String
 
-    @HttpRpcPOST(path = "uploadWithName")
-    fun uploadWithName(@HttpRpcRequestBodyParameter name: String, @HttpRpcRequestBodyParameter file: InputStream): String
+    @HttpPOST(path = "uploadWithName")
+    fun uploadWithName(@RestRequestBodyParameter name: String, @RestRequestBodyParameter file: InputStream): String
 
-    @HttpRpcPOST(path = "uploadWithoutParameterAnnotations")
+    @HttpPOST(path = "uploadWithoutParameterAnnotations")
     fun uploadWithoutParameterAnnotations(fileName: String, file: InputStream): String
 
-    @HttpRpcPOST(path = "fileUploadObject")
-    fun fileUpload(@HttpRpcRequestBodyParameter file: HttpFileUpload): String
+    @HttpPOST(path = "fileUploadObject")
+    fun fileUpload(@RestRequestBodyParameter file: HttpFileUpload): String
 
-    @HttpRpcPOST(path = "fileUploadWithFormParam")
-    fun fileUploadWithFormParam(@HttpRpcRequestBodyParameter formParam: String, @HttpRpcRequestBodyParameter file: HttpFileUpload): String
+    @HttpPOST(path = "fileUploadWithFormParam")
+    fun fileUploadWithFormParam(@RestRequestBodyParameter formParam: String, @RestRequestBodyParameter file: HttpFileUpload): String
 
-    @HttpRpcPOST(path = "multiFileUploadObject")
-    fun fileUpload(@HttpRpcRequestBodyParameter file1: HttpFileUpload, @HttpRpcRequestBodyParameter file2: HttpFileUpload): String
+    @HttpPOST(path = "multiFileUploadObject")
+    fun fileUpload(@RestRequestBodyParameter file1: HttpFileUpload, @RestRequestBodyParameter file2: HttpFileUpload): String
 
-    @HttpRpcPOST(path = "fileUploadObjectList")
-    fun fileUploadObjectList(@HttpRpcRequestBodyParameter files: List<HttpFileUpload>): String
+    @HttpPOST(path = "fileUploadObjectList")
+    fun fileUploadObjectList(@RestRequestBodyParameter files: List<HttpFileUpload>): String
 
-    @HttpRpcPOST(path = "multiInputStreamFileUpload")
-    fun multiInputStreamFileUpload(@HttpRpcRequestBodyParameter file1: InputStream, @HttpRpcRequestBodyParameter file2: InputStream): String
+    @HttpPOST(path = "multiInputStreamFileUpload")
+    fun multiInputStreamFileUpload(@RestRequestBodyParameter file1: InputStream, @RestRequestBodyParameter file2: InputStream): String
 
-    @HttpRpcPOST(path = "uploadWithQueryParam")
+    @HttpPOST(path = "uploadWithQueryParam")
     fun fileUploadWithQueryParam(
-        @HttpRpcQueryParameter(required = false) tenant: String,
-        @HttpRpcRequestBodyParameter file: HttpFileUpload
+        @RestQueryParameter(required = false) tenant: String,
+        @RestRequestBodyParameter file: HttpFileUpload
     ): String
 
-    @HttpRpcPOST(path = "uploadWithPathParam/{tenant}/")
+    @HttpPOST(path = "uploadWithPathParam/{tenant}/")
     fun fileUploadWithPathParam(
-        @HttpRpcPathParameter tenant: String,
-        @HttpRpcRequestBodyParameter file: HttpFileUpload
+        @RestPathParameter tenant: String,
+        @RestRequestBodyParameter file: HttpFileUpload
     ): String
 
-    @HttpRpcPOST(path = "uploadWithNameInAnnotation")
+    @HttpPOST(path = "uploadWithNameInAnnotation")
     fun fileUploadWithNameInAnnotation(
-        @HttpRpcRequestBodyParameter(name = "differentName", description = "differentDesc") file: HttpFileUpload
+        @RestRequestBodyParameter(name = "differentName", description = "differentDesc") file: HttpFileUpload
     ): String
 }

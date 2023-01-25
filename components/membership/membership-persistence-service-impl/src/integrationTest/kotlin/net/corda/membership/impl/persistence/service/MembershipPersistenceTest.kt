@@ -11,6 +11,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
@@ -23,7 +25,7 @@ import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
@@ -33,6 +35,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -53,9 +56,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -110,6 +115,10 @@ class MembershipPersistenceTest {
         private const val EPOCH_KEY = "corda.epoch"
         private const val MPV_KEY = "corda.minimumPlatformVersion"
         private const val MODIFIED_TIME_KEY = "corda.modifiedTime"
+
+        private const val RULE_ID = "rule-id"
+        private const val RULE_REGEX = "rule-regex"
+        private const val RULE_LABEL = "rule-label"
 
         private val logger = contextLogger()
 
@@ -178,6 +187,9 @@ class MembershipPersistenceTest {
 
         @InjectService(timeout = 5000)
         lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
+
+        @InjectService(timeout = 5000)
+        lateinit var allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService
 
         @InjectService(timeout = 5000)
         lateinit var keyEncodingService: KeyEncodingService
@@ -277,6 +289,24 @@ class MembershipPersistenceTest {
                 )
             }
 
+            override fun addApprovalRule(
+                viewOwningIdentity: HoldingIdentity,
+                ruleParams: ApprovalRuleParams
+            ) = safeCall {
+                membershipPersistenceClient.addApprovalRule(
+                    viewOwningIdentity, ruleParams
+                )
+            }
+
+            override fun deleteApprovalRule(
+                viewOwningIdentity: HoldingIdentity,
+                ruleId: String
+            ) = safeCall {
+                membershipPersistenceClient.deleteApprovalRule(
+                    viewOwningIdentity, ruleId
+                )
+            }
+
             fun <T> safeCall(func: () -> T): T {
                 return eventually {
                     assertDoesNotThrow {
@@ -304,7 +334,7 @@ class MembershipPersistenceTest {
 //        private val vnodeDbInfo = TestDbInfo("vnode_vault_$holdingIdentityShortHash", DbSchema.VNODE)
         private val clusterDbInfo = TestDbInfo.createConfig()
 
-        private val smartConfigFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+        private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
         private val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         private val dbConfig = smartConfigFactory.create(clusterDbInfo.config)
 
@@ -353,6 +383,7 @@ class MembershipPersistenceTest {
 
             membershipPersistenceService.startAndWait()
             membershipPersistenceClientWrapper.startAndWait()
+            allowedCertificatesReaderWriterService.start()
 
             eventually {
                 logger.info("Waiting for required services to start...")
@@ -1065,6 +1096,71 @@ class MembershipPersistenceTest {
         assertThat(updatedEntity.registrationId).isEqualTo(registrationId)
         assertThat(updatedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
         assertThat(updatedEntity.status).isEqualTo(RegistrationStatus.PENDING_AUTO_APPROVAL.name)
+    }
+
+    @Test
+    fun `addApprovalRule persists the approval rule and returns the rule ID`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
+        }
+        val ruleDetails = membershipPersistenceClientWrapper.addApprovalRule(
+            viewOwningHoldingIdentity,
+            ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
+        ).getOrThrow()
+
+        val approvalRuleEntity = vnodeEmf.use {
+            it.find(ApprovalRulesEntity::class.java, ruleDetails.ruleId)
+        }
+        with(approvalRuleEntity) {
+            assertThat(ruleRegex).isEqualTo(RULE_REGEX)
+            assertThat(ruleType).isEqualTo(ApprovalRuleType.STANDARD.name)
+            assertThat(ruleLabel).isEqualTo(RULE_LABEL)
+        }
+    }
+
+    @Test
+    fun `deleteApprovalRule deletes the approval rule from the db`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
+        }
+        val testRule = ApprovalRulesEntity(RULE_ID, RULE_REGEX, ApprovalRuleType.STANDARD.name, RULE_LABEL)
+        vnodeEmf.transaction {
+            it.persist(testRule)
+        }
+
+        membershipPersistenceClientWrapper.deleteApprovalRule(viewOwningHoldingIdentity, RULE_ID).getOrThrow()
+
+        vnodeEmf.use {
+            assertThat(it.find(ApprovalRulesEntity::class.java, RULE_ID)).isNull()
+        }
+    }
+
+    @Test
+    fun `getApprovalRules retrieves all approval rules`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        val rule1 = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
+        val rule2 = ApprovalRuleDetails("rule-id-2", "rule-regex-2", "rule-label-2")
+        val entities = listOf(
+            ApprovalRulesEntity(rule1.ruleId, rule1.ruleRegex, ApprovalRuleType.STANDARD.name, rule1.ruleLabel),
+            ApprovalRulesEntity(rule2.ruleId, rule2.ruleRegex, ApprovalRuleType.STANDARD.name, rule2.ruleLabel)
+        )
+        vnodeEmf.transaction { em ->
+            entities.forEach { em.persist(it) }
+        }
+
+        val result = membershipQueryClient.getApprovalRules(
+            viewOwningHoldingIdentity,
+            ApprovalRuleType.STANDARD
+        ).getOrThrow()
+
+        assertThat(result.size).isEqualTo(2)
+        assertThat(result).containsAll(listOf(rule1, rule2))
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =

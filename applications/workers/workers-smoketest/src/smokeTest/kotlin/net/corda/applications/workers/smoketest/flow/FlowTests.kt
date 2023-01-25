@@ -93,7 +93,6 @@ class FlowTests {
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.NonValidatingNotaryTestFlow",
-            "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
             "net.cordapp.testing.testflows.ledger.TokenSelectionFlow"
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
@@ -658,6 +657,19 @@ class FlowTests {
     }
 
     @Test
+    fun `Crypto - Signing service finds my signing keys`() {
+        val requestBody = RpcSmokeTestInput()
+        requestBody.command = "crypto_find_my_signing_keys"
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(flowResult.command).isEqualTo("crypto_find_my_signing_keys")
+        assertThat(flowResult.result).isEqualTo("success")
+    }
+
+    @Test
     fun `Context is propagated to initiated and sub flows`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "context_propagation"
@@ -740,17 +752,6 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.result).isEqualTo(dataToSerialize)
         assertThat(flowResult.command).isEqualTo("serialization")
-    }
-
-    @Test
-    fun `Notary - Uniqueness client service flow is finishing without exceptions`() {
-        val requestID = startRpcFlow(
-            bobHoldingId,
-            mapOf(),
-            "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
-        )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
 
     @Test

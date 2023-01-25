@@ -1,8 +1,8 @@
 package net.cordapp.demo.consensual
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
@@ -40,7 +40,7 @@ data class FindTransactionResponse(
     val errorMessage: String?
 )
 
-class FindTransactionFlow : RPCStartableFlow {
+class FindTransactionFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var ledgerService: ConsensualLedgerService
@@ -49,7 +49,7 @@ class FindTransactionFlow : RPCStartableFlow {
     lateinit var marshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
+    override fun call(requestBody: RestRequestBody): String {
         val txId =
             requestBody.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java).transactionId
 

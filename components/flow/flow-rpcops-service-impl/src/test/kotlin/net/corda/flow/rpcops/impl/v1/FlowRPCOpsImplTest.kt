@@ -6,7 +6,7 @@ import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
-import net.corda.flow.rpcops.v1.FlowRpcOps
+import net.corda.flow.rpcops.v1.FlowRestResource
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.exception.BadRequestException
@@ -33,7 +33,6 @@ import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -78,7 +77,7 @@ class FlowRPCOpsImplTest {
     private fun getMockCPIMeta(): CpiMetadata {
 
         val mockManifest = mock<CordappManifest>().also {
-            whenever(it.rpcStartableFlows).thenReturn(setOf(FLOW1, "flow2"))
+            whenever(it.clientStartableFlows).thenReturn(setOf(FLOW1, "flow2"))
         }
         val mockCPKMetadata = mock<CpkMetadata>().also {
             whenever(it.cordappManifest).thenReturn(mockManifest)
@@ -103,9 +102,8 @@ class FlowRPCOpsImplTest {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
-            VirtualNodeState.ACTIVE,
-            0,
-            Instant.now()
+            version = 0,
+            timestamp = Instant.now()
         )
     }
 
@@ -146,8 +144,8 @@ class FlowRPCOpsImplTest {
         ).thenReturn(true)
     }
 
-    private fun createFlowRpcOps(initialise: Boolean = true): FlowRpcOps {
-        return FlowRPCOpsImpl(
+    private fun createFlowRpcOps(initialise: Boolean = true): FlowRestResource {
+        return FlowRestResourceImpl(
             virtualNodeInfoReadService,
             flowStatusCacheService,
             publisherFactory,

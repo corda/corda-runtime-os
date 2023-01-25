@@ -5,7 +5,7 @@ import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
 import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_ORIGIN
 import io.javalin.core.util.Header.CACHE_CONTROL
 import io.javalin.core.util.Header.WWW_AUTHENTICATE
-import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
+import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.toExample
 import net.corda.httprpc.test.*
@@ -46,9 +46,9 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             server = HttpRpcServerImpl(
                 listOf(
                     TestHealthCheckAPIImpl(),
-                    TestJavaPrimitivesRPCopsImpl(),
+                    TestJavaPrimitivesRestResourceImpl(),
                     CustomSerializationAPIImpl(),
-                    TestEntityRpcOpsImpl(),
+                    TestEntityRestResourceImpl(),
                     TestFileUploadImpl()
                 ),
                 ::securityManager,

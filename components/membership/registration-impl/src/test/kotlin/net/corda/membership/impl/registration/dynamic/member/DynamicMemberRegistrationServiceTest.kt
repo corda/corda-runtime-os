@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.dynamic.member
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
@@ -13,10 +14,11 @@ import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -70,6 +72,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
+import net.corda.membership.locally.hosted.identities.IdentityInfo
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
@@ -105,8 +111,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.*
+import java.security.cert.X509Certificate
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import javax.security.auth.x500.X500Principal
 
 class DynamicMemberRegistrationServiceTest {
     private companion object {
@@ -217,11 +225,12 @@ class DynamicMemberRegistrationServiceTest {
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
     private val testConfig =
-        SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
+        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+        LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
     )
 
     private var coordinatorIsRunning = false
@@ -288,6 +297,14 @@ class DynamicMemberRegistrationServiceTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(member)) } doReturn virtualNodeInfo
     }
+    private val gatewayConfiguration = mock<SmartConfig> {
+        on { getConfig("sslConfig") } doReturn mock
+        on { getString("tlsType") } doReturn "ONE_WAY"
+    }
+    private val configurationGetService = mock<ConfigurationGetService> {
+        on { getSmartConfig(ConfigKeys.P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
+    }
+    private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService>()
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -300,7 +317,9 @@ class DynamicMemberRegistrationServiceTest {
         membershipSchemaValidatorFactory,
         platformInfoProvider,
         ephemeralKeyPairEncryptor,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        locallyHostedIdentitiesService,
+        configurationGetService,
     )
 
     private val context = mapOf(
@@ -415,6 +434,30 @@ class DynamicMemberRegistrationServiceTest {
                 LEDGER_KEYS_KEY.format(0),
                 LEDGER_KEY_HASHES_KEY.format(0),
                 LEDGER_KEY_SIGNATURE_SPEC.format(0)
+            )
+        }
+
+        @Test
+        fun `registration context with mutual TLS adds the certificate subject`() {
+            whenever(gatewayConfiguration.getString("tlsType")).doReturn("MUTUAL")
+            val certificate = mock<X509Certificate> {
+                on { subjectX500Principal } doReturn X500Principal(mgm.x500Name.toString())
+            }
+            val identityInfo = mock<IdentityInfo> {
+                on { tlsCertificates } doReturn listOf(certificate)
+            }
+            whenever(locallyHostedIdentitiesService.getIdentityInfo(member)).doReturn(identityInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+            registrationService.register(registrationResultId, member, context)
+
+            val memberContext = assertDoesNotThrow { memberContextCaptor.firstValue }
+
+            assertThat(memberContext.items).contains(
+                KeyValuePair(
+                    TLS_CERTIFICATE_SUBJECT, mgm.x500Name.toString()
+                )
             )
         }
     }
@@ -578,6 +621,38 @@ class DynamicMemberRegistrationServiceTest {
                 it.assertThat(result.message).isNotNull.contains("Could not find virtual node")
             }
             registrationService.stop()
+        }
+
+        @Test
+        fun `registration context with mutual TLS will fail if the identity can not be found`() {
+            whenever(gatewayConfiguration.getString("tlsType")).doReturn("MUTUAL")
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val result = registrationService.register(registrationResultId, member, context)
+
+            SoftAssertions.assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                it.assertThat(result.message).isNotNull.contains("is not locally hosted")
+            }
+        }
+
+        @Test
+        fun `registration context with mutual TLS will fail if the identity has no certificates`() {
+            whenever(gatewayConfiguration.getString("tlsType")).doReturn("MUTUAL")
+            val identityInfo = mock<IdentityInfo> {
+                on { tlsCertificates } doReturn emptyList()
+            }
+            whenever(locallyHostedIdentitiesService.getIdentityInfo(member)).doReturn(identityInfo)
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val result = registrationService.register(registrationResultId, member, context)
+
+            SoftAssertions.assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                it.assertThat(result.message).isNotNull.contains("is missing TLS certificates")
+            }
         }
     }
 

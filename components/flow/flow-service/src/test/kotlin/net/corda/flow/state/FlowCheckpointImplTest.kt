@@ -23,7 +23,7 @@ import net.corda.flow.state.impl.FlowCheckpointImpl
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
@@ -38,7 +38,7 @@ class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
         .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(60000L))
-    private val smartFlowConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(flowConfig)
+    private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
     private val now = Instant.MIN
 
     private fun getMinimumCheckpoint(): Pair<Checkpoint, FlowCheckpointImpl> {
@@ -583,7 +583,7 @@ class FlowCheckpointImplTest {
         val flowConfig = ConfigFactory.empty()
             .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
             .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(3000L))
-        val smartFlowConfig = SmartConfigFactoryFactory.createWithoutSecurityServices().create(flowConfig)
+        val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
 
         val checkpoint = setupAvroCheckpoint(retryState = RetryState().apply {
             retryCount = 5

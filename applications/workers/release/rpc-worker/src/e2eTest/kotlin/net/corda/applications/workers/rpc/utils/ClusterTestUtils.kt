@@ -7,19 +7,19 @@ import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.client.exceptions.RequestErrorException
-import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
+import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.packaging.testutils.TestUtils
-import net.corda.membership.httprpc.v1.CertificatesRpcOps
-import net.corda.membership.httprpc.v1.HsmRpcOps
-import net.corda.membership.httprpc.v1.KeysRpcOps
-import net.corda.membership.httprpc.v1.MGMRpcOps
-import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
-import net.corda.membership.httprpc.v1.NetworkRpcOps
+import net.corda.membership.httprpc.v1.CertificatesRestResource
+import net.corda.membership.httprpc.v1.HsmRestResource
+import net.corda.membership.httprpc.v1.KeysRestResource
+import net.corda.membership.httprpc.v1.MGMRestResource
+import net.corda.membership.httprpc.v1.MemberRegistrationRestResource
+import net.corda.membership.httprpc.v1.NetworkRestResource
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
@@ -37,6 +37,7 @@ import java.nio.file.StandardOpenOption
 import java.util.UUID
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
+const val LINK_MANAGER_CONFIG = "corda.p2p.linkManager"
 const val P2P_TENANT_ID = "p2p"
 const val HSM_CAT_SESSION = "SESSION_INIT"
 const val HSM_CAT_PRE_AUTH = "PRE_AUTH"
@@ -61,7 +62,7 @@ fun E2eCluster.uploadCpi(
     ).write(keystore.readAllBytes())
 
     // first upload certificate to corda
-    clusterHttpClientFor(CertificatesRpcOps::class.java).use { client ->
+    clusterHttpClientFor(CertificatesRestResource::class.java).use { client ->
         with(client.start().proxy) {
             val pem = TestUtils.ROOT_CA.toPem().toByteArray()
 
@@ -78,7 +79,7 @@ fun E2eCluster.uploadCpi(
     }
 
     // then build and upload cpi
-    return clusterHttpClientFor(CpiUploadRPCOps::class.java).use { client ->
+    return clusterHttpClientFor(CpiUploadRestResource::class.java).use { client ->
         with(client.start().proxy) {
             // Check if MGM CPI was already uploaded in previous run. Current validation only allows one MGM CPI.
             if (isMgm) {
@@ -141,7 +142,7 @@ fun E2eCluster.createVirtualNode(
     member: E2eClusterMember,
     cpiCheckSum: String
 ) {
-    clusterHttpClientFor(VirtualNodeRPCOps::class.java)
+    clusterHttpClientFor(VirtualNodeRestResource::class.java)
         .use { client ->
             client.start().proxy.createVirtualNode(
                 VirtualNodeRequest(
@@ -164,7 +165,7 @@ fun E2eCluster.keyExists(
     tenantId: String,
     cat: String
 ): Boolean {
-    return clusterHttpClientFor(KeysRpcOps::class.java)
+    return clusterHttpClientFor(KeysRestResource::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -189,7 +190,7 @@ fun E2eCluster.generateKeyPairIfNotExists(
     tenantId: String,
     cat: String
 ): String {
-    return clusterHttpClientFor(KeysRpcOps::class.java)
+    return clusterHttpClientFor(KeysRestResource::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -223,7 +224,7 @@ fun E2eCluster.assignSoftHsm(
     holdingId: String,
     cat: String
 ): HsmAssociationInfo {
-    return clusterHttpClientFor(HsmRpcOps::class.java)
+    return clusterHttpClientFor(HsmRestResource::class.java)
         .use { client ->
             client.start().proxy.assignSoftHsm(holdingId, cat)
         }
@@ -233,7 +234,7 @@ fun E2eCluster.register(
     holdingId: String,
     context: Map<String, String>
 ): RegistrationRequestProgress {
-    return clusterHttpClientFor(MemberRegistrationRpcOps::class.java)
+    return clusterHttpClientFor(MemberRegistrationRestResource::class.java)
         .use { client ->
             val proxy = client.start().proxy
             proxy.startRegistration(
@@ -258,34 +259,37 @@ fun E2eCluster.register(
 fun E2eCluster.generateGroupPolicy(
     holdingId: String
 ): String {
-    return clusterHttpClientFor(MGMRpcOps::class.java).use { client ->
+    return clusterHttpClientFor(MGMRestResource::class.java).use { client ->
         client.start().proxy.generateGroupPolicy(holdingId)
     }
 }
 
 fun E2eCluster.setUpNetworkIdentity(
     holdingId: String,
-    sessionKeyId: String
+    sessionKeyId: String,
+    useClusterLevelSessionKeyAndCert: Boolean? = null,
+    sessionCertificateChainAlias: String? = null
 ) {
-    clusterHttpClientFor(NetworkRpcOps::class.java).use { client ->
+    clusterHttpClientFor(NetworkRestResource::class.java).use { client ->
         client.start().proxy.setupHostedIdentities(
             holdingId,
             HostedIdentitySetupRequest(
-                TLS_CERT_ALIAS,
-                true,
-                null,
-                sessionKeyId
+                p2pTlsCertificateChainAlias = TLS_CERT_ALIAS,
+                useClusterLevelTlsCertificateAndKey = true,
+                useClusterLevelSessionCertificateAndKey = useClusterLevelSessionKeyAndCert,
+                sessionKeyId = sessionKeyId,
+                sessionCertificateChainAlias = sessionCertificateChainAlias
             )
         )
     }
 }
 
-fun E2eCluster.disableCLRChecks() {
+fun E2eCluster.disableGatewayCLRChecks() {
     val sslConfig = "sslConfig"
     val revocationCheck = "revocationCheck"
     val mode = "mode"
     val modeOff = "OFF"
-    clusterHttpClientFor(ConfigRPCOps::class.java).use { client ->
+    clusterHttpClientFor(ConfigRestResource::class.java).use { client ->
         val proxy = client.start().proxy
         val configResponse = proxy.get(GATEWAY_CONFIG)
         val config = ObjectMapper().readTree(
@@ -304,6 +308,29 @@ fun E2eCluster.disableCLRChecks() {
     }
 }
 
+fun E2eCluster.disableLinkManagerCLRChecks() {
+    val revocationCheck = "revocationCheck"
+    val mode = "mode"
+    val modeOff = "OFF"
+    clusterHttpClientFor(ConfigRestResource::class.java).use { client ->
+        val proxy = client.start().proxy
+        val configResponse = proxy.get(LINK_MANAGER_CONFIG)
+        val config = ObjectMapper().readTree(
+            configResponse.configWithDefaults
+        )
+        if (modeOff != config[revocationCheck][mode].asText()) {
+            proxy.updateConfig(
+                UpdateConfigParameters(
+                    LINK_MANAGER_CONFIG,
+                    configResponse.version,
+                    TestJsonObject("{ \"$revocationCheck\": { \"$mode\": \"$modeOff\" } }"),
+                    ConfigSchemaVersion(1, 0)
+                )
+            )
+        }
+    }
+}
+
 /**
  * Onboard all members in a cluster definition using a given CPI checksum.
  * Returns a map from member X500 name to holding ID.
@@ -311,7 +338,8 @@ fun E2eCluster.disableCLRChecks() {
 fun E2eCluster.onboardMembers(
     mgm: E2eClusterMember,
     memberGroupPolicy: String,
-    tempDir: Path
+    tempDir: Path,
+    useSessionCertificate: Boolean = false,
 ): List<E2eClusterMember> {
     val holdingIds = mutableListOf<E2eClusterMember>()
     val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray(), tempDir)
@@ -329,9 +357,21 @@ fun E2eCluster.onboardMembers(
         }
 
         val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)
+
+        if (useSessionCertificate) {
+            val memberSessionCsr = generateCsr(member, memberSessionKeyId, member.holdingId, addHostToSubjectAlternativeNames = false)
+            val memberSessionCert = getCa().generateCert(memberSessionCsr)
+            uploadSessionCertificate(memberSessionCert, member.holdingId)
+        }
+
         val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
 
-        setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
+        if (useSessionCertificate) {
+            setUpNetworkIdentity(member.holdingId, memberSessionKeyId, useClusterLevelSessionKeyAndCert = false, SESSION_CERT_ALIAS)
+        } else {
+            setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
+        }
+
 
         assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
         register(
@@ -356,7 +396,8 @@ fun E2eCluster.onboardMembers(
 
 fun E2eCluster.onboardMgm(
     mgm: E2eClusterMember,
-    tempDir: Path
+    tempDir: Path,
+    useSessionCertificate: Boolean = false,
 ) {
     val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), tempDir, true)
     createVirtualNode(mgm, cpiChecksum)
@@ -366,14 +407,29 @@ fun E2eCluster.onboardMgm(
     val mgmSessionKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_SESSION)
     val mgmECDHKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_PRE_AUTH)
 
-    register(
-        mgm.holdingId,
+    val mgmRegistrationContext = if (useSessionCertificate) {
+        val mgmSessionCsr = generateCsr(mgm, mgmSessionKeyId, mgm.holdingId, addHostToSubjectAlternativeNames = false)
+        val mgmSessionCert = getCa().generateCert(mgmSessionCsr)
+        uploadSessionCertificate(mgmSessionCert, mgm.holdingId)
         createMgmRegistrationContext(
-            tlsTrustRoot = getCa().caCertificate.toPem(),
+            caTrustRoot = getCa().caCertificate.toPem(),
+            sessionKeyId = mgmSessionKeyId,
+            ecdhKeyId = mgmECDHKeyId,
+            p2pUrl = p2pUrl,
+            sessionPkiMode = "Standard"
+        )
+    } else {
+        createMgmRegistrationContext(
+            caTrustRoot = getCa().caCertificate.toPem(),
             sessionKeyId = mgmSessionKeyId,
             ecdhKeyId = mgmECDHKeyId,
             p2pUrl = p2pUrl
         )
+    }
+
+    register(
+        mgm.holdingId,
+        mgmRegistrationContext,
     )
 
     assertOnlyMgmIsInMemberList(mgm.holdingId, mgm.name)
@@ -385,7 +441,11 @@ fun E2eCluster.onboardMgm(
         uploadTlsCertificate(mgmTlsCert)
     }
 
-    setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
+    if (useSessionCertificate) {
+        setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId, useClusterLevelSessionKeyAndCert = false, SESSION_CERT_ALIAS)
+    } else {
+        setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
+    }
 }
 
 fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {

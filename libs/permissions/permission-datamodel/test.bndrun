@@ -3,6 +3,13 @@
 -runee: JavaSE-11
 -runtrace: true
 
+-runvm: \
+    -DpostgresHost=${project.postgresHost},\
+    -DpostgresPort=${project.postgresPort},\
+    -DpostgresDb=${project.postgresDb},\
+    -DpostgresUser=${project.postgresUser},\
+    -DpostgresPassword=${project.postgresPassword}
+
 -runsystempackages: \
     sun.security.x509
 
@@ -22,11 +29,3 @@
 -runstartlevel: \
     order=sortbynameversion,\
     begin=-1
-
--runproperties: \
-    org.osgi.framework.bsnversion=multiple,\
-    postgresHost=${project.postgresHost},\
-    postgresPort=${project.postgresPort},\
-    postgresDb=${project.postgresDb},\
-    postgresUser=${project.postgresUser},\
-    postgresPassword=${project.postgresPassword}

@@ -4,7 +4,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.stream.Stream
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.flow.rpcops.v1.FlowClassRpcOps
+import net.corda.flow.rpcops.v1.FlowClassRestResource
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,7 +13,6 @@ import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -52,9 +51,8 @@ class FlowClassRPCOpsImplTest {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
-            VirtualNodeState.ACTIVE,
-            0,
-            Instant.now()
+            version = 0,
+            timestamp = Instant.now()
         )
     }
 
@@ -74,7 +72,7 @@ class FlowClassRPCOpsImplTest {
         context.run {
             testClass.start()
 
-            context.verifyIsDown<FlowClassRpcOps>()
+            context.verifyIsDown<FlowClassRestResource>()
         }
     }
 
@@ -84,14 +82,14 @@ class FlowClassRPCOpsImplTest {
         context.run {
             testClass.start()
             bringDependenciesUp()
-            context.verifyIsUp<FlowClassRpcOps>()
+            context.verifyIsUp<FlowClassRestResource>()
         }
     }
 
     @Test
     fun `Resource not found error when no vNode exists`() {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
-        val flowClassRPCOps = FlowClassRPCOpsImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
+        val flowClassRPCOps = FlowClassRestResourceImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
         assertThrows<ResourceNotFoundException> {
             flowClassRPCOps.getStartableFlows("1234567890ab")
         }
@@ -103,7 +101,7 @@ class FlowClassRPCOpsImplTest {
     fun `Resource not found error when no CPI exists`() {
         whenever(cpiInfoReadService.get(any())).thenReturn(null)
 
-        val flowClassRPCOps = FlowClassRPCOpsImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
+        val flowClassRPCOps = FlowClassRestResourceImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
         assertThrows<ResourceNotFoundException> {
             flowClassRPCOps.getStartableFlows("1234567890ab")
         }
@@ -113,19 +111,19 @@ class FlowClassRPCOpsImplTest {
 
     @Test
     fun `Get flow classes executes cpi service and vnode service and returns list of strings`() {
-        val flowClassRPCOps = FlowClassRPCOpsImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
+        val flowClassRPCOps = FlowClassRestResourceImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
         flowClassRPCOps.getStartableFlows("1234567890ab")
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
     }
 
-    private fun getFlowClassRPCOpsTestContext(): LifecycleTest<FlowClassRPCOpsImpl> {
+    private fun getFlowClassRPCOpsTestContext(): LifecycleTest<FlowClassRestResourceImpl> {
         return LifecycleTest {
             addDependency<LifecycleCoordinatorFactory>()
             addDependency<VirtualNodeInfoReadService>()
             addDependency<CpiInfoReadService>()
 
-            FlowClassRPCOpsImpl(
+            FlowClassRestResourceImpl(
                 coordinatorFactory,
                 virtualNodeInfoReadService,
                 cpiInfoReadService

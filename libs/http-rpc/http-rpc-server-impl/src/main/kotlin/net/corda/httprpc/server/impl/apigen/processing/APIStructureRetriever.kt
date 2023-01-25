@@ -2,9 +2,9 @@ package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.v5.base.util.contextLogger
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpGET
+import net.corda.httprpc.annotations.HttpPOST
+import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
@@ -13,17 +13,17 @@ import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.models.ResponseBody
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.httprpc.tools.annotations.validation.HttpRpcInterfaceValidator
+import net.corda.httprpc.tools.annotations.validation.RestInterfaceValidator
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import net.corda.httprpc.durablestream.api.isFiniteDurableStreamsMethod
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
-import net.corda.httprpc.annotations.HttpRpcDELETE
-import net.corda.httprpc.annotations.HttpRpcPUT
-import net.corda.httprpc.annotations.HttpRpcWS
-import net.corda.httprpc.annotations.isRpcEndpointAnnotation
+import net.corda.httprpc.PluggableRestResource
+import net.corda.httprpc.RestResource
+import net.corda.httprpc.annotations.HttpDELETE
+import net.corda.httprpc.annotations.HttpPUT
+import net.corda.httprpc.annotations.HttpWS
+import net.corda.httprpc.annotations.isRestEndpointAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.annotations.extensions.title
@@ -35,11 +35,11 @@ import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.kotlinFunction
 
 /**
- * [APIStructureRetriever] scans through the class, method and parameter annotations of the passed [PluggableRPCOps] list,
+ * [APIStructureRetriever] scans through the class, method and parameter annotations of the passed [PluggableRestResource] list,
  * generating a list of [Resource].
  */
 @Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown")
-internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
+internal class APIStructureRetriever(private val opsImplList: List<PluggableRestResource<*>>) {
     private companion object {
         private val log = contextLogger()
     }
@@ -48,7 +48,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
 
     private val delegationTargetsMap by lazy { retrieveImplMap() }
 
-    private fun retrieveImplMap(): Map<Class<out RpcOps>, PluggableRPCOps<*>> {
+    private fun retrieveImplMap(): Map<Class<out RestResource>, PluggableRestResource<*>> {
         try {
             log.trace { "Retrieve implementations by target interface map." }
             return opsImplList.mapNotNull { opsImpl ->
@@ -68,7 +68,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
             return opsImplList.mapNotNull {
                 retrieveTargetInterface(it)
             }.validated().map { c ->
-                val annotation = c.annotations.find { annotation -> annotation is HttpRpcResource } as HttpRpcResource
+                val annotation = c.annotations.find { annotation -> annotation is HttpRestResource } as HttpRestResource
                 val basePath = annotation.path(c)
                 Resource(
                     annotation.name(c),
@@ -85,11 +85,11 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         }
     }
 
-    private fun List<Class<out RpcOps>>.validated(): List<Class<out RpcOps>> {
+    private fun List<Class<out RestResource>>.validated(): List<Class<out RestResource>> {
         try {
             log.trace { "Validate resource classes: ${this.joinToString(",")}." }
             return this.apply {
-                val result = HttpRpcInterfaceValidator.validate(this)
+                val result = RestInterfaceValidator.validate(this)
                 if (result.errors.isNotEmpty()) {
                     throw IllegalArgumentException(
                         "Errors when validate resource classes:\n${
@@ -108,10 +108,10 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         }
     }
 
-    private fun retrieveTargetInterface(impl: PluggableRPCOps<*>): Class<out RpcOps>? {
+    private fun retrieveTargetInterface(impl: PluggableRestResource<*>): Class<out RestResource>? {
         try {
             log.trace { "Retrieve target interface for implementation \"${impl::class.java.name}\"." }
-            return impl.targetInterface.takeIf { it.annotations.any { annotation -> annotation is HttpRpcResource } }
+            return impl.targetInterface.takeIf { it.annotations.any { annotation -> annotation is HttpRestResource } }
                     .also {
                         log.trace {
                             "Retrieved target interface \"${impl.targetInterface.name}\" " +
@@ -126,7 +126,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         }
     }
 
-    private fun retrieveEndpoints(clazz: Class<out RpcOps>): List<Endpoint> {
+    private fun retrieveEndpoints(clazz: Class<out RestResource>): List<Endpoint> {
         try {
             log.trace { "Retrieve endpoints." }
             val methods = clazz.methods
@@ -142,16 +142,16 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
 
     private fun getEndpointsByAnnotations(methods: Array<Method>) =
         methods.sortedBy { it.name }.filter { method ->
-            method.annotations.singleOrNull { it.isRpcEndpointAnnotation() } != null
+            method.annotations.singleOrNull { it.isRestEndpointAnnotation() } != null
         }.map { method ->
             method.toEndpoint()
         }
 
-    private fun getImplicitGETEndpoints(methods: Array<Method>, clazz: Class<out RpcOps>) =
+    private fun getImplicitGETEndpoints(methods: Array<Method>, clazz: Class<out RestResource>) =
         methods.filter {
             isImplicitlyExposedGETMethod(it)
         }.map { method ->
-            HttpRpcGET::class.createInstance().let { annotation ->
+            HttpGET::class.createInstance().let { annotation ->
                 Endpoint(
                     EndpointMethod.GET,
                     annotation.title(method),
@@ -182,13 +182,13 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
     private fun Method.toEndpoint(): Endpoint {
         try {
             log.trace { "Method \"${this.name}\" to endpoint." }
-            val annotation = this.annotations.single { it.isRpcEndpointAnnotation() }
+            val annotation = this.annotations.single { it.isRestEndpointAnnotation() }
             return when (annotation) {
-                is HttpRpcGET -> this.toGETEndpoint(annotation)
-                is HttpRpcPOST -> this.toPOSTEndpoint(annotation)
-                is HttpRpcPUT -> this.toPUTEndpoint(annotation)
-                is HttpRpcDELETE -> this.toDELETEEndpoint(annotation)
-                is HttpRpcWS -> this.toWSEndpoint(annotation)
+                is HttpGET -> this.toGETEndpoint(annotation)
+                is HttpPOST -> this.toPOSTEndpoint(annotation)
+                is HttpPUT -> this.toPUTEndpoint(annotation)
+                is HttpDELETE -> this.toDELETEEndpoint(annotation)
+                is HttpWS -> this.toWSEndpoint(annotation)
                 else -> throw IllegalArgumentException("Unknown endpoint type for: ${this.name}")
             }.also { log.trace { "Method \"${this.name}\" to endpoint completed." } }
         } catch (e: Exception) {
@@ -199,7 +199,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         }
     }
 
-    private fun Method.toGETEndpoint(annotation: HttpRpcGET): Endpoint {
+    private fun Method.toGETEndpoint(annotation: HttpGET): Endpoint {
         log.trace { """Method "$name" to GET endpoint.""" }
         return Endpoint(
             EndpointMethod.GET,
@@ -217,7 +217,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         ).also { log.trace { """"Method "$name" to GET endpoint completed.""" } }
     }
 
-    private fun Method.toDELETEEndpoint(annotation: HttpRpcDELETE): Endpoint {
+    private fun Method.toDELETEEndpoint(annotation: HttpDELETE): Endpoint {
         log.trace { """Method "$name" to DELETE endpoint.""" }
         return Endpoint(
             EndpointMethod.DELETE,
@@ -235,7 +235,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         ).also { log.trace { """"Method "$name" to DELETE endpoint completed.""" } }
     }
 
-    private fun Method.toPOSTEndpoint(annotation: HttpRpcPOST): Endpoint {
+    private fun Method.toPOSTEndpoint(annotation: HttpPOST): Endpoint {
         log.trace { "Method \"${this.name}\" to POST endpoint." }
         val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
         val responseBody = when {
@@ -276,7 +276,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         ).also { log.trace { "Method \"${this.name}\" to POST endpoint completed." } }
     }
 
-    private fun Method.toPUTEndpoint(annotation: HttpRpcPUT): Endpoint {
+    private fun Method.toPUTEndpoint(annotation: HttpPUT): Endpoint {
         log.trace { "Method \"${this.name}\" to PUT endpoint." }
         val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
         val responseBody = when {
@@ -317,7 +317,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         ).also { log.trace { "Method \"${this.name}\" to PUT endpoint completed." } }
     }
 
-    private fun Method.toWSEndpoint(annotation: HttpRpcWS): Endpoint {
+    private fun Method.toWSEndpoint(annotation: HttpWS): Endpoint {
         log.trace { """Method "$name" to WS endpoint.""" }
         return Endpoint(
             EndpointMethod.WS,
@@ -335,7 +335,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
         ).also { log.trace { """"Method "$name" to WS endpoint completed.""" } }
     }
 
-    private fun Method.getInvocationMethod(clazz: Class<out RpcOps>? = null): InvocationMethod {
+    private fun Method.getInvocationMethod(clazz: Class<out RestResource>? = null): InvocationMethod {
         try {
             log.debug { "Get invocation method for \"${this.name}\"." }
             return InvocationMethod(

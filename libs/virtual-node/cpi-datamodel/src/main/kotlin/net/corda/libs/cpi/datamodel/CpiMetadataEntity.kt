@@ -59,7 +59,8 @@ data class CpiMetadataEntity(
     var fileUploadRequestId: String,
     @OneToMany(
         fetch = FetchType.EAGER,
-        cascade = [CascadeType.PERSIST, CascadeType.MERGE]
+        cascade = [CascadeType.PERSIST, CascadeType.MERGE],
+        orphanRemoval = true
     )
     @JoinColumns(
         JoinColumn(name = "cpi_name", referencedColumnName = "name", insertable = false, updatable = false),

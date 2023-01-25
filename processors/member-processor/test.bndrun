@@ -6,6 +6,13 @@
 #uncomment to remote debug
 # -runjdb: 5005
 
+-runvm: \
+    -DpostgresHost=${project.postgresHost},\
+    -DpostgresPort=${project.postgresPort},\
+    -DpostgresDb=${project.postgresDb},\
+    -DpostgresUser=${project.postgresUser},\
+    -DpostgresPassword=${project.postgresPassword}
+
 -runsystempackages: \
     sun.security.x509
 
@@ -25,6 +32,7 @@
     bnd.identity;id='net.corda.membership-service-impl',\
     bnd.identity;id='net.corda.membership-persistence-client-impl',\
     bnd.identity;id='net.corda.membership-p2p-impl',\
+    bnd.identity;id='net.corda.members-client-certificate-publisher-service-impl',\
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-client-hsm-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
@@ -56,12 +64,6 @@
     begin=-1
 
 -runproperties: \
-    org.osgi.framework.bsnversion=multiple,\
-    postgresHost=${project.postgresHost},\
-    postgresPort=${project.postgresPort},\
-    postgresDb=${project.postgresDb},\
-    postgresUser=${project.postgresUser},\
-    postgresPassword=${project.postgresPassword},\
     org.slf4j.simpleLogger.defaultLogLevel=info,\
     org.slf4j.simpleLogger.showShortLogName=true,\
     org.slf4j.simpleLogger.showThreadName=false,\

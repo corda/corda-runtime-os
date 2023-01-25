@@ -3,7 +3,7 @@ package net.corda.httprpc.server.impl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.CustomNonSerializableString
 import net.corda.httprpc.test.CustomUnsafeString
-import net.corda.httprpc.test.ResponseEntityRpcOpsImpl
+import net.corda.httprpc.test.ResponseEntityRestResourceImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.multipartDir
@@ -33,7 +33,7 @@ class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
             )
             server = HttpRpcServerImpl(
                 listOf(
-                    ResponseEntityRpcOpsImpl()
+                    ResponseEntityRestResourceImpl()
                 ),
                 ::securityManager,
                 httpRpcSettings,

@@ -25,7 +25,7 @@ fun normalizePath(path: String) = path.replace("//+".toRegex(), "/")
  *  Note: if liquibase tries to read the master changelog before fetching all the constituent changelog files then
  *  any which have not been fetched will not come through.
  *
- * @property list of [ChangeLogResourceFiles] that will be processed in order. Associated classloaders will be de-duped.
+ * @property changelogFiles of [ChangeLogResourceFiles] that will be processed in order. Associated classloaders will be de-duped.
  * @constructor Create initially empty Classloader change log
  */
 class ClassloaderChangeLog(
@@ -49,8 +49,9 @@ class ClassloaderChangeLog(
         val classLoader: ClassLoader = ChangeLogResourceFiles::class.java.classLoader
     ) {
         init {
-            if (masterFiles.isEmpty())
+            if (masterFiles.isEmpty()) {
                 throw IllegalArgumentException("masterFiles must have at least one item.")
+            }
         }
     }
 
@@ -114,8 +115,7 @@ class ClassloaderChangeLog(
         } else {
             fetchAllClassLoaders(path) ?: fetchAllClassLoaders(path, leaf = true)
         })
-        println("resolved $path to $stream across ${distinctLoaders}")
-        if (stream == null )  throw FileNotFoundException("Changelog $path not found across ${distinctLoaders.size} class loaders")
-        return stream
+        log.trace("resolved {} to {} across {}", path, stream, distinctLoaders)
+        return stream ?: throw FileNotFoundException("Changelog $path not found across ${distinctLoaders.size} class loaders")
     }
 }

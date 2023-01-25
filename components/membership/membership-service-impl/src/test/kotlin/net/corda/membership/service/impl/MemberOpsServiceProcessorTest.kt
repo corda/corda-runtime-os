@@ -20,6 +20,7 @@ import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -253,13 +254,15 @@ class MemberOpsServiceProcessorTest {
             it.assertThat(groupPolicy).contains("\"corda.groupId\":\"$MGM_GROUP_ID\"")
             it.assertThat(groupPolicy).contains("\"$CIPHER_SUITE\"")
             it.assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"OneWay\"")
+            it.assertThat(groupPolicy).doesNotContain(MGM_CLIENT_CERTIFICATE_SUBJECT)
         }
     }
 
     @Test
     fun `should parse TLS type if present`() {
         val testPropertiesWithMutualTls = testProperties +
-                (PropertyKeys.TLS_TYPE to "mutual")
+                (PropertyKeys.TLS_TYPE to "mutual") +
+                (PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT to "subject")
         val testPersistedGroupPolicyEntries =
             LayeredPropertyMapMocks.create<LayeredContextImpl>(testPropertiesWithMutualTls)
         whenever(
@@ -283,7 +286,9 @@ class MemberOpsServiceProcessorTest {
 
         val response = result.response as? MGMGroupPolicyResponse
         val groupPolicy = response?.groupPolicy
-        assertThat(groupPolicy).contains("\"$TLS_TYPE\":\"Mutual\"")
+        assertThat(groupPolicy)
+            .contains("\"$TLS_TYPE\":\"Mutual\"")
+            .contains("\"$MGM_CLIENT_CERTIFICATE_SUBJECT\":\"subject\"")
     }
 
     @Nested

@@ -7,7 +7,7 @@ import net.corda.configuration.write.impl.writer.RPCSubscriptionFactory
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -22,7 +22,7 @@ import org.mockito.kotlin.whenever
 
 /** Tests of [RPCSubscriptionFactory]. */
 class RPCSubscriptionFactoryTests {
-    private val configFactory = SmartConfigFactoryFactory.createWithoutSecurityServices()
+    private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
 
     /** Returns a mock [SubscriptionFactory]. */
     private fun getSubscriptionFactory() = mock<SubscriptionFactory>().apply {

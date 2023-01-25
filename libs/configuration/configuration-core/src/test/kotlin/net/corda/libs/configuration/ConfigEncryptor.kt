@@ -25,8 +25,10 @@ class ConfigEncryptor {
             EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to passphrase
         )
 
-        val configFactory = SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory()))
-            .create(ConfigFactory.parseMap(secretsConfig))
+        val configFactory = SmartConfigFactory.createWith(
+            ConfigFactory.parseMap(secretsConfig),
+            listOf(EncryptionSecretsServiceFactory())
+        )
         val config = configFactory.create(configSection)
 
         println("Config section:")

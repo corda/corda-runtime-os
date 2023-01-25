@@ -2,6 +2,7 @@ package net.corda.ledger.notary.plugin.factory.impl
 
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
+import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -21,12 +22,12 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
     service = [ PluggableNotaryClientFlowFactory::class, UsedByFlow::class, UsedByVerification::class, UsedByPersistence::class ],
-    property = [ "corda.system=true" ],
-    scope = ServiceScope.PROTOTYPE
+    property = [ CORDA_SYSTEM_SERVICE ],
+    scope = PROTOTYPE
 )
 class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
     @Reference(service = NotaryLookup::class)

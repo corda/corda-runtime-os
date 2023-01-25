@@ -146,7 +146,7 @@ class UtxoReceiveFinalityFlow(
         val notarySignaturesPayload = session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
 
         val notarySignatures = notarySignaturesPayload.getOrThrow { failure ->
-            val message = "Notarisation failed. Failure received from ${session.counterparty} for transaction " +
+            val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
                     "${transaction.id} with message: ${failure.message}"
             log.warn(message)
             CordaRuntimeException(message)

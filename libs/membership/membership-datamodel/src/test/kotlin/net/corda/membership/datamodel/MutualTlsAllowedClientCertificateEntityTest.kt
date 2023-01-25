@@ -5,7 +5,8 @@ import org.junit.jupiter.api.Test
 
 class MutualTlsAllowedClientCertificateEntityTest {
     private val entity = MutualTlsAllowedClientCertificateEntity(
-        "subject"
+        "subject",
+        false,
     )
 
     @Test
@@ -25,17 +26,17 @@ class MutualTlsAllowedClientCertificateEntityTest {
 
     @Test
     fun `equals return false for another subject`() {
-        assertThat(entity.equals(MutualTlsAllowedClientCertificateEntity("another"))).isFalse
+        assertThat(entity.equals(MutualTlsAllowedClientCertificateEntity("another", false))).isFalse
     }
 
     @Test
     fun `equals return true for same subject`() {
-        assertThat(entity.equals(MutualTlsAllowedClientCertificateEntity(entity.subject))).isTrue
+        assertThat(entity.equals(MutualTlsAllowedClientCertificateEntity(entity.subject, entity.isDeleted))).isTrue
     }
 
     @Test
     fun `hashCode returns a valid number`() {
         assertThat(entity.hashCode())
-            .isEqualTo(MutualTlsAllowedClientCertificateEntity(entity.subject).hashCode())
+            .isEqualTo(MutualTlsAllowedClientCertificateEntity(entity.subject, false).hashCode())
     }
 }

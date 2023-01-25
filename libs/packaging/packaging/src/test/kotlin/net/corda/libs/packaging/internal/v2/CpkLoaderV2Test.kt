@@ -38,7 +38,6 @@ class CpkLoaderV2Test {
                     ), cpk.metadata.libraries
                 )
             },
-            { assertEquals(0, cpk.metadata.dependencies.size) },
             { assertEquals(CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER, cpk.metadata.mainBundle) },
         )
     }

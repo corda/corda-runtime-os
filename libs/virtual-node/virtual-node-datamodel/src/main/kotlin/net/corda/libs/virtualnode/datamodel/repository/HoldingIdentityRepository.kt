@@ -11,13 +11,7 @@ interface HoldingIdentityRepository {
     @Suppress("LongParameterList")
     fun put(
         entityManager: EntityManager,
-        holdingIdentity: HoldingIdentity,
-        vaultDdlConnectionId: UUID?,
-        vaultDmlConnectionId: UUID,
-        cryptoDdlConnectionId: UUID?,
-        cryptoDmlConnectionId: UUID,
-        uniquenessDdlConnectionId: UUID?,
-        uniquenessDmlConnectionId: UUID?
+        holdingIdentity: HoldingIdentity
     )
 }
 

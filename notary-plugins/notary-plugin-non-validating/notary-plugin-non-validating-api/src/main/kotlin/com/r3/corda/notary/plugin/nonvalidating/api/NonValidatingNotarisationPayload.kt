@@ -4,6 +4,7 @@ import com.r3.corda.notary.plugin.common.BaseNotarisationPayload
 import com.r3.corda.notary.plugin.common.NotarisationRequestSignature
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import java.security.PublicKey
 
 /**
  * Container for the transaction and notarisation request signature.
@@ -12,9 +13,11 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 @CordaSerializable
 class NonValidatingNotarisationPayload(
     transaction: UtxoFilteredTransaction,
-    requestSignature: NotarisationRequestSignature
+    requestSignature: NotarisationRequestSignature,
+    notaryKey: PublicKey
 ): BaseNotarisationPayload(
     transaction,
     requestSignature,
+    notaryKey,
     listOf(UtxoFilteredTransaction::class.java)
 )

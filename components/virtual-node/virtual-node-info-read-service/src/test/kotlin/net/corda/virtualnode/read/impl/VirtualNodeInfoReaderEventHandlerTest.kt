@@ -24,7 +24,7 @@ internal class VirtualNodeInfoReaderEventHandlerTest {
         val event = ConfigChangedEvent(
             setOf(ConfigKeys.MESSAGING_CONFIG),
             mapOf(
-                ConfigKeys.RPC_CONFIG to config,
+                ConfigKeys.REST_CONFIG to config,
                 ConfigKeys.MESSAGING_CONFIG to config,
                 ConfigKeys.BOOT_CONFIG to config
             )

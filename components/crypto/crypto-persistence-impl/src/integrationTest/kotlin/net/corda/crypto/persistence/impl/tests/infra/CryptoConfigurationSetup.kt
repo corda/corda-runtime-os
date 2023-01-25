@@ -7,8 +7,9 @@ import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
+import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -109,13 +110,14 @@ object CryptoConfigurationSetup {
         )
 
     private fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
-        var cfg = SmartConfigFactoryFactory(listOf(EncryptionSecretsServiceFactory())).create(
+        var cfg = SmartConfigFactory.createWith(
             ConfigFactory.parseString(
                 """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase
             ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
         """.trimIndent()
-            )
+            ),
+            listOf(EncryptionSecretsServiceFactory())
         ).create(
             ConfigFactory
                 .parseString(MESSAGING_CONFIGURATION_VALUE)

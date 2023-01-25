@@ -2,10 +2,9 @@ package net.corda.ledger.common.testkit
 
 import java.security.KeyPairGenerator
 import java.security.PublicKey
+import java.security.spec.ECGenParameterSpec
 
-// TODO change this to something safer. (ECDSA)
-private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("RSA").also {
-    it.initialize(512)
-}
 
-val publicKeyExample: PublicKey = kpg.genKeyPair().public
+val publicKeyExample: PublicKey = KeyPairGenerator.getInstance("EC")
+    .apply { initialize(ECGenParameterSpec("secp256r1")) }
+    .generateKeyPair().public

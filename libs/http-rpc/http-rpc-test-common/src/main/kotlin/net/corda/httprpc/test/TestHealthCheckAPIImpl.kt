@@ -1,6 +1,6 @@
 package net.corda.httprpc.test
 
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
@@ -17,7 +17,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
-class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthCheckAPI>, Lifecycle {
+class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRestResource<TestHealthCheckAPI>, Lifecycle {
 
     private companion object {
         val log = contextLogger()

@@ -21,8 +21,10 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -31,10 +33,13 @@ import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.MemberInfo
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -69,14 +74,20 @@ class UtxoFinalityFlowTest {
     private val publicKeyAlice1 = mock<PublicKey>()
     private val publicKeyAlice2 = mock<PublicKey>()
     private val publicKeyBob = mock<PublicKey>()
-    private val publicKeyNotary = mock<PublicKey>()
+
+    private val publicKeyNotaryVNode1 = mock<PublicKey>()
+    private val publicKeyNotaryVNode2 = mock<PublicKey>()
+    private val invalidNotaryVNodeKey = mock<PublicKey>()
 
     private val notaryService = mock<Party>()
+    private val notaryServiceKey = mock<CompositeKey>()
 
     private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1, byteArrayOf(1, 2, 3))
     private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2, byteArrayOf(1, 2, 4))
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
-    private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotary, byteArrayOf(1, 2, 6))
+
+    private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotaryVNode1, byteArrayOf(1, 2, 6))
+    private val invalidNotarySignature = digitalSignatureAndMetadata(invalidNotaryVNodeKey, byteArrayOf(1, 2, 7))
 
     private val metadata = mock<TransactionMetadata>()
 
@@ -87,6 +98,8 @@ class UtxoFinalityFlowTest {
 
     private val pluggableNotaryClientFlow = mock<PluggableNotaryClientFlow>()
     private val ledgerTransaction = mock<UtxoLedgerTransaction>()
+
+    private val payloadCaptor = argumentCaptor<Payload<*>>()
 
     @BeforeEach
     fun beforeEach() {
@@ -138,11 +151,14 @@ class UtxoFinalityFlowTest {
         whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(
             pluggableNotaryClientFlow
         )
-        whenever(notaryService.owningKey).thenReturn(publicKeyNotary)
+
+        // Composite key containing both of the notary VNode keys
+        whenever(notaryServiceKey.leafKeys).thenReturn(setOf(publicKeyNotaryVNode1, publicKeyNotaryVNode2))
+        whenever(notaryService.owningKey).thenReturn(notaryServiceKey)
     }
 
     @Test
-    fun `receiving valid signatures over a transaction with successful notarisation leads to it being recorded and distributed for recording to passed in sessions`() {
+    fun `receiving valid signatures over a transaction with successful notarisation (from one of the notary VNodes) leads to it being recorded and distributed for recording to passed in sessions`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -256,6 +272,65 @@ class UtxoFinalityFlowTest {
     }
 
     @Test
+    fun `receiving a signature from a notary that is not part of the notary service composite key throws an error`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
+
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureBob
+                )
+            )
+        )
+        whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(invalidNotarySignature))
+
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Notary's signature has not been created by the transaction's notary")
+
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
+        verify(transactionSignatureService, never()).verifyNotarySignature(any(), eq(invalidNotarySignature))
+
+        verify(initialTx).addSignature(signatureAlice1)
+        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
+        verify(updatedTxSomeSigs).addSignature(signatureBob)
+        verify(updatedTxAllSigs, never()).addSignature(invalidNotarySignature)
+
+        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+
+        verify(sessionAlice).receive(Payload::class.java)
+        verify(sessionBob).receive(Payload::class.java)
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
+        verify(flowMessaging).sendAll(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>(), eq(sessions))
+        verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(invalidNotarySignature))), any())
+    }
+
+    @Test
     fun `receiving valid signatures over a transaction then receiving no signatures from notary throws`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
@@ -284,9 +359,12 @@ class UtxoFinalityFlowTest {
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf())
 
+        doNothing().whenever(flowMessaging).sendAll(payloadCaptor.capture(), eq(sessions))
+
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessage("Notary has not returned any signatures.")
+            .hasMessageContaining("Notary")
+            .hasMessageContaining("did not return any signatures after requesting notarization of transaction")
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
@@ -310,7 +388,10 @@ class UtxoFinalityFlowTest {
             )
         )
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
-        verify(flowMessaging).sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>("Notary has not returned any signatures."), sessions)
+        verify(flowMessaging).sendAll(any<Payload.Failure<*>>(), eq(sessions))
+        assertThat((payloadCaptor.firstValue as Payload.Failure<*>).message)
+            .contains("Notary")
+            .contains("did not return any signatures after requesting notarization of transaction")
     }
 
     @Test
@@ -636,7 +717,7 @@ class UtxoFinalityFlowTest {
     private fun digitalSignatureAndMetadata(publicKey: PublicKey, byteArray: ByteArray): DigitalSignatureAndMetadata {
         return DigitalSignatureAndMetadata(
             DigitalSignature.WithKey(publicKey, byteArray, emptyMap()),
-            DigitalSignatureMetadata(Instant.now(), emptyMap())
+            DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
     }
 }

@@ -1,7 +1,7 @@
 package net.corda.messaging.publisher
 
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.SmartConfigFactoryFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.producer.CordaProducer
@@ -59,7 +59,7 @@ class CordaPublisherImplTest {
             1,
             true,
             Duration.ofMillis(100L),
-            SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
+            SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         )
         producer = mock()
         whenever(producerBuilder.createProducer(any(), any())).thenReturn(producer)
@@ -259,7 +259,7 @@ class CordaPublisherImplTest {
             1,
             transactional,
             Duration.ofMillis(100L),
-            SmartConfigFactoryFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
+            SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         )
         return CordaPublisherImpl(publisherConfig, producerConfig, producerBuilder)
     }

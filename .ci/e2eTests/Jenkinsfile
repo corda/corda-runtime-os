@@ -98,7 +98,7 @@ pipeline {
 
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 45, unit: 'MINUTES')
         timestamps()
     }
 
@@ -178,7 +178,9 @@ pipeline {
                 // Bob's cluster is used as a primary access point by Smoke and E2E tests
                 INITIAL_ADMIN_USER_PASSWORD = "${E2E_CLUSTER_B_RPC_PASSWORD}"
             }
-
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
             steps {
                 script {
                     def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
