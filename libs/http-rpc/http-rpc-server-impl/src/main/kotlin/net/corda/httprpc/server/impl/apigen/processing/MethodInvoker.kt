@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.exception.ServiceUnavailableException
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
@@ -79,11 +79,11 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
         }
         val durableStreamContext = durableContexts.single() as DurableStreamContext
 
-        val rpcAuthContext = CURRENT_RPC_CONTEXT.get() ?: throw FailedLoginException("Missing authentication context.")
+        val rpcAuthContext = CURRENT_REST_CONTEXT.get() ?: throw FailedLoginException("Missing authentication context.")
         with(rpcAuthContext) {
             val rpcContextWithDurableStreamContext =
                 this.copy(invocation = this.invocation.copy(durableStreamContext = durableStreamContext))
-            CURRENT_RPC_CONTEXT.set(rpcContextWithDurableStreamContext)
+            CURRENT_REST_CONTEXT.set(rpcContextWithDurableStreamContext)
         }
 
         @Suppress("SpreadOperator")

@@ -17,7 +17,7 @@ dependencies {
     implementation "net.corda:corda-crypto"
 
     api project(":libs:http-rpc:http-rpc")
-    implementation project(":libs:http-rpc:http-rpc-common")
+    implementation project(":libs:http-rpc:rest-common")
     implementation project(":libs:http-rpc:rest-tools")
     implementation project(":libs:http-rpc:json-serialization")
     implementation project(":libs:utilities")

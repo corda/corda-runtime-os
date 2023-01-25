@@ -14,7 +14,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
@@ -138,7 +138,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         logger.info("Requesting synchronization of vault schema for virtual node '$virtualNodeShortId' with its current CPI.")
 
         val instant = clock.instant()
-        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val actor = CURRENT_REST_CONTEXT.get().principal
         val request = VirtualNodeManagementRequest(
             instant,
             VirtualNodeDBResetRequest(

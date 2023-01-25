@@ -14,8 +14,8 @@ import net.corda.httprpc.exception.ForbiddenException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
-import net.corda.httprpc.security.RpcAuthContext
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
+import net.corda.httprpc.security.RestAuthContext
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.packaging.core.CordappManifest
@@ -129,10 +129,10 @@ class FlowRPCOpsImplTest {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
         whenever(publisher.publish(any())).thenReturn(listOf(CompletableFuture<Unit>().apply { complete(Unit) }))
 
-        val rpcAuthContext = mock<RpcAuthContext>().apply {
+        val restAuthContext = mock<RestAuthContext>().apply {
             whenever(principal).thenReturn(loginName)
         }
-        CURRENT_RPC_CONTEXT.set(rpcAuthContext)
+        CURRENT_REST_CONTEXT.set(restAuthContext)
 
         whenever(permissionValidationService.permissionValidator).thenReturn(permissionValidator)
 
