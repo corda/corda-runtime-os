@@ -6,15 +6,19 @@ import java.util.UUID
 import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.e2etest.utilities.CLUSTER_URI
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.GROUP_ID
+import net.corda.e2etest.utilities.PASSWORD
+import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJson
+import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.httprpc.ResponseCode.CONFLICT
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
@@ -62,9 +66,9 @@ class VirtualNodeRpcTest {
     fun `can import codesigner certificate`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             assertWithRetry {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
@@ -84,13 +88,13 @@ class VirtualNodeRpcTest {
     fun `can upload CPI`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             val requestId =
-                cpiUpload(TEST_CPB_LOCATION, net.corda.e2etest.utilities.GROUP_ID, staticMemberList, cpiName)
+                cpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -139,9 +143,9 @@ class VirtualNodeRpcTest {
     fun `cannot upload CPI without group policy file aka CPB`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             val requestId = cpbUpload(TEST_CPB_LOCATION).let { it.toJson()["id"].textValue() }
@@ -172,12 +176,12 @@ class VirtualNodeRpcTest {
     fun `cannot upload same CPI`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             val requestId =
-                cpiUpload(TEST_CPB_LOCATION, net.corda.e2etest.utilities.GROUP_ID, staticMemberList, cpiName)
+                cpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -193,9 +197,9 @@ class VirtualNodeRpcTest {
     fun `cannot upload same CPI with different groupId`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             val requestId = cpiUpload(
                 TEST_CPB_LOCATION,
@@ -217,9 +221,9 @@ class VirtualNodeRpcTest {
     fun `can upload different CPI with same groupId`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             val requestId = cpiUpload(
                 TEST_CPB_LOCATION,
@@ -260,9 +264,9 @@ class VirtualNodeRpcTest {
     fun `list cpis`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             val json = assertWithRetry {
@@ -279,16 +283,16 @@ class VirtualNodeRpcTest {
     fun `list cpis and check group id matches value in group policy file`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             val json = cpiList().toJson()
             val cpiJson = json["cpis"].first { it["id"]["cpiName"].textValue() == cpiName}
 
             val groupPolicyJson = cpiJson["groupPolicy"].textValue().toJson()
-            assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(net.corda.e2etest.utilities.GROUP_ID)
+            assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(GROUP_ID)
         }
     }
 
@@ -297,9 +301,9 @@ class VirtualNodeRpcTest {
     fun `can create virtual node with holding id and CPI`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             val hash = getCpiChecksum(cpiName)
 
@@ -318,9 +322,9 @@ class VirtualNodeRpcTest {
     fun `cannot create duplicate virtual node`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             val hash = getCpiChecksum(cpiName)
 
@@ -336,9 +340,9 @@ class VirtualNodeRpcTest {
     fun `list virtual nodes`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             assertWithRetry {
@@ -359,9 +363,9 @@ class VirtualNodeRpcTest {
     fun `set virtual node state`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             val vnodesWithStates: List<Pair<String, String>> = vNodeList().toJson()["virtualNodes"].map {
                 it["holdingIdentity"]["shortHash"].textValue() to it["state"].textValue()
@@ -403,9 +407,9 @@ class VirtualNodeRpcTest {
     fun `cpi status returns 400 for unknown request id`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             assertWithRetry {
                 command { cpiStatus("THIS_WILL_NEVER_BE_A_CPI_STATUS") }
@@ -419,15 +423,14 @@ class VirtualNodeRpcTest {
     fun `can force upload same CPI`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
-            val requestId =
-                forceCpiUpload(TEST_CPB_LOCATION, net.corda.e2etest.utilities.GROUP_ID, staticMemberList, cpiName).let { it.toJson()["id"].textValue() }
+            val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             // BUG:  returning "OK" feels 'weakly' typed
@@ -448,9 +451,9 @@ class VirtualNodeRpcTest {
     fun `can run the uploaded CPI`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             runReturnAStringFlow("original-cpi")
@@ -462,9 +465,9 @@ class VirtualNodeRpcTest {
     fun `persist dog`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             runSimplePersistenceCheckFlow("Could persist dog")
@@ -476,16 +479,16 @@ class VirtualNodeRpcTest {
     fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId = forceCpiUpload(
                 CACHE_INVALIDATION_TEST_CPB,
-                net.corda.e2etest.utilities.GROUP_ID,
+                GROUP_ID,
                 staticMemberList,
                 cpiName
             )
@@ -508,9 +511,9 @@ class VirtualNodeRpcTest {
     fun `can run the force-uploaded CPI with a change to ReturnAStringFlow`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             runReturnAStringFlow("force-uploaded-cpi")
@@ -522,9 +525,9 @@ class VirtualNodeRpcTest {
     fun `Can sync DB and persist fish`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             // Status 204 indicates a non-error but no response data
             assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
@@ -538,15 +541,15 @@ class VirtualNodeRpcTest {
     fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
             val requestId =
-                forceCpiUpload(TEST_CPB_LOCATION, net.corda.e2etest.utilities.GROUP_ID, staticMemberList, cpiName)
+                forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -568,9 +571,9 @@ class VirtualNodeRpcTest {
     fun `Can sync DB again and persist dog`() {
         cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
             assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
 
@@ -609,7 +612,7 @@ class VirtualNodeRpcTest {
             val cpis = cpiList().toJson()["cpis"]
             val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
             assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
-            net.corda.e2etest.utilities.truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
+            truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
         }
         return cpiFileChecksum
     }

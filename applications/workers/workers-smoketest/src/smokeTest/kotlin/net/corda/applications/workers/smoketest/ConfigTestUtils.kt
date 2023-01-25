@@ -1,9 +1,12 @@
 package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.databind.JsonNode
-import kong.unirest.UnirestException
 import java.io.IOException
 import java.time.Duration
+import kong.unirest.UnirestException
+import net.corda.e2etest.utilities.CLUSTER_URI
+import net.corda.e2etest.utilities.PASSWORD
+import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.toJson
@@ -24,9 +27,9 @@ fun JsonNode.configWithDefaultsNode(): JsonNode =
 fun getConfig(section: String): JsonNode {
     return cluster {
         endpoint(
-            net.corda.e2etest.utilities.CLUSTER_URI,
-            net.corda.e2etest.utilities.USERNAME,
-            net.corda.e2etest.utilities.PASSWORD
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
         )
 
         assertWithRetryIgnoringExceptions {
@@ -44,9 +47,9 @@ fun getConfig(section: String): JsonNode {
 fun updateConfig(config: String, section: String) {
     return cluster {
         endpoint(
-            net.corda.e2etest.utilities.CLUSTER_URI,
-            net.corda.e2etest.utilities.USERNAME,
-            net.corda.e2etest.utilities.PASSWORD
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
         )
 
         val currentConfig = getConfig(section).body.toJson()
@@ -84,9 +87,9 @@ fun waitForConfigurationChange(section: String, key: String, value: String, expe
     .ofMinutes(1)) {
     cluster {
         endpoint(
-            net.corda.e2etest.utilities.CLUSTER_URI,
-            net.corda.e2etest.utilities.USERNAME,
-            net.corda.e2etest.utilities.PASSWORD
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
         )
 
         if (expectServiceToBeDown) {

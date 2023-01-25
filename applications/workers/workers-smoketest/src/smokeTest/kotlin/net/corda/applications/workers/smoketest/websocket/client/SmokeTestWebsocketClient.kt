@@ -3,6 +3,8 @@ package net.corda.applications.workers.smoketest.websocket.client
 import java.net.URI
 import java.time.Duration
 import java.util.LinkedList
+import net.corda.e2etest.utilities.PASSWORD
+import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.contextLogger
 import net.corda.e2etest.utilities.getOrThrow
 import net.corda.test.util.consistently
@@ -47,8 +49,8 @@ fun useWebsocketConnection(
 }
 
 class SmokeTestWebsocketClient(
-    private val username: String = net.corda.e2etest.utilities.USERNAME,
-    private val password: String = net.corda.e2etest.utilities.PASSWORD,
+    private val username: String = USERNAME,
+    private val password: String = PASSWORD,
     private val connectTimeout: Duration = Duration.ofSeconds(10),
 ) : AutoCloseable {
 

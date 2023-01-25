@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.e2etest.utilities.GROUP_ID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
+import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -34,7 +35,7 @@ class UtxoLedgerTests {
 
     private val testRunUniqueId = UUID.randomUUID()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
-    private val notaryCpiName = "${net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
+    private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
     private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"

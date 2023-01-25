@@ -3,6 +3,9 @@ package net.corda.applications.workers.smoketest
 import java.time.Instant
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import net.corda.e2etest.utilities.CLUSTER_URI
+import net.corda.e2etest.utilities.PASSWORD
+import net.corda.e2etest.utilities.USERNAME
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.cluster
 
@@ -11,9 +14,9 @@ object RbacTestUtils {
     fun getAllRbacRoles(): List<RbacRole> {
         return cluster {
             endpoint(
-                net.corda.e2etest.utilities.CLUSTER_URI,
-                net.corda.e2etest.utilities.USERNAME,
-                net.corda.e2etest.utilities.PASSWORD
+                CLUSTER_URI,
+                USERNAME,
+                PASSWORD
             )
 
             val bodyAsString = assertWithRetry {
