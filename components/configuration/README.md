@@ -43,7 +43,7 @@ Typically, this is the sequence for initialisation of configuration:
 13. `ConfigReadServiceEventHandler.setupSubscription` will also create a compacted topic Kafka subscription, 
      hooked up to the `ConfigProcessor` instance. The compacted topic forms a map of strings to `Configuration`
      objects. For example, with the combined worker, we would see 8 keys, such as "corda.membership" and
-     "corda.cryptoLibrary". The values in the map are Avro `Configuration` objects, which have:
+     "corda.cr yptoLibrary". The values in the map are Avro `Configuration` objects, which have:
         - a string field `value` which is a JSON representation, with defaults applied
         - a string field `source` which is a JSON representation, without defaults applied
         - an int field `version` (starts at 0)
@@ -66,5 +66,15 @@ Typically, this is the sequence for initialisation of configuration:
     which could be empty, then calling `ConfigurationValidatorImpl.validate` with that sparse config object.
 20. `ConfigurationValidatorImpl.validate` obtains the schema for the key in question from `SchemaProviderImpl`,
     then calling `ConfigurationValidatorImpl.validateConfigAndGetJSONNode`. This will throw exceptions if there
-    are mismatches and will set defaults in the config.
-21. TODO: describe typical ways config is accessed, via a `SmartConfig` object.
+    are mismatches and will set defaults in the config. 
+21. The resulting configuration JSON is posted to the compacted `CONFIG_TOPIC`
+22. The `ConfigurationReadService` is invoked by the lifecycle coordination code. (TODO: how) and invokes
+    `ComponentConfigHandler.onNewConfiguration`. 
+23. `ComponentConfigHandler.onNewConfiguration` is called with a config and the keys that have changed, and
+    posts a `ConfigChangdEvent` to the lifecycle coordinator it is associated with, with the full
+    config as a field of the event.
+24. The lifecycle coordinator calls the `processEvent` method of the component that instantiated it.
+25. The `processEvent` handler for `ConfigChangedEvent` should call the `getConfig` method with a string constant such as
+    `ConfigKeys.MESSAGING_CONFIG` and will get back a `SmartConfig` object.
+26. The `SmartConfig` object can be passed around within the business logic, and its methods
+    such as `getString` and `getInt` can be called when specific values are required.
