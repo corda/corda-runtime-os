@@ -10,21 +10,21 @@ import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
-import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.StringWriter
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 
 class DBTopicUtilIntegrationTest {
 
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val entityManagerFactoryFactory = EntityManagerFactoryFactoryImpl()
         private val lbm = LiquibaseSchemaMigratorImpl()

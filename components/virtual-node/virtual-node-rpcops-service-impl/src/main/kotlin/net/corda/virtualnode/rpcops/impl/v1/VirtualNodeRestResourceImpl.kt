@@ -1,6 +1,5 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
-import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.ExceptionEnvelope
@@ -37,19 +36,20 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.ClockFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import net.corda.virtualnode.rpcops.impl.v1.ExceptionTranslator.Companion.translate
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
 @Component(service = [PluggableRestResource::class])
@@ -69,7 +69,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
 
     private companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"

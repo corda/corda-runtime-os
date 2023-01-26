@@ -9,9 +9,9 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -27,7 +27,7 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
     private val knownValues = ConcurrentHashMap<K, V>()
 
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     internal val topicName = subscriptionConfig.eventTopic

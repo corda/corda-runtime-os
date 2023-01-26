@@ -3,12 +3,12 @@ package net.corda.virtualnode.rpcops.common.impl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 @Component(service = [VirtualNodeSenderFactory::class])
@@ -17,7 +17,7 @@ class VirtualNodeSenderFactoryImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
 ) : VirtualNodeSenderFactory {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

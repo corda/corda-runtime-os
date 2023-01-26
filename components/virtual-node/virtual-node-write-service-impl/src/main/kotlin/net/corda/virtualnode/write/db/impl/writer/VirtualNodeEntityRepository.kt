@@ -4,8 +4,8 @@ import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
@@ -16,7 +16,7 @@ internal class VirtualNodeEntityRepository(
     ) {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val SHORT_HASH_LENGTH: Int = 12
     }
 

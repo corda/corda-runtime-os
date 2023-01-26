@@ -13,13 +13,13 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicy
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(
@@ -49,7 +49,7 @@ class RestGateway @Activate constructor(
 ) : Lifecycle {
 
      companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         internal const val INTERNAL_PLUGGABLE_REST_RESOURCES = "internalPluggableRestResources"
 
          private fun <T> ComponentContext.fetchServices(refName: String): List<T> {

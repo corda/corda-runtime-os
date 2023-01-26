@@ -6,12 +6,12 @@ import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 
 class StatusPublisher(private val statusTopic: String, private val publisher: Publisher) {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val sequenceNumberByRequestId = mutableMapOf<String, Int>()

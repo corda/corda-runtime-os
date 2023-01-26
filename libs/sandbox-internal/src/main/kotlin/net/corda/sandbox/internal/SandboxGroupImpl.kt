@@ -10,9 +10,9 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.Bundle
+import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableMap
 
 /**
@@ -31,7 +31,7 @@ internal class SandboxGroupImpl(
 ) : SandboxGroupInternal {
 
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val metadata: Map<Bundle, CpkMetadata> = unmodifiableMap(cpkSandboxes.associate { cpk ->

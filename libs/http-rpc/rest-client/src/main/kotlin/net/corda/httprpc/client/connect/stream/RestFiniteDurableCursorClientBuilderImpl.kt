@@ -12,9 +12,9 @@ import net.corda.httprpc.durablestream.api.Cursor
 import net.corda.httprpc.durablestream.api.FiniteDurableCursor
 import net.corda.httprpc.durablestream.api.FiniteDurableCursorBuilder
 import net.corda.httprpc.durablestream.api.PositionManager
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
 import java.time.Duration
@@ -43,7 +43,7 @@ private class RestFiniteDurableCursorClientImpl(
     override val positionManager: PositionManager
 ) : FiniteDurableCursor<Any> {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun poll(maxCount: Int, awaitForResultTimeout: Duration): Cursor.PollResult<Any> {

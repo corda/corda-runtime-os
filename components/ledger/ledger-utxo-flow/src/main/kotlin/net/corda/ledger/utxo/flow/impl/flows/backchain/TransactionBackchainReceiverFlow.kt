@@ -9,10 +9,10 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class TransactionBackchainReceiverFlow(
@@ -22,7 +22,7 @@ class TransactionBackchainReceiverFlow(
 ) : SubFlow<TopologicalSort> {
 
     private companion object {
-        val log = loggerFor<TransactionBackchainReceiverFlow>()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

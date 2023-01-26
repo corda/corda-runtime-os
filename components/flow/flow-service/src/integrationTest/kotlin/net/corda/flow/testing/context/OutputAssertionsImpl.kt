@@ -21,7 +21,6 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -30,6 +29,7 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.slf4j.LoggerFactory
 
 class OutputAssertionsImpl(
     private val serializer: CordaAvroSerializer<Any>,
@@ -42,7 +42,7 @@ class OutputAssertionsImpl(
 ) : OutputAssertions {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     val asserts = mutableListOf<(TestRun) -> Unit>()

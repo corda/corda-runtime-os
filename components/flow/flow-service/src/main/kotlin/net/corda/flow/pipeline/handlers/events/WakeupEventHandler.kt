@@ -3,15 +3,15 @@ package net.corda.flow.pipeline.handlers.events
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowEventHandler::class])
 class WakeupEventHandler : FlowEventHandler<Wakeup> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val type = Wakeup::class.java

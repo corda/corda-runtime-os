@@ -6,7 +6,6 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType.FLOW
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.OBJECTCLASS
@@ -14,13 +13,14 @@ import org.osgi.framework.Constants.SCOPE_SINGLETON
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableSet
 import java.util.LinkedList
 
 @Component(service = [SandboxDependencyInjectorFactory::class])
 class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
     private companion object {
-        private val logger = loggerFor<SandboxDependencyInjectorFactoryImpl>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val INJECTOR_FILTER = "(&$CORDA_SANDBOX_FILTER($SERVICE_SCOPE=$SCOPE_SINGLETON))"
         private val FORBIDDEN_INTERFACES: Set<String> = unmodifiableSet(setOf(
             SingletonSerializeAsToken::class.java.name,

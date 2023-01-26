@@ -5,7 +5,6 @@ import net.corda.securitymanager.ConditionalPermission.Access.ALLOW
 import net.corda.securitymanager.ConditionalPermission.Access.DENY
 import net.corda.securitymanager.SecurityManagerException
 import net.corda.securitymanager.SecurityManagerService
-import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -13,6 +12,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
 import org.osgi.service.condpermadmin.ConditionalPermissionInfo
 import org.osgi.service.permissionadmin.PermissionInfo
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.io.InputStream
 import java.security.Security
@@ -27,7 +27,7 @@ class SecurityManagerServiceImpl @Activate constructor(
     bundleContext: BundleContext
 ) : SecurityManagerService {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val PACKAGE_ACCESS_PROPERTY = "package.access"
         private const val DEFAULT_SECURITY_POLICY = "high_security.policy"
         private val ALL_PERMISSION_POLICY = listOf(

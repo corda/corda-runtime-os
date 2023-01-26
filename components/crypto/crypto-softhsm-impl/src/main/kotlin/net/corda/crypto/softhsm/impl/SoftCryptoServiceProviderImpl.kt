@@ -22,12 +22,12 @@ import net.corda.crypto.softhsm.WRAPPING_DEFAULT_NAME
 import net.corda.crypto.softhsm.WRAPPING_HSM_NAME
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * The service ranking is set to the smallest possible number to allow the upstream implementation to pick other
@@ -54,7 +54,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     )
 ), SoftCryptoServiceProvider {
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 

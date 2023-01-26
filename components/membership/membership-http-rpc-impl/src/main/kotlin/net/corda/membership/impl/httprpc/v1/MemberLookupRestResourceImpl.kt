@@ -11,7 +11,6 @@ import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
@@ -20,6 +19,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Component(service = [PluggableRestResource::class])
 class MemberLookupRestResourceImpl @Activate constructor(
@@ -31,7 +31,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : MemberLookupRestResource, PluggableRestResource<MemberLookupRestResource>, Lifecycle {
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private interface InnerMemberLookupRpcOps {

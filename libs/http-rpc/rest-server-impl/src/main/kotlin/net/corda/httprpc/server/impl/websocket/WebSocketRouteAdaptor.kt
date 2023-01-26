@@ -18,7 +18,7 @@ import net.corda.httprpc.server.impl.context.ContextUtils.retrieveParameters
 import net.corda.httprpc.server.impl.security.RestAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.ws.DuplexChannel
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode.POLICY_VIOLATION
 
@@ -41,7 +41,7 @@ internal class WebSocketRouteAdaptor(
 ) : WsMessageHandler, WsCloseHandler, WsConnectHandler, WsErrorHandler, AutoCloseable {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val channelsBySessionId = ConcurrentHashMap<SessionId, DuplexChannel>()

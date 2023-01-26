@@ -18,9 +18,9 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Handle the events inside the [VirtualNodeInfo] service component.
@@ -34,7 +34,7 @@ class VirtualNodeInfoReaderEventHandler(
 ) : LifecycleEventHandler {
     companion object {
         internal const val GROUP_NAME = "VIRTUAL_NODE_INFO_READER"
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var subscription: CompactedSubscription<HoldingIdentity, VirtualNodeInfo>? = null

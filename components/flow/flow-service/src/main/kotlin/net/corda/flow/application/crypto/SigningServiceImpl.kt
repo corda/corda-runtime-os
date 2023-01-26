@@ -8,7 +8,6 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -17,6 +16,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 @Component(
@@ -31,7 +31,7 @@ class SigningServiceImpl @Activate constructor(
 ) : SigningService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable

@@ -24,11 +24,11 @@ import net.corda.membership.service.MemberOpsService
 import net.corda.membership.synchronisation.SynchronisationProxy
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.member.internal.lifecycle.MemberProcessorLifecycleHandler
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [MemberProcessor::class])
@@ -76,7 +76,7 @@ class MemberProcessorImpl @Activate constructor(
 ) : MemberProcessor {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dependentComponents = DependentComponents.of(

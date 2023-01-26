@@ -36,7 +36,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 class RegistrationProcessor(
@@ -59,7 +59,7 @@ class RegistrationProcessor(
     override val eventValueClass = RegistrationCommand::class.java
 
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val memberTypeChecker = MemberTypeChecker(membershipGroupReaderProvider)

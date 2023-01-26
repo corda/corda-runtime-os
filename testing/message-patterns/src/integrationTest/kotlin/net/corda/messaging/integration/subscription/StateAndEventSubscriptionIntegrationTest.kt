@@ -44,7 +44,6 @@ import net.corda.messaging.integration.processors.TestStateEventProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessorStrings
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions
@@ -57,6 +56,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -67,7 +67,7 @@ class StateAndEventSubscriptionIntegrationTest {
     private lateinit var publisher: Publisher
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CLIENT_ID = "integrationTestEventPublisher"
         const val EVENTSTATE_OUTPUT2 = "EventStateOutputTopic2"

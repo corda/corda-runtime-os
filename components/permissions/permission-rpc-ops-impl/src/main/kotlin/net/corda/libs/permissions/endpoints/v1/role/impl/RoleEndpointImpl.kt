@@ -20,10 +20,10 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * An RPC Ops endpoint for Role operations.
@@ -37,7 +37,7 @@ class RoleEndpointImpl @Activate constructor(
 ) : RoleEndpoint, PluggableRestResource<RoleEndpoint>, Lifecycle {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @Suppress("ThrowsCount")
         private fun PermissionManager.checkProtectedRole(roleId: String, principal: String) {

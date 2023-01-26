@@ -1,6 +1,5 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
-import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
@@ -31,14 +30,14 @@ import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.lang.Exception
+import org.slf4j.LoggerFactory
+import java.time.Duration
 
 @Suppress("unused")
 @Component(service = [PluggableRestResource::class])
@@ -55,7 +54,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
 
     companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"

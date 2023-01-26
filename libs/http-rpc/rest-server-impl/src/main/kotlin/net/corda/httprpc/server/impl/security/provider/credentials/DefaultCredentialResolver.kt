@@ -4,14 +4,14 @@ import io.javalin.core.util.Header.AUTHORIZATION
 import net.corda.httprpc.server.impl.context.ClientRequestContext
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.trace
 import javax.security.auth.login.FailedLoginException
 
 internal class DefaultCredentialResolver : CredentialResolver {
     companion object {
         private val TOKEN_PATTERN = "^Bearer (?<token>[a-zA-Z0-9-._~+/]+=*)$".toRegex()
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun resolve(context: ClientRequestContext): AuthenticationCredentials? {

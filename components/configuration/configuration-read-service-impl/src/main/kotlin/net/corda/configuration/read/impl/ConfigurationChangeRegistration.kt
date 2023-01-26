@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.Resource
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
 class ConfigurationChangeRegistration(
@@ -13,7 +13,7 @@ class ConfigurationChangeRegistration(
 ) : Resource {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val isClosed = AtomicBoolean(false)

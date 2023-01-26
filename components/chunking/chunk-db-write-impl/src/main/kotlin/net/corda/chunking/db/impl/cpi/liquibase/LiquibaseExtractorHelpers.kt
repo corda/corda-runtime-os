@@ -4,7 +4,7 @@ import net.corda.db.admin.LiquibaseXmlConstants.DB_CHANGE_LOG_ROOT_ELEMENT
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.packaging.Cpk
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.StringReader
@@ -19,7 +19,7 @@ import javax.xml.stream.events.XMLEvent
 class LiquibaseExtractorHelpers {
     companion object {
         private const val MIGRATION_FOLDER = "migration"
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

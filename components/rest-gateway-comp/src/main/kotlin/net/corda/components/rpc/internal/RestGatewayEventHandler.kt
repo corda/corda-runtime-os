@@ -41,7 +41,7 @@ import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.function.Supplier
 
 @Suppress("LongParameterList")
@@ -56,7 +56,7 @@ internal class RestGatewayEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val MULTI_PART_DIR = "multipart"
 

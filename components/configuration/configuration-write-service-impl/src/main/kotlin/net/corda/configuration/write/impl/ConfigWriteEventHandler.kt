@@ -15,15 +15,15 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
 internal class ConfigWriteEventHandler(
     private val rpcSubscriptionFactory: RPCSubscriptionFactory,
     private val configMerger: ConfigMerger) : LifecycleEventHandler {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var rpcSubscription: ConfigurationManagementRPCSubscription? = null

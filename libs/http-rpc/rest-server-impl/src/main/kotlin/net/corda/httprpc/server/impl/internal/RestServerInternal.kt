@@ -26,7 +26,7 @@ import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.eclipse.jetty.http2.HTTP2Cipher
@@ -58,7 +58,7 @@ internal class RestServerInternal(
 ) {
 
     internal companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @VisibleForTesting
         internal const val SSL_PASSWORD_MISSING =

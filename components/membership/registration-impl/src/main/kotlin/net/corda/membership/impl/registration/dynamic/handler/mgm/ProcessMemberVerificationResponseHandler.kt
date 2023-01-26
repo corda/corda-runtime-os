@@ -29,10 +29,10 @@ import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PENDING_AUTO_APPROVAL
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberContext
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class ProcessMemberVerificationResponseHandler(
@@ -49,7 +49,7 @@ internal class ProcessMemberVerificationResponseHandler(
     ),
 ) : RegistrationHandler<ProcessMemberVerificationResponse> {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val commandType = ProcessMemberVerificationResponse::class.java

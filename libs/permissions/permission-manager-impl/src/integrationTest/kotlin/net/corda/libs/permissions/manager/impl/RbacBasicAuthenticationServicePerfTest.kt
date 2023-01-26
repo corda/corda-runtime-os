@@ -4,25 +4,23 @@ import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.permissions.password.impl.PasswordServiceImpl
-import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.slf4j.LoggerFactory
 import java.security.SecureRandom
 import java.time.Instant
-
 import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.Collectors
 
 class RbacBasicAuthenticationServicePerfTest {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val userLogons: List<String> = (1..10).map { "user$it" }
         const val repsCount = 1_000
         const val PERF_THRESHOLD_MS = 10_000L
