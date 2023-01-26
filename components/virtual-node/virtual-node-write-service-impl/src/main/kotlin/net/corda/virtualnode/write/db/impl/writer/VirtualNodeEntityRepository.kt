@@ -70,4 +70,26 @@ internal class VirtualNodeEntityRepository(
         val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
+
+    internal fun getCPIMetadataByNameAndVersion(name: String, version: String, signerSummaryHash: String): CpiMetadataLite? {
+        val cpiMetadataEntity = entityManagerFactory.use {
+            it.transaction {
+                it.createQuery(
+                    "SELECT cpi FROM CpiMetadataEntity cpi " +
+                            "WHERE cpi.name = :cpiName "+
+                            "AND cpi.version = :cpiVersion "+
+                            "AND cpi.signerSummaryHash = :signerSummaryHash ",
+                    CpiMetadataEntity::class.java
+                )
+                    .setParameter("cpiName", name)
+                    .setParameter("cpiVersion", version)
+                    .setParameter("signerSummaryHash", signerSummaryHash)
+                    .singleResult
+            }
+        }
+
+        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, SecureHash.parse(cpiMetadataEntity.signerSummaryHash))
+        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
+        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
+    }
 }

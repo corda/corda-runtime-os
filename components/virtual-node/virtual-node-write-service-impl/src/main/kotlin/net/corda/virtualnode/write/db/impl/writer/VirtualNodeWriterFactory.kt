@@ -52,7 +52,7 @@ internal class VirtualNodeWriterFactory(
     fun create(messagingConfig: SmartConfig): VirtualNodeWriter {
         val virtualNodeInfoPublisher = createPublisher(messagingConfig)
         val rpcSubscription = createRPCSubscription(messagingConfig, virtualNodeInfoPublisher)
-        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig)
+        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig, virtualNodeInfoPublisher)
         return VirtualNodeWriter(rpcSubscription, asyncOperationSubscription, virtualNodeInfoPublisher)
     }
 
@@ -61,13 +61,15 @@ internal class VirtualNodeWriterFactory(
      */
     private fun createAsyncOperationSubscription(
         messagingConfig: SmartConfig,
+        virtualNodeInfoPublisher: Publisher,
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
         val oldVirtualNodeEntityRepository = VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
 
         val virtualNodeUpgradeHandler = VirtualNodeUpgradeOperationHandler(
             dbConnectionManager.getClusterEntityManagerFactory(),
-            oldVirtualNodeEntityRepository
+            oldVirtualNodeEntityRepository,
+            virtualNodeInfoPublisher
         )
         val asyncOperationProcessor = VirtualNodeAsyncOperationProcessor(virtualNodeUpgradeHandler)
 
@@ -77,7 +79,7 @@ internal class VirtualNodeWriterFactory(
     }
 
     /**
-     * Creates a [Publisher] using the provided [config] and [instanceId].
+     * Creates a [Publisher] using the provided [config].
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */

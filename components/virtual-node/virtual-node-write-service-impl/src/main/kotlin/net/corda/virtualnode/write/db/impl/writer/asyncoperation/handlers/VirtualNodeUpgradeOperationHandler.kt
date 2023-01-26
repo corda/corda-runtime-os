@@ -5,11 +5,14 @@ import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
+import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
@@ -21,6 +24,7 @@ import javax.persistence.EntityManagerFactory
 internal class VirtualNodeUpgradeOperationHandler(
     private val entityManagerFactory: EntityManagerFactory,
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
+    private val virtualNodeInfoPublisher: Publisher,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
 
@@ -33,53 +37,63 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestId: String,
         request: VirtualNodeUpgradeRequest
     ): Record<*, *>? {
-        log.info("Virtual node upgrade operation $request. requested at $requestTimestamp")
-        upgradeVirtualNodeCpi(requestId, request)
+        log.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
+        request.validateFields()
+
+        upgradeVirtualNodeCpi(requestId, request.virtualNodeShortHash, request.cpiFileChecksum)
+
         return null
     }
 
     private fun upgradeVirtualNodeCpi(
         requestId: String,
-        request: VirtualNodeUpgradeRequest
+        virtualNodeShortHash: String,
+        targetCpiFileChecksum: String
     ) {
-        try {
-            request.validateFields()
+        val vnodeInfo = entityManagerFactory.createEntityManager().transaction { em ->
 
-            entityManagerFactory.createEntityManager().transaction { em ->
+            val currentVirtualNode = findCurrentVirtualNode(em, virtualNodeShortHash)
+            val targetCpiMetadata = findTargetCpi(targetCpiFileChecksum)
+            val originalCpiMetadata = findCurrentCpi(
+                currentVirtualNode.cpiIdentifier.name,
+                currentVirtualNode.cpiIdentifier.version,
+                currentVirtualNode.cpiIdentifier.signerSummaryHash.toString()
+            )
 
-                val currentVirtualNode = findCurrentVirtualNode(em, request.virtualNodeShortHash)
-                val targetCpiMetadata = findUpgradeCpi(request.cpiFileChecksum)
-                val originalCpiMetadata = findCurrentCpiMetadata(
-                    currentVirtualNode.cpiIdentifier.name, currentVirtualNode.cpiIdentifier.version
-                )
+            validateCpiInSameGroup(originalCpiMetadata, targetCpiMetadata)
 
-                validateCpiInSameGroup(originalCpiMetadata, targetCpiMetadata)
-
-                val updatedVirtualNode = virtualNodeRepository.upgradeVirtualNodeCpi(
-                    em,
-                    currentVirtualNode.holdingIdentity.shortHash.toString(),
-                    targetCpiMetadata.id.name,
-                    targetCpiMetadata.id.version,
-                    targetCpiMetadata.id.signerSummaryHash.toString()
-                )
-
-                log.info(
-                    "Virtual node upgrade request $requestId successful. Virtual node " +
-                            "${updatedVirtualNode.holdingIdentity.shortHash} successfully upgraded to CPI " +
-                            "${targetCpiMetadata.id.name}, ${targetCpiMetadata.id.version} (${targetCpiMetadata.fileChecksum}"
-                )
-
-                // todo cs - publish virtual node info
-
-            }
-        } catch (e: Exception) {
-            log.error("Error upgrading virtual node (request ID: $requestId) to cpi ${request.cpiFileChecksum}", e)
+            val cpiName = targetCpiMetadata.id.name
+            val cpiVersion = targetCpiMetadata.id.version
+            val cpiSignerSummaryHash = targetCpiMetadata.id.signerSummaryHash.toString()
+            virtualNodeRepository.upgradeVirtualNodeCpi(
+                em,
+                virtualNodeShortHash,
+                cpiName,
+                cpiVersion,
+                cpiSignerSummaryHash
+            )
         }
+
+        virtualNodeInfoPublisher.publish(
+            listOf(
+                Record(
+                    Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
+                    vnodeInfo.holdingIdentity.toAvro(),
+                    vnodeInfo.toAvro()
+                )
+            )
+        )
+
+        log.info(
+            "Virtual node upgrade complete ($requestId) - Virtual node " +
+                    "${vnodeInfo.holdingIdentity.shortHash} successfully upgraded to CPI " +
+                    "name: ${vnodeInfo.cpiIdentifier.name}, version: ${vnodeInfo.cpiIdentifier.version}"
+        )
     }
 
 
-    private fun findCurrentCpiMetadata(cpiName: String, cpiVersion: String): CpiMetadataLite {
-        return requireNotNull(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(cpiName, cpiVersion)) {
+    private fun findCurrentCpi(cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String): CpiMetadataLite {
+        return requireNotNull(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(cpiName, cpiVersion, cpiSignerSummaryHash)) {
             "CPI with name $cpiName, version $cpiVersion was not found."
         }
     }
@@ -99,7 +113,7 @@ internal class VirtualNodeUpgradeOperationHandler(
     }
 
 
-    private fun findUpgradeCpi(cpiFileChecksum: String): CpiMetadataLite {
+    private fun findTargetCpi(cpiFileChecksum: String): CpiMetadataLite {
         return oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(cpiFileChecksum)
             ?: throw CpiNotFoundException("CPI with file checksum $cpiFileChecksum was not found.")
     }

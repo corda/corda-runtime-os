@@ -21,9 +21,10 @@ class VirtualNodeValidationServiceImplTest {
 
     private val validationService = VirtualNodeValidationServiceImpl(virtualNodeInfoReadService, cpiInfoReadService)
     private val vnodeId = "aaaa1111bbbb"
-    private val cpiFileChecksum = "SHA-256:2234567800"
+    private val cpiFileChecksum = "2234567800"
+    private val cpiFileChecksumFull = "SHA-256:2234567800"
     private val vnodeShortHash = ShortHash.of(vnodeId)
-    private val cpiSecureHash = SecureHash.parse(cpiFileChecksum)
+    private val cpiSecureHash = SecureHash.parse(cpiFileChecksumFull)
 
     @Test
     fun `validateVirtualNodeExists throws resource not found if vnode not found`() {

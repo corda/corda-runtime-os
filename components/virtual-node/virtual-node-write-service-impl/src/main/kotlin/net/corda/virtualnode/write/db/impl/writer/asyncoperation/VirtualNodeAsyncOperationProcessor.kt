@@ -17,17 +17,23 @@ internal class VirtualNodeAsyncOperationProcessor(
     override fun onNext(events: List<Record<String, VirtualNodeAsynchronousRequest>>): List<Record<*, *>> {
         log.info("Received ${events.size} asynchronous virtual node operation requests.")
         events.map { record ->
-            when (val typedRequest = record.value?.request) {
-                is VirtualNodeUpgradeRequest -> {
-                    virtualNodeUpgradeHandler.handle(
-                        record.value!!.timestamp,
-                        record.value!!.requestId,
-                        typedRequest
-                    )
+            try {
+                when (val typedRequest = record.value?.request) {
+                    is VirtualNodeUpgradeRequest -> {
+                        virtualNodeUpgradeHandler.handle(
+                            record.value!!.timestamp,
+                            record.value!!.requestId,
+                            typedRequest
+                        )
+                    }
+                    null -> log.warn("Received null payload for asynchronous virtual node operation not supported: $record")
+                    else -> log.warn("Asynchronous virtual node operation not supported: $record")
                 }
-
-                null -> log.warn("Received null payload for asynchronous virtual node operation not supported: $record")
-                else -> log.warn("Asynchronous virtual node operation not supported: $record")
+            } catch (e: Exception) {
+                log.warn(
+                    "Error while processing asynchronous virtual node operation key: ${record.key}, requestId: ${record.value?.requestId}",
+                    e
+                )
             }
         }
         return emptyList()
