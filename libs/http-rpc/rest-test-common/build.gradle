@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Corda HTTP RPC Test Common'
+description 'Corda REST Test Common'
 
 
 dependencies {

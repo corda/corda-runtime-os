@@ -6,7 +6,7 @@ import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.durablestream.api.FiniteDurableCursorBuilder
 import java.time.DayOfWeek
 
-@HttpRestResource(name = "CalendarRestResource", description = "Calendar RPC Ops", path = "calendar")
+@HttpRestResource(name = "CalendarRestResource", description = "Calendar REST resource", path = "calendar")
 interface CalendarRestResource : RestResource {
 
     data class CalendarDay(val dayOfWeek: DayOfWeek, val dayOfYear: String)
