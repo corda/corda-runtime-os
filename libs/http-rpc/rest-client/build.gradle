@@ -38,7 +38,7 @@ dependencies {
     testRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(":libs:http-rpc:rest-server")
-    integrationTestImplementation project(":libs:http-rpc:http-rpc-server-impl")
+    integrationTestImplementation project(":libs:http-rpc:rest-server-impl")
     integrationTestImplementation project(':libs:http-rpc:rest-stubs-impl')
     integrationTestImplementation project(':libs:utilities')
     integrationTestImplementation project(':libs:http-rpc:ssl-cert-read')

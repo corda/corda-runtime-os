@@ -1,0 +1,73 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Corda REST Server Impl'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly 'org.osgi:osgi.core'
+    implementation project(":osgi-framework-api")
+
+    implementation project(":libs:http-rpc:rest")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:utilities")
+    implementation project(":libs:http-rpc:rest-tools")
+    implementation project(':libs:http-rpc:http-rpc-security-read')
+    implementation project(':libs:http-rpc:json-serialization')
+    implementation project(':libs:metrics')
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-application"
+
+    implementation project(":libs:http-rpc:rest-server")
+    implementation "net.corda:corda-crypto"
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:1.0_1"
+    implementation "org.eclipse.jetty.websocket:websocket-servlet:$jettyVersion"
+    implementation "org.eclipse.jetty.websocket:websocket-server:$jettyVersion"
+    implementation "org.eclipse.jetty.http2:http2-server:$jettyVersion"
+    implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
+    constraints {
+        implementation("org.yaml:snakeyaml:$snakeyamlVersion") {
+            because 'Required until jackson-dataformat-yaml use snake yaml 1.32 internally '
+        }
+    }
+    // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
+    // Constraints block can be removed when Swagger is upgraded to the next version
+    constraints {
+        implementation("com.fasterxml.jackson.core:$jacksonVersion") {
+            because 'sonatype-2021-4682'
+        }
+    }
+
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation project(":libs:http-rpc:rest-common")
+
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+
+    testImplementation project(":libs:http-rpc:http-rpc-test-common")
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly 'org.osgi:osgi.core'
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    runtimeOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+
+    integrationTestImplementation "com.konghq:unirest-java:$unirestVersion"
+
+    integrationTestImplementation "org.mockito:mockito-core:$mockitoVersion"
+    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+    integrationTestImplementation project(':libs:http-rpc:rest-stubs-impl')
+    integrationTestImplementation project(":testing:test-utilities")
+}
