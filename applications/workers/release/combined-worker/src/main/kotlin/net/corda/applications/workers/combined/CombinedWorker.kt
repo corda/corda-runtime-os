@@ -93,7 +93,7 @@ class CombinedWorker @Activate constructor(
             params.hsmId = SOFT_HSM_ID
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
-        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
+        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId, params.masterWrappingKeyPassphrase, params.masterWrappingKeySalt))
         val bootstrapConfig = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
@@ -169,4 +169,12 @@ private class CombinedWorkerParams {
 
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
+
+    // It is not appropriate to use command line options for passphrases and SALTs in production,
+    // but combined worker is not a production configuration so we do allow it here.
+    @Option(names = ["-P", "--master-wrapping-key-passphrase"], description = ["Crypto processor master wrapping key passphrase"])
+    var masterWrappingKeyPassphrase: String = ""
+
+    @Option(names = ["-S", "--master-wrapping-key-salt"], description = ["Crypto processor master wrapping key SALT"])
+    var masterWrappingKeySalt: String = ""
 }
