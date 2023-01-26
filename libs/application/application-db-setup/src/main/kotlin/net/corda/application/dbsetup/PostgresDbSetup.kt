@@ -11,6 +11,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
@@ -37,8 +38,8 @@ class PostgresDbSetup(
     private val dbAdminPassword: String,
     private val dbName: String,
     private val secretsSalt: String,
-    private val secretsPassphrase: String,
-): DbSetup {
+    private val secretsPassphrase: String
+    ): DbSetup {
     
     companion object {
         private const val DB_DRIVER = "org.postgresql.Driver"
@@ -61,7 +62,7 @@ class PostgresDbSetup(
         "$dbUrl?user=$superUser&password=$superUserPassword"
     }
 
-    override fun run(config: SmartConfig) {
+    override fun run(config: SmartConfig, configFactory: SmartConfigFactory) {
         // TODO - fix CORE-9721; run all this under a transaction. If we fail part way through this block having made
         // the config table dbInitialised will be true and we'll never make any of the config tables we didn't get
         // before the first run was aborted
@@ -73,7 +74,7 @@ class PostgresDbSetup(
             initConfiguration("corda-crypto", "crypto_user_$dbName", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
-            createCryptoConfig(config)
+            createCryptoConfig(config, configFactory)
         } else {
             log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }
@@ -195,19 +196,15 @@ class PostgresDbSetup(
             }
     }
 
-    private fun createCryptoConfig(bootConfig: SmartConfig) {
+    private fun createCryptoConfig(bootConfig: SmartConfig, configFactory: SmartConfigFactory) {
         val random = SecureRandom()
-        val config = createCryptoSmartConfigFactory(
-            KeyCredentials(
-                salt = secretsSalt,
-                passphrase = secretsPassphrase
-            )
-        ).createDefaultCryptoConfig(
+        val config = createDefaultCryptoConfig(
             bootConfig,
             KeyCredentials(
                 passphrase = random.randomString(),
                 salt = random.randomString()
-            )
+            ),
+            configFactory
         ).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(

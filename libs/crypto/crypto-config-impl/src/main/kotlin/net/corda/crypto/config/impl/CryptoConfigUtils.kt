@@ -263,24 +263,14 @@ fun createCryptoSmartConfigFactory(smartFactoryKey: KeyCredentials): SmartConfig
         listOf(EncryptionSecretsServiceFactory())
     )
 
-// TODO - move to test library file
-fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
-    createCryptoSmartConfigFactory(smartFactoryKey).createDefaultCryptoConfig(
-        SmartConfigFactory.createWith(ConfigFactory.parseMap(mapOf(SmartConfigFactory.SECRET_SERVICE_TYPE to "duck")), emptyList()).create(ConfigFactory.empty()),
-        KeyCredentials(
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString()
-        )
-    )
-
-fun SmartConfigFactory.createDefaultCryptoConfig(bootConfig: SmartConfig, masterWrappingKey: KeyCredentials): SmartConfig = try {
+fun createDefaultCryptoConfig(bootConfig: SmartConfig, masterWrappingKey: KeyCredentials, configFactory: SmartConfigFactory): SmartConfig = try {
     val wrappingKeyMapPath = "crypto.$DEFAULT_HSM_OBJ.${CryptoHSMConfig.HSMConfig::cfg.name}.${CryptoHSMConfig::hsm.name}.wrappingKeyMap"
     // If the passphrase or salt is in the boot config, we do not need to default it.
     // We do not want to store a default for either value here unencrypted. If however the user chooses to pass in the
     // passphrase and SALT to us, it is their responsibility to protect it as possible, using a secrets addon such as encrypted secrets.
     val excludePassphrase = bootConfig.hasPath("$wrappingKeyMapPath.passphrase")
     val excludeSalt = bootConfig.hasPath("$wrappingKeyMapPath.salt")
-    this.create(
+    configFactory.create(
         ConfigFactory.empty()
             .withValue(
                 CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
@@ -346,10 +336,10 @@ fun SmartConfigFactory.createDefaultCryptoConfig(bootConfig: SmartConfig, master
                                 "wrappingKeyMap" to listOfNotNull(
                                     "name" to "CACHING",
                                     if (excludeSalt) null else "salt" to ConfigValueFactory.fromMap(
-                                        makeSecret(masterWrappingKey.salt).root().unwrapped()
+                                        configFactory.makeSecret(masterWrappingKey.salt).root().unwrapped()
                                     ),
                                     if (excludePassphrase) null else  "passphrase" to ConfigValueFactory.fromMap(
-                                        makeSecret(masterWrappingKey.passphrase).root().unwrapped()
+                                        configFactory.makeSecret(masterWrappingKey.passphrase).root().unwrapped()
                                     ),
                                     "cache" to mapOf(
                                         "expireAfterAccessMins" to 60,
