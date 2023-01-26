@@ -274,11 +274,12 @@ fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
     )
 
 fun SmartConfigFactory.createDefaultCryptoConfig(bootConfig: SmartConfig, masterWrappingKey: KeyCredentials): SmartConfig = try {
-    val passphrasePath = "crypto.$DEFAULT_HSM_OBJ.${CryptoHSMConfig.HSMConfig::cfg.name}.${CryptoHSMConfig::hsm.name}.wrappingKeyMap.passphrase"
-    // Since the passphrase secret is in the boot config, we do not need to default it.
-    // We do not want to get the value and end up storing that unencrypted in the database.
-    // So, to be safe, we just leave it out
-    val excludePassphrase = bootConfig.hasPath(passphrasePath)
+    val wrappingKeyMapPath = "crypto.$DEFAULT_HSM_OBJ.${CryptoHSMConfig.HSMConfig::cfg.name}.${CryptoHSMConfig::hsm.name}.wrappingKeyMap"
+    // If the passphrase or salt is in the boot config, we do not need to default it.
+    // We do not want to store a default for either value here unencrypted. If however the user chooses to pass in the
+    // passphrase and SALT to us, it is their responsibility to protect it as possible, using a secrets addon such as encrypted secrets.
+    val excludePassphrase = bootConfig.hasPath("$wrappingKeyMapPath.passphrase")
+    val excludeSalt = bootConfig.hasPath("$wrappingKeyMapPath.salt")
     this.create(
         ConfigFactory.empty()
             .withValue(
@@ -344,7 +345,9 @@ fun SmartConfigFactory.createDefaultCryptoConfig(bootConfig: SmartConfig, master
                                 ),
                                 "wrappingKeyMap" to listOfNotNull(
                                     "name" to "CACHING",
-                                    "salt" to masterWrappingKey.salt,
+                                    if (excludeSalt) null else "salt" to ConfigValueFactory.fromMap(
+                                        makeSecret(masterWrappingKey.salt).root().unwrapped()
+                                    ),
                                     if (excludePassphrase) null else  "passphrase" to ConfigValueFactory.fromMap(
                                         makeSecret(masterWrappingKey.passphrase).root().unwrapped()
                                     ),
