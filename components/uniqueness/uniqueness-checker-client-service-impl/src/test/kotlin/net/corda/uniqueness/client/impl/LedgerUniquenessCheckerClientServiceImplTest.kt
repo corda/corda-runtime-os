@@ -14,6 +14,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRe
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
@@ -42,7 +43,12 @@ class LedgerUniquenessCheckerClientServiceImplTest {
 
         val dummyTxId = SecureHashUtils.randomSecureHash()
 
-        val notaryServiceKeys = listOf(aliceNotaryVNodeKey, bobNotaryVNodeKey, charlieNotaryVNodeKey)
+        val notaryServiceCompositeKey = mock<CompositeKey> {
+            on { leafKeys } doReturn setOf(aliceNotaryVNodeKey, bobNotaryVNodeKey, charlieNotaryVNodeKey)
+            on { isFulfilledBy(eq(setOf(aliceNotaryVNodeKey))) } doReturn true
+            on { isFulfilledBy(eq(setOf(bobNotaryVNodeKey))) } doReturn true
+            on { isFulfilledBy(eq(setOf(charlieNotaryVNodeKey))) } doReturn true
+        }
     }
 
     private val argumentCaptor = argumentCaptor<Class<out UniquenessCheckExternalEventFactory>>()
@@ -58,12 +64,54 @@ class LedgerUniquenessCheckerClientServiceImplTest {
             5,
             null,
             Instant.now(),
-            notaryServiceKeys
+            notaryServiceCompositeKey
         )
 
         assertThat(response.result).isInstanceOf(UniquenessCheckResultSuccess::class.java)
         assertThat(response.signature).isNotNull
         assertThat(response.signature?.by).isEqualTo(aliceNotaryVNodeKey)
+    }
+
+    @Test
+    fun `Signing is successful when the provided notary service key is a simple key and the selected key matches`() {
+        val response = createClientService(
+            currentVNodeNotaryKey = aliceNotaryVNodeKey
+        ).requestUniquenessCheck(
+            dummyTxId.toString(),
+            emptyList(),
+            emptyList(),
+            5,
+            null,
+            Instant.now(),
+            // The notary service consists of a single VNode who is Alice
+            aliceNotaryVNodeKey
+        )
+
+        assertThat(response.result).isInstanceOf(UniquenessCheckResultSuccess::class.java)
+        assertThat(response.signature).isNotNull
+        assertThat(response.signature?.by).isEqualTo(aliceNotaryVNodeKey)
+    }
+
+    @Test
+    fun `Signing is unsuccessful when the provided notary service key is a simple key and the selected key does not match`() {
+        val exception = assertThrows<IllegalArgumentException> {
+            createClientService(
+                currentVNodeNotaryKey = aliceNotaryVNodeKey
+            ).requestUniquenessCheck(
+                dummyTxId.toString(),
+                emptyList(),
+                emptyList(),
+                5,
+                null,
+                Instant.now(),
+                // The notary service consists of a single VNode who is Bob
+                bobNotaryVNodeKey
+            )
+        }
+
+        assertThat(exception).hasStackTraceContaining(
+            "The notary key selected for signing is not associated with the notary service key."
+        )
     }
 
     @Test
@@ -77,7 +125,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
             5,
             null,
             Instant.now(),
-            notaryServiceKeys
+            notaryServiceCompositeKey
         )
 
         assertThat(response.result).isInstanceOf(UniquenessCheckResultSuccess::class.java)
@@ -100,7 +148,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
             5,
             null,
             Instant.now(),
-            notaryServiceKeys
+            notaryServiceCompositeKey
         )
 
         assertThat(response.result).isInstanceOf(UniquenessCheckResultFailure::class.java)
@@ -121,12 +169,12 @@ class LedgerUniquenessCheckerClientServiceImplTest {
                 5,
                 null,
                 Instant.now(),
-                notaryServiceKeys
+                notaryServiceCompositeKey
             )
         }
 
         assertThat(exception).hasStackTraceContaining(
-            "The notary key selected for signing is not part of the notary service composite key."
+            "The notary key selected for signing is not associated with the notary service key."
         )
     }
 
@@ -140,11 +188,13 @@ class LedgerUniquenessCheckerClientServiceImplTest {
                 5,
                 null,
                 Instant.now(),
-                notaryServiceKeys
+                notaryServiceCompositeKey
             )
         }
 
-        assertThat(exception).hasStackTraceContaining("Could not find notary keys to sign with.")
+        assertThat(exception).hasStackTraceContaining(
+            "Could not find any keys associated with the notary service's public key."
+        )
     }
 
     private fun createClientService(
@@ -172,6 +222,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
 
         val mockSigningService = mock<SigningService> {
             on { sign(any(), any(), any()) } doReturn dummySignature
+            on { findMySigningKeys(any()) } doReturn mapOf(mock<PublicKey>() to currentVNodeNotaryKey)
         }
 
         val mockDigestService = mock<DigestService> {

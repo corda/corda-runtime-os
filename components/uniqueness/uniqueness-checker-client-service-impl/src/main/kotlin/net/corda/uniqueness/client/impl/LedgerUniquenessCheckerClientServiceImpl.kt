@@ -1,7 +1,6 @@
 package net.corda.uniqueness.client.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.membership.lib.MemberInfoExtension.Companion.notaryKeys
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
 import net.corda.v5.application.crypto.DigestService
@@ -17,6 +16,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.containsAny
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
@@ -60,7 +60,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
         numOutputStates: Int,
         timeWindowLowerBound: Instant?,
         timeWindowUpperBound: Instant,
-        notaryServiceKeys: List<PublicKey>
+        notaryServiceKey: PublicKey
     ): LedgerUniquenessCheckResponse {
         log.debug { "Received request with id: $txId, sending it to Uniqueness Checker" }
 
@@ -79,7 +79,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
         val signature = if (result is UniquenessCheckResultSuccess) {
             signBatch(
                 listOf(SecureHash.parse(txId)),
-                notaryServiceKeys
+                notaryServiceKey
             ).rootSignature
         } else null
 
@@ -90,7 +90,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun signBatch(txIds: List<SecureHash>, notaryServiceKeys: List<PublicKey>): BatchSignature {
+    private fun signBatch(txIds: List<SecureHash>, notaryServiceKey: PublicKey): BatchSignature {
         // TODO CORE-6615 This validation mechanism needs to be
         //  reconsidered in the future
         val algorithms = txIds.mapTo(HashSet(), SecureHash::algorithm)
@@ -120,7 +120,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
 
         val sig = signingService.sign(
             merkleTree.root.bytes,
-            selectNotaryVNodeSigningKey(notaryServiceKeys),
+            selectNotaryVNodeSigningKey(notaryServiceKey),
             SignatureSpec.ECDSA_SHA256
         )
 
@@ -140,21 +140,25 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     }
 
     // TODO CORE-9469 The key selection here will be replaced with the Crypto API once it is finished.
-    private fun selectNotaryVNodeSigningKey(notaryServiceKeys: List<PublicKey>): PublicKey {
-        val myInfo = memberLookup.myInfo()
+    private fun selectNotaryVNodeSigningKey(notaryServiceKey: PublicKey): PublicKey {
 
-        require(myInfo.notaryKeys.isNotEmpty()) {
-            "Could not find notary keys to sign with."
+        // We select the first key that is not null
+        val selectedSigningKey = signingService
+            .findMySigningKeys(setOf(notaryServiceKey)).values
+            .filterNotNull()
+            .firstOrNull()
+
+        // We need to make sure there's at least one key we can sign with
+        require(selectedSigningKey != null) {
+            "Could not find any keys associated with the notary service's public key."
         }
 
-        // Always use the latest registered notary key. Even if key was rotated, the first element will be the latest.
-        val signingNotaryKey = myInfo.notaryKeys.first()
-
-        require(notaryServiceKeys.contains(signingNotaryKey)) {
-            "The notary key selected for signing is not part of the notary service composite key."
+        // We double check that the selected key is actually part of the notary service key
+        require(notaryServiceKey.containsAny(setOf(selectedSigningKey))) {
+            "The notary key selected for signing is not associated with the notary service key."
         }
 
-        return signingNotaryKey
+        return selectedSigningKey
     }
 }
 
