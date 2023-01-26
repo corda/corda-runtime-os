@@ -32,7 +32,7 @@ class EncryptionSecretsServiceImpl(
         return decryptor.decrypt(secretValue, salt, passphrase)
     }
 
-    override fun createValue(plainText: String): Config {
+    override fun createValue(plainText: String, path: String): Config {
         val encryptedSecret = encryptor.encrypt(plainText, salt, passphrase)
         val secretConfig = mapOf(
             "${SmartConfig.SECRET_KEY}.${EncryptionSecretsService.SECRET_KEY}" to encryptedSecret,

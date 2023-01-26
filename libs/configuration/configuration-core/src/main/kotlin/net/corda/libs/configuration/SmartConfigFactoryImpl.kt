@@ -21,7 +21,7 @@ class SmartConfigFactoryImpl(
         return SmartConfigImpl(config, this, secretsLookupService)
     }
 
-    override fun makeSecret(plainText: String): SmartConfig {
-        return SmartConfigImpl(secretsCreateService.createValue(plainText), this, secretsLookupService)
+    override fun makeSecret(plainText: String, path: String): SmartConfig {
+        return SmartConfigImpl(secretsCreateService.createValue(plainText, path), this, secretsLookupService)
     }
 }

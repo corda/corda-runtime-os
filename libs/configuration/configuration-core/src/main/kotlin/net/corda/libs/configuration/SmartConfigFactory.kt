@@ -38,7 +38,7 @@ interface SmartConfigFactory {
         fun createWithoutSecurityServices() = SmartConfigFactoryImpl(
             MaskedSecretsLookupService(),
             object : SecretsCreateService {
-                override fun createValue(plainText: String): Config {
+                override fun createValue(plainText: String, path: String): Config {
                     throw SecretsConfigurationException("This SmartConfigFactory does not support creating secrets.")
                 }
             })
@@ -53,6 +53,6 @@ interface SmartConfigFactory {
      */
     fun create(config: Config): SmartConfig
 
-    fun makeSecret(plainText: String): SmartConfig
+    fun makeSecret(plainText: String, path: String): SmartConfig
 }
 

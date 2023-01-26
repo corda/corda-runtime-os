@@ -94,7 +94,7 @@ class CombinedWorker @Activate constructor(
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId, params.masterWrappingKeyPassphrase, params.masterWrappingKeySalt))
-        val (bootstrapConfig, _) = getBootstrapConfig(
+        val (bootstrapConfig, configFactory) = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
@@ -121,8 +121,8 @@ class CombinedWorker @Activate constructor(
             dbAdminPassword,
             dbName,
             secretsSalt,
-            secretsPassphrase
-        ).run(bootstrapConfig)
+            secretsPassphrase,
+        ).run(bootstrapConfig, configFactory)
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
