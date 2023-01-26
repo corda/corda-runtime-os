@@ -18,6 +18,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
 
@@ -42,10 +43,6 @@ enum class FinalityNotarizationFailureType(val value: String) {
 @CordaSystemFlow
 abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
-    private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     @CordaInject
     lateinit var transactionSignatureService: TransactionSignatureService
 
@@ -60,6 +57,8 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    abstract val log: Logger
 
     @Suspendable
     protected fun verifySignature(
