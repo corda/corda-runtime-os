@@ -10,7 +10,7 @@ enum class NumberTypeEnum {
 }
 
 @HttpRestResource(
-    name = "net.corda.httprpc.server.impl.rpcops.NumberSequencesRestResource",
+    name = "net.corda.httprpc.server.impl.rest.resource.NumberSequencesRestResource",
     description = "Number Sequences Rest Resource",
     path = "numberseq"
 )
