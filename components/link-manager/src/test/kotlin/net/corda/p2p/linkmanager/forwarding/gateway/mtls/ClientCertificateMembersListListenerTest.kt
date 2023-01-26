@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
-import net.corda.data.p2p.mtls.ClientCertificateSubject
+import net.corda.data.p2p.mtls.MemberAllowedCertificateSubject
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -26,7 +26,7 @@ class ClientCertificateMembersListListenerTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
     private val messagingConfiguration = mock<SmartConfig>()
-    private val processor = argumentCaptor<CompactedProcessor<String, ClientCertificateSubject>>()
+    private val processor = argumentCaptor<CompactedProcessor<String, MemberAllowedCertificateSubject>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
             createCompactedSubscription(
@@ -39,7 +39,7 @@ class ClientCertificateMembersListListenerTest {
     private val clientCertificateSourceManager = mock<ClientCertificateSourceManager>()
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        val subscriptionBuilder = context.arguments()[1] as? () -> Subscription<String, ClientCertificateSubject>
+        val subscriptionBuilder = context.arguments()[1] as? () -> Subscription<String, MemberAllowedCertificateSubject>
         subscriptionBuilder?.invoke()
     }
 
@@ -58,14 +58,13 @@ class ClientCertificateMembersListListenerTest {
         )
     }
 
-
     @Test
     fun `onNext will add source if not null`() {
         processor.firstValue.onNext(
             Record(
                 "topic",
                 "key",
-                ClientCertificateSubject("subject")
+                MemberAllowedCertificateSubject("subject")
             ),
             null,
             emptyMap(),
@@ -85,7 +84,7 @@ class ClientCertificateMembersListListenerTest {
                 "key",
                 null,
             ),
-            ClientCertificateSubject("subject"),
+            MemberAllowedCertificateSubject("subject"),
             emptyMap(),
         )
 
@@ -112,15 +111,16 @@ class ClientCertificateMembersListListenerTest {
 
     @Test
     fun `onSnapshot will add all the subjects`() {
-        val subjects = (1..4).associate { "key1" to ClientCertificateSubject("subject 1") }
+        val subjects = (1..4).associate { "key1" to MemberAllowedCertificateSubject("subject 1") }
 
         processor.firstValue.onSnapshot(subjects)
 
         subjects.forEach { (key, subject) ->
             verify(clientCertificateSourceManager)
-                .addSource(subject.subject,
-                    ClientCertificateSourceManager.MembershipSource(key))
+                .addSource(
+                    subject.subject,
+                    ClientCertificateSourceManager.MembershipSource(key)
+                )
         }
     }
 }
-

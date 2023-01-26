@@ -1,6 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.data.p2p.mtls.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,8 +24,8 @@ internal class MgmAllowedCertificateSubjectsReconciler(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val reconcilerFactory: ReconcilerFactory,
-    private val kafkaReconcilerReader: ReconcilerReader<AllowedCertificateSubject, AllowedCertificateSubject>,
-    private val kafkaReconcilerWriter: ReconcilerWriter<AllowedCertificateSubject, AllowedCertificateSubject>,
+    private val kafkaReconcilerReader: ReconcilerReader<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>,
+    private val kafkaReconcilerWriter: ReconcilerWriter<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>,
 ) : ReconcilerWrapper {
     companion object {
         private val dependencies = setOf(
@@ -54,14 +54,14 @@ internal class MgmAllowedCertificateSubjectsReconciler(
         virtualNodeInfoReadService.getAll().stream().map {
             VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
         }
-    private var dbReconcilerReader: DbReconcilerReader<AllowedCertificateSubject, AllowedCertificateSubject>? = null
+    private var dbReconcilerReader: DbReconcilerReader<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>? = null
     private var reconciler: Reconciler? = null
     override fun updateInterval(intervalMillis: Long) {
         if (dbReconcilerReader == null) {
             dbReconcilerReader = DbReconcilerReader(
                 coordinatorFactory,
-                AllowedCertificateSubject::class.java,
-                AllowedCertificateSubject::class.java,
+                MgmAllowedCertificateSubject::class.java,
+                MgmAllowedCertificateSubject::class.java,
                 dependencies,
                 ::reconciliationContextFactory,
                 ::getAllAllowedSubjects
@@ -75,8 +75,8 @@ internal class MgmAllowedCertificateSubjectsReconciler(
                     dbReader = dbReconcilerReader!!,
                     kafkaReader = kafkaReconcilerReader,
                     writer = kafkaReconcilerWriter,
-                    keyClass = AllowedCertificateSubject::class.java,
-                    valueClass = AllowedCertificateSubject::class.java,
+                    keyClass = MgmAllowedCertificateSubject::class.java,
+                    valueClass = MgmAllowedCertificateSubject::class.java,
                     reconciliationIntervalMs = intervalMillis,
                 ).also { it.start() }
             } else {
@@ -87,12 +87,12 @@ internal class MgmAllowedCertificateSubjectsReconciler(
     }
 
     private fun getAllAllowedSubjects(reconciliationContext: ReconciliationContext):
-        Stream<VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject>> {
+        Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>> {
         val context = reconciliationContext as? VirtualNodeReconciliationContext ?: return Stream.empty()
         return getAllAllowedSubjects(context.getOrCreateEntityManager())
             .map { entity ->
-                val subject = AllowedCertificateSubject(entity.subject, context.virtualNodeInfo.holdingIdentity.groupId)
-                object : VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject> {
+                val subject = MgmAllowedCertificateSubject(entity.subject, context.virtualNodeInfo.holdingIdentity.groupId)
+                object : VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject> {
                     override val version = 1
                     override val isDeleted = entity.isDeleted
                     override val key = subject

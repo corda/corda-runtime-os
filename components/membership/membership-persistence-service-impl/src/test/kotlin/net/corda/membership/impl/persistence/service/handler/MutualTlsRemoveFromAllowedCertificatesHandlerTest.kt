@@ -3,7 +3,7 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
-import net.corda.data.p2p.mtls.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.MutualTlsAllowedClientCertificateEntity
@@ -82,6 +82,6 @@ class MutualTlsRemoveFromAllowedCertificatesHandlerTest {
             request,
         )
 
-        verify(writerToKafka).remove(AllowedCertificateSubject(request.subject, holdingIdentity.groupId))
+        verify(writerToKafka).remove(MgmAllowedCertificateSubject(request.subject, holdingIdentity.groupId))
     }
 }

@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
-import net.corda.data.p2p.mtls.AllClientCertificateSubjects
+import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -12,7 +12,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.P2P.Companion.P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
+import net.corda.schema.Schemas.P2P.Companion.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.AfterEach
@@ -34,12 +34,12 @@ class ClientCertificatePublisherTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
     private val messagingConfiguration = mock<SmartConfig>()
-    private val processor = argumentCaptor<CompactedProcessor<String, AllClientCertificateSubjects>>()
+    private val processor = argumentCaptor<CompactedProcessor<String, ClientCertificateSubjects>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
             createCompactedSubscription(
                 argThat {
-                    this.eventTopic == P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
+                    this.eventTopic == GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
                 },
                 processor.capture(),
                 any()
@@ -49,7 +49,7 @@ class ClientCertificatePublisherTest {
     private val publisherFactory = mock<PublisherFactory>()
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        val subscriptionBuilder = context.arguments()[1] as? () -> Subscription<String, AllClientCertificateSubjects>
+        val subscriptionBuilder = context.arguments()[1] as? () -> Subscription<String, ClientCertificateSubjects>
         subscriptionBuilder?.invoke()
     }
     private val mockPublisherWithDominoLogic = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
@@ -97,9 +97,9 @@ class ClientCertificatePublisherTest {
             verify(mockPublisherWithDominoLogic.constructed().first()).publish(
                 listOf(
                     Record(
-                        topic = P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
+                        topic = GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
                         key = mgmClientCertificateSubject.toString(),
-                        value = AllClientCertificateSubjects(mgmClientCertificateSubject.toString())
+                        value = ClientCertificateSubjects(mgmClientCertificateSubject.toString())
                     )
                 )
             )
@@ -124,7 +124,7 @@ class ClientCertificatePublisherTest {
             verify(mockPublisherWithDominoLogic.constructed().first()).publish(
                 listOf(
                     Record(
-                        topic = P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
+                        topic = GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
                         key = mgmClientCertificateSubject.toString(),
                         value = null,
                     )
@@ -164,7 +164,7 @@ class ClientCertificatePublisherTest {
             verify(mockPublisherWithDominoLogic.constructed().first()).publish(
                 listOf(
                     Record(
-                        topic = P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
+                        topic = GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
                         key = mgmClientCertificateSubject.toString(),
                         value = null,
                     )
@@ -184,9 +184,9 @@ class ClientCertificatePublisherTest {
             verify(mockPublisherWithDominoLogic.constructed().first()).publish(
                 listOf(
                     Record(
-                        topic = P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
+                        topic = GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
                         key = "subject",
-                        value = AllClientCertificateSubjects("subject"),
+                        value = ClientCertificateSubjects("subject"),
                     )
                 )
             )
@@ -213,7 +213,7 @@ class ClientCertificatePublisherTest {
         fun `it will not publish the subject if it has been published`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "subject" to AllClientCertificateSubjects("subject")
+                    "subject" to ClientCertificateSubjects("subject")
                 )
             )
 
@@ -233,7 +233,7 @@ class ClientCertificatePublisherTest {
                 Record(
                     "topic",
                     "subject",
-                    AllClientCertificateSubjects("subject")
+                    ClientCertificateSubjects("subject")
                 ),
                 null,
                 emptyMap()
@@ -247,7 +247,7 @@ class ClientCertificatePublisherTest {
         fun `it will remove the subject if null`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "subject" to AllClientCertificateSubjects("subject")
+                    "subject" to ClientCertificateSubjects("subject")
                 )
             )
 
@@ -257,7 +257,7 @@ class ClientCertificatePublisherTest {
                     "subject",
                     null,
                 ),
-                AllClientCertificateSubjects("subject"),
+                ClientCertificateSubjects("subject"),
                 emptyMap()
             )
 
@@ -266,9 +266,9 @@ class ClientCertificatePublisherTest {
                 .publish(
                     listOf(
                         Record(
-                            topic = P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
+                            topic = GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
                             key = "subject",
-                            value = AllClientCertificateSubjects("subject")
+                            value = ClientCertificateSubjects("subject")
                         )
                     )
                 )
@@ -278,7 +278,7 @@ class ClientCertificatePublisherTest {
         fun `it will not remove the subject if previous data is null`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "subject" to AllClientCertificateSubjects("subject")
+                    "subject" to ClientCertificateSubjects("subject")
                 )
             )
 

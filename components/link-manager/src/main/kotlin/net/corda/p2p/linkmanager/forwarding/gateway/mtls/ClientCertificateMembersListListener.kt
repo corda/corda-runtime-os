@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
-import net.corda.data.p2p.mtls.ClientCertificateSubject
+import net.corda.data.p2p.mtls.MemberAllowedCertificateSubject
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -37,14 +37,14 @@ internal class ClientCertificateMembersListListener(
             messagingConfig = messagingConfiguration,
         )
     }
-    private inner class Processor : CompactedProcessor<String, ClientCertificateSubject> {
+    private inner class Processor : CompactedProcessor<String, MemberAllowedCertificateSubject> {
         override val keyClass = String::class.java
-        override val valueClass = ClientCertificateSubject::class.java
+        override val valueClass = MemberAllowedCertificateSubject::class.java
 
         override fun onNext(
-            newRecord: Record<String, ClientCertificateSubject>,
-            oldValue: ClientCertificateSubject?,
-            currentData: Map<String, ClientCertificateSubject>,
+            newRecord: Record<String, MemberAllowedCertificateSubject>,
+            oldValue: MemberAllowedCertificateSubject?,
+            currentData: Map<String, MemberAllowedCertificateSubject>,
         ) {
             val value = newRecord.value
             if (value != null) {
@@ -60,7 +60,7 @@ internal class ClientCertificateMembersListListener(
             }
         }
 
-        override fun onSnapshot(currentData: Map<String, ClientCertificateSubject>) {
+        override fun onSnapshot(currentData: Map<String, MemberAllowedCertificateSubject>) {
             ready.complete(Unit)
             currentData.forEach { (key, value) ->
                 clientCertificateSourceManager.addSource(

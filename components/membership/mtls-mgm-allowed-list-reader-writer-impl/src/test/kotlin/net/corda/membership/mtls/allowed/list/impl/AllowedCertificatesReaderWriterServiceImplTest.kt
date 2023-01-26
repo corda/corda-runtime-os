@@ -2,7 +2,7 @@ package net.corda.membership.mtls.allowed.list.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.p2p.mtls.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -50,8 +50,8 @@ class AllowedCertificatesReaderWriterServiceImplTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private val compactedSubscription = mock<CompactedSubscription<String, AllowedCertificateSubject>>()
-    private val processor = argumentCaptor<CompactedProcessor<String, AllowedCertificateSubject>>()
+    private val compactedSubscription = mock<CompactedSubscription<String, MgmAllowedCertificateSubject>>()
+    private val processor = argumentCaptor<CompactedProcessor<String, MgmAllowedCertificateSubject>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
             createCompactedSubscription(
@@ -223,7 +223,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         @Test
         fun `onNext will add item to list`() {
             processor.firstValue.onNext(
-                Record("topic", "key", AllowedCertificateSubject("subject", "group")),
+                Record("topic", "key", MgmAllowedCertificateSubject("subject", "group")),
                 null,
                 emptyMap()
             )
@@ -243,13 +243,13 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         @Test
         fun `onNext will remove old data`() {
             processor.firstValue.onNext(
-                Record("topic", "key", AllowedCertificateSubject("subject", "group")),
+                Record("topic", "key", MgmAllowedCertificateSubject("subject", "group")),
                 null,
                 emptyMap()
             )
             processor.firstValue.onNext(
                 Record("topic", "key", null),
-                AllowedCertificateSubject("subject", "group"),
+                MgmAllowedCertificateSubject("subject", "group"),
                 emptyMap()
             )
 
@@ -261,7 +261,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         @Test
         fun `onNext will not remove old data if null`() {
             processor.firstValue.onNext(
-                Record("topic", "key", AllowedCertificateSubject("subject", "group")),
+                Record("topic", "key", MgmAllowedCertificateSubject("subject", "group")),
                 null,
                 emptyMap()
             )
@@ -280,8 +280,8 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         fun `onSnapshot will add all the data`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "one" to AllowedCertificateSubject("subject 1", "group 1"),
-                    "two" to AllowedCertificateSubject("subject 2", "group 2"),
+                    "one" to MgmAllowedCertificateSubject("subject 1", "group 1"),
+                    "two" to MgmAllowedCertificateSubject("subject 2", "group 2"),
                 )
             )
 
@@ -308,8 +308,8 @@ class AllowedCertificatesReaderWriterServiceImplTest {
         fun `onSnapshot will set the state to up`() {
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "one" to AllowedCertificateSubject("subject 1", "group"),
-                    "two" to AllowedCertificateSubject("subject 2", "group"),
+                    "one" to MgmAllowedCertificateSubject("subject 1", "group"),
+                    "two" to MgmAllowedCertificateSubject("subject 2", "group"),
                 )
             )
 
@@ -327,21 +327,21 @@ class AllowedCertificatesReaderWriterServiceImplTest {
 
         @Test
         fun `put will publish the record`() {
-            impl.put(AllowedCertificateSubject("subject", "group"), AllowedCertificateSubject("subject", "group"))
+            impl.put(MgmAllowedCertificateSubject("subject", "group"), MgmAllowedCertificateSubject("subject", "group"))
 
             verify(publisher).publish(
                 argThat {
                     size == 1 &&
                         first().key == "group;subject" &&
-                        (first().value as? AllowedCertificateSubject)?.subject == "subject" &&
-                        (first().value as? AllowedCertificateSubject)?.groupId == "group"
+                        (first().value as? MgmAllowedCertificateSubject)?.subject == "subject" &&
+                        (first().value as? MgmAllowedCertificateSubject)?.groupId == "group"
                 }
             )
         }
 
         @Test
         fun `remove will publish the record`() {
-            impl.remove(AllowedCertificateSubject("subject", "group"))
+            impl.remove(MgmAllowedCertificateSubject("subject", "group"))
 
             verify(publisher).publish(
                 argThat {

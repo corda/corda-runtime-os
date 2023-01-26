@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
-import net.corda.data.p2p.mtls.AllClientCertificateSubjects
+import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -15,7 +15,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.P2P.Companion.P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
+import net.corda.schema.Schemas.P2P.Companion.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
 import net.corda.virtualnode.HoldingIdentity
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -35,7 +35,7 @@ internal class ClientCertificatePublisher(
     private val ready = CompletableFuture<Unit>()
 
     private val publishedCertificates = ConcurrentHashMap.newKeySet<String>()
-    private val toPublish = ConcurrentLinkedQueue<Record<String, AllClientCertificateSubjects>>()
+    private val toPublish = ConcurrentLinkedQueue<Record<String, ClientCertificateSubjects>>()
     private val holdingIdentityToCertificate = ConcurrentHashMap<HoldingIdentity, String>()
     private val knownCertificates = ClientCertificateSourceManager(this)
 
@@ -93,7 +93,7 @@ internal class ClientCertificatePublisher(
 
     private val subscriptionConfig = SubscriptionConfig(
         groupName = LISTENER_NAME,
-        eventTopic = P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
+        eventTopic = GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
     )
     private val subscription = {
         subscriptionFactory.createCompactedSubscription(
@@ -102,14 +102,14 @@ internal class ClientCertificatePublisher(
             messagingConfig = messagingConfiguration,
         )
     }
-    private inner class Processor : CompactedProcessor<String, AllClientCertificateSubjects> {
+    private inner class Processor : CompactedProcessor<String, ClientCertificateSubjects> {
         override val keyClass = String::class.java
-        override val valueClass = AllClientCertificateSubjects::class.java
+        override val valueClass = ClientCertificateSubjects::class.java
 
         override fun onNext(
-            newRecord: Record<String, AllClientCertificateSubjects>,
-            oldValue: AllClientCertificateSubjects?,
-            currentData: Map<String, AllClientCertificateSubjects>,
+            newRecord: Record<String, ClientCertificateSubjects>,
+            oldValue: ClientCertificateSubjects?,
+            currentData: Map<String, ClientCertificateSubjects>,
         ) {
             val value = newRecord.value
             if (value != null) {
@@ -119,7 +119,7 @@ internal class ClientCertificatePublisher(
             }
         }
 
-        override fun onSnapshot(currentData: Map<String, AllClientCertificateSubjects>) {
+        override fun onSnapshot(currentData: Map<String, ClientCertificateSubjects>) {
             publishedCertificates.addAll(
                 currentData.values.map { it.subject }
             )
@@ -164,9 +164,9 @@ internal class ClientCertificatePublisher(
         if (publishedCertificates.add(subject)) {
             toPublish.offer(
                 Record(
-                    P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
+                    GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
                     subject,
-                    AllClientCertificateSubjects(subject),
+                    ClientCertificateSubjects(subject),
                 )
             )
             publishQueueIfPossible()
@@ -177,7 +177,7 @@ internal class ClientCertificatePublisher(
         if (publishedCertificates.remove(subject)) {
             toPublish.offer(
                 Record(
-                    P2P_ALL_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
+                    GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
                     subject,
                     null,
                 )

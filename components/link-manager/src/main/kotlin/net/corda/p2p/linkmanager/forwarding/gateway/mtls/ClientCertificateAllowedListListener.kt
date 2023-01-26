@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
-import net.corda.data.p2p.mtls.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -37,14 +37,14 @@ internal class ClientCertificateAllowedListListener(
             messagingConfig = messagingConfiguration,
         )
     }
-    private inner class Processor : CompactedProcessor<String, AllowedCertificateSubject> {
+    private inner class Processor : CompactedProcessor<String, MgmAllowedCertificateSubject> {
         override val keyClass = String::class.java
-        override val valueClass = AllowedCertificateSubject::class.java
+        override val valueClass = MgmAllowedCertificateSubject::class.java
 
         override fun onNext(
-            newRecord: Record<String, AllowedCertificateSubject>,
-            oldValue: AllowedCertificateSubject?,
-            currentData: Map<String, AllowedCertificateSubject>,
+            newRecord: Record<String, MgmAllowedCertificateSubject>,
+            oldValue: MgmAllowedCertificateSubject?,
+            currentData: Map<String, MgmAllowedCertificateSubject>,
         ) {
             val newValue = newRecord.value
             if (newValue != null) {
@@ -60,7 +60,7 @@ internal class ClientCertificateAllowedListListener(
             }
         }
 
-        override fun onSnapshot(currentData: Map<String, AllowedCertificateSubject>) {
+        override fun onSnapshot(currentData: Map<String, MgmAllowedCertificateSubject>) {
             ready.complete(Unit)
             currentData.values.forEach { value ->
                 clientCertificateSourceManager.addSource(

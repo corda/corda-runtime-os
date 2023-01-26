@@ -2,7 +2,7 @@ package net.corda.membership.mtls.allowed.list.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.p2p.mtls.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -48,7 +48,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
         const val SUBSCRIPTION_GROUP_NAME = "mgm-allowed-certificate-subjects-reader"
         const val PUBLISHER_CLIENT_ID = "mgm-allowed-certificate-subjects-writer"
     }
-    private val publishedSubjects = ConcurrentHashMap.newKeySet<AllowedCertificateSubject>()
+    private val publishedSubjects = ConcurrentHashMap.newKeySet<MgmAllowedCertificateSubject>()
     private val coordinator = coordinatorFactory.createCoordinator<AllowedCertificatesReaderWriterService> {event, _ ->
         handleEvent(event)
     }
@@ -122,14 +122,14 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
         }
     }
 
-    private inner class Processor: CompactedProcessor<String, AllowedCertificateSubject> {
+    private inner class Processor: CompactedProcessor<String, MgmAllowedCertificateSubject> {
         override val keyClass = String::class.java
-        override val valueClass = AllowedCertificateSubject::class.java
+        override val valueClass = MgmAllowedCertificateSubject::class.java
 
         override fun onNext(
-            newRecord: Record<String, AllowedCertificateSubject>,
-            oldValue: AllowedCertificateSubject?,
-            currentData: Map<String, AllowedCertificateSubject>,
+            newRecord: Record<String, MgmAllowedCertificateSubject>,
+            oldValue: MgmAllowedCertificateSubject?,
+            currentData: Map<String, MgmAllowedCertificateSubject>,
         ) {
             val newData = newRecord.value
             if(newData != null) {
@@ -141,7 +141,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
             }
         }
 
-        override fun onSnapshot(currentData: Map<String, AllowedCertificateSubject>) {
+        override fun onSnapshot(currentData: Map<String, MgmAllowedCertificateSubject>) {
             publishedSubjects.addAll(currentData.values)
             coordinator.updateStatus(LifecycleStatus.UP)
         }
@@ -149,9 +149,9 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
     }
 
     override fun getAllVersionedRecords():
-            Stream<VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject>>? {
+            Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>? {
         return publishedSubjects.stream().map {
-            object: VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject> {
+            object: VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject> {
                 override val version = 1
                 override val isDeleted = false
                 override val key = it
@@ -160,10 +160,10 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
         }
     }
 
-    private fun AllowedCertificateSubject.key(): String
+    private fun MgmAllowedCertificateSubject.key(): String
         = "${this.groupId};${this.subject}"
 
-    override fun put(recordKey: AllowedCertificateSubject, recordValue: AllowedCertificateSubject) {
+    override fun put(recordKey: MgmAllowedCertificateSubject, recordValue: MgmAllowedCertificateSubject) {
         coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
             listOf(
                 Record(
@@ -177,7 +177,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
         }
     }
 
-    override fun remove(recordKey: AllowedCertificateSubject) {
+    override fun remove(recordKey: MgmAllowedCertificateSubject) {
         coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
             listOf(
                 Record(

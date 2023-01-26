@@ -1,6 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.data.p2p.mtls.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinator
@@ -58,10 +58,10 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getAll() } doReturn listOf(virtualNodeInfo)
     }
-    private val dbReader = argumentCaptor<DbReconcilerReader<AllowedCertificateSubject, AllowedCertificateSubject>>()
+    private val dbReader = argumentCaptor<DbReconcilerReader<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>()
     private val reconciler = mock<Reconciler>()
-    private val kafkaReconcilerReader = mock<ReconcilerReader<AllowedCertificateSubject, AllowedCertificateSubject>>()
-    private val kafkaReconcilerWriter = mock<ReconcilerWriter<AllowedCertificateSubject, AllowedCertificateSubject>>()
+    private val kafkaReconcilerReader = mock<ReconcilerReader<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>()
+    private val kafkaReconcilerWriter = mock<ReconcilerWriter<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>()
     private val transaction = mock<EntityTransaction>()
     private val entityManager = mock<EntityManager> {
         on { transaction } doReturn transaction
@@ -78,8 +78,8 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
                 dbReader.capture(),
                 eq(kafkaReconcilerReader),
                 eq(kafkaReconcilerWriter),
-                eq(AllowedCertificateSubject::class.java),
-                eq(AllowedCertificateSubject::class.java),
+                eq(MgmAllowedCertificateSubject::class.java),
+                eq(MgmAllowedCertificateSubject::class.java),
                 any(),
             )
         } doReturn reconciler
