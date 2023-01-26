@@ -175,6 +175,6 @@ private class CombinedWorkerParams {
     @Option(names = ["-P", "--master-wrapping-key-passphrase"], description = ["Crypto processor master wrapping key passphrase"])
     var masterWrappingKeyPassphrase: String = ""
 
-    @Option(names = ["-S", "--master-wrapping-key-salt"], description = ["Crypto processor master wrapping key SALT"])
+    @Option(names = ["-S", "--master-wrapping-key-salt"], description = ["Crypto processor master wrapping key salt"])
     var masterWrappingKeySalt: String = ""
 }
