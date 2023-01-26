@@ -2,7 +2,7 @@ package net.corda.httprpc.client;
 
 import net.corda.httprpc.client.config.RestClientConfig;
 import net.corda.httprpc.server.config.models.RestServerSettings;
-import net.corda.httprpc.server.impl.HttpRpcServerImpl;
+import net.corda.httprpc.server.impl.RestServerImpl;
 import net.corda.httprpc.test.CustomSerializationAPIImpl;
 import net.corda.httprpc.test.TestHealthCheckAPI;
 import net.corda.httprpc.test.TestHealthCheckAPIImpl;
@@ -30,7 +30,7 @@ public class RestJavaClientIntegrationTest extends RestIntegrationTestBase {
             20000L
         );
         RestIntegrationTestBase.Companion.setServer(
-                new HttpRpcServerImpl(
+                new RestServerImpl(
                         List.of(new TestHealthCheckAPIImpl(), new CustomSerializationAPIImpl()),
                         RestIntegrationTestBase.Companion::getSecurityManager,
                         restServerSettings,
