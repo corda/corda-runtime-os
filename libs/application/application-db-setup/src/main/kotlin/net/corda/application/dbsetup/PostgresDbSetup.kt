@@ -62,6 +62,9 @@ class PostgresDbSetup(
     }
 
     override fun run(config: SmartConfig) {
+        // TODO - fix CORE-9721; run all this under a transaction. If we fail part way through this block having made
+        // the config table dbInitialised will be true and we'll never make any of the config tables we didn't get
+        // before the first run was aborted
         if (!dbInitialised()) {
             log.info("Initialising DB.")
             initDb()

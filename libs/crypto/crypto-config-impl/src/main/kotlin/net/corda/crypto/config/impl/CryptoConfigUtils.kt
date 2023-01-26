@@ -243,8 +243,12 @@ fun SmartConfig.bootstrapHsmId(): String =
         throw IllegalStateException("Failed to get $HSM_ID.", e)
     }
 
-fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
-    mapOf(HSM_ID to hsmId)
+fun createCryptoBootstrapParamsMap(hsmId: String, passphrase: String="", salt: String=""): Map<String, String> =
+    listOfNotNull(
+        HSM_ID to hsmId,
+        if (passphrase.isNotEmpty()) "${String.format(HSM_MAP_ITEM_OBJ, hsmId)}.${CryptoHSMConfig.HSMConfig::cfg.name}.${CryptoHSMConfig::hsm.name}.wrappingKeyMap.passphrase" to passphrase else null,
+        if (salt.isNotEmpty()) "${String.format(HSM_MAP_ITEM_OBJ, hsmId)}.${CryptoHSMConfig.HSMConfig::cfg.name}.${CryptoHSMConfig::hsm.name}.wrappingKeyMap.salt" to salt else null
+    ).toMap()
 
 fun createCryptoSmartConfigFactory(smartFactoryKey: KeyCredentials): SmartConfigFactory =
     // TODO - figure out why this is here and how that is going to work with other SecretsServiceFactory implementations
@@ -270,11 +274,11 @@ fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
     )
 
 fun SmartConfigFactory.createDefaultCryptoConfig(bootConfig: SmartConfig, masterWrappingKey: KeyCredentials): SmartConfig = try {
-    val passphrasePath = "${CryptoHSMConfig.HSMConfig::cfg.name}.wrappingKeyMap.passpharse"
+    val passphrasePath = "crypto.$DEFAULT_HSM_OBJ.${CryptoHSMConfig.HSMConfig::cfg.name}.${CryptoHSMConfig::hsm.name}.wrappingKeyMap.passphrase"
     // Since the passphrase secret is in the boot config, we do not need to default it.
-    // We do not want to get the value and end up storing that unencrpted in the database.
+    // We do not want to get the value and end up storing that unencrypted in the database.
     // So, to be safe, we just leave it out
-    val excludePassphrase = (bootConfig.hasPath(passphrasePath) && bootConfig.isSecret(passphrasePath))
+    val excludePassphrase = bootConfig.hasPath(passphrasePath)
     this.create(
         ConfigFactory.empty()
             .withValue(
