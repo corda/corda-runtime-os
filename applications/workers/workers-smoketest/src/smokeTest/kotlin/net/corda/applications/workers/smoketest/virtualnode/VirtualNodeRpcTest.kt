@@ -601,11 +601,15 @@ class VirtualNodeRpcTest {
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
 
-            val virtualNodeShortHash = eventuallyCreateVirtualNode(cpiV1, bobX500)
-            eventuallyGetVirtualNodeWithCpi(virtualNodeShortHash, upgradeTestingCpiName, "v1")
+            val bobVNodeId = eventuallyCreateVirtualNode(cpiV1, bobX500)
+            eventuallyGetVirtualNodeWithCpi(bobVNodeId, upgradeTestingCpiName, "v1")
 
-            triggerVirtualNodeUpgrade(virtualNodeShortHash, cpiV2)
-            eventuallyGetVirtualNodeWithCpi(virtualNodeShortHash, upgradeTestingCpiName, "v2")
+            runReturnAStringFlow("upgrade-test-v1", bobVNodeId)
+
+            triggerVirtualNodeUpgrade(bobVNodeId, cpiV2)
+            eventuallyGetVirtualNodeWithCpi(bobVNodeId, upgradeTestingCpiName, "v2")
+
+            runReturnAStringFlow("upgrade-test-v2", bobVNodeId)
         }
     }
 
@@ -633,12 +637,12 @@ class VirtualNodeRpcTest {
         }
     }
 
-    private fun runReturnAStringFlow(expectedResult: String) {
+    private fun runReturnAStringFlow(expectedResult: String, holdingId: String = aliceHoldingId) {
         val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
 
-        val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+        val requestId = startRpcFlow(holdingId, emptyMap(), className)
 
-        val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+        val flowStatus = awaitRpcFlowFinished(holdingId, requestId)
 
         assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
