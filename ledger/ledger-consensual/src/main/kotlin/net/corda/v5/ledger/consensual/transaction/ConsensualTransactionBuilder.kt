@@ -2,8 +2,8 @@ package net.corda.v5.ledger.consensual.transaction
 
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.ledger.consensual.ConsensualState
-import java.security.PublicKey
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
  * Defines a builder for [ConsensualSignedTransaction]s.
@@ -38,24 +38,8 @@ interface ConsensualTransactionBuilder {
      *
      * @throws IllegalStateException when called a second time on the same object to prevent
      *      unintentional duplicate transactions.
+     * @throws CordaRuntimeException if none of the required keys are available to sign the transaction.
      */
     @Suspendable
     fun toSignedTransaction(): ConsensualSignedTransaction
-
-    /**
-     * Verifies the content of the [ConsensualTransactionBuilder] and
-     * signs the transaction with the specified signatory key.
-     *
-     * Calling this function once consumes the [ConsensualTransactionBuilder], so it cannot be used again.
-     * Therefore, if you want to build two transactions you need two builders.
-     *
-     * @param signatory The signatory expected to sign the current transaction.
-     * @return Returns a [ConsensualSignedTransaction] with signature for the specified signatory key.
-     *
-     * @throws IllegalStateException when called a second time on the same object to prevent
-     *      unintentional duplicate transactions.
-     */
-    @Suspendable
-    @Deprecated("Temporary function until the argumentless version gets available")
-    fun toSignedTransaction(signatory: PublicKey): ConsensualSignedTransaction
 }
