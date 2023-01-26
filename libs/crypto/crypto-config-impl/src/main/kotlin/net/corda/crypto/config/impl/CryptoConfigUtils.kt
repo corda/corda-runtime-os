@@ -2,6 +2,7 @@
 
 package net.corda.crypto.config.impl
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
@@ -258,15 +259,22 @@ fun createCryptoSmartConfigFactory(smartFactoryKey: KeyCredentials): SmartConfig
         listOf(EncryptionSecretsServiceFactory())
     )
 
+// TODO - move to test library file
 fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
     createCryptoSmartConfigFactory(smartFactoryKey).createDefaultCryptoConfig(
+        SmartConfigFactory.createWith(ConfigFactory.parseMap(mapOf(SmartConfigFactory.SECRET_SERVICE_TYPE to "duck")), emptyList()).create(ConfigFactory.empty()),
         KeyCredentials(
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString()
         )
     )
 
-fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentials): SmartConfig = try {
+fun SmartConfigFactory.createDefaultCryptoConfig(bootConfig: SmartConfig, masterWrappingKey: KeyCredentials): SmartConfig = try {
+    val passphrasePath = "${CryptoHSMConfig.HSMConfig::cfg.name}.wrappingKeyMap.passpharse"
+    // Since the passphrase secret is in the boot config, we do not need to default it.
+    // We do not want to get the value and end up storing that unencrpted in the database.
+    // So, to be safe, we just leave it out
+    val excludePassphrase = (bootConfig.hasPath(passphrasePath) && bootConfig.isSecret(passphrasePath))
     this.create(
         ConfigFactory.empty()
             .withValue(
@@ -330,17 +338,17 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                                         "maximumSize" to 1000
                                     )
                                 ),
-                                "wrappingKeyMap" to mapOf(
+                                "wrappingKeyMap" to listOfNotNull(
                                     "name" to "CACHING",
                                     "salt" to masterWrappingKey.salt,
-                                    "passphrase" to ConfigValueFactory.fromMap(
+                                    if (excludePassphrase) null else  "passphrase" to ConfigValueFactory.fromMap(
                                         makeSecret(masterWrappingKey.passphrase).root().unwrapped()
                                     ),
                                     "cache" to mapOf(
                                         "expireAfterAccessMins" to 60,
                                         "maximumSize" to 1000
                                     )
-                                ),
+                                ).toMap(),
                                 "wrapping" to mapOf(
                                     "name" to "DEFAULT"
                                 )
