@@ -53,7 +53,7 @@ class TestPeekTransactionFlow {
             val keyGenerator = KeyPairGenerator.getInstance("EC")
 
             val participantKey = keyGenerator.generateKeyPair().public
-            val testState = UtxoDemoFlow.TestUtxoState("text", listOf(participantKey))
+            val testState = UtxoDemoFlow.TestUtxoState("text", listOf(participantKey), listOf(""))
             val testContractState = mock<TransactionState<UtxoDemoFlow.TestUtxoState>>().apply {
                 whenever(this.contractState).thenReturn(testState)
             }
