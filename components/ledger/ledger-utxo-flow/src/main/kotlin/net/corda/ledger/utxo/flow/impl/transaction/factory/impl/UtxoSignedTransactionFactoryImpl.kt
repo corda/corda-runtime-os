@@ -22,6 +22,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -71,8 +72,14 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         UtxoLedgerTransactionVerifier(utxoLedgerTransactionFactory.create(wireTransaction)).verify(utxoTransactionBuilder.notary!!)
 
-        val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
-
+        val signaturesWithMetadata =
+            transactionSignatureService.sign(
+                wireTransaction.id,
+                utxoTransactionBuilder.signatories
+            )
+        if (signaturesWithMetadata.isEmpty()){
+            throw CordaRuntimeException("None of the required keys were available to sign the transaction")
+        }
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
