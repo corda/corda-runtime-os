@@ -20,6 +20,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
@@ -27,8 +28,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PENDING_AUTO_APPROVAL
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.membership.MemberContext
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -83,16 +82,16 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val approvalRuleDetails = mock<ApprovalRuleDetails> {
         on { ruleRegex } doReturn APPROVAL_RULE_STRING
     }
-    private val membershipQueryClient = mock<MembershipQueryClient>()
-    private val memberContext = mock<MemberContext> {
-        on { entries } doReturn mapOf(MEMBER_KEY to MEMBER_KEY).entries
+    private val memberContext = mock<KeyValuePairList> {
+        on { items } doReturn listOf(KeyValuePair(MEMBER_KEY, MEMBER_KEY))
     }
-    private val mockMemberInfo = mock<MemberInfo> {
-        on { memberProvidedContext } doReturn memberContext
+    private val requestStatus = mock<RegistrationRequestStatus> {
+        on { memberContext } doReturn memberContext
     }
-    private val groupReader = mock<MembershipGroupReader> {
-        on { lookup(any()) } doReturn mockMemberInfo
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on { queryRegistrationRequestStatus(eq(mgm.toCorda()), any()) } doReturn MembershipQueryResult.Success(requestStatus)
     }
+    private val groupReader = mock<MembershipGroupReader>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(any()) } doReturn groupReader
     }
@@ -155,7 +154,7 @@ class ProcessMemberVerificationResponseHandlerTest {
     }
 
     @Test
-    fun `handler returns approve member command with manual approval status`() {
+    fun `handler sets request status to manual approval`() {
         whenever(membershipQueryClient.getApprovalRules(any(), any())).doReturn(MembershipQueryResult.Success(listOf(approvalRuleDetails)))
         val result = processMemberVerificationResponseHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
@@ -238,7 +237,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
     @Test
     fun `handler use the correct TTL configuration`() {
-        whenever(membershipQueryClient.getApprovalRules(any(), any())).doReturn(MembershipQueryResult.Success(listOf()))
+        whenever(membershipQueryClient.getApprovalRules(any(), any())).doReturn(MembershipQueryResult.Success(emptyList()))
         processMemberVerificationResponseHandler.invoke(
             state,
             Record(TOPIC, member.toString(), RegistrationCommand(command))

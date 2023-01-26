@@ -18,6 +18,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
+import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -29,6 +30,7 @@ import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PEND
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.membership.MemberContext
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 
@@ -75,7 +77,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 throw CordaRuntimeException("Member ${mgm.x500Name} is not an MGM and can not process member's registration.")
             }
 
-            val status = getApprovalType(mgm.toCorda(), member.toCorda())
+            val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId)
             membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
                 registrationId,
@@ -120,14 +122,19 @@ internal class ProcessMemberVerificationResponseHandler(
         )
     }
 
-    private fun getApprovalType(mgm: HoldingIdentity, member: HoldingIdentity): RegistrationStatus {
-        val proposedMemberInfo = with(membershipGroupReaderProvider.getGroupReader(mgm)) {
-            lookup(member.x500Name) ?: throw CordaRuntimeException(
-                "Could not read the proposed MemberInfo for registration request submitted by ${member.x500Name}."
-            )
+    private fun getNextRegistrationStatus(
+        mgm: HoldingIdentity,
+        member: HoldingIdentity,
+        registrationId: String
+    ): RegistrationStatus {
+        val proposedMemberInfo = membershipQueryClient.queryRegistrationRequestStatus(mgm, registrationId)
+            .getOrThrow()?.memberContext?.toMap() ?: throw CordaRuntimeException(
+            "Could not read the proposed MemberInfo for registration request (ID=$registrationId) submitted by ${member.x500Name}."
+        )
+
+        val activeMemberInfo = with(membershipGroupReaderProvider.getGroupReader(mgm)) {
+            lookup(member.x500Name)?.memberProvidedContext?.toMap()
         }
-        // TODO Get active MemberInfo from MembershipGroupReader after implementing re-registration.
-        val activeMemberInfo = null
 
         val rules = membershipQueryClient.getApprovalRules(mgm, ApprovalRuleType.STANDARD).getOrThrow()
             .map { RegistrationRule.Impl(it.ruleRegex.toRegex()) }
@@ -140,4 +147,6 @@ internal class ProcessMemberVerificationResponseHandler(
             }
         }
     }
+
+    private fun MemberContext.toMap() = entries.associate { it.key to it.value }
 }

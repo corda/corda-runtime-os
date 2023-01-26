@@ -33,7 +33,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.regex.PatternSyntaxException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
