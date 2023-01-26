@@ -1,8 +1,8 @@
 package net.corda.httprpc.client;
 
 import net.corda.httprpc.client.config.RestClientConfig;
-import net.corda.httprpc.server.config.models.HttpRpcSettings;
-import net.corda.httprpc.server.impl.HttpRpcServerImpl;
+import net.corda.httprpc.server.config.models.RestServerSettings;
+import net.corda.httprpc.server.impl.RestServerImpl;
 import net.corda.httprpc.test.CustomSerializationAPIImpl;
 import net.corda.httprpc.test.TestHealthCheckAPI;
 import net.corda.httprpc.test.TestHealthCheckAPIImpl;
@@ -22,18 +22,18 @@ public class RestJavaClientIntegrationTest extends RestIntegrationTestBase {
 
     @BeforeAll
     static void setUpBeforeClass() {
-        HttpRpcSettings httpRpcSettings = new HttpRpcSettings(new NetworkHostAndPort("localhost", 0),
+        RestServerSettings restServerSettings = new RestServerSettings(new NetworkHostAndPort("localhost", 0),
             RestIntegrationTestBase.Companion.getContext(),
             null,
             null,
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
             20000L
         );
         RestIntegrationTestBase.Companion.setServer(
-                new HttpRpcServerImpl(
+                new RestServerImpl(
                         List.of(new TestHealthCheckAPIImpl(), new CustomSerializationAPIImpl()),
                         RestIntegrationTestBase.Companion::getSecurityManager,
-                        httpRpcSettings,
+                        restServerSettings,
                         Path.of(System.getProperty("java.io.tmpdir")),
                         true
                 )

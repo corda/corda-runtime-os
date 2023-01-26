@@ -17,16 +17,6 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
     val wireTransaction: WireTransaction
 
     /**
-     * Sign the current [UtxoSignedTransactionInternal] with the specified key.
-     *
-     * @param publicKey The private counterpart of the specified public key will be used for signing the
-     *      [UtxoSignedTransaction].
-     * @return Returns the new [UtxoSignedTransactionInternal] containing the applied signature and the signature itself.
-     */
-    @Suspendable
-    fun sign(publicKey: PublicKey): Pair<UtxoSignedTransactionInternal, DigitalSignatureAndMetadata>
-
-    /**
      * Adds a signature to the current [UtxoSignedTransactionInternal].
      *
      * @param signature The signature to be added to the [UtxoSignedTransactionInternal].
@@ -40,12 +30,10 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      * if there are any. (Disabled until crypto support becomes available.)
      *
      * @return Returns the new [UtxoSignedTransactionInternal] containing the applied signature and a
-     *          list of added signatures.
+     *          list of the added signatures.
      */
     @Suspendable
-    fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
-        TODO("Not implemented yet")
-    }
+    fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>>
 
     /**
      * Gets the missing signatories from the current [UtxoSignedTransactionInternal].

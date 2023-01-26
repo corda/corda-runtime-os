@@ -13,8 +13,8 @@ import net.corda.httprpc.JsonObject
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
-import net.corda.httprpc.security.RpcAuthContext
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
+import net.corda.httprpc.security.RestAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
@@ -51,10 +51,10 @@ class ConfigRestResourceImplTests {
         @JvmStatic
         @BeforeAll
         fun setRPCContext() {
-            val rpcAuthContext = mock<RpcAuthContext>().apply {
+            val restAuthContext = mock<RestAuthContext>().apply {
                 whenever(principal).thenReturn(actor)
             }
-            CURRENT_RPC_CONTEXT.set(rpcAuthContext)
+            CURRENT_REST_CONTEXT.set(restAuthContext)
         }
     }
 

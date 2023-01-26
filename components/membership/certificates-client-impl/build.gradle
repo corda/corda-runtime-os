@@ -25,7 +25,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(':components:membership:group-policy')
     implementation project(':libs:membership:certificates-common')
-    implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:http-rpc:rest")
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

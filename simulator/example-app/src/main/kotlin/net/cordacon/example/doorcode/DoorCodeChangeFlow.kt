@@ -54,10 +54,9 @@ class DoorCodeChangeFlow : ClientStartableFlow {
         val doorCodeState = DoorCodeConsensualState(newDoorCode, participants.map { getPublicKey(it) })
 
         val txBuilder = consensualLedgerService.getTransactionBuilder()
-        @Suppress("DEPRECATION")
         val signedTransaction = txBuilder
             .withStates(doorCodeState)
-            .toSignedTransaction(memberLookup.myInfo().ledgerKeys.first())
+            .toSignedTransaction()
 
         val sessions = initiateSessions(participants.minus(memberLookup.myInfo().name))
         val result = consensualLedgerService.finalize(signedTransaction, sessions)

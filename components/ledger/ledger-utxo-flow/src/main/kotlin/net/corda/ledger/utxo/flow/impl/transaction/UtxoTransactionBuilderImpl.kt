@@ -123,34 +123,16 @@ data class UtxoTransactionBuilderImpl(
     }
 
     @Suspendable
-    override fun toSignedTransaction(): UtxoSignedTransaction {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    @Deprecated("Temporary function until the argumentless version gets available")
-    override fun toSignedTransaction(signatory: PublicKey): UtxoSignedTransaction =
-        sign(listOf(signatory))
+    override fun toSignedTransaction(): UtxoSignedTransaction =
+        sign()
 
     @Suspendable
     fun sign(): UtxoSignedTransaction {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    fun sign(vararg signatories: PublicKey): UtxoSignedTransaction =
-        sign(signatories.toList())
-
-    @Suspendable
-    fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
         check(!alreadySigned) { "The transaction cannot be signed twice." }
-        require(signatories.toList().isNotEmpty()) {
-            "At least one key needs to be provided in order to create a signed Transaction!"
-        }
         UtxoTransactionBuilderVerifier(this).verify()
-        val tx = utxoSignedTransactionFactory.create(this, signatories)
-        alreadySigned = true
-        return tx
+        return utxoSignedTransactionFactory.create(this, signatories).also {
+            alreadySigned = true
+        }
     }
 
     private fun ContractState.withEncumbrance(tag: String?): ContractStateAndEncumbranceTag {

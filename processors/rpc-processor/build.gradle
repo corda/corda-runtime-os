@@ -54,8 +54,8 @@ dependencies {
 
     runtimeOnly project(':libs:configuration:configuration-endpoints')
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
-    runtimeOnly project(':libs:http-rpc:http-rpc-server-impl')
-    runtimeOnly project(':libs:http-rpc:http-rpc-stubs-impl')
+    runtimeOnly project(':libs:http-rpc:rest-server-impl')
+    runtimeOnly project(':libs:http-rpc:rest-stubs-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
@@ -71,8 +71,8 @@ dependencies {
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
 
-    integrationTestImplementation project(':libs:http-rpc:http-rpc')
-    integrationTestImplementation project(':libs:http-rpc:http-rpc-server')
+    integrationTestImplementation project(':libs:http-rpc:rest')
+    integrationTestImplementation project(':libs:http-rpc:rest-server')
     integrationTestImplementation project(':libs:http-rpc:rest-tools')
 
     integrationTestImplementation project(':components:membership:membership-http-rpc')

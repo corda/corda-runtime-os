@@ -15,18 +15,12 @@ internal class QueryRegistrationRequestHandler(persistenceHandlerServices: Persi
     ): RegistrationRequestQueryResponse {
         val shortHash = context.holdingIdentity.toCorda().shortHash
         return transaction(shortHash) { em ->
-
             val criteriaBuilder = em.criteriaBuilder
             val queryBuilder = criteriaBuilder.createQuery(RegistrationRequestEntity::class.java)
             val root = queryBuilder.from(RegistrationRequestEntity::class.java)
             val query = queryBuilder
                 .select(root)
-                .where(
-                    criteriaBuilder.and(
-                        criteriaBuilder.equal(root.get<String>("registrationId"), request.registrationRequestId),
-                        criteriaBuilder.equal(root.get<String>("holdingIdentityShortHash"), shortHash.value),
-                    )
-                ).orderBy()
+                .where(criteriaBuilder.equal(root.get<String>("registrationId"), request.registrationRequestId))
             val details =
                 em.createQuery(query)
                     .resultList

@@ -7,6 +7,7 @@ import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
@@ -92,6 +93,8 @@ class FlowEventProcessorImpl(
         } catch (e: FlowPlatformException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowFatalException) {
+            flowEventExceptionProcessor.process(e, pipeline.context)
+        } catch (e: FlowMarkedForKillException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)

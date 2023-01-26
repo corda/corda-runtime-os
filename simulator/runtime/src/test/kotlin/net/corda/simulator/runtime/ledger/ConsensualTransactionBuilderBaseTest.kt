@@ -3,10 +3,12 @@ package net.corda.simulator.runtime.ledger
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.corda.v5.membership.MemberInfo
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.BeforeEach
@@ -24,6 +26,9 @@ class ConsensualTransactionBuilderBaseTest {
     private val publicKeys = generateKeys(3)
     private val signingService = mock<SigningService>()
     private val configuration = SimulatorConfigurationBuilder.create().build()
+    private val memberLookup = mock<MemberLookup>()
+    private val myLedgerKey = publicKeys[0]
+    private val myMemberInfo = mock<MemberInfo>()
 
     @BeforeEach
     fun `set up signing service mock`() {
@@ -31,6 +36,8 @@ class ConsensualTransactionBuilderBaseTest {
             whenever(signingService.sign(any(), eq(it), any()))
                 .thenReturn(DigitalSignature.WithKey(it, "some bytes".toByteArray(), mapOf()))
         }
+        whenever(myMemberInfo.ledgerKeys).thenReturn(listOf(myLedgerKey))
+        whenever(memberLookup.myInfo()).thenReturn(myMemberInfo)
     }
 
     @Test
@@ -38,13 +45,12 @@ class ConsensualTransactionBuilderBaseTest {
         val builder = ConsensualTransactionBuilderBase(
             listOf(MyConsensualState(publicKeys)),
             signingService,
-            mock(),
+            memberLookup,
             configuration
         )
 
-        @Suppress("DEPRECATION")
-        val tx = builder.toSignedTransaction(publicKeys[0])
-        assertThat(tx.signatures.map {it.by}, `is`(listOf(publicKeys[0])))
+        val tx = builder.toSignedTransaction()
+        assertThat(tx.signatures.map {it.by}, `is`(listOf(myLedgerKey)))
     }
 
     @Test
@@ -63,11 +69,10 @@ class ConsensualTransactionBuilderBaseTest {
         val builder = ConsensualTransactionBuilderBase(
             states,
             signingService,
-            mock(),
+            memberLookup,
             clockConfig
         )
-        @Suppress("DEPRECATION")
-        val tx = builder.toSignedTransaction(publicKeys[0])
+        val tx = builder.toSignedTransaction()
 
         // Then the ledger transaction version should have the states in it
         assertThat(tx.toLedgerTransaction().states, `is`(states))

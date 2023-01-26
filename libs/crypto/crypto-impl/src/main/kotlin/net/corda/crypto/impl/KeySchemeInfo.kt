@@ -58,7 +58,6 @@ abstract class ECDSAKeySchemeInfo(
     SignatureSpec.ECDSA_SHA256
 )
 
-// TODO How did this
 class ECDSAR1KeySchemeInfo(
     provider: Provider
 ) : ECDSAKeySchemeInfo(provider, ECDSA_SECP256R1_TEMPLATE)

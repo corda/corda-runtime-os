@@ -1,9 +1,9 @@
 package net.corda.httprpc.client
 
 import net.corda.httprpc.client.config.RestClientConfig
-import net.corda.httprpc.server.config.models.HttpRpcSSLSettings
-import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.impl.HttpRpcServerImpl
+import net.corda.httprpc.server.config.models.RestSSLSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
+import net.corda.httprpc.server.impl.RestServerImpl
 import net.corda.httprpc.ssl.impl.SslCertReadServiceStubImpl
 import net.corda.httprpc.test.CustomSerializationAPI
 import net.corda.httprpc.test.CustomSerializationAPIImpl
@@ -33,19 +33,19 @@ internal class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
         fun setUpBeforeClass() {
             //System.setProperty("javax.net.debug", "all")
             val keyStoreInfo = sslService.getOrCreateKeyStore()
-            val sslConfig = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
-            val httpRpcSettings = HttpRpcSettings(
+            val sslConfig = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
+            val restServerSettings = RestServerSettings(
                 NetworkHostAndPort("localhost", 0),
                 context,
                 sslConfig,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
                 20000L
             )
-            server = HttpRpcServerImpl(
+            server = RestServerImpl(
                 listOf(TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
                 ::securityManager,
-                httpRpcSettings,
+                restServerSettings,
                 multipartDir,
                 true
             ).apply { start() }

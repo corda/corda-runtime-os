@@ -56,12 +56,35 @@ pipeline {
         CORDA_REVISION = "${env.GIT_COMMIT}"
         GRADLE_PERFORMANCE_TUNING = "--max-workers=4 --parallel -Dscan.tag.combined-worker --build-cache -Si"
     }
+
+    parameters {
+        string(name: 'COMMIT_TO_CHECKOUT', defaultValue: '', description: 'Commit ID to check out of SCM - leave blank to take head of current branch')
+    }
+
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timestamps()
     }
+
     stages {
-		  //stage create DB - see shared pipline
+        stage('check out') {
+            steps {
+                script {
+                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null) { // CHANGE_ID only populated in PRs
+                        echo "Checking out commit ID from upstream job ${params.COMMIT_TO_CHECKOUT}"
+                        sh 'git checkout "$COMMIT_TO_CHECKOUT"'
+                    } else {
+                        if (env.CHANGE_ID) {
+                            echo "Checking out head revision of ${env.BRANCH_NAME} and merging into ${env.CHANGE_TARGET}"
+                        } else {
+                            echo "Checking out head revision of ${env.BRANCH_NAME}"
+                        }
+                    }
+                }
+            }
+        }
+		  
+        //stage create DB - see shared pipline
         stage('create DBs') {
             environment {
                 KUBECONFIG = credentials('e2e-tests-credentials')

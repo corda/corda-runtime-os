@@ -4,7 +4,7 @@ import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
@@ -66,7 +66,7 @@ class RoleEndpointImpl @Activate constructor(
     }
 
     override fun createRole(createRoleType: CreateRoleType): ResponseEntity<RoleResponseType> {
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         val createRoleResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
@@ -77,7 +77,7 @@ class RoleEndpointImpl @Activate constructor(
     }
 
     override fun getRole(id: String): RoleResponseType {
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         val roleResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
@@ -88,7 +88,7 @@ class RoleEndpointImpl @Activate constructor(
     }
 
     override fun addPermission(roleId: String, permissionId: String): ResponseEntity<RoleResponseType> {
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         val updatedRoleResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
@@ -99,7 +99,7 @@ class RoleEndpointImpl @Activate constructor(
     }
 
     override fun removePermission(roleId: String, permissionId: String): ResponseEntity<RoleResponseType> {
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         val updatedRoleResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
