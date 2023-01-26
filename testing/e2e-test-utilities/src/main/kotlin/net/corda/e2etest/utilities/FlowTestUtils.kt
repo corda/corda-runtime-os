@@ -1,10 +1,8 @@
-package net.corda.applications.workers.smoketest
+package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.contains
-import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
-import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
@@ -29,7 +27,11 @@ fun startRpcFlow(
 ): String {
 
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         assertWithRetry {
             command {
@@ -49,7 +51,11 @@ fun startRpcFlow(
 
 fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         val requestId = UUID.randomUUID().toString()
 
@@ -71,7 +77,11 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, ex
 
 fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         ObjectMapper().readValue(
             assertWithRetry {
@@ -90,7 +100,11 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
 
 fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         assertWithRetry {
             command { multipleFlowStatus(holdingId) }
@@ -110,7 +124,11 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
 
 fun getFlowClasses(holdingId: String): List<String> {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         val vNodeJson = assertWithRetry {
             command { runnableFlowClasses(holdingId) }
@@ -124,7 +142,11 @@ fun getFlowClasses(holdingId: String): List<String> {
 
 fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
         // be a bit patient for the CPI info to get there in case it has just been uploaded
         val json = eventually(
             duration = Duration.ofSeconds(30)
@@ -176,7 +198,11 @@ fun getOrCreateVirtualNodeFor(x500: String, cpiName: String): String {
 
 fun registerMember(holdingIdentityShortHash: String, isNotary: Boolean = false) {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         val membershipJson = assertWithRetry {
             command { registerMember(holdingIdentityShortHash, isNotary) }
@@ -204,7 +230,11 @@ fun registerMember(holdingIdentityShortHash: String, isNotary: Boolean = false) 
 
 fun addSoftHsmFor(holdingId: String, category: String) {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
         assertWithRetry {
             timeout(Duration.ofSeconds(5))
             command { addSoftHsmToVNode(holdingId, category) }
@@ -216,7 +246,11 @@ fun addSoftHsmFor(holdingId: String, category: String) {
 
 fun createKeyFor(holdingId: String, alias: String, category: String, scheme: String): String {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
         val keyId = assertWithRetry {
             command { createKey(holdingId, alias, category, scheme) }
             condition { it.code == 200 }
@@ -248,7 +282,11 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
  */
 fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String, staticMemberNames: List<String>) {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         val cpis = cpiList().toJson()["cpis"]
         val existingCpi = cpis.toList().firstOrNull { it["id"]["cpiName"].textValue() == name }

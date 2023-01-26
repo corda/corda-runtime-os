@@ -1,15 +1,13 @@
-package net.corda.applications.workers.smoketest
+package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
-import java.io.IOException
-import java.time.Duration
 import kong.unirest.UnirestException
-import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
-import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.fail
+import java.io.IOException
+import java.time.Duration
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
@@ -22,7 +20,11 @@ fun JsonNode.configWithDefaultsNode(): JsonNode =
  */
 fun getConfig(section: String): JsonNode {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         assertWithRetryIgnoringExceptions {
             command { getConfig(section) }
@@ -38,7 +40,11 @@ fun getConfig(section: String): JsonNode {
  */
 fun updateConfig(config: String, section: String) {
     return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         val currentConfig = getConfig(section).body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
@@ -71,10 +77,19 @@ fun updateConfig(config: String, section: String) {
  * Wait for the REST API on the rpc-worker to respond with an updated config value.
  * If [expectServiceToBeDown] is set to true it is expected the config endpoint will go down before coming back up with the new config.
  */
-fun waitForConfigurationChange(section: String, key: String, value: String, expectServiceToBeDown: Boolean = true, timeout: Duration = Duration
-    .ofMinutes(1)) {
+fun waitForConfigurationChange(
+    section: String,
+    key: String,
+    value: String,
+    expectServiceToBeDown: Boolean = true,
+    timeout: Duration = Duration.ofMinutes(1)
+) {
     cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
 
         if (expectServiceToBeDown) {
             // Wait for the service to become unavailable

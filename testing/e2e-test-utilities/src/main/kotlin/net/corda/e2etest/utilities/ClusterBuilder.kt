@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest.virtualnode.helpers
+package net.corda.e2etest.utilities
 
 import java.io.FileNotFoundException
 import java.net.URI
@@ -10,6 +10,7 @@ import java.nio.file.Paths
  *  The caller needs to marshall the response body to json, and then query
  *  the json for the expected results.
  */
+@Suppress("TooManyFunctions")
 class ClusterBuilder {
     private var client: HttpsClient? = null
 
