@@ -55,6 +55,7 @@ internal class VirtualNodeUpgradeOperationHandler(
             val currentVirtualNode = findCurrentVirtualNode(em, virtualNodeShortHash)
             val targetCpiMetadata = findTargetCpi(targetCpiFileChecksum)
             val originalCpiMetadata = findCurrentCpi(
+                em,
                 currentVirtualNode.cpiIdentifier.name,
                 currentVirtualNode.cpiIdentifier.version,
                 currentVirtualNode.cpiIdentifier.signerSummaryHash.toString()
@@ -92,8 +93,10 @@ internal class VirtualNodeUpgradeOperationHandler(
     }
 
 
-    private fun findCurrentCpi(cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String): CpiMetadataLite {
-        return requireNotNull(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(cpiName, cpiVersion, cpiSignerSummaryHash)) {
+    private fun findCurrentCpi(em: EntityManager, cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String): CpiMetadataLite {
+        return requireNotNull(
+            oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(em, cpiName, cpiVersion, cpiSignerSummaryHash)
+        ) {
             "CPI with name $cpiName, version $cpiVersion was not found."
         }
     }

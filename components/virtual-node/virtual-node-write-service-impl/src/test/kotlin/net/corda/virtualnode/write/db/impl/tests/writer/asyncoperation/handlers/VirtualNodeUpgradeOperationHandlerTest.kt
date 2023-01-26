@@ -39,7 +39,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val virtualNodeInfoPublisher = mock<Publisher>()
     private val virtualNodeRepository = mock<VirtualNodeRepository>()
     private val entityTransaction = mock<EntityTransaction>()
-    private val entityManager = mock<EntityManager>()
+    private val em = mock<EntityManager>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
     private val vnodeId = "123456789011"
 
@@ -90,8 +90,8 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @BeforeEach
     fun setUp() {
-        whenever(entityManager.transaction).thenReturn(entityTransaction)
-        whenever(entityManagerFactory.createEntityManager()).thenReturn(entityManager)
+        whenever(em.transaction).thenReturn(entityTransaction)
+        whenever(entityManagerFactory.createEntityManager()).thenReturn(em)
     }
 
     @Test
@@ -122,7 +122,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler can't find virtual node throws`() {
-        whenever(virtualNodeRepository.find(entityManager, ShortHash.Companion.of(vnodeId)))
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId)))
             .thenReturn(null)
 
         assertThrows<VirtualNodeNotFoundException> {
@@ -136,7 +136,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler can't find target CPI throws`() {
-        whenever(virtualNodeRepository.find(entityManager, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(null)
 
         assertThrows<CpiNotFoundException> {
@@ -150,9 +150,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler can't find current CPI associated with target CPI throws`() {
-        whenever(virtualNodeRepository.find(entityManager, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
             .thenReturn(null)
 
         assertThrows<IllegalArgumentException> {
@@ -167,9 +167,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `upgrade handler validates target CPI and current CPI are in the same group`() {
         val cpiInDifferentGroup = mock<CpiMetadataLite> { whenever(it.mgmGroupId).thenReturn("group-b") }
-        whenever(virtualNodeRepository.find(entityManager, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
             .thenReturn(cpiInDifferentGroup)
 
         assertThrows<MgmGroupMismatchException> {
@@ -183,9 +183,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler fails to upgrade, rolls back transaction`() {
-        whenever(virtualNodeRepository.find(entityManager, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
             .thenReturn(currentCpiMetadata)
         whenever(virtualNodeRepository.upgradeVirtualNodeCpi(any(), any(), any(), any(), any())).thenThrow(IllegalArgumentException("err"))
 
@@ -204,12 +204,12 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler successfully persists and publishes vnode info`() {
-        whenever(virtualNodeRepository.find(entityManager, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
             .thenReturn(currentCpiMetadata)
         whenever(virtualNodeRepository.upgradeVirtualNodeCpi(
-            eq(entityManager), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString))
+            eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString))
         ).thenReturn(upgradedVnodeInfo)
 
         val capture = argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()

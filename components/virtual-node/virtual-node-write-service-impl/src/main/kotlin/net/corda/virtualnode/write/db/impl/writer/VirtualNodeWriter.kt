@@ -18,19 +18,19 @@ import net.corda.messaging.api.subscription.Subscription
  */
 internal class VirtualNodeWriter internal constructor(
     private val rpcSubscription: RPCSubscription<VirtualNodeManagementRequest, VirtualNodeManagementResponse>,
-    private val durableSubscription: Subscription<String, VirtualNodeAsynchronousRequest>,
+    private val asyncOperationSubscription: Subscription<String, VirtualNodeAsynchronousRequest>,
     private val publisher: Publisher
 ) : Resource {
 
     fun start() {
         rpcSubscription.start()
         publisher.start()
-        durableSubscription.start()
+        asyncOperationSubscription.start()
     }
 
     override fun close() {
         rpcSubscription.close()
         publisher.close()
-        durableSubscription.close()
+        asyncOperationSubscription.close()
     }
 }
