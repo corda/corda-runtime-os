@@ -60,7 +60,7 @@ fun createDbConfig(
     maxPoolSize: Int? = null,
 ): SmartConfig {
     var config =
-        smartConfigFactory.makeSecret(password).atPath(DatabaseConfig.DB_PASS)
+        smartConfigFactory.makeSecret(password, DatabaseConfig.DB_PASS).atPath(DatabaseConfig.DB_PASS)
             .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(username))
     if(null != jdbcDriver)
         config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))

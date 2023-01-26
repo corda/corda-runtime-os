@@ -234,12 +234,12 @@ class PostgresDbSetup(
         return "{\"database\":{" +
                 "\"jdbc\":" +
                 "{\"url\":\"$jdbcUrl\"}," +
-                "\"pass\":${createSecureConfig(secretsService, password)}," +
+                "\"pass\":${createSecureConfig(secretsService, password, "database.pass")}," +
                 "\"user\":\"$username\"}}"
     }
 
-    private fun createSecureConfig(secretsService: SecretsCreateService, value: String): String {
-        return secretsService.createValue(value).root().render(ConfigRenderOptions.concise())
+    private fun createSecureConfig(secretsService: SecretsCreateService, value: String, path:String): String {
+        return secretsService.createValue(value, path).root().render(ConfigRenderOptions.concise())
     }
 
     private fun SecureRandom.randomString(length: Int = 32): String = ByteArray(length).let {

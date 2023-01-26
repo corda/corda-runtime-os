@@ -336,10 +336,10 @@ fun createDefaultCryptoConfig(bootConfig: SmartConfig, masterWrappingKey: KeyCre
                                 "wrappingKeyMap" to listOfNotNull(
                                     "name" to "CACHING",
                                     if (excludeSalt) null else "salt" to ConfigValueFactory.fromMap(
-                                        configFactory.makeSecret(masterWrappingKey.salt).root().unwrapped()
+                                        configFactory.makeSecret(masterWrappingKey.salt, "$wrappingKeyMapPath.passphrase").root().unwrapped()
                                     ),
                                     if (excludePassphrase) null else  "passphrase" to ConfigValueFactory.fromMap(
-                                        configFactory.makeSecret(masterWrappingKey.passphrase).root().unwrapped()
+                                        configFactory.makeSecret(masterWrappingKey.passphrase, "$wrappingKeyMapPath.salt").root().unwrapped()
                                     ),
                                     "cache" to mapOf(
                                         "expireAfterAccessMins" to 60,
