@@ -11,8 +11,11 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.io.ByteArrayInputStream
 import java.security.MessageDigest
 import java.security.PublicKey
@@ -120,6 +123,42 @@ class CryptoUtilsTests {
                     generateKeyPair(ECDSA_SECP256R1_SPEC).public,
                 )
             )
+        )
+    }
+
+    @Test
+    fun `containsAny should only return true if one of the provided key parameters is associated with the composite key`() {
+        val key = generateKeyPair(ECDSA_SECP256R1_SPEC).public
+        val key2 = generateKeyPair(ECDSA_SECP256R1_SPEC).public
+        val key3 = generateKeyPair(ECDSA_SECP256R1_SPEC).public
+
+        val invalidKey = generateKeyPair(ECDSA_SECP256R1_SPEC).public
+        val differentAlgoKey = generateKeyPair(RSA_SPEC).public
+
+        val compositeKey = mock<CompositeKey> {
+            on { leafKeys } doReturn setOf(key, key2, key3)
+        }
+
+        val compositeKey2 = mock<CompositeKey> {
+            on { leafKeys } doReturn setOf(key, key3)
+        }
+
+        assertAll(
+            // First composite key probes
+            { assertTrue { compositeKey.containsAny(setOf(key)) } },
+            { assertTrue { compositeKey.containsAny(setOf(key, key2)) } },
+            { assertTrue { compositeKey.containsAny(setOf(key2, key3)) } },
+            { assertTrue { compositeKey.containsAny(setOf(key, key3)) } },
+            { assertTrue { compositeKey.containsAny(setOf(key2)) } },
+            { assertTrue { compositeKey.containsAny(setOf(key2, invalidKey)) } },
+            { assertTrue { compositeKey.containsAny(setOf(key3, differentAlgoKey)) } },
+            { assertFalse { compositeKey.containsAny(setOf(invalidKey)) } },
+            { assertFalse { compositeKey.containsAny(setOf(differentAlgoKey)) } },
+            { assertFalse { compositeKey.containsAny(emptySet()) } },
+            // Second composite key probes
+            { assertTrue { compositeKey2.containsAny(setOf(key)) } },
+            { assertTrue { compositeKey2.containsAny(setOf(key3)) } },
+            { assertFalse { compositeKey2.containsAny(setOf(key2)) } }
         )
     }
 
