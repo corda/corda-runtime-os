@@ -46,7 +46,6 @@ pluginManagement {
         id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
-        id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
         id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
         id 'org.jetbrains.dokka' version dokkaVersion
