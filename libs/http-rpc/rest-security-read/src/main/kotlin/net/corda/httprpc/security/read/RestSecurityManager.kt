@@ -6,9 +6,9 @@ import net.corda.lifecycle.Lifecycle
 import javax.security.auth.login.FailedLoginException
 
 /**
- * Manage security of RPC users, providing logic for user authentication and authorization.
+ * Manage security of Rest users, providing logic for user authentication and authorization.
  */
-interface RPCSecurityManager : Lifecycle {
+interface RestSecurityManager : Lifecycle {
     /**
      * An identifier associated to this security service
      */
@@ -32,7 +32,7 @@ interface RPCSecurityManager : Lifecycle {
 /**
  * Non-throwing version of authenticate, returning null instead of throwing in case of authentication failure
  */
-fun RPCSecurityManager.tryAuthenticate(principal: String, password: Password): AuthorizingSubject? {
+fun RestSecurityManager.tryAuthenticate(principal: String, password: Password): AuthorizingSubject? {
     password.use {
         return try {
             authenticate(principal, password)

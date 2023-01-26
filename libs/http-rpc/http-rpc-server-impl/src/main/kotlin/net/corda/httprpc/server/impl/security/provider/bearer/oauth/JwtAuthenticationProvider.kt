@@ -4,7 +4,7 @@ import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.JWT
 import com.nimbusds.jwt.JWTParser
 import net.corda.httprpc.security.AuthorizingSubject
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.impl.security.provider.bearer.BearerTokenAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.v5.base.util.contextLogger
@@ -14,7 +14,7 @@ import javax.security.auth.login.FailedLoginException
 internal open class JwtAuthenticationProvider(
     private val jwtProcessor: JwtProcessor,
     private val claimExtractor: JwtClaimExtractor,
-    private val rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
+    private val restSecurityManagerSupplier: Supplier<RestSecurityManager>
 ) : BearerTokenAuthenticationProvider() {
 
     companion object {
@@ -40,7 +40,7 @@ internal open class JwtAuthenticationProvider(
         return try {
             val claims = jwtProcessor.process(jwt)
             val username = claimExtractor.getUsername(claims)
-            rpcSecurityManagerSupplier.get().buildSubject(username)
+            restSecurityManagerSupplier.get().buildSubject(username)
         } catch (e: BadJOSEException) {
             throw FailedLoginException("Unable to validate token.")
         }

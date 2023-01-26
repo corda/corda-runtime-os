@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.RestServer
 import net.corda.httprpc.server.config.RestServerSettingsProvider
 import net.corda.httprpc.server.config.impl.RestServerObjectSettingsProvider
@@ -28,7 +28,7 @@ import kotlin.concurrent.write
 @SuppressWarnings("TooGenericExceptionThrown", "LongParameterList")
 class HttpRpcServerImpl(
     restResourceImpls: List<PluggableRestResource<out RestResource>>,
-    rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>,
+    restSecurityManagerSupplier: Supplier<RestSecurityManager>,
     restServerSettings: RestServerSettings,
     multiPartDir: Path,
     devMode: Boolean
@@ -50,7 +50,7 @@ class HttpRpcServerImpl(
             restServerSettings.context.version,
             resources
         ),
-        SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManagerSupplier)),
+        SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, restSecurityManagerSupplier)),
         httpRpcObjectConfigProvider,
         OpenApiInfoProvider(resources, httpRpcObjectConfigProvider),
         multiPartDir,
@@ -98,12 +98,12 @@ class HttpRpcServerImpl(
 
     private fun createAuthenticationProviders(
         settings: RestServerSettingsProvider,
-        rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
+        restSecurityManagerSupplier: Supplier<RestSecurityManager>
     ): Set<AuthenticationProvider> {
-        val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(rpcSecurityManagerSupplier))
+        val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(restSecurityManagerSupplier))
         val azureAdSettings = settings.getSsoSettings()?.azureAd()
         if (azureAdSettings != null) {
-            result.add(AzureAdAuthenticationProvider.createDefault(azureAdSettings, rpcSecurityManagerSupplier))
+            result.add(AzureAdAuthenticationProvider.createDefault(azureAdSettings, restSecurityManagerSupplier))
         }
         return result
     }

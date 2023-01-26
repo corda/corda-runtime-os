@@ -1,6 +1,6 @@
 package net.corda.components.rbac
 
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.security.read.rbac.RBACSecurityManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -32,7 +32,7 @@ class RBACSecurityManagerService @Activate constructor(
         val log = contextLogger()
     }
 
-    val securityManager: RPCSecurityManager
+    val securityManager: RestSecurityManager
         get() {
             validateRpcSecurityManagerRunning()
             return innerSecurityManager!!
@@ -52,7 +52,7 @@ class RBACSecurityManagerService @Activate constructor(
 
     @Volatile
     @VisibleForTesting
-    internal var innerSecurityManager: RPCSecurityManager? = null
+    internal var innerSecurityManager: RestSecurityManager? = null
 
     @VisibleForTesting
     internal var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<RBACSecurityManagerService>(::processEvent)

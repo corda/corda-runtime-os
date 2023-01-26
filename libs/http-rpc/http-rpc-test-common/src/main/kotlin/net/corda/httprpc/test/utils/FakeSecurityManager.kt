@@ -3,10 +3,10 @@ package net.corda.httprpc.test.utils
 import net.corda.httprpc.security.AuthServiceId
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.Password
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import javax.security.auth.login.FailedLoginException
 
-class FakeSecurityManager : RPCSecurityManager {
+class FakeSecurityManager : RestSecurityManager {
 
     companion object {
         const val USERNAME = "admin"
