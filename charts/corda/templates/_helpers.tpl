@@ -529,7 +529,7 @@ Cluster DB name
 {{- end -}}
 
 {{/*
-Cluster DB secret name
+Default name for cluster DB secret
 */}}
 {{- define "corda.clusterDbDefaultSecretName" -}}
 {{ printf "%s-cluster-db" (include "corda.fullname" .) }}
@@ -725,10 +725,10 @@ NOTE: some of then naming here is incorrect.
 {{- end }}
 
 {{/*
-Bootstrap RBAC User secret name 
+Default name for RBAC DB secret
 */}}
-{{- define "corda.rbacDbUserSecretName" -}}
-{{ printf "%s-rbac-db-user" (include "corda.fullname" .) }}
+{{- define "corda.rbacDbDefaultSecretName" -}}
+{{ printf "%s-rbac-db" (include "corda.fullname" .) }}
 {{- end -}}
 
 {{/*
@@ -742,7 +742,7 @@ RBAC User environment variable
       name: {{ .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify bootstrap.db.rbac.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.rbacDbUserSecretName" . | quote }}
+      name: {{ include "corda.rbacDbDefaultSecretName" . | quote }}
       key: "username" 
       {{- end }}
 - name: RBAC_DB_USER_PASSWORD
@@ -752,16 +752,16 @@ RBAC User environment variable
       name: {{ .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify bootstrap.db.rbac.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.rbac.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.rbacDbUserSecretName" . | quote }}
+      name: {{ include "corda.rbacDbDefaultSecretName" . | quote }}
       key: "password" 
       {{- end }}
 {{- end -}}
 
 {{/*
-Bootstrap crypto Worker secret name 
+Default name for crypto DB secret
 */}}
-{{- define "corda.cryptoDbUserSecretName" -}}
-{{ printf "%s-crypto-db-user" (include "corda.fullname" .) }}
+{{- define "corda.cryptoDbDefaultSecretName" -}}
+{{ printf "%s-crypto-db" (include "corda.fullname" .) }}
 {{- end -}}
 
 {{/*
@@ -775,7 +775,7 @@ Crypto worker environment variable
       name: {{ .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify bootstrap.db.crypto.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.cryptoDbUserSecretName" . | quote }}
+      name: {{ include "corda.cryptoDbDefaultSecretName" . | quote }}
       key: "username" 
       {{- end }}
 - name: CRYPTO_DB_USER_PASSWORD
@@ -785,7 +785,7 @@ Crypto worker environment variable
       name: {{ .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify bootstrap.db.crypto.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.crypto.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.cryptoDbUserSecretName" . | quote }}
+      name: {{ include "corda.cryptoDbDefaultSecretName" . | quote }}
       key: "password" 
       {{- end }}
 {{- end -}}
