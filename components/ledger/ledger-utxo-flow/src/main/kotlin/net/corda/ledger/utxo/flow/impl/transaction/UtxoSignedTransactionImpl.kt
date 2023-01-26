@@ -54,28 +54,23 @@ data class UtxoSignedTransactionImpl(
     override val commands: List<Command>
         get() = wrappedWireTransaction.commands
 
+    override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
+        UtxoSignedTransactionImpl(serializationService, transactionSignatureService, utxoLedgerTransactionFactory,
+            wireTransaction, signatures + signature)
+
     @Suspendable
-    override fun sign(publicKey: PublicKey): Pair<UtxoSignedTransactionInternal, DigitalSignatureAndMetadata> {
-        val newSignature = transactionSignatureService.sign(id, publicKey)
+    override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
+        val newSignatures = transactionSignatureService.sign(id, getMissingSignatories())
         return Pair(
             UtxoSignedTransactionImpl(
                 serializationService,
                 transactionSignatureService,
                 utxoLedgerTransactionFactory,
                 wireTransaction,
-                signatures + newSignature
+                signatures + newSignatures
             ),
-            newSignature
+            newSignatures
         )
-    }
-
-    override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
-        UtxoSignedTransactionImpl(serializationService, transactionSignatureService, utxoLedgerTransactionFactory,
-            wireTransaction, signatures + signature)
-
-    @Suspendable
-    override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
-        TODO("Not implemented yet")
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
