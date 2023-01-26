@@ -94,7 +94,7 @@ class CombinedWorker @Activate constructor(
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
-        val config = getBootstrapConfig(
+        val bootstrapConfig = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
@@ -103,13 +103,13 @@ class CombinedWorker @Activate constructor(
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
-        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.JDBC_URL))
-            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
+        val dbUrl = if(bootstrapConfig.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.JDBC_URL))
+            bootstrapConfig.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
         val dbName = dbUrl.split("/").last().split("?").first()
-        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
-            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
-        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
-            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_PASS) else "password"
+        val dbAdmin = if(bootstrapConfig.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
+            bootstrapConfig.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
+        val dbAdminPassword = if(bootstrapConfig.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
+            bootstrapConfig.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_PASS) else "password"
         val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
         val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
 
@@ -122,22 +122,22 @@ class CombinedWorker @Activate constructor(
             dbName,
             secretsSalt,
             secretsPassphrase
-        ).run()
+        ).run(bootstrapConfig)
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         JavaSerialisationFilter.install()
 
-        logger.info("CONFIG = $config")
+        logger.info("CONFIG = $bootstrapConfig")
 
-        cryptoProcessor.start(config)
-        dbProcessor.start(config)
+        cryptoProcessor.start(bootstrapConfig)
+        dbProcessor.start(bootstrapConfig)
         uniquenessProcessor.start()
-        flowProcessor.start(config)
-        memberProcessor.start(config)
-        rpcProcessor.start(config)
-        linkManagerProcessor.start(config)
-        gatewayProcessor.start(config)
+        flowProcessor.start(bootstrapConfig)
+        memberProcessor.start(bootstrapConfig)
+        rpcProcessor.start(bootstrapConfig)
+        linkManagerProcessor.start(bootstrapConfig)
+        gatewayProcessor.start(bootstrapConfig)
     }
 
     override fun shutdown() {

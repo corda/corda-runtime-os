@@ -10,6 +10,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.DbSchema
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
@@ -60,7 +61,7 @@ class PostgresDbSetup(
         "$dbUrl?user=$superUser&password=$superUserPassword"
     }
 
-    override fun run() {
+    override fun run(config: SmartConfig) {
         if (!dbInitialised()) {
             log.info("Initialising DB.")
             initDb()
@@ -69,7 +70,7 @@ class PostgresDbSetup(
             initConfiguration("corda-crypto", "crypto_user_$dbName", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
-            createCryptoConfig()
+            createCryptoConfig(config)
         } else {
             log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }
@@ -191,7 +192,7 @@ class PostgresDbSetup(
             }
     }
 
-    private fun createCryptoConfig() {
+    private fun createCryptoConfig(bootConfig: SmartConfig) {
         val random = SecureRandom()
         val config = createCryptoSmartConfigFactory(
             KeyCredentials(
@@ -199,6 +200,7 @@ class PostgresDbSetup(
                 passphrase = secretsPassphrase
             )
         ).createDefaultCryptoConfig(
+            bootConfig,
             KeyCredentials(
                 passphrase = random.randomString(),
                 salt = random.randomString()
