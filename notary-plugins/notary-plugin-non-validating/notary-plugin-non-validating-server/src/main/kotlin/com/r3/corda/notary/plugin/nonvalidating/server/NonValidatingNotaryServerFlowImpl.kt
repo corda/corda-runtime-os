@@ -18,7 +18,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -106,11 +105,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             verifyTransaction(requestPayload)
 
-            // If the key is a composite key (multiple notary VNodes) we need to extract the leaves
-            // If the key is not a composite key (single notary VNode) we can simply use that public key
-            val notaryServicePublicKeys = (requestPayload.notaryKey as? CompositeKey)?.leafKeys?.toList()
-                ?: listOf(requestPayload.notaryKey)
-
             logger.trace { "Requesting uniqueness check for transaction ${txDetails.id}" }
 
             val uniquenessResponse = clientService.requestUniquenessCheck(
@@ -120,7 +114,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 txDetails.numOutputs,
                 txDetails.timeWindow.from,
                 txDetails.timeWindow.until,
-                notaryServicePublicKeys
+                requestPayload.notaryKey
             )
 
             logger.debug {
