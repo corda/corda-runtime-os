@@ -61,7 +61,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        private const val VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_ASYNC_OPERATION_CLIENT"
+        private const val VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT"
     }
 
     override val targetInterface: Class<VirtualNodeMaintenanceRestResource> = VirtualNodeMaintenanceRestResource::class.java
@@ -117,7 +117,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(
-                            duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
+                            duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID)
                         )
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
