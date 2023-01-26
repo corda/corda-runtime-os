@@ -3161,6 +3161,54 @@
         }
       }
     },
+    "/virtualnode/{virtualnodeshortid}/cpi/{targetcpifilechecksum}" : {
+      "put" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method upgrades a virtual node's CPI.",
+        "operationId" : "put_virtualnode__virtualnodeshortid__cpi__targetcpifilechecksum_",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to update",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "targetcpifilechecksum",
+          "in" : "path",
+          "description" : "The file checksum of the CPI to upgrade to.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The file checksum of the CPI to upgrade to.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Identifier for the request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AsyncResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
         "tags" : [ "Virtual Node API" ],
@@ -3249,6 +3297,17 @@
           }
         },
         "description" : "The approval rule information including the regular expression associated with the rule, and an optional label describing the rule"
+      },
+      "AsyncResponse" : {
+        "required" : [ "requestId" ],
+        "type" : "object",
+        "properties" : {
+          "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
       },
       "BulkCreatePermissionsRequestType" : {
         "required" : [ "permissionsToCreate", "roleIds" ],
