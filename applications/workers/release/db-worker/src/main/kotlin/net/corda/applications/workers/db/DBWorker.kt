@@ -65,7 +65,7 @@ class DBWorker @Activate constructor(
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
-        val config = getBootstrapConfig(
+        val (config, _) = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
