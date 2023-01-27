@@ -53,31 +53,29 @@ class StartFlowTest : FlowServiceTestBase() {
     fun `RPC Start Flow - Flow throws FlowMarkedForKillException if startFlowOperationalStatus is INACTIVE`() {
 
         given {
-            virtualNode(CPI1, BOB_HOLDING_IDENTITY, flowStartOperationalStatus = OperationalStatus.INACTIVE)
+            virtualNode(CPI1, CHARLIE_HOLDING_IDENTITY, flowStartOperationalStatus = OperationalStatus.INACTIVE)
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
-            membershipGroupFor(BOB_HOLDING_IDENTITY)
+            membershipGroupFor(CHARLIE_HOLDING_IDENTITY)
         }
 
         println("printing")
 
         `when` {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
-
-            wakeupEventReceived(FLOW_ID1)
-                .completedSuccessfullyWith("hello")
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
-                flowStatus(FlowStates.RUNNING)
-            }
-
-            expectOutputForFlow(FLOW_ID1) {
-                flowStatus(FlowStates.COMPLETED, result = "hello")
-                nullStateRecord()
+//                nullStateRecord()
+//                markedForDlq() ?
+//                noFlowEvents()
+                flowStatus(
+                    state = FlowStates.KILLED,
+                    errorType = FlowProcessingExceptionTypes.FLOW_FAILED,
+                    errorMessage = "'flowStartOperationalStatus is INACTIVE, new flows cannot be started for ${CHARLIE_HOLDING_IDENTITY.x500Name}"
+                )
             }
         }
     }

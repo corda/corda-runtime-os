@@ -185,7 +185,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            val activeSessionIds = checkpoint.sessions.filterNot { sessionState ->
+            val activeSessionIds = checkpoint.sessions.filterNot                                                                                                                                                                                              { sessionState ->
                 sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR
             }.map { it.sessionId }
 

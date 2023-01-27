@@ -258,7 +258,7 @@ class OutputAssertionsImpl(
                 testRun.response!!.responseEvents.any {
                     matchStatusRecord(flowId, state, result, errorType, errorMessage, it)
                 },
-                "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
+                "??? ${testRun.response} Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
             )
         }
     }

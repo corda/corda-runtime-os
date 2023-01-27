@@ -26,14 +26,7 @@ class StartFlowEventHandler @Activate constructor(
         context.checkpoint.initFlowState(context.inputEventPayload.startContext)
         context.checkpoint.waitingFor =  WaitingFor(WaitingForStartFlow)
 
-        val holdingIdentity = context.checkpoint.holdingIdentity
-        println("inputEventPayload HI: ${context.inputEventPayload.startContext.initiatedBy}")
-        println("inputEventPayload HI shorthash: ${context.inputEventPayload.startContext.initiatedBy.toCorda().shortHash}")
-
-        println("checkpoint HI stuff:")
-        println(holdingIdentity.shortHash)
-        println(holdingIdentity)
-        println(holdingIdentity.toString())
+        val holdingIdentity = context.inputEventPayload.startContext.identity.toCorda()
 
 //        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash)
         val virtualNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
