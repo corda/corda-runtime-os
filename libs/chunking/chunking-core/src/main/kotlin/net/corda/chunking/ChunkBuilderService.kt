@@ -25,7 +25,7 @@ interface ChunkBuilderService {
         identifier: String,
         chunkNumber: Int,
         checksum: SecureHash,
-        offset: Long? = null,
+        offset: Long,
         properties: KeyValuePairList? = null,
         //TODO - remove these CORE-9481
         fileName: String? = null,
@@ -44,7 +44,7 @@ interface ChunkBuilderService {
         identifier: String,
         chunkNumber: Int,
         byteBuffer: ByteBuffer,
-        offset: Long? = null,
+        offset: Long,
         properties: KeyValuePairList? = null,
         //TODO - remove these CORE-9481
         fileName: String? = null,

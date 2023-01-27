@@ -56,6 +56,13 @@
             "string",
             "null"
           ]
+        },
+        "maxAllowedMessageSize": {
+          "description": "Maximum allowed size, in bytes, for publishing Messages. This is required for initial push of config to Kafka.",
+          "type": "integer",
+          "default": 972800,
+          "minimum": 512000,
+          "maximum": 8388608
         }
       },
       "additionalProperties": false
