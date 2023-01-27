@@ -9,7 +9,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -20,6 +19,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MgmGr
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import org.slf4j.LoggerFactory
 
 internal class VirtualNodeUpgradeOperationHandler(
     private val entityManagerFactory: EntityManagerFactory,
@@ -29,7 +29,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
 
     private companion object {
-        val log = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun handle(
@@ -37,7 +37,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestId: String,
         request: VirtualNodeUpgradeRequest
     ): Record<*, *>? {
-        log.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
+        logger.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
         request.validateFields()
 
         upgradeVirtualNodeCpi(requestId, request.virtualNodeShortHash, request.cpiFileChecksum)
@@ -85,7 +85,7 @@ internal class VirtualNodeUpgradeOperationHandler(
             )
         )
 
-        log.info(
+        logger.info(
             "Virtual node upgrade complete ($requestId) - Virtual node " +
                     "${vnodeInfo.holdingIdentity.shortHash} successfully upgraded to CPI " +
                     "name: ${vnodeInfo.cpiIdentifier.name}, version: ${vnodeInfo.cpiIdentifier.version}"
