@@ -1830,11 +1830,11 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "The ID of the holding identity whose registration progress is to be checked",
+          "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The ID of the holding identity whose registration progress is to be checked",
+            "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1918,11 +1918,11 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "The ID of the holding identity whose registration progress is to be checked",
+          "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The ID of the holding identity whose registration progress is to be checked",
+            "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
             "nullable" : false,
             "example" : "string"
           }
