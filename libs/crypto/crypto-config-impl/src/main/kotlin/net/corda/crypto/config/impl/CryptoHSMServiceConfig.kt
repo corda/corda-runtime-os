@@ -1,12 +1,13 @@
 package net.corda.crypto.config.impl
 
-import net.corda.libs.configuration.SmartConfig
+import com.typesafe.config.Config
+
 
 /**
  * The HSM service configuration.
  */
-class CryptoHSMServiceConfig(private val config: SmartConfig) {
-    class CacheConfig(private val config: SmartConfig) {
+class CryptoHSMServiceConfig(private val config: Config) {
+    class CacheConfig(private val config: Config) {
         val expireAfterAccessMins: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
             try {
                 config.getLong(this::expireAfterAccessMins.name)
