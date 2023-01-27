@@ -1,5 +1,6 @@
 package net.corda.processors.crypto.tests.infra
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
@@ -84,9 +85,7 @@ fun makeBootstrapConfig(dbParams: SmartConfig): SmartConfig = smartConfigFactory
         )
 )
 
-fun makeCryptoConfig(): SmartConfig = smartConfigFactory.createDefaultCryptoConfig(
-    KeyCredentials("master-key-pass", "master-key-salt")
-)
+fun makeCryptoConfig(): Config = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
 
 fun randomDataByteArray(): ByteArray {
     val random = Random(Instant.now().toEpochMilli())

@@ -80,7 +80,7 @@ class CryptoConfigSubcommand : Runnable {
         })
         val wrappingPassphraseSecret = smartConfigFactory.makeSecret(wrappingPassphraseDefined).toSafeConfig().root()
         val wrappingSaltSecret = smartConfigFactory.makeSecret(wrappingSaltDefined).toSafeConfig().root()
-        val config = createDefaultCryptoConfig(wrappingSaltSecret, wrappingPassphraseSecret).root().render(ConfigRenderOptions.concise())
+        val config = createDefaultCryptoConfig(wrappingPassphraseSecret, wrappingSaltSecret).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
             section = CRYPTO_CONFIG,
