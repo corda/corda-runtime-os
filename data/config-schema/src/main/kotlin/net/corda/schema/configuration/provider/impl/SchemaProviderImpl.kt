@@ -2,16 +2,16 @@ package net.corda.schema.configuration.provider.impl
 
 import net.corda.schema.configuration.provider.ConfigSchemaException
 import net.corda.schema.configuration.provider.SchemaProvider
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.versioning.Version
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 
 internal class SchemaProviderImpl : SchemaProvider {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java)
 
         private const val RESOURCE_ROOT = "net/corda/schema/configuration"
         private const val SCHEMA_EXTENSION = ".json"

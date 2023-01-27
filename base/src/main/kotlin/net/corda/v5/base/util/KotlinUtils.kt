@@ -28,12 +28,20 @@ infix fun Long.exactAdd(b: Long): Long = Math.addExact(this, b)
  *
  * `private val log = loggerFor<MyClass>()`
  */
+@Deprecated(
+    "Will be removed from api library",
+    ReplaceWith("LoggerFactory.getLogger(this::class.java)", "org.slf4j.LoggerFactory")
+)
 inline fun <reified T : Any> loggerFor(): Logger = LoggerFactory.getLogger(T::class.java)
 
 /** Returns the logger used for detailed logging. */
 fun detailedLogger(): Logger = LoggerFactory.getLogger("DetailedInfo")
 
 /** When called from a companion object, returns the logger for the enclosing class. */
+@Deprecated(
+    "Will be removed from api library",
+    ReplaceWith("LoggerFactory.getLogger(this::class.java.enclosingClass)", "org.slf4j.LoggerFactory")
+)
 fun Any.contextLogger(): Logger = LoggerFactory.getLogger(javaClass.enclosingClass)
 
 /** Log a TRACE level message produced by evaluating the given lambda, but only if TRACE logging is enabled. */
@@ -75,7 +83,6 @@ val Int.seconds: Duration get() = Duration.ofSeconds(toLong())
  * @see Duration.ofMillis
  */
 val Int.millis: Duration get() = Duration.ofMillis(toLong())
-
 
 @Suppress("UNCHECKED_CAST")
 fun <T, U : T> uncheckedCast(obj: T) = obj as U

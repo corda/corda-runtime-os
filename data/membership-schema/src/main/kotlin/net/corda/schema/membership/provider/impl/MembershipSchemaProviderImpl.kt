@@ -3,16 +3,16 @@ package net.corda.schema.membership.provider.impl
 import net.corda.schema.membership.MembershipSchema
 import net.corda.schema.membership.provider.MembershipSchemaException
 import net.corda.schema.membership.provider.MembershipSchemaProvider
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.versioning.Version
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 
 internal class MembershipSchemaProviderImpl : MembershipSchemaProvider {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java)
 
         private const val RESOURCE_ROOT = "net/corda/schema/membership"
         private const val SCHEMA_EXTENSION = ".json"
