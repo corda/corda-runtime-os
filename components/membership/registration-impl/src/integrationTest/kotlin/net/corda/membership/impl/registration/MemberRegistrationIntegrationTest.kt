@@ -37,7 +37,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.registration.RegistrationProxy
@@ -162,7 +161,6 @@ class MemberRegistrationIntegrationTest {
         const val CPI_VERSION = "1.1"
         const val CPI_SIGNER_HASH = "ALG:A1B2C3D4"
         const val CPI_NAME = "cpi-name"
-        const val TEST_SERIAL = 1
 
         @JvmStatic
         @BeforeAll
@@ -309,7 +307,6 @@ class MemberRegistrationIntegrationTest {
                     it.assertThat(getValue(MEMBER_CPI_SIGNER_HASH)).isEqualTo(CPI_SIGNER_HASH)
                     it.assertThat(getValue(PLATFORM_VERSION)).isEqualTo(TEST_ACTIVE_PLATFORM_VERSION.toString())
                     it.assertThat(getValue(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
-                    it.assertThat(getValue(SERIAL)).isEqualTo(TEST_SERIAL.toString())
 
                     with(map { pair -> pair.key }) {
                         it.assertThat(contains(String.format(LEDGER_KEYS_KEY, 0))).isTrue

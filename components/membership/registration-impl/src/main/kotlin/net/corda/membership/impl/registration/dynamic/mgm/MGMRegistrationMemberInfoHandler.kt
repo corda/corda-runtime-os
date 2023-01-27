@@ -141,7 +141,6 @@ internal class MGMRegistrationMemberInfoHandler(
             SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
             MEMBER_CPI_NAME to cpi.name,
             MEMBER_CPI_VERSION to cpi.version,
-            SERIAL to SERIAL_CONST,
         ) + optionalContext
         return memberInfoFactory.create(
             memberContext = memberContext.toSortedMap(),
@@ -149,7 +148,8 @@ internal class MGMRegistrationMemberInfoHandler(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
                 STATUS to MEMBER_STATUS_ACTIVE,
-                IS_MGM to "true"
+                IS_MGM to "true",
+                SERIAL to SERIAL_CONST,
             )
         )
     }

@@ -352,7 +352,6 @@ class MGMRegistrationServiceTest {
                             MEMBER_CPI_NAME,
                             MEMBER_CPI_VERSION,
                             MEMBER_CPI_SIGNER_HASH,
-                            SERIAL,
                             URL_KEY.format(0),
                             PROTOCOL_VERSION.format(0),
                         )
@@ -363,7 +362,8 @@ class MGMRegistrationServiceTest {
                             CREATION_TIME,
                             MODIFIED_TIME,
                             STATUS,
-                            IS_MGM
+                            IS_MGM,
+                            SERIAL,
                         )
                     )
 

@@ -376,11 +376,11 @@ class SynchronisationIntegrationTest {
                 String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",
                 MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
                 MemberInfoExtension.PLATFORM_VERSION to PLATFORM_VERSION,
-                MemberInfoExtension.SERIAL to "1",
             ),
             sortedMapOf(
                 MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
                 MemberInfoExtension.MODIFIED_TIME to clock.instant().toString(),
+                MemberInfoExtension.SERIAL to "1",
             )
 
         )

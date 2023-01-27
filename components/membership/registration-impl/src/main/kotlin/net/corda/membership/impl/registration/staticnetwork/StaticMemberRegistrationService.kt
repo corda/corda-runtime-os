@@ -332,7 +332,6 @@ class StaticMemberRegistrationService @Activate constructor(
             PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
             MEMBER_CPI_NAME to cpi.name,
             MEMBER_CPI_VERSION to cpi.version,
-            SERIAL to staticMemberInfo.serial,
         ) + optionalContext
 
         val memberInfo = memberInfoFactory.create(
@@ -340,6 +339,7 @@ class StaticMemberRegistrationService @Activate constructor(
             sortedMapOf(
                 STATUS to staticMemberInfo.status,
                 MODIFIED_TIME to staticMemberInfo.modifiedTime,
+                SERIAL to staticMemberInfo.serial,
             )
         )
 
