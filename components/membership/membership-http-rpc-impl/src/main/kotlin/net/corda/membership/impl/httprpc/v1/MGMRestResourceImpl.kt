@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.regex.PatternSyntaxException
 
 @Component(service = [PluggableRestResource::class])
 class MGMRestResourceImpl @Activate constructor(
@@ -255,6 +256,7 @@ class MGMRestResourceImpl @Activate constructor(
 
         override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo {
             return try {
+                validateRegex(ruleInfo.ruleRegex)
                 mgmOpsClient.addApprovalRule(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     ApprovalRuleParams(ruleInfo.ruleRegex, ApprovalRuleType.STANDARD, ruleInfo.ruleLabel)
@@ -265,6 +267,8 @@ class MGMRestResourceImpl @Activate constructor(
                 invalidInput(holdingIdentityShortHash)
             } catch (e: MembershipPersistenceException) {
                 throw BadRequestException("${e.message}")
+            } catch (e: PatternSyntaxException) {
+                throw BadRequestException("The regular expression's (${ruleInfo.ruleRegex}) syntax is invalid.")
             }
         }
 
@@ -299,5 +303,9 @@ class MGMRestResourceImpl @Activate constructor(
                 ),
                 message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
             )
+
+        private fun validateRegex(expression: String) {
+            expression.toRegex()
+        }
     }
 }

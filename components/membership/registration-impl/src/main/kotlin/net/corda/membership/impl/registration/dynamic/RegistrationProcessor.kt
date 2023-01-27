@@ -119,6 +119,8 @@ class RegistrationProcessor(
             cordaAvroSerializationFactory,
             memberTypeChecker,
             membershipConfig,
+            membershipQueryClient,
+            membershipGroupReaderProvider,
         ),
         PersistMemberRegistrationState::class.java to PersistMemberRegistrationStateHandler(
             membershipPersistenceClient,

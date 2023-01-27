@@ -100,37 +100,44 @@ class CordaKafkaProducerImpl(
     }
 
     override fun commitTransaction() {
-        var failedDueToRetryable = false
+        var retryableException: KafkaException? = null
+
         tryWithCleanupOnFailure("committing transaction") {
-            if (!commitTransactionAndCatchRetryable()) {
+            retryableException = commitTransactionAndCatchRetryable()
+
+            if (retryableException != null) {
                 // We can/should retry this kind of failure under the contract of the Kafka producer, abort is neither
                 // required nor allowed. We allow a single retry only.
-                failedDueToRetryable = !commitTransactionAndCatchRetryable()
+                log.warn("Unexpected transient error committing transaction, re-trying", retryableException)
+                retryableException = commitTransactionAndCatchRetryable()
             }
         }
 
-        if (failedDueToRetryable) {
-            // We have retired once, we are not retrying again, so the only other option compatible with the producer
+        if (retryableException != null) {
+            // We have retried once, we are not retrying again, so the only other option compatible with the producer
             // contract is to close the producer without aborting. That is the responsibility of the client, which we
             // notify by throwing the relevant exception.
-            throw CordaMessageAPIProducerRequiresReset("Unexpected error occurred committing transaction")
+            throw CordaMessageAPIProducerRequiresReset(
+                "Unexpected error occurred committing transaction",
+                retryableException
+            )
         }
     }
 
     /**
      * The contract of the Kafka producer is that certain types of errors have their own process for handling.
      * If a commit is interrupted or timed out, we cannot abort, but it is safe to retry the commit if we want.
-     * This method catches those exceptions and returns whether that happened or not.
+     * This method catches those exceptions and returns them if they happened.
      *
-     * @return true if successful, false if not and can be retried, otherwise throws whatever the producer throws
+     * @return null if successful, exception instance transaction can be retried, otherwise throws whatever thrown by the producer.
      */
     private fun commitTransactionAndCatchRetryable() = try {
         producer.commitTransaction()
-        true
+        null
     } catch (ex: TimeoutException) {
-        false
+        ex
     } catch (ex: InterruptException) {
-        false
+        ex
     }
 
     override fun sendAllOffsetsToTransaction(consumer: CordaConsumer<*, *>) {
@@ -163,8 +170,10 @@ class CordaKafkaProducerImpl(
         try {
             producer.close()
         } catch (ex: Exception) {
-            log.info("CordaKafkaProducer failed to close producer safely. This can be observed when there are " +
-                    "no reachable brokers. ClientId: ${config.clientId}", ex)
+            log.info(
+                "CordaKafkaProducer failed to close producer safely. This can be observed when there are " +
+                        "no reachable brokers. ClientId: ${config.clientId}", ex
+            )
         }
     }
 

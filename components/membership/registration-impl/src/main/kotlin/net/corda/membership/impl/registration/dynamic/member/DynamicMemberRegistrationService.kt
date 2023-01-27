@@ -50,7 +50,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
@@ -155,7 +154,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val SERIAL_CONST = "1"
 
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
         val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
@@ -390,7 +388,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
                 MEMBER_CPI_NAME to cpi.name,
                 MEMBER_CPI_VERSION to cpi.version,
-                SERIAL to SERIAL_CONST,
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())

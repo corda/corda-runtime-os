@@ -19,7 +19,6 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertIs
 
-@Suppress("DEPRECATION")
 class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
@@ -51,7 +50,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
-            .toSignedTransaction(publicKeyExample)
+            .toSignedTransaction()
 
         assertIs<UtxoSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)

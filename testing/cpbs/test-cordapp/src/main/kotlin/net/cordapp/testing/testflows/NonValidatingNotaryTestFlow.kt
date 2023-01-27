@@ -179,9 +179,6 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
      * A helper function that will build a UTXO signed transaction from the provided input parameters using the
      * [UtxoTransactionBuilder] utility class.
      */
-    @Suppress(
-        "deprecation", // Can be removed once the new `sign` function on the TX builder is added
-    )
     @Suspendable
     private fun buildSignedTransaction(
         notaryServerParty: Party,
@@ -192,38 +189,38 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
     ): UtxoSignedTransaction {
         val myKey = memberLookup.myInfo().sessionInitiationKey
         return utxoLedgerService.getTransactionBuilder()
-            .setNotary(notaryServerParty)
-            .addCommand(TestCommand())
-            .run {
-                // TODO CORE-8726 Since the builder will always be copied with the new attributes,
-                //  we always need to re-assign it
-                var builder = if (timeWindowBounds.first != null) {
-                    setTimeWindowBetween(
-                        Instant.now().plusMillis(timeWindowBounds.first!!),
-                        Instant.now().plusMillis(timeWindowBounds.second)
-                    )
-                } else {
-                    setTimeWindowUntil(
-                        Instant.now().plusMillis(timeWindowBounds.second)
-                    )
-                }
+                .setNotary(notaryServerParty)
+                .addCommand(TestCommand())
+                .run {
+                    // TODO CORE-8726 Since the builder will always be copied with the new attributes,
+                    //  we always need to re-assign it
+                    var builder = if (timeWindowBounds.first != null) {
+                        setTimeWindowBetween(
+                            Instant.now().plusMillis(timeWindowBounds.first!!),
+                            Instant.now().plusMillis(timeWindowBounds.second)
+                        )
+                    } else {
+                        setTimeWindowUntil(
+                            Instant.now().plusMillis(timeWindowBounds.second)
+                        )
+                    }
 
-                repeat(outputStateCount) {
-                    builder = builder.addOutputState(
-                        TestContract.TestState(emptyList())
-                    )
-                }
+                    repeat(outputStateCount) {
+                        builder = builder.addOutputState(
+                            TestContract.TestState(emptyList())
+                        )
+                    }
 
-                inputStateRefs.forEach {
-                    builder = builder.addInputState(StateRef.parse(it))
-                }
+                    inputStateRefs.forEach {
+                        builder = builder.addInputState(StateRef.parse(it))
+                    }
 
-                referenceStateRefs.forEach {
-                    builder = builder.addReferenceState(StateRef.parse(it))
-                }
-                builder = builder.addSignatories(listOf(myKey))
-                builder
-            }.toSignedTransaction(myKey)
+                    referenceStateRefs.forEach {
+                        builder = builder.addReferenceState(StateRef.parse(it))
+                    }
+                    builder = builder.addSignatories(listOf(myKey))
+                    builder
+                }.toSignedTransaction()
     }
 
     /**

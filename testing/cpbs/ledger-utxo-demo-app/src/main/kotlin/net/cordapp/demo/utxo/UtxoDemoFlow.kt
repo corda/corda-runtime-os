@@ -72,14 +72,13 @@ class UtxoDemoFlow : ClientStartableFlow {
             val notary = notaryLookup.notaryServices.single()
             val txBuilder = utxoLedgerService.getTransactionBuilder()
 
-            @Suppress("DEPRECATION")
             val signedTransaction = txBuilder
                 .setNotary(Party(notary.name, notary.publicKey))
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())
                 .addSignatories(testUtxoState.participants)
-                .toSignedTransaction(myInfo.ledgerKeys.first())
+                .toSignedTransaction()
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
 

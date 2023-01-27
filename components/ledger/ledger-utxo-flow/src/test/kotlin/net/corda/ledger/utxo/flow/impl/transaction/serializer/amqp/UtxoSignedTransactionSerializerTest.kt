@@ -35,7 +35,6 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
         assertEquals(utxoSignedTransactionExample.id, deserialized.id)
     }
 
-    @Suppress("DEPRECATION")
     @Test
     fun `serialize and deserialize with encumbrance`() {
         val inputStateAndRef = getUtxoInvalidStateAndRef()
@@ -60,7 +59,7 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
-            .toSignedTransaction(publicKeyExample)
+            .toSignedTransaction()
 
         val bytes = serializationService.serialize(signedTx)
         val deserialized = serializationService.deserialize(bytes)

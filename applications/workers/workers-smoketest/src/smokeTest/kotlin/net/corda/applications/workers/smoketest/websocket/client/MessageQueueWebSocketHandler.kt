@@ -1,10 +1,10 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
-import java.io.IOException
-import java.util.concurrent.CopyOnWriteArrayList
-import net.corda.applications.workers.smoketest.contextLogger
+import net.corda.e2etest.utilities.contextLogger
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
+import java.io.IOException
+import java.util.concurrent.CopyOnWriteArrayList
 
 class MessageQueueWebSocketHandler : NoOpEndpoint(), InternalWebsocketHandler {
 

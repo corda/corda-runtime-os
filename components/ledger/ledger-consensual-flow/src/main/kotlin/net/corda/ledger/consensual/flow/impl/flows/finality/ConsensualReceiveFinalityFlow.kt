@@ -8,7 +8,6 @@ import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedg
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.serialization.SerializationService
@@ -29,9 +28,6 @@ class ConsensualReceiveFinalityFlow(
     private companion object {
         val log = contextLogger()
     }
-
-    @CordaInject
-    lateinit var memberLookup: MemberLookup
 
     @CordaInject
     lateinit var persistenceService: ConsensualLedgerPersistenceService
@@ -108,26 +104,9 @@ class ConsensualReceiveFinalityFlow(
     private fun signTransaction(
         initialTransaction: ConsensualSignedTransactionInternal,
     ): Pair<ConsensualSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
-        val myKeys = memberLookup.myInfo()
-            .ledgerKeys
-            .toSet()
-        // Which of our keys are required.
-        val myExpectedSigningKeys = initialTransaction
-            .getMissingSignatories()
-            .intersect(myKeys)
-
-        if (myExpectedSigningKeys.isEmpty()) {
-            log.debug { "We are not required signer of ${initialTransaction.id}." }
-        }
-
-        var transaction = initialTransaction
-        val mySignatures = myExpectedSigningKeys.map { publicKey ->
-            log.debug { "Signing transaction: ${transaction.id} with $publicKey" }
-            transaction.sign(publicKey).also {
-                transaction = it.first
-            }.second
-        }
-
+        log.debug { "Signing transaction: ${initialTransaction.id} with our available required keys." }
+        val (transaction, mySignatures) = initialTransaction.addMissingSignatures()
+        log.debug { "Signing transaction: ${initialTransaction.id} resulted (${mySignatures.size}) signatures." }
         return transaction to Payload.Success(mySignatures)
     }
 

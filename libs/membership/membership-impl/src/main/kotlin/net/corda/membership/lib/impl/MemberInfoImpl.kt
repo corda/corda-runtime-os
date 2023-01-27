@@ -36,7 +36,7 @@ class MemberInfoImpl(
 
     override val platformVersion: Int get() = memberProvidedContext.parse(PLATFORM_VERSION)
 
-    override val serial: Long get() = memberProvidedContext.parse(SERIAL)
+    override val serial: Long get() = mgmProvidedContext.parse(SERIAL)
 
     override val isActive: Boolean get() = mgmProvidedContext.parse(STATUS, String::class.java) == MEMBER_STATUS_ACTIVE
 

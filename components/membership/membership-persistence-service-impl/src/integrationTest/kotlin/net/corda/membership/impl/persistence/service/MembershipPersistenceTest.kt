@@ -605,20 +605,20 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
-                KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair("corda.notary.service.name", notaryServiceName),
                 KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
                 KeyValuePair("corda.roles.0", "notary"),
                 KeyValuePair("corda.notary.keys.0.pem", keyEncodingService.encodeAsString(notaryKey)),
                 KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val expectedGroupParameters = listOf(
@@ -671,20 +671,20 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
-                KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair("corda.notary.service.name", notaryServiceName),
                 KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
                 KeyValuePair("corda.roles.0", "notary"),
                 KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
                 KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         vnodeEmf.transaction {
@@ -756,20 +756,20 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
-                KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair("corda.notary.service.name", notaryServiceName),
                 KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
                 KeyValuePair("corda.roles.0", "notary"),
                 KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
                 KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val oldNotaryKey = with(keyGenerator) {
@@ -838,14 +838,14 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "5000"),
-                KeyValuePair(SERIAL, "1"),
-                KeyValuePair(SOFTWARE_VERSION, "5.0.0")
-            )
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+            ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
 
         val result = membershipPersistenceClientWrapper.persistMemberInfo(
@@ -874,10 +874,10 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity.serialNumber).isEqualTo(1)
         assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
 
-        fun contextIsEqual(actual: String?, expected: String) = assertThat(actual).isEqualTo(expected)
-
         val persistedMgmContext = persistedEntity.mgmContext.deserializeContextAsMap()
-        contextIsEqual(persistedMgmContext[STATUS], MEMBER_STATUS_ACTIVE)
+        assertThat(persistedMgmContext)
+            .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
+            .containsEntry(SERIAL, "1")
 
         val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
         assertThat(persistedMemberContext)
@@ -886,7 +886,6 @@ class MembershipPersistenceTest {
             .containsEntry(GROUP_ID, groupId)
             .containsEntry(PARTY_NAME, memberx500Name.toString())
             .containsEntry(PLATFORM_VERSION, "5000")
-            .containsEntry(SERIAL, "1")
             .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
 
@@ -1177,14 +1176,14 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberName.toString()),
                 KeyValuePair(PLATFORM_VERSION, "5000"),
-                KeyValuePair(SERIAL, "1"),
-                KeyValuePair(SOFTWARE_VERSION, "5.0.0")
-            )
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+            ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_PENDING)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_PENDING),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
 
         return membershipPersistenceClientWrapper.persistMemberInfo(
