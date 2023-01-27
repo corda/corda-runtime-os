@@ -1,11 +1,11 @@
 package net.corda.crypto.config.impl
 
-import net.corda.libs.configuration.SmartConfig
+import com.typesafe.config.Config
 
 /**
  * The connections' factory configuration.
  */
-class CryptoConnectionsFactoryConfig(private val config: SmartConfig) {
+class CryptoConnectionsFactoryConfig(private val config: Config) {
     val expireAfterAccessMins: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
             config.getLong(this::expireAfterAccessMins.name)

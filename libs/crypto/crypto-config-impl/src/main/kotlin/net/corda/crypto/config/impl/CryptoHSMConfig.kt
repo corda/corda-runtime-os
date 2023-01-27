@@ -1,11 +1,10 @@
 package net.corda.crypto.config.impl
 
 import com.typesafe.config.Config
-import net.corda.libs.configuration.SmartConfig
 
-class CryptoHSMConfig(private val config: SmartConfig) {
+class CryptoHSMConfig(private val config: Config) {
 
-    class RetryConfig(private val config: SmartConfig) {
+    class RetryConfig(private val config: Config) {
         val maxAttempts: Int by lazy(LazyThreadSafetyMode.PUBLICATION) {
             try {
                 config.getInt(this::maxAttempts.name)
@@ -23,7 +22,7 @@ class CryptoHSMConfig(private val config: SmartConfig) {
         }
     }
 
-    class HSMConfig(private val config: SmartConfig) {
+    class HSMConfig(private val config: Config) {
         val name: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
             try {
                 config.getString(this::name.name)
@@ -72,7 +71,7 @@ class CryptoHSMConfig(private val config: SmartConfig) {
             }
         }
 
-        val cfg: SmartConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val cfg: Config by lazy(LazyThreadSafetyMode.PUBLICATION) {
             try {
                 config.getConfig(this::cfg.name)
             } catch (e: Throwable) {

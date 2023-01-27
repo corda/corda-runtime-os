@@ -1,10 +1,11 @@
 package net.corda.cli.plugin.initialconfig
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import net.corda.crypto.config.impl.createCryptoSmartConfigFactory
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import picocli.CommandLine
 import java.io.File
@@ -59,25 +60,27 @@ class CryptoConfigSubcommand : Runnable {
 
     override fun run() {
         val random = SecureRandom()
-        val config = createCryptoSmartConfigFactory(
-            KeyCredentials(
-                passphrase = passphrase,
-                salt = salt
-            )
-        ).createDefaultCryptoConfig(
-            KeyCredentials(
-                passphrase = if (softHsmRootPassphrase.isNullOrBlank()) {
-                    random.randomString()
-                } else {
-                    softHsmRootPassphrase!!
-                },
-                salt = if (softHsmRootSalt.isNullOrBlank()) {
-                    random.randomString()
-                } else {
-                    softHsmRootSalt!!
-                }
-            )
-        ).root().render(ConfigRenderOptions.concise())
+        val smartConfigFactory = SmartConfigFactory.createWith(
+            ConfigFactory.parseString("""
+            ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=${passphrase}
+            ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=${salt}
+        """.trimIndent()
+            ),
+            listOf(EncryptionSecretsServiceFactory())
+        )
+        val wrappingPassphraseDefined = (if (softHsmRootPassphrase.isNullOrBlank()) {
+            random.randomString()
+        } else {
+            softHsmRootPassphrase!!
+        })
+        val wrappingSaltDefined = (if (softHsmRootSalt.isNullOrBlank()) {
+            random.randomString()
+        } else {
+            softHsmRootSalt!!
+        })
+        val wrappingPassphraseSecret = smartConfigFactory.makeSecret(wrappingPassphraseDefined).toSafeConfig().root()
+        val wrappingSaltSecret = smartConfigFactory.makeSecret(wrappingSaltDefined).toSafeConfig().root()
+        val config = createDefaultCryptoConfig(wrappingSaltSecret, wrappingPassphraseSecret).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
             section = CRYPTO_CONFIG,

@@ -1,8 +1,8 @@
 package net.corda.crypto.config.impl
 
-import net.corda.libs.configuration.SmartConfig
+import com.typesafe.config.Config
 
-class CryptoBusProcessorConfig(internal val config: SmartConfig) : SmartConfig by config {
+class CryptoBusProcessorConfig(internal val config: Config) : Config by config {
     val maxAttempts: Int
         get() = try {
             config.getInt(this::maxAttempts.name)

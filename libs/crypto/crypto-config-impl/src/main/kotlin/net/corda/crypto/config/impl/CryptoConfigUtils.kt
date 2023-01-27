@@ -2,6 +2,7 @@
 
 package net.corda.crypto.config.impl
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
@@ -174,70 +175,70 @@ fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
 
 fun SmartConfig.toConfigurationSecrets(): ConfigurationSecrets = ConfigurationSecretsImpl(this)
 
-fun SmartConfig.cryptoConnectionFactory(): CryptoConnectionsFactoryConfig =
+fun Config.cryptoConnectionFactory(): CryptoConnectionsFactoryConfig =
     try {
-        CryptoConnectionsFactoryConfig(getConfig(CRYPTO_CONNECTION_FACTORY_OBJ))
+        CryptoConnectionsFactoryConfig(getConfig(CRYPTO_CONNECTION_FACTORY_OBJ)!!)
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $CRYPTO_CONNECTION_FACTORY_OBJ.", e)
     }
 
-fun SmartConfig.signingService(): CryptoSigningServiceConfig =
+fun Config.signingService(): CryptoSigningServiceConfig =
     try {
-        CryptoSigningServiceConfig(getConfig(SIGNING_SERVICE_OBJ))
+        CryptoSigningServiceConfig(getConfig(SIGNING_SERVICE_OBJ)!!)
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $SIGNING_SERVICE_OBJ.", e)
     }
 
-fun SmartConfig.hsmMap(): Map<String, CryptoHSMConfig> =
+fun Config.hsmMap(): Map<String, CryptoHSMConfig> =
     try {
         val set = getConfig(HSM_MAP)
         set.root().keys.associateWith {
-            CryptoHSMConfig(set.getConfig(it))
+            CryptoHSMConfig(set.getConfig(it)!!)
         }
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $HSM_MAP.", e)
     }
 
-fun SmartConfig.hsm(id: String): CryptoHSMConfig {
+fun Config.hsm(id: String): CryptoHSMConfig {
     val path = String.format(HSM_MAP_ITEM_OBJ, id)
     return try {
-        CryptoHSMConfig(getConfig(path))
+        CryptoHSMConfig(getConfig(path)!!)
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $path.", e)
     }
 }
 
-fun SmartConfig.hsmService(): CryptoHSMServiceConfig =
+fun Config.hsmService(): CryptoHSMServiceConfig =
     try {
-        CryptoHSMServiceConfig(getConfig(HSM_SERVICE_OBJ))
+        CryptoHSMServiceConfig(getConfig(HSM_SERVICE_OBJ)!!)
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $HSM_SERVICE_OBJ.", e)
     }
 
-fun SmartConfig.opsBusProcessor(): CryptoBusProcessorConfig =
+fun Config.opsBusProcessor(): CryptoBusProcessorConfig =
     try {
         CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(OPS_BUS_PROCESSOR_OBJ))
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get BusProcessorConfig for ops operations.", e)
     }
 
-fun SmartConfig.flowBusProcessor(): CryptoBusProcessorConfig =
+fun Config.flowBusProcessor(): CryptoBusProcessorConfig =
     try {
-        CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(FLOW_BUS_PROCESSOR_OBJ))
+        CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ)?.getConfig(FLOW_BUS_PROCESSOR_OBJ)!!)
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get BusProcessorConfig for flow ops operations.", e)
     }
 
-fun SmartConfig.hsmRegistrationBusProcessor(): CryptoBusProcessorConfig =
+fun Config.hsmRegistrationBusProcessor(): CryptoBusProcessorConfig =
     try {
-        CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(HSM_REGISTRATION_BUS_PROCESSOR_OBJ))
+        CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ)?.getConfig(HSM_REGISTRATION_BUS_PROCESSOR_OBJ)!!)
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get BusProcessorConfig for hsm registration operations.", e)
     }
 
-fun SmartConfig.bootstrapHsmId(): String =
+fun Config.bootstrapHsmId(): String =
     try {
-        getString(HSM_ID)
+        getString(HSM_ID)!!
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $HSM_ID.", e)
     }
@@ -245,144 +246,116 @@ fun SmartConfig.bootstrapHsmId(): String =
 fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
     mapOf(HSM_ID to hsmId)
 
-fun createCryptoSmartConfigFactory(smartFactoryKey: KeyCredentials): SmartConfigFactory =
-    // TODO - figure out why this is here and how that is going to work with other SecretsServiceFactory implementations
-    //  is this test-only? If so, why is it not in a test utils module?
-    SmartConfigFactory.createWith(
-        ConfigFactory.parseString(
-            """
-            ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=${smartFactoryKey.passphrase}
-            ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=${smartFactoryKey.salt}
-        """.trimIndent()
-        ),
-        listOf(EncryptionSecretsServiceFactory())
-    )
-
-fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
-    createCryptoSmartConfigFactory(smartFactoryKey).createDefaultCryptoConfig(
-        KeyCredentials(
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString()
+fun createDefaultCryptoConfig(wrappingKeySalt: Any, wrappingKeyPassphrase: Any): Config = ConfigFactory.empty()
+        .withValue(
+            CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
+                mapOf(
+                    CryptoConnectionsFactoryConfig::expireAfterAccessMins.name to 5,
+                    CryptoConnectionsFactoryConfig::maximumSize.name to 3
+                )
+            )
         )
-    )
-
-fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentials): SmartConfig = try {
-    this.create(
-        ConfigFactory.empty()
-            .withValue(
-                CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
-                    mapOf(
-                        CryptoConnectionsFactoryConfig::expireAfterAccessMins.name to 5,
-                        CryptoConnectionsFactoryConfig::maximumSize.name to 3
+        .withValue(
+            SIGNING_SERVICE_OBJ, ConfigValueFactory.fromMap(
+                mapOf(
+                    CryptoSigningServiceConfig::cache.name to mapOf(
+                        CryptoSigningServiceConfig.CacheConfig::expireAfterAccessMins.name to 60,
+                        CryptoSigningServiceConfig.CacheConfig::maximumSize.name to 10000
                     )
                 )
             )
-            .withValue(
-                SIGNING_SERVICE_OBJ, ConfigValueFactory.fromMap(
-                    mapOf(
-                        CryptoSigningServiceConfig::cache.name to mapOf(
-                            CryptoSigningServiceConfig.CacheConfig::expireAfterAccessMins.name to 60,
-                            CryptoSigningServiceConfig.CacheConfig::maximumSize.name to 10000
-                        )
-                    )
+        )
+        .withValue(
+            HSM_SERVICE_OBJ, ConfigValueFactory.fromMap(
+                mapOf(
+                    CryptoHSMServiceConfig::downstreamMaxAttempts.name to 3
                 )
             )
-            .withValue(
-                HSM_SERVICE_OBJ, ConfigValueFactory.fromMap(
-                    mapOf(
-                        CryptoHSMServiceConfig::downstreamMaxAttempts.name to 3
-                    )
-                )
-            )
-            .withValue(
-                DEFAULT_HSM_OBJ, ConfigValueFactory.fromMap(
-                    mapOf(
-                        CryptoHSMConfig::workerTopicSuffix.name to "",
-                        CryptoHSMConfig::retry.name to mapOf(
-                            CryptoHSMConfig.RetryConfig::maxAttempts.name to 3,
-                            CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
+        )
+        .withValue(
+            DEFAULT_HSM_OBJ, ConfigValueFactory.fromMap(
+                mapOf(
+                    CryptoHSMConfig::workerTopicSuffix.name to "",
+                    CryptoHSMConfig::retry.name to mapOf(
+                        CryptoHSMConfig.RetryConfig::maxAttempts.name to 3,
+                        CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
+                    ),
+                    CryptoHSMConfig::hsm.name to mapOf(
+                        CryptoHSMConfig.HSMConfig::name.name to SOFT_HSM_SERVICE_NAME,
+                        CryptoHSMConfig.HSMConfig::categories.name to listOf(
+                            mapOf(
+                                CryptoHSMConfig.CategoryConfig::category.name to "*",
+                                CryptoHSMConfig.CategoryConfig::policy.name to PrivateKeyPolicy.WRAPPED.name,
+                            )
                         ),
-                        CryptoHSMConfig::hsm.name to mapOf(
-                            CryptoHSMConfig.HSMConfig::name.name to SOFT_HSM_SERVICE_NAME,
-                            CryptoHSMConfig.HSMConfig::categories.name to listOf(
-                                mapOf(
-                                    CryptoHSMConfig.CategoryConfig::category.name to "*",
-                                    CryptoHSMConfig.CategoryConfig::policy.name to PrivateKeyPolicy.WRAPPED.name,
+                        CryptoHSMConfig.HSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
+                        CryptoHSMConfig.HSMConfig::capacity.name to -1,
+                        CryptoHSMConfig.HSMConfig::supportedSchemes.name to listOf(
+                            "CORDA.RSA",
+                            "CORDA.ECDSA.SECP256R1",
+                            "CORDA.ECDSA.SECP256K1",
+                            "CORDA.EDDSA.ED25519",
+                            "CORDA.X25519",
+                            "CORDA.SM2",
+                            "CORDA.GOST3410.GOST3411",
+                            "CORDA.SPHINCS-256"
+                        ),
+                        CryptoHSMConfig.HSMConfig::cfg.name to mapOf(
+                            "keyMap" to mapOf(
+                                "name" to "CACHING",
+                                "cache" to mapOf(
+                                    "expireAfterAccessMins" to 60,
+                                    "maximumSize" to 1000
                                 )
                             ),
-                            CryptoHSMConfig.HSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
-                            CryptoHSMConfig.HSMConfig::capacity.name to -1,
-                            CryptoHSMConfig.HSMConfig::supportedSchemes.name to listOf(
-                                "CORDA.RSA",
-                                "CORDA.ECDSA.SECP256R1",
-                                "CORDA.ECDSA.SECP256K1",
-                                "CORDA.EDDSA.ED25519",
-                                "CORDA.X25519",
-                                "CORDA.SM2",
-                                "CORDA.GOST3410.GOST3411",
-                                "CORDA.SPHINCS-256"
-                            ),
-                            CryptoHSMConfig.HSMConfig::cfg.name to mapOf(
-                                "keyMap" to mapOf(
-                                    "name" to "CACHING",
-                                    "cache" to mapOf(
-                                        "expireAfterAccessMins" to 60,
-                                        "maximumSize" to 1000
-                                    )
-                                ),
-                                "wrappingKeyMap" to mapOf(
-                                    "name" to "CACHING",
-                                    "salt" to masterWrappingKey.salt,
-                                    "passphrase" to ConfigValueFactory.fromMap(
-                                        makeSecret(masterWrappingKey.passphrase).root().unwrapped()
-                                    ),
-                                    "cache" to mapOf(
-                                        "expireAfterAccessMins" to 60,
-                                        "maximumSize" to 1000
-                                    )
-                                ),
-                                "wrapping" to mapOf(
-                                    "name" to "DEFAULT"
+                            "wrappingKeyMap" to mapOf(
+                                "name" to "CACHING",
+                                "salt" to wrappingKeySalt,
+                                "passphrase" to wrappingKeyPassphrase,
+                                "cache" to mapOf(
+                                    "expireAfterAccessMins" to 60,
+                                    "maximumSize" to 1000
                                 )
+                            ),
+                            "wrapping" to mapOf(
+                                "name" to "DEFAULT"
                             )
                         )
                     )
                 )
             )
-            .withValue(
-                BUS_PROCESSORS_OBJ, ConfigValueFactory.fromMap(
-                    mapOf(
-                        OPS_BUS_PROCESSOR_OBJ to mapOf(
-                            CryptoBusProcessorConfig::maxAttempts.name to 3,
-                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
-                                listOf(
-                                    200
-                                )
-                            ),
+        )
+        .withValue(
+            BUS_PROCESSORS_OBJ, ConfigValueFactory.fromMap(
+                mapOf(
+                    OPS_BUS_PROCESSOR_OBJ to mapOf(
+                        CryptoBusProcessorConfig::maxAttempts.name to 3,
+                        CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
+                            listOf(
+                                200
+                            )
                         ),
-                        FLOW_BUS_PROCESSOR_OBJ to mapOf(
-                            CryptoBusProcessorConfig::maxAttempts.name to 3,
-                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
-                                listOf(
-                                    200
-                                )
-                            ),
-                        ),
-                        HSM_REGISTRATION_BUS_PROCESSOR_OBJ to mapOf(
-                            CryptoBusProcessorConfig::maxAttempts.name to 3,
-                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
-                                listOf(
-                                    200
-                                )
-                            ),
-                        )
                     ),
-                )
+                    FLOW_BUS_PROCESSOR_OBJ to mapOf(
+                        CryptoBusProcessorConfig::maxAttempts.name to 3,
+                        CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
+                            listOf(
+                                200
+                            )
+                        ),
+                    ),
+                    HSM_REGISTRATION_BUS_PROCESSOR_OBJ to mapOf(
+                        CryptoBusProcessorConfig::maxAttempts.name to 3,
+                        CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
+                            listOf(
+                                200
+                            )
+                        ),
+                    )
+                ),
             )
     )
-} catch (e: Throwable) {
-    throw CryptoException("Failed to create default crypto config", e)
-}
+
 
 private class ConfigurationSecretsImpl(
     private val owner: SmartConfig

@@ -38,9 +38,7 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Default config should have expected values`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
-        )
+        val config = createDefaultCryptoConfig("master-passphrase", "master-salt")
         val connectionFactory = config.cryptoConnectionFactory()
         assertEquals(5, connectionFactory.expireAfterAccessMins)
         assertEquals(3, connectionFactory.maximumSize)
@@ -165,9 +163,7 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Should be able to get crypto config from the map of configs`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
-        )
+        val config = SmartConfigFactory.createWithoutSecurityServices()createDefaultCryptoConfig("master-passphrase", "master-salt")
         val map = mapOf(
             FLOW_CONFIG to configFactory.create(ConfigFactory.empty()),
             CRYPTO_CONFIG to config
