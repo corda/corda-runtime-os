@@ -124,6 +124,22 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         }
     }
 
+    override fun upgradeVirtualNodeCpi(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        cpiName: String,
+        cpiVersion: String,
+        cpiSignerSummaryHash: String
+    ): VirtualNodeInfo {
+        val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
+            ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+        virtualNode.cpiName = cpiName
+        virtualNode.cpiVersion = cpiVersion
+        virtualNode.cpiSignerSummaryHash = cpiSignerSummaryHash
+        return entityManager.merge(virtualNode)
+            .toVirtualNodeInfo()
+    }
+
     private fun findEntity(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeEntity? {
         val queryBuilder = with(entityManager.criteriaBuilder!!) {
             val queryBuilder = createQuery(VirtualNodeEntity::class.java)!!

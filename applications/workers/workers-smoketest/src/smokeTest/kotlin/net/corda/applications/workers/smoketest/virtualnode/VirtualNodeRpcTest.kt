@@ -28,6 +28,9 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCATION
+import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
+import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
 
 /**
  * Any 'unordered' tests are run *last*
@@ -48,12 +51,15 @@ class VirtualNodeRpcTest {
 
         private val testRunUniqueId = UUID.randomUUID()
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
         private val staticMemberList = listOf(
             aliceX500,
+            bobX500
         )
 
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
+        private val upgradeTestingCpiName = "${VNODE_UPGRADE_TEST_CPI_NAME}_$testRunUniqueId"
         private val otherCpiName = "${TEST_CPI_NAME}_OTHER_$testRunUniqueId"
     }
 
@@ -94,37 +100,7 @@ class VirtualNodeRpcTest {
                 PASSWORD
             )
 
-            val requestId =
-                cpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            // BUG:  returning "OK" feels 'weakly' typed
-            val json = assertWithRetry {
-                // CPI upload can be slow in the combined worker, especially after it has just started up.
-                timeout(Duration.ofSeconds(100))
-                interval(Duration.ofSeconds(2))
-                command { cpiStatus(requestId) }
-                condition {
-                    it.code == 200 && it.toJson()["status"].textValue() == "OK"
-                }
-                immediateFailCondition {
-                    it.code == CONFLICT.statusCode
-                            && null != it.toJson()["details"]
-                            && it.toJson()["details"]["code"].textValue().equals(CONFLICT.toString())
-                            && null != it.toJson()["title"]
-                            && it.toJson()["title"].textValue().contains("already uploaded")
-                }
-            }.toJson()
-
-            val cpiHash = json["cpiFileChecksum"].textValue()
-            assertThat(cpiHash).isNotNull.isNotEmpty
-
-            // Capture the cpiHash from the cpi status upload
-            // We probably want more tests like this that enforce "expectations" on the API.
-            assertThat(cpiHash!!.length)
-                .withFailMessage("Short code length of wrong size - likely this test needs fixing")
-                .isEqualTo(12)
+            val cpiHash = eventuallyUploadCpi(TEST_CPB_LOCATION, cpiName)
 
             val actualChecksum = getCpiChecksum(cpiName)
 
@@ -134,6 +110,44 @@ class VirtualNodeRpcTest {
 
             assertThat(actualChecksum).isEqualTo(cpiHash)
         }
+    }
+
+    private fun ClusterBuilder.eventuallyUploadCpi(
+        cpbLocation: String,
+        cpiName: String,
+        cpiVersion: String = "1.0.0.0-SNAPSHOT"
+    ): String {
+        val requestId = cpiUpload(cpbLocation, GROUP_ID, staticMemberList, cpiName, cpiVersion)
+            .let { it.toJson()["id"].textValue() }
+        assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+        // BUG:  returning "OK" feels 'weakly' typed
+        val json = assertWithRetry {
+            // CPI upload can be slow in the combined worker, especially after it has just started up.
+            timeout(Duration.ofSeconds(100))
+            interval(Duration.ofSeconds(2))
+            command { cpiStatus(requestId) }
+            condition {
+                it.code == 200 && it.toJson()["status"].textValue() == "OK"
+            }
+            immediateFailCondition {
+                it.code == CONFLICT.statusCode
+                        && null != it.toJson()["details"]
+                        && it.toJson()["details"]["code"].textValue().equals(CONFLICT.toString())
+                        && null != it.toJson()["title"]
+                        && it.toJson()["title"].textValue().contains("already uploaded")
+            }
+        }.toJson()
+
+        val cpiHash = json["cpiFileChecksum"].textValue()
+        assertThat(cpiHash).isNotNull.isNotEmpty
+
+        // Capture the cpiHash from the cpi status upload
+        // We probably want more tests like this that enforce "expectations" on the API.
+        assertThat(cpiHash!!.length)
+            .withFailMessage("Short code length of wrong size - likely this test needs fixing")
+            .isEqualTo(12)
+        return cpiHash
     }
 
     /**
@@ -181,8 +195,7 @@ class VirtualNodeRpcTest {
                 USERNAME,
                 PASSWORD
             )
-            val requestId =
-                cpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
+            val requestId = cpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -232,7 +245,6 @@ class VirtualNodeRpcTest {
                 staticMemberList,
                 otherCpiName
             ).let { it.toJson()["id"].textValue() }
-
 
             val json = assertWithRetry {
                 // CPI upload can be slow in the combined worker, especially after it has just started up.
@@ -290,7 +302,7 @@ class VirtualNodeRpcTest {
             )
 
             val json = cpiList().toJson()
-            val cpiJson = json["cpis"].first { it["id"]["cpiName"].textValue() == cpiName}
+            val cpiJson = json["cpis"].first { it["id"]["cpiName"].textValue() == cpiName }
 
             val groupPolicyJson = cpiJson["groupPolicy"].textValue().toJson()
             assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(GROUP_ID)
@@ -306,16 +318,21 @@ class VirtualNodeRpcTest {
                 USERNAME,
                 PASSWORD
             )
-            val hash = getCpiChecksum(cpiName)
+            val cpiFileChecksum = getCpiChecksum(cpiName)
 
-            val vNodeJson = assertWithRetry {
-                command { vNodeCreate(hash, aliceX500) }
-                condition { it.code == 200 }
-                failMessage(ERROR_HOLDING_ID)
-            }.toJson()
-
-            assertThat(vNodeJson["holdingIdentity"]["shortHash"].textValue()).isNotNull.isNotEmpty
+            eventuallyCreateVirtualNode(cpiFileChecksum, aliceX500)
         }
+    }
+
+    private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
+        val vNodeJson = assertWithRetry {
+            command { vNodeCreate(cpiFileChecksum, x500Name) }
+            condition { it.code == 200 }
+            failMessage(ERROR_HOLDING_ID)
+        }.toJson()
+        val vnodeShortHash = vNodeJson["holdingIdentity"]["shortHash"].textValue()
+        assertThat(vnodeShortHash).isNotNull.isNotEmpty
+        return vnodeShortHash
     }
 
     @Test
@@ -370,7 +387,7 @@ class VirtualNodeRpcTest {
                 command { getVNode(aliceHoldingId) }
                 condition { response ->
                     response.code == 200 &&
-                        response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
+                            response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
                 }
             }
         }
@@ -630,7 +647,7 @@ class VirtualNodeRpcTest {
 
             val requestId =
                 forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                .let { it.toJson()["id"].textValue() }
+                    .let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             assertWithRetry {
@@ -661,12 +678,60 @@ class VirtualNodeRpcTest {
         }
     }
 
-    private fun runReturnAStringFlow(expectedResult: String) {
+    @Test
+    @Order(110)
+    fun `can upgrade a virtual node's CPI`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
+            val cpiV1 = getCpiChecksum(upgradeTestingCpiName, "v1")
+
+            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
+            val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
+
+            val bobVNodeId = eventuallyCreateVirtualNode(cpiV1, bobX500)
+            eventuallyGetVirtualNodeWithCpi(bobVNodeId, upgradeTestingCpiName, "v1")
+
+            runReturnAStringFlow("upgrade-test-v1", bobVNodeId)
+
+            triggerVirtualNodeUpgrade(bobVNodeId, cpiV2)
+            eventuallyGetVirtualNodeWithCpi(bobVNodeId, upgradeTestingCpiName, "v2")
+
+            runReturnAStringFlow("upgrade-test-v2", bobVNodeId)
+        }
+    }
+
+    private fun ClusterBuilder.triggerVirtualNodeUpgrade(
+        virtualNodeShortHash: String, targetCpiFileChecksum: String
+    ): String? {
+        val vNodeJson = assertWithRetry {
+            command { vNodeUpgrade(virtualNodeShortHash, targetCpiFileChecksum) }
+            condition { it.code == 202 }
+            failMessage(ERROR_HOLDING_ID)
+        }.toJson()
+        return vNodeJson["requestId"].textValue()
+    }
+
+    private fun ClusterBuilder.eventuallyGetVirtualNodeWithCpi(
+        virtualNodeShortHash: String, cpiName: String, cpiVersion: String
+    ) = assertWithRetry {
+        timeout(Duration.of(30, ChronoUnit.SECONDS))
+        command { getVNode(virtualNodeShortHash) }
+        condition { response ->
+            response.code == 200 &&
+                    response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(bobX500) &&
+                    response.toJson()["cpiIdentifier"]["cpiName"].textValue().equals(cpiName) &&
+                    response.toJson()["cpiIdentifier"]["cpiVersion"].textValue().equals(cpiVersion)
+        }
+    }
+
+    private fun runReturnAStringFlow(expectedResult: String, holdingId: String = aliceHoldingId) {
         val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
 
-        val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+        val requestId = startRpcFlow(holdingId, emptyMap(), className)
 
-        val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+        val flowStatus = awaitRpcFlowFinished(holdingId, requestId)
 
         assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
@@ -691,6 +756,18 @@ class VirtualNodeRpcTest {
         val cpiFileChecksum = eventually {
             val cpis = cpiList().toJson()["cpis"]
             val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
+            assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
+            truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
+        }
+        return cpiFileChecksum
+    }
+
+    private fun ClusterBuilder.getCpiChecksum(cpiName: String, cpiVersion: String): String {
+        val cpiFileChecksum = eventually {
+            val cpis = cpiList().toJson()["cpis"]
+            val cpiJson = cpis.toList().find {
+                it["id"]["cpiName"].textValue() == cpiName && it["id"]["cpiVersion"].textValue() == cpiVersion
+            }
             assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
             truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
         }

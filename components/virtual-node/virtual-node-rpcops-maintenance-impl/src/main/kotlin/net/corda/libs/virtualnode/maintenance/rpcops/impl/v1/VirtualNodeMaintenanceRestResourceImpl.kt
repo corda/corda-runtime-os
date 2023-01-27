@@ -27,6 +27,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -59,6 +60,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT"
     }
 
     override val targetInterface: Class<VirtualNodeMaintenanceRestResource> = VirtualNodeMaintenanceRestResource::class.java
@@ -113,7 +115,9 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
-                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
+                        virtualNodeSenderFactory.createSender(
+                            duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID)
+                        )
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
