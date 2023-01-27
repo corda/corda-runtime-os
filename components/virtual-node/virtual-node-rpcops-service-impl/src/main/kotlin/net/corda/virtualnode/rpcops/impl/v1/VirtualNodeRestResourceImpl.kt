@@ -203,10 +203,8 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
     override fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
         val shortHash = ShortHash.parseOrThrow(holdingIdentityShortHash)
         val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)
+            ?: throw ResourceNotFoundException("VirtualNode with shortHash $holdingIdentityShortHash could not be found.")
 
-        if (virtualNode == null) {
-            throw ResourceNotFoundException("VirtualNode with shortHash $holdingIdentityShortHash could not be found.")
-        }
         return virtualNode.toEndpointType()
     }
 

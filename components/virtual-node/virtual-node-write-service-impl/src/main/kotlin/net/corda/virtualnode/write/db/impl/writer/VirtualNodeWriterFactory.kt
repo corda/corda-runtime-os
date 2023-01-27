@@ -24,6 +24,8 @@ import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import javax.persistence.EntityManager
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 
 /** A factory for [VirtualNodeWriter]s. */
 @Suppress("LongParameterList")
@@ -64,12 +66,14 @@ internal class VirtualNodeWriterFactory(
         virtualNodeInfoPublisher: Publisher,
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
-        val oldVirtualNodeEntityRepository = VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
+        val oldVirtualNodeEntityRepository = VirtualNodeEntityRepository(this.dbConnectionManager.getClusterEntityManagerFactory())
+        val migrationUtility = MigrationUtilityImpl(dbConnectionManager, LiquibaseSchemaMigratorImpl())
 
         val virtualNodeUpgradeHandler = VirtualNodeUpgradeOperationHandler(
-            dbConnectionManager.getClusterEntityManagerFactory(),
+            this.dbConnectionManager.getClusterEntityManagerFactory(),
             oldVirtualNodeEntityRepository,
-            virtualNodeInfoPublisher
+            virtualNodeInfoPublisher,
+            migrationUtility
         )
         val asyncOperationProcessor = VirtualNodeAsyncOperationProcessor(virtualNodeUpgradeHandler)
 
