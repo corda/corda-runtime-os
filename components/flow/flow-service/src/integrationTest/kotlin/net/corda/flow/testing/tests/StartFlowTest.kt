@@ -5,6 +5,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
+import net.corda.virtualnode.OperationalStatus
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -24,6 +25,41 @@ class StartFlowTest : FlowServiceTestBase() {
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
         }
+
+        println("herehoho")
+
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitialCheckpoint)
+
+            wakeupEventReceived(FLOW_ID1)
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                wakeUpEvent()
+                flowStatus(FlowStates.RUNNING)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowStatus(FlowStates.COMPLETED, result = "hello")
+                nullStateRecord()
+            }
+        }
+    }
+
+    @Test
+    fun `RPC Start Flow - Flow throws FlowMarkedForKillException if startFlowOperationalStatus is INACTIVE`() {
+
+        given {
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY, flowStartOperationalStatus = OperationalStatus.INACTIVE)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
+            membershipGroupFor(BOB_HOLDING_IDENTITY)
+        }
+
+        println("printing")
 
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")

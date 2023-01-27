@@ -4,12 +4,20 @@ import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
 
 interface StepSetup {
 
     val initiatedIdentityMemberName: MemberX500Name
 
-    fun virtualNode(cpiId: String, holdingId: HoldingIdentity)
+    fun virtualNode(
+        cpiId: String,
+        holdingId: HoldingIdentity,
+        flowP2pOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE,
+        flowStartOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE,
+        flowOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE,
+        vaultDbOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE,)
 
     fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash)
 

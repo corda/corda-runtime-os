@@ -47,6 +47,7 @@ import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.fake.VirtualNodeInfoReadServiceFake
 import net.corda.virtualnode.toCorda
@@ -117,8 +118,25 @@ class FlowServiceTestContext @Activate constructor(
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
-    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity) {
+    override fun virtualNode(
+        cpiId: String,
+        holdingId: HoldingIdentity,
+        flowP2pOperationalStatus: OperationalStatus,
+        flowStartOperationalStatus: OperationalStatus,
+        flowOperationalStatus: OperationalStatus,
+        vaultDbOperationalStatus: OperationalStatus
+    ) {
         val emptyUUID = UUID(0, 0)
+
+        println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+        println("$flowP2pOperationalStatus")
+        println("$flowStartOperationalStatus")
+        println("$flowOperationalStatus")
+        println("$vaultDbOperationalStatus")
+        print(holdingId.toString())
+        println(holdingId.x500Name)
+        println(holdingId.toCorda())
+        println(holdingId.toCorda().shortHash)
 
         virtualNodeInfoReadService.addOrUpdate(
             VirtualNodeInfo(
@@ -130,8 +148,17 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
+                emptyUUID,
+                flowP2pOperationalStatus = flowP2pOperationalStatus,
+                flowStartOperationalStatus = flowStartOperationalStatus,
+                flowOperationalStatus = flowOperationalStatus,
+                vaultDbOperationalStatus = vaultDbOperationalStatus,
                 timestamp = Instant.now()
             )
+//            flowP2pOperationalStatus = flowP2pOperationalStatus,
+//            flowStartOperationalStatus = flowStartOperationalStatus,
+//            flowOperationalStatus = flowOperationalStatus,
+//            vaultDbOperationalStatus = vaultDbOperationalStatus,
         )
     }
 
