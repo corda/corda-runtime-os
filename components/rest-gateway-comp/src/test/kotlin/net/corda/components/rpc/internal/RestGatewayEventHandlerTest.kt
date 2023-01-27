@@ -31,7 +31,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-internal class HttpRpcGatewayEventHandlerTest {
+internal class RestGatewayEventHandlerTest {
 
     private val permissionManagementService = mock<PermissionManagementService>()
 
@@ -39,7 +39,7 @@ internal class HttpRpcGatewayEventHandlerTest {
     private val coordinator = mock<LifecycleCoordinator>()
     private val server = mock<RestServer>()
     private val sslCertReadService = mock<SslCertReadService>()
-    private val rpcConfig = mock<SmartConfig>().also {
+    private val restGatewayConfig = mock<SmartConfig>().also {
         whenever(it.getString(ConfigKeys.REST_ADDRESS)).thenReturn("localhost:0")
         whenever(it.getString(ConfigKeys.REST_CONTEXT_DESCRIPTION)).thenReturn("REST_CONTEXT_DESCRIPTION")
         whenever(it.getString(ConfigKeys.REST_CONTEXT_TITLE)).thenReturn("REST_CONTEXT_TITLE")
@@ -65,7 +65,7 @@ internal class HttpRpcGatewayEventHandlerTest {
     private val endpoint = mock<MockEndpoint>()
     private val restResources: List<PluggableRestResource<out RestResource>> = listOf(endpoint)
 
-    private val handler = HttpRpcGatewayEventHandler(
+    private val handler = RestGatewayEventHandler(
         permissionManagementService,
         configurationReadService,
         restServerFactory,
@@ -105,7 +105,7 @@ internal class HttpRpcGatewayEventHandlerTest {
     @Test
     fun `processing an UP status change for configuration registers for config updates and sets status to UP`() {
         handler.registration = registration
-        handler.rpcConfig = rpcConfig
+        handler.restGatewayConfig = restGatewayConfig
 
         handler.processEvent(RegistrationStatusChangeEvent(registration, LifecycleStatus.UP), coordinator)
 

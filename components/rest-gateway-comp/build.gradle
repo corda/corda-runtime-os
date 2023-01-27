@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'HTTP RPC Gateway component'
+description 'REST Gateway component'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

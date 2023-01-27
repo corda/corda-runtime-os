@@ -1,8 +1,8 @@
 package net.corda.components.rpc
 
 import net.corda.components.rbac.RBACSecurityManagerService
-import net.corda.components.rpc.HttpRpcGateway.Companion.INTERNAL_PLUGGABLE_RPC_OPS
-import net.corda.components.rpc.internal.HttpRpcGatewayEventHandler
+import net.corda.components.rpc.RestGateway.Companion.INTERNAL_PLUGGABLE_REST_RESOURCES
+import net.corda.components.rpc.internal.RestGatewayEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
@@ -23,16 +23,16 @@ import org.osgi.service.component.annotations.ReferencePolicy
 
 @Suppress("LongParameterList")
 @Component(
-    service = [HttpRpcGateway::class],
+    service = [RestGateway::class],
     reference = [
         Reference(
-            name = INTERNAL_PLUGGABLE_RPC_OPS,
+            name = INTERNAL_PLUGGABLE_REST_RESOURCES,
             service = PluggableRestResource::class,
             cardinality = ReferenceCardinality.MULTIPLE,
             policy = ReferencePolicy.DYNAMIC
         )
     ])
-class HttpRpcGateway @Activate constructor(
+class RestGateway @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -50,7 +50,7 @@ class HttpRpcGateway @Activate constructor(
 
      companion object {
         private val log = contextLogger()
-        internal const val INTERNAL_PLUGGABLE_RPC_OPS = "internalPluggableRpcOps"
+        internal const val INTERNAL_PLUGGABLE_REST_RESOURCES = "internalPluggableRestResources"
 
          private fun <T> ComponentContext.fetchServices(refName: String): List<T> {
              @Suppress("unchecked_cast")
@@ -59,9 +59,9 @@ class HttpRpcGateway @Activate constructor(
     }
 
     private val dynamicRestResources: List<PluggableRestResource<out RestResource>>
-        get() = componentContext.fetchServices(INTERNAL_PLUGGABLE_RPC_OPS)
+        get() = componentContext.fetchServices(INTERNAL_PLUGGABLE_REST_RESOURCES)
 
-    private val handler = HttpRpcGatewayEventHandler(
+    private val handler = RestGatewayEventHandler(
         permissionManagementService,
         configurationReadService,
         restServerFactory,
@@ -70,7 +70,7 @@ class HttpRpcGateway @Activate constructor(
         ::dynamicRestResources
     )
 
-    private var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGateway>(handler)
+    private var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<RestGateway>(handler)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
