@@ -697,29 +697,27 @@ Kafka SASL init container
 {{- end }}
 
 {{/*
-DB SALT and Passphrase environment variable
-NOTE: some of then naming here is incorrect.
-      These variables have nothing to do with the DB or DB Worker, but are common for all worker types.
+SALT and PASSPHRASE environment variables for decrypting configuration.
 */}}
 {{- define "corda.configSaltAndPassphraseEnv" -}}
 - name: SALT
   valueFrom:
     secretKeyRef:
-      {{- if .Values.workers.db.salt.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.workers.db.salt.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify workers.db.salt.valueFrom.secretKeyRef.key" .Values.workers.db.salt.valueFrom.secretKeyRef.key | quote }}
+      {{- if .Values.config.encryption.salt.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.config.encryption.salt.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify config.encryption.salt.valueFrom.secretKeyRef.key" .Values.config.encryption.salt.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      name: {{ (printf "%s-config" (include "corda.fullname" .)) | quote }}
       key: "salt"
       {{- end }}
 - name: PASSPHRASE
   valueFrom:
     secretKeyRef:
-      {{- if .Values.workers.db.passphrase.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.workers.db.passphrase.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify workers.db.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
+      {{- if .Values.config.encryption.passphrase.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.config.encryption.passphrase.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify config.encryption.passphrase.valueFrom.secretKeyRef.key" .Values.workers.db.passphrase.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ (printf "%s-db-worker" (include "corda.fullname" .)) | quote }}
+      name: {{ (printf "%s-config" (include "corda.fullname" .)) | quote }}
       key: "passphrase" 
       {{- end }}
 {{- end }}
