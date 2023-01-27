@@ -47,6 +47,7 @@ import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.fake.VirtualNodeInfoReadServiceFake
 import net.corda.virtualnode.toCorda
@@ -117,7 +118,7 @@ class FlowServiceTestContext @Activate constructor(
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
-    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity) {
+    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity, flowOperationalStatus: OperationalStatus) {
         val emptyUUID = UUID(0, 0)
 
         virtualNodeInfoReadService.addOrUpdate(
@@ -130,7 +131,8 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
-                timestamp = Instant.now()
+                timestamp = Instant.now(),
+                flowOperationalStatus = flowOperationalStatus
             )
         )
     }
