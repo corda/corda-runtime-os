@@ -113,8 +113,11 @@ class CordaKafkaProducerImpl(
      * @param callback for error handling in async producers
      * @param partition partition to send to. defaults to null.
      */
-    private fun sendChunks(cordaProducerRecords: List<CordaProducerRecord<*, *>>, callback: CordaProducer.Callback? = null, partition: Int? =
-        null) {
+    private fun sendChunks(
+        cordaProducerRecords: List<CordaProducerRecord<*, *>>,
+        callback: CordaProducer.Callback? = null,
+        partition: Int? = null
+    ) {
         if (!transactional) {
             //set the call back and throw the exception. This mimics what the kafka client does
             val exceptionThrown = CordaMessageAPIFatalException(asyncChunkErrorMessage)
