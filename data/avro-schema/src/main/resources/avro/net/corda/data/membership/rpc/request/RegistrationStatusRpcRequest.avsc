@@ -6,7 +6,7 @@
   "fields": [
     {
       "name": "holdingIdentityId",
-      "doc": "ID of the holding identity whose registration status we want to check.",
+      "doc": "ID of the holding identity whose view of the registration status we want to check.",
       "type": "string"
     }
   ]
