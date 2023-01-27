@@ -92,7 +92,7 @@ internal class ChunkWriterImpl(
         checksum: SecureHash,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
-        chunkBuilderService.buildFinalChunk(identifier, chunkNumber, checksum, properties?.toAvro(), fileName, offset)
+        chunkBuilderService.buildFinalChunk(identifier, chunkNumber, checksum, offset, properties?.toAvro(), fileName)
     )
 
     private fun writeChunk(
@@ -102,7 +102,7 @@ internal class ChunkWriterImpl(
         byteBuffer: ByteBuffer,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
-        chunkBuilderService.buildChunk(identifier, chunkNumber, byteBuffer, properties?.toAvro(), fileName, offset)
+        chunkBuilderService.buildChunk(identifier, chunkNumber, byteBuffer, offset, properties?.toAvro(), fileName)
     )
 
     override fun onChunk(onChunkWriteCallback: ChunkWriteCallback) {

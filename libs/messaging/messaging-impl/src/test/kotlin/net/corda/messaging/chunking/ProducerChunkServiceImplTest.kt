@@ -52,7 +52,7 @@ class ProducerChunkServiceImplTest {
                 .setOffset(null)
                 .setData(ByteBuffer.wrap("bytes".toByteArray()))
                 .setProperties(KeyValuePairList()).build()
-        }.whenever(chunkBuilderService).buildChunk(any(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull())
+        }.whenever(chunkBuilderService).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
         doAnswer {
             partNumber += 1
             Chunk.newBuilder()
@@ -63,7 +63,7 @@ class ProducerChunkServiceImplTest {
                 .setOffset(null)
                 .setData(ByteBuffer.wrap(ByteArray(0)))
                 .setProperties(KeyValuePairList()).build()
-        }.whenever(chunkBuilderService).buildFinalChunk(any(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull())
+        }.whenever(chunkBuilderService).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
 
         whenever(producerRecord.topic).thenReturn("topic")
         whenever(producerRecord.key).thenReturn(key)
@@ -85,8 +85,8 @@ class ProducerChunkServiceImplTest {
         assertThat(result).isNotEmpty
         assertThat(result).size().isEqualTo(3)
 
-        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull())
-        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -109,8 +109,8 @@ class ProducerChunkServiceImplTest {
         assertThat(result).isNotEmpty
         assertThat(result.size).isEqualTo(3)
 
-        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull())
-        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -125,7 +125,7 @@ class ProducerChunkServiceImplTest {
         assertThat(result).isNotEmpty
         assertThat(result.size).isEqualTo(3)
 
-        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull())
-        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), anyOrNull(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
 }
