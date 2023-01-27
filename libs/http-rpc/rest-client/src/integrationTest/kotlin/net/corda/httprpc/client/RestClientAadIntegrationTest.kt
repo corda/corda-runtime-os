@@ -2,9 +2,9 @@ package net.corda.httprpc.client
 
 import net.corda.httprpc.client.config.RestClientConfig
 import net.corda.httprpc.server.config.models.AzureAdSettings
-import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.config.models.RestServerSettings
 import net.corda.httprpc.server.config.models.SsoSettings
-import net.corda.httprpc.server.impl.HttpRpcServerImpl
+import net.corda.httprpc.server.impl.RestServerImpl
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.AzureAdMock
@@ -19,18 +19,18 @@ class RestClientAadIntegrationTest : RestIntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-        val httpRpcSettings = HttpRpcSettings(
+        val restServerSettings = RestServerSettings(
             NetworkHostAndPort("localhost", 0),
             context,
             null,
             SsoSettings(AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))),
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
             20000L
         )
-        server = HttpRpcServerImpl(
+        server = RestServerImpl(
             listOf(TestHealthCheckAPIImpl()),
             ::securityManager,
-            httpRpcSettings,
+            restServerSettings,
             multipartDir,
             true
         ).apply { start() }

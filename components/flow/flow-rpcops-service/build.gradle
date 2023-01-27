@@ -7,7 +7,7 @@ description "Flow RPC Ops Service"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-    api project(':libs:http-rpc:http-rpc')
+    api project(':libs:http-rpc:rest')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:configuration:configuration-core')

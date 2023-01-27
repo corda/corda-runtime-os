@@ -16,6 +16,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -51,6 +52,7 @@ internal class StartRegistrationHandler(
 
     private companion object {
         val logger = contextLogger()
+        const val SERIAL_CONST = "1"
     }
 
     private val keyValuePairListDeserializer =
@@ -185,7 +187,8 @@ internal class StartRegistrationHandler(
             sortedMapOf(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
-                STATUS to MEMBER_STATUS_PENDING
+                STATUS to MEMBER_STATUS_PENDING,
+                SERIAL to SERIAL_CONST,
             )
         )
     }

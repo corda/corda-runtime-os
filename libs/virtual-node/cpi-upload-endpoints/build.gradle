@@ -8,7 +8,7 @@ description 'Endpoint API for uploading a CPI actions.'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    api project(':libs:http-rpc:http-rpc')
+    api project(':libs:http-rpc:rest')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'

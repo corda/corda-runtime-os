@@ -24,6 +24,7 @@ import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
@@ -32,6 +33,7 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -90,13 +92,14 @@ class FlowEventProcessorImplTest {
         wakeupPayload,
         outputRecords = outputRecords
     )
+    private val flowKilledStatusRecords = listOf(Record(FLOW_STATUS_TOPIC, "key", flowState))
 
     private val outputResponse = StateAndEventProcessor.Response<Checkpoint>(
         null,
         listOf<Record<String, String>>()
     )
 
-
+    private val detailsMap = mapOf("reason" to "answer")
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
         whenever(eventPreProcessing()).thenReturn(this)
         whenever(runOrContinue(any())).thenReturn(this)
@@ -237,6 +240,19 @@ class FlowEventProcessorImplTest {
         val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
         assertThat(response).isEqualTo(outputResponse)
+    }
+
+    @Test
+    fun `FlowMarkedForKillException produces flow kill context`() {
+        val error = FlowMarkedForKillException("reason")
+
+        whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
+        val killedFlowResponse = StateAndEventProcessor.Response(checkpoint, flowKilledStatusRecords)
+        whenever(flowEventExceptionProcessor.process(error, updatedContext)).thenReturn(killedFlowResponse)
+
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+
+        assertThat(response).isEqualTo(killedFlowResponse)
     }
 
     @Test

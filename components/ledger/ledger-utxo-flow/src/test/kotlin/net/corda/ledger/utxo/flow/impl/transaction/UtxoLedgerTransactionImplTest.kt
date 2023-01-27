@@ -18,7 +18,6 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertIs
 
-@Suppress("DEPRECATION")
 internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
@@ -45,7 +44,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
-            .toSignedTransaction(publicKeyExample)
+            .toSignedTransaction()
         val ledgerTransaction = signedTransaction.toLedgerTransaction()
 
         assertIs<SecureHash>(ledgerTransaction.id)

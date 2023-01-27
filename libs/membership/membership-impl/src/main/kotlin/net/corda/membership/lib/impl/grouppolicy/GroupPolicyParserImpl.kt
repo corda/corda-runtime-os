@@ -6,6 +6,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
@@ -153,12 +154,13 @@ class GroupPolicyParserImpl @Activate constructor(
         return parsedGroupPolicy?.mgmInfo?.let {
             val now = clock.instant().toString()
             memberInfoFactory.create(
-                it.toSortedMap(),
+                it.filterKeys { !it.equals(SERIAL) }.toSortedMap(),
                 sortedMapOf(
                     CREATION_TIME to now,
                     MODIFIED_TIME to now,
                     STATUS to MEMBER_STATUS_ACTIVE,
-                    IS_MGM to "true"
+                    IS_MGM to "true",
+                    SERIAL to it.get(SERIAL)
                 )
             )
         }
