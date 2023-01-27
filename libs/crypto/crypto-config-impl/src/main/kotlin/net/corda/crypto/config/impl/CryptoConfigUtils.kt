@@ -4,6 +4,7 @@ package net.corda.crypto.config.impl
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValue
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
@@ -246,7 +247,7 @@ fun Config.bootstrapHsmId(): String =
 fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
     mapOf(HSM_ID to hsmId)
 
-fun createDefaultCryptoConfig(wrappingKeySalt: Any, wrappingKeyPassphrase: Any): Config = ConfigFactory.empty()
+fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): Config = ConfigFactory.empty()
         .withValue(
             CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
                 mapOf(

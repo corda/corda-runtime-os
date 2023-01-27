@@ -1,5 +1,6 @@
 package net.corda.processor.member
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -96,9 +97,7 @@ class MemberProcessorTestUtils {
             listOf(EncryptionSecretsServiceFactory())
         )
 
-        fun makeCryptoConfig(): SmartConfig = smartConfigFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-key-pass", "master-key-salt")
-        )
+        fun makeCryptoConfig(): Config = createDefaultCryptoConfig( "master-key-pass","master-key-salt")
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(
@@ -279,7 +278,7 @@ class MemberProcessorTestUtils {
 
         fun Publisher.publishMembershipConf(membershipConfig: SmartConfig) =
             publishConf(ConfigKeys.MEMBERSHIP_CONFIG, membershipConfig.root().render())
-        fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
+        fun Publisher.publishDefaultCryptoConf(cryptoConfig: Config) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
         fun Publisher.publishGatewayConfig() =
             publishConf(
