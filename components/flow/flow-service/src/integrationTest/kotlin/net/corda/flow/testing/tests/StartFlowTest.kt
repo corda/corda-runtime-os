@@ -26,7 +26,7 @@ class StartFlowTest : FlowServiceTestBase() {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
         }
 
-        println("herehoho")
+        println("printing")
 
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")

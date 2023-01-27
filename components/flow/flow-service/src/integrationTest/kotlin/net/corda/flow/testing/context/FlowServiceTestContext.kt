@@ -138,23 +138,28 @@ class FlowServiceTestContext @Activate constructor(
         println(holdingId.toCorda())
         println(holdingId.toCorda().shortHash)
 
+        val vnodeInfo = VirtualNodeInfo(
+            holdingId.toCorda(),
+            getCpiIdentifier(cpiId),
+            emptyUUID,
+            emptyUUID,
+            emptyUUID,
+            emptyUUID,
+            emptyUUID,
+            emptyUUID,
+            emptyUUID,
+            flowP2pOperationalStatus = flowP2pOperationalStatus,
+            flowStartOperationalStatus = flowStartOperationalStatus,
+            flowOperationalStatus = flowOperationalStatus,
+            vaultDbOperationalStatus = vaultDbOperationalStatus,
+            timestamp = Instant.now()
+        )
+
+        println("vnodeInfo.flowStartOperationalStatus: ${vnodeInfo.flowStartOperationalStatus}")
+        println("vnodeInfo.flowStartOperationalStatus: ${vnodeInfo.flowOperationalStatus}")
+
         virtualNodeInfoReadService.addOrUpdate(
-            VirtualNodeInfo(
-                holdingId.toCorda(),
-                getCpiIdentifier(cpiId),
-                emptyUUID,
-                emptyUUID,
-                emptyUUID,
-                emptyUUID,
-                emptyUUID,
-                emptyUUID,
-                emptyUUID,
-                flowP2pOperationalStatus = flowP2pOperationalStatus,
-                flowStartOperationalStatus = flowStartOperationalStatus,
-                flowOperationalStatus = flowOperationalStatus,
-                vaultDbOperationalStatus = vaultDbOperationalStatus,
-                timestamp = Instant.now()
-            )
+            vnodeInfo
 //            flowP2pOperationalStatus = flowP2pOperationalStatus,
 //            flowStartOperationalStatus = flowStartOperationalStatus,
 //            flowOperationalStatus = flowOperationalStatus,
