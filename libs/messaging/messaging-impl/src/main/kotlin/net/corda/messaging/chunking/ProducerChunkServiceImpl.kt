@@ -64,11 +64,13 @@ class ProducerChunkServiceImpl(
         val chunksAsBytes = divideDataIntoChunks(bytes, chunkSize)
         val hash = Checksum.digestForBytes(bytes)
         var partNumber = 0
+        var offset: Long? = null
         val requestId = UUID.randomUUID().toString()
         return chunksAsBytes.map {
-            chunkBuilderService.buildChunk(requestId, partNumber++, ByteBuffer.wrap(it))
+            offset = if (offset == null) 0 else offset!! + bytes.size
+            chunkBuilderService.buildChunk(requestId, partNumber++, ByteBuffer.wrap(it), offset)
         }.toMutableList().apply {
-            add(chunkBuilderService.buildFinalChunk(requestId, partNumber++, hash))
+            add(chunkBuilderService.buildFinalChunk(requestId, partNumber++, hash, offset))
         }
     }
 

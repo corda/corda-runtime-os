@@ -36,7 +36,7 @@ class ChunkBuilderServiceImplTest {
 
     @Test
     fun `test final chunk has secure hash and empty bytes`() {
-        val chunk = chunkBuilderService.buildFinalChunk(id, chunkNumber, secureHash, properties, fileName, offset)
+        val chunk = chunkBuilderService.buildFinalChunk(id, chunkNumber, secureHash, offset, properties, fileName)
         assertThat(chunk.requestId).isEqualTo(id)
         assertThat(chunk.partNumber).isEqualTo(chunkNumber)
         assertThat(chunk.checksum).isEqualTo(secureHash.toAvro())
@@ -50,7 +50,7 @@ class ChunkBuilderServiceImplTest {
 
     @Test
     fun `test chunk has np secure hash and empty bytes`() {
-        val chunk = chunkBuilderService.buildChunk(id, chunkNumber, chunkBytes, properties, fileName, offset)
+        val chunk = chunkBuilderService.buildChunk(id, chunkNumber, chunkBytes, offset, properties, fileName)
         assertThat(chunk.requestId).isEqualTo(id)
         assertThat(chunk.partNumber).isEqualTo(chunkNumber)
         assertThat(chunk.data).isEqualTo(chunkBytes)
