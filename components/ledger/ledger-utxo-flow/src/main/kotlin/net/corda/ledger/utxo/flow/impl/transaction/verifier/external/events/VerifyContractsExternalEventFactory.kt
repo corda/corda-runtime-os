@@ -39,7 +39,7 @@ class VerifyContractsExternalEventFactory(
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setTransaction(parameters.transaction)
-                .setCpkMetadata(parameters.cpkMetadata)
+                .setCpiMetadata(parameters.cpiMetadata)
                 .setFlowExternalEventContext(flowExternalEventContext)
                 .build()
         )
@@ -71,5 +71,5 @@ class VerifyContractsExternalEventFactory(
 
 data class VerifyContractsParameters(
     val transaction: ByteBuffer,
-    val cpkMetadata: List<CordaPackageSummaryAvro>
+    val cpiMetadata: CordaPackageSummaryAvro
 )

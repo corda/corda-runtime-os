@@ -23,19 +23,11 @@ class VerifyContractsExternalEventFactoryTest {
     fun `creates a record containing an VerifyContractsRequest`() {
         val checkpoint = mock<FlowCheckpoint>()
         val transaction = ByteBuffer.wrap(byteArrayOf(1))
-        val cpkMetadata = listOf(
-            CordaPackageSummary(
-                "cpk1",
-                "1.0",
-                "SHA-256:0000000000000001",
-                "SHA-256:0000000000000011"
-            ),
-            CordaPackageSummary(
-                "cpk2",
-                "2.0",
-                "SHA-256:0000000000000002",
-                "SHA-256:0000000000000022"
-            )
+        val cpiMetadata = CordaPackageSummary(
+            "cpi",
+            "1.0",
+            "SHA-256:0000000000000001",
+            "SHA-256:0000000000000011"
         )
         val externalEventContext = ExternalEventContext(
             "request id",
@@ -49,7 +41,7 @@ class VerifyContractsExternalEventFactoryTest {
         val externalEventRecord = VerifyContractsExternalEventFactory(testClock).createExternalEvent(
             checkpoint,
             externalEventContext,
-            VerifyContractsParameters(transaction, cpkMetadata)
+            VerifyContractsParameters(transaction, cpiMetadata)
         )
 
         assertEquals(Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
@@ -59,7 +51,7 @@ class VerifyContractsExternalEventFactoryTest {
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 transaction,
-                cpkMetadata,
+                cpiMetadata,
                 externalEventContext
             ),
             externalEventRecord.payload

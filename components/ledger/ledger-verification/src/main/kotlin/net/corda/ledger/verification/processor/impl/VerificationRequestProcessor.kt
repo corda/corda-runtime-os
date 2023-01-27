@@ -4,6 +4,7 @@ import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
 import net.corda.ledger.verification.processor.ResponseFactory
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.withMDC
@@ -40,8 +41,10 @@ class VerificationRequestProcessor(
                 withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
-                        val cpkIds = request.cpkMetadata.mapTo(mutableSetOf()) { SecureHash.parse(it.fileChecksum) }
-                        val sandbox = verificationSandboxService.get(holdingIdentity, cpkIds)
+                        val cpiId = with(request.cpiMetadata) {
+                            CpiIdentifier(name, version, SecureHash.parse(signerSummaryHash))
+                        }
+                        val sandbox = verificationSandboxService.get(holdingIdentity, cpiId)
                         requestHandler.handleRequest(sandbox, request)
                     } catch (e: Exception) {
                         responseFactory.errorResponse(request.flowExternalEventContext, e)

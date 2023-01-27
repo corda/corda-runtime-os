@@ -1,7 +1,11 @@
 package net.corda.ledger.verification.sanbox.impl
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.ledger.verification.sanbox.VerificationSandboxService
 import net.corda.ledger.verification.exceptions.NotReadyException
+import net.corda.ledger.verification.exceptions.VirtualNodeException
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
@@ -36,13 +40,21 @@ import org.osgi.service.component.annotations.Reference
 class VerificationSandboxServiceImpl @Activate constructor(
     @Reference
     private val sandboxService: SandboxGroupContextComponent,
+    @Reference
+    private val cpiInfoService: CpiInfoReadService
 ) : VerificationSandboxService {
     companion object {
         private val logger = contextLogger()
     }
 
-    override fun get(holdingIdentity: HoldingIdentity, cpkFileChecksums: Set<SecureHash>): SandboxGroupContext {
-        // TODO We should verify the CPK's are contract only as part of platform verify of the request (CORE-9379)
+    override fun get(holdingIdentity: HoldingIdentity, cpiId: CpiIdentifier): SandboxGroupContext {
+        val cpksMetadata = cpiInfoService.get(cpiId)?.cpksMetadata
+            ?: throw VirtualNodeException("Could not get list of CPKs for $cpiId")
+
+        // Verification sandbox uses only Contract CPKs
+        val cpkFileChecksums = cpksMetadata
+            .filter(CpkMetadata::isContractCpk)
+            .mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
 
         if (!sandboxService.hasCpks(cpkFileChecksums)) {
             // TODO Retries when CPKs not available (CORE-9382)

@@ -35,12 +35,16 @@ class UtxoLedgerTransactionVerifierComponent @Activate constructor(
 
     @Suspendable
     fun verifyContracts(transaction: UtxoLedgerTransaction) {
+        val cpiMetadata = transaction.getCpiMetadata()
+        check(cpiMetadata != null) {
+            "CPI Metadata not set for UTXO transaction with ID ${transaction.id}"
+        }
         val verificationResult = externalEventExecutor.execute(
             VerifyContractsExternalEventFactory::class.java,
             VerifyContractsParameters(
                 serialize(transaction.toContainer()),
-                transaction.getCpkMetadata().map {
-                    CordaPackageSummary(it.name, it.version, it.signerSummaryHash, it.fileChecksum)
+                with (cpiMetadata) {
+                    CordaPackageSummary(name, version, signerSummaryHash, fileChecksum)
                 }
             )
         )
@@ -55,9 +59,9 @@ class UtxoLedgerTransactionVerifierComponent @Activate constructor(
             UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs)
         }
 
-    private fun UtxoLedgerTransaction.getCpkMetadata() =
+    private fun UtxoLedgerTransaction.getCpiMetadata() =
         (this as UtxoLedgerTransactionInternal).run {
-            wireTransaction.metadata.getCpkMetadata()
+            wireTransaction.metadata.getCpiMetadata()
         }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
