@@ -40,7 +40,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                 ?: throw CordaRuntimeException("Transaction does not exist locally") // TODO what to do if transaction disappears
             try {
                 log.trace { "Backchain resolution of $resolvingTransactionId - Verifying transaction $transactionId" }
-                UtxoLedgerTransactionVerifier(transaction.toLedgerTransaction()).verify(transaction.notary)
+                UtxoLedgerTransactionVerifier(transaction.toLedgerTransaction()).verify()
                 log.trace { "Backchain resolution of $resolvingTransactionId - Verified transaction $transactionId" }
             } catch (e: Exception) {
                 // TODO revisit what exceptions get caught

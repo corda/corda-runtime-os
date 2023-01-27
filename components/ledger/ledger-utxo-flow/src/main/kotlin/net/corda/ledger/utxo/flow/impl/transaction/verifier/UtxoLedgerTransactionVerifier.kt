@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 // TODO Move this class to VerificationProcessor and replace it here with UtxoLedgerTransactionVerifierComponent (CORE-9385)
@@ -8,12 +7,13 @@ class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransacti
 
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
 
-    fun verify(notary: Party) {
-        verifyPlatformChecks(notary)
+    fun verify() {
+        UtxoTransactionMetadataVerifier(transaction.metadata).verify()
+        verifyPlatformChecks()
         UtxoLedgerTransactionContractVerifier(transaction).verify()
     }
 
-    private fun verifyPlatformChecks(notary: Party) {
+    private fun verifyPlatformChecks() {
         /**
          * These checks are shared with [UtxoTransactionBuilderVerifier] verification.
          * They do not require backchain resolution.
@@ -26,19 +26,19 @@ class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransacti
         /**
          * These checks require backchain resolution.
          */
-        verifyInputNotaries(notary)
+        verifyInputNotaries()
         verifyInputsAreOlderThanOutputs()
     }
 
 
-    private fun verifyInputNotaries(notary: Party) {
+    private fun verifyInputNotaries() {
         val allInputs = transaction.inputTransactionStates + transaction.referenceTransactionStates
         if(allInputs.isEmpty())
             return
         check(allInputs.map { it.notary }.distinct().size == 1) {
             "Input and reference states' notaries need to be the same."
         }
-        check(allInputs.first().notary == notary) {
+        check(allInputs.first().notary == transaction.notary) {
             "Input and reference states' notaries need to be the same as the $subjectClass's notary."
         }
         // TODO CORE-8958 check rotated notaries

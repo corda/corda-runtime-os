@@ -3,6 +3,8 @@ package net.corda.ledger.utxo.data.transaction
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
@@ -19,6 +21,12 @@ class UtxoLedgerTransactionImpl(
 
     override val id: SecureHash
         get() = wrappedWireTransaction.id
+
+    override val notary: Party
+        get() = wrappedWireTransaction.notary
+
+    override val metadata: TransactionMetadata
+        get() = wrappedWireTransaction.metadata
 
     override val timeWindow: TimeWindow
         get() = wrappedWireTransaction.timeWindow
