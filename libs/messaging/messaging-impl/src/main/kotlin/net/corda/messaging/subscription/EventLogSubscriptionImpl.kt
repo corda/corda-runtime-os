@@ -22,6 +22,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
+import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
@@ -90,7 +91,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     override fun close() = threadLooper.close()
 
     @Suppress("NestedBlockDepth")
-    fun runConsumeLoop() {
+    private fun runConsumeLoop() {
         var attempts = 0
         var consumer: CordaConsumer<K, V>?
         var producer: CordaProducer?
@@ -99,8 +100,10 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             try {
                 log.debug { "Attempt: $attempts" }
                 deadLetterRecords = mutableListOf()
-                val rebalanceListener = partitionAssignmentListener?.let {
-                    ForwardingRebalanceListener(config.topic, config.group, config.clientId, it)
+                val rebalanceListener = if (partitionAssignmentListener == null) {
+                    LoggingConsumerRebalanceListener(config.topic, config.group, config.clientId)
+                } else {
+                    ForwardingRebalanceListener(config.topic, config.group, config.clientId, partitionAssignmentListener)
                 }
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
                 consumer = cordaConsumerBuilder.createConsumer(
@@ -222,6 +225,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         }
 
         try {
+            log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
+                    "size: ${cordaConsumerRecords.size})" }
             producer.beginTransaction()
             val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
                 .toCordaProducerRecords() }!!
@@ -237,6 +242,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             }
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
+            log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
+                    "size: ${cordaConsumerRecords.size}) complete." }
         } catch (ex: Exception) {
             when (ex) {
                 is CordaMessageAPIFatalException,
