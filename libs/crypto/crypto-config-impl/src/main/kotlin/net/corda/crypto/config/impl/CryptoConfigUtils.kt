@@ -14,7 +14,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.exceptions.CryptoException
-import java.util.UUID
 
 // NOTE: hsmId is part of the bootstrap configuration
 
@@ -263,14 +262,14 @@ fun createCryptoSmartConfigFactory(smartFactoryKey: KeyCredentials): SmartConfig
         listOf(EncryptionSecretsServiceFactory())
     )
 
-fun createDefaultCryptoConfig(bootConfig: SmartConfig, masterWrappingKey: KeyCredentials, configFactory: SmartConfigFactory): SmartConfig = try {
+fun createDefaultCryptoConfig(bootConfig: Config, masterWrappingKey: KeyCredentials, smartConfigFactory: SmartConfigFactory): SmartConfig = try {
     val wrappingKeyMapPath = "crypto.$DEFAULT_HSM_OBJ.${CryptoHSMConfig.HSMConfig::cfg.name}.${CryptoHSMConfig::hsm.name}.wrappingKeyMap"
     // If the passphrase or salt is in the boot config, we do not need to default it.
     // We do not want to store a default for either value here unencrypted. If however the user chooses to pass in the
     // passphrase and SALT to us, it is their responsibility to protect it as possible, using a secrets addon such as encrypted secrets.
     val excludePassphrase = bootConfig.hasPath("$wrappingKeyMapPath.passphrase")
     val excludeSalt = bootConfig.hasPath("$wrappingKeyMapPath.salt")
-    configFactory.create(
+    smartConfigFactory.create(
         ConfigFactory.empty()
             .withValue(
                 CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
@@ -336,10 +335,10 @@ fun createDefaultCryptoConfig(bootConfig: SmartConfig, masterWrappingKey: KeyCre
                                 "wrappingKeyMap" to listOfNotNull(
                                     "name" to "CACHING",
                                     if (excludeSalt) null else "salt" to ConfigValueFactory.fromMap(
-                                        configFactory.makeSecret(masterWrappingKey.salt, "$wrappingKeyMapPath.passphrase").root().unwrapped()
+                                        smartConfigFactory.makeSecret(masterWrappingKey.salt, "$wrappingKeyMapPath.passphrase").root().unwrapped()
                                     ),
                                     if (excludePassphrase) null else  "passphrase" to ConfigValueFactory.fromMap(
-                                        configFactory.makeSecret(masterWrappingKey.passphrase, "$wrappingKeyMapPath.salt").root().unwrapped()
+                                        smartConfigFactory.makeSecret(masterWrappingKey.passphrase, "$wrappingKeyMapPath.salt").root().unwrapped()
                                     ),
                                     "cache" to mapOf(
                                         "expireAfterAccessMins" to 60,

@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -20,6 +21,7 @@ import kotlin.test.assertNull
 class CryptoConfigUtilsTests {
     companion object {
         private lateinit var configFactory: SmartConfigFactory
+        private lateinit var cryptoConfig: SmartConfig
 
         @JvmStatic
         @BeforeAll
@@ -33,24 +35,26 @@ class CryptoConfigUtilsTests {
                 ),
                 listOf(EncryptionSecretsServiceFactory())
             )
+            cryptoConfig = createDefaultCryptoConfig(
+                configFactory.create(ConfigFactory.empty()),
+                KeyCredentials("master-passphrase", "master-salt"),
+                configFactory
+            )
         }
     }
 
     @Test
     fun `Default config should have expected values`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
-        )
-        val connectionFactory = config.cryptoConnectionFactory()
+        val connectionFactory = cryptoConfig.cryptoConnectionFactory()
         assertEquals(5, connectionFactory.expireAfterAccessMins)
         assertEquals(3, connectionFactory.maximumSize)
-        val signingService = config.signingService()
+        val signingService = cryptoConfig.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        val hsmService = config.hsmService()
+        val hsmService = cryptoConfig.hsmService()
         assertEquals(3, hsmService.downstreamMaxAttempts)
-        assertThat(config.hsmMap()).hasSize(1)
-        val softWorker = config.hsm(SOFT_HSM_ID)
+        assertThat(cryptoConfig.hsmMap()).hasSize(1)
+        val softWorker = cryptoConfig.hsm(SOFT_HSM_ID)
         assertEquals("", softWorker.workerTopicSuffix)
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
@@ -86,15 +90,15 @@ class CryptoConfigUtilsTests {
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
-        val opsBusProcessor = config.opsBusProcessor()
+        val opsBusProcessor = cryptoConfig.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
         assertEquals(200L, opsBusProcessor.waitBetweenMills[0])
-        val flowBusProcessor = config.flowBusProcessor()
+        val flowBusProcessor = cryptoConfig.flowBusProcessor()
         assertEquals(3, flowBusProcessor.maxAttempts)
         assertEquals(1, flowBusProcessor.waitBetweenMills.size)
         assertEquals(200L, flowBusProcessor.waitBetweenMills[0])
-        val hsmRegistrationBusProcessor = config.hsmRegistrationBusProcessor()
+        val hsmRegistrationBusProcessor = cryptoConfig.hsmRegistrationBusProcessor()
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
         assertEquals(200L, hsmRegistrationBusProcessor.waitBetweenMills[0])
@@ -102,19 +106,16 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Test config should have expected values`() {
-        val config = createTestCryptoConfig(
-            KeyCredentials("pass", "salt")
-        )
-        val connectionFactory = config.cryptoConnectionFactory()
+        val connectionFactory = cryptoConfig.cryptoConnectionFactory()
         assertEquals(5, connectionFactory.expireAfterAccessMins)
         assertEquals(3, connectionFactory.maximumSize)
-        val signingService = config.signingService()
+        val signingService = cryptoConfig.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
-        val hsmService = config.hsmService()
+        val hsmService = cryptoConfig.hsmService()
         assertEquals(3, hsmService.downstreamMaxAttempts)
-        assertThat(config.hsmMap()).hasSize(1)
-        val softWorker = config.hsm(SOFT_HSM_ID)
+        assertThat(cryptoConfig.hsmMap()).hasSize(1)
+        val softWorker = cryptoConfig.hsm(SOFT_HSM_ID)
         assertEquals("", softWorker.workerTopicSuffix)
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
@@ -149,15 +150,15 @@ class CryptoConfigUtilsTests {
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
-        val opsBusProcessor = config.opsBusProcessor()
+        val opsBusProcessor = cryptoConfig.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
         assertEquals(1, opsBusProcessor.waitBetweenMills.size)
         assertEquals(200L, opsBusProcessor.waitBetweenMills[0])
-        val flowBusProcessor = config.flowBusProcessor()
+        val flowBusProcessor = cryptoConfig.flowBusProcessor()
         assertEquals(3, flowBusProcessor.maxAttempts)
         assertEquals(1, flowBusProcessor.waitBetweenMills.size)
         assertEquals(200L, flowBusProcessor.waitBetweenMills[0])
-        val hsmRegistrationBusProcessor = config.hsmRegistrationBusProcessor()
+        val hsmRegistrationBusProcessor = cryptoConfig.hsmRegistrationBusProcessor()
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
         assertEquals(200L, hsmRegistrationBusProcessor.waitBetweenMills[0])
@@ -165,15 +166,12 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Should be able to get crypto config from the map of configs`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
-        )
         val map = mapOf(
             FLOW_CONFIG to configFactory.create(ConfigFactory.empty()),
-            CRYPTO_CONFIG to config
+            CRYPTO_CONFIG to cryptoConfig
         )
         val result = map.toCryptoConfig()
-        assertSame(config, result)
+        assertSame(cryptoConfig, result)
     }
 
     @Test
@@ -188,18 +186,14 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Should be able to get signing service config`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
-        ).signingService()
+        val config = cryptoConfig.signingService()
         assertEquals(60, config.cache.expireAfterAccessMins)
         assertEquals(10000, config.cache.maximumSize)
     }
 
     @Test
     fun `Should be able to get CryptoHSM service config`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
-        ).hsmService()
+        val config = cryptoConfig.hsmService()
         assertEquals(3, config.downstreamMaxAttempts)
     }
 
@@ -387,11 +381,8 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `hsm(id) should throw IllegalStateException if id is not found`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
-        )
         assertThrows<IllegalStateException> {
-            config.hsm(UUID.randomUUID().toString())
+            cryptoConfig.hsm(UUID.randomUUID().toString())
         }
     }
 

@@ -51,6 +51,7 @@ dependencies {
     integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestImplementation project(":testing:test-utilities")
+    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
         // Need to exclude the org.osgi package as will use the BND ones at runtime

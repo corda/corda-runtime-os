@@ -59,12 +59,7 @@ class CryptoConfigSubcommand : Runnable {
 
     override fun run() {
         val random = SecureRandom()
-        val config = createCryptoSmartConfigFactory(
-            KeyCredentials(
-                passphrase = passphrase,
-                salt = salt
-            )
-        ).createDefaultCryptoConfig(
+        val config = createDefaultCryptoConfig(
             KeyCredentials(
                 passphrase = if (softHsmRootPassphrase.isNullOrBlank()) {
                     random.randomString()

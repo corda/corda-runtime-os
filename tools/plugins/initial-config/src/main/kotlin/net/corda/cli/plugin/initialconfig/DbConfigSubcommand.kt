@@ -129,5 +129,5 @@ fun createDbConfig(
 }
 
 fun createSecureConfig(secretsService: SecretsCreateService, value: String): String {
-    return secretsService.createValue(value).root().render(ConfigRenderOptions.concise())
+    return secretsService.createValue(value, "").root().render(ConfigRenderOptions.concise())
 }

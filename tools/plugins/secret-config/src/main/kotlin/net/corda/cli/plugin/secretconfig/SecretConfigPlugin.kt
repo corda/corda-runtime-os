@@ -52,7 +52,7 @@ class SecretConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             }
             val encryptionService = EncryptionSecretsServiceImpl(passphrase!!, salt!!)
 
-            val configSection = encryptionService.createValue(value)
+            val configSection = encryptionService.createValue(value, "")
 
             println(configSection.root().render(ConfigRenderOptions.concise()))
         }

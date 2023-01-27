@@ -7,9 +7,9 @@ interface SecretsCreateService {
      * Create secret configuration value
      *
      * @param plainText secret
-     * @param path location of the new secret
+     * @param key cluster wide unique handle on the secret, e.g. `master_wrapping_key_passphrase` or `vnode_vault_db_<hash>`
      * @return [Config] object that contains everything needed to be able to retrieve the secret.
      */
-    fun createValue(plainText: String, path: String): Config
+    fun createValue(plainText: String, key: String): Config
 }
 

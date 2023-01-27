@@ -8,7 +8,6 @@ import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
-import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -18,6 +17,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import java.time.Instant
 import kotlin.random.Random
+import org.mockito.kotlin.mock
 
 const val RESPONSE_TOPIC = "test.response"
 
@@ -84,8 +84,11 @@ fun makeBootstrapConfig(dbParams: SmartConfig): SmartConfig = smartConfigFactory
         )
 )
 
-fun makeCryptoConfig(): SmartConfig = smartConfigFactory.createDefaultCryptoConfig(
-    KeyCredentials("master-key-pass", "master-key-salt")
+
+fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(
+    ConfigFactory.empty(),
+    KeyCredentials("master-key-pass", "master-key-salt"),
+    mock<SmartConfigFactory>()
 )
 
 fun randomDataByteArray(): ByteArray {
