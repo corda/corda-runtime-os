@@ -13,7 +13,9 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.debug
 import org.osgi.framework.Bundle
 import org.slf4j.LoggerFactory
-import java.util.Collections.unmodifiableMap
+import java.util.Collections.unmodifiableSortedMap
+import java.util.SortedMap
+import java.util.TreeMap
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -30,11 +32,11 @@ internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
 
-    companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override val metadata: Map<Bundle, CpkMetadata> = unmodifiableMap(cpkSandboxes.associate { cpk ->
+    override val metadata: SortedMap<Bundle, CpkMetadata> = unmodifiableSortedMap(cpkSandboxes.associateTo(TreeMap()) { cpk ->
         cpk.mainBundle to cpk.cpkMetadata
     })
 
