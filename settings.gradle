@@ -38,7 +38,6 @@ pluginManagement {
         id 'org.jetbrains.dokka' version dokkaVersion
         id "com.github.davidmc24.gradle.plugin.avro-base" version avroGradlePluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
-        id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
         id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
     }
