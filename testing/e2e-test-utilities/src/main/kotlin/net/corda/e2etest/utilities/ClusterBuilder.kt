@@ -25,6 +25,7 @@ class ClusterBuilder {
 
     fun get(cmd: String) = client!!.get(cmd)
 
+    @Suppress("LongParameterList")
     private fun uploadCpiResource(
         cmd: String,
         resourceName: String,
