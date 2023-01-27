@@ -18,7 +18,7 @@ import net.corda.v5.ledger.utxo.TransactionState
  * @throws IllegalArgumentException if the current [ContractState] cannot be cast to the specified type.
  */
 fun <T : ContractState> ContractState.cast(type: Class<T>): T {
-    return if (javaClass.isAssignableFrom(type)) {
+    return if (!javaClass.isAssignableFrom(type)) {
         throw IllegalArgumentException("ContractState of type ${javaClass.canonicalName} cannot be cast to type ${type.canonicalName}.")
     } else type.cast(this)
 }

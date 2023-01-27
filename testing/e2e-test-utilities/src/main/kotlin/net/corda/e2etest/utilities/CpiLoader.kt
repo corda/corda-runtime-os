@@ -1,8 +1,8 @@
-package net.corda.applications.workers.smoketest.virtualnode.helpers
+package net.corda.e2etest.utilities
 
-import net.corda.applications.workers.smoketest.virtualnode.helpers.GroupPolicyUtils.getDefaultStaticNetworkGroupPolicy
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.e2etest.utilities.GroupPolicyUtils.getDefaultStaticNetworkGroupPolicy
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.readAll
 import java.io.FileNotFoundException
@@ -72,7 +72,7 @@ object CpiLoader {
     }
 
     private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("cordadevcodesign.p12")?.use { it.readAllBytes() }
-        ?: throw Exception("cordadevcodesign.p12 not found")
+        ?: throw FileNotFoundException("cordadevcodesign.p12 not found")
 
     private fun getStaticNetworkPolicy(groupId: String, staticMemberNames: List<String>) =
         getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames)
