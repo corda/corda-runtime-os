@@ -1,12 +1,12 @@
 package net.cordapp.testing.testflows
 
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -18,14 +18,14 @@ import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.cordapp.testing.testflows.messages.MessageFlowInput
+import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "flowDevProtocol")
 class MessagingFlow : ClientStartableFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -79,7 +79,7 @@ class MessagingFlow : ClientStartableFlow {
 class MessagingInitiatedFlow : ResponderFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -123,7 +123,7 @@ class MessagingInitiatedFlow : ResponderFlow {
 class InlineSubFlow(private val session: FlowSession) : SubFlow<Unit> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable
@@ -139,7 +139,7 @@ class InlineSubFlow(private val session: FlowSession) : SubFlow<Unit> {
 class InitiatingSubFlow(private val counterparty: MemberX500Name) : SubFlow<Unit> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -160,7 +160,7 @@ class InitiatingSubFlow(private val counterparty: MemberX500Name) : SubFlow<Unit
 class InitiatingSubFlowInitiatedFlow : ResponderFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

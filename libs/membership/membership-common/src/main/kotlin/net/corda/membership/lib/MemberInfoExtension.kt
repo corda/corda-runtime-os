@@ -3,7 +3,6 @@ package net.corda.membership.lib
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import net.corda.v5.base.util.parseOrNull
@@ -14,13 +13,14 @@ import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.LoggerFactory
 import java.net.URL
 import java.security.PublicKey
 import java.time.Instant
 
 class MemberInfoExtension {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         /** Key name for ledger keys property. */
         const val LEDGER_KEYS = "corda.ledger.keys"

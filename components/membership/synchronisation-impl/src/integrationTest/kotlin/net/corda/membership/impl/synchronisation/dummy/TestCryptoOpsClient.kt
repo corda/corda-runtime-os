@@ -1,5 +1,6 @@
 package net.corda.membership.impl.synchronisation.dummy
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -8,8 +9,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.util.contextLogger
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -18,6 +17,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -39,7 +39,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
 ) : TestCryptoOpsClient {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
         private val keys: ConcurrentHashMap<String, CryptoSigningKey> = ConcurrentHashMap()
     }

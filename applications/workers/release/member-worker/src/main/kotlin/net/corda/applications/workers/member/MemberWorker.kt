@@ -14,10 +14,10 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.member.MemberProcessor
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 
 /** The worker for handling member services. */
@@ -41,7 +41,7 @@ class MemberWorker @Activate constructor(
 ) : Application {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /** Parses the arguments, then initialises and starts the [processor]. */

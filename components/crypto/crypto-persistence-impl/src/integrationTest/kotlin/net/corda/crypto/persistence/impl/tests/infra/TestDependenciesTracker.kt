@@ -12,10 +12,10 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class TestDependenciesTracker private constructor(
@@ -26,7 +26,7 @@ class TestDependenciesTracker private constructor(
     private val dependencies: Set<LifecycleCoordinatorName>
 ) : Lifecycle {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         fun create(myName: LifecycleCoordinatorName, dependencies: Set<Class<out Lifecycle>>): TestDependenciesTracker {
             val bundleContext = FrameworkUtil.getBundle(this::class.java.classLoader).get().bundleContext

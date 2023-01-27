@@ -6,13 +6,13 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 @InitiatedBy("roll-call")
 class RollCallResponderFlow: ResponderFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

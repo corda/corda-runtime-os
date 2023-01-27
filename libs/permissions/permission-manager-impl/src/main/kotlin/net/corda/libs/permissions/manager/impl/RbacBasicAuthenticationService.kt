@@ -4,8 +4,8 @@ import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationService(
@@ -14,7 +14,7 @@ class RbacBasicAuthenticationService(
 ) : BasicAuthenticationService {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val repeatedLogonsCache = RepeatedLogonsCache()

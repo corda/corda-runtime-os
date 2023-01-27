@@ -4,13 +4,13 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.messaging.topic.utils.TopicUtils
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutionException
 
 /**
@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutionException
 class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
 
     private companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun createTopics(topicsTemplate: Config) {

@@ -4,7 +4,7 @@ import io.javalin.websocket.WsContext
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
 import org.eclipse.jetty.websocket.api.CloseStatus
 
@@ -14,7 +14,7 @@ import org.eclipse.jetty.websocket.api.CloseStatus
 class DeferredWebSocketCloserService : WebSocketCloserService {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val deferredWebsocketClosePool = Executors.newScheduledThreadPool(1,

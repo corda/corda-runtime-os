@@ -1,18 +1,17 @@
 package net.cordapp.testing.testflows
 
 import com.r3.corda.notary.plugin.nonvalidating.client.NonValidatingNotaryClientFlowImpl
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parseList
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.hours
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
@@ -23,6 +22,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 import java.time.Instant
 
@@ -63,7 +63,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     private companion object {
-        val log = loggerFor<NonValidatingNotaryTestFlow>()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable

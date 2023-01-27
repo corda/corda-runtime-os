@@ -17,9 +17,9 @@ import net.corda.schema.configuration.MessagingConfig.Bus.DB_PROPERTIES
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_PASS
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_URL
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_USER
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
+import org.slf4j.LoggerFactory
 
 /**
  * Resolve a DB bus configuration against the enforced and default configurations provided by the library.
@@ -27,7 +27,7 @@ import org.osgi.framework.FrameworkUtil
 internal class MessageBusConfigResolver(private val smartConfigFactory: SmartConfigFactory) {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val ENFORCED_CONFIG_FILE = "messaging-enforced.conf"
         private const val DEFAULT_CONFIG_FILE = "messaging-defaults.conf"

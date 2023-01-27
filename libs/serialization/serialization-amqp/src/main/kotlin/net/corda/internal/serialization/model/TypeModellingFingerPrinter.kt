@@ -1,8 +1,6 @@
 package net.corda.internal.serialization.model
 
 import com.google.common.hash.Hashing
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.toBase64
 import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.amqp.ifThrowsAppend
@@ -10,6 +8,8 @@ import net.corda.internal.serialization.model.TypeIdentifier.ArrayOf
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.model.TypeIdentifier.UnknownType
 import net.corda.sandbox.SandboxGroup
+import net.corda.v5.base.util.toBase64
+import org.slf4j.LoggerFactory
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -66,7 +66,7 @@ internal class FingerprintWriter(debugEnabled: Boolean = false) {
         private const val NOT_NULLABLE_HASH: String = "Nullable = false"
         private const val ANY_TYPE_HASH: String = "Any type = true"
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val debugBuffer: StringBuilder? = if (debugEnabled) StringBuilder() else null

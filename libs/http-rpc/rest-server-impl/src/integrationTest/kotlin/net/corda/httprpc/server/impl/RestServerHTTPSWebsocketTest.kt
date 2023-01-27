@@ -7,7 +7,7 @@ import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.client.WebSocketClient
@@ -18,7 +18,7 @@ import java.nio.file.Files
 class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
     private companion object {
 
-        val LOG = contextLogger()
+        val LOG = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val sslService = SslCertReadServiceStubImpl {
             Files.createTempDirectory("RestServerHTTPSWebsocketTest")

@@ -1,9 +1,9 @@
 package net.corda.messaging.emulation.topic.model
 
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.util.*
+import org.slf4j.LoggerFactory
+import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -14,7 +14,7 @@ internal class Partition(
     val topicName: String,
 ) {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     val lock = ReentrantReadWriteLock()

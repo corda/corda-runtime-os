@@ -12,7 +12,6 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -24,6 +23,7 @@ import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.security.AccessController.doPrivileged
 import java.security.DigestInputStream
@@ -62,7 +62,7 @@ internal class SandboxServiceImpl @Activate constructor(
     // Bundles that failed to uninstall when a sandbox group was unloaded.
     private val zombieBundles = mutableSetOf<Bundle>()
 
-    private val logger = loggerFor<SandboxServiceImpl>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         if (publicSandboxes.isNotEmpty()) {

@@ -7,8 +7,8 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 
 class StartFlowExecutor(
     private val eventKey: String,
@@ -18,7 +18,7 @@ class StartFlowExecutor(
 ) : FlowMapperEventExecutor {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun execute(): FlowMapperResult {

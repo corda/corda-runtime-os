@@ -5,9 +5,9 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
-import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
@@ -30,10 +30,10 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.impl.persistence.service.handler.AddNotaryToGroupParametersHandler
+import net.corda.membership.impl.persistence.service.handler.DeleteApprovalRuleHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsAddToAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsListAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsRemoveFromAllowedCertificatesHandler
-import net.corda.membership.impl.persistence.service.handler.DeleteApprovalRuleHandler
 import net.corda.membership.impl.persistence.service.handler.PersistApprovalRuleHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersInitialSnapshotHandler
@@ -57,8 +57,8 @@ import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderW
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
@@ -75,7 +75,7 @@ internal class MembershipPersistenceRPCProcessor(
 ) : RPCResponderProcessor<MembershipPersistenceRequest, MembershipPersistenceResponse> {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val persistenceHandlerServices = PersistenceHandlerServices(

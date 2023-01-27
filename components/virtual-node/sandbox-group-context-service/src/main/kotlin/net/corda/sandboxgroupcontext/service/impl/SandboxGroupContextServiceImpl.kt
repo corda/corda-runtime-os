@@ -1,23 +1,12 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
 package net.corda.sandboxgroupcontext.service.impl
 
-import java.security.AccessControlContext
-import java.security.AccessControlException
-import java.time.Duration
-import java.util.Collections.singleton
-import java.util.Collections.unmodifiableSet
-import java.util.Deque
-import java.util.Hashtable
-import java.util.LinkedList
-import java.util.SortedMap
-import java.util.TreeMap
-import java.util.concurrent.CompletableFuture
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.metrics.CordaMetrics
-import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.RequireCordaSystem
 import net.corda.sandbox.RequireCordaSystem.CORDA_SYSTEM_NAMESPACE
+import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
@@ -36,7 +25,6 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
@@ -57,6 +45,18 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
+import org.slf4j.LoggerFactory
+import java.security.AccessControlContext
+import java.security.AccessControlException
+import java.time.Duration
+import java.util.Collections.singleton
+import java.util.Collections.unmodifiableSet
+import java.util.Deque
+import java.util.Hashtable
+import java.util.LinkedList
+import java.util.SortedMap
+import java.util.TreeMap
+import java.util.concurrent.CompletableFuture
 
 typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>, Any>>
 
@@ -95,7 +95,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         private val uninjectableFilter = FrameworkUtil.createFilter(CORDA_UNINJECTABLE_FILTER)
         private val markerOnlyFilter = FrameworkUtil.createFilter(CORDA_MARKER_ONLY_FILTER)
         private val systemFilter = FrameworkUtil.createFilter(CORDA_SYSTEM_FILTER)
-        private val logger = loggerFor<SandboxGroupContextServiceImpl>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val sandboxServiceProperties = Hashtable<String, Any?>().apply {
             put(CORDA_SANDBOX, true)

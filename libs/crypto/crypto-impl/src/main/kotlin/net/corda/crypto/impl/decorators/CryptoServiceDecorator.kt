@@ -10,9 +10,9 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutorWithTimeout
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class CryptoServiceDecorator(
@@ -21,7 +21,7 @@ class CryptoServiceDecorator(
     private val maxAttempts: Int
 ) : CryptoService, AutoCloseable {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         fun create(
             cryptoService: CryptoService,

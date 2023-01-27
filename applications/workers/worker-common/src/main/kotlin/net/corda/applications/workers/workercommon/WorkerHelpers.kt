@@ -14,10 +14,10 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.InputStream
 import java.lang.management.ManagementFactory
@@ -33,7 +33,7 @@ enum class BusType {
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
 
         /**

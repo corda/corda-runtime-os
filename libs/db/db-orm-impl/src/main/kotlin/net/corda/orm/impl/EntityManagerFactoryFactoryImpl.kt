@@ -4,12 +4,12 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.v5.base.util.contextLogger
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 import javax.persistence.spi.PersistenceUnitInfo
 
@@ -26,7 +26,7 @@ class EntityManagerFactoryFactoryImpl(
         }
 ) : EntityManagerFactoryFactory {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

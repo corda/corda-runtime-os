@@ -1,9 +1,5 @@
 package net.corda.messaging.publisher
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -35,9 +31,13 @@ import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceLi
 import net.corda.messaging.utils.FutureTracker
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.Companion.getRPCResponseTopic
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
@@ -50,7 +50,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 ) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var threadLooper =

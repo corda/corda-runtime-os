@@ -3,20 +3,20 @@ package net.corda.membership.impl.p2p.handler
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 internal class MembershipPackageHandler(
     private val avroSchemaRegistry: AvroSchemaRegistry
 ) : AuthenticatedMessageHandler() {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun invokeAuthenticatedMessage(

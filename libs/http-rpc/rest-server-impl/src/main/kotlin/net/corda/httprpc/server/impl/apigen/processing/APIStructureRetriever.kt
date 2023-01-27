@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.httprpc.durablestream.DurableStreamContext
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.HttpRestResource
@@ -41,7 +41,7 @@ import kotlin.reflect.jvm.kotlinFunction
 @Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown")
 internal class APIStructureRetriever(private val opsImplList: List<PluggableRestResource<*>>) {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     val structure: List<Resource> by lazy { retrieveResources() }

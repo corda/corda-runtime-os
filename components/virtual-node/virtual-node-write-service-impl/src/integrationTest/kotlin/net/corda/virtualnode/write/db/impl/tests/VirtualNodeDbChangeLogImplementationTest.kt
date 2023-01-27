@@ -2,13 +2,13 @@ package net.corda.virtualnode.write.db.impl.tests
 
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.testkit.DbUtils
-import net.corda.v5.base.util.contextLogger
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 
 class VirtualNodeDbChangeLogImplementationTest  {
     // It hardly seems worth bringing in a template system for one expansion, so we'll just do string replacement on _INCLUDETARGET_
@@ -38,7 +38,7 @@ class VirtualNodeDbChangeLogImplementationTest  {
 </databaseChangeLog>
 """
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val dbConfig = DbUtils.getEntityManagerConfiguration("test")
         private val fakeId = UUID.randomUUID()
     }

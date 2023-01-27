@@ -18,8 +18,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 
 internal class ConfigReadServiceEventHandler(
     private val subscriptionFactory: SubscriptionFactory,
@@ -36,7 +36,7 @@ internal class ConfigReadServiceEventHandler(
     private val configuration = mutableMapOf<String, SmartConfig>()
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val GROUP = "CONFIGURATION_READ"
     }

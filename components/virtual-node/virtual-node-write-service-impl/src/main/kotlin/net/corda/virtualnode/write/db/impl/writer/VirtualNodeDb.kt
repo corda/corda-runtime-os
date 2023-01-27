@@ -12,8 +12,8 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
+import org.slf4j.LoggerFactory
 
 /**
  * Encapsulates access to a single database, either of type VAULT or CONFIG, at muliple different provilege levels
@@ -31,7 +31,7 @@ class VirtualNodeDb(
 ) {
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

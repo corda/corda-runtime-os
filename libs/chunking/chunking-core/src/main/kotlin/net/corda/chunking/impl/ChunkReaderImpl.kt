@@ -1,15 +1,15 @@
 package net.corda.chunking.impl
 
+import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkReader
 import net.corda.chunking.ChunksCombined
-import net.corda.chunking.Checksum
 import net.corda.chunking.RequestId
 import net.corda.chunking.toCorda
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -20,7 +20,7 @@ import java.nio.file.StandardOpenOption
  */
 internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private fun KeyValuePairList.fromAvro(): Map<String, String?> {
             return items.associate { it.key to it.value }

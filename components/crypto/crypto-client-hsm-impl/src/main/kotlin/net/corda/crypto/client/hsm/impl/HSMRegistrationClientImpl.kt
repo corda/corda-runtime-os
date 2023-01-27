@@ -14,8 +14,8 @@ import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
 
@@ -23,7 +23,7 @@ class HSMRegistrationClientImpl(
     private val sender: RPCSender<HSMRegistrationRequest, HSMRegistrationResponse>
 ) {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {

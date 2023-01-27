@@ -2,7 +2,6 @@ package net.corda.membership.impl.read.reader
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,13 +23,14 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.stream.Stream
+import net.corda.data.membership.GroupParameters as GroupParametersAvro
 
 
 @Component(service = [GroupParametersReaderService::class])
@@ -60,7 +60,7 @@ class GroupParametersReaderServiceImpl internal constructor(
     )
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val serviceName = GroupParametersReaderService::class.java.simpleName
         const val CONSUMER_GROUP = "GROUP_PARAMETERS_READER"
     }
