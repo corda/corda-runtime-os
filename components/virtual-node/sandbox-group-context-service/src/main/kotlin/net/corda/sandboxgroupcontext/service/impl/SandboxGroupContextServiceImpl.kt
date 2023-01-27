@@ -286,7 +286,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                         // corda.marker.only property.
                         serviceTypes.isNotEmpty() || markerOnlyFilter.match(serviceRef)
                     }?.also { injectableTypes ->
-                        logger.debug("Identified injectable service {}, holding ID={}", serviceRef, vnc.holdingIdentity)
+                        logger.info("Identified injectable service {}, holding ID={}", serviceRef, vnc.holdingIdentity)
                         injectableTypes += serviceMarkerType
 
                         // We filtered on services having a component name, so we
@@ -598,8 +598,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     serviceObj,
                     serviceFactory.serviceReference.copyPropertiesForSandbox()
                 )
-                if (logger.isDebugEnabled) {
-                    logger.debug("Registered sandbox service {}[{}] for bundle [{}][{}]",
+                if (logger.isInfoEnabled) {
+                    logger.info("Registered sandbox service {}[{}] for bundle [{}][{}]",
                         serviceObj::class.java.simpleName,
                         serviceClassNames.joinToString(),
                         targetContext.bundle.symbolicName,
@@ -671,7 +671,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                             null
                         }
                 } else if (nonInjectable.isByConstructor) {
-                    logger.debug("Discovered non-injectable sandbox service {}", serviceRef)
+                    logger.info("Discovered non-injectable sandbox service {}", serviceRef)
                     nonInjectables[serviceRef] = nonInjectable
                     modified = true
                     null
@@ -694,7 +694,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             } catch (e: Exception) {
                 throw SandboxException("Service $serviceRef is unavailable", e)
             }?.let { serviceObj ->
-                logger.debug("Created non-injectable sandbox service: {}", serviceObj::class.java.name)
+                logger.info("Created non-injectable sandbox service: {}", serviceObj::class.java.name)
                 serviceRegistry[serviceRef] = serviceObj
                 NonInjectableService(serviceFactory, serviceObj)
             }

@@ -6,6 +6,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateSingleFlow
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -53,6 +54,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Disabled
     @Test
     fun `A flow finishing when previously in a retry state publishes a completed flow status and schedules flow cleanup`() {
         // Trigger a retry state

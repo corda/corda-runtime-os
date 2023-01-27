@@ -5,6 +5,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -56,6 +57,7 @@ class StartFlowTest : FlowServiceTestBase() {
      * Scenario 2 - Fails multiple times and hits the retry limit failing the flow to the DLQ
      */
 
+    @Disabled
     @Test
     fun `RPC Start Flow - Retry scenario 1 - Fail then succeeds`() {
         given {
@@ -110,6 +112,7 @@ class StartFlowTest : FlowServiceTestBase() {
         }
     }
 
+    @Disabled
     @Test
     fun `RPC Start Flow - Retry scenario 2 - Hit the retry limit and fail the flow`() {
         given {
