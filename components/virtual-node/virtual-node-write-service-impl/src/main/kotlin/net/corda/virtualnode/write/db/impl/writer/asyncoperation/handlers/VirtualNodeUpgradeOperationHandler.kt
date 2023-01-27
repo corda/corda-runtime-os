@@ -27,6 +27,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyn
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MgmGroupMismatchException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeStateException
 
+@Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
     private val entityManagerFactory: EntityManagerFactory,
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
