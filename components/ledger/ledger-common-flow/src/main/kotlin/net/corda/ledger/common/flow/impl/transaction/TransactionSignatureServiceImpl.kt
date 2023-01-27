@@ -26,6 +26,7 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -65,7 +66,14 @@ class TransactionSignatureServiceImpl @Activate constructor(
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
     @Suspendable
     override fun sign(transactionId: SecureHash, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata> {
-        return signingService.findMySigningKeys(publicKeys.toSet()).values.filterNotNull().map { publicKey ->
+        val availableKeys = signingService.findMySigningKeys(publicKeys.toSet()).values.filterNotNull()
+        if (availableKeys.isEmpty()) {
+            throw (TransactionNoAvailableKeysException(
+                "The publicKeys do not have any private counterparts available.",
+                null
+            ))
+        }
+        return availableKeys.map { publicKey ->
             val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
             requireNotNull(signatureSpec) {
                 "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"
@@ -103,8 +111,15 @@ class TransactionSignatureServiceImpl @Activate constructor(
 
         val batchTree = merkleTreeProvider.createTree(transactions.map { it.id.bytes }, hashDigestProvider)
 
-        val batchSignaturesWithMeta =
-            signingService.findMySigningKeys(publicKeys.toSet()).values.filterNotNull().map { publicKey ->
+        val availableKeys = signingService.findMySigningKeys(publicKeys.toSet()).values.filterNotNull()
+        if (availableKeys.isEmpty()) {
+            throw (TransactionNoAvailableKeysException(
+                "The publicKeys do not have any private counterparts available.",
+                null
+            ))
+        }
+
+        val batchSignaturesWithMeta = availableKeys.map { publicKey ->
                 val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
                 requireNotNull(signatureSpec) {
                     "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"

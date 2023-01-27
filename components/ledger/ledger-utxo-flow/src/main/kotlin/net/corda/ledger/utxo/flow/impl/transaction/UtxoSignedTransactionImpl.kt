@@ -12,6 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -60,7 +61,11 @@ data class UtxoSignedTransactionImpl(
 
     @Suspendable
     override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
-        val newSignatures = transactionSignatureService.sign(id, getMissingSignatories())
+        val newSignatures = try {
+            transactionSignatureService.sign(id, getMissingSignatories())
+        } catch(_: TransactionNoAvailableKeysException){ // No signatures are needed if no keys are available.
+            listOf()
+        }
         return Pair(
             UtxoSignedTransactionImpl(
                 serializationService,
