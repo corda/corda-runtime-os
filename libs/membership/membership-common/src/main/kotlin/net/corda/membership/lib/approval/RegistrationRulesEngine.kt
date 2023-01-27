@@ -7,18 +7,19 @@ package net.corda.membership.lib.approval
 interface RegistrationRulesEngine {
     val rules: Collection<RegistrationRule>
 
-    fun requiresManualApproval(proposedMemberInfo: Map<String, String?>, activeMemberInfo: Map<String, String?>?):
+    fun requiresManualApproval(proposedMemberContext: Map<String, String?>, activeMemberContext: Map<String, String?>?):
             Boolean
 
     class Impl(override val rules: Collection<RegistrationRule>) : RegistrationRulesEngine {
 
         override fun requiresManualApproval(
-            proposedMemberInfo: Map<String, String?>,
-            activeMemberInfo: Map<String, String?>?
+            proposedMemberContext: Map<String, String?>,
+            activeMemberContext: Map<String, String?>?
         ): Boolean {
-            val memberInfoDiff = activeMemberInfo?.let { active ->
-                (proposedMemberInfo.entries - active.entries).mapTo(mutableSetOf()) { it.key }
-            } ?: proposedMemberInfo.keys
+            val memberInfoDiff = activeMemberContext?.let { active ->
+                ((proposedMemberContext.entries - active.entries) + (active.entries - proposedMemberContext.entries))
+                    .mapTo(mutableSetOf()) { it.key }
+            } ?: proposedMemberContext.keys
 
             return rules.any {
                 it.evaluate(memberInfoDiff)
