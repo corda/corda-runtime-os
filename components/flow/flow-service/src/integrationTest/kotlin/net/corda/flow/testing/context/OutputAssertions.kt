@@ -70,6 +70,8 @@ interface OutputAssertions {
     fun entityRequestSent(expectedRequestPayload: Any)
 
     fun noEntityRequestSent()
+
+    fun flowKilledStatus(flowTerminatedReason: String)
 }
 
 inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

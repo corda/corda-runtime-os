@@ -99,7 +99,6 @@ class FlowEventProcessorImplTest {
         listOf<Record<String, String>>()
     )
 
-    private val detailsMap = mapOf("reason" to "answer")
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
         whenever(eventPreProcessing()).thenReturn(this)
         whenever(runOrContinue(any())).thenReturn(this)
