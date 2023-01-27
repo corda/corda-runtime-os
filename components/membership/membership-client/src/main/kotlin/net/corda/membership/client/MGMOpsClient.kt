@@ -3,6 +3,7 @@ package net.corda.membership.client
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.common.ManualApprovalDecision
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -154,4 +155,22 @@ interface MGMOpsClient : Lifecycle {
         requestingMemberX500Name: String?,
         viewHistoric: Boolean,
     ): Collection<RegistrationRequestStatus>
+
+    /**
+     * Approve or decline registration requests which require manual approval. This method can only be used for
+     * requests that are in "PENDING_MANUAL_APPROVAL" status.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestId ID of the registration request.
+     * @param decision Decision [ManualApprovalDecision] to apply on the specified registration request.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     */
+    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
+    fun reviewRegistrationRequest(
+        holdingIdentityShortHash: ShortHash,
+        requestId: String,
+        decision: ManualApprovalDecision,
+    )
 }

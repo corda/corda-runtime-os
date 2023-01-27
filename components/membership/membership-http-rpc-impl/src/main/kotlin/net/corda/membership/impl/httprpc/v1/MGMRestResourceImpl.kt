@@ -3,6 +3,7 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalAction
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
@@ -21,6 +22,7 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRestResource
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.httprpc.v1.types.request.ManualApprovalDecisionRequest
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
@@ -140,6 +142,8 @@ class MGMRestResourceImpl internal constructor(
             requestingMemberX500Name: String?,
             viewHistoric: Boolean,
         ): Collection<RpcRegistrationRequestStatus>
+
+        fun reviewRegistrationRequest(holdingIdentityShortHash: String, requestId: String, decision: ManualApprovalDecisionRequest)
     }
 
     override val protocolVersion = 1
@@ -221,6 +225,10 @@ class MGMRestResourceImpl internal constructor(
         holdingIdentityShortHash: String, requestingMemberX500Name: String?, viewHistoric: Boolean
     ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestingMemberX500Name, viewHistoric)
 
+    override fun reviewRegistrationRequest(
+        holdingIdentityShortHash: String, requestId: String, decision: ManualApprovalDecisionRequest
+    ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, decision)
+
     fun activate(reason: String) {
         impl = ActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP, reason)
@@ -301,8 +309,16 @@ class MGMRestResourceImpl internal constructor(
         ): PreAuthToken = throwNotRunningException()
 
         override fun viewRegistrationRequests(
-            holdingIdentityShortHash: String, requestingMemberX500Name: String?, viewHistoric: Boolean
-        ): Collection<RegistrationRequestStatus> = throwNotRunningException()
+            holdingIdentityShortHash: String,
+            requestingMemberX500Name: String?,
+            viewHistoric: Boolean,
+        ): Collection<RpcRegistrationRequestStatus> = throwNotRunningException()
+
+        override fun reviewRegistrationRequest(
+            holdingIdentityShortHash: String,
+            requestId: String,
+            decision: ManualApprovalDecisionRequest,
+        ): Unit = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
@@ -466,6 +482,18 @@ class MGMRestResourceImpl internal constructor(
                 viewHistoric,
             )
         }.map { it.toRpc() }
+
+        override fun reviewRegistrationRequest(
+            holdingIdentityShortHash: String,
+            requestId: String,
+            decision: ManualApprovalDecisionRequest,
+        ) = handleCommonErrors(holdingIdentityShortHash) {
+            mgmOpsClient.reviewRegistrationRequest(
+                ShortHash.parseOrThrow(holdingIdentityShortHash),
+                requestId,
+                ManualApprovalDecision(ApprovalAction.valueOf(decision.action.name), decision.reason)
+            )
+        }
 
         private fun RegistrationRequestStatus.toRpc() =
             RpcRegistrationRequestStatus(

@@ -4,8 +4,13 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
+import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.common.ApprovalAction
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.ManualApprovalDecision
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -30,10 +35,14 @@ import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
@@ -127,6 +136,12 @@ class MGMOpsClientImpl @Activate constructor(
             requestingMemberX500Name: String?,
             viewHistoric: Boolean,
         ): Collection<RegistrationRequestStatus>
+
+        fun reviewRegistrationRequest(
+            holdingIdentityShortHash: ShortHash,
+            requestId: String,
+            decision: ManualApprovalDecision,
+        )
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -136,6 +151,14 @@ class MGMOpsClientImpl @Activate constructor(
 
     // for checking the components' health
     private var componentHandle: AutoCloseable? = null
+
+    private var _publisher: Publisher? = null
+
+    /**
+     * Publisher for Kafka messaging. Recreated after every [ConfigKeys.MESSAGING_CONFIG] change.
+     */
+    private val publisher: Publisher
+        get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
 
     private val coordinator = coordinatorFactory.createCoordinator<MGMOpsClient>(::processEvent)
 
@@ -206,6 +229,10 @@ class MGMOpsClientImpl @Activate constructor(
         holdingIdentityShortHash: ShortHash, requestingMemberX500Name: String?, viewHistoric: Boolean
     ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestingMemberX500Name, viewHistoric)
 
+    override fun reviewRegistrationRequest(
+        holdingIdentityShortHash: ShortHash, requestId: String, decision: ManualApprovalDecision
+    ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, decision)
+
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
@@ -256,6 +283,12 @@ class MGMOpsClientImpl @Activate constructor(
                         it.start()
                     }
                 )
+                _publisher?.close()
+                _publisher = publisherFactory.createPublisher(
+                    PublisherConfig("mgm-ops-client"),
+                    event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+                )
+                _publisher?.start()
                 coordinator.updateStatus(LifecycleStatus.UP, "Dependencies are UP and configuration received.")
             }
         }
@@ -285,6 +318,10 @@ class MGMOpsClientImpl @Activate constructor(
 
         override fun viewRegistrationRequests(
             holdingIdentityShortHash: ShortHash, requestingMemberX500Name: String?, viewHistoric: Boolean
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun reviewRegistrationRequest(
+            holdingIdentityShortHash: ShortHash, requestId: String, decision: ManualApprovalDecision
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -448,6 +485,29 @@ class MGMOpsClientImpl @Activate constructor(
                 requestingMemberX500Name,
                 viewHistoric,
             ).getOrThrow()
+
+        override fun reviewRegistrationRequest(
+            holdingIdentityShortHash: ShortHash, requestId: String, decision: ManualApprovalDecision
+        ) {
+            mgmHoldingIdentity(holdingIdentityShortHash)
+            if (decision.action == ApprovalAction.APPROVE) {
+                publishApprovalDecision(ApproveRegistration(), holdingIdentityShortHash, requestId)
+            } else {
+                publishApprovalDecision(DeclineRegistration(decision.reason ?: ""), holdingIdentityShortHash, requestId)
+            }
+        }
+
+        private fun publishApprovalDecision(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {
+            publisher.publish(
+                listOf(
+                    Record(
+                        REGISTRATION_COMMAND_TOPIC,
+                        "$requestId-${holdingIdentityShortHash}",
+                        RegistrationCommand(command)
+                    )
+                )
+            )
+        }
 
         override fun close() = rpcSender.close()
 

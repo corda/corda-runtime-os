@@ -11,6 +11,7 @@ import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.httprpc.v1.types.request.ManualApprovalDecisionRequest
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
@@ -341,7 +342,7 @@ interface MGMRestResource : RestResource {
      * @return Registration requests as a collection of [RpcRegistrationRequestStatus].
      */
     @HttpGET(
-        path = "{mgmHoldingIdentityShortHash}/requests/",
+        path = "{holdingIdentityShortHash}/requests/",
     )
     fun viewRegistrationRequests(
         @RestPathParameter(
@@ -360,4 +361,35 @@ interface MGMRestResource : RestResource {
         )
         viewHistoric: Boolean = false
     ): Collection<RpcRegistrationRequestStatus>
+
+    /**
+     * The [reviewRegistrationRequest] method enables you to approve or decline registration requests which require
+     * manual approval. This method can only be used for requests that are in "PENDING_MANUAL_APPROVAL" status.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.reviewRegistrationRequest("58B6030FABDD", "3B9A266F96E2", ManualApprovalDecision(ManualApprovalAction.APPROVE, "Reason for action"))
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestId ID of the registration request.
+     * @param decision Decision [ManualApprovalDecisionRequest] to apply on the specified registration request.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/request/{requestId}"
+    )
+    fun reviewRegistrationRequest(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+        @RestPathParameter(
+            description = "ID of the registration request"
+        )
+        requestId: String,
+        @RestRequestBodyParameter(
+            description = "Includes the action to be taken (approve/decline) and the reason for the specified action"
+        )
+        decision: ManualApprovalDecisionRequest
+    )
 }
