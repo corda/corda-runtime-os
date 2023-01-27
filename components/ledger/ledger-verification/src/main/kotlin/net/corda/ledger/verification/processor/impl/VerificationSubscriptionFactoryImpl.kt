@@ -4,7 +4,7 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
 import net.corda.ledger.utxo.contract.verification.VerifyContractsRequestRedelivery
-import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig

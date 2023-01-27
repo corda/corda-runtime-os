@@ -1,4 +1,4 @@
-package net.corda.ledger.verification.sanbox
+package net.corda.ledger.verification.sandbox
 
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.exceptions.CordaRuntimeException

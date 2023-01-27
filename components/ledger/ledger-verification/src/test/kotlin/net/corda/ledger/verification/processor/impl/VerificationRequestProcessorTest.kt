@@ -12,7 +12,7 @@ import net.corda.ledger.utxo.contract.verification.VerifyContractsRequestRedeliv
 import net.corda.ledger.utxo.contract.verification.VerifyContractsResponse
 import net.corda.ledger.verification.exceptions.NotReadyException
 import net.corda.ledger.verification.processor.VerificationRequestHandler
-import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext

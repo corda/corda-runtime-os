@@ -2,6 +2,7 @@ import aQute.bnd.gradle.Bundle
 
 plugins {
     id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
@@ -36,6 +37,9 @@ dependencies {
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(":libs:serialization:json-validator")
 
+    runtimeOnly project(':components:virtual-node:sandbox-amqp')
+    runtimeOnly project(':components:virtual-node:sandbox-json')
+    runtimeOnly project(":libs:crypto:crypto-serialization-impl")
     runtimeOnly project(':libs:crypto:merkle-impl')
 
     implementation 'net.corda:corda-config-schema'
@@ -47,16 +51,18 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
-    testImplementation project(':libs:ledger:ledger-utxo-data')
-    testImplementation project(':testing:db-testkit')
-
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    // Integration test resources using cpis configuration
+    cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
 
     // IMPORTANT: do NOT include cpbs (or cpks) as dependencies of the integration test.
     // This would cause OSGi to load the bundle twice (once as part of the test) and again
@@ -91,4 +97,16 @@ dependencies {
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}
+
+//  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

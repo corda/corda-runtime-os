@@ -1,6 +1,6 @@
-package net.corda.ledger.verification.sanbox.impl
+package net.corda.ledger.verification.sandbox.impl
 
-import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.ledger.verification.exceptions.NotReadyException
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
@@ -45,8 +45,6 @@ class VerificationSandboxServiceImpl @Activate constructor(
         // TODO We should verify the CPK's are contract only as part of platform verify of the request (CORE-9379)
 
         if (!sandboxService.hasCpks(cpkFileChecksums)) {
-            // TODO Retries when CPKs not available (CORE-9382)
-
             // We're throwing internal exceptions so that we can relay some information back to the flow worker
             // on how to proceed with any request to us that fails.
             throw NotReadyException("CPKs not available (yet): $cpkFileChecksums")

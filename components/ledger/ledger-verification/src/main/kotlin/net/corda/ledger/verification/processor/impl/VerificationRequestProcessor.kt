@@ -8,7 +8,7 @@ import net.corda.ledger.utxo.contract.verification.VerifyContractsRequestRedeliv
 import net.corda.ledger.utxo.contract.verification.VerifyContractsResponse
 import net.corda.ledger.verification.exceptions.NotReadyException
 import net.corda.ledger.verification.processor.VerificationRequestHandler
-import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.withMDC
@@ -25,7 +25,9 @@ import java.time.Instant
 class VerificationRequestProcessor(
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
-    private val externalEventResponseFactory: ExternalEventResponseFactory
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    private val maxRedeliveries: Int = MAX_REDELIVERIES,
+    private val redeliveryDelay: Duration = REDELIVERY_DELAY
 ) : StateAndEventProcessor<String, VerifyContractsRequestRedelivery, VerifyContractsRequest> {
 
     private companion object {
@@ -53,7 +55,7 @@ class VerificationRequestProcessor(
                     val sandbox = verificationSandboxService.get(holdingIdentity, cpkIds)
                     successfulResponse(request, requestHandler.handleRequest(sandbox, request))
                 } catch (e: NotReadyException) {
-                    if (state != null && state.redeliveryNumber >= MAX_REDELIVERIES) {
+                    if (state != null && state.redeliveryNumber >= maxRedeliveries) {
                         errorResponse(request, e)
                     } else {
                         redeliverRequest(state, request)
@@ -74,7 +76,7 @@ class VerificationRequestProcessor(
         return StateAndEventProcessor.Response(
             VerifyContractsRequestRedelivery(
                 now,
-                now.plus(REDELIVERY_DELAY),
+                now.plus(redeliveryDelay),
                 redeliveryNumber,
                 request
             ),
