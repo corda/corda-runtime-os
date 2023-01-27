@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read
 
 import com.typesafe.config.ConfigFactory
-import kotlin.reflect.KFunction
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -20,7 +19,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -33,6 +31,8 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
+import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipGroupReaderProviderIntegrationTest {
@@ -40,7 +40,7 @@ class MembershipGroupReaderProviderIntegrationTest {
     companion object {
         const val CLIENT_ID = "group-read-integration-test"
 
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @InjectService(timeout = 4000L)

@@ -5,9 +5,9 @@ import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.serialization.SerializationContext
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.codec.Data
+import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.io.OutputStream
 import java.lang.reflect.Type
@@ -30,7 +30,7 @@ open class SerializationOutput constructor(
         internal val serializerFactory: LocalSerializerFactory
 ) {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val objectHistory: MutableMap<Any, Int> = IdentityHashMap()

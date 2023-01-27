@@ -18,12 +18,12 @@ import net.corda.metrics.CordaMetrics
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
-import net.corda.v5.base.util.contextLogger
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * An implementation of [WorkerMonitor].
@@ -37,7 +37,7 @@ internal class WorkerMonitorImpl @Activate constructor(
     private val lifecycleRegistry: LifecycleRegistry
 ) : WorkerMonitor {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // The use of Javalin is temporary, and will be replaced in the future.

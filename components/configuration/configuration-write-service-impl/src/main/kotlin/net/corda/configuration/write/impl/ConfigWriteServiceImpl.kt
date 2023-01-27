@@ -10,10 +10,10 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /** An implementation of [ConfigWriteService]. */
 @Suppress("Unused", "LongParameterList")
@@ -34,7 +34,7 @@ internal class ConfigWriteServiceImpl @Activate constructor(
 ) : ConfigWriteService {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator = let {

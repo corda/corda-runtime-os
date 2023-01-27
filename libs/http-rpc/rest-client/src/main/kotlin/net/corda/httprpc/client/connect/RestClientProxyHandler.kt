@@ -1,5 +1,6 @@
 package net.corda.httprpc.client.connect
 
+import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpDELETE
 import net.corda.httprpc.annotations.HttpGET
@@ -12,21 +13,20 @@ import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
 import net.corda.httprpc.client.connect.remote.RemoteClient
 import net.corda.httprpc.client.connect.stream.RestFiniteDurableCursorClientBuilderImpl
+import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.processing.endpointHttpVerb
 import net.corda.httprpc.client.processing.parametersFrom
 import net.corda.httprpc.client.processing.toWebRequest
+import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.isStaticallyExposedGet
-import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
-import net.corda.httprpc.ResponseCode
-import net.corda.httprpc.client.exceptions.InternalErrorException
-import net.corda.httprpc.response.ResponseEntity
 
 /**
  * [RestClientProxyHandler] is responsible for converting method invocations to web requests that are called against the server,
@@ -43,7 +43,7 @@ internal class RestClientProxyHandler<I : RestResource>(
 ) : InvocationHandler {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var serverProtocolVersion: Int? = null

@@ -2,12 +2,12 @@ package net.corda.httprpc.test
 
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.PluggableRestResource
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 class ObjectsInJsonEndpointImpl : ObjectsInJsonEndpoint, PluggableRestResource<ObjectsInJsonEndpoint> {
 
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val protocolVersion: Int = 1

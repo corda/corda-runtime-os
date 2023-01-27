@@ -24,7 +24,7 @@ dependencies {
     implementation project(":components:membership:membership-persistence-client")
     implementation project(':components:virtual-node:cpi-upload-rpcops-service')
     implementation project(':components:flow:flow-rpcops-service')
-    implementation project(':components:http-rpc-gateway-comp')
+    implementation project(':components:rest-gateway-comp')
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-client-hsm")

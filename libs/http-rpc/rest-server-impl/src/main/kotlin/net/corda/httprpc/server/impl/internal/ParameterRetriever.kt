@@ -8,7 +8,7 @@ import net.corda.httprpc.server.impl.apigen.processing.Parameter
 import net.corda.httprpc.server.impl.apigen.processing.ParameterType
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.utils.mapTo
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.trace
 import java.net.URLDecoder
 import java.util.function.Function
@@ -38,7 +38,7 @@ internal object ParameterRetrieverFactory {
 @Suppress("TooGenericExceptionThrown")
 private class PathParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun apply(ctx: ParametersRetrieverContext): Any {
@@ -60,7 +60,7 @@ private class PathParameterRetriever(private val parameter: Parameter) : Paramet
 @Suppress("TooGenericExceptionThrown")
 private class QueryParameterListRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun apply(ctx: ParametersRetrieverContext): Any {
@@ -85,7 +85,7 @@ private class QueryParameterListRetriever(private val parameter: Parameter) : Pa
 @Suppress("TooGenericExceptionThrown")
 private class QueryParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun apply(ctx: ParametersRetrieverContext): Any? {
@@ -110,7 +110,7 @@ private class QueryParameterRetriever(private val parameter: Parameter) : Parame
 @Suppress("TooGenericExceptionThrown")
 private class BodyParameterRetriever(private val parameter: Parameter, private val routeInfo: RouteInfo) : ParameterRetriever {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val RouteInfo.isSingleBodyParam: Boolean
@@ -155,7 +155,7 @@ private class BodyParameterRetriever(private val parameter: Parameter, private v
 @Suppress("TooGenericExceptionThrown")
 private class MultipartParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suppress("ComplexMethod")

@@ -1,7 +1,7 @@
 package net.corda.messaging.emulation.topic.model
 
-import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.read
 
@@ -11,7 +11,7 @@ internal class ConsumptionLoop(
 ) : Runnable {
 
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     private val partitionToLastReadOffset = ConcurrentHashMap<Partition, Long>()
 

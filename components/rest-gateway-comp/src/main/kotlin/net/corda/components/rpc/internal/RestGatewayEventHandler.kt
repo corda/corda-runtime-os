@@ -41,11 +41,11 @@ import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.function.Supplier
 
 @Suppress("LongParameterList")
-internal class HttpRpcGatewayEventHandler(
+internal class RestGatewayEventHandler(
     private val permissionManagementService: PermissionManagementService,
     private val configurationReadService: ConfigurationReadService,
     private val restServerFactory: RestServerFactory,
@@ -56,7 +56,7 @@ internal class HttpRpcGatewayEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val MULTI_PART_DIR = "multipart"
 
@@ -74,7 +74,7 @@ internal class HttpRpcGatewayEventHandler(
 
     @Volatile
     @VisibleForTesting
-    internal var rpcConfig: SmartConfig? = null
+    internal var restGatewayConfig: SmartConfig? = null
 
     @Volatile
     @VisibleForTesting
@@ -106,20 +106,20 @@ internal class HttpRpcGatewayEventHandler(
                     )
                 }
 
-                val numberOfRpcOps = dynamicRestResourcesProvider.get().filterIsInstance<Lifecycle>()
+                val restResourceCount = dynamicRestResourcesProvider.get().filterIsInstance<Lifecycle>()
                     .map {
                         log.info("Starting: ${it.javaClass.simpleName}")
                         it.start()
                     }
                     .count()
-                log.info("Started $numberOfRpcOps RPCOps that have lifecycle.")
+                log.info("Started $restResourceCount REST resources that have lifecycle.")
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         log.info("Registration received UP status. Registering for configuration updates.")
                         dependenciesUp = true
-                        rpcConfig.let {
+                        restGatewayConfig.let {
                             if (it == null) {
                                 log.info("Configuration has not been received yet")
                             } else {
@@ -129,11 +129,11 @@ internal class HttpRpcGatewayEventHandler(
 
                     }
                     LifecycleStatus.DOWN -> {
-                        log.info("Registration received DOWN status. Stopping the Http RPC Gateway.")
+                        log.info("Registration received DOWN status. Stopping the REST Gateway.")
                         downTransition()
                     }
                     LifecycleStatus.ERROR -> {
-                        log.info("Registration received ERROR status. Stopping the Http RPC Gateway.")
+                        log.info("Registration received ERROR status. Stopping the REST Gateway.")
                         coordinator.postEvent(StopEvent(true))
                     }
                 }
@@ -145,7 +145,7 @@ internal class HttpRpcGatewayEventHandler(
                 val config = event.config[REST_CONFIG]!!.withFallback(
                     event.config[BOOT_CONFIG]
                 )
-                rpcConfig = config
+                restGatewayConfig = config
                 if (dependenciesUp) {
                     upTransition(coordinator, config)
                 } else {
@@ -171,7 +171,7 @@ internal class HttpRpcGatewayEventHandler(
     }
 
     private fun upTransition(coordinator: LifecycleCoordinator, config: SmartConfig) {
-        createAndStartHttpRpcServer(config)
+        createAndStartRestServer(config)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -183,8 +183,8 @@ internal class HttpRpcGatewayEventHandler(
         sslCertReadService = null
     }
 
-    private fun createAndStartHttpRpcServer(config: SmartConfig) {
-        log.info("Stopping any running HTTP RPC Server and endpoints.")
+    private fun createAndStartRestServer(config: SmartConfig) {
+        log.info("Stopping any running REST Server and endpoints.")
         server?.close()
         sslCertReadService?.stop()
 
@@ -210,10 +210,10 @@ internal class HttpRpcGatewayEventHandler(
 
         val multiPartDir = tempPathProvider.getOrCreate(config, MULTI_PART_DIR)
 
-        log.info("Starting HTTP RPC Server.")
-        val rpcOps = dynamicRestResourcesProvider.get()
+        log.info("Starting REST Server.")
+        val restResources = dynamicRestResourcesProvider.get()
         server = restServerFactory.createRestServer(
-            restResourceImpls = rpcOps,
+            restResourceImpls = restResources,
             restSecurityManagerSupplier = rbacSecurityManagerService::securityManager,
             restServerSettings = restServerSettings,
             multiPartDir = multiPartDir

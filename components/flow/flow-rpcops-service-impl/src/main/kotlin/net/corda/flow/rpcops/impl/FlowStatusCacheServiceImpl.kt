@@ -2,7 +2,6 @@ package net.corda.flow.rpcops.impl
 
 import com.google.common.collect.Multimap
 import com.google.common.collect.Multimaps
-import java.util.LinkedList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
@@ -24,11 +23,12 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -43,7 +43,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
 ) : FlowStatusCacheService, CompactedProcessor<FlowKey, FlowStatus> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null

@@ -3,12 +3,12 @@ package net.cordapp.testing.calculator
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 class OutputFormattingFlow(private val result: Int) : SubFlow<String> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

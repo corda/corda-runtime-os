@@ -19,13 +19,13 @@ import net.corda.session.manager.impl.processor.SessionErrorProcessorReceive
 import net.corda.session.manager.impl.processor.SessionErrorProcessorSend
 import net.corda.session.manager.impl.processor.SessionInitProcessorReceive
 import net.corda.session.manager.impl.processor.SessionInitProcessorSend
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 class SessionEventProcessorFactory {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     /**
      * Get the correct processor for the [sessionEvent] received.

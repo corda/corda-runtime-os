@@ -12,10 +12,10 @@ import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderW
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -28,7 +28,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 ) : PersistenceHandler<REQUEST, RESPONSE> {
 
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager

@@ -6,11 +6,11 @@ import net.corda.httprpc.client.connect.RestClientProxyHandler
 import net.corda.httprpc.client.connect.RestConnectionListenerDistributor
 import net.corda.httprpc.client.connect.remote.RemoteUnirestClient
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Proxy
 import java.time.Duration
 import java.util.*
@@ -52,7 +52,7 @@ class RestClient<I : RestResource> internal constructor(
     ) : this(baseAddress, restResourceClass, clientConfig, healthCheckInterval, Companion::defaultProxyGenerator)
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val defaultHealthCheckInterval = 10000L
 

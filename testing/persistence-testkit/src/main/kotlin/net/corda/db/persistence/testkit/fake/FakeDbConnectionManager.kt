@@ -12,7 +12,7 @@ import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -29,7 +29,7 @@ class FakeDbConnectionManager(
     private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl()
 ): DbConnectionManager, DbConnectionOps, DataSourceFactory {
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private data class NamedDataSources(val id: UUID, val name: String, val dataSource: CloseableDataSource)

@@ -3,8 +3,8 @@ package net.corda.httprpc.test
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.lifecycle.Lifecycle
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRestResource<TestHealthCheckAPI>, Lifecycle {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val targetInterface: Class<TestHealthCheckAPI>

@@ -1,6 +1,5 @@
 package net.corda.crypto.component.impl
 
-import java.util.concurrent.atomic.AtomicInteger
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
@@ -17,6 +16,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * A base abstract class that can be used to provide basic functionality relating to lifecycle management for components

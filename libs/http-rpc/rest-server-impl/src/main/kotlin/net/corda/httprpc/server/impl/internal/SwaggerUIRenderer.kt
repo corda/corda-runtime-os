@@ -4,7 +4,7 @@ import io.javalin.core.util.Util
 import io.javalin.http.Context
 import io.javalin.http.Handler
 import io.javalin.http.InternalServerErrorResponse
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider.Companion.jsonPath
 import net.corda.httprpc.server.config.RestServerSettingsProvider
 import org.osgi.framework.FrameworkUtil
@@ -16,7 +16,7 @@ import org.osgi.framework.FrameworkUtil
 internal class SwaggerUIRenderer(private val configurationProvider: RestServerSettingsProvider) : Handler {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun handle(ctx: Context) {

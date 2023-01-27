@@ -3,12 +3,12 @@ package net.corda.persistence.common
 import net.corda.libs.configuration.SmartConfig
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.schema.configuration.MessagingConfig
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 class PayloadChecker(private val maxPayloadSize: Int) {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CORDA_MESSAGE_OVERHEAD = 1024
     }
 

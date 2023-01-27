@@ -2,11 +2,12 @@ package net.corda.sample.testapp
 
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.v5.base.util.contextLogger
+import net.corda.sample.testapp.TestApplication.Companion.SHUTDOWN_DELAY
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * This class is the entry point of the didactic application showing how to run an *Application* from a bootable JAR.
@@ -24,7 +25,7 @@ class TestApplication @Activate constructor(
 
     private companion object {
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         /**
          * Time in ms before the application shutdown itself.

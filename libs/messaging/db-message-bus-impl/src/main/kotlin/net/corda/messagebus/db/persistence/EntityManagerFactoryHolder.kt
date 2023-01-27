@@ -6,12 +6,12 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -25,7 +25,7 @@ class EntityManagerFactoryHolder @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var emf: EntityManagerFactory? = null

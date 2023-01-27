@@ -2362,7 +2362,7 @@
     <ID>UnusedPrivateMember:EvolutionObjectBuilderRenamedPropertyTests.kt$EvolutionObjectBuilderRenamedPropertyTests$private val yTestValue = 4113687</ID>
     <ID>UnusedPrivateMember:PrivatePropertyTests.kt$PrivatePropertyTests.Outer$private val i: Inner</ID>
     <ID>UnusedPrivateMember:ThrowableEvolutionTests.kt$ThrowableEvolutionTests$private val toBeRemovedValue = "Remove"</ID>
-    <ID>UnusedPrivateMember:TypeLoader.kt$ClassTypeLoader.Companion$private val logger = contextLogger()</ID>
+    <ID>UnusedPrivateMember:TypeLoader.kt$ClassTypeLoader.Companion$private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)</ID>
     <ID>UseCheckOrError:Envelope.kt$Envelope.Companion$throw IllegalStateException("Was expecting a list")</ID>
     <ID>UseCheckOrError:EvolutionSerializerFactory.kt$DefaultEvolutionSerializerFactory$throw IllegalStateException("Unknown primitive type '$primitiveType'")</ID>
     <ID>UseCheckOrError:LocalTypeInformation.kt$LocalTypeInformation.ACollection$throw IllegalStateException("Cannot parameterise $this")</ID>

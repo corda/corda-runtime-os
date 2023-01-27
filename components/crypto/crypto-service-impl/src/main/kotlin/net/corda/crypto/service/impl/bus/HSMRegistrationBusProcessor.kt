@@ -16,9 +16,9 @@ import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
@@ -27,7 +27,7 @@ class HSMRegistrationBusProcessor(
     event: ConfigChangedEvent
 ) : RPCResponderProcessor<HSMRegistrationRequest, HSMRegistrationResponse> {
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val config = event.config.toCryptoConfig().hsmRegistrationBusProcessor()

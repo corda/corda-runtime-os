@@ -10,7 +10,6 @@ import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
-import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
@@ -27,6 +26,7 @@ import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.UnsupportedForMessageFormatException
 import org.apache.kafka.common.errors.UnsupportedVersionException
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Wrapper for the CordaKafkaProducer.
@@ -48,7 +48,7 @@ class CordaKafkaProducerImpl(
     }
 
     private companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private fun CordaProducer.Callback.toKafkaCallback(): Callback {

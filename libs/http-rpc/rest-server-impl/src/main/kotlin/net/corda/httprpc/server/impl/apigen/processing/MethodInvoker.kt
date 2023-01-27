@@ -9,7 +9,7 @@ import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableRetu
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.httprpc.durablestream.api.Cursor
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
 import net.corda.v5.base.util.trace
 import java.util.function.Supplier
@@ -26,7 +26,7 @@ interface MethodInvoker {
 internal open class DefaultMethodInvoker(private val invocationMethod: InvocationMethod) :
     MethodInvoker {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun invoke(vararg args: Any?): Any? {
@@ -52,7 +52,7 @@ internal open class DefaultMethodInvoker(private val invocationMethod: Invocatio
 internal open class DurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod) :
     DefaultMethodInvoker(invocationMethod) {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun invoke(vararg args: Any?): DurableReturnResult<Any> {
@@ -102,7 +102,7 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
 internal class FiniteDurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod) :
     DurableStreamsMethodInvoker(invocationMethod) {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun invoke(vararg args: Any?): FiniteDurableReturnResult<Any> {

@@ -1,6 +1,6 @@
 package net.corda.httprpc.test.utils
 
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.Closeable
 import java.io.InputStream
@@ -14,7 +14,7 @@ import java.util.Hashtable
 internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLStreamHandlerFactory, Closeable {
     companion object {
         const val PROTOCOL = "mock"
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @Suppress("TooGenericExceptionThrown")
         private fun forceSetURLStreamHandlerFactory(factory: URLStreamHandlerFactory?) {

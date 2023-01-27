@@ -1,11 +1,11 @@
 package net.corda.applications.workers.rpc.http
 
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
-import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.extension.ConditionEvaluationResult
 import org.junit.jupiter.api.extension.ExecutionCondition
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.platform.commons.util.AnnotationUtils
+import org.slf4j.LoggerFactory
 
 /**
  * Endpoint availability condition
@@ -15,7 +15,7 @@ import org.junit.platform.commons.util.AnnotationUtils
 internal class EndpointAvailabilityCondition : ExecutionCondition {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val testToolkit by TestToolkitProperty()

@@ -1,7 +1,7 @@
 package net.corda.ledger.verification.sanbox.impl
 
-import net.corda.ledger.verification.sanbox.VerificationSandboxService
 import net.corda.ledger.verification.exceptions.NotReadyException
+import net.corda.ledger.verification.sanbox.VerificationSandboxService
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
@@ -13,12 +13,12 @@ import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * This is a sandbox service that is internal to this component.
@@ -38,7 +38,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
     private val sandboxService: SandboxGroupContextComponent,
 ) : VerificationSandboxService {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpkFileChecksums: Set<SecureHash>): SandboxGroupContext {

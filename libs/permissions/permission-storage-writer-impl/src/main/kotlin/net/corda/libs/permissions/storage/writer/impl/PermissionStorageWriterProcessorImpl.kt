@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.storage.writer.impl
 
-import java.util.concurrent.CompletableFuture
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.management.PermissionManagementRequest
@@ -11,15 +10,16 @@ import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
-import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 import java.util.function.Supplier
 
 class PermissionStorageWriterProcessorImpl(
@@ -30,7 +30,7 @@ class PermissionStorageWriterProcessorImpl(
 ) : PermissionStorageWriterProcessor {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suppress("ComplexMethod")

@@ -17,11 +17,11 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowP2PFilterService::class], immediate = true)
 class FlowP2PFilterService @Activate constructor(
@@ -36,7 +36,7 @@ class FlowP2PFilterService @Activate constructor(
 ) : Lifecycle {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "FlowSessionFilterConsumer"
         private const val SUBSCRIPTION = "SUBSCRIPTION"
         private const val REGISTRATION = "REGISTRATION"

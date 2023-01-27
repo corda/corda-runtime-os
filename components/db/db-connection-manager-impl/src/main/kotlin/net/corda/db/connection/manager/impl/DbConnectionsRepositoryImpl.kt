@@ -14,7 +14,7 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -33,7 +33,7 @@ class DbConnectionsRepositoryImpl(
 ): DbConnectionsRepository {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun put(
