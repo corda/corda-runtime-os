@@ -16,16 +16,19 @@ import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableSortedMap
 import java.util.SortedMap
 import java.util.TreeMap
+import java.util.UUID
 
 /**
  * An implementation of the [SandboxGroup] interface.
  *
- * @param cpkSandboxes The CPK sandboxes in this sandbox group.
+ * @property id Unique identifier for this sandbox group.
+ * @property cpkSandboxes The CPK sandboxes in this sandbox group.
  * @param publicSandboxes An iterable containing all existing public sandboxes.
  * @param classTagFactory Used to generate class tags.
  * @param bundleUtils The utils that all OSGi activity is delegated to for testing purposes.
  */
 internal class SandboxGroupImpl(
+    override val id: UUID,
     override val cpkSandboxes: Collection<CpkSandbox>,
     private val publicSandboxes: Iterable<Sandbox>,
     private val classTagFactory: ClassTagFactory,
