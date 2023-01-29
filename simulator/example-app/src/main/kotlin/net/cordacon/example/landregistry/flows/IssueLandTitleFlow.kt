@@ -1,6 +1,12 @@
 package net.cordacon.example.landregistry.flows
 
-import net.corda.v5.application.flows.*
+import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.application.flows.ClientStartableFlow
+import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.InitiatedBy
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.cordacon.example.landregistry.states.LandTitleContract
 import net.cordacon.example.landregistry.states.LandTitleState
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -46,8 +52,11 @@ class IssueLandTitleFlow: ClientStartableFlow {
     override fun call(requestBody: RestRequestBody): String {
         val request = requestBody.getRequestBodyAs<LandRegistryRequest>(jsonMarshallingService)
 
-        if(utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).isNotEmpty())
-            throw IllegalArgumentException("Title Number: ${request.titleNumber} already exist.")
+        val exists = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).any {
+            it.state.contractState.titleNumber == request.titleNumber
+        }
+        if(exists)
+            throw java.lang.IllegalArgumentException("Title Number: ${request.titleNumber} does not exist.")
 
         val myInfo = memberLookup.myInfo()
         val owner = memberLookup.lookup(request.owner)

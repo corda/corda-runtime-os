@@ -5,6 +5,7 @@ import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
 import net.cordacon.example.landregistry.flows.*
 import net.cordacon.example.utils.createMember
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class LandRegistryTest {
@@ -39,7 +40,7 @@ class LandRegistryTest {
 
         val result = nodes[0].callFlow(requestData)
 
-        println(result)
+        Assertions.assertNotNull(result)
 
     }
 
@@ -59,7 +60,7 @@ class LandRegistryTest {
         }
 
         val issueRequest =  LandRegistryRequest(
-            "T001",
+            "T002",
             "BKC, Mumbai",
             500,
             "Awesome Property",
@@ -73,10 +74,10 @@ class LandRegistryTest {
         )
 
         val result = nodes[0].callFlow(issueRequestData)
-        println(result)
+        Assertions.assertNotNull(result)
 
         val transferRequest = TransferLandTitleRequest(
-            "T001",
+            "T002",
             newOwner
         )
 
@@ -88,6 +89,6 @@ class LandRegistryTest {
 
         val result1 = nodes[1].callFlow(transferRequestData)
 
-        println(result1)
+        Assertions.assertNotNull(result1)
     }
 }

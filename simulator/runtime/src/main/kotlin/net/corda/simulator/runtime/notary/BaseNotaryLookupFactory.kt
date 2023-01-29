@@ -6,6 +6,9 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.membership.NotaryInfo
 import java.security.PublicKey
 
+/**
+ * @see [NotaryLookupFactory]
+ */
 class BaseNotaryLookupFactory: NotaryLookupFactory {
 
     override fun createNotaryLookup(fiber: SimFiber, notaryInfo: NotaryInfo): NotaryLookup {

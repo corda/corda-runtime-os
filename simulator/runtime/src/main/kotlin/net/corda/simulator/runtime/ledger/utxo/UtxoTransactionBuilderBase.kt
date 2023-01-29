@@ -7,12 +7,16 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.*
+import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
 
+@Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderBase(
     override val notary: Party? = null,
     val timeWindow: TimeWindow? = null,

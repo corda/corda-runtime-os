@@ -3,9 +3,9 @@ package net.corda.simulator.runtime.ledger.utxo
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
-import net.corda.simulator.entities.*
-import net.corda.simulator.runtime.ledger.ConsensualSignedTransactionBase
-import net.corda.simulator.runtime.ledger.ConsensualStateLedgerInfo
+import net.corda.simulator.entities.UtxoTransactionEntity
+import net.corda.simulator.entities.UtxoTransactionOutputEntity
+import net.corda.simulator.entities.UtxoTransactionSignatureEntity
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -17,15 +17,18 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.utxo.*
+import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.getOutputStates
 import java.security.PublicKey
 import java.time.Instant
-import javax.transaction.Transactional
 
+@Suppress("LongParameterList")
 class UtxoSignedTransactionBase(
     override val commands: List<Command>,
     override val inputStateRefs: List<StateRef>,
@@ -115,7 +118,8 @@ class UtxoSignedTransactionBase(
                 ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
                          String(it.transactionHash.bytes))
             val tx = fromEntity(entity, signingService, serializer, config, persistenceService)
-            val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[it.index], notary, null)
+            val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[it.index],
+                notary, null)
             StateAndRefImpl(ts, it)
         }
     }
@@ -166,12 +170,10 @@ class UtxoSignedTransactionBase(
         }
 
         transactionEntity.signatures.addAll(signatureEntities)
-        //transactionEntity.outputs.addAll(outputs)
         return transactionEntity
     }
 
     internal fun toOutputsEntity() : List<UtxoTransactionOutputEntity> {
-        //val txEntity = toEntity()
         return outputStates.mapIndexed{ index, contractState ->
             UtxoTransactionOutputEntity(
                 id.toString(),

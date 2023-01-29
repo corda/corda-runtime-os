@@ -5,7 +5,6 @@ import net.corda.simulator.factories.ServiceOverrideBuilder
 import net.corda.simulator.runtime.ledger.SimConsensualLedgerService
 import net.corda.simulator.runtime.ledger.utxo.SimUtxoLedgerService
 import net.corda.simulator.runtime.messaging.SimFiber
-import net.corda.simulator.runtime.notary.NotaryLookupFactory
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.simulator.runtime.signing.OnlyOneSignatureSpecService
@@ -25,7 +24,6 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.utxo.UtxoLedgerService

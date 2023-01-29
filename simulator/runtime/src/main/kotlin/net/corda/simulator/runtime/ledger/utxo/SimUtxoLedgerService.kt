@@ -3,18 +3,18 @@ package net.corda.simulator.runtime.ledger.utxo
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
-import net.corda.simulator.entities.ConsensualTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
-import net.corda.simulator.runtime.ledger.ConsensualSignedTransactionBase
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.*
+import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
@@ -38,7 +38,8 @@ class SimUtxoLedgerService(
         memberLookup, signingService, notarySigningService, persistenceService)
 
     override fun getTransactionBuilder(): UtxoTransactionBuilder {
-        return utxoTransactionBuilderFactory.createUtxoTransactionBuilder(signingService, serializationService, persistenceService, configuration)
+        return utxoTransactionBuilderFactory.createUtxoTransactionBuilder(
+            signingService, serializationService, persistenceService, configuration)
     }
 
     override fun finalize(
@@ -50,10 +51,6 @@ class SimUtxoLedgerService(
 
     override fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
         return transactionFinalizer.receiveFinality(session, validator)
-    }
-
-    override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
-        TODO("Not yet implemented")
     }
 
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
@@ -91,10 +88,15 @@ class SimUtxoLedgerService(
             )
             val stateRef = StateRef(ledgerTx.id, utxoTransactionOutputEntity.index)
             val transactionState = TransactionStateImpl(
-                ledgerTx.outputContractStates[utxoTransactionOutputEntity.index] as T, ledgerTx.notary, null)
+                ledgerTx.outputContractStates[utxoTransactionOutputEntity.index] as T, ledgerTx.notary,
+                null)
             StateAndRefImpl(transactionState, stateRef)
         }
         return stateAndRefs
+    }
+
+    override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
+        TODO("Not yet implemented")
     }
 
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {

@@ -5,7 +5,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import java.lang.reflect.InvocationTargetException
 import java.security.PublicKey
 
 /**

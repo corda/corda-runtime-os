@@ -3,7 +3,19 @@ package net.corda.simulator.entities
 import java.io.Serializable
 import java.time.Instant
 import java.util.Objects
-import javax.persistence.*
+import javax.persistence.NamedQuery
+import javax.persistence.Entity
+import javax.persistence.Table
+import javax.persistence.Id
+import javax.persistence.Column
+import javax.persistence.OneToMany
+import javax.persistence.ManyToOne
+import javax.persistence.FetchType
+import javax.persistence.CascadeType
+import javax.persistence.IdClass
+import javax.persistence.JoinColumn
+import javax.persistence.Embeddable
+
 
 @NamedQuery(
     name = "UtxoTransactionEntity.findByTransactionId",
@@ -94,8 +106,6 @@ class UtxoTransactionSignatureEntity(
 )
 class UtxoTransactionOutputEntity(
     @Id
-//    @ManyToOne
-//    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
     @Column(name = "id", nullable = false, updatable = false)
     val transactionId: String,
 

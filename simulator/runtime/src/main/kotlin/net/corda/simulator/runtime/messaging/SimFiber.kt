@@ -83,7 +83,7 @@ interface SimFiber : Closeable, HasMemberInfos, FlowRegistry {
     /**
      * Creates a notary lookup for the simulator.
      *
-     * @return A [MemberLookup] containing notary details.
+     * @return A [NotaryLookup] containing notary details.
      */
     fun createNotaryLookup(): NotaryLookup
 

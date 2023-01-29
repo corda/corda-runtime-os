@@ -6,6 +6,7 @@ import java.security.PublicKey
 import java.time.LocalDateTime
 
 
+@Suppress("LongParameterList")
 @BelongsToContract(LandTitleContract::class)
 class LandTitleState(
     val titleNumber: String,
