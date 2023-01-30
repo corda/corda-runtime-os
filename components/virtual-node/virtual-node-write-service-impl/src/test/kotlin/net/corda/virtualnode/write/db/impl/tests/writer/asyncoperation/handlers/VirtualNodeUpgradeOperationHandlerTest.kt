@@ -322,7 +322,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString), eq("req1"), eq(requestTimestamp), eq(request.toString())
             )
         ).thenReturn(inProgressOpVnodeInfo)
-        whenever(migrationUtility.runCpiMigrations(any(), any(), any())).thenThrow(PersistenceException("Some liquibase exception"))
+        whenever(migrationUtility.runVaultMigrations(any(), any(), any())).thenThrow(PersistenceException("Some liquibase exception"))
 
         val vnodeInfoCapture =
             argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
@@ -371,9 +371,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
         handler.handle(requestTimestamp, "req1", request)
 
         verify(virtualNodeInfoPublisher, times(2)).publish(inProgressVNodeInfoCapture.capture())
-        verify(migrationUtility).runCpiMigrations(
+        verify(migrationUtility).runVaultMigrations(
             eq(ShortHash.of(request.virtualNodeShortHash)),
-            eq(mapOf("cpk1" to listOf(mockChangelog1, mockChangelog2))),
+            eq(listOf(mockChangelog1, mockChangelog2)),
             eq(vaultDdlConnectionId)
         )
         // todo cs - when we add virtual node info, separate these publishes (one should be in progress operation, the other complete)

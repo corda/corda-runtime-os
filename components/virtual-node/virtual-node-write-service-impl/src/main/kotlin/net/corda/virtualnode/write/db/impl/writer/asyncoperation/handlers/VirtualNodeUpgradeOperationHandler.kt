@@ -86,14 +86,13 @@ internal class VirtualNodeUpgradeOperationHandler(
                 requestId, requestTimestamp, request.toString()
             )
 
-            val migrationChangelogs: Map<String, List<CpkDbChangeLogEntity>> =
+            val migrationChangelogs: List<CpkDbChangeLogEntity> =
                 getCurrentChangelogsForCpi(
                     em,
                     targetCpiMetadata.id.name,
                     targetCpiMetadata.id.version,
                     targetCpiMetadata.id.signerSummaryHash.toString()
                 )
-                    .groupBy { it.id.cpkFileChecksum }
 
             UpgradeTransactionCompleted(
                 upgradedVnodeInfo,
@@ -128,7 +127,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         }
 
         logger.info("Vault DDL connection found for virtual node, preparing to run CPI migrations (request $requestId)")
-        migrationUtility.runCpiMigrations(
+        migrationUtility.runVaultMigrations(
             ShortHash.of(request.virtualNodeShortHash),
             transactionCompleted.migrationsByCpkFileChecksum,
             transactionCompleted.vaultDdlConnectionId
@@ -166,7 +165,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
     data class UpgradeTransactionCompleted(
         val upgradedVirtualNodeInfo: VirtualNodeInfo,
-        val migrationsByCpkFileChecksum: Map<String, List<CpkDbChangeLogEntity>>,
+        val migrationsByCpkFileChecksum: List<CpkDbChangeLogEntity>,
         val vaultDdlConnectionId: UUID?,
     )
 

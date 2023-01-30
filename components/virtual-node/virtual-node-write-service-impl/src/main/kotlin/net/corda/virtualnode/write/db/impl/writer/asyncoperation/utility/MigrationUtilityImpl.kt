@@ -21,16 +21,18 @@ internal class MigrationUtilityImpl(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun runCpiMigrations(
+    override fun runVaultMigrations(
         virtualNodeShortHash: ShortHash,
-        migrationsByCpkFileChecksum: Map<String, List<CpkDbChangeLogEntity>>,
+        migrationsByCpkFileChecksum: List<CpkDbChangeLogEntity>,
         vaultDdlConnectionId: UUID
     ) {
-        migrationsByCpkFileChecksum.forEach { (cpkFileChecksum, changelogs) ->
-            dbConnectionManager.createDatasource(vaultDdlConnectionId).use {
-                runCpkMigrations(it, virtualNodeShortHash, cpkFileChecksum, changelogs)
+        migrationsByCpkFileChecksum
+            .groupBy { it.id.cpkFileChecksum }
+            .forEach { (cpkFileChecksum, changelogs) ->
+                dbConnectionManager.createDatasource(vaultDdlConnectionId).use {
+                    runCpkMigrations(it, virtualNodeShortHash, cpkFileChecksum, changelogs)
+                }
             }
-        }
     }
 
     private fun runCpkMigrations(
