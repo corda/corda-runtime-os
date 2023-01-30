@@ -4,7 +4,7 @@ import javax.security.auth.login.FailedLoginException
 import net.corda.httprpc.security.AuthServiceId
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.Password
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import java.util.function.Supplier
@@ -12,7 +12,7 @@ import java.util.function.Supplier
 class RBACSecurityManager(
     private val permissionValidatorSupplier: Supplier<PermissionValidator>,
     private val basicAuthenticationService: BasicAuthenticationService
-) : RPCSecurityManager {
+) : RestSecurityManager {
 
     override val id = AuthServiceId(RBACSecurityManager::class.java.name)
 
