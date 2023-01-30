@@ -63,7 +63,7 @@ class SoftKeyMapConfig(
 class SoftWrappingKeyMapConfig(
     val name: String,
     val salt: String,
-    val passphrase: Map<String, Any>,
+    val passphrase: String,
     val cache: SoftCacheConfig
 )
 

@@ -3,7 +3,6 @@ package net.corda.crypto.config.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -76,11 +75,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
         assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
         assertEquals("master-salt", hsmCfg.getString("wrappingKeyMap.salt"))
-        assertEquals(
-            "master-passphrase", hsmCfg.toConfigurationSecrets().getSecret(
-                hsmCfg.getConfig("wrappingKeyMap.passphrase").root().unwrapped()
-            )
-        )
+        assertEquals("master-passphrase", hsmCfg.getString("wrappingKeyMap.passphrase"))
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
@@ -100,9 +95,7 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Test config should have expected values`() {
-        val config = createTestCryptoConfig(
-            KeyCredentials("pass", "salt")
-        )
+        val config = createDefaultCryptoConfig("pass", "salt")
         val connectionFactory = config.cryptoConnectionFactory()
         assertEquals(5, connectionFactory.expireAfterAccessMins)
         assertEquals(3, connectionFactory.maximumSize)
@@ -140,10 +133,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, hsmCfg.getLong("keyMap.cache.maximumSize"))
         assertEquals("CACHING", hsmCfg.getString("wrappingKeyMap.name"))
         assertThat(hsmCfg.getString("wrappingKeyMap.salt")).isNotBlank
-        assertThat(hsmCfg.toConfigurationSecrets().getSecret(
-                hsmCfg.getConfig("wrappingKeyMap.passphrase").root().unwrapped()
-            )
-        ).isNotBlank
+        assertThat(hsmCfg.getString("wrappingKeyMap.passphrase")).isNotBlank
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
         assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
@@ -163,7 +153,9 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Should be able to get crypto config from the map of configs`() {
-        val config = SmartConfigFactory.createWithoutSecurityServices()createDefaultCryptoConfig("master-passphrase", "master-salt")
+        val config = SmartConfigFactory.createWithoutSecurityServices().create(
+            createDefaultCryptoConfig("master-passphrase", "master-salt")
+        )
         val map = mapOf(
             FLOW_CONFIG to configFactory.create(ConfigFactory.empty()),
             CRYPTO_CONFIG to config
@@ -184,8 +176,8 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Should be able to get signing service config`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
+        val config = createDefaultCryptoConfig(
+            "master-passphrase", "master-salt"
         ).signingService()
         assertEquals(60, config.cache.expireAfterAccessMins)
         assertEquals(10000, config.cache.maximumSize)
@@ -193,8 +185,8 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Should be able to get CryptoHSM service config`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
+        val config = createDefaultCryptoConfig(
+            "master-passphrase", "master-salt"
         ).hsmService()
         assertEquals(3, config.downstreamMaxAttempts)
     }
@@ -383,9 +375,7 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `hsm(id) should throw IllegalStateException if id is not found`() {
-        val config = configFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-passphrase", "master-salt")
-        )
+        val config = createDefaultCryptoConfig("master-passphrase", "master-salt")
         assertThrows<IllegalStateException> {
             config.hsm(UUID.randomUUID().toString())
         }

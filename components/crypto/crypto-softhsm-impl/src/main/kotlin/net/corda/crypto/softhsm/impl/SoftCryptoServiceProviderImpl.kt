@@ -1,7 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.cipher.suite.PlatformDigestService
@@ -64,8 +63,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
 
-    override fun getInstance(config: SoftCryptoServiceConfig, secrets: ConfigurationSecrets): CryptoService =
-        impl.getInstance(config, secrets)
+    override fun getInstance(config: SoftCryptoServiceConfig): CryptoService = impl.getInstance(config)
 
     override val lifecycleName: LifecycleCoordinatorName get() = lifecycleCoordinatorName
 
@@ -75,9 +73,9 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val store: WrappingKeyStore
     ) : AbstractImpl {
 
-        fun getInstance(config: SoftCryptoServiceConfig, secrets: ConfigurationSecrets): CryptoService {
+        fun getInstance(config: SoftCryptoServiceConfig): CryptoService {
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
-            val wrappingKeyMap = createSoftWrappingKeyMap(config, secrets)
+            val wrappingKeyMap = createSoftWrappingKeyMap(config)
             val privateKeyWrapping = createSoftPrivateKeyWrapping(config, wrappingKeyMap)
             val keyMap = createSoftKeyMap(config, privateKeyWrapping)
             return SoftCryptoService(
@@ -89,18 +87,17 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         }
 
         private fun createSoftWrappingKeyMap(
-            config: SoftCryptoServiceConfig,
-            secrets: ConfigurationSecrets
+            config: SoftCryptoServiceConfig
         ): SoftWrappingKeyMap =
             when (config.wrappingKeyMap.name) {
                 KEY_MAP_TRANSIENT_NAME -> TransientSoftWrappingKeyMap(
                     store,
-                    createMasterWrappingKey(config.wrappingKeyMap, secrets)
+                    createMasterWrappingKey(config.wrappingKeyMap)
                 )
                 KEY_MAP_CACHING_NAME -> CachingSoftWrappingKeyMap(
                     config.wrappingKeyMap.cache,
                     store,
-                    createMasterWrappingKey(config.wrappingKeyMap, secrets)
+                    createMasterWrappingKey(config.wrappingKeyMap)
                 )
                 else -> throw IllegalStateException(
                     "Unknown configuration value '${config.wrappingKeyMap.name}' for " +
@@ -109,14 +106,8 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                 )
             }
 
-        private fun createMasterWrappingKey(
-            config: SoftWrappingKeyMapConfig,
-            secrets: ConfigurationSecrets
-        ) = WrappingKey.derive(
-            schemeMetadata = schemeMetadata,
-            salt = config.salt,
-            passphrase = secrets.getSecret(config.passphrase),
-        )
+        private fun createMasterWrappingKey(config: SoftWrappingKeyMapConfig) =
+            WrappingKey.derive(schemeMetadata, config.salt, config.passphrase)
 
         private fun createSoftPrivateKeyWrapping(
             config: SoftCryptoServiceConfig,

@@ -32,10 +32,7 @@ class ComplianceSpec(
         // round trip config to ensure that the deserialization can be done
         val serialized = objectMapper.writeValueAsBytes(options.serviceConfig)
         val config = objectMapper.readValue(serialized, options.serviceConfig::class.java)
-        val cryptoService = providers.get(options.serviceName).getInstance(
-            config,
-            options.secrets
-        )
+        val cryptoService = providers.get(options.serviceName).getInstance(config)
         return CryptoServiceDecorator.create(
             cryptoService = cryptoService,
             maxAttempts = options.maxAttempts,

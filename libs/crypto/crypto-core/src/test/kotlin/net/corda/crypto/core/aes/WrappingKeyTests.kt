@@ -126,15 +126,6 @@ class WrappingKeyTests {
     }
 
     @Test
-    fun `Should derive same keys for the same passphrases and salts`() {
-        val passphrase = UUID.randomUUID().toString()
-        val salt = UUID.randomUUID().toString()
-        val key1 = WrappingKey.derive(schemeMetadata, KeyCredentials(passphrase, salt))
-        val key2 = WrappingKey.derive(schemeMetadata, passphrase, salt)
-        assertEquals(key1, key2)
-    }
-
-    @Test
     fun `Should derive different keys for the different passphrases`() {
         val passphrase1 = UUID.randomUUID().toString()
         val passphrase2 = UUID.randomUUID().toString()
