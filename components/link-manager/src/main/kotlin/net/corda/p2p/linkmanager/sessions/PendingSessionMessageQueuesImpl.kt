@@ -1,17 +1,17 @@
 package net.corda.p2p.linkmanager.sessions
 
-import java.util.LinkedList
-import java.util.Queue
+import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
+import java.util.LinkedList
+import java.util.Queue
 
 internal class PendingSessionMessageQueuesImpl(
     publisherFactory: PublisherFactory,
@@ -20,7 +20,7 @@ internal class PendingSessionMessageQueuesImpl(
 ) : PendingSessionMessageQueues {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "pending_session_messages_publisher"
     }
 

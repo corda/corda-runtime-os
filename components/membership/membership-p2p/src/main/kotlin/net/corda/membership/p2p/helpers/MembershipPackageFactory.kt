@@ -17,12 +17,12 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 @Suppress("LongParameterList")
@@ -35,7 +35,7 @@ class MembershipPackageFactory(
     private val idFactory: () -> String,
 ) {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     private fun DigitalSignature.WithKey.toAvro() =
         CryptoSignatureWithKey.newBuilder()

@@ -11,8 +11,8 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.schema.membership.MembershipSchema
 import net.corda.schema.membership.provider.MembershipSchemaException
 import net.corda.schema.membership.provider.MembershipSchemaProvider
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.net.URI
 
@@ -21,7 +21,7 @@ class MembershipSchemaValidatorImpl(
 ) : MembershipSchemaValidator {
     private companion object {
         private val REGISTERED_SCHEMES = listOf("https", "http")
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val VALIDATION_ERROR = "Exception when validating membership schema."
     }
 

@@ -17,7 +17,7 @@ import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.httprpc.server.impl.websocket.deferred.DeferredWebSocketCloserService
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import java.nio.file.Path
@@ -34,7 +34,7 @@ class RestServerImpl(
     devMode: Boolean
 ) : RestServer {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Volatile

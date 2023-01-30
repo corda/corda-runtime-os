@@ -3,7 +3,7 @@ package net.corda.sandboxgroupcontext.service.impl
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.v5.base.util.loggerFor
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -21,7 +21,7 @@ internal class CloseableSandboxGroupContextImpl(
     private val closeable: AutoCloseable
 ) : CloseableSandboxGroupContext {
     private companion object {
-        private val logger = loggerFor<CloseableSandboxGroupContext>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lock = ReentrantLock()

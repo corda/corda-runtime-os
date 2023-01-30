@@ -1,6 +1,5 @@
 package net.corda.crypto.component.impl
 
-import java.util.concurrent.atomic.AtomicInteger
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +13,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     coordinatorFactory: LifecycleCoordinatorFactory,

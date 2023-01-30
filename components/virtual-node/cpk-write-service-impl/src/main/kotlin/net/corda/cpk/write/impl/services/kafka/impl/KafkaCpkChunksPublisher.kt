@@ -7,8 +7,8 @@ import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class KafkaCpkChunksPublisher(
@@ -17,7 +17,7 @@ class KafkaCpkChunksPublisher(
     private val topicName: String
 ) : CpkChunksPublisher {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun put(cpkChunkId: CpkChunkId, cpkChunk: Chunk) {

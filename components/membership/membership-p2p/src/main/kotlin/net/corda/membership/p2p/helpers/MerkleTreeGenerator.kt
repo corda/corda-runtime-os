@@ -5,20 +5,20 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.toAvro
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MemberInfo
+import org.slf4j.LoggerFactory
 
 class MerkleTreeGenerator(
     private val merkleTreeProvider: MerkleTreeProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val NODE_HASH_PREFIX = "CORDA_MEMBERSHIP_NODE"
         const val LEAF_HASH_PREFIX = "CORDA_MEMBERSHIP_LEAF"
     }

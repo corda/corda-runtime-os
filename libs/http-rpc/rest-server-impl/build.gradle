@@ -49,7 +49,7 @@ dependencies {
 
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 
-    testImplementation project(":libs:http-rpc:http-rpc-test-common")
+    testImplementation project(":libs:http-rpc:rest-test-common")
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 

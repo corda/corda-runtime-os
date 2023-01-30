@@ -3,11 +3,11 @@ package net.corda.cpk.read.impl.services.persistence
 import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.SecureHash
 import net.corda.utilities.inputStream
 import net.corda.utilities.outputStream
+import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -18,7 +18,7 @@ import java.util.SortedSet
  */
 class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileManager {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val DELIMITER = ".cpk.part."
 

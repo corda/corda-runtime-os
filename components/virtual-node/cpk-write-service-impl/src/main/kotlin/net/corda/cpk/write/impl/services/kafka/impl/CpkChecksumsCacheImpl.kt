@@ -12,11 +12,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.Collections
 
 /**
  * This cache will get updated everytime a zero chunk is pushed to Kafka and gets picked up by [CacheSynchronizer].
@@ -27,7 +27,7 @@ class CpkChecksumsCacheImpl(
     nodeConfig: SmartConfig = SmartConfigImpl.empty()
 ) : CpkChecksumsCache {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private fun ByteBuffer.isZeroChunk() = this.limit() == 0
     }

@@ -2,7 +2,7 @@ package net.corda.internal.serialization.model
 
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.lang.reflect.Type
 
@@ -29,7 +29,7 @@ interface TypeLoader {
 class ClassTypeLoader: TypeLoader {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     val cache = DefaultCacheProvider.createCache<TypeIdentifier, Type>()

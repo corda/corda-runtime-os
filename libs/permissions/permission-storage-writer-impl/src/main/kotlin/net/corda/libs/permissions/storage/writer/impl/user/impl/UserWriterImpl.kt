@@ -1,9 +1,5 @@
 package net.corda.libs.permissions.storage.writer.impl.user.impl
 
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
@@ -17,8 +13,12 @@ import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.User as AvroUser
 
 class UserWriterImpl(
@@ -26,7 +26,7 @@ class UserWriterImpl(
 ) : UserWriter {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun createUser(request: CreateUserRequest, requestUserId: String): AvroUser {

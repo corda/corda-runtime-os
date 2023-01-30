@@ -148,12 +148,12 @@ class MGMOpsClientTest {
             *convertEndpoints().toTypedArray(),
             MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
             MemberInfoExtension.PLATFORM_VERSION to "5000",
-            MemberInfoExtension.SERIAL to "1"
         ),
         sortedMapOf(
             MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
             MemberInfoExtension.MODIFIED_TIME to clock.instant().toString(),
-            IS_MGM to "true"
+            IS_MGM to "true",
+            MemberInfoExtension.SERIAL to "1",
         )
     )
 

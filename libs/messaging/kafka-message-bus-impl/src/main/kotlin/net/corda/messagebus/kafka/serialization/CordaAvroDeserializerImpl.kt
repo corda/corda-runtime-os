@@ -2,9 +2,9 @@ package net.corda.messagebus.kafka.serialization
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.function.Consumer
 
@@ -16,7 +16,7 @@ class CordaAvroDeserializerImpl<T : Any>(
 
     private companion object {
         val stringDeserializer = StringDeserializer()
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun deserialize(data: ByteArray): T? {

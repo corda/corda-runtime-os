@@ -11,6 +11,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-management-sender')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(":components:virtual-node:virtual-node-info-read-service-rpc-extensions")

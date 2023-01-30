@@ -4,9 +4,9 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.client.RestConnection
 import net.corda.httprpc.client.RestConnectionListener
 import net.corda.httprpc.client.auth.credentials.CredentialsProvider
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class RestConnectionListenerDistributor<I : RestResource>
     (private val listeners: Iterable<RestConnectionListener<I>>, private val credentialsProvider: CredentialsProvider) {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private data class RestConnectionContextImpl<I : RestResource>(
             override val credentialsProvider: CredentialsProvider,

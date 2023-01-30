@@ -6,7 +6,7 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import org.osgi.service.component.annotations.Component
 
 @HttpRestResource(name = "Hello Rest API", description = "The Hello Rest API is used to test interactions via the " +
@@ -26,7 +26,7 @@ interface HelloRestResource : RestResource {
 class HelloRestResourceImpl : HelloRestResource, PluggableRestResource<HelloRestResource>, RestResource {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val targetInterface = HelloRestResource::class.java

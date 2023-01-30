@@ -7,7 +7,7 @@ import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.impl.security.provider.bearer.BearerTokenAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.function.Supplier
 import javax.security.auth.login.FailedLoginException
 
@@ -18,7 +18,7 @@ internal open class JwtAuthenticationProvider(
 ) : BearerTokenAuthenticationProvider() {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun doAuthenticate(credential: BearerTokenAuthenticationCredentials): AuthorizingSubject {

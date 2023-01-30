@@ -10,7 +10,7 @@ import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jose.util.ResourceRetriever
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.proc.JWTClaimsSetAwareJWSKeySelector
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.security.Key
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -24,7 +24,7 @@ internal class AzureAdIssuerJWSKeySelector(
         private const val DEFAULT_REFRESH_TIME_MINUTES = 5L
         private val DEFAULT_JWK_SET_CACHE_LIFESPAN = TimeUnit.MINUTES.toMillis(5L)
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val keySelectors = ConcurrentHashMap<String, JWSKeySelector<SecurityContext>>()

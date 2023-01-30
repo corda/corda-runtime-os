@@ -30,11 +30,11 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -73,7 +73,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     configKeys = setOf(CRYPTO_CONFIG)
 ), CryptoServiceFactory {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val jsonMapper = JsonMapper
             .builder()

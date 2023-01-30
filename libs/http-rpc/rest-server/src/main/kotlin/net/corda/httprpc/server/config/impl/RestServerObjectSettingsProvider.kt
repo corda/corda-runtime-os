@@ -3,7 +3,7 @@ package net.corda.httprpc.server.config.impl
 import net.corda.httprpc.server.config.RestServerSettingsProvider
 import net.corda.httprpc.server.config.SsoSettingsProvider
 import net.corda.httprpc.server.config.models.RestServerSettings
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.nio.file.Path
 
 class RestServerObjectSettingsProvider(
@@ -11,7 +11,7 @@ class RestServerObjectSettingsProvider(
     private val devMode: Boolean
 ) : RestServerSettingsProvider {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val ssoSettingsProvider: SsoSettingsProvider? by lazy {

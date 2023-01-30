@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import java.time.Instant
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -28,11 +27,12 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("Unused")
 @Component(service = [FlowEventExceptionProcessor::class])
@@ -48,7 +48,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 ) : FlowEventExceptionProcessor {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var maxRetryAttempts = 0

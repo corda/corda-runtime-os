@@ -46,7 +46,6 @@ pluginManagement {
         id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
-        id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
         id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
         id 'org.jetbrains.dokka' version dokkaVersion
@@ -106,7 +105,7 @@ include 'components:flow:flow-rpcops-service'
 include 'components:flow:flow-rpcops-service-impl'
 include 'components:flow:flow-service'
 include 'components:gateway'
-include 'components:http-rpc-gateway-comp'
+include 'components:rest-gateway-comp'
 include 'components:kafka-topic-admin'
 include 'components:ledger:ledger-common-flow'
 include 'components:ledger:ledger-common-flow-api'
@@ -249,7 +248,7 @@ include 'libs:http-rpc:rest-stubs-impl'
 include 'libs:http-rpc:ssl-cert-read'
 include 'libs:http-rpc:rest-common'
 include 'libs:http-rpc:rest-client'
-include 'libs:http-rpc:http-rpc-test-common'
+include 'libs:http-rpc:rest-test-common'
 include 'libs:http-rpc:rbac-security-manager'
 include 'libs:kotlin-reflection'
 include 'libs:kotlin-reflection:kotlin-reflection-test-api'
@@ -399,9 +398,12 @@ include 'testing:cpbs:split-packages:split-packages-one'
 include 'testing:cpbs:split-packages:split-packages-one:library-one'
 include 'testing:cpbs:split-packages:split-packages-two'
 include 'testing:cpbs:split-packages:split-packages-two:library-two'
+include 'testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1'
+include 'testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2'
 include 'testing:crypto-testkit'
 include 'testing:db-message-bus-testkit'
 include 'testing:db-testkit'
+include 'testing:e2e-test-utilities'
 include 'testing:flow:dummy-link-manager'
 include 'testing:flow:external-events'
 include 'testing:flow:flow-utilities'

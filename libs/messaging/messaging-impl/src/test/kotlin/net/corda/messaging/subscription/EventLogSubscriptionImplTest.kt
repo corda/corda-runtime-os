@@ -2,18 +2,20 @@ package net.corda.messaging.subscription
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.consumer.CordaConsumer
+import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.stubs.StubEventLogProcessor
+import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
+import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -24,6 +26,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.argumentCaptor
 import net.corda.test.util.waitWhile
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -49,6 +52,7 @@ class EventLogSubscriptionImplTest {
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
     private var pollInvocationCount: Int = 0
     private var builderInvocationCount: Int = 0
+    private val rebalanceListenerCaptor = argumentCaptor<CordaConsumerRebalanceListener>()
     private lateinit var kafkaEventLogSubscription: EventLogSubscriptionImpl<String, ByteBuffer>
     private lateinit var processor: StubEventLogProcessor<String, ByteBuffer>
     private lateinit var pollInvocationLatch: CountDownLatch
@@ -83,7 +87,7 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
             any(),
-            anyOrNull()
+            rebalanceListenerCaptor.capture()
         )
         doReturn(mockCordaProducer).whenever(cordaProducerBuilder).createProducer(any(), any())
         doReturn(lifeCycleCoordinatorMockHelper.lifecycleCoordinator).`when`(lifecycleCoordinatorFactory)
@@ -114,13 +118,14 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
             any(),
-            anyOrNull()
+            any(),
         )
         verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(1)).sendRecords(any())
         verify(mockCordaProducer, times(1)).sendAllOffsetsToTransaction(any())
         verify(mockCordaProducer, times(1)).commitTransaction()
+        assertThat(rebalanceListenerCaptor.firstValue::class.java).isEqualTo(LoggingConsumerRebalanceListener::class.java)
     }
 
     /**
@@ -135,7 +140,7 @@ class EventLogSubscriptionImplTest {
                 any(),
                 any(),
                 any(),
-                anyOrNull()
+                any(),
             )
         )
             .thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
@@ -159,12 +164,11 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
             any(),
-            anyOrNull()
+            any(),
         )
         verify(cordaProducerBuilder, times(0)).createProducer(any(), any())
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
-
-        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
     }
 
     /**
@@ -198,13 +202,12 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
             any(),
-            anyOrNull()
+            any(),
         )
         verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
         verify(mockCordaProducer, times(0)).beginTransaction()
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
-
-        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
     }
 
     /**
@@ -225,7 +228,7 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
             any(),
-            anyOrNull()
+            any(),
         )
         whenever(mockCordaConsumer.poll(config.pollTimeout)).thenThrow(
             CordaMessageAPIIntermittentException(
@@ -253,14 +256,13 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
             any(),
-            anyOrNull()
+            any(),
         )
         verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
         verify(mockCordaProducer, times(0)).beginTransaction()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
-
-        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
     }
 
     @Test
@@ -278,7 +280,7 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
             any(),
-            anyOrNull()
+            any()
         )
 
         pollInvocationLatch = CountDownLatch(consumerPollAndProcessRetriesCount)
@@ -315,8 +317,7 @@ class EventLogSubscriptionImplTest {
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendAllOffsetsToTransaction(any())
         verify(mockCordaProducer, times(0)).commitTransaction()
-
-        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
     }
 
     @Test
@@ -347,15 +348,14 @@ class EventLogSubscriptionImplTest {
             any(),
             any(),
             any(),
-            anyOrNull()
+            any()
         )
         verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendRecordOffsetsToTransaction(any(), anyOrNull())
         verify(mockCordaProducer, times(0)).commitTransaction()
-
-        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
     }
 
     @Test
@@ -375,7 +375,7 @@ class EventLogSubscriptionImplTest {
             }
             @Suppress("TooGenericExceptionThrown")
             throw Throwable()
-        }.whenever(cordaProducerBuilder).createProducer(any(),any())
+        }.whenever(cordaProducerBuilder).createProducer(any(), any())
 
         kafkaEventLogSubscription = EventLogSubscriptionImpl(
             config,
@@ -390,6 +390,42 @@ class EventLogSubscriptionImplTest {
         // We must wait for the callback above in order we know what thread to join below
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
-        Assertions.assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
+        assertThat(lock.withLock { uncaughtExceptionInSubscriptionThread }).isNull()
+    }
+
+    @Test
+    fun forwardingRebalanceListenerConfiguredWhenUserConfiguresCustomListener() {
+        val customListener = object : PartitionAssignmentListener {
+            override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {}
+            override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {}
+        }
+
+        kafkaEventLogSubscription = EventLogSubscriptionImpl(
+            config,
+            cordaConsumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            customListener,
+            lifecycleCoordinatorFactory
+        )
+        kafkaEventLogSubscription.start()
+        eventsLatch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        kafkaEventLogSubscription.close()
+
+        verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()
+        )
+
+        verify(cordaProducerBuilder, times(1)).createProducer(any(), any())
+        verify(mockCordaProducer, times(1)).beginTransaction()
+        verify(mockCordaProducer, times(1)).sendRecords(any())
+        verify(mockCordaProducer, times(1)).sendAllOffsetsToTransaction(any())
+        assertThat(rebalanceListenerCaptor.firstValue::class.java).isEqualTo(ForwardingRebalanceListener::class.java)
+        verify(mockCordaProducer, times(1)).commitTransaction()
     }
 }

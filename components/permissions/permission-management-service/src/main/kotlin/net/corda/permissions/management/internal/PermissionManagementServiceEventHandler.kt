@@ -30,7 +30,7 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class PermissionManagementServiceEventHandler(
@@ -43,7 +43,7 @@ internal class PermissionManagementServiceEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val GROUP_NAME = "rpc.permission.management"
         const val CLIENT_NAME = "rpc.permission.manager"
     }
