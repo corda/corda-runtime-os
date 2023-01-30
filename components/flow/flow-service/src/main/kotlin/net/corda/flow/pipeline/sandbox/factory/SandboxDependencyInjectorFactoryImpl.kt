@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.sandbox.factory
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType.FLOW
@@ -33,11 +34,19 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
             "Expected serviceGroupType=$FLOW but found ${sandboxGroupContext.virtualNodeContext.sandboxGroupType}"
         }
         val references = LinkedList<ServiceReference<*>>()
-        return sandboxGroupContext.sandboxGroup.metadata.keys.firstOrNull()
+        val sandboxGroup = sandboxGroupContext.sandboxGroup
+        val sandboxId = sandboxGroup.id
+        return sandboxGroup.metadata.keys.firstOrNull()
             ?.let(Bundle::getBundleContext)
             ?.let { bundleContext ->
                 bundleContext.getServiceReferences(UsedByFlow::class.java, INJECTOR_FILTER)
                     .mapNotNull<ServiceReference<*>, Pair<SingletonSerializeAsToken, List<String>>> { ref ->
+                        if (ref.getProperty(CORDA_SANDBOX) != sandboxId) {
+                            // This shouldn't happen - it would imply our isolation hooks are buggy!
+                            logger.warn("Service {}{} not applicable for sandbox '{}'", ref, ref.properties, sandboxId)
+                            return@mapNotNull null
+                        }
+
                         @Suppress("unchecked_cast", "RemoveExplicitTypeArguments")
                         (ref.getProperty(OBJECTCLASS) as? Array<String> ?: emptyArray<String>())
                             .filterNot(FORBIDDEN_INTERFACES::contains)
