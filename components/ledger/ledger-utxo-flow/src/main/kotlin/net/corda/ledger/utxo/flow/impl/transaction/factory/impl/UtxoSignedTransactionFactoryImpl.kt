@@ -70,7 +70,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
 
-        UtxoLedgerTransactionVerifier(utxoLedgerTransactionFactory.create(wireTransaction)).verify(utxoTransactionBuilder.notary!!)
+        UtxoLedgerTransactionVerifier(utxoLedgerTransactionFactory.create(wireTransaction)).verify()
 
         val signaturesWithMetadata =
             transactionSignatureService.sign(

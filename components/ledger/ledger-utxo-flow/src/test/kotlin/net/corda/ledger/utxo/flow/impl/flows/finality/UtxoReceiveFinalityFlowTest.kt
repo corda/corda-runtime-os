@@ -109,6 +109,7 @@ class UtxoReceiveFinalityFlowTest {
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
+        whenever(ledgerTransaction.metadata).thenReturn(metadata)
 
         whenever(notaryService.owningKey).thenReturn(publicKeyNotary)
     }
