@@ -5,6 +5,7 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.testkit.consensualStateExample
@@ -18,6 +19,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.membership.MemberInfo
@@ -59,6 +61,8 @@ class ConsensualReceiveFinalityFlowTest {
     private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 3))
     private val signature3 = digitalSignatureAndMetadata(publicKey3, byteArrayOf(1, 2, 4))
 
+    private val transactionMetadata = mock<TransactionMetadata>()
+    private val wireTransaction = mock<WireTransaction>()
     private val ledgerTransaction = mock<ConsensualLedgerTransactionImpl>()
     private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
 
@@ -72,6 +76,8 @@ class ConsensualReceiveFinalityFlowTest {
         whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKey1, publicKey2))
 
         whenever(signedTransaction.id).thenReturn(ID)
+        whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
+        whenever(signedTransaction.wireTransaction).thenReturn(wireTransaction)
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransaction to listOf(signature1, signature2))
         whenever(signedTransaction.addSignature(signature3)).thenReturn(signedTransaction)

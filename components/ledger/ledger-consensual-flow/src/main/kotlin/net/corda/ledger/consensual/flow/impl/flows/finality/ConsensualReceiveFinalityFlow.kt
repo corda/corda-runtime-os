@@ -4,7 +4,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
-import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -94,10 +93,6 @@ class ConsensualReceiveFinalityFlow(
                 throw e
             }
         }
-    }
-
-    private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction) {
-        ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
     @Suspendable

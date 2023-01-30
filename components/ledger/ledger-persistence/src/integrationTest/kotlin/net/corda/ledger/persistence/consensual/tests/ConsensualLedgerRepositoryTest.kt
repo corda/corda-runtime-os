@@ -33,7 +33,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -71,7 +70,6 @@ class ConsensualLedgerRepositoryTest {
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: ConsensualRepository
     private lateinit var persistenceService: ConsensualPersistenceService
-    private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
@@ -108,12 +106,6 @@ class ConsensualLedgerRepositoryTest {
                 digestService,
                 TEST_CLOCK)
         }
-    }
-
-    @Suppress("Unused")
-    @AfterAll
-    fun cleanup() {
-        emConfig.close()
     }
 
     @Test
