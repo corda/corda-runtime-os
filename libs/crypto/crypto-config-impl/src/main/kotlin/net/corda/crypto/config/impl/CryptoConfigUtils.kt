@@ -4,18 +4,12 @@ package net.corda.crypto.config.impl
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValue
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.v5.crypto.exceptions.CryptoException
-import java.util.UUID
 
 // NOTE: hsmId is part of the bootstrap configuration
 
@@ -162,7 +156,7 @@ private const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
 private const val SIGNING_SERVICE_OBJ = "signingService"
 private const val HSM_SERVICE_OBJ = "hsmService"
 private const val HSM_MAP = "hsmMap"
-private const val HSM_MAP_ITEM_OBJ = "hsmMap.%s"
+const val HSM_MAP_ITEM_OBJ = "hsmMap.%s"
 private const val BUS_PROCESSORS_OBJ = "busProcessors"
 private const val OPS_BUS_PROCESSOR_OBJ = "ops"
 private const val FLOW_BUS_PROCESSOR_OBJ = "flow"
@@ -247,6 +241,12 @@ fun Config.bootstrapHsmId(): String =
 fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
     mapOf(HSM_ID to hsmId)
 
+// This returns a plain Config object, i.e. without all the Corda machinery of SmartConfig. That is because
+// it allows the caller to either treat this as pure data with no secrets, or set up SmartConfig themselves
+// with their own set of SmartConfigFactory implementations. That way, this function stays simple, without
+// many dependencies, and is stateless.
+//
+// Longer term, get this from the JSON config schema, or eliminate this function
 fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): Config = ConfigFactory.empty()
         .withValue(
             CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(

@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.core.CryptoConsts
@@ -39,7 +38,6 @@ class CryptoServiceFactoryTests {
                 override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
                 override fun getInstance(
                     config: SoftCryptoServiceConfig,
-                    secrets: ConfigurationSecrets
                 ): CryptoService = factory.cryptoService
             }
         )

@@ -19,7 +19,6 @@ import net.corda.crypto.component.impl.lifecycleNameAsSet
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.bootstrapHsmId
 import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
@@ -133,12 +132,12 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
             val retry = hsmConfig.retry
             val hsm = hsmConfig.hsm
+            logger.info("json ${hsm.cfg.root().render(ConfigRenderOptions.concise()).toString()} to ${cryptoServiceProvider.configType}")
             val cryptoService = cryptoServiceProvider.getInstance(
                 objectMapper.readValue(
                     hsm.cfg.root().render(ConfigRenderOptions.concise()),
                     cryptoServiceProvider.configType
-                ),
-                cryptoConfig.toConfigurationSecrets()
+                )
             )
             CryptoServiceDecorator.create(
                 cryptoService,

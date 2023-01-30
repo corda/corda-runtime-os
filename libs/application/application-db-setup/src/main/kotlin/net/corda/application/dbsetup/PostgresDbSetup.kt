@@ -2,9 +2,7 @@ package net.corda.application.dbsetup
 
 
 import com.typesafe.config.ConfigRenderOptions
-import net.corda.crypto.config.impl.createCryptoSmartConfigFactory
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
@@ -193,11 +191,7 @@ class PostgresDbSetup(
 
     private fun createCryptoConfig() {
         val random = SecureRandom()
-        val config = createDefaultCryptoConfig(
-            KeyCredentials(
-                passphrase = random.randomString(),
-                salt = random.randomString()
-            )
+        val config = createDefaultCryptoConfig(random.randomString(), random.randomString()
         ).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(

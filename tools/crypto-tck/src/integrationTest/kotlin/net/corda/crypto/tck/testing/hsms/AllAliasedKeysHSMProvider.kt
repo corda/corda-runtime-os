@@ -24,6 +24,5 @@ class AllAliasedKeysHSMProvider @Activate constructor(
 
     override val name: String = NAME
 
-    override fun getInstance(config: AllAliasedKeysHSMConfiguration, secrets: ConfigurationSecrets): CryptoService =
-        AllAliasedKeysHSM(config, schemeMetadata, digestService)
+    override fun getInstance(config: AllAliasedKeysHSMConfiguration): CryptoService = AllAliasedKeysHSM(config, schemeMetadata, digestService)
 }

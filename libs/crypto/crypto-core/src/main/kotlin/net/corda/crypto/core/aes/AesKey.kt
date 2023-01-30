@@ -27,14 +27,7 @@ class AesKey(
             keyGenerator.init(AES_KEY_SIZE)
             return AesKey(keyGenerator.generateKey())
         }
-
-        /**
-         * Creates an instance of [AesKey] by derives the AES key using passphrase and salt.
-         * The resulting key is deterministic.
-         */
-        fun derive(credentials: KeyCredentials): AesKey =
-            derive(credentials.passphrase, credentials.salt)
-
+        
         /**
          * Creates an instance of [AesKey] by derives the AES key using passphrase and salt.
          * The resulting key is deterministic.

@@ -19,28 +19,9 @@ interface CryptoServiceProvider<T : Any> {
      * Creates a new instance of the [CryptoService] implementation.
      *
      * @param config crypto service configuration
-     * @param secrets provides access to decrypting the configuration secrets
-     *
-     * The secrets have to be declared as Map in the corresponding POJO, the JSON will look like
-     * the example below for the property called 'passphrase'
-     *
-     * POJO (Kotlin):
-     *```
-     *  val passphrase: Map<String, Any>
-     *```
-     *
-     * JSON:
-     *```
-     *  "passphrase": {
-     *      "configSecret": {
-     *          "encryptedSecret": "<encrypted-value>"
-     *      }
-     *  }
-     *```
-     *
      * @return An instance of the [CryptoService].
      *
      * @throws [net.corda.v5.crypto.exceptions.CryptoException] for general cryptographic exceptions.
      */
-    fun getInstance(config: T, secrets: ConfigurationSecrets): CryptoService
+    fun getInstance(config: T): CryptoService
 }
