@@ -1,12 +1,9 @@
 #!/bin/bash
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source $SCRIPT_DIR/settings.sh
+SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
 set -e
+source "$SCRIPT_DIR"/settings.sh
 
-declare -a namespaces=($A_CLUSTER_NAMESPACE $B_CLUSTER_NAMESPACE $MGM_CLUSTER_NAMESPACE $APP_SIMULATOR_DB_NAMESPACE)
+kubectl delete ns $(kubectl get ns | grep ^$NAMESPACE_PREFIX | awk '{print $1}') --wait || echo ''
 
-echo $namespaces
-kubectl delete ns ${namespaces[*]} --wait
-
-killall kubectl
+killall kubectl || echo ''
