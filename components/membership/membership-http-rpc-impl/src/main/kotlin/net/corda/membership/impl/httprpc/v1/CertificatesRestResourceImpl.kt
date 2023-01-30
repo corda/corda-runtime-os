@@ -12,6 +12,7 @@ import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -21,6 +22,7 @@ import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRestResource
 import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -99,10 +101,12 @@ class CertificatesRestResourceImpl @Activate constructor(
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {
-        val key = cryptoOpsClient.lookup(
-            tenantId = tenantId,
-            ids = listOf(keyId)
-        ).firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
+        val key = tryWithExceptionHandling("find key with ID $keyId for $tenantId") {
+            cryptoOpsClient.lookup(
+                tenantId = tenantId,
+                ids = listOf(keyId)
+            )
+        }!!.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
         val publicKey = keyEncodingService.decodePublicKey(key.publicKey.array())
 
         val extensionsGenerator = ExtensionsGenerator()
@@ -190,16 +194,14 @@ class CertificatesRestResourceImpl @Activate constructor(
                 details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
             )
         }
-        try {
+
+        tryWithExceptionHandling("import certificate") {
             certificatesClient.importCertificates(
                 usageType,
                 holdingIdentityShortHash,
                 alias,
                 rawCertificates.joinToString(separator = "\n"),
             )
-        } catch (e: Exception) {
-            logger.warn("Could not import certificate", e)
-            throw InternalServerException("Could not import certificate: ${e.message}")
         }
     }
 
@@ -214,15 +216,13 @@ class CertificatesRestResourceImpl @Activate constructor(
         } ?: throw InvalidInputDataException(
             details = mapOf("usage" to "Unknown usage: $usage")
         )
-        return try {
+
+        return tryWithExceptionHandling("get certificate aliases") {
             certificatesClient.getCertificateAliases(
                 usageType,
                 holdingIdentityShortHash,
-            ).toList()
-        } catch (e: Exception) {
-            logger.warn("Could not get certificate aliases", e)
-            throw InternalServerException("Could not get certificate aliases: ${e.message}")
-        }
+            )
+        }!!.toList()
     }
 
     override fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
@@ -241,18 +241,14 @@ class CertificatesRestResourceImpl @Activate constructor(
         } ?: throw InvalidInputDataException(
             details = mapOf("usage" to "Unknown usage: $usage")
         )
-        return try {
+
+        return tryWithExceptionHandling("get certificate chain") {
             certificatesClient.retrieveCertificates(
                 holdingIdentityShortHash,
                 usageType,
                 alias
-            ) ?: throw ResourceNotFoundException(alias, "alias")
-        } catch (e: ResourceNotFoundException) {
-            throw e
-        } catch (e: Exception) {
-            logger.warn("Could not get certificate aliases", e)
-            throw InternalServerException("Could not get certificate aliases: ${e.message}")
-        }
+            )
+        } ?: throw ResourceNotFoundException(alias, "alias")
     }
 
     override val targetInterface = CertificatesRestResource::class.java
@@ -293,6 +289,21 @@ class CertificatesRestResourceImpl @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
+    }
+
+    private fun<T> tryWithExceptionHandling(
+        operation: String,
+        block: () -> T?
+    ): T? {
+        try {
+            return block()
+        } catch (repartitionException: CordaRPCAPIPartitionException) {
+            logger.warn("Could not $operation", repartitionException)
+            throw ServiceUnavailableException("Could not $operation: Repartition Event!")
+        } catch (e: Exception) {
+            logger.warn("Could not $operation", e)
+            throw InternalServerException("Could not $operation: ${e.message}")
+        }
     }
 
     private inner class CsrContentSigner(
