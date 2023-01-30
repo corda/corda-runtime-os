@@ -16,6 +16,7 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -493,7 +494,7 @@ class MGMRestResourceTest {
         @Test
         fun `it fails when not ready`() {
             assertThrows<ServiceUnavailableException> {
-                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, subject, null, null)
+                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, null, null))
             }
         }
 
@@ -501,7 +502,7 @@ class MGMRestResourceTest {
         fun `it fails when the owner x500Name is invalid`() {
             startService()
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, "Invalid X500Name", null, null)
+                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest("Invalid X500Name", null, null))
             }
         }
 
@@ -509,7 +510,7 @@ class MGMRestResourceTest {
         fun `it fails when the tll is not a valid ISO-8061 duration`() {
             startService()
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, subject, "PT5D", null)
+                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, "PT5D", null))
             }
         }
 
@@ -521,7 +522,7 @@ class MGMRestResourceTest {
             ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
 
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, subject, "P5D", null)
+                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, "P5D", null))
             }
         }
 
@@ -539,7 +540,7 @@ class MGMRestResourceTest {
                 )
             ).doReturn(AvroPreAuthToken(tokenId, subject, expiryTimestamp, AvroPreAuthTokenStatus.AVAILABLE, remark, removalRemark))
 
-            val token = mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, subject, ttl, remark)
+            val token = mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, ttl, remark))
 
             assertThat(token).isEqualTo(
                 PreAuthToken(tokenId, subject, expiryTimestamp, PreAuthTokenStatus.AVAILABLE, remark, removalRemark)

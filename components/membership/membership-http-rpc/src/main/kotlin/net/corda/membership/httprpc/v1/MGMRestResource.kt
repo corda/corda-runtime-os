@@ -10,6 +10,7 @@ import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
@@ -109,11 +110,7 @@ interface MGMRestResource : RestResource {
      * Generate a preAuthToken.
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM.
-     * @param ownerX500Name The X500 name of the member to preauthorize.
-     * @param ttl A (time-to-live) how long after which this token will become invalid. If unset then the token if valid forever.
-     * The duration must be specified using the ISO-8601 duration format PnDTnHnMn.nS, where n is an integer, D is days, H is hours and M is
-     * minutes. Some examples PT15M (15 minutes), P4D (4 days), P1DT2H2M (1 day 2 hours and 2 minutes).
-     * @param remarks Some optional remarks.
+     * @param request Details of the token to create.
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/preauthtoken",
@@ -122,11 +119,7 @@ interface MGMRestResource : RestResource {
         @RestPathParameter
         holdingIdentityShortHash: String,
         @RestRequestBodyParameter
-        ownerX500Name: String,
-        @RestRequestBodyParameter(required = false)
-        ttl: String? = null,
-        @RestRequestBodyParameter(required = false)
-        remarks: String? = null,
+        request: PreAuthTokenRequest
     ): PreAuthToken
 
     /**

@@ -21,8 +21,8 @@ class PreAuthTokenEntity (
     @Column(name = "owner_x500_name", nullable = false, updatable = false)
     val ownerX500Name: String,
 
-    @Column(name = "ttl", nullable = false, updatable = false)
-    val ttl: Instant,
+    @Column(name = "ttl", updatable = false)
+    val ttl: Instant?,
 
     @Column(name = "status", nullable = false)
     var status: String,

@@ -17,6 +17,7 @@ import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRestResource
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
@@ -80,7 +81,7 @@ class MGMRestResourceImpl internal constructor(
         fun mutualTlsListClientCertificate(
             holdingIdentityShortHash: String,
         ): Collection<String>
-        fun generatePreAuthToken(holdingIdentityShortHash: String, ownerX500Name: String, ttl: String?, remarks: String?): PreAuthToken
+        fun generatePreAuthToken(holdingIdentityShortHash: String, request: PreAuthTokenRequest): PreAuthToken
         fun getPreAuthTokens(
             holdingIdentityShortHash: String,
             ownerX500Name: String?,
@@ -140,8 +141,8 @@ class MGMRestResourceImpl internal constructor(
     override fun mutualTlsListClientCertificate(holdingIdentityShortHash: String) =
         impl.mutualTlsListClientCertificate(holdingIdentityShortHash)
 
-    override fun generatePreAuthToken(holdingIdentityShortHash: String, ownerX500Name: String, ttl: String?, remarks: String?) =
-        impl.generatePreAuthToken(holdingIdentityShortHash, ownerX500Name, ttl, remarks)
+    override fun generatePreAuthToken(holdingIdentityShortHash: String, request: PreAuthTokenRequest) =
+        impl.generatePreAuthToken(holdingIdentityShortHash, request)
 
     override fun getPreAuthTokens(
         holdingIdentityShortHash: String,
@@ -204,9 +205,7 @@ class MGMRestResourceImpl internal constructor(
 
         override fun generatePreAuthToken(
             holdingIdentityShortHash: String,
-            ownerX500Name: String,
-            ttl: String?,
-            remarks: String?
+            request: PreAuthTokenRequest
         ): PreAuthToken {
             throw ServiceUnavailableException(
                 "${MGMRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
@@ -326,22 +325,20 @@ class MGMRestResourceImpl internal constructor(
 
         override fun generatePreAuthToken(
             holdingIdentityShortHash: String,
-            ownerX500Name: String,
-            ttl: String?,
-            remarks: String?
+            request: PreAuthTokenRequest
         ): PreAuthToken {
             val ownerX500 = try {
-                MemberX500Name.parse(ownerX500Name)
+                MemberX500Name.parse(request.ownerX500Name)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     details = mapOf(
-                        "ownerX500Name" to ownerX500Name
+                        "ownerX500Name" to request.ownerX500Name
                     ),
                     message = "ownerX500Name is not a valid X500 name: ${e.message}",
                 )
             }
 
-            val ttlAsInstant =  ttl?.let{
+            val ttlAsInstant =  request.ttl?.let{ ttl ->
                 clock.instant() + try {
                     Duration.parse(ttl)
                 } catch (e: DateTimeParseException) {
@@ -359,7 +356,7 @@ class MGMRestResourceImpl internal constructor(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     ownerX500,
                     ttlAsInstant,
-                    remarks
+                    request.remarks
                 ).fromAvro()
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
