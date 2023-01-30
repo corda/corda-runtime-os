@@ -1,6 +1,5 @@
 package net.corda.messagebus.kafka.producer.builder
 
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
