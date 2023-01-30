@@ -50,7 +50,7 @@ class RestServerImpl(
             restServerSettings.context.version,
             resources
         ),
-        SecurityManagerRPCImpl(createAuthenticationProviders(restServerConfigProvider, restSecurityManagerSupplier)),
+        RestAuthenticationProviderImpl(createAuthenticationProviders(restServerConfigProvider, restSecurityManagerSupplier)),
         restServerConfigProvider,
         OpenApiInfoProvider(resources, restServerConfigProvider),
         multiPartDir,
