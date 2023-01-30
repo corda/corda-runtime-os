@@ -2371,7 +2371,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/GeneratePreAuthTokenWrapperRequest"
+                "$ref" : "#/components/schemas/PreAuthTokenRequest"
               }
             }
           },
@@ -3732,6 +3732,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3870,6 +3871,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -3898,29 +3900,6 @@
           }
         },
         "description" : "GenerateCsrWrapperRequest",
-        "nullable" : false
-      },
-      "GeneratePreAuthTokenWrapperRequest" : {
-        "required" : [ "ownerX500Name" ],
-        "type" : "object",
-        "properties" : {
-          "ownerX500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "remarks" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "ttl" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          }
-        },
-        "description" : "GeneratePreAuthTokenWrapperRequest",
         "nullable" : false
       },
       "GetCPIsResponse" : {
@@ -4178,6 +4157,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4221,6 +4201,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4267,6 +4248,28 @@
             "format" : "datetime",
             "nullable" : true,
             "example" : "2022-06-24T10:15:30Z"
+          }
+        }
+      },
+      "PreAuthTokenRequest" : {
+        "required" : [ "ownerX500Name" ],
+        "type" : "object",
+        "properties" : {
+          "ownerX500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "remarks" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ttl" : {
+            "type" : "string",
+            "format" : "duration",
+            "nullable" : true,
+            "example" : "PT15M"
           }
         }
       },
@@ -4341,6 +4344,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
@@ -4683,16 +4687,19 @@
             "example" : "string"
           },
           "flowOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -4716,6 +4723,7 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
