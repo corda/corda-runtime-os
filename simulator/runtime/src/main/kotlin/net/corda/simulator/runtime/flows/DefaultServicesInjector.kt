@@ -23,8 +23,8 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import org.slf4j.LoggerFactory
 
 /**
  * Injector for default services for Simulator.
@@ -32,7 +32,7 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
 @Suppress("TooManyFunctions")
 class DefaultServicesInjector(private val configuration: SimulatorConfiguration) : FlowServicesInjector {
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

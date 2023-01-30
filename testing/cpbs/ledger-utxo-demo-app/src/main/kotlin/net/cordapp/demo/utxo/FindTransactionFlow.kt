@@ -1,15 +1,15 @@
 package net.cordapp.demo.utxo
 
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.cordapp.demo.utxo.contract.TestUtxoState
+import org.slf4j.LoggerFactory
 
 data class FindTransactionParameters(val transactionId: String)
 
@@ -44,7 +44,7 @@ data class FindTransactionResponse(
 class FindTransactionFlow : ClientStartableFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

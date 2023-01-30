@@ -7,13 +7,13 @@ import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 
 @Suppress("unused")
 class ExampleFlow : ClientStartableFlow {
-    private val logger = loggerFor<ExampleFlow>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     @CordaInject
     private lateinit var jsonMarshaller: JsonMarshallingService

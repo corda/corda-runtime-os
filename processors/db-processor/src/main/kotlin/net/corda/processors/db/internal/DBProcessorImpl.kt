@@ -49,7 +49,6 @@ import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
@@ -57,6 +56,7 @@ import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
@@ -138,7 +138,7 @@ class DBProcessorImpl @Activate constructor(
     }
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dependentComponents = DependentComponents.of(

@@ -21,13 +21,13 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.millis
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.concurrent.ConcurrentHashMap
@@ -63,7 +63,7 @@ class LocallyHostedIdentitiesServiceImpl(
         const val SUBSCRIPTION_GROUP_NAME = "locally-hosted-identities-service"
         const val defaultRetries = 4
         val waitBetweenRetries = 100.millis
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val identities = ConcurrentHashMap<HoldingIdentity, IdentityInfo>()

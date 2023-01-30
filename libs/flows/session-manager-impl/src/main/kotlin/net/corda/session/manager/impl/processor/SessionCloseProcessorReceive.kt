@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -9,9 +8,10 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
+import java.time.Instant
 
 
 /**
@@ -32,7 +32,7 @@ class SessionCloseProcessorReceive(
     private val sessionId = sessionEvent.sessionId
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun execute(): SessionState {

@@ -14,10 +14,10 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class UtxoFinalityFlow(
@@ -26,7 +26,7 @@ class UtxoFinalityFlow(
 ) : UtxoFinalityBase() {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val transactionId = initialTransaction.id
@@ -133,8 +133,7 @@ class UtxoFinalityFlow(
 
     @Suspendable
     private fun persistTransactionWithCounterpartySignatures(transaction: UtxoSignedTransactionInternal) {
-        val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
-        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED, relevantStatesIndexes)
+        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 
@@ -214,7 +213,8 @@ class UtxoFinalityFlow(
 
     @Suspendable
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
-        persistenceService.persist(transaction, TransactionStatus.VERIFIED)
+        val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded notarised transaction $transactionId" }
     }
 

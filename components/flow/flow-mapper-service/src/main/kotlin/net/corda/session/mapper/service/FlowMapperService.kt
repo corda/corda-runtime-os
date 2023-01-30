@@ -1,6 +1,5 @@
 package net.corda.session.mapper.service
 
-import java.util.concurrent.Executors
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
@@ -26,11 +25,12 @@ import net.corda.session.mapper.service.executor.FlowMapperListener
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import net.corda.session.mapper.service.executor.ScheduledTaskState
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.util.concurrent.Executors
 
 @Component(service = [FlowMapperService::class], immediate = true)
 class FlowMapperService @Activate constructor(
@@ -47,7 +47,7 @@ class FlowMapperService @Activate constructor(
 ) : Lifecycle {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "FlowMapperConsumer"
 
         private const val SUBSCRIPTION = "SUBSCRIPTION"

@@ -5,19 +5,19 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 
 @Suppress("unused")
 @Component
 @ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
-    private val logger = loggerFor<MembershipGroupReaderProvider>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader {
         return MembershipGroupReaderImpl(holdingIdentity)

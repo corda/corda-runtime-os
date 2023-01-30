@@ -2,10 +2,10 @@ package net.corda.messagebus.kafka.serialization
 
 import net.corda.data.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer
+import org.slf4j.LoggerFactory
 
 class CordaAvroSerializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry
@@ -13,7 +13,7 @@ class CordaAvroSerializerImpl<T : Any>(
 
     companion object {
         private val stringSerializer = StringSerializer()
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun serialize(data: T): ByteArray? {

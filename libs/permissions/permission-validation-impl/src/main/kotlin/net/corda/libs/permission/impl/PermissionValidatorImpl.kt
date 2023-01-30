@@ -1,19 +1,19 @@
 package net.corda.libs.permission.impl
 
 import net.corda.data.permissions.summary.UserPermissionSummary
-import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.data.permissions.PermissionType as AvroPermissionType
 
 class PermissionValidatorImpl(
     private val permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>
 ) : PermissionValidator {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var running = false

@@ -35,7 +35,6 @@ import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
@@ -43,6 +42,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -63,7 +63,7 @@ class FlowRestResourceImpl @Activate constructor(
 ) : FlowRestResource, PluggableRestResource<FlowRestResource>, Lifecycle {
 
     private companion object {
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 

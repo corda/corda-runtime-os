@@ -12,7 +12,6 @@ import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messagebus.kafka.utils.toTopicPartitions
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
@@ -30,6 +29,7 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -43,7 +43,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 ) : CordaConsumer<K, V> {
 
     companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun close() {

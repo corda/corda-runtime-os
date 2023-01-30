@@ -15,8 +15,8 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 
 internal class ProcessMemberVerificationRequestHandler(
     clock: Clock,
@@ -29,7 +29,7 @@ internal class ProcessMemberVerificationRequestHandler(
     )
 ) : RegistrationHandler<ProcessMemberVerificationRequest> {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val commandType = ProcessMemberVerificationRequest::class.java

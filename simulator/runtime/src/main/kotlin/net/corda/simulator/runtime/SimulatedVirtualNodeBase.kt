@@ -11,7 +11,7 @@ import net.corda.simulator.runtime.flows.FlowServicesInjector
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.messaging.SimFlowContextProperties
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 /**
  * The base class for simulated virtual nodes.
@@ -30,7 +30,7 @@ class SimulatedVirtualNodeBase(
 ) : SimulatedNodeBase(), SimulatedVirtualNode {
 
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val member : MemberX500Name = holdingIdentity.member

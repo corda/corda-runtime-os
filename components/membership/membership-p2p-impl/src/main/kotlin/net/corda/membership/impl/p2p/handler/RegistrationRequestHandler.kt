@@ -6,17 +6,17 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
 
@@ -27,7 +27,7 @@ internal class RegistrationRequestHandler(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : UnauthenticatedMessageHandler() {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun invokeUnauthenticatedMessage(

@@ -33,7 +33,6 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.ContractState
@@ -52,6 +51,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.security.KeyPairGenerator
@@ -85,7 +85,7 @@ class UtxoLedgerMessageProcessorTests {
                 it.initialize(512)
             }.genKeyPair().public
         private val notaryExample = Party(notaryX500Name, publicKeyExample)
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @RegisterExtension

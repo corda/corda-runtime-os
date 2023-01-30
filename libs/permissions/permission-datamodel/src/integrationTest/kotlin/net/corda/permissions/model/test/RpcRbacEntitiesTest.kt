@@ -12,7 +12,6 @@ import net.corda.orm.utils.use
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.model.User
 import net.corda.test.util.LoggingUtils.emphasise
-import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.time.Instant
 import java.util.UUID
@@ -29,7 +29,7 @@ import javax.persistence.EntityManagerFactory
 @ExtendWith(ServiceExtension::class)
 class RpcRbacEntitiesTest {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @InjectService
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory

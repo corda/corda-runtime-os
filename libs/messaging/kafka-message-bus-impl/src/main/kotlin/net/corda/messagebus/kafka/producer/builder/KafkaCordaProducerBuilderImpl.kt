@@ -13,13 +13,14 @@ import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.classload.OsgiDelegatedClassLoader
-import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.util.Properties
 
 /**
  * Builder for a Kafka Producer.
@@ -39,7 +40,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
 ) : CordaProducerBuilder {
 
     companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {

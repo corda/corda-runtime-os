@@ -33,7 +33,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -41,6 +40,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicyOption
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [SynchronisationProxy::class])
@@ -89,7 +89,7 @@ class SynchronisationProxyImpl @Activate constructor(
     }
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val SERVICE_STARTING_LOG = "Synchronisation proxy starting."
         const val SERVICE_STOPPING_LOG = "Synchronisation proxy stopping."

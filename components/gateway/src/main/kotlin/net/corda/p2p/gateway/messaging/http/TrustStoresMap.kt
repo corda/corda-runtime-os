@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.crypto.utils.convertToKeyStore
+import net.corda.data.p2p.GatewayTruststore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -11,10 +12,9 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.GatewayTruststore
 import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
@@ -30,7 +30,7 @@ internal class TrustStoresMap(
 
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_tls_truststores_reader"
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     private val ready = CompletableFuture<Unit>()
     private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES)

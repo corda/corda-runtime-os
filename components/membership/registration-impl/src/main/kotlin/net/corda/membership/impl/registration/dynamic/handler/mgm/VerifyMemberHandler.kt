@@ -23,8 +23,8 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.VERIFY_MEMBER_REQUEST
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class VerifyMemberHandler(
@@ -40,7 +40,7 @@ internal class VerifyMemberHandler(
     private val ttlIdsFactory: TtlIdsFactory = TtlIdsFactory(),
 ) : RegistrationHandler<VerifyMember> {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val commandType = VerifyMember::class.java

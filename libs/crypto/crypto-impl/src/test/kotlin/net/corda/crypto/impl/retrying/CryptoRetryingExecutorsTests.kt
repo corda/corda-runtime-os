@@ -1,6 +1,5 @@
 package net.corda.crypto.impl.retrying
 
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoRetryException
 import org.assertj.core.api.Assertions.assertThat
@@ -8,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.TimeoutException
 import javax.persistence.LockTimeoutException
@@ -20,7 +20,7 @@ class CryptoRetryingExecutorsTests {
     private val defaultRetryTimeout = Duration.ofSeconds(5)
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @JvmStatic
         fun mostCommonUnrecoverableExceptions(): List<Throwable> = listOf(

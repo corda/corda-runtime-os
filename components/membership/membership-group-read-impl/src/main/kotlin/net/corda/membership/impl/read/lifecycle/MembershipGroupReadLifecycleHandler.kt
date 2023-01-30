@@ -15,7 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 /**
  * Lifecycle handler for the membership group read component.
@@ -30,7 +30,7 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
         private val deactivateImplFunction: (String) -> Unit
     ) : MembershipGroupReadLifecycleHandler {
         companion object {
-            val logger = contextLogger()
+            val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
         private var configRegistrationHandle: AutoCloseable? = null

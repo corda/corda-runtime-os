@@ -16,7 +16,6 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.jpa' apply false
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'biz.aQute.bnd.builder' apply false
-    id "org.gradle.test-retry" apply false
     id 'com.adarshr.test-logger' version '3.2.0' apply false
     id 'io.snyk.gradle.plugin.snykplugin'
     id 'idea'
@@ -56,7 +55,6 @@ allprojects {
     }
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
-    apply plugin: "org.gradle.test-retry" 
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
