@@ -1,9 +1,9 @@
 package com.r3.corda.notary.plugin.nonvalidating.client
 
-import com.r3.corda.notary.plugin.common.NotaryException
-import com.r3.corda.notary.plugin.common.generateRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationRequest
 import com.r3.corda.notary.plugin.common.NotarisationResponse
+import com.r3.corda.notary.plugin.common.NotaryException
+import com.r3.corda.notary.plugin.common.generateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.SigningService
@@ -14,12 +14,12 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.LoggerFactory
 
 /**
  * The client that is used for the non-validating notary logic. This class is very simple and uses the basic
@@ -33,7 +33,7 @@ class NonValidatingNotaryClientFlowImpl(
 ) : PluggableNotaryClientFlow {
 
     private companion object {
-        val log = loggerFor<NonValidatingNotaryClientFlowImpl>()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

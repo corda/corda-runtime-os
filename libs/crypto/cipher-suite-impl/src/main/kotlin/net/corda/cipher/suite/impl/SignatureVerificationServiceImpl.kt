@@ -11,7 +11,6 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigestService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
@@ -22,6 +21,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 import javax.crypto.Cipher
 
@@ -37,7 +37,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
 ) : SignatureVerificationService,
     UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val signatureInstances = SignatureInstances(schemeMetadata.providers)

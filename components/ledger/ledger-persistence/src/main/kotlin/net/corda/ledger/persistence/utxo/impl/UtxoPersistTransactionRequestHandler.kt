@@ -8,11 +8,11 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTokenObserverMap
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.LoggerFactory
 
 class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constructor(
     private val holdingIdentity: HoldingIdentity,
@@ -24,7 +24,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
 ) : RequestHandler {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun execute(): List<Record<*, *>> {

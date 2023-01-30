@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
 import net.corda.internal.serialization.amqp.GetterReader
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -9,7 +9,7 @@ import net.corda.serialization.InternalProxySerializer
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.util.Locale
 
@@ -23,7 +23,7 @@ class ThrowableSerializer(
     override val revealSubclasses: Boolean get() = true
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private fun String.capitalise(): String {
             return replaceFirstChar { c ->

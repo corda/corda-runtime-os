@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.forwarding.gateway
 
 import net.corda.crypto.utils.PemCertificate
+import net.corda.data.p2p.GatewayTruststore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -15,12 +16,11 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.GatewayTruststore
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -34,7 +34,7 @@ internal class TrustStoresPublisher(
 ) : LifecycleWithDominoTile {
 
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CURRENT_DATA_READER_GROUP_NAME = "linkmanager_truststore_reader"
         private const val MISSING_DATA_WRITER_GROUP_NAME = "linkmanager_truststore_writer"
     }

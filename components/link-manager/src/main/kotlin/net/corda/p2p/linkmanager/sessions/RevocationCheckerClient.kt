@@ -13,8 +13,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
-import java.lang.IllegalStateException
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.TimeoutException
 
@@ -26,7 +25,7 @@ class RevocationCheckerClient(
     private companion object {
         const val groupAndClientName = "GatewayRevocationChecker"
         val timeout: Duration = Duration.ofSeconds(60)
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val publisherConfig = RPCConfig(

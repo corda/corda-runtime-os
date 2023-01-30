@@ -1,7 +1,5 @@
 package net.corda.membership.impl.persistence.client
 
-import java.time.Duration
-import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.identity.HoldingIdentity
@@ -29,7 +27,9 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.util.UUID
 import java.util.concurrent.TimeoutException
 
 abstract class AbstractPersistenceClient(
@@ -41,7 +41,7 @@ abstract class AbstractPersistenceClient(
 ) : Lifecycle {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val RPC_TIMEOUT_MS = 10000L
     }
 

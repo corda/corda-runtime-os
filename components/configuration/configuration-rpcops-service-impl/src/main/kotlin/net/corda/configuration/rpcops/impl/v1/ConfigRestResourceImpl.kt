@@ -19,8 +19,8 @@ import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -47,12 +47,12 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /** An implementation of [ConfigRestResource]. */
@@ -79,7 +79,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java
         )
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val REGISTRATION = "REGISTRATION"
         const val SENDER = "SENDER"

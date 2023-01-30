@@ -6,7 +6,7 @@ import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 /**
  * Receives [UploadStatus] messages on a compacted queue from the db-processor / [net.corda.chunking.db.impl.ChunkWriteToDbProcessor]
@@ -16,7 +16,7 @@ import net.corda.v5.base.util.contextLogger
 @Suppress("UNUSED")
 class UploadStatusProcessor : CompactedProcessor<UploadStatusKey, UploadStatus> {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val emptyExceptionEnvelope = ExceptionEnvelope("", "")
     }
 

@@ -5,7 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 class TestRPCSubscription<REQUEST, RESPONSE>(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -13,7 +13,7 @@ class TestRPCSubscription<REQUEST, RESPONSE>(
         LifecycleCoordinatorName("TestRPCSubscription"),
 ) : RPCSubscription<REQUEST, RESPONSE> {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
 

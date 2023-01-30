@@ -18,16 +18,15 @@ import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
-import net.corda.persistence.common.exceptions.NotReadyException
-import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
+import net.corda.persistence.common.exceptions.NotReadyException
+import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.persistence.common.getSerializationService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -42,6 +41,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.util.UUID
@@ -56,7 +56,7 @@ import java.util.UUID
 class PersistenceExceptionTests {
     companion object {
         const val TOPIC = "pretend-topic"
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @RegisterExtension

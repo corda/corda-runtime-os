@@ -23,8 +23,8 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
@@ -42,7 +42,7 @@ class PermissionStorageReaderImpl(
 ) : PermissionStorageReader {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var stopped = false

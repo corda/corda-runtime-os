@@ -1,6 +1,5 @@
 package net.corda.permissions.storage.writer.internal
 
-import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
@@ -22,7 +21,8 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
+import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
 class PermissionStorageWriterServiceEventHandler(
@@ -39,7 +39,7 @@ class PermissionStorageWriterServiceEventHandler(
         const val GROUP_NAME = "user.permissions.management"
         const val CLIENT_NAME = "user.permissions.management"
 
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @VisibleForTesting

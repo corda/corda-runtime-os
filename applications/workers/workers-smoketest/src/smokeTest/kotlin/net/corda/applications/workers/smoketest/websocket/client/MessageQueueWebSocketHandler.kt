@@ -1,10 +1,10 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
-import java.io.IOException
-import java.util.concurrent.CopyOnWriteArrayList
-import net.corda.applications.workers.smoketest.contextLogger
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
+import org.slf4j.LoggerFactory
+import java.io.IOException
+import java.util.concurrent.CopyOnWriteArrayList
 
 class MessageQueueWebSocketHandler : NoOpEndpoint(), InternalWebsocketHandler {
 
@@ -14,7 +14,7 @@ class MessageQueueWebSocketHandler : NoOpEndpoint(), InternalWebsocketHandler {
         get() = ArrayList(_messageQueue)
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun onWebSocketConnect(session: Session) {

@@ -15,7 +15,7 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.Base64
@@ -49,7 +49,7 @@ class PostgresDbSetup(
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO"
         )
 
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dbAdminUrl by lazy {

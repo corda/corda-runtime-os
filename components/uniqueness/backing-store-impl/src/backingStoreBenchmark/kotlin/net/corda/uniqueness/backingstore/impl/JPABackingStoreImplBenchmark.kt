@@ -40,13 +40,12 @@ import org.mockito.kotlin.whenever
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.io.FileOutputStream
-import java.io.PrintStream
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.TreeMap
+import java.util.UUID
 import kotlin.math.roundToInt
 import kotlin.system.measureTimeMillis
 
@@ -59,7 +58,7 @@ import kotlin.system.measureTimeMillis
 class JPABackingStoreImplBenchmark {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // Controls how many times we invoke the backing store API. Increasing this should not impact

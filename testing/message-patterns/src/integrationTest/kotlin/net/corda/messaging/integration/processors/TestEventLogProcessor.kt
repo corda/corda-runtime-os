@@ -1,11 +1,11 @@
 package net.corda.messaging.integration.processors
 
-import java.util.concurrent.CountDownLatch
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
+import java.util.concurrent.CountDownLatch
 
 class TestEventLogProcessor(
     private val latch: CountDownLatch? = null, private val outputTopic: String? = null, val id: String? = null
@@ -16,7 +16,7 @@ class TestEventLogProcessor(
         get() = DemoRecord::class.java
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun onNext(events: List<EventLogRecord<String, DemoRecord>>): List<Record<*, *>> {

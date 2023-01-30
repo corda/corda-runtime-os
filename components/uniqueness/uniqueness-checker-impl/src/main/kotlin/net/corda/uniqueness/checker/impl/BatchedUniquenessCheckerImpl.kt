@@ -35,8 +35,8 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
-import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
@@ -44,7 +44,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -53,9 +52,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.LinkedList
 
 /**
  * A batched implementation of the uniqueness checker component, which processes batches of requests
@@ -98,7 +97,7 @@ class BatchedUniquenessCheckerImpl(
         const val CONFIG_HANDLE = "CONFIG_HANDLE"
         const val SUBSCRIPTION = "SUBSCRIPTION"
 
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lifecycleCoordinator: LifecycleCoordinator =

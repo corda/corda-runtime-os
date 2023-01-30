@@ -5,15 +5,15 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 /**
@@ -25,7 +25,7 @@ import java.nio.ByteBuffer
 class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFactory) : DurableProcessor<String, AppMessage> {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     private val cordaAvroDeserializer: CordaAvroDeserializer<SessionEvent> = cordaAvroSerializationFactory.createAvroDeserializer({},
         SessionEvent::class.java)

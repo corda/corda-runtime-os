@@ -1,15 +1,15 @@
 package com.example.fragment
 
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 import java.util.Properties
 
 @Suppress("unused")
 @Component(name = "sandbox.fragment.flow")
 class ExampleFlow @Activate constructor(): SubFlow<String> {
-    private val logger = loggerFor<ExampleFlow>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     init {
         logger.info("Activated")

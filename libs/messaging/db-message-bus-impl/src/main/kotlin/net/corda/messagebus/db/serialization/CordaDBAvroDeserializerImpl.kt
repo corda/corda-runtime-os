@@ -2,7 +2,7 @@ package net.corda.messagebus.db.serialization
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.function.Consumer
 
@@ -13,7 +13,7 @@ class CordaDBAvroDeserializerImpl<T : Any>(
 ) : CordaAvroDeserializer<T> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun deserialize(data: ByteArray): T? {

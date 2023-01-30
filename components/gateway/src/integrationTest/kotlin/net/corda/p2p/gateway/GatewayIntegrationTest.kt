@@ -13,6 +13,15 @@ import net.corda.crypto.test.certificates.generation.toKeystore
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.GatewayTlsCertificates
+import net.corda.data.p2p.GatewayTruststore
+import net.corda.data.p2p.LinkInMessage
+import net.corda.data.p2p.LinkOutHeader
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.SessionPartitions
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.crypto.CommonHeader
+import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
@@ -29,15 +38,6 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.data.p2p.GatewayTruststore
-import net.corda.data.p2p.LinkInMessage
-import net.corda.data.p2p.LinkOutHeader
-import net.corda.data.p2p.LinkOutMessage
-import net.corda.data.p2p.NetworkType
-import net.corda.data.p2p.SessionPartitions
-import net.corda.data.p2p.crypto.AuthenticatedDataMessage
-import net.corda.data.p2p.crypto.CommonHeader
-import net.corda.data.p2p.crypto.MessageType
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
@@ -64,7 +64,6 @@ import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toHex
 import org.assertj.core.api.Assertions.assertThat
@@ -78,6 +77,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
+import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.net.ConnectException
 import java.net.HttpURLConnection.HTTP_BAD_REQUEST
@@ -106,7 +106,7 @@ import java.net.http.HttpRequest as JavaHttpRequest
 
 class GatewayIntegrationTest : TestBase() {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val GROUP_ID = "Group - 1"
 
         const val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"

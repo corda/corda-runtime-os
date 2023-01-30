@@ -18,8 +18,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 
 /**
  * Handle the events inside the [CpiInfoReader] component.
@@ -33,7 +33,7 @@ class CpiInfoReaderEventHandler(
 ) : LifecycleEventHandler {
     companion object {
         internal const val GROUP_NAME = "CPI_INFO_READER"
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var subscription: CompactedSubscription<CpiIdentifier, CpiMetadata>? = null

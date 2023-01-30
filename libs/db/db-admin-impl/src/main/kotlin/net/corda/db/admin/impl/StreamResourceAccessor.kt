@@ -7,7 +7,7 @@ import liquibase.resource.Resource
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseXmlConstants
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -39,7 +39,7 @@ class StreamResourceAccessor(
         ClassLoaderResourceAccessor(ClassLoaderResourceAccessor::class.java.classLoader)
 ) : AbstractResourceAccessor() {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // transformer only used for debugging

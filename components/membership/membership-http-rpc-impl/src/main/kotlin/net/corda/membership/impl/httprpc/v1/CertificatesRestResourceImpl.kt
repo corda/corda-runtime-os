@@ -21,7 +21,6 @@ import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRestResource
 import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -48,6 +47,7 @@ import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
 import java.security.PublicKey
@@ -67,7 +67,7 @@ class CertificatesRestResourceImpl @Activate constructor(
 ) : CertificatesRestResource, PluggableRestResource<CertificatesRestResource>, Lifecycle {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val defaultCodeNameToSpec = mapOf(
             ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,

@@ -2,7 +2,7 @@ package net.corda.chunking.db.impl.validation
 
 import net.corda.data.certificates.CertificateUsage
 import net.corda.membership.certificate.service.CertificatesService
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
@@ -11,7 +11,7 @@ internal class CertificateExtractor(
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509")
 ) {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     fun getAllCertificates(): Collection<X509Certificate> {
         return certificatesService

@@ -35,10 +35,10 @@ import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [RegistrationManagementService::class])
@@ -72,7 +72,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
 ) : RegistrationManagementService {
 
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val CONSUMER_GROUP = "membership.registration.processor.group"
 

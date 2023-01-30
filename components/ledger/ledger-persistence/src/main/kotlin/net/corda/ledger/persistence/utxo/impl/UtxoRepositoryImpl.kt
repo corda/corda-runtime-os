@@ -11,10 +11,10 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.utxo.StateRef
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -29,7 +29,7 @@ class UtxoRepositoryImpl(
 ) : UtxoRepository {
     private companion object {
         private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun findTransaction(

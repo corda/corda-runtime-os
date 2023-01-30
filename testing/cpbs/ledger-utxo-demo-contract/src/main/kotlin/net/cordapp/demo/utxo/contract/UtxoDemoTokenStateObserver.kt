@@ -1,6 +1,5 @@
 package net.cordapp.demo.utxo.contract
 
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
@@ -10,11 +9,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import java.math.BigDecimal
 
 class UtxoDemoTokenStateObserver : UtxoLedgerTokenStateObserver<TestUtxoState> {
-
-    private companion object {
-        val log = loggerFor<UtxoDemoTokenStateObserver>()
-    }
-
+    
     override val stateType = TestUtxoState::class.java
 
     override fun onCommit(state: TestUtxoState): UtxoToken {
