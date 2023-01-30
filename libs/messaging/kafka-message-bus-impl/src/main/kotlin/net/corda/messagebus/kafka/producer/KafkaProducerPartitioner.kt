@@ -2,19 +2,19 @@ package net.corda.messagebus.kafka.producer
 
 import net.corda.data.chunking.ChunkKey
 import net.corda.utilities.copyBytes
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.apache.kafka.clients.producer.Partitioner
 import org.apache.kafka.clients.producer.internals.BuiltInPartitioner
 import org.apache.kafka.common.Cluster
+import org.slf4j.LoggerFactory
 
 /**
  * Custom partitioner to be used with Kafka Producers.
  */
 class KafkaProducerPartitioner : Partitioner {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(javaClass.enclosingClass)
     }
 
     override fun configure(configs: MutableMap<String, *>?) {}
