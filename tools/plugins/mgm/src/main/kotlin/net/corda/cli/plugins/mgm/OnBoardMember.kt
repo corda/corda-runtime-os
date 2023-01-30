@@ -198,23 +198,6 @@ class OnBoardMember : Runnable, BaseOnboard() {
         creator.run()
     }
 
-    private fun allowClientCertificate() {
-        val access = json.readTree(mtlsMgmAccessFile)
-        val mgmCordaClusterName = access.get("cordaClusterName").asText()
-        if (mgmCordaClusterName == cordaClusterName) {
-            // No need to allow a certificate in the same cluster
-            return
-        }
-        val holdingId = access.get("holdingId").asText()
-        val url = urlFromClusterName(mgmCordaClusterName)
-        val rpcPassword = rpcPasswordFromClusterName(mgmCordaClusterName)
-        Unirest
-            .put("$url/mgm/$holdingId/mutual-tls/allowed-client-certificate-subjects/$certificateSubject")
-            .basicAuth("admin", rpcPassword)
-            .asJson()
-            .bodyOrThrow()
-    }
-
     private val ledgerKeyId by lazy {
         assignSoftHsmAndGenerateKey("LEDGER")
     }
@@ -240,7 +223,11 @@ class OnBoardMember : Runnable, BaseOnboard() {
         createTlsKeyIdNeeded()
 
         if (mtls) {
-            allowClientCertificate()
+            println(
+                "Using $certificateSubject as client certificate. " +
+                    "The onboarding will fail until the MGM will allow this subject. " +
+                    "One can use the allowClientCertificate to allow it."
+            )
         }
 
         setupNetwork()

@@ -72,18 +72,6 @@ class OnboardMgm : Runnable, BaseOnboard() {
         println("Group policy file created at $groupPolicyFile")
     }
 
-    private fun saveMgmAccessDetails() {
-        mtlsMgmAccessFile.parentFile.mkdirs()
-        json.writerWithDefaultPrettyPrinter()
-            .writeValue(
-                mtlsMgmAccessFile,
-                mapOf(
-                    "cordaClusterName" to cordaClusterName,
-                    "holdingId" to holdingId,
-                )
-            )
-    }
-
     private val tlsTrustRoot by lazy {
         ca.caCertificate.toPem()
     }
@@ -176,7 +164,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
         saveGroupPolicy()
 
         if (mtls) {
-            saveMgmAccessDetails()
+            println(
+                "To onboard members to this group on other cluster please allow those members " +
+                    "client certificates on this MGM. One can use the allowClientCertificate to do this."
+            )
         }
     }
 }
