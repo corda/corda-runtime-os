@@ -8,9 +8,9 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messaging.api.chunking.ConsumerChunkService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 
 /**
  * Service to reassemble chunked messages into their original values.
@@ -24,7 +24,7 @@ class ConsumerChunkServiceImpl<K : Any, V : Any>(
 ) : ConsumerChunkService<K, V> {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun assembleChunks(chunks: Map<ChunkKey, Chunk>): Pair<K, V>? {

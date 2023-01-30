@@ -4,7 +4,6 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -96,8 +95,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
-        UtxoTransactionMetadataVerifier(signedTransaction.metadata).verify()
-        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify(signedTransaction.notary)
+        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
 }

@@ -10,8 +10,8 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ProducerChunkService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 
 /**
  * Chunks up an object, bytes or record into chunks.
@@ -23,7 +23,7 @@ class ProducerChunkServiceImpl(
 ) : ProducerChunkService {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
