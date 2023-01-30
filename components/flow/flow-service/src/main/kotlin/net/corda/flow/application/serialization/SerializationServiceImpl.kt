@@ -8,13 +8,13 @@ import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVI
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.reflection.castIfPossible
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
 @Component(
@@ -28,7 +28,7 @@ class SerializationServiceImpl @Activate constructor(
 ) : SerializationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val serializationService

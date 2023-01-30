@@ -1,5 +1,6 @@
 plugins {
     id 'corda.common-library'
+    id 'corda.common-publishing'
 }
 
 description 'Test Utilities'

@@ -129,11 +129,11 @@ class MemberLookupRestResourceTest {
             *convertEndpoints().toTypedArray(),
             SOFTWARE_VERSION to "5.0.0",
             PLATFORM_VERSION to "5000",
-            SERIAL to "1"
         ),
         sortedMapOf(
             STATUS to MEMBER_STATUS_ACTIVE,
-            MODIFIED_TIME to clock.instant().toString()
+            MODIFIED_TIME to clock.instant().toString(),
+            SERIAL to "1",
         )
     )
 

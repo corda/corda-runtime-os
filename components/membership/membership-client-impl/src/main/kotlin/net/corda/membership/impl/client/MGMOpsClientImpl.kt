@@ -38,7 +38,6 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
@@ -49,6 +48,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Instant
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 @Component(service = [MGMOpsClient::class])
@@ -71,7 +71,7 @@ class MGMOpsClientImpl @Activate constructor(
 ) : MGMOpsClient {
 
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val ERROR_MSG = "Service is in an incorrect state for calling."
 
         const val CLIENT_ID = "mgm-ops-client"

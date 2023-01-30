@@ -15,7 +15,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -25,6 +24,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.time.Instant
 import java.util.*
+import org.slf4j.LoggerFactory
 
 /**
  * Created for mocking and simplifying membership persistence client functionalities used by the membership services.
@@ -40,7 +40,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : TestMembershipPersistenceClient {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
     }
 

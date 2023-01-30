@@ -1,6 +1,5 @@
 package net.corda.sandbox.serialization.amqp
 
-import java.util.function.Supplier
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -20,7 +19,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getMetadataServices
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.serialization.InternalCustomSerializer
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -29,6 +27,8 @@ import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope
+import org.slf4j.LoggerFactory
+import java.util.function.Supplier
 
 /**
  * Configures a sandbox with AMQP serialization support.
@@ -46,7 +46,7 @@ class AMQPSerializationProvider @Activate constructor(
     private val serializationServiceProxy: SerializationServiceProxy?
 ) : UsedByFlow, UsedByPersistence, UsedByVerification, CustomMetadataConsumer {
     private companion object {
-        private val logger = loggerFor<AMQPSerializationProvider>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private fun createSerializerFactory(context: SandboxGroupContext): SerializerFactory {

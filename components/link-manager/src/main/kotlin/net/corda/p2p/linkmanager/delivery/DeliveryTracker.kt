@@ -2,6 +2,12 @@ package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.AuthenticatedMessageDeliveryState
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerProcessedMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -19,16 +25,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.data.p2p.AuthenticatedMessageAndKey
-import net.corda.data.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerProcessedMarker
-import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
@@ -102,7 +101,7 @@ internal class DeliveryTracker(
 
         companion object {
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"
-            private val logger = contextLogger()
+            private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
         private val publisher = PublisherWithDominoLogic(

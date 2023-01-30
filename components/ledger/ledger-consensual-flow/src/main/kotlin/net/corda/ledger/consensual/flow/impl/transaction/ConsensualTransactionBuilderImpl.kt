@@ -6,7 +6,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
-import java.security.PublicKey
 import java.util.Objects
 
 class ConsensualTransactionBuilderImpl(
@@ -21,29 +20,16 @@ class ConsensualTransactionBuilderImpl(
         copy(states = this.states + states)
 
     @Suspendable
-    override fun toSignedTransaction(): ConsensualSignedTransaction {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    @Deprecated("Temporary function until the argumentless version gets available")
-    override fun toSignedTransaction(signatory: PublicKey): ConsensualSignedTransaction =
-        sign(listOf(signatory))
+    override fun toSignedTransaction(): ConsensualSignedTransaction =
+        sign()
 
     @Suspendable
     fun sign(): ConsensualSignedTransaction {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
-        require(signatories.toList().isNotEmpty()) {
-            "At least one key needs to be provided in order to create a signed Transaction!"
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
+        ConsensualTransactionBuilderVerifier(this).verify()
+        return consensualSignedTransactionFactory.create(this).also {
+            alreadySigned = true
         }
-        verifyIfReady()
-        val tx = consensualSignedTransactionFactory.create(this, signatories)
-        alreadySigned = true
-        return tx
     }
 
     private fun copy(states: List<ConsensualState> = this.states): ConsensualTransactionBuilderImpl {
@@ -51,13 +37,6 @@ class ConsensualTransactionBuilderImpl(
             consensualSignedTransactionFactory,
             states,
         )
-    }
-
-    private fun verifyIfReady() {
-        check(!alreadySigned) { "A transaction cannot be signed twice." }
-        ConsensualTransactionBuilderVerifier(this).verify()
-        // The metadata, states will get verified in the [ConsensualSignedTransactionFactoryImpl.create()] since the whole
-        // transaction is assembled there.
     }
 
     override fun equals(other: Any?): Boolean {
@@ -71,6 +50,4 @@ class ConsensualTransactionBuilderImpl(
     override fun toString(): String {
         return "ConsensualTransactionBuilderImpl(states=$states)"
     }
-
-
 }

@@ -43,7 +43,8 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             dbConnectionManager,
             dbAdmin,
             schemaMigrator,
-            groupPolicyParser)
+            groupPolicyParser
+        )
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)
     }

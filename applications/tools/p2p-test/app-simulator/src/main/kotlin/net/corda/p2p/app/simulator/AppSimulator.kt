@@ -30,12 +30,12 @@ import net.corda.schema.configuration.MessagingConfig
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.time.Duration
@@ -57,7 +57,7 @@ class AppSimulator @Activate constructor(
 ) : Application {
 
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val clock: Clock = UTCClock()
         const val DB_PARAMS_PREFIX = "dbParams"
         const val TOPIC_CREATION_PREFIX = "topicCreationParams"

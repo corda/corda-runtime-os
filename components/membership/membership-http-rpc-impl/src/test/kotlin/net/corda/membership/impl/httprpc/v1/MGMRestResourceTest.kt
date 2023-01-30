@@ -216,6 +216,17 @@ class MGMRestResourceTest {
 
             stopService()
         }
+
+        @Test
+        fun `addGroupApprovalRule throws bad request for invalid regex syntax`() {
+            startService()
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams("*", RULE_LABEL))
+            }
+
+            stopService()
+        }
     }
 
     @Nested

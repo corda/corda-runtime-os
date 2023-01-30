@@ -1,6 +1,5 @@
 package net.corda.flow.mapper.impl.executor
 
-import java.time.Instant
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
@@ -8,13 +7,14 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionEventExecutor(
@@ -28,7 +28,7 @@ class SessionEventExecutor(
 ) : FlowMapperEventExecutor {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val messageDirection = sessionEvent.messageDirection

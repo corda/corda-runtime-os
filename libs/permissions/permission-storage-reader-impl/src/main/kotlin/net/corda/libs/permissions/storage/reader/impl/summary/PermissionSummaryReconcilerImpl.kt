@@ -1,17 +1,17 @@
 package net.corda.libs.permissions.storage.reader.impl.summary
 
 import net.corda.libs.permissions.storage.common.converter.toAvroPermissionSummary
-import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 import net.corda.libs.permissions.storage.reader.repository.UserLogin
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
 import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
+import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 
 class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun getSummariesForReconciliation(

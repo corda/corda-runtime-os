@@ -13,17 +13,17 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

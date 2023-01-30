@@ -24,13 +24,13 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList", "Unused")
 @Component(service = [LinkManagerProcessor::class])
@@ -62,7 +62,7 @@ class LinkManagerProcessorImpl @Activate constructor(
 ) : LinkManagerProcessor {
 
     private companion object {
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var registration: RegistrationHandle? = null

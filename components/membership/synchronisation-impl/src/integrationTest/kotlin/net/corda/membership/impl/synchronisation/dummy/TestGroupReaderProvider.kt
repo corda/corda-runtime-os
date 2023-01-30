@@ -15,7 +15,6 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
@@ -24,6 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 /**
@@ -42,7 +42,7 @@ class TestGroupReaderProviderImpl @Activate constructor(
     private val groupParametersFactory: GroupParametersFactory
 ) : TestGroupReaderProvider {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator = coordinatorFactory.createCoordinator(
@@ -78,7 +78,7 @@ class TestGroupReaderProviderImpl @Activate constructor(
 
 class TestGroupReader(private val groupParametersFactory: GroupParametersFactory) : MembershipGroupReader {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
         private const val EPOCH = "5"
         private const val PLATFORM_VERSION = "5000"

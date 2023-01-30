@@ -1,13 +1,13 @@
 package net.corda.httprpc.client.stream
 
+import net.corda.httprpc.durablestream.api.PositionManager
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.div
-import net.corda.httprpc.durablestream.api.PositionManager
-import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.channels.ClosedChannelException
 import java.nio.channels.FileChannel
@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 class FilePositionManagerTest {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val tempFolder = Files.createTempDirectory(this::class.java.simpleName)

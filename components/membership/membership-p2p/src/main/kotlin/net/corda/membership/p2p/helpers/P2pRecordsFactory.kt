@@ -2,16 +2,16 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.identity.HoldingIdentity
-import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -23,7 +23,7 @@ class P2pRecordsFactory(
     companion object {
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         fun SmartConfig.getTtlMinutes(ttlConfiguration: String?): Long? {
             return ttlConfiguration?.let { configurationName ->

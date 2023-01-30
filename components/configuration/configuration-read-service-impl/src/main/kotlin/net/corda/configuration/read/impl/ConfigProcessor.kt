@@ -2,7 +2,6 @@ package net.corda.configuration.read.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -14,8 +13,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 // This should be used by our class that needs to cache config
 
@@ -27,7 +27,7 @@ internal class ConfigProcessor(
 ) : CompactedProcessor<String, Configuration> {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val configCache = ConcurrentHashMap<String, VersionedRecord<String, Configuration>>()

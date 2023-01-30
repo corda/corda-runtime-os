@@ -6,10 +6,10 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorInternal
 import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.lifecycle.registry.LifecycleRegistryException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
@@ -25,7 +25,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     private companion object {
         private const val NEW_COORDINATOR_REASON = "Coordinator has just been created"
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinators: MutableMap<LifecycleCoordinatorName, LifecycleCoordinatorInternal> =

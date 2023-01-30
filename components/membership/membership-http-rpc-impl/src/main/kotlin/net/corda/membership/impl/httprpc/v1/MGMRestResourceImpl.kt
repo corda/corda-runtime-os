@@ -28,7 +28,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -38,6 +37,8 @@ import org.slf4j.Logger
 import java.time.Duration
 import java.time.format.DateTimeParseException
 import java.util.*
+import org.slf4j.LoggerFactory
+import java.util.regex.PatternSyntaxException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
@@ -65,7 +66,7 @@ class MGMRestResourceImpl internal constructor(
     )
 
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private interface InnerMGMRpcOps {
@@ -441,6 +442,7 @@ class MGMRestResourceImpl internal constructor(
 
         override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo {
             return try {
+                validateRegex(ruleInfo.ruleRegex)
                 mgmOpsClient.addApprovalRule(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     ApprovalRuleParams(ruleInfo.ruleRegex, ApprovalRuleType.STANDARD, ruleInfo.ruleLabel)
@@ -451,6 +453,8 @@ class MGMRestResourceImpl internal constructor(
                 invalidInput(holdingIdentityShortHash)
             } catch (e: MembershipPersistenceException) {
                 throw BadRequestException("${e.message}")
+            } catch (e: PatternSyntaxException) {
+                throw BadRequestException("The regular expression's (${ruleInfo.ruleRegex}) syntax is invalid.")
             }
         }
 
@@ -494,6 +498,10 @@ class MGMRestResourceImpl internal constructor(
             AvroPreAuthTokenStatus.REVOKED -> PreAuthTokenStatus.REVOKED
             AvroPreAuthTokenStatus.CONSUMED -> PreAuthTokenStatus.CONSUMED
             AvroPreAuthTokenStatus.AUTO_INVALIDATED -> PreAuthTokenStatus.AUTO_INVALIDATED
+        }
+
+        private fun validateRegex(expression: String) {
+            expression.toRegex()
         }
     }
 }

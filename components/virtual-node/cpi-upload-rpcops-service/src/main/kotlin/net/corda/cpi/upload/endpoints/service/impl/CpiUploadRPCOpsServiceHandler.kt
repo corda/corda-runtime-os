@@ -18,7 +18,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 /**
  * Registers to [ConfigurationReadService] for config updates, and on new config updates creates a new [CpiUploadManager]
@@ -32,7 +32,7 @@ class CpiUploadRPCOpsServiceHandler(
 ) : LifecycleEventHandler {
 
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @VisibleForTesting

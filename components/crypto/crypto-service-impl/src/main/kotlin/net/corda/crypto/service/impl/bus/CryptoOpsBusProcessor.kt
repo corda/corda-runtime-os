@@ -33,9 +33,9 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
@@ -45,7 +45,7 @@ class CryptoOpsBusProcessor(
     event: ConfigChangedEvent
 ) : RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private fun SigningKeyInfo.toAvro(): CryptoSigningKey =
             CryptoSigningKey(

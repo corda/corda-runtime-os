@@ -9,9 +9,9 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -33,7 +33,7 @@ class PubSubSubscription<K : Any, V : Any>(
 ) : Subscription<K, V> {
 
     companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(

@@ -8,13 +8,24 @@ import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 
-// using an interface allows us to easily mock/test
+/**
+ * Interface for CRUD operations for a virtual node.
+ */
 interface VirtualNodeRepository {
+    /**
+     * Find all virtual nodes.
+     */
     fun findAll(entityManager: EntityManager): Stream<VirtualNodeInfo>
+
+    /**
+     * Find a virtual node identified by the given holdingIdentity short hash
+     */
     fun find(entityManager: EntityManager, holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
 
+    /**
+     * Persist a holding identity with the given holdingId and CPI.
+     */
     @Suppress("LongParameterList")
-
     fun put(
         entityManager: EntityManager,
         holdingId: HoldingIdentity,
@@ -26,6 +37,21 @@ interface VirtualNodeRepository {
         uniquenessDDLConnectionId: UUID?,
         uniquenessDMLConnectionId: UUID?
     )
+
+    /**
+     * Update a virtual node's state.
+     */
     fun updateVirtualNodeState(entityManager: EntityManager, holdingIdentityShortHash: String, newState: String): VirtualNodeInfo
+
+    /**
+     * Upgrade the CPI associated with a virtual node.
+     */
+    fun upgradeVirtualNodeCpi(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        cpiName: String,
+        cpiVersion: String,
+        cpiSignerSummaryHash: String
+    ): VirtualNodeInfo
 }
 

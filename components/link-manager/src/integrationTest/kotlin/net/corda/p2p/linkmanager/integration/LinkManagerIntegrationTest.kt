@@ -39,7 +39,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -50,6 +49,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito.mock
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -75,7 +75,7 @@ class LinkManagerIntegrationTest {
         private const val cryptoConf = """
         dummy=1
     """
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @InjectService(timeout = 4000)
         lateinit var publisherFactory: PublisherFactory

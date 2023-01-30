@@ -30,8 +30,8 @@
     "name" : "HSM API",
     "description" : "The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys."
   }, {
-    "name" : "Hello RPC API",
-    "description" : "The Hello RPC API is used to test interactions via the HTTP-RPC API. It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker."
+    "name" : "Hello Rest API",
+    "description" : "The Hello Rest API is used to test interactions via the Rest API. It verifies that a call to Rest can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-Rest worker."
   }, {
     "name" : "Keys Management API",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
@@ -956,7 +956,7 @@
     },
     "/hello" : {
       "post" : {
-        "tags" : [ "Hello RPC API" ],
+        "tags" : [ "Hello Rest API" ],
         "description" : "This method produces a greeting phrase for the addressee.",
         "operationId" : "post_hello",
         "parameters" : [ {
@@ -995,7 +995,7 @@
     },
     "/hello/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Hello RPC API" ],
+        "tags" : [ "Hello Rest API" ],
         "description" : "",
         "operationId" : "get_hello_getprotocolversion",
         "parameters" : [ ],
@@ -1830,11 +1830,11 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "The ID of the holding identity whose registration progress is to be checked",
+          "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The ID of the holding identity whose registration progress is to be checked",
+            "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1918,11 +1918,11 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "The ID of the holding identity whose registration progress is to be checked",
+          "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The ID of the holding identity whose registration progress is to be checked",
+            "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
             "nullable" : false,
             "example" : "string"
           }
@@ -3341,6 +3341,54 @@
         }
       }
     },
+    "/virtualnode/{virtualnodeshortid}/cpi/{targetcpifilechecksum}" : {
+      "put" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method upgrades a virtual node's CPI.",
+        "operationId" : "put_virtualnode__virtualnodeshortid__cpi__targetcpifilechecksum_",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to update",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "targetcpifilechecksum",
+          "in" : "path",
+          "description" : "The file checksum of the CPI to upgrade to.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The file checksum of the CPI to upgrade to.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Identifier for the request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AsyncResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
         "tags" : [ "Virtual Node API" ],
@@ -3429,6 +3477,17 @@
           }
         },
         "description" : "The approval rule information including the regular expression associated with the rule, and an optional label describing the rule"
+      },
+      "AsyncResponse" : {
+        "required" : [ "requestId" ],
+        "type" : "object",
+        "properties" : {
+          "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
       },
       "BulkCreatePermissionsRequestType" : {
         "required" : [ "permissionsToCreate", "roleIds" ],

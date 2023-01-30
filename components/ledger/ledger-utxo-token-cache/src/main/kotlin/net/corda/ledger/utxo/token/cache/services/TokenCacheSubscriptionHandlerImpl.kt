@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.token.cache.services
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
+import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -15,9 +16,8 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 
 class TokenCacheSubscriptionHandlerImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -27,7 +27,7 @@ class TokenCacheSubscriptionHandlerImpl constructor(
 ) : TokenCacheSubscriptionHandler {
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "TokenEventConsumer"
     }
 

@@ -42,18 +42,15 @@ class QueryRegistrationRequestHandlerTest {
     }
     private val entityTransaction = mock<EntityTransaction>()
     private val registrationIdPath = mock<Path<String>>()
-    private val holdingIdentityShortHashPath = mock<Path<String>>()
     private val registrationId = "id"
     private val root = mock<Root<RegistrationRequestEntity>> {
         on { get<String>("registrationId") } doReturn registrationIdPath
-        on { get<String>("holdingIdentityShortHash") } doReturn holdingIdentityShortHashPath
     }
     private val predicate = mock<Predicate>()
     private val query = mock<CriteriaQuery<RegistrationRequestEntity>> {
         on { from(RegistrationRequestEntity::class.java) } doReturn root
         on { select(root) } doReturn mock
         on { where(predicate) } doReturn mock
-        on { orderBy() } doReturn mock
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(any()) } doReturn KeyValuePairList(emptyList())
@@ -65,8 +62,6 @@ class QueryRegistrationRequestHandlerTest {
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(RegistrationRequestEntity::class.java) } doReturn query
         on { equal(registrationIdPath, registrationId) } doReturn predicate
-        on { equal(holdingIdentityShortHashPath, shortHash.value) } doReturn predicate
-        on { and(predicate, predicate) } doReturn predicate
     }
     private val actualQuery = mock<TypedQuery<RegistrationRequestEntity>>()
     private val entityManager = mock<EntityManager> {
