@@ -181,4 +181,73 @@ interface MGMRestResource : RestResource {
         @RestPathParameter(description = "The ID of the group approval rule to be deleted")
         ruleId: String
     )
+
+    /**
+     * This method enables you to add a regular expression rule to configure the manual reviews of registration
+     * requests. Requests which contain a valid pre-auth token are evaluated against the rules added using this method
+     * to determine whether they will be automatically or manually approved. If the [MemberInfo] proposed in the request
+     * contains any new, removed or changed keys that match one or more of the approval rules, the request will require
+     * manual approval.
+     *
+     * @see addGroupApprovalRule for how to add approval rules for registrations with a pre-auth token.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param ruleParams The approval rule definition. See [ApprovalRuleRequestParams] for more details.
+     *
+     * @return Details of the newly persisted approval rule.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/approval/rules/preauth",
+        description = "This API adds a rule to the set of group approval rules for registrations " +
+                "including a pre-auth token.",
+        responseDescription = "Details of the newly persisted approval rule."
+    )
+    fun addPreAuthGroupApprovalRule(
+        @RestPathParameter(description = "The holding identity ID of the MGM.")
+        holdingIdentityShortHash: String,
+        @RestRequestBodyParameter(description = "The definition of the approval rule to create.")
+        ruleParams: ApprovalRuleRequestParams,
+    ): ApprovalRuleInfo
+
+    /**
+     * This method enables you to retrieve the set of approval rules the group is currently configured with for
+     * registration requests containing a valid pre-auth token. Registration requests with a valid pre-auth token are
+     * evaluated against these rules to determine whether they will be automatically or manually approved. If the
+     * [MemberInfo] proposed in a request contains any new, removed, or changed keys that match one or more of the
+     * approval rules in this collection, the request will require manual approval.
+     *
+     * @see getGroupApprovalRules for how to retrieve approval rules for registrations with a pre-auth token.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     *
+     * @return Group approval rules as a collection of [ApprovalRuleInfo].
+     */
+    @HttpGET(
+        path = "{holdingIdentityShortHash}/approval/rules/preauth",
+        description = "This method retrieves the set of rules the group is currently configured with for " +
+                "registration request with a pre-auth token.",
+        responseDescription = "A collection of group approval rules."
+    )
+    fun getPreAuthGroupApprovalRules(
+        @RestPathParameter(description = "The holding identity ID of the MGM.")
+        holdingIdentityShortHash: String
+    ): Collection<ApprovalRuleInfo>
+
+    /**
+     * This method allows you to delete a group approval rule that was added through the [addPreAuthGroupApprovalRule]
+     * method.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param ruleId ID of the group approval rule to be deleted.
+     */
+    @HttpDELETE(
+        path = "{holdingIdentityShortHash}/approval/rules/preauth/{ruleId}",
+        description = "This method deletes a group approval rule for registrations including a pre-auth token."
+    )
+    fun deletePreAuthGroupApprovalRule(
+        @RestPathParameter(description = "The holding identity ID of the MGM.")
+        holdingIdentityShortHash: String,
+        @RestPathParameter(description = "The ID of the group approval rule to be deleted.")
+        ruleId: String
+    )
 }
