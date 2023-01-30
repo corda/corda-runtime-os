@@ -24,7 +24,7 @@ import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
-import net.corda.processors.rpc.RPCProcessor
+import net.corda.processors.rest.RestProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
@@ -48,8 +48,8 @@ class CombinedWorker @Activate constructor(
     private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
-    @Reference(service = RPCProcessor::class)
-    private val rpcProcessor: RPCProcessor,
+    @Reference(service = RestProcessor::class)
+    private val restProcessor: RestProcessor,
     @Reference(service = MemberProcessor::class)
     private val memberProcessor: MemberProcessor,
     @Reference(service = LinkManagerProcessor::class)
@@ -135,7 +135,7 @@ class CombinedWorker @Activate constructor(
         uniquenessProcessor.start()
         flowProcessor.start(config)
         memberProcessor.start(config)
-        rpcProcessor.start(config)
+        restProcessor.start(config)
         linkManagerProcessor.start(config)
         gatewayProcessor.start(config)
     }
@@ -148,7 +148,7 @@ class CombinedWorker @Activate constructor(
         dbProcessor.stop()
         flowProcessor.stop()
         memberProcessor.stop()
-        rpcProcessor.stop()
+        restProcessor.stop()
         linkManagerProcessor.stop()
         gatewayProcessor.stop()
 

@@ -1,9 +1,9 @@
-package net.corda.processors.rpc
+package net.corda.processors.rest
 
 import net.corda.libs.configuration.SmartConfig
 
-/** The processor for a `RPCWorker`. */
-interface RPCProcessor {
+/** The processor for a `RestWorker`. */
+interface RestProcessor {
     fun start(bootConfig: SmartConfig)
 
     fun stop()
