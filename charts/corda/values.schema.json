@@ -890,6 +890,33 @@
                 }
             }
         },
+        "config": {
+            "type": "object",
+            "title": "config service configuration",
+            "required": [
+                "encryption"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "encryption": {
+                    "type": "object",
+                    "title": "configuration for encryption of configuration",
+                    "required": [
+                        "salt",
+                        "passphrase"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "salt": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "passphrase": {
+                            "$ref": "#/$defs/config"
+                        }
+                    }
+                }
+            }
+        },
         "workers": {
             "type": "object",
             "default": {},
@@ -981,12 +1008,6 @@
                                             ]
                                         }
                                     }
-                                },
-                                "salt": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "passphrase": {
-                                    "$ref": "#/$defs/config"
                                 }
                             },
                             "examples": [{
@@ -1006,8 +1027,6 @@
                                 "profiling": {
                                     "enabled": false
                                 },
-                                "salt": "password",
-                                "passphrase": "password",
                                 "resources": {
                                     "requests": {
                                         "cpu": "1",
@@ -1392,8 +1411,6 @@
                     "profiling": {
                         "enabled": false
                     },
-                    "salt": "",
-                    "passphrase": "",
                     "resources": {
                         "requests": {
                             "cpu": "1",

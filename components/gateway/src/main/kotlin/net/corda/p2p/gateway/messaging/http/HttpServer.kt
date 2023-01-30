@@ -12,7 +12,7 @@ import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
@@ -38,7 +38,7 @@ class HttpServer(
     HttpServerListener {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         /**
          * Default number of thread to use for the worker group

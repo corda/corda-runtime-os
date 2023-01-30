@@ -11,9 +11,9 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 class FlowSessionImpl(
@@ -26,7 +26,7 @@ class FlowSessionImpl(
 ) : FlowSession, FlowSessionInternal {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val contextProperties: FlowContextProperties = flowContext

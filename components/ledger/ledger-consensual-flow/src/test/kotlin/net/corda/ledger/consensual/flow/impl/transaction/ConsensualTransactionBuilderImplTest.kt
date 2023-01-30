@@ -2,7 +2,6 @@ package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
-import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
@@ -12,13 +11,12 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
-@Suppress("DEPRECATION")
 internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     @Test
     fun `can build a simple Transaction`() {
         val tx = consensualTransactionBuilder
             .withStates(consensualStateExample)
-            .toSignedTransaction(publicKeyExample)
+            .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
     }
 
@@ -28,15 +26,15 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             val builder = consensualTransactionBuilder
                 .withStates(consensualStateExample)
 
-            builder.toSignedTransaction(publicKeyExample)
-            builder.toSignedTransaction(publicKeyExample)
+            builder.toSignedTransaction()
+            builder.toSignedTransaction()
         }
     }
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
-            consensualTransactionBuilder.toSignedTransaction(publicKeyExample)
+            consensualTransactionBuilder.toSignedTransaction()
         }
         assertEquals("At least one consensual state is required", exception.message)
     }
@@ -47,7 +45,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             consensualTransactionBuilder
                 .withStates(consensualStateExample)
                 .withStates(ConsensualStateClassExample("test", emptyList()))
-                .toSignedTransaction(publicKeyExample)
+                .toSignedTransaction()
         }
         assertEquals("All consensual states must have participants", exception.message)
     }
@@ -56,7 +54,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     fun `includes CPI and CPK information in metadata`() {
         val tx = consensualTransactionBuilder
             .withStates(consensualStateExample)
-            .toSignedTransaction(publicKeyExample) as ConsensualSignedTransactionImpl
+            .toSignedTransaction() as ConsensualSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
         assertEquals(1, metadata.getLedgerVersion())

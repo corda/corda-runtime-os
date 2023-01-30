@@ -9,8 +9,8 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -21,7 +21,7 @@ import javax.persistence.Table
 class TruancyResponderFlow : ResponderFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

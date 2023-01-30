@@ -17,15 +17,15 @@ import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.provider.SchemaProvider
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val REGISTERED_SCHEMES = listOf("https", "http")
     }
 

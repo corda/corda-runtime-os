@@ -121,7 +121,7 @@ companion object {
 or
 
 ```kotlin
-val logger = contextLogger()
+val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 ```
 
 if the module depends on `net.corda:corda-base`.

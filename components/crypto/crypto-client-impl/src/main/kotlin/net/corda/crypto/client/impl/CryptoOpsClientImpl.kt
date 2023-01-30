@@ -31,7 +31,6 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.toBase58
 import net.corda.v5.crypto.DigitalSignature
@@ -40,6 +39,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Duration
@@ -51,7 +51,7 @@ class CryptoOpsClientImpl(
     private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
 ) {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     fun getSupportedSchemes(tenantId: String, category: String): List<String> {

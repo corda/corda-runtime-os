@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -14,10 +13,11 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.session.manager.SessionManager
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
@@ -32,7 +32,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 ) : FlowGlobalPostProcessor {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {

@@ -11,8 +11,8 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -25,7 +25,7 @@ class SessionInitExecutor(
 ) : FlowMapperEventExecutor {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val messageDirection = sessionEvent.messageDirection

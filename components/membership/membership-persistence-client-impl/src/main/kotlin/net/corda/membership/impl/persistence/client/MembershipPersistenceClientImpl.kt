@@ -37,7 +37,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -45,6 +44,7 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -81,7 +81,7 @@ class MembershipPersistenceClientImpl(
     )
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val groupName = "membership.db.persistence.client.group"

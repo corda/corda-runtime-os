@@ -7,7 +7,6 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import org.hibernate.Session
 import org.hibernate.cfg.AvailableSettings.DIALECT
 import org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER
@@ -16,6 +15,7 @@ import org.hibernate.cfg.AvailableSettings.JPA_JDBC_URL
 import org.hibernate.cfg.AvailableSettings.JPA_JDBC_USER
 import org.hibernate.dialect.HSQLDialect
 import org.hibernate.jpa.HibernatePersistenceProvider
+import org.slf4j.LoggerFactory
 import java.sql.Connection
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -32,7 +32,7 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
     private val emf : EntityManagerFactory = createEntityManagerFactory(member)
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         fun createEntityManagerFactory(member: MemberX500Name): EntityManagerFactory {
             log.info("Creating EntityManagerFactory")
             val emf = HibernatePersistenceProvider()

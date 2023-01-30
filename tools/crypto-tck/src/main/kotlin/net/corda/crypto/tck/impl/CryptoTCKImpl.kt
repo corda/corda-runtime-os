@@ -7,7 +7,6 @@ import net.corda.crypto.tck.ExecutionBuilder
 import net.corda.crypto.tck.ExecutionOptions
 import net.corda.crypto.tck.impl.compliance.CryptoServiceCompliance
 import net.corda.crypto.tck.impl.compliance.SessionInactivityCompliance
-import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.engine.JupiterTestEngine
 import org.junit.platform.engine.discovery.DiscoverySelectors
@@ -24,6 +23,7 @@ import org.opentest4j.TestAbortedException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.io.PrintWriter
 
 @Component(service = [CryptoTCK::class], immediate = true)
@@ -32,7 +32,7 @@ class CryptoTCKImpl @Activate constructor(
     override val schemeMetadata: CipherSchemeMetadata
 ) : CryptoTCK {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val version: String by lazy(LazyThreadSafetyMode.PUBLICATION) {

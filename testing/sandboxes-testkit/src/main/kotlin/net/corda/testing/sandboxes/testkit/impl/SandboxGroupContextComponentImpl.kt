@@ -1,17 +1,17 @@
 package net.corda.testing.sandboxes.testkit.impl
 
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.SandboxSetup
-import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 @Suppress("unused")
 @Component(service = [ SandboxGroupContextComponent::class ])
@@ -20,7 +20,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference
     private val sandboxGroupContextService: SandboxGroupContextService
 ) : SandboxGroupContextComponent, SandboxGroupContextService by sandboxGroupContextService {
-    private val logger = loggerFor<SandboxGroupContextComponentImpl>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     override val isRunning: Boolean = true
 

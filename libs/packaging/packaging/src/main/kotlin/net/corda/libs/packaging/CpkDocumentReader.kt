@@ -6,9 +6,9 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.exception.DependencyMetadataException
 import net.corda.libs.packaging.core.exception.LibraryMetadataException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.NodeList
@@ -28,7 +28,7 @@ import javax.xml.validation.SchemaFactory
 
 class CpkDocumentReader {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val SAME_SIGNER_PLACEHOLDER = SecureHash("NONE", byteArrayOf(0))
 
         private const val CORDA_CPK_V1 = "corda-cpk-1.0.xsd"

@@ -25,10 +25,10 @@ import net.corda.permissions.validation.cache.internal.PermissionSummaryTopicSna
 import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
@@ -49,7 +49,7 @@ class PermissionValidationCacheService @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator<PermissionValidationCacheService> { event, _ -> eventHandler(event) }
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CONSUMER_GROUP = "PERMISSION_VALIDATION_SERVICE"
     }
 

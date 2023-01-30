@@ -1,13 +1,13 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.standard.EnumSerializer
-import net.corda.internal.serialization.amqp.standard.CollectionSerializer
-import net.corda.internal.serialization.amqp.standard.MapSerializer
-import net.corda.internal.serialization.amqp.standard.checkSupportedMapType
-import net.corda.internal.serialization.amqp.standard.PrimArraySerializer
 import net.corda.internal.serialization.amqp.standard.ArraySerializer
-import net.corda.internal.serialization.amqp.standard.SingletonSerializer
+import net.corda.internal.serialization.amqp.standard.CollectionSerializer
+import net.corda.internal.serialization.amqp.standard.EnumSerializer
+import net.corda.internal.serialization.amqp.standard.MapSerializer
 import net.corda.internal.serialization.amqp.standard.ObjectSerializer
+import net.corda.internal.serialization.amqp.standard.PrimArraySerializer
+import net.corda.internal.serialization.amqp.standard.SingletonSerializer
+import net.corda.internal.serialization.amqp.standard.checkSupportedMapType
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.FingerPrinter
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -17,10 +17,10 @@ import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.reflection.kotlinObjectInstance
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.apache.qpid.proton.amqp.Symbol
+import org.slf4j.LoggerFactory
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.util.Optional
@@ -116,7 +116,7 @@ class DefaultLocalSerializerFactory(
     : LocalSerializerFactory {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val customSerializerNames: List<String>

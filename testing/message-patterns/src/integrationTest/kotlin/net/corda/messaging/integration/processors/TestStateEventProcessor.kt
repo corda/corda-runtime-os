@@ -6,7 +6,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
 
 class TestStateEventProcessor(
@@ -21,7 +21,7 @@ class TestStateEventProcessor(
             DemoRecord> {
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val keyClass: Class<String>

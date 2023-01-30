@@ -4,13 +4,13 @@ import net.corda.simulator.SimulatedNode
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.v5.application.persistence.PersistenceService
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 abstract class SimulatedNodeBase : SimulatedNode {
 
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     protected abstract val fiber: SimFiber

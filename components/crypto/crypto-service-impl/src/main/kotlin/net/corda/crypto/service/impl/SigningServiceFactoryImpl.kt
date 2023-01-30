@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.persistence.SigningKeyStore
@@ -8,12 +9,11 @@ import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [SigningServiceFactory::class])
 class SigningServiceFactoryImpl @Activate constructor(
@@ -36,7 +36,7 @@ class SigningServiceFactoryImpl @Activate constructor(
     )
 ), SigningServiceFactory {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun createActiveImpl(): Impl = Impl(schemeMetadata, store, cryptoServiceFactory)

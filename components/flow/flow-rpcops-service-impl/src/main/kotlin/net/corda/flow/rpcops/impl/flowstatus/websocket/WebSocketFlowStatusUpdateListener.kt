@@ -1,7 +1,5 @@
 package net.corda.flow.rpcops.impl.flowstatus.websocket
 
-import java.time.Instant
-import java.util.concurrent.TimeUnit
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
@@ -10,9 +8,11 @@ import net.corda.flow.rpcops.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.WebSocketProtocolViolationException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 /**
  * Flow status update handler that uses websockets to communicate updates to the counterpart connection.
@@ -24,7 +24,7 @@ class WebSocketFlowStatusUpdateListener(
 ) : FlowStatusUpdateListener {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val id: String
@@ -91,7 +91,7 @@ class WebSocketFlowStatusUpdateListener(
         }
     }
 
-    private fun FlowStates.isFlowFinished() = this == FlowStates.COMPLETED || this == FlowStates.FAILED
+    private fun FlowStates.isFlowFinished() = this == FlowStates.COMPLETED || this == FlowStates.FAILED || this == FlowStates.KILLED
 
     private fun FlowStatus.createFlowStatusResponse(): FlowStatusResponse {
         return FlowStatusResponse(

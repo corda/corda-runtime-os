@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
@@ -20,6 +21,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.membership.MemberInfo
@@ -66,6 +68,8 @@ class ConsensualFinalityFlowTest {
 
     private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
     private val updatedSignedTransaction = mock<ConsensualSignedTransactionInternal>()
+    private val transactionMetadata = mock<TransactionMetadata>()
+    private val wireTransaction = mock<WireTransaction>()
     private val ledgerTransaction = mock<ConsensualLedgerTransaction>()
 
     @BeforeEach
@@ -86,6 +90,8 @@ class ConsensualFinalityFlowTest {
         whenever(updatedSignedTransaction.id).thenReturn(TX_ID)
         whenever(updatedSignedTransaction.addSignature(any())).thenReturn(updatedSignedTransaction)
         whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
+        whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
+        whenever(signedTransaction.wireTransaction).thenReturn(wireTransaction)
         whenever(ledgerTransaction.requiredSignatories).thenReturn(setOf(publicKeyExample))
 
         whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))

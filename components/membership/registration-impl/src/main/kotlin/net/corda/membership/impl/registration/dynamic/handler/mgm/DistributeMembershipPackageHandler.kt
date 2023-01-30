@@ -28,11 +28,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -63,7 +63,7 @@ class DistributeMembershipPackageHandler(
     ) { UUID.randomUUID().toString() }
 ) : RegistrationHandler<DistributeMembershipPackage> {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val commandType = DistributeMembershipPackage::class.java

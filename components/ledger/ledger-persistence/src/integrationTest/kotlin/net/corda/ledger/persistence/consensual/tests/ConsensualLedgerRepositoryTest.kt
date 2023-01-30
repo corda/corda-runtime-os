@@ -3,8 +3,6 @@ package net.corda.ledger.persistence.consensual.tests
 import net.corda.common.json.validation.JsonValidator
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
-import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
-import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -29,16 +27,12 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -60,7 +54,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
-import kotlin.random.Random
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -77,7 +70,6 @@ class ConsensualLedgerRepositoryTest {
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: ConsensualRepository
     private lateinit var persistenceService: ConsensualPersistenceService
-    private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
@@ -114,12 +106,6 @@ class ConsensualLedgerRepositoryTest {
                 digestService,
                 TEST_CLOCK)
         }
-    }
-
-    @Suppress("Unused")
-    @AfterAll
-    fun cleanup() {
-        emConfig.close()
     }
 
     @Test

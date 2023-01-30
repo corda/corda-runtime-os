@@ -1,6 +1,6 @@
 package net.corda.processors.rpc.internal
 
-import net.corda.components.rpc.HttpRpcGateway
+import net.corda.components.rpc.RestGateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -27,12 +27,12 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rpc.RPCProcessor
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /** The processor for a `RPCWorker`. */
 @Component(service = [RPCProcessor::class])
@@ -42,8 +42,8 @@ class RPCProcessorImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService,
-    @Reference(service = HttpRpcGateway::class)
-    private val httpRpcGateway: HttpRpcGateway,
+    @Reference(service = RestGateway::class)
+    private val restGateway: RestGateway,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = FlowRPCOpsService::class)
@@ -79,14 +79,14 @@ class RPCProcessorImpl @Activate constructor(
 ) : RPCProcessor {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CLIENT_ID_RPC_PROCESSOR = "rpc.processor"
     }
 
     private val dependentComponents = DependentComponents.of(
         ::configReadService,
-        ::httpRpcGateway,
+        ::restGateway,
         ::flowRPCOpsService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,

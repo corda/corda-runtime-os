@@ -3,13 +3,13 @@ package net.corda.ledger.utxo.token.cache.services
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
-import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
-import net.corda.v5.base.util.contextLogger
+import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
+import org.slf4j.LoggerFactory
 
 class TokenCacheEventProcessor constructor(
     private val eventConverter: EventConverter,
@@ -18,7 +18,7 @@ class TokenCacheEventProcessor constructor(
 ) : StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val keyClass = TokenPoolCacheKey::class.java

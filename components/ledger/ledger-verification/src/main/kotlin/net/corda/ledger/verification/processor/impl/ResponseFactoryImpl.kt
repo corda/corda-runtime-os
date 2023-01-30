@@ -10,10 +10,10 @@ import net.corda.ledger.verification.exceptions.NullParameterException
 import net.corda.ledger.verification.exceptions.VirtualNodeException
 import net.corda.ledger.verification.processor.ResponseFactory
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
 @Component(service = [ResponseFactory::class])
@@ -23,7 +23,7 @@ class ResponseFactoryImpl @Activate constructor(
 ) : ResponseFactory {
 
     companion object{
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun successResponse(

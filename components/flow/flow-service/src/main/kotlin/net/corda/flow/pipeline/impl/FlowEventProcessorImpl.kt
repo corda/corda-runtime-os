@@ -7,6 +7,7 @@ import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
@@ -15,9 +16,9 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.utilities.withMDC
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
 
 class FlowEventProcessorImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
@@ -28,7 +29,7 @@ class FlowEventProcessorImpl(
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val keyClass = String::class.java
@@ -92,6 +93,8 @@ class FlowEventProcessorImpl(
         } catch (e: FlowPlatformException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowFatalException) {
+            flowEventExceptionProcessor.process(e, pipeline.context)
+        } catch (e: FlowMarkedForKillException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)

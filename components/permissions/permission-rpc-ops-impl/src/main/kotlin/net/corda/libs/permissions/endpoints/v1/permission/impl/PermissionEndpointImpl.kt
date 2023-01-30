@@ -4,7 +4,7 @@ import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
@@ -22,10 +22,10 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * An RPC Ops endpoint for Permission operations.
@@ -40,7 +40,7 @@ class PermissionEndpointImpl @Activate constructor(
 ) : PermissionEndpoint, PluggableRestResource<PermissionEndpoint>, Lifecycle {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val targetInterface: Class<PermissionEndpoint> = PermissionEndpoint::class.java
@@ -52,7 +52,7 @@ class PermissionEndpointImpl @Activate constructor(
     )
 
     override fun createPermission(createPermissionType: CreatePermissionType): ResponseEntity<PermissionResponseType> {
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         val createPermissionResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
@@ -63,7 +63,7 @@ class PermissionEndpointImpl @Activate constructor(
     }
 
     override fun getPermission(id: String): PermissionResponseType {
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         val permissionResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
@@ -130,7 +130,7 @@ class PermissionEndpointImpl @Activate constructor(
             }
         }
 
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         // Construct and send Kafka message and wait for the response

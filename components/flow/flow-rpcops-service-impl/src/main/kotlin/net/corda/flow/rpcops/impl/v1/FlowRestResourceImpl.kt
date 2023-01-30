@@ -17,7 +17,7 @@ import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
@@ -35,7 +35,6 @@ import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
@@ -43,6 +42,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -63,7 +63,7 @@ class FlowRestResourceImpl @Activate constructor(
 ) : FlowRestResource, PluggableRestResource<FlowRestResource>, Lifecycle {
 
     private companion object {
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
@@ -137,7 +137,7 @@ class FlowRestResourceImpl @Activate constructor(
             throw InvalidInputDataException(msg, details)
         }
 
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val rpcContext = CURRENT_REST_CONTEXT.get()
         val principal = rpcContext.principal
 
         if (!permissionValidationService.permissionValidator.authorizeUser(principal,

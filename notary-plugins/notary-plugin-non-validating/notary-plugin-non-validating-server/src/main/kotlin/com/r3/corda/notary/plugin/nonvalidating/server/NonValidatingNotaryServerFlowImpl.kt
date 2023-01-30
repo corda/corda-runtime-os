@@ -1,10 +1,10 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.toNotarisationResponse
-import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationRequest
 import com.r3.corda.notary.plugin.common.NotarisationResponse
 import com.r3.corda.notary.plugin.common.NotaryErrorGeneralImpl
+import com.r3.corda.notary.plugin.common.toNotarisationResponse
+import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
@@ -16,9 +16,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -26,7 +24,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
-import kotlin.IllegalStateException
+import org.slf4j.LoggerFactory
 
 /**
  * The server-side implementation of the non-validating notary logic.
@@ -37,7 +35,7 @@ import kotlin.IllegalStateException
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {
-        val logger: Logger = loggerFor<NonValidatingNotaryServerFlowImpl>()
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -106,11 +104,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             verifyTransaction(requestPayload)
 
-            // If the key is a composite key (multiple notary VNodes) we need to extract the leaves
-            // If the key is not a composite key (single notary VNode) we can simply use that public key
-            val notaryServicePublicKeys = (requestPayload.notaryKey as? CompositeKey)?.leafKeys?.toList()
-                ?: listOf(requestPayload.notaryKey)
-
             logger.trace { "Requesting uniqueness check for transaction ${txDetails.id}" }
 
             val uniquenessResponse = clientService.requestUniquenessCheck(
@@ -120,7 +113,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 txDetails.numOutputs,
                 txDetails.timeWindow.from,
                 txDetails.timeWindow.until,
-                notaryServicePublicKeys
+                requestPayload.notaryKey
             )
 
             logger.debug {

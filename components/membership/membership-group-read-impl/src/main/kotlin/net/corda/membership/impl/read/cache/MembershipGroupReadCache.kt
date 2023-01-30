@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.cache
 
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 /**
  * Interface wrapping all caches required for the membership group read service component.
@@ -29,7 +29,7 @@ interface MembershipGroupReadCache {
      */
     class Impl : MembershipGroupReadCache {
         companion object {
-            private val logger = contextLogger()
+            private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
         override var memberListCache: MemberListCache = MemberListCache.Impl()

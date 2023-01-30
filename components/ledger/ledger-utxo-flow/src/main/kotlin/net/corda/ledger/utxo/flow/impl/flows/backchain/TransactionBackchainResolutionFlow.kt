@@ -10,15 +10,15 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class TransactionBackchainResolutionFlow(private val transaction: UtxoSignedTransaction, private val session: FlowSession) : SubFlow<Unit> {
 
     private companion object {
-        val log = loggerFor<TransactionBackchainResolutionFlow>()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

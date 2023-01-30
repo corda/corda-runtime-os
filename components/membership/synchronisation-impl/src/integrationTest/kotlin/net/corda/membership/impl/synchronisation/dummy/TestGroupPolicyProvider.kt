@@ -6,12 +6,12 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 
 /**
  * Created for mocking and simplifying group policy functionalities used by the membership services.
@@ -27,7 +27,7 @@ class TestGroupPolicyProviderImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : TestGroupPolicyProvider {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
     }
 

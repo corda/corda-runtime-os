@@ -1,15 +1,14 @@
 package net.corda.testing.sandboxes.impl
 
 import net.corda.cpk.read.CpkReadService
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
@@ -17,6 +16,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Paths
@@ -34,7 +34,7 @@ class CpkReadServiceImpl @Activate constructor(
     bundleContext: BundleContext,
     properties: Map<String, Any?>
 ) : CpkReadService, CpiLoader {
-    private val logger = loggerFor<CpkReadService>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val cpkDir = (properties[CpiLoader.BASE_DIRECTORY_KEY] as? String)?.let { Paths.get(it) }
         ?: throw IllegalStateException("Base directory not configured")

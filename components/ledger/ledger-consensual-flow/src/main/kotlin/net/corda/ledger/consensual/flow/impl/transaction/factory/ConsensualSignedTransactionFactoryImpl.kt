@@ -18,6 +18,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -26,7 +27,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
-import java.security.PublicKey
 import java.time.Instant
 
 @Suppress("LongParameterList")
@@ -56,8 +56,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
      */
     @Suspendable
     override fun create(
-        consensualTransactionBuilder: ConsensualTransactionBuilder,
-        signatories: Iterable<PublicKey>
+        consensualTransactionBuilder: ConsensualTransactionBuilder
     ): ConsensualSignedTransaction {
         val metadata: TransactionMetadata = transactionMetadataFactory.create(consensualMetadata())
         ConsensualTransactionMetadataVerifier(metadata).verify()
@@ -67,14 +66,19 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
 
         verifyTransaction(wireTransaction)
 
-        val signaturesWithMetaData = signatories.map {
-            transactionSignatureService.sign(wireTransaction.id, it)
+        val signaturesWithMetadata =
+            transactionSignatureService.sign(
+                wireTransaction.id,
+                consensualTransactionBuilder.states.flatMap { it.participants }
+            )
+        if (signaturesWithMetadata.isEmpty()){
+            throw CordaRuntimeException("None of the required keys were available to sign the transaction.")
         }
         return ConsensualSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
             wireTransaction,
-            signaturesWithMetaData
+            signaturesWithMetadata
         )
     }
 
