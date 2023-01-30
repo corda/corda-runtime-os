@@ -46,7 +46,7 @@ class KafkaConfigMergerImpl : BusConfigMerger {
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
         return if (hasMaxMsgSize) {
             baseKafkaConfig
-                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(bootConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
+                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(bootConfig.getLong(BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE)))
         } else {
             baseKafkaConfig
         }
