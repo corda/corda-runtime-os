@@ -8,6 +8,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
@@ -35,6 +36,8 @@ class WrappedUtxoWireTransaction(
     }
 
     val id: SecureHash get() = wireTransaction.id
+
+    val metadata: TransactionMetadata get() = wireTransaction.metadata
 
     val notary: Party by lazy(LazyThreadSafetyMode.PUBLICATION) {
         deserialize(UtxoComponentGroup.NOTARY, notaryIndex)
