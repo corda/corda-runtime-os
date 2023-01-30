@@ -34,7 +34,7 @@ enum class BusType {
 class WorkerHelpers {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
+            private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
 
         /**
          * Parses the [args] into the [params].
@@ -87,13 +87,12 @@ class WorkerHelpers {
             val secretsConfig =
                 ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys { (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
 
-            val bootConfig = SmartConfigFactory
+            var bootConfig = SmartConfigFactory
                 .createWith(secretsConfig, secretsServiceFactoryResolver.findAll())
                 .create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
-            validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
-            return bootConfig
+            return validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
         }
 
         private fun loadResource(resource: String): InputStream {
