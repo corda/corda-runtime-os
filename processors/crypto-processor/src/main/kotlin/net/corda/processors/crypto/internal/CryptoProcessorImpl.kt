@@ -169,7 +169,6 @@ class CryptoProcessorImpl @Activate constructor(
                     if (hsmAssociated) {
                         setStatus(LifecycleStatus.UP, coordinator)
                     } else {
-                        logger.info("Assigning SOFT HSMs")
                         val failed = temporaryAssociateClusterWithSoftHSM()
                         if (failed.isNotEmpty()) {
                             if(tmpAssignmentFailureCounter.getAndIncrement() <= 5) {
