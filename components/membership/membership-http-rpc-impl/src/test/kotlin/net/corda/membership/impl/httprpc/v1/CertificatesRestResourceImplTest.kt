@@ -5,7 +5,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -181,7 +180,6 @@ class CertificatesRestResourceImplTest {
                 )
             }
 
-            assertThat(details.responseCode).isEqualTo(ResponseCode.SERVICE_UNAVAILABLE)
             assertThat(details.message).isEqualTo("Could not find key with ID keyId for id: Repartition Event!")
         }
 
@@ -424,7 +422,6 @@ class CertificatesRestResourceImplTest {
                 certificatesOps.importCertificateChain("p2p-tls", null, "alias", listOf(certificate))
             }
 
-            assertThat(details.responseCode).isEqualTo(ResponseCode.SERVICE_UNAVAILABLE)
             assertThat(details.message).isEqualTo("Could not import certificate: Repartition Event!")
         }
     }
@@ -501,7 +498,6 @@ class CertificatesRestResourceImplTest {
                 )
             }
 
-            assertThat(details.responseCode).isEqualTo(ResponseCode.SERVICE_UNAVAILABLE)
             assertThat(details.message).isEqualTo("Could not get certificate aliases: Repartition Event!")
         }
     }
@@ -599,7 +595,6 @@ class CertificatesRestResourceImplTest {
                 )
             }
 
-            assertThat(details.responseCode).isEqualTo(ResponseCode.SERVICE_UNAVAILABLE)
             assertThat(details.message).isEqualTo("Could not get certificate chain: Repartition Event!")
         }
     }

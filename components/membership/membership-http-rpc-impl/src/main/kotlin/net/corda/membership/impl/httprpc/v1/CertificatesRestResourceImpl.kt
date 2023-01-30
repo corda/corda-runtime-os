@@ -106,7 +106,7 @@ class CertificatesRestResourceImpl @Activate constructor(
                 tenantId = tenantId,
                 ids = listOf(keyId)
             )
-        }!!.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
+        }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
         val publicKey = keyEncodingService.decodePublicKey(key.publicKey.array())
 
         val extensionsGenerator = ExtensionsGenerator()
@@ -222,7 +222,7 @@ class CertificatesRestResourceImpl @Activate constructor(
                 usageType,
                 holdingIdentityShortHash,
             )
-        }!!.toList()
+        }.toList()
     }
 
     override fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
@@ -293,8 +293,8 @@ class CertificatesRestResourceImpl @Activate constructor(
 
     private fun<T> tryWithExceptionHandling(
         operation: String,
-        block: () -> T?
-    ): T? {
+        block: () -> T
+    ): T {
         try {
             return block()
         } catch (repartitionException: CordaRPCAPIPartitionException) {
