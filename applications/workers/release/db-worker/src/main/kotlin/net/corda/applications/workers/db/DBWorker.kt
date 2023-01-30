@@ -70,7 +70,7 @@ class DBWorker @Activate constructor(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig)
-        )
+        ).bootstrapConfig
 
         processor.start(config)
         uniquenessProcessor.start()

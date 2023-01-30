@@ -132,13 +132,18 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
             val retry = hsmConfig.retry
             val hsm = hsmConfig.hsm
-            logger.info("json ${hsm.cfg.root().render(ConfigRenderOptions.concise()).toString()} to ${cryptoServiceProvider.configType}")
-            val cryptoService = cryptoServiceProvider.getInstance(
-                objectMapper.readValue(
-                    hsm.cfg.root().render(ConfigRenderOptions.concise()),
-                    cryptoServiceProvider.configType
-                )
-            )
+//            logger.info(
+//                "json ${
+//                    hsm.cfg.root().render(ConfigRenderOptions.concise()).toString()
+//                } to ${cryptoServiceProvider.configType}"
+//            )
+//            val text: String = hsm.cfg.root().render(ConfigRenderOptions.concise())
+//
+//            val config: Any = objectMapper.readValue(
+//                text,
+//                cryptoServiceProvider.configType
+//            )
+            val cryptoService = cryptoServiceProvider.getInstance(hsm.cfg)
             CryptoServiceDecorator.create(
                 cryptoService,
                 retry.maxAttempts,

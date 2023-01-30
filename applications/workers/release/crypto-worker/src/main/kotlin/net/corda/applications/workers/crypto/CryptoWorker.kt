@@ -88,7 +88,7 @@ class CryptoWorker @Activate constructor(
             PathAndConfig(BootConfig.BOOT_DB_PARAMS, params.databaseParams),
             PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         )
-    )
+    ).bootstrapConfig
 }
 
 class CryptoWorkerParams {

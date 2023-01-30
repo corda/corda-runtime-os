@@ -8,6 +8,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.DbSchema
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
@@ -35,6 +36,7 @@ class PostgresDbSetup(
     private val dbName: String,
     private val secretsSalt: String,
     private val secretsPassphrase: String,
+    private val smartConfigFactory: SmartConfigFactory
 ): DbSetup {
     
     companion object {
@@ -191,7 +193,9 @@ class PostgresDbSetup(
 
     private fun createCryptoConfig() {
         val random = SecureRandom()
-        val config = createDefaultCryptoConfig(random.randomString(), random.randomString()
+        val config = createDefaultCryptoConfig(
+            smartConfigFactory.makeSecret(random.randomString()).root(),
+            smartConfigFactory.makeSecret(random.randomString()).root(),
         ).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(

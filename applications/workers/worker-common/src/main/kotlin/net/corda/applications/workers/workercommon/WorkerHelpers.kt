@@ -52,6 +52,11 @@ class WorkerHelpers {
             return params
         }
 
+        data class BootstrapConfigResults(
+            val bootstrapConfig: SmartConfig,
+            val smartConfigFactory: SmartConfigFactory
+        )
+
         /**
          * Uses [smartConfigFactory] to create a `SmartConfig` containing the instance ID, topic prefix, additional
          * params in the [defaultParams], and any [extraParams]. Check that the configuration matches the schema,
@@ -69,7 +74,7 @@ class WorkerHelpers {
             validator: ConfigurationValidator,
             extraParams: List<PathAndConfig> = emptyList(),
             busType: BusType = BusType.KAFKA
-        ): SmartConfig {
+        ): BootstrapConfigResults {
             val extraParamsMap = extraParams
                 .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
                 .flatMap { map -> map.entries }
@@ -94,9 +99,9 @@ class WorkerHelpers {
             val secretsConfig =
                 ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys { (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
 
-            val bootConfig = SmartConfigFactory
+            val smartConfigFactory = SmartConfigFactory
                 .createWith(secretsConfig, secretsServiceFactoryResolver.findAll())
-                .create(config)
+            val bootConfig = smartConfigFactory.create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
             validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
@@ -116,7 +121,7 @@ class WorkerHelpers {
             // This is handled later, via the lifecycle coordinator and the domino logic,
             // based on the requirements graph.
             //
-            return bootConfig
+            return BootstrapConfigResults(bootConfig, smartConfigFactory)
         }
 
         private fun loadResource(resource: String): InputStream {
