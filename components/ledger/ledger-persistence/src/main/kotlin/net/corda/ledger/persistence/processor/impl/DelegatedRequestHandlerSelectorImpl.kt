@@ -21,8 +21,8 @@ class DelegatedRequestHandlerSelectorImpl @Activate constructor(
     private val utxoRequestHandlerSelector: UtxoRequestHandlerSelector,
 ) : DelegatedRequestHandlerSelector {
 
-    companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
