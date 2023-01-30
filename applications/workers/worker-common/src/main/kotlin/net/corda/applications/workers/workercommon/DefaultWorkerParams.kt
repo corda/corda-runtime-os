@@ -27,6 +27,13 @@ class DefaultWorkerParams {
     // This needs revision as arguably it belongs to the `messagingParams`
     var topicPrefix = ""
 
+    // This needs revision as arguably it belongs to the `messagingParams`
+    @Option(
+        names = ["-M", "--max-message-size"],
+        description = ["The maximum message size allowed to be sent to kafka. Required for initial read of config "]
+    )
+    var maxAllowedMessageSize = 972800
+
     @Option(names = ["-n", "--no-worker-monitor"], description = ["Disables the worker monitor."])
     var disableWorkerMonitor = false
 

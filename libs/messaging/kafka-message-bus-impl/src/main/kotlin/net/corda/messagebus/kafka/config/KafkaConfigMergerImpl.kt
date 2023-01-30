@@ -6,7 +6,6 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
-import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -42,12 +41,12 @@ class KafkaConfigMergerImpl : BusConfigMerger {
     }
 
     private fun getBaseKafkaMessagingConfig(bootConfig: SmartConfig): SmartConfig {
-        val hasMaxMsgSize = bootConfig.hasPath(BOOT_MAX_ALLOWED_MSG_SIZE)
+        val hasMaxMsgSize = bootConfig.hasPath(MAX_ALLOWED_MSG_SIZE)
         val baseKafkaConfig = SmartConfigImpl.empty()
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
         return if (hasMaxMsgSize) {
             baseKafkaConfig
-                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(bootConfig.getLong(BOOT_MAX_ALLOWED_MSG_SIZE)))
+                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(bootConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
         } else {
             baseKafkaConfig
         }
