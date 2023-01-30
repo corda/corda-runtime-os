@@ -117,17 +117,13 @@ class DbConnectionManagerImpl (
          * In a K8s setting we have to be careful that doesn't just trigger pods being terminated and re-created
          * because K8s thinks they're unhealthy while it's actually the downstream system.
          */
-        while (true) {
-            try {
-                checkDatabaseConnection(clusterDataSource)
-                logger.info("Connection to Cluster DB is successful.")
-                return
-            } catch (e: DBConfigurationException) {
-                logger.warn("Failed to connect to Cluster DB. " +
-                        "Will be retrying in ${checkConnectionRetryTimeout.seconds}s: $e")
-                sleeper(checkConnectionRetryTimeout)
-            }
+        val dbTest = DbConnectionTest()
+        while (!dbTest.isDatabaseConnectionUp(clusterDataSource)) {
+            logger.warn("Failed to connect to Cluster DB. Will be retrying in ${checkConnectionRetryTimeout.seconds}s")
+            sleeper(checkConnectionRetryTimeout)
         }
+        logger.info("Connection to Cluster DB is successful.")
+        eventHandler.scheduleNextDbCheck(lifecycleCoordinator)
     }
 
     /**
@@ -144,16 +140,5 @@ class DbConnectionManagerImpl (
             throw DBConfigurationException("Entity set for $name not found"),
             DbEntityManagerConfiguration(dataSource),
         )
-    }
-
-    /**
-     * Checks that it is possible to connect to the cluster database using the [dataSource].
-     *
-     * @throws DBConfigurationException If the cluster database cannot be connected to.
-     */
-    private fun checkDatabaseConnection(dataSource: DataSource) = try {
-        dataSource.connection.close()
-    } catch (e: Exception) {
-        throw DBConfigurationException("Could not connect to cluster database.", e)
     }
 }
