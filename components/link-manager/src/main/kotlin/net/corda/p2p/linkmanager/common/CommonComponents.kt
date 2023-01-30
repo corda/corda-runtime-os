@@ -95,11 +95,8 @@ internal class CommonComponents(
         publisherFactory,
         lifecycleCoordinatorFactory,
         messagingConfiguration,
-    ).also {
-        groupPolicyProvider.registerListener("$LISTENER_NAME-${it.javaClass.simpleName}") { holdingIdentity, groupPolicy ->
-            it.groupAdded(holdingIdentity, groupPolicy)
-        }
-    }
+        groupPolicyProvider,
+    )
 
     private val externalDependencies = listOf(
         NamedLifecycle.of(groupPolicyProvider),
@@ -113,7 +110,6 @@ internal class CommonComponents(
         NamedLifecycle.of(membershipQueryClient),
         NamedLifecycle.of(groupParametersReaderService)
     ) + externalDependencies
-
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
