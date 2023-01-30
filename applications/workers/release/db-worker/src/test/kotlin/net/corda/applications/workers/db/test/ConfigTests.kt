@@ -222,10 +222,9 @@ class ConfigTests {
     }
 
     private class DummyConfigurationValidator : ConfigurationValidator {
-        override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean): SmartConfig =
-            SmartConfigImpl.empty()
+        override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean): SmartConfig = config
 
-        override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = SmartConfigImpl.empty()
+        override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = config
 
         override fun getDefaults(key: String, version: Version): Config = SmartConfigImpl.empty()
     }
