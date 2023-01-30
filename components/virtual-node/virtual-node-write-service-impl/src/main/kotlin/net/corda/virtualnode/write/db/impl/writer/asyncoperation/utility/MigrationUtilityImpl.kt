@@ -6,11 +6,11 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
+import org.slf4j.LoggerFactory
 
 internal class MigrationUtilityImpl(
     private val dbConnectionManager: DbConnectionManager,
@@ -18,7 +18,7 @@ internal class MigrationUtilityImpl(
 ) : MigrationUtility {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun runCpiMigrations(

@@ -15,7 +15,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -26,6 +25,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtilit
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MgmGroupMismatchException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeStateException
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -39,7 +39,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
 
     private companion object {
-        val log = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun handle(
@@ -47,7 +47,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestId: String,
         request: VirtualNodeUpgradeRequest
     ): Record<*, *>? {
-        log.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
+        logger.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
         request.validateFields()
 
         upgradeVirtualNodeCpi(requestTimestamp, requestId, request)
@@ -108,7 +108,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         if (!isVaultSchemaAndTargetCpiInSync()) {
             tryRunningMigrationsInProcess(transactionCompleted, requestId, request)
         } else {
-            log.info(
+            logger.info(
                 "Virtual node upgrade complete, no migrations were necessary - Virtual node " +
                         "${upgradedVNodeInfo.holdingIdentity.shortHash} successfully upgraded to CPI " +
                         "name: ${upgradedVNodeInfo.cpiIdentifier.name}, version: ${upgradedVNodeInfo.cpiIdentifier.version} " +
@@ -123,11 +123,11 @@ internal class VirtualNodeUpgradeOperationHandler(
         request: VirtualNodeUpgradeRequest
     ) {
         if (transactionCompleted.vaultDdlConnectionId == null) {
-            log.info("No vault DDL connection provided, CPI migrations must be run out of process (request $requestId)")
+            logger.info("No vault DDL connection provided, CPI migrations must be run out of process (request $requestId)")
             return
         }
 
-        log.info("Vault DDL connection found for virtual node, preparing to run CPI migrations (request $requestId)")
+        logger.info("Vault DDL connection found for virtual node, preparing to run CPI migrations (request $requestId)")
         migrationUtility.runCpiMigrations(
             ShortHash.of(request.virtualNodeShortHash),
             transactionCompleted.migrationsByCpkFileChecksum,
@@ -143,7 +143,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 //            return
 //        }
 
-        log.info("Virtual node upgrade CPI migrations completed (request $requestId)")
+        logger.info("Virtual node upgrade CPI migrations completed (request $requestId)")
         val vNodeCompleted = entityManagerFactory.createEntityManager().transaction { em ->
             virtualNodeRepository.completeOperation(em, request.virtualNodeShortHash)
         }

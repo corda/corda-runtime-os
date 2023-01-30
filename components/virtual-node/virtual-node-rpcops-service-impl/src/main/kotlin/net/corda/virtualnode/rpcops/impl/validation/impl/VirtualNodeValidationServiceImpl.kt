@@ -11,7 +11,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.impl.validation.VirtualNodeValidationService
 
-class VirtualNodeValidationServiceImpl(
+internal class VirtualNodeValidationServiceImpl(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val cpiInfoReadService: CpiInfoReadService
 ): VirtualNodeValidationService {

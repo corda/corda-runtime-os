@@ -9,8 +9,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -21,7 +21,7 @@ class VirtualNodeSenderImpl(
     private val asyncOperationPublisher: Publisher,
 ) : VirtualNodeSender {
     companion object {
-        val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val PUBLICATION_TIMEOUT_SECONDS = 180L
     }
 
