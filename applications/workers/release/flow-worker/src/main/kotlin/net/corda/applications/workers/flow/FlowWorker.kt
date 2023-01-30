@@ -68,7 +68,8 @@ class FlowWorker @Activate constructor(
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
-            configurationValidatorFactory.createConfigValidator())
+            configurationValidatorFactory.createConfigValidator()
+        ).bootstrapConfig
 
         flowProcessor.start(config)
         verificationProcessor.start(config)

@@ -67,7 +67,7 @@ class CombinedWorker @Activate constructor(
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
-        val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
+    val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
 ) : Application {
 
     private companion object {
@@ -94,7 +94,7 @@ class CombinedWorker @Activate constructor(
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
-        val config = getBootstrapConfig(
+        val (config, smartConfigFactory) = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
@@ -121,7 +121,8 @@ class CombinedWorker @Activate constructor(
             dbAdminPassword,
             dbName,
             secretsSalt,
-            secretsPassphrase
+            secretsPassphrase,
+            smartConfigFactory
         ).run()
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
