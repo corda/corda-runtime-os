@@ -11,7 +11,7 @@ import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 internal object VNodeTestUtils {

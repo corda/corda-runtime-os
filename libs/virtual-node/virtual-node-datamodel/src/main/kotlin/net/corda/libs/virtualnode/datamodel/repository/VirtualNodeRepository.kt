@@ -47,6 +47,7 @@ interface VirtualNodeRepository {
     /**
      * Upgrade the CPI associated with a virtual node.
      */
+    @Suppress("LongParameterList")
     fun upgradeVirtualNodeCpi(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
