@@ -18,7 +18,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
@@ -26,6 +25,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowClassRestResource::class, PluggableRestResource::class], immediate = true)
 class FlowClassRestResourceImpl @Activate constructor(
@@ -38,7 +38,7 @@ class FlowClassRestResourceImpl @Activate constructor(
 ) : FlowClassRestResource, PluggableRestResource<FlowClassRestResource>, Lifecycle {
 
     companion object {
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun start() = coordinator.start()

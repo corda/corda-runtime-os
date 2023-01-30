@@ -6,7 +6,7 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.loggerFor
+import org.slf4j.LoggerFactory
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.time.Duration
@@ -22,7 +22,7 @@ internal class SandboxGroupContextCacheImpl private constructor(
         : this(capacity, ReferenceQueue<SandboxGroupContextWrapper>(), ConcurrentHashMap.newKeySet())
 
     private companion object {
-        private val logger = loggerFor<SandboxGroupContextCache>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val WAIT_MILLIS = 100L
     }
 

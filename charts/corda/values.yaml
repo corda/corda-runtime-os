@@ -326,6 +326,35 @@ bootstrap:
   serviceAccount:
     name: ""
 
+# config service configuration
+config:
+  # the configuration for encryption of configuration
+  encryption:
+    # the salt configuration for encryption of configuration
+    salt:
+      # -- the salt for encryption of configuration, defaults to a value randomly-generated on install
+      value: ""
+      # the salt secret configuration; if name is specified, used in preference to config.encryption.salt.value
+      valueFrom:
+        # the salt secret key reference
+        secretKeyRef:
+          # -- the name of the secret containing the salt for encryption of configuration; if specified, used in preference to config.encryption.salt.value
+          name: ""
+          # -- the key in the secret containing the salt for encryption of configuration
+          key: ""
+    # the passphrase configuration for encryption of configuration
+    passphrase:
+      # -- the passphrase for encryption of configuration, defaults to a value randomly-generated on install
+      value: ""
+      # the passphrase secret configuration; if name is specified, used in preference to config.encryption.passphrase.value
+      valueFrom:
+        # the passphrase secret key reference
+        secretKeyRef:
+          # -- the name of the secret containing the passphrase for encryption of configuration; if specified, used in preference to config.encryption.passphrase.value
+          name: ""
+          # -- the key in the secret containing the passphrase for encryption of configuration
+          key: ""
+
 # worker configuration
 workers:
   # crypto worker configuration
@@ -429,30 +458,6 @@ workers:
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
-    # the salt configuration 
-    salt: 
-      # -- the salt, defaults to a value randomly-generated on install
-      value: ""
-      # the salt secret configuration; used in preference to value if name is set
-      valueFrom:
-        # the salt secret key reference
-        secretKeyRef:
-          # -- the salt secret name
-          name: ""
-          # -- the salt secret key
-          key: ""
-    # passphrase configuration
-    passphrase: 
-      # -- the passphrase, defaults to a value randomly-generated on install
-      value: ""
-      # the passphrase secret configuration
-      valueFrom:
-        # the passphrase secret key reference
-        secretKeyRef:
-          # -- the passphrase secret name
-          name: ""
-          # -- the passphrase secret key
-          key: ""
 
     # resource limits and requests configuration for the DB worker containers.
     resources:

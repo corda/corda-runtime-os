@@ -16,7 +16,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 
@@ -38,7 +38,7 @@ class SimulatorDelegateBase  (
 ) : SimulatedCordaNetwork {
 
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val flowFactory: FlowFactory = BaseFlowFactory()

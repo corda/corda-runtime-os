@@ -21,7 +21,6 @@ import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -32,6 +31,7 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
+import org.slf4j.LoggerFactory
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
@@ -44,7 +44,7 @@ class SoftCryptoService(
     private val digestService: PlatformDigestService
 ) : CryptoService {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         fun produceSupportedSchemes(schemeMetadata: CipherSchemeMetadata): Map<KeyScheme, List<SignatureSpec>> =
             mutableMapOf<KeyScheme, List<SignatureSpec>>().apply {

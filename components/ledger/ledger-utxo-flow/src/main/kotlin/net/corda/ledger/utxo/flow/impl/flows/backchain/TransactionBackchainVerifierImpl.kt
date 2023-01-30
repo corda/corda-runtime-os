@@ -8,7 +8,6 @@ import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -16,6 +15,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 
 @Component(
     service = [ TransactionBackchainVerifier::class, UsedByFlow::class ],
@@ -28,7 +28,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
 ) : TransactionBackchainVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        val log = loggerFor<TransactionBackchainVerifierImpl>()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable

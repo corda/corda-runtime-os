@@ -29,10 +29,10 @@ import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.DatabaseConfig
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
@@ -71,7 +71,7 @@ class CombinedWorker @Activate constructor(
 ) : Application {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /** Parses the arguments, then initialises and starts the processors. */

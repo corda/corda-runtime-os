@@ -1,16 +1,14 @@
 package net.corda.testing.sandboxes.impl
 
-import net.corda.libs.packaging.core.CpiIdentifier
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.VirtualNodeLoader
-import net.corda.v5.base.util.loggerFor
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -18,8 +16,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 
 @Suppress("unused")
@@ -32,7 +32,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
     private val virtualNodeInfoMap = ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo>()
     private val resourcesLookup = mutableMapOf<CpiIdentifier, String>()
     private val cpiResources = mutableMapOf<String, Cpi>()
-    private val logger = loggerFor<VirtualNodeLoader>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     override val isRunning: Boolean
         get() = true

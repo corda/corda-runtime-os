@@ -31,7 +31,6 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -48,6 +47,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.time.Instant
@@ -72,7 +72,7 @@ class ConsensualLedgerMessageProcessorTests {
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
             "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
         )
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @RegisterExtension

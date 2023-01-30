@@ -28,8 +28,8 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class ApproveRegistrationHandler(
@@ -46,7 +46,7 @@ internal class ApproveRegistrationHandler(
     ),
 ) : RegistrationHandler<ApproveRegistration> {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val commandType = ApproveRegistration::class.java

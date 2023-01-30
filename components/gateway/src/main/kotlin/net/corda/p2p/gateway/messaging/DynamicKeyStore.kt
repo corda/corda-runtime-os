@@ -6,6 +6,7 @@ import net.corda.crypto.delegated.signing.CertificateChain
 import net.corda.crypto.delegated.signing.DelegatedCertificateStore
 import net.corda.crypto.delegated.signing.DelegatedSigner
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -18,11 +19,10 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.GatewayTlsCertificates
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.security.InvalidKeyException
 import java.security.PublicKey
@@ -45,7 +45,7 @@ internal class DynamicKeyStore(
 
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_certificates_truststores_reader"
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     override val aliasToCertificates = ConcurrentHashMap<Alias, CertificateChain>()
 

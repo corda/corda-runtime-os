@@ -50,13 +50,12 @@ import net.corda.membership.registration.RegistrationStatusQueryException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
-import net.corda.v5.base.util.parseOrNull
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
@@ -74,7 +73,7 @@ class MemberOpsServiceProcessor(
     }
 
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val handlers = mapOf<Class<*>, (MemberOpsServiceProcessor) -> RpcHandler<*>>(
             RegistrationRpcRequest::class.java to { it.RegistrationRequestHandler() },

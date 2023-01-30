@@ -1,6 +1,5 @@
 package net.corda.membership.impl.client
 
-import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.common.RegistrationStatus
@@ -43,7 +42,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
@@ -51,6 +49,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.util.UUID
 import java.util.concurrent.TimeoutException
 
 @Component(service = [MemberOpsClient::class])
@@ -63,7 +63,7 @@ class MemberOpsClientImpl @Activate constructor(
     val configurationReadService: ConfigurationReadService
 ) : MemberOpsClient {
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val ERROR_MSG = "Service is in an incorrect state for calling."
 
         const val CLIENT_ID = "membership.ops.rpc"

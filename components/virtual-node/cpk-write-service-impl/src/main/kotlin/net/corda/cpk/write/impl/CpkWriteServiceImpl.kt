@@ -40,7 +40,6 @@ import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.trace
@@ -49,6 +48,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.time.Duration
 
@@ -68,7 +68,7 @@ class CpkWriteServiceImpl @Activate constructor(
     private val dbConnectionManager: DbConnectionManager
 ) : CpkWriteService, LifecycleEventHandler {
     companion object {
-        val logger: Logger = contextLogger()
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CPK_WRITE_GROUP = "cpk.writer"
         const val CPK_WRITE_CLIENT = "$CPK_WRITE_GROUP.client"

@@ -3,7 +3,6 @@ package net.corda.membership.groupparams.writer.service.impl
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -23,13 +22,14 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import net.corda.data.membership.GroupParameters as GroupParametersAvro
 
 @Component(service = [GroupParametersWriterService::class])
 class GroupParametersWriterServiceImpl @Activate constructor(
@@ -41,7 +41,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
 ) : GroupParametersWriterService {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SERVICE = "GroupParametersWriterService"
     }
 

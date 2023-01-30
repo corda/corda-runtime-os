@@ -8,8 +8,8 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.constants.SubscriptionType
-import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
+import org.slf4j.LoggerFactory
 
 /**
  * Class to resolve configuration for the messaging layer.
@@ -17,7 +17,7 @@ import org.osgi.framework.FrameworkUtil
 internal class MessagingConfigResolver(private val smartConfigFactory: SmartConfigFactory) {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         // Defaults could be provided externally using the schema instead. However, at the time of writing this isn't
         // integrated, so the default fallback mechanism is left as a compromise.

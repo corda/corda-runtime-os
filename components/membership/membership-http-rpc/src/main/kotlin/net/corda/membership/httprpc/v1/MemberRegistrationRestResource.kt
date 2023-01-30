@@ -76,7 +76,7 @@ interface MemberRegistrationRestResource : RestResource {
      * memberRegistrationOps.checkRegistrationProgress(holdingIdentityShortHash = "58B6030FABDD")
      * ```
      *
-     * @param holdingIdentityShortHash The ID of the holding identity whose registration progress is to be checked.
+     * @param holdingIdentityShortHash The ID of the holding identity whose view of the registration progress is to be checked.
      *
      * @return List of [RegistrationRequestStatus] to indicate the last known statuses of all registration requests made
      * by [holdingIdentityShortHash].
@@ -97,7 +97,7 @@ interface MemberRegistrationRestResource : RestResource {
         """
     )
     fun checkRegistrationProgress(
-        @RestPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
+        @RestPathParameter(description = "The ID of the holding identity whose view of the registration progress is to be checked.")
         holdingIdentityShortHash: String
     ): List<RegistrationRequestStatus>
 
@@ -112,7 +112,7 @@ interface MemberRegistrationRestResource : RestResource {
      * registrationRequestId = "3B9A266F96E2")
      * ```
      *
-     * @param holdingIdentityShortHash The ID of the holding identity whose registration progress is to be checked.
+     * @param holdingIdentityShortHash The ID of the holding identity whose view of the registration progress is to be checked.
      * @param registrationRequestId The ID of the registration request.
      *
      * @return [RegistrationRequestStatus] to indicate the last known status of the specified registration request made
@@ -134,7 +134,7 @@ interface MemberRegistrationRestResource : RestResource {
         """
     )
     fun checkSpecificRegistrationProgress(
-        @RestPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
+        @RestPathParameter(description = "The ID of the holding identity whose view of the registration progress is to be checked.")
         holdingIdentityShortHash: String,
         @RestPathParameter(description = "The ID of the registration request")
         registrationRequestId: String,

@@ -16,9 +16,9 @@ import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class ConsensualFinalityFlow(
@@ -27,7 +27,7 @@ class ConsensualFinalityFlow(
 ) : ConsensualFinalityBase() {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val transactionId = initialTransaction.id

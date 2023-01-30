@@ -7,16 +7,16 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

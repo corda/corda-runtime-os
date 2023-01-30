@@ -16,9 +16,9 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.utilities.withMDC
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
 
 class FlowEventProcessorImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
@@ -29,7 +29,7 @@ class FlowEventProcessorImpl(
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val keyClass = String::class.java

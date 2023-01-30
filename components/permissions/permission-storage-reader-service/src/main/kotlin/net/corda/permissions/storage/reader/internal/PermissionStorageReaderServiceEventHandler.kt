@@ -1,6 +1,5 @@
 package net.corda.permissions.storage.reader.internal
 
-import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
@@ -28,8 +27,9 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
+import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
 class PermissionStorageReaderServiceEventHandler(
@@ -45,7 +45,7 @@ class PermissionStorageReaderServiceEventHandler(
 
     private companion object {
         const val CLIENT_NAME = "user.permissions.management"
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @VisibleForTesting

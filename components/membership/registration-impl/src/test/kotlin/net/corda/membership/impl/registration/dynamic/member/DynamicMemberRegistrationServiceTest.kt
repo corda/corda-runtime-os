@@ -46,7 +46,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
@@ -425,7 +424,6 @@ class DynamicMemberRegistrationServiceTest {
                 SOFTWARE_VERSION,
                 PLATFORM_VERSION,
                 REGISTRATION_ID,
-                SERIAL,
                 URL_KEY.format(0),
                 PROTOCOL_VERSION.format(0),
                 PARTY_SESSION_KEY,

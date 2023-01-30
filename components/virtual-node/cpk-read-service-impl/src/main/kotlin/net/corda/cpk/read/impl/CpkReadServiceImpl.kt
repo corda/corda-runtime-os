@@ -1,12 +1,12 @@
 package net.corda.cpk.read.impl
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.read.impl.services.CpkChunksKafkaReader
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.packaging.Cpk
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,7 +19,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
@@ -28,9 +27,8 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
-import net.corda.utilities.WorkspacePathProvider
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import net.corda.utilities.WorkspacePathProvider
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
@@ -38,6 +36,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CpkReadService::class])
 class CpkReadServiceImpl (
@@ -65,7 +65,7 @@ class CpkReadServiceImpl (
     )
 
     companion object {
-        val logger: Logger = contextLogger()
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CPK_CACHE_DIR = "cpk-cache"
         const val CPK_PARTS_DIR = "cpk-parts"

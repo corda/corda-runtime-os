@@ -2,7 +2,7 @@ package net.corda.httprpc.client.stream
 
 import net.corda.httprpc.durablestream.api.PositionManager
 import net.corda.httprpc.durablestream.api.PositionManager.Companion.MIN_POSITION
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.Path
@@ -13,7 +13,7 @@ import kotlin.concurrent.write
 
 internal class FilePositionManager(private val filePath: Path) : PositionManager, AutoCloseable {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val BUFFER_SIZE = Long.MAX_VALUE.toString().length
     }
 

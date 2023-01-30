@@ -8,6 +8,9 @@ import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.membership.impl.p2p.handler.MembershipPackageHandler
 import net.corda.membership.impl.p2p.handler.MembershipSyncRequestHandler
 import net.corda.membership.impl.p2p.handler.MessageHandler
@@ -18,12 +21,9 @@ import net.corda.membership.impl.p2p.handler.VerificationResponseHandler
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 class MembershipP2PProcessor(
@@ -36,7 +36,7 @@ class MembershipP2PProcessor(
     override val valueClass = AppMessage::class.java
 
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
     }
