@@ -2,6 +2,8 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.io.InputStream
+import java.lang.management.ManagementFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -19,8 +21,6 @@ import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
 import picocli.CommandLine
-import java.io.InputStream
-import java.lang.management.ManagementFactory
 
 /** Associates a configuration key/value map with the path at which the configuration should be stored. */
 data class PathAndConfig(val path: String, val config: Map<String, String>)
@@ -92,7 +92,7 @@ class WorkerHelpers {
                 .create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
-            validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
+            validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
             return bootConfig
         }
 
