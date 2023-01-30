@@ -33,6 +33,12 @@ import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.PersistenceException
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeStateException
 
 class VirtualNodeUpgradeOperationHandlerTest {
     private val oldVirtualNodeEntityRepository = mock<VirtualNodeEntityRepository>()
@@ -41,12 +47,25 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val entityTransaction = mock<EntityTransaction>()
     private val em = mock<EntityManager>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
+    private val migrationUtility = mock<MigrationUtility>()
     private val vnodeId = "123456789011"
+
+    private val mockChangelog1 = mock<CpkDbChangeLogEntity> { changelog ->
+        whenever(changelog.id).thenReturn(CpkDbChangeLogKey("cpk1", "dog.xml"))
+    }
+    private val mockChangelog2 = mock<CpkDbChangeLogEntity> { changelog ->
+        whenever(changelog.id).thenReturn(CpkDbChangeLogKey("cpk1", "cat.xml"))
+    }
+    private val getCurrentChangelogsForCpi = mock<(EntityManager, String, String, String) -> List<CpkDbChangeLogEntity>> {
+        whenever(it(any(), any(), any(), any())).thenReturn(listOf(mockChangelog1, mockChangelog2))
+    }
 
     private val handler = VirtualNodeUpgradeOperationHandler(
         entityManagerFactory,
         oldVirtualNodeEntityRepository,
         virtualNodeInfoPublisher,
+        migrationUtility,
+        getCurrentChangelogsForCpi,
         virtualNodeRepository
     )
 
@@ -59,8 +78,12 @@ class VirtualNodeUpgradeOperationHandlerTest {
         whenever(it.version).thenReturn("v1")
         whenever(it.signerSummaryHash).thenReturn(ssh)
     }
-    private val currentVnode = mock<VirtualNodeInfo>() {
+    private val vNode = mock<VirtualNodeInfo>() {
         whenever(it.cpiIdentifier).thenReturn(currentCpiId)
+        whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
     }
     private val groupName = "someGroup1"
     private val targetCpiChecksum = "targetCpi"
@@ -79,6 +102,19 @@ class VirtualNodeUpgradeOperationHandlerTest {
         mockHoldingIdentity,
         targetCpiId,
         null,
+        UUID.randomUUID(),
+        null,
+        UUID.randomUUID(),
+        null,
+        UUID.randomUUID(),
+        UUID.randomUUID(),
+        timestamp = Instant.now()
+    )
+    private val vaultDdlConnectionId = UUID.randomUUID()
+    private val upgradedVnodeInfoWithVaultDdl = VirtualNodeInfo(
+        mockHoldingIdentity,
+        targetCpiId,
+        vaultDdlConnectionId,
         UUID.randomUUID(),
         null,
         UUID.randomUUID(),
@@ -135,8 +171,28 @@ class VirtualNodeUpgradeOperationHandlerTest {
     }
 
     @Test
+    fun `upgrade handler validates vault_db_operational_status is INACTIVE`() {
+        val activeVnode = mock<VirtualNodeInfo> {
+            whenever(it.cpiIdentifier).thenReturn(currentCpiId)
+            whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
+            whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
+            whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
+            whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
+        }
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(activeVnode)
+
+        assertThrows<VirtualNodeStateException> {
+            handler.handle(
+                Instant.now(),
+                "req1",
+                VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+            )
+        }
+    }
+
+    @Test
     fun `upgrade handler can't find target CPI throws`() {
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(null)
 
         assertThrows<CpiNotFoundException> {
@@ -150,7 +206,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler can't find current CPI associated with target CPI throws`() {
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
             .thenReturn(null)
@@ -167,7 +223,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `upgrade handler validates target CPI and current CPI are in the same group`() {
         val cpiInDifferentGroup = mock<CpiMetadataLite> { whenever(it.mgmGroupId).thenReturn("group-b") }
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
             .thenReturn(cpiInDifferentGroup)
@@ -183,11 +239,12 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler fails to upgrade, rolls back transaction`() {
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
             .thenReturn(currentCpiMetadata)
-        whenever(virtualNodeRepository.upgradeVirtualNodeCpi(any(), any(), any(), any(), any())).thenThrow(IllegalArgumentException("err"))
+        whenever(virtualNodeRepository.upgradeVirtualNodeCpi(any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenThrow(IllegalArgumentException("err"))
 
         whenever(entityTransaction.rollbackOnly).thenReturn(true)
 
@@ -204,24 +261,27 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     @Test
     fun `upgrade handler successfully persists and publishes vnode info`() {
-        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(currentVnode)
+        val requestTimestamp = Instant.now()
+        val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
             .thenReturn(currentCpiMetadata)
-        whenever(virtualNodeRepository.upgradeVirtualNodeCpi(
-            eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString))
+        whenever(
+            virtualNodeRepository.upgradeVirtualNodeCpi(
+                eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString), eq("req1"), eq(requestTimestamp), eq(request.toString())
+            )
         ).thenReturn(upgradedVnodeInfo)
 
-        val capture = argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
+        val vnodeInfoCapture =
+            argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
 
-        handler.handle(
-            Instant.now(),
-            "req1",
-            VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
-        )
-        verify(virtualNodeInfoPublisher, times(1)).publish(capture.capture())
+        handler.handle(requestTimestamp, "req1", request)
 
-        val publishedRecordList = capture.firstValue
+        verify(virtualNodeInfoPublisher, times(1)).publish(vnodeInfoCapture.capture())
+
+        val publishedRecordList = vnodeInfoCapture.firstValue
         assertThat(publishedRecordList).isNotNull
         assertThat(publishedRecordList).hasSize(1)
 
@@ -232,7 +292,87 @@ class VirtualNodeUpgradeOperationHandlerTest {
         assertThat(publishedRecord.key.x500Name).isEqualTo(x500Name.toString())
 
         assertThat(publishedRecord.value).isNotNull
-       assertThat(publishedRecord.value!!.cpiIdentifier.name).isEqualTo(cpiName)
+        assertThat(publishedRecord.value!!.cpiIdentifier.name).isEqualTo(cpiName)
+        assertThat(publishedRecord.value!!.cpiIdentifier.version).isEqualTo("v2")
+    }
+
+    @Test
+    fun `upgrade handler throws when running migrations`() {
+        val requestTimestamp = Instant.now()
+        val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+            .thenReturn(currentCpiMetadata)
+        whenever(
+            virtualNodeRepository.upgradeVirtualNodeCpi(
+                eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString), eq("req1"), eq(requestTimestamp), eq(request.toString())
+            )
+        ).thenReturn(upgradedVnodeInfoWithVaultDdl)
+        whenever(migrationUtility.runCpiMigrations(any(), any(), any())).thenThrow(PersistenceException("Some liquibase exception"))
+
+        val vnodeInfoCapture =
+            argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
+
+        assertThrows<PersistenceException> {
+            handler.handle(requestTimestamp, "req1", request)
+        }
+
+        verify(virtualNodeInfoPublisher, times(1)).publish(vnodeInfoCapture.capture())
+
+        val publishedRecordList = vnodeInfoCapture.firstValue
+        assertThat(publishedRecordList).isNotNull
+        assertThat(publishedRecordList).hasSize(1)
+
+        val publishedRecord = publishedRecordList[0]
+        assertThat(publishedRecord.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
+
+        assertThat(publishedRecord.key.groupId).isEqualTo(groupName)
+        assertThat(publishedRecord.key.x500Name).isEqualTo(x500Name.toString())
+
+        assertThat(publishedRecord.value).isNotNull
+        assertThat(publishedRecord.value!!.cpiIdentifier.name).isEqualTo(cpiName)
+        assertThat(publishedRecord.value!!.cpiIdentifier.version).isEqualTo("v2")
+    }
+
+    @Test
+    fun `upgrade handler successfully persists, runs migrations with vault ddl and publishes vnode info`() {
+        val requestTimestamp = Instant.now()
+        val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+            .thenReturn(currentCpiMetadata)
+        whenever(
+            virtualNodeRepository.upgradeVirtualNodeCpi(
+                eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString), eq("req1"), eq(requestTimestamp), eq(request.toString())
+            )
+        ).thenReturn(upgradedVnodeInfoWithVaultDdl)
+
+        val vnodeInfoCapture =
+            argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
+
+        handler.handle(requestTimestamp, "req1", request)
+
+        verify(virtualNodeInfoPublisher, times(1)).publish(vnodeInfoCapture.capture())
+        verify(migrationUtility).runCpiMigrations(
+            eq(ShortHash.of(request.virtualNodeShortHash)),
+            eq(mapOf("cpk1" to listOf(mockChangelog1, mockChangelog2))),
+            eq(vaultDdlConnectionId)
+        )
+
+        val publishedRecordList = vnodeInfoCapture.firstValue
+        assertThat(publishedRecordList).isNotNull
+        assertThat(publishedRecordList).hasSize(1)
+
+        val publishedRecord = publishedRecordList[0]
+        assertThat(publishedRecord.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
+
+        assertThat(publishedRecord.key.groupId).isEqualTo(groupName)
+        assertThat(publishedRecord.key.x500Name).isEqualTo(x500Name.toString())
+
+        assertThat(publishedRecord.value).isNotNull
+        assertThat(publishedRecord.value!!.cpiIdentifier.name).isEqualTo(cpiName)
         assertThat(publishedRecord.value!!.cpiIdentifier.version).isEqualTo("v2")
     }
 }

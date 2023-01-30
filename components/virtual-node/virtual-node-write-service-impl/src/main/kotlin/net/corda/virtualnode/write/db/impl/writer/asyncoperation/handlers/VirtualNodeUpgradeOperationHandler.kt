@@ -50,26 +50,26 @@ internal class VirtualNodeUpgradeOperationHandler(
         log.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
         request.validateFields()
 
-        upgradeVirtualNodeCpi(requestId, request.virtualNodeShortHash, request.cpiFileChecksum)
+        upgradeVirtualNodeCpi(requestTimestamp, requestId, request)
 
         return null
     }
 
     private fun upgradeVirtualNodeCpi(
+        requestTimestamp: Instant,
         requestId: String,
-        virtualNodeShortHash: String,
-        targetCpiFileChecksum: String
+        request: VirtualNodeUpgradeRequest
     ) {
         val transactionCompleted = entityManagerFactory.createEntityManager().transaction { em ->
 
-            val currentVirtualNode = findCurrentVirtualNode(em, virtualNodeShortHash)
+            val currentVirtualNode = findCurrentVirtualNode(em, request.virtualNodeShortHash)
 
             if (currentVirtualNode.vaultDbOperationalStatus != OperationalStatus.INACTIVE) {
                 // a future iteration of this will check first to see if migrations are actually required
                 throw VirtualNodeStateException("Virtual node must be in maintenance before upgrade (request $requestId).")
             }
 
-            val targetCpiMetadata = findTargetCpi(targetCpiFileChecksum)
+            val targetCpiMetadata = findTargetCpi(request.cpiFileChecksum)
             val originalCpiMetadata = findCurrentCpi(
                 em,
                 currentVirtualNode.cpiIdentifier.name,
@@ -82,8 +82,11 @@ internal class VirtualNodeUpgradeOperationHandler(
             val cpiName = targetCpiMetadata.id.name
             val cpiVersion = targetCpiMetadata.id.version
             val cpiSignerSummaryHash = targetCpiMetadata.id.signerSummaryHash.toString()
-            val upgradedVnodeInfo =
-                virtualNodeRepository.upgradeVirtualNodeCpi(em, virtualNodeShortHash, cpiName, cpiVersion, cpiSignerSummaryHash)
+            val upgradedVnodeInfo = virtualNodeRepository.upgradeVirtualNodeCpi(
+                em, request.virtualNodeShortHash,
+                cpiName, cpiVersion, cpiSignerSummaryHash,
+                requestId, requestTimestamp, request.toString()
+            )
 
             val migrationChangelogs: Map<String, List<CpkDbChangeLogEntity>> =
                 getCurrentChangelogsForCpi(em, cpiName, cpiVersion, cpiSignerSummaryHash)
@@ -96,16 +99,6 @@ internal class VirtualNodeUpgradeOperationHandler(
             )
         }
 
-        if (transactionCompleted.vaultDdlConnectionId != null) {
-            log.info("Virtual node upgrade (request $requestId) vault DDL connection found, running CPI migrations.")
-            migrationUtility.runCpiMigrations(
-                ShortHash.of(virtualNodeShortHash),
-                transactionCompleted.migrationsByCpkFileChecksum,
-                transactionCompleted.vaultDdlConnectionId
-            )
-            log.info("Virtual node upgrade (request $requestId) CPI migrations completed.")
-        }
-
         val upgradedVNodeInfo = transactionCompleted.upgradedVirtualNodeInfo
         virtualNodeInfoPublisher.publish(
             listOf(
@@ -116,6 +109,16 @@ internal class VirtualNodeUpgradeOperationHandler(
                 )
             )
         )
+
+        if (transactionCompleted.vaultDdlConnectionId != null) {
+            log.info("Virtual node upgrade vault DDL connection found, running CPI migrations (request $requestId)")
+            migrationUtility.runCpiMigrations(
+                ShortHash.of(request.virtualNodeShortHash),
+                transactionCompleted.migrationsByCpkFileChecksum,
+                transactionCompleted.vaultDdlConnectionId
+            )
+            log.info("Virtual node upgrade CPI migrations completed (request $requestId)")
+        }
 
         log.info(
             "Virtual node upgrade complete ($requestId) - Virtual node " +

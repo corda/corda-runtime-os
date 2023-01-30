@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
+import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
@@ -51,7 +52,10 @@ interface VirtualNodeRepository {
         holdingIdentityShortHash: String,
         cpiName: String,
         cpiVersion: String,
-        cpiSignerSummaryHash: String
+        cpiSignerSummaryHash: String,
+        requestId: String,
+        requestTimestamp: Instant,
+        serializedRequest: String
     ): VirtualNodeInfo
 }
 
