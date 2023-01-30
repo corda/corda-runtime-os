@@ -33,6 +33,7 @@ object DbSchema {
     const val VNODE_MEMBER_SIGNATURE = "vnode_member_signature"
     const val VNODE_GROUP_PARAMETERS = "vnode_group_parameters"
     const val VNODE_GROUP_APPROVAL_RULES = "vnode_group_approval_rules"
+    const val VNODE_PRE_AUTH_TOKENS = "vnode_pre_auth_tokens"
 
     const val LEDGER_CONSENSUAL_TRANSACTION_TABLE = "consensual_transaction"
     const val LEDGER_CONSENSUAL_TRANSACTION_STATUS_TABLE = "consensual_transaction_status"

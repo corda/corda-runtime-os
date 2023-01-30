@@ -1,0 +1,6 @@
+{
+  "type": "enum",
+  "name": "PreAuthTokenStatus",
+  "namespace": "net.corda.data.membership.preauth",
+  "symbols": [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED"]
+}

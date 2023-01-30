@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "PreAuthTokenQueryResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for pre auth tokens",
+  "fields": [
+    {
+      "name": "tokens",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.preauth.PreAuthToken"
+      },
+      "doc": "The tokens found by the query."
+    }
+  ]
+}

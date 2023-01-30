@@ -18,6 +18,7 @@
         "net.corda.data.membership.db.response.command.PersistGroupParametersResponse",
         "net.corda.data.membership.db.response.command.PersistApprovalRuleResponse",
         "net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse",
+        "net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse",
         "net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse",
         "net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse",
         "net.corda.data.membership.db.response.query.PersistenceFailedResponse",
@@ -25,7 +26,8 @@
         "net.corda.data.membership.db.response.query.MemberSignatureQueryResponse",
         "net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse",
         "net.corda.data.membership.db.response.query.GroupPolicyQueryResponse",
-        "net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse"
+        "net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse",
+        "net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse"
       ],
       "doc": "Response payload which depends on the requested operation."
     }

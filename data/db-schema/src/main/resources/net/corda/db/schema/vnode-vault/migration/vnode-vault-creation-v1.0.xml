@@ -38,6 +38,25 @@
         </createTable>
         <addPrimaryKey columnNames="subject" constraintName="vnode_mtls_allowed_certificate_pk" tableName="vnode_mtls_allowed_certificate"/>
 
+        <createTable tableName="vnode_pre_auth_tokens">
+            <column name="token_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="owner_x500_name" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ttl" type="TIMESTAMP">
+            </column>
+            <column name="status" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creation_remark" type="TEXT">
+            </column>
+            <column name="removal_remark" type="TEXT">
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="token_id" constraintName="vnode_pre_auth_tokens_pk" tableName="vnode_pre_auth_tokens"/>
+
         <createTable tableName="vnode_registration_request">
             <column name="registration_id" type="NVARCHAR(255)">
                 <constraints nullable="false"/>

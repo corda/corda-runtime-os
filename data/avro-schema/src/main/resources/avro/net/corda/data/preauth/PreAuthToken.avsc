@@ -1,0 +1,44 @@
+{
+  "type": "record",
+  "name": "PreAuthToken",
+  "namespace": "net.corda.data.membership.preauth",
+  "doc": "A token issued to a holding identity, used to authenticate a registration request.",
+  "fields": [
+    {
+      "name": "id",
+      "doc": "A unique identifier of the token.",
+      "type": "string"
+    },
+    {
+      "name": "ownerX500Name",
+      "doc": "The X500 name of the holding identity that the token belongs to.",
+      "type": "string"
+    },
+    {
+      "name": "ttl",
+      "doc": "Unix timestamp for when the pre auth token expires. In milliseconds since the epoch.",
+      "type": [
+         "null",
+         {
+           "type": "long",
+           "logicalType": "timestamp-millis"
+         }
+      ]
+    },
+    {
+      "name": "status",
+      "doc": "The current status of the token.",
+      "type": "net.corda.data.membership.preauth.PreAuthTokenStatus"
+    },
+    {
+      "name": "creationRemark",
+      "doc": "An optional remark added when the token was created.",
+      "type": ["null", "string"]
+    },
+    {
+      "name": "removalRemark",
+      "doc": "An optional remark added when the token is consumed, revoked or auto invalidated.",
+      "type": ["null", "string"]
+    }
+  ]
+}

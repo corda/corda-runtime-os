@@ -1,0 +1,34 @@
+{
+  "type": "record",
+  "name": "AddPreAuthToken",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Add a pre auth token.",
+  "fields": [
+    {
+      "name": "tokenId",
+      "doc": "Token identifier of the pre auth token.",
+      "type": "string"
+    },
+    {
+      "name": "ownerX500Name",
+      "doc": "X500 name of the owner of the pre auth token.",
+      "type": "string"
+    },
+    {
+      "name": "ttl",
+      "doc": "A timestamp for when the pre auth token expires.",
+      "type": [
+         "null",
+         {
+           "type": "long",
+           "logicalType": "timestamp-millis"
+         }
+      ]
+    },
+    {
+      "name": "remark",
+      "doc": "An optional remark added when the token was created.",
+      "type": ["string", "null"]
+    }
+  ]
+}
