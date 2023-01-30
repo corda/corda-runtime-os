@@ -17,7 +17,7 @@ internal class ClientCertificateBusListener<T : Any> private constructor(
     private val converter: (Record<String, T>) -> Record<String, ClientCertificateSubjects>,
 ) : DurableProcessor<String, T> {
     companion object {
-        private const val LISTENER_NAME = "compacted-subscription-lifecycle-with-domino-tile"
+        private const val LISTENER_NAME = "certificate-subject-forwarding-subscription"
 
         inline fun <reified T : Any> createSubscription(
             lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,

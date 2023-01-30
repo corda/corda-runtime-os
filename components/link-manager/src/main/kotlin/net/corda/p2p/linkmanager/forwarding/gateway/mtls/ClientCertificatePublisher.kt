@@ -23,7 +23,7 @@ internal class ClientCertificatePublisher(
     groupPolicyProvider: GroupPolicyProvider,
 ) : LifecycleWithDominoTile {
     private companion object {
-        const val PUBLISHER_NAME = "linkmanager_mtls_client_certificate_publisher_publisher"
+        const val PUBLISHER_NAME = "linkmanager_mtls_client_certificate_publisher"
     }
 
     private val groupPolicyListener = GroupPolicyListener(
