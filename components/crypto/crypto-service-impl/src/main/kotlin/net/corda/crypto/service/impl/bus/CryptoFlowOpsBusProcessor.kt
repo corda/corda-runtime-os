@@ -19,8 +19,8 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
@@ -29,7 +29,7 @@ class CryptoFlowOpsBusProcessor(
     event: ConfigChangedEvent
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val keyClass: Class<String> = String::class.java

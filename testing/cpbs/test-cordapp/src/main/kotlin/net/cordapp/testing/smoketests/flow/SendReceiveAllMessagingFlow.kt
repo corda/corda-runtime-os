@@ -13,8 +13,8 @@ import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.cordapp.testing.testflows.MyClass
+import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "SendReceiveAllProtocol")
 class SendReceiveAllMessagingFlow(
@@ -22,7 +22,7 @@ class SendReceiveAllMessagingFlow(
 ) : SubFlow<String> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -100,7 +100,7 @@ class SendReceiveAllMessagingFlow(
 class SendReceiveAllInitiatedFlow : ResponderFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

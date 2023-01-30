@@ -6,8 +6,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.orm.utils.transaction
-import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -20,7 +20,7 @@ class DBTopicUtils(
 ) : TopicUtils {
 
     private companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun createTopics(topicsTemplate: Config) {

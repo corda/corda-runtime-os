@@ -1,24 +1,22 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
-import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
-import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class ConsensualReceiveFinalityFlow(
@@ -27,11 +25,8 @@ class ConsensualReceiveFinalityFlow(
 ) : ConsensualFinalityBase() {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    @CordaInject
-    lateinit var memberLookup: MemberLookup
 
     @CordaInject
     lateinit var persistenceService: ConsensualLedgerPersistenceService
@@ -100,34 +95,13 @@ class ConsensualReceiveFinalityFlow(
         }
     }
 
-    private fun verifyTransaction(signedTransaction: ConsensualSignedTransaction) {
-        ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
-    }
-
     @Suspendable
     private fun signTransaction(
         initialTransaction: ConsensualSignedTransactionInternal,
     ): Pair<ConsensualSignedTransactionInternal, Payload<List<DigitalSignatureAndMetadata>>> {
-        val myKeys = memberLookup.myInfo()
-            .ledgerKeys
-            .toSet()
-        // Which of our keys are required.
-        val myExpectedSigningKeys = initialTransaction
-            .getMissingSignatories()
-            .intersect(myKeys)
-
-        if (myExpectedSigningKeys.isEmpty()) {
-            log.debug { "We are not required signer of ${initialTransaction.id}." }
-        }
-
-        var transaction = initialTransaction
-        val mySignatures = myExpectedSigningKeys.map { publicKey ->
-            log.debug { "Signing transaction: ${transaction.id} with $publicKey" }
-            transaction.sign(publicKey).also {
-                transaction = it.first
-            }.second
-        }
-
+        log.debug { "Signing transaction: ${initialTransaction.id} with our available required keys." }
+        val (transaction, mySignatures) = initialTransaction.addMissingSignatures()
+        log.debug { "Signing transaction: ${initialTransaction.id} resulted (${mySignatures.size}) signatures." }
         return transaction to Payload.Success(mySignatures)
     }
 

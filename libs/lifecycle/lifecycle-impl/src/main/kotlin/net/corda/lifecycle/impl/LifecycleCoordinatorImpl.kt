@@ -1,9 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,10 +16,14 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -55,7 +55,7 @@ class LifecycleCoordinatorImpl(
 ) : LifecycleCoordinatorInternal {
 
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

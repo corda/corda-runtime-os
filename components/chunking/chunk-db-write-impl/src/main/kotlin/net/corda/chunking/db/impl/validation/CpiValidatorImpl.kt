@@ -20,9 +20,9 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.schema.membership.MembershipSchema.GroupPolicySchema
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.X509Certificate
@@ -42,7 +42,7 @@ class CpiValidatorImpl(
     private val clock: Clock,
 ) : CpiValidator {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val certificateExtractor by lazy {

@@ -13,13 +13,13 @@ import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.SessionManager
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 @Component(service = [FlowEventHandler::class])
@@ -31,7 +31,7 @@ class SessionEventHandler @Activate constructor(
 ) : FlowEventHandler<SessionEvent> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val type = SessionEvent::class.java

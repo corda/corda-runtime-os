@@ -19,11 +19,11 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [FlowService::class])
@@ -39,7 +39,7 @@ class FlowService @Activate constructor(
 ) : Lifecycle {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG)
     }
 

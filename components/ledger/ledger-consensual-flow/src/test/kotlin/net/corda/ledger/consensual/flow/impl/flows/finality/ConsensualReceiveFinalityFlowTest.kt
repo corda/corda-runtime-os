@@ -5,6 +5,7 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.testkit.consensualStateExample
@@ -18,6 +19,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.membership.MemberInfo
@@ -59,6 +61,8 @@ class ConsensualReceiveFinalityFlowTest {
     private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 3))
     private val signature3 = digitalSignatureAndMetadata(publicKey3, byteArrayOf(1, 2, 4))
 
+    private val transactionMetadata = mock<TransactionMetadata>()
+    private val wireTransaction = mock<WireTransaction>()
     private val ledgerTransaction = mock<ConsensualLedgerTransactionImpl>()
     private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
 
@@ -72,10 +76,10 @@ class ConsensualReceiveFinalityFlowTest {
         whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKey1, publicKey2))
 
         whenever(signedTransaction.id).thenReturn(ID)
-        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, publicKey3))
+        whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
+        whenever(signedTransaction.wireTransaction).thenReturn(wireTransaction)
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
-        whenever(signedTransaction.sign(publicKey1)).thenReturn(signedTransaction to signature1)
-        whenever(signedTransaction.sign(publicKey2)).thenReturn(signedTransaction to signature2)
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransaction to listOf(signature1, signature2))
         whenever(signedTransaction.addSignature(signature3)).thenReturn(signedTransaction)
         whenever(signedTransaction.signatures).thenReturn(listOf(signature1, signature2))
 
@@ -87,13 +91,12 @@ class ConsensualReceiveFinalityFlowTest {
 
     @Test
     fun `receiving a transaction that passes verification is signed and recorded`() {
-        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, publicKey3))
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransaction to listOf(signature1, signature2))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
 
         callReceiveFinalityFlow()
 
-        verify(signedTransaction).sign(publicKey1)
-        verify(signedTransaction).sign(publicKey2)
+        verify(signedTransaction).addMissingSignatures()
         verify(signedTransaction).addSignature(signature3)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
@@ -102,13 +105,12 @@ class ConsensualReceiveFinalityFlowTest {
 
     @Test
     fun `the received transaction is only signed with ledger keys in the transaction's missing signatories`() {
-        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, mock()))
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransaction to listOf(signature1))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
 
         callReceiveFinalityFlow()
 
-        verify(signedTransaction).sign(publicKey1)
-        verify(signedTransaction, never()).sign(publicKey2)
+        verify(signedTransaction).addMissingSignatures()
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1)))
@@ -164,13 +166,12 @@ class ConsensualReceiveFinalityFlowTest {
 
     @Test
     fun `the received transaction does not have to be signed by the local member to be recorded`() {
-        whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKey1, publicKey2, publicKey3))
-        whenever(memberInfo.ledgerKeys).thenReturn(emptyList())
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransaction to listOf())
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
 
         callReceiveFinalityFlow()
 
-        verify(signedTransaction, never()).sign(any())
+        verify(signedTransaction).addMissingSignatures()
         verify(session).send(Payload.Success(emptyList<DigitalSignatureAndMetadata>()))
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
@@ -191,7 +192,6 @@ class ConsensualReceiveFinalityFlowTest {
 
     private fun callReceiveFinalityFlow(validator: ConsensualTransactionValidator = ConsensualTransactionValidator { }) {
         val flow = ConsensualReceiveFinalityFlow(session, validator)
-        flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.serializationService = serializationService
         flow.transactionSignatureService = transactionSignatureService

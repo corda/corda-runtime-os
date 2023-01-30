@@ -8,6 +8,7 @@ import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateAndRefExample
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -34,6 +35,8 @@ class TransactionBackchainVerifierImplTest {
     }
 
     private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
+
+    private val metadata = mock<TransactionMetadata>()
 
     private val transaction1 = mock<UtxoSignedTransaction>()
     private val transaction2 = mock<UtxoSignedTransaction>()
@@ -66,6 +69,7 @@ class TransactionBackchainVerifierImplTest {
         whenever(ledgerTransaction1.outputStateAndRefs).thenReturn(emptyList())
         whenever(ledgerTransaction1.signatories).thenReturn(listOf(signatory))
         whenever(ledgerTransaction1.commands).thenReturn(listOf(command))
+        whenever(ledgerTransaction1.metadata).thenReturn(metadata)
         whenever(ledgerTransaction2.id).thenReturn(TX_ID_2)
         whenever(ledgerTransaction2.inputStateRefs).thenReturn(listOf(utxoStateAndRefExample.ref))
         whenever(ledgerTransaction2.outputContractStates).thenReturn(emptyList())
@@ -73,6 +77,7 @@ class TransactionBackchainVerifierImplTest {
         whenever(ledgerTransaction2.outputStateAndRefs).thenReturn(emptyList())
         whenever(ledgerTransaction2.signatories).thenReturn(listOf(signatory))
         whenever(ledgerTransaction2.commands).thenReturn(listOf(command))
+        whenever(ledgerTransaction2.metadata).thenReturn(metadata)
         whenever(ledgerTransaction3.id).thenReturn(TX_ID_3)
         whenever(ledgerTransaction3.inputStateRefs).thenReturn(listOf(utxoStateAndRefExample.ref))
         whenever(ledgerTransaction3.outputContractStates).thenReturn(emptyList())
@@ -80,6 +85,7 @@ class TransactionBackchainVerifierImplTest {
         whenever(ledgerTransaction3.outputStateAndRefs).thenReturn(emptyList())
         whenever(ledgerTransaction3.signatories).thenReturn(listOf(signatory))
         whenever(ledgerTransaction3.commands).thenReturn(listOf(command))
+        whenever(ledgerTransaction3.metadata).thenReturn(metadata)
     }
 
     @Test

@@ -16,6 +16,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -33,11 +34,11 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class StartRegistrationHandler(
@@ -50,7 +51,8 @@ internal class StartRegistrationHandler(
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val SERIAL_CONST = "1"
     }
 
     private val keyValuePairListDeserializer =
@@ -185,7 +187,8 @@ internal class StartRegistrationHandler(
             sortedMapOf(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
-                STATUS to MEMBER_STATUS_PENDING
+                STATUS to MEMBER_STATUS_PENDING,
+                SERIAL to SERIAL_CONST,
             )
         )
     }

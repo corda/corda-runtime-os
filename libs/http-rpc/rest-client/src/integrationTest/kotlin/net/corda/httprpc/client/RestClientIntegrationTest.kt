@@ -2,7 +2,7 @@ package net.corda.httprpc.client
 
 import net.corda.httprpc.client.config.RestClientConfig
 import net.corda.httprpc.server.config.models.RestServerSettings
-import net.corda.httprpc.server.impl.HttpRpcServerImpl
+import net.corda.httprpc.server.impl.RestServerImpl
 import net.corda.httprpc.test.CalendarRestResource
 import net.corda.httprpc.test.CalendarRestResourceImpl
 import net.corda.httprpc.test.CustomSerializationAPI
@@ -54,7 +54,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
                 RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
                 20000L
             )
-            server = HttpRpcServerImpl(
+            server = RestServerImpl(
                 listOf(
                     TestHealthCheckAPIImpl(),
                     CustomSerializationAPIImpl(),

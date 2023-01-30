@@ -10,7 +10,7 @@ import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 /**
  * Persist a [Chunk] to the database and send an [UploadStatus] message
@@ -21,7 +21,7 @@ class ChunkWriteToDbProcessor(
     private val validator: CpiValidator
 ) : DurableProcessor<RequestId, Chunk> {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private fun processChunk(request: Chunk) {

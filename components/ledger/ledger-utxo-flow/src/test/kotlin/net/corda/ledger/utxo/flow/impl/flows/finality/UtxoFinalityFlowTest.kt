@@ -30,6 +30,10 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.utxo.Contract
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.MemberInfo
@@ -100,6 +104,9 @@ class UtxoFinalityFlowTest {
     private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
     private val payloadCaptor = argumentCaptor<Payload<*>>()
+    private val transactionState = mock<TransactionState<TestState>>()
+    private val stateAndRef = mock<StateAndRef<TestState>>()
+    private val testState = TestState(listOf(publicKeyAlice1))
 
     @BeforeEach
     fun beforeEach() {
@@ -147,6 +154,7 @@ class UtxoFinalityFlowTest {
         whenever(ledgerTransaction.signatories).thenReturn(listOf(publicKeyExample))
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
+        whenever(ledgerTransaction.metadata).thenReturn(metadata)
 
         whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(
             pluggableNotaryClientFlow
@@ -155,6 +163,11 @@ class UtxoFinalityFlowTest {
         // Composite key containing both of the notary VNode keys
         whenever(notaryServiceKey.leafKeys).thenReturn(setOf(publicKeyNotaryVNode1, publicKeyNotaryVNode2))
         whenever(notaryService.owningKey).thenReturn(notaryServiceKey)
+
+        // Single output State
+        whenever(stateAndRef.state).thenReturn(transactionState)
+        whenever(transactionState.contractType).thenReturn(TestContact::class.java)
+        whenever(transactionState.contractState).thenReturn(testState)
     }
 
     @Test
@@ -183,6 +196,7 @@ class UtxoFinalityFlowTest {
             )
         )
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+        whenever(notarisedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
@@ -198,9 +212,9 @@ class UtxoFinalityFlowTest {
         verify(updatedTxSomeSigs).addSignature(signatureBob)
         verify(updatedTxAllSigs).addSignature(signatureNotary)
 
-        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
-        verify(persistenceService).persist(notarisedTx, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED, emptyList())
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED, emptyList())
+        verify(persistenceService).persist(notarisedTx, TransactionStatus.VERIFIED, listOf(0))
 
         verify(sessionAlice).receive(Payload::class.java)
         verify(sessionBob).receive(Payload::class.java)
@@ -720,4 +734,11 @@ class UtxoFinalityFlowTest {
             DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), emptyMap())
         )
     }
+
+    class TestContact : Contract {
+        override fun verify(transaction: UtxoLedgerTransaction) {
+        }
+    }
+
+    class TestState(override val participants: List<PublicKey>) : ContractState
 }

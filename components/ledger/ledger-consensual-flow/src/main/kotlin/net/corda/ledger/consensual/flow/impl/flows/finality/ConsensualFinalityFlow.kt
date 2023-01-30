@@ -5,7 +5,6 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
-import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -16,9 +15,9 @@ import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class ConsensualFinalityFlow(
@@ -27,7 +26,7 @@ class ConsensualFinalityFlow(
 ) : ConsensualFinalityBase() {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val transactionId = initialTransaction.id
@@ -58,10 +57,6 @@ class ConsensualFinalityFlow(
         }
 
         return transaction
-    }
-
-    private fun verifyTransaction(signedTransaction: ConsensualSignedTransactionInternal) {
-        ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
     @Suspendable

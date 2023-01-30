@@ -23,19 +23,19 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toHex
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -47,7 +47,7 @@ import kotlin.test.assertTrue
 
 class HSMRegistrationClientComponentTests {
     companion object {
-        private val  logger = contextLogger()
+        private val  logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @JvmStatic
         fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =

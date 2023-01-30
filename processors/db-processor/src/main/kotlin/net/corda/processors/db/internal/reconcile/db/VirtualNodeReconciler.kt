@@ -7,9 +7,9 @@ import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
 class VirtualNodeReconciler(
@@ -20,7 +20,7 @@ class VirtualNodeReconciler(
     private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, VirtualNodeInfo>
 ) : ReconcilerWrapper {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val dependencies = setOf(
             LifecycleCoordinatorName.forComponent<DbConnectionManager>()
         )

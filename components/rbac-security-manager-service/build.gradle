@@ -17,7 +17,7 @@ dependencies {
     implementation project(":libs:utilities")
 
     api project(":libs:lifecycle:lifecycle")
-    api project(':libs:http-rpc:http-rpc-security-read')
+    api project(':libs:http-rpc:rest-security-read')
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -1,12 +1,12 @@
 package net.cordacon.example.doorcode
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -16,11 +16,11 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 /**
@@ -30,7 +30,7 @@ import java.security.PublicKey
 class DoorCodeChangeFlow : ClientStartableFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -54,10 +54,9 @@ class DoorCodeChangeFlow : ClientStartableFlow {
         val doorCodeState = DoorCodeConsensualState(newDoorCode, participants.map { getPublicKey(it) })
 
         val txBuilder = consensualLedgerService.getTransactionBuilder()
-        @Suppress("DEPRECATION")
         val signedTransaction = txBuilder
             .withStates(doorCodeState)
-            .toSignedTransaction(memberLookup.myInfo().ledgerKeys.first())
+            .toSignedTransaction()
 
         val sessions = initiateSessions(participants.minus(memberLookup.myInfo().name))
         val result = consensualLedgerService.finalize(signedTransaction, sessions)
@@ -90,7 +89,7 @@ class DoorCodeChangeFlow : ClientStartableFlow {
 class DoorCodeChangeResponderFlow : ResponderFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

@@ -16,11 +16,11 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.reconciliation.VersionedRecord
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Stream
 import kotlin.concurrent.withLock
@@ -42,7 +42,7 @@ class GroupParametersReconciler(
     private val kafkaReconcilerReader: ReconcilerReader<HoldingIdentity, GroupParameters>,
 ) : ReconcilerWrapper {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val dependencies = setOf(
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
