@@ -50,12 +50,16 @@ interface VirtualNodeRepository {
     fun upgradeVirtualNodeCpi(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        cpiName: String,
-        cpiVersion: String,
-        cpiSignerSummaryHash: String,
-        requestId: String,
-        requestTimestamp: Instant,
-        serializedRequest: String
+        cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String,
+        requestId: String, requestTimestamp: Instant, serializedRequest: String
+    ): VirtualNodeInfo
+
+    /**
+     * Complete an in-progress operation on a virtual node.
+     */
+    fun completeOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String
     ): VirtualNodeInfo
 }
 

@@ -130,12 +130,8 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     override fun upgradeVirtualNodeCpi(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        cpiName: String,
-        cpiVersion: String,
-        cpiSignerSummaryHash: String,
-        requestId: String,
-        requestTimestamp: Instant,
-        serializedRequest: String
+        cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String,
+        requestId: String, requestTimestamp: Instant, serializedRequest: String
     ): VirtualNodeInfo {
         val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
@@ -149,6 +145,21 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             VirtualNodeOperationState.IN_PROGRESS,
             requestTimestamp
         )
+        val updatedVirtualNode = entityManager.merge(virtualNode)
+        return updatedVirtualNode.toVirtualNodeInfo()
+    }
+
+    override fun completeOperation(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeInfo {
+        val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
+            ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+
+        val operation: VirtualNodeOperationEntity = virtualNode.operationInProgress ?: return virtualNode.toVirtualNodeInfo()
+
+        operation.latestUpdateTimestamp = Instant.now()
+        operation.state = VirtualNodeOperationState.COMPLETED
+        virtualNode.operationInProgress = null
+
+        entityManager.merge(operation)
         return entityManager.merge(virtualNode)
             .toVirtualNodeInfo()
     }

@@ -17,23 +17,23 @@ import javax.persistence.EntityManagerFactory
 internal object VNodeTestUtils {
     fun newVNode(
         entityManagerFactory: EntityManagerFactory,
-        name: String,
-        version: String,
-        hash: String,
+        cpiName: String,
+        cpiVersion: String,
+        cpiSignerSummaryHash: String,
         virtualNodeOperationEntity: VirtualNodeOperationEntity? = null,
         holdingIdentityEntity: HoldingIdentityEntity? = null
     ): VirtualNodeEntity {
 
-        println("Creating VNode for testing: $name, $version, $hash")
+        println("Creating VNode for testing: $cpiName, $cpiVersion, $cpiSignerSummaryHash")
 
-        val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentity = holdingIdentityEntity ?: newHoldingIdentityEntity(name)
+        val cpiMetadata = newCpiMetadataEntity(cpiName, cpiVersion, cpiSignerSummaryHash)
+        val holdingIdentity = holdingIdentityEntity ?: newHoldingIdentityEntity(cpiName)
         val virtualNode = VirtualNodeEntity(
             holdingIdentity.holdingIdentityShortHash,
             holdingIdentity,
-            name,
-            version,
-            hash,
+            cpiName,
+            cpiVersion,
+            cpiSignerSummaryHash,
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
