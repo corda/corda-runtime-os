@@ -42,6 +42,7 @@ class UtxoDemoEvolveFlow : RPCStartableFlow {
 
     private val log = loggerFor<UtxoDemoEvolveFlow>()
 
+    @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Utxo flow demo starting...")
         val response = try {

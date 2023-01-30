@@ -87,7 +87,7 @@ class UtxoLedgerTests {
     }
 
     @Test
-    fun `Utxo Ledger - create a transaction containing states and finalize it`() {
+    fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`() {
         val input = "test input"
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
@@ -119,6 +119,20 @@ class UtxoLedgerTests {
             assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
             assertThat(parsedResult.transaction.participants).hasSize(3)
         }
+
+        val evolvedMessage = "evolved input"
+        val evolveRequestId = startRpcFlow(
+            bobHoldingId,
+            mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0"),
+            "net.cordapp.demo.utxo.UtxoDemoEvolveFlow"
+        )
+        val evolveFlowResult = awaitRpcFlowFinished(bobHoldingId, evolveRequestId)
+
+        val parsedEvolveFlowResult = objectMapper
+            .readValue(evolveFlowResult.flowResult!!, EvolveResponse::class.java)
+        assertThat(parsedEvolveFlowResult.transactionId).isNotNull()
+        assertThat(parsedEvolveFlowResult.errorMessage).isNull()
+        assertThat(evolveFlowResult.flowError).isNull()
     }
 
     @Test
@@ -146,4 +160,10 @@ class UtxoLedgerTests {
         val transaction: UtxoTransactionResult?,
         val errorMessage: String?
     )
+
+    data class EvolveResponse(
+        val transactionId: String?,
+        val errorMessage: String?)
+
 }
+
