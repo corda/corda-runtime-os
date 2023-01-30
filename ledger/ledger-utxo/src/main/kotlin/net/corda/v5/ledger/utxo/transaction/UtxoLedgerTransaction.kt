@@ -2,6 +2,8 @@ package net.corda.v5.ledger.utxo.transaction
 
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
@@ -35,6 +37,16 @@ interface UtxoLedgerTransaction {
      * @property id The ID of the transaction.
      */
     val id: SecureHash
+
+    /**
+     * @property notary The notary used for notarising this transaction.
+     */
+    val notary: Party
+
+    /**
+     * @property metadata The transaction's metadata.
+     */
+    val metadata: TransactionMetadata
 
     val timeWindow: TimeWindow
     val attachments: List<Attachment>
