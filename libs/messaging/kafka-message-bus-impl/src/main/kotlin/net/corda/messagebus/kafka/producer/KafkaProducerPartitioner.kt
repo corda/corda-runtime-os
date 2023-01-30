@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory
  * Custom partitioner to be used with Kafka Producers.
  */
 class KafkaProducerPartitioner : Partitioner {
-    private companion object {
-        val logger = LoggerFactory.getLogger(javaClass.enclosingClass)
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun configure(configs: MutableMap<String, *>?) {}
