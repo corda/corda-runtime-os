@@ -87,7 +87,7 @@ class WorkerHelpers {
             val secretsConfig =
                 ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys { (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
 
-            var bootConfig = SmartConfigFactory
+            val bootConfig = SmartConfigFactory
                 .createWith(secretsConfig, secretsServiceFactoryResolver.findAll())
                 .create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
