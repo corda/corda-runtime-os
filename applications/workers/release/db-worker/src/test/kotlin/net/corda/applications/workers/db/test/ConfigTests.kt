@@ -1,6 +1,7 @@
 package net.corda.applications.workers.db.test
 
 import com.typesafe.config.Config
+import java.io.InputStream
 import net.corda.application.addon.CordaAddonResolver
 import net.corda.application.banner.StartupBanner
 import net.corda.applications.workers.db.DBWorker
@@ -11,7 +12,6 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidator
-
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
-import java.io.InputStream
 
 /**
  * Tests handling of command-line arguments for the [DBWorker].
@@ -226,7 +225,7 @@ class ConfigTests {
         override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean): SmartConfig =
             SmartConfigImpl.empty()
 
-        override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = Unit
+        override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = SmartConfigImpl.empty()
 
         override fun getDefaults(key: String, version: Version): Config = SmartConfigImpl.empty()
     }
