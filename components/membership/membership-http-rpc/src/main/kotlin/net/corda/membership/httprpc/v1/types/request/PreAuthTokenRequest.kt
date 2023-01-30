@@ -1,5 +1,7 @@
 package net.corda.membership.httprpc.v1.types.request
 
+import java.time.Duration
+
 /**
  * Request generation of a preAuthToken.
  *
@@ -11,6 +13,6 @@ package net.corda.membership.httprpc.v1.types.request
  */
 data class PreAuthTokenRequest (
     val ownerX500Name: String,
-    val ttl: String? = null,
+    val ttl: Duration? = null,
     val remarks: String? = null
 )

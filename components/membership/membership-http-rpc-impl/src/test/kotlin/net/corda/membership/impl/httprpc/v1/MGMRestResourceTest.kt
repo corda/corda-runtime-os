@@ -40,6 +40,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -505,7 +506,7 @@ class MGMRestResourceTest {
         @Test
         fun `it fails when not ready`() {
             assertThrows<ServiceUnavailableException> {
-                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, null, null))
+                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject))
             }
         }
 
@@ -513,15 +514,7 @@ class MGMRestResourceTest {
         fun `it fails when the owner x500Name is invalid`() {
             startService()
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest("Invalid X500Name", null, null))
-            }
-        }
-
-        @Test
-        fun `it fails when the tll is not a valid ISO-8061 duration`() {
-            startService()
-            assertThrows<InvalidInputDataException> {
-                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, "PT5D", null))
+                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest("Invalid X500Name"))
             }
         }
 
@@ -533,7 +526,7 @@ class MGMRestResourceTest {
             ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
 
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, "P5D", null))
+                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, Duration.ofDays(5)))
             }
         }
 
@@ -541,7 +534,7 @@ class MGMRestResourceTest {
         fun `it returns the correct result from the client`() {
             startService()
             val tokenId = "tokenId"
-            val ttl = "P5D"
+            val ttl = Duration.ofDays(5)
             val remark = "Remark"
             val removalRemark = "RemovalRemark"
             val expiryTimestamp = initialTime.plus(5, ChronoUnit.DAYS)

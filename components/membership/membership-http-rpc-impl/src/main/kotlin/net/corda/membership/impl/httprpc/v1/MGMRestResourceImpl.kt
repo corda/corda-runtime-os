@@ -34,8 +34,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.time.Duration
-import java.time.format.DateTimeParseException
 import java.util.*
 import org.slf4j.LoggerFactory
 import java.util.regex.PatternSyntaxException
@@ -245,6 +243,7 @@ class MGMRestResourceImpl internal constructor(
             )
     }
 
+    @Suppress("TooManyFunctions")
     private inner class ActiveImpl : InnerMGMRpcOps {
         override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
             return try {
@@ -340,16 +339,7 @@ class MGMRestResourceImpl internal constructor(
             }
 
             val ttlAsInstant =  request.ttl?.let{ ttl ->
-                clock.instant() + try {
-                    Duration.parse(ttl)
-                } catch (e: DateTimeParseException) {
-                    throw InvalidInputDataException(
-                        details = mapOf(
-                            "ttl" to ttl
-                        ),
-                        message = "ttl is not a valid ISO-8061 duration: ${e.message}",
-                    )
-                }
+                clock.instant() + ttl
             }
 
             return try {
