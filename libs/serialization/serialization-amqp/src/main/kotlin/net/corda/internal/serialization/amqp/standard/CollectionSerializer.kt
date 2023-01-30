@@ -36,7 +36,7 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
     AMQPSerializer<Any> {
     override val type: Type = declaredType
 
-    override val typeDescriptor: Symbol by lazy {
+    override val typeDescriptor: Symbol by lazy(LazyThreadSafetyMode.PUBLICATION) {
         factory.createDescriptor(type)
     }
 

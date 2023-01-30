@@ -25,6 +25,7 @@ import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
+import kotlin.LazyThreadSafetyMode.PUBLICATION
 
 /**
  * Serialization / deserialization of arrays.
@@ -71,14 +72,14 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
         }
     }
 
-    override val typeDescriptor: Symbol by lazy {
+    override val typeDescriptor: Symbol by lazy(PUBLICATION) {
         factory.createDescriptor(type)
     }
 
-    internal val elementType: Type by lazy { type.componentType().resolveAgainst(type) }
-    internal open val typeName by lazy { calcTypeName(type) }
+    internal val elementType: Type by lazy(PUBLICATION) { type.componentType().resolveAgainst(type) }
+    internal open val typeName by lazy(PUBLICATION) { calcTypeName(type) }
 
-    internal val typeNotation: TypeNotation by lazy {
+    internal val typeNotation: TypeNotation by lazy(PUBLICATION) {
         RestrictedType(typeName, null, emptyList(), "list", Descriptor(typeDescriptor), emptyList())
     }
 
