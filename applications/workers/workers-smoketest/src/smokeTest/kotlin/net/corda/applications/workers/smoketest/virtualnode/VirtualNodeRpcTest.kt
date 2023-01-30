@@ -45,6 +45,8 @@ class VirtualNodeRpcTest {
         private const val ERROR_IS_CLUSTER_RUNNING = "Initial upload failed - is the cluster running?"
         private const val ERROR_HOLDING_ID =
             "Holding id could not be created - this test needs to be run on a clean cluster."
+        private const val ERROR_VNODE_NOT_IN_MAINTENANCE =
+            "Virtual node must be in maintenance to perform an upgrade."
 
         // Server side messages
         private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Invalid CPI.  Unknown Corda-CPI-Format - \"1.0\""
@@ -53,6 +55,7 @@ class VirtualNodeRpcTest {
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
+        private val bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
         private val staticMemberList = listOf(
             aliceX500,
             bobX500
@@ -571,29 +574,61 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(110)
-    fun `can upgrade a virtual node's CPI`() {
+    fun `can upload v1 and v2 of a CPI with the same name`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
-            val cpiV1 = getCpiChecksum(upgradeTestingCpiName, "v1")
-
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
+        }
+    }
+
+    @Test
+    @Order(111)
+    fun `prepare a virtual node with v1 CPI`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val cpiV1 = getCpiChecksum(upgradeTestingCpiName, "v1")
+            eventuallyCreateVirtualNode(cpiV1, bobX500)
+            eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v1")
+
+            runReturnAStringFlow("upgrade-test-v1", bobHoldingId)
+            runSimplePersistenceCheckFlow("Could persist fish", bobHoldingId)
+        }
+    }
+
+    @Test
+    @Order(112)
+    fun `upgrading without transitioning virtual node to maintenance fails with bad request`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
 
-            val bobVNodeId = eventuallyCreateVirtualNode(cpiV1, bobX500)
-            eventuallyGetVirtualNodeWithCpi(bobVNodeId, upgradeTestingCpiName, "v1")
+            assertWithRetry {
+                command { vNodeUpgrade(bobHoldingId, cpiV2) }
+                condition { it.code == 400 }
+                failMessage(ERROR_VNODE_NOT_IN_MAINTENANCE)
+            }.toJson()
 
-            runReturnAStringFlow("upgrade-test-v1", bobVNodeId)
-            runSimplePersistenceCheckFlow("Could persist fish", bobVNodeId)
+        }
+    }
 
-            eventuallyUpdateVirtualNodeState(bobVNodeId, "maintenance", "INACTIVE")
+    @Test
+    @Order(113)
+    fun `can upgrading a virtual node's CPI when it is in maintenance`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            triggerVirtualNodeUpgrade(bobVNodeId, cpiV2)
-            eventuallyGetVirtualNodeWithCpi(bobVNodeId, upgradeTestingCpiName, "v2")
+            eventuallyUpdateVirtualNodeState(bobHoldingId, "maintenance", "INACTIVE")
 
-            runReturnAStringFlow("upgrade-test-v2", bobVNodeId)
-            runSimplePersistenceCheckFlow("Could persist dog", bobVNodeId)
+            val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
+            triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
+            eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
+
+            runReturnAStringFlow("upgrade-test-v2", bobHoldingId)
+            runSimplePersistenceCheckFlow("Could persist dog", bobHoldingId)
         }
     }
 
@@ -608,7 +643,7 @@ class VirtualNodeRpcTest {
         return vNodeJson["requestId"].textValue()
     }
 
-    private fun ClusterBuilder.eventuallyGetVirtualNodeWithCpi(
+    private fun ClusterBuilder.eventuallyAssertVirtualNodeHasCpi(
         virtualNodeShortHash: String, cpiName: String, cpiVersion: String
     ) = assertWithRetry {
         timeout(Duration.of(30, ChronoUnit.SECONDS))
