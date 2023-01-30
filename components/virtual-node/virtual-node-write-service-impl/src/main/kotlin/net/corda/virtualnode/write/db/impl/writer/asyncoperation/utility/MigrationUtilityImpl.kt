@@ -35,6 +35,11 @@ internal class MigrationUtilityImpl(
             }
     }
 
+    override fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean {
+        // todo cs - as part of CORE-https://r3-cev.atlassian.net/browse/CORE-9046
+        return false
+    }
+
     private fun runCpkMigrations(
         dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLogEntity>
     ) {

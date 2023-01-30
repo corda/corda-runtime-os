@@ -25,4 +25,12 @@ internal interface MigrationUtility {
         migrationsByCpkFileChecksum: List<CpkDbChangeLogEntity>,
         vaultDdlConnectionId: UUID
     )
+
+    /**
+     * Checks if the vault for the given connection ID requires migrations to be run to be in sync with the given list of CPK change logs.
+     *
+     * @param cpkChangelogs the changelogs with which to compare
+     * @param vaultDmlConnectionId the DML connection ID of the vault to be compared
+     */
+    fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean
 }

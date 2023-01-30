@@ -47,7 +47,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val entityTransaction = mock<EntityTransaction>()
     private val em = mock<EntityManager>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
-    private val migrationUtility = mock<MigrationUtility>()
+    private val migrationUtility = mock<MigrationUtility>() {
+        whenever(it.isVaultSchemaAndTargetCpiInSync(any(), any())).thenReturn(false)
+    }
     private val vnodeId = "123456789011"
 
     private val mockChangelog1 = mock<CpkDbChangeLogEntity> { changelog ->
@@ -56,8 +58,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val mockChangelog2 = mock<CpkDbChangeLogEntity> { changelog ->
         whenever(changelog.id).thenReturn(CpkDbChangeLogKey("cpk1", "cat.xml"))
     }
+    private val cpkDbChangelogs = listOf(mockChangelog1, mockChangelog2)
     private val getCurrentChangelogsForCpi = mock<(EntityManager, String, String, String) -> List<CpkDbChangeLogEntity>> {
-        whenever(it(any(), any(), any(), any())).thenReturn(listOf(mockChangelog1, mockChangelog2))
+        whenever(it(any(), any(), any(), any())).thenReturn(cpkDbChangelogs)
     }
 
     private val handler = VirtualNodeUpgradeOperationHandler(
@@ -98,11 +101,12 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
     private val x500Name = MemberX500Name("Alice", "Alice Corp", "LDN", "GB")
     private val mockHoldingIdentity = HoldingIdentity(x500Name, groupName)
+    val vaultDmlConnectionId = UUID.randomUUID()
     private val vnodeInfoWithoutVaultDdl = VirtualNodeInfo(
         mockHoldingIdentity,
         targetCpiId,
         null,
-        UUID.randomUUID(),
+        vaultDmlConnectionId,
         null,
         UUID.randomUUID(),
         null,
@@ -116,7 +120,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         mockHoldingIdentity,
         targetCpiId,
         vaultDdlConnectionId,
-        UUID.randomUUID(),
+        vaultDmlConnectionId,
         null,
         UUID.randomUUID(),
         null,
@@ -128,7 +132,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         mockHoldingIdentity,
         targetCpiId,
         vaultDdlConnectionId,
-        UUID.randomUUID(),
+        vaultDmlConnectionId,
         null,
         UUID.randomUUID(),
         null,
@@ -373,11 +377,54 @@ class VirtualNodeUpgradeOperationHandlerTest {
         verify(virtualNodeInfoPublisher, times(2)).publish(inProgressVNodeInfoCapture.capture())
         verify(migrationUtility).runVaultMigrations(
             eq(ShortHash.of(request.virtualNodeShortHash)),
-            eq(listOf(mockChangelog1, mockChangelog2)),
+            eq(cpkDbChangelogs),
             eq(vaultDdlConnectionId)
         )
         // todo cs - when we add virtual node info, separate these publishes (one should be in progress operation, the other complete)
 //        verify(virtualNodeInfoPublisher, times(1)).publish(upgradeCompleteVNodeInfoCapture.capture())
+
+        val publishedRecordList = inProgressVNodeInfoCapture.firstValue
+        assertThat(publishedRecordList).isNotNull
+        assertThat(publishedRecordList).hasSize(1)
+
+        val publishedRecord = publishedRecordList[0]
+        assertThat(publishedRecord.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
+
+        assertThat(publishedRecord.key.groupId).isEqualTo(groupName)
+        assertThat(publishedRecord.key.x500Name).isEqualTo(x500Name.toString())
+
+        assertThat(publishedRecord.value).isNotNull
+        assertThat(publishedRecord.value!!.cpiIdentifier.name).isEqualTo(cpiName)
+        assertThat(publishedRecord.value!!.cpiIdentifier.version).isEqualTo("v2")
+
+        // todo cs - after we add operationInProgress to virtualNodeInfo, assertions here that after completion, it is null
+    }
+
+    @Test
+    fun `upgrade handler successfully persists, no migrations required`() {
+        val requestTimestamp = Instant.now()
+        val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+        val migrationUtility = mock<MigrationUtility>() {
+            whenever(it.isVaultSchemaAndTargetCpiInSync(any(), any())).thenReturn(false)
+        }
+
+        whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
+        whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+            .thenReturn(currentCpiMetadata)
+        whenever(virtualNodeRepository.upgradeVirtualNodeCpi(
+            eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString), eq("req1"), eq(requestTimestamp), eq(request.toString()))
+        ).thenReturn(inProgressOpVnodeInfo)
+        whenever(migrationUtility.isVaultSchemaAndTargetCpiInSync(cpkDbChangelogs, vaultDmlConnectionId)).thenReturn(true)
+        whenever(virtualNodeRepository.completeOperation(em, request.virtualNodeShortHash)).thenReturn(migrationsCompleteVnodeInfo)
+
+        val inProgressVNodeInfoCapture =
+            argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
+
+        handler.handle(requestTimestamp, "req1", request)
+
+        verify(virtualNodeInfoPublisher, times(2)).publish(inProgressVNodeInfoCapture.capture())
+        verify(migrationUtility, times(0)).runVaultMigrations(any(), any(), any())
 
         val publishedRecordList = inProgressVNodeInfoCapture.firstValue
         assertThat(publishedRecordList).isNotNull
