@@ -6,7 +6,6 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
 import net.corda.crypto.cipher.suite.CryptoServiceProvider
