@@ -48,9 +48,9 @@ class ConsumerChunkServiceImplTest {
         whenever(keyDeserializer.deserialize(realKeyBytes)).thenReturn(realKey)
         whenever(valueDeserializer.deserialize(fullBytes)).thenReturn(completeValue)
 
-        testChunk1 = chunkBuilder.buildChunk(id, 1,  ByteBuffer.wrap(bytes1))
-        testChunk2 = chunkBuilder.buildChunk(id, 2,  ByteBuffer.wrap(bytes2))
-        testFinalChunk = chunkBuilder.buildFinalChunk(id, 3,  Checksum.digestForBytes(fullBytes))
+        testChunk1 = chunkBuilder.buildChunk(id, 1,  ByteBuffer.wrap(bytes1), 10)
+        testChunk2 = chunkBuilder.buildChunk(id, 2,  ByteBuffer.wrap(bytes2), 20)
+        testFinalChunk = chunkBuilder.buildFinalChunk(id, 3,  Checksum.digestForBytes(fullBytes), 20)
         chunks = mutableListOf(testChunk1, testChunk2, testFinalChunk)
         chunkMap = mutableMapOf(
             testChunkKey1 to testChunk1,

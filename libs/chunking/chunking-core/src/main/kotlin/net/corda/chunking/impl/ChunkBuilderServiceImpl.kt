@@ -14,7 +14,7 @@ class ChunkBuilderServiceImpl : ChunkBuilderService {
         identifier: String,
         chunkNumber: Int,
         checksum: SecureHash,
-        offset: Long?,
+        offset: Long,
         properties: KeyValuePairList?,
         fileName: String?,
     ): Chunk = Chunk.newBuilder()
@@ -32,7 +32,7 @@ class ChunkBuilderServiceImpl : ChunkBuilderService {
         identifier: String,
         chunkNumber: Int,
         byteBuffer: ByteBuffer,
-        offset: Long?,
+        offset: Long,
         properties: KeyValuePairList?,
         fileName: String?,
     ): Chunk = Chunk.newBuilder()
