@@ -2,8 +2,8 @@
   <configuration default="false" name="Combined Worker Local" type="JarApplication">
     <option name="JAR_PATH" value="$PROJECT_DIR$/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar" />
     <option name="VM_PARAMETERS" value="-Dco.paralleluniverse.fibers.verifyInstrumentation=true" />
-    <option name="PROGRAM_PARAMETERS" value="--instance-id=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt -ddatabase.user=user -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster -M=972801 -ddatabase.jdbc.directory=$ProjectFileDir$/applications/workers/release/combined-worker/drivers" />
-    <option name="WORKING_DIRECTORY" value="C:\dev\corda-runtime-os" />
+    <option name="PROGRAM_PARAMETERS" value="--instance-id=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt -ddatabase.user=user -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster -ddatabase.jdbc.directory=$ProjectFileDir$/applications/workers/release/combined-worker/drivers" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="ALTERNATIVE_JRE_PATH" />
     <method v="2">
       <option name="Gradle.BeforeRunTask" enabled="false" tasks="appJar" externalProjectPath="$PROJECT_DIR$/applications/workers/release/combined-worker" vmOptions="" scriptParameters="" />
