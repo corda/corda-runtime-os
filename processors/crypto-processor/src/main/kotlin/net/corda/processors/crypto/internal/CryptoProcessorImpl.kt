@@ -139,6 +139,18 @@ class CryptoProcessorImpl @Activate constructor(
             is StopEvent -> {
                 // Nothing to do
             }
+            is BootConfigEvent -> {
+                val bootstrapConfig = event.config
+
+                logger.info("Crypto processor bootstrapping {}", configurationReadService::class.simpleName)
+                configurationReadService.bootstrapConfig(bootstrapConfig)
+
+                logger.info("Crypto processor bootstrapping {}", dbConnectionManager::class.simpleName)
+                dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
+
+                logger.info("Crypto processor bootstrapping {}", cryptoServiceFactory::class.simpleName)
+                cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
+            }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
                     dependenciesUp = true
@@ -151,18 +163,6 @@ class CryptoProcessorImpl @Activate constructor(
                     dependenciesUp = false
                     setStatus(event.status, coordinator)
                 }
-            }
-            is BootConfigEvent -> {
-                val bootstrapConfig = event.config
-
-                logger.info("Crypto processor bootstrapping {}", configurationReadService::class.simpleName)
-                configurationReadService.bootstrapConfig(bootstrapConfig)
-
-                logger.info("Crypto processor bootstrapping {}", dbConnectionManager::class.simpleName)
-                dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
-
-                logger.info("Crypto processor bootstrapping {}", cryptoServiceFactory::class.simpleName)
-                cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
             }
             is AssociateHSM -> {
                 if(dependenciesUp) {
