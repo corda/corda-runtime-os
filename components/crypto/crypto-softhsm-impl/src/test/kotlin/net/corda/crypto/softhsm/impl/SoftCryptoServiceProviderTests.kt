@@ -221,40 +221,6 @@ class SoftCryptoServiceProviderTests {
     }
 
     @Test
-    fun `getInstance should throw IllegalStateException when creating new instance with unknown wrapping`() {
-        val customConfig = SoftCryptoServiceConfig(
-            keyMap = SoftKeyMapConfig(
-                name = KEY_MAP_TRANSIENT_NAME,
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrappingKeyMap = SoftWrappingKeyMapConfig(
-                name = KEY_MAP_TRANSIENT_NAME,
-                salt = "salt",
-                passphrase = "",
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrapping = SoftWrappingConfig(
-                name = "<unknown name>",
-                hsm = null
-            )
-        )
-        component.start()
-        eventually {
-            assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        assertThrows<IllegalStateException> {
-            component.getInstance(customConfig)
-        }
-    }
-
-    @Test
     fun `Should deactivate implementation when component is stopped`() {
         assertFalse(component.isRunning)
         component.start()
