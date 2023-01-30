@@ -69,6 +69,7 @@ class TestInitialConfigPluginCrypto {
         assertThat(outText).startsWith(expectedPrefix)
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
+        assertThat(json).containsSubsequence("\"passphrase\":{\"configSecret\":{\"encryptedSecret\":")
         assertGeneratedJson(json) {
             assertEquals("master-salt", it.getString("wrappingKeyMap.salt"))
             assertEquals("master-passphrase", it.getString("wrappingKeyMap.passphrase"))
