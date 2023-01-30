@@ -43,7 +43,7 @@ class OpenApiCompatibilityTest {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private val importantRpcOps = setOf(
+        private val importantRestResources = setOf(
             CertificatesRestResource::class.java, // P2P
             HsmRestResource::class.java, // P2P
             KeysRestResource::class.java, // P2P
@@ -56,15 +56,15 @@ class OpenApiCompatibilityTest {
             MemberRegistrationRestResource::class.java, // MGM
             MGMRestResource::class.java, // MGM
             NetworkRestResource::class.java, // MGM
-            PermissionEndpoint::class.java, // RPC
-            RoleEndpoint::class.java, // RPC
-            UserEndpoint::class.java, // RPC
-            VirtualNodeMaintenanceRestResource::class.java // RPC
+            PermissionEndpoint::class.java, // REST
+            RoleEndpoint::class.java, // REST
+            UserEndpoint::class.java, // REST
+            VirtualNodeMaintenanceRestResource::class.java // REST
         )
 
-        // `cardinality` is not equal to `importantRpcOps.size` as there might be some test RestResource as well
+        // `cardinality` is not equal to `importantRestResources.size` as there might be some test RestResource as well
         @InjectService(service = PluggableRestResource::class, cardinality = 16, timeout = 10_000)
-        lateinit var dynamicRpcOps: List<RestResource>
+        lateinit var dynamicRestResources: List<RestResource>
 
         @InjectService(service = RestServerFactory::class, timeout = 10_000)
         lateinit var httpServerFactory: RestServerFactory
@@ -72,12 +72,12 @@ class OpenApiCompatibilityTest {
 
     @Test
     fun test() {
-        val allOps = dynamicRpcOps.map { (it as PluggableRestResource<*>).targetInterface }.sortedBy { it.name }
+        val allOps = dynamicRestResources.map { (it as PluggableRestResource<*>).targetInterface }.sortedBy { it.name }
         assertThat(allOps.filterNot {
-            it.name.contains("HelloRestResource") // the only test, i.e. not important RPC Ops we have
-        }.toSet()).isEqualTo(importantRpcOps)
+            it.name.contains("HelloRestResource") // the only test, i.e. not important REST resources we have
+        }.toSet()).isEqualTo(importantRestResources)
 
-        logger.info("RPC Ops discovered: ${allOps.map { it.simpleName }}")
+        logger.info("REST resources discovered: ${allOps.map { it.simpleName }}")
 
         val existingSwaggerJson = computeExistingSwagger()
         val baselineSwagger = fetchBaseline()
@@ -109,7 +109,7 @@ class OpenApiCompatibilityTest {
         val context = RestContext(
             "1",
             "api",
-            "Corda HTTP RPC API",
+            "Corda REST API",
             "All the endpoints for publicly visible Open API calls"
         )
         val serverAddress = NetworkHostAndPort("localhost", 0)
@@ -123,7 +123,7 @@ class OpenApiCompatibilityTest {
         )
 
         val server = httpServerFactory.createRestServer(
-            dynamicRpcOps.map { it as PluggableRestResource<out RestResource> }.sortedBy { it.targetInterface.name },
+            dynamicRestResources.map { it as PluggableRestResource<out RestResource> }.sortedBy { it.targetInterface.name },
             { FakeSecurityManager() }, restServerSettings, multipartDir, devMode = true
         ).apply { start() }
 

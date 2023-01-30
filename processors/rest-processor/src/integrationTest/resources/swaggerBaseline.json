@@ -1,0 +1,4563 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "Corda HTTP RPC API",
+    "description" : "All the endpoints for publicly visible Open API calls",
+    "version" : "1"
+  },
+  "servers" : [ {
+    "url" : "/api/v1"
+  } ],
+  "security" : [ {
+    "basicAuth" : [ ]
+  } ],
+  "tags" : [ {
+    "name" : "CPI API",
+    "description" : "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) files in the Corda cluster."
+  }, {
+    "name" : "Certificates API",
+    "description" : "The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate authority (CA)."
+  }, {
+    "name" : "Configuration API",
+    "description" : "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters."
+  }, {
+    "name" : "Flow Info API",
+    "description" : "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked using the Flow Management API for a given identity."
+  }, {
+    "name" : "Flow Management API",
+    "description" : "The Flow Management API consists of a number of endpoints used to interact with flows."
+  }, {
+    "name" : "HSM API",
+    "description" : "The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys."
+  }, {
+    "name" : "Hello Rest API",
+    "description" : "The Hello Rest API is used to test interactions via the Rest API. It verifies that a call to Rest can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-Rest worker."
+  }, {
+    "name" : "Keys Management API",
+    "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
+  }, {
+    "name" : "MGM API",
+    "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
+  }, {
+    "name" : "Member Lookup API",
+    "description" : "The Member Lookup API consists of endpoints used to look up information related to membership groups."
+  }, {
+    "name" : "Member Registration API",
+    "description" : "The Member Registration API consists of a number of endpoints which manage holding identities' participation in membership groups. To participate in a membership group, the holding identity is required to make a registration request that needs to be approved by the MGM for that group. This API allows you to start the registration process for a holding identity, and check the status of a previously created registration request."
+  }, {
+    "name" : "Network API",
+    "description" : "The Network API consists of endpoints which manage the setup of holding identities in P2P networks."
+  }, {
+    "name" : "RBAC Permission API",
+    "description" : "The RBAC Permission API consists of a number of endpoints enabling permissions management in the RBAC (role-based access control) permission system. You can get details of specified permissions and create new permissions."
+  }, {
+    "name" : "RBAC Role API",
+    "description" : "The RBAC Role API consists of a number of endpoints enabling role management in the RBAC (role-based access control) permission system. You can get all roles in the system, create new roles and add and delete permissions from roles."
+  }, {
+    "name" : "RBAC User API",
+    "description" : "The RBAC User API consists of a number of endpoints enabling user management in the RBAC (role-based access control) permission system. You can get details of specified users, create new users, assign roles to users and remove roles from users."
+  }, {
+    "name" : "Virtual Node API",
+    "description" : "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes."
+  }, {
+    "name" : "Virtual Node Maintenance API",
+    "description" : "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management.Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them."
+  } ],
+  "paths" : {
+    "/certificates/cluster/{usage}" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method gets the certificate chain aliases for a cluster.",
+        "operationId" : "get_certificates_cluster__usage_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The cluster level certificates aliases in the usage.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "string",
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method imports a certificate chain for a cluster.",
+        "operationId" : "put_certificates_cluster__usage_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "alias" : {
+                    "type" : "string",
+                    "description" : "The unique alias under which the certificate chain will be stored",
+                    "nullable" : false,
+                    "example" : "string"
+                  },
+                  "certificate" : {
+                    "uniqueItems" : false,
+                    "type" : "array",
+                    "nullable" : false,
+                    "items" : {
+                      "type" : "string",
+                      "description" : "A content of the file to upload.",
+                      "format" : "binary",
+                      "example" : "No example available for this type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/cluster/{usage}/{alias}" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method gets the certificate chain in PEM format for a cluster.",
+        "operationId" : "get_certificates_cluster__usage___alias_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "alias",
+          "in" : "path",
+          "description" : "The certificate chain unique alias.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate chain unique alias.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The certificate in PEM format.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "",
+        "operationId" : "get_certificates_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/vnode/{holdingidentityid}/{usage}" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method gets the certificate chain aliases for a virtual node.",
+        "operationId" : "get_certificates_vnode__holdingidentityid___usage_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "The certificate holding identity ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate holding identity ID",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The virtual node certificates aliases in the usage.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "string",
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method imports a certificate chain for a virtual node.",
+        "operationId" : "put_certificates_vnode__holdingidentityid___usage_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "The certificate holding identity ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate holding identity ID",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "alias" : {
+                    "type" : "string",
+                    "description" : "The unique alias under which the certificate chain will be stored",
+                    "nullable" : false,
+                    "example" : "string"
+                  },
+                  "certificate" : {
+                    "uniqueItems" : false,
+                    "type" : "array",
+                    "nullable" : false,
+                    "items" : {
+                      "type" : "string",
+                      "description" : "A content of the file to upload.",
+                      "format" : "binary",
+                      "example" : "No example available for this type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/vnode/{holdingidentityid}/{usage}/{alias}" : {
+      "get" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method gets the certificate chain in PEM format for a virtual node.",
+        "operationId" : "get_certificates_vnode__holdingidentityid___usage___alias_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "The certificate holding identity ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate holding identity ID",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "alias",
+          "in" : "path",
+          "description" : "The certificate chain unique alias.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate chain unique alias.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The certificate in PEM format.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/{tenantid}/{keyid}" : {
+      "post" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method enables you to generate a certificate signing request (CSR) for a tenant.",
+        "operationId" : "post_certificates__tenantid___keyid_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "keyid",
+          "in" : "path",
+          "description" : "Identifier of the public key that will be included in the certificate",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier of the public key that will be included in the certificate",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GenerateCsrWrapperRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The CSR in PEM format.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/config" : {
+      "put" : {
+        "tags" : [ "Configuration API" ],
+        "description" : "This method updates a section of the cluster configuration.",
+        "operationId" : "put_config",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateConfigParameters"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "\n            The updated cluster configuration for the specified section:\n            - `section`: the section of the configuration to be updated.\n            - `config`: the updated configuration in JSON or HOCON format.\n            - `schemaVersion`: the schema version of the configuration.\n            - `version`: the version number used for optimistic locking. The request fails if this version does not \n                match the version stored in the database for the corresponding section or -1 if this is a new section \n                for which no configuration has yet been stored.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateConfigResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/config/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Configuration API" ],
+        "description" : "",
+        "operationId" : "get_config_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/config/{section}" : {
+      "get" : {
+        "tags" : [ "Configuration API" ],
+        "description" : "This method returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
+        "operationId" : "get_config__section_",
+        "parameters" : [ {
+          "name" : "section",
+          "in" : "path",
+          "description" : "Section name for the configuration.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Section name for the configuration.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The configuration for the given section",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GetConfigResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/cpi" : {
+      "get" : {
+        "tags" : [ "CPI API" ],
+        "description" : "The GET method returns a list of all CPIs uploaded to the cluster.",
+        "operationId" : "get_cpi",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Details of all of the CPIs uploaded to the cluster.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GetCPIsResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "CPI API" ],
+        "description" : "This method uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
+        "operationId" : "post_cpi",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "upload" : {
+                    "type" : "string",
+                    "description" : "The CPI file to be uploaded.",
+                    "format" : "binary",
+                    "nullable" : false,
+                    "example" : "No example available for this type"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The ID for the CPI upload request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CpiUploadResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/cpi/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "CPI API" ],
+        "description" : "",
+        "operationId" : "get_cpi_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/cpi/status/{id}" : {
+      "get" : {
+        "tags" : [ "CPI API" ],
+        "description" : "The status endpoint uses the GET method to return status information for the CPI upload with the given request ID.",
+        "operationId" : "get_cpi_status__id_",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "The ID returned from the CPI upload request.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID returned from the CPI upload request.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CpiUploadStatus"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/flow/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Flow Management API" ],
+        "description" : "",
+        "operationId" : "get_flow_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/flow/{holdingidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Flow Management API" ],
+        "description" : "This method returns an array containing the statuses of all flows running for a specified holding identity. An empty array is returned if there are no flows running.",
+        "operationId" : "get_flow__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            A collection of statuses for the flow instances, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FlowStatusResponses"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Flow Management API" ],
+        "description" : "This method starts a new instance for the specified flow for the specified holding identity.",
+        "operationId" : "post_flow__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartFlowParameters"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "\n            The initial status of the flow instance; if the flow already exists, then the status of the existing flow will be returned.\n            \n            holdingIdentityShortHash: The short form hash of the holding identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FlowStatusResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/flow/{holdingidentityshorthash}/{clientrequestid}" : {
+      "get" : {
+        "tags" : [ "Flow Management API" ],
+        "description" : "This method gets the current status of the specified flow instance.",
+        "operationId" : "get_flow__holdingidentityshorthash___clientrequestid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "clientrequestid",
+          "in" : "path",
+          "description" : "Client provided flow identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Client provided flow identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The status of the flow instance, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FlowStatusResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/flowclass/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Flow Info API" ],
+        "description" : "",
+        "operationId" : "get_flowclass_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/flowclass/{holdingidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Flow Info API" ],
+        "description" : "This method gets all flows that can be used by the specified holding identity.",
+        "operationId" : "get_flowclass__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; this is obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; this is obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The class names of all flows that can be run",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StartableFlowsResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/hello" : {
+      "post" : {
+        "tags" : [ "Hello Rest API" ],
+        "description" : "This method produces a greeting phrase for the addressee.",
+        "operationId" : "post_hello",
+        "parameters" : [ {
+          "name" : "addressee",
+          "in" : "query",
+          "description" : "An arbitrary name can be used for the greeting.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "An arbitrary name can be used for the greeting.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "A greeting phrase for the addressee",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/hello/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Hello Rest API" ],
+        "description" : "",
+        "operationId" : "get_hello_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/hsm/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "HSM API" ],
+        "description" : "",
+        "operationId" : "get_hsm_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/hsm/soft/{tenantid}/{category}" : {
+      "post" : {
+        "tags" : [ "HSM API" ],
+        "description" : "This method enables you to assign a soft HSM to the tenant for the specified category.",
+        "operationId" : "post_hsm_soft__tenantid___category_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "category",
+          "in" : "path",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HsmAssociationInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/hsm/{tenantid}/{category}" : {
+      "get" : {
+        "tags" : [ "HSM API" ],
+        "description" : "This method retrieves information on the HSM of the specified category assigned to the tenant.",
+        "operationId" : "get_hsm__tenantid___category_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "category",
+          "in" : "path",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "nullable" : true,
+                  "allOf" : [ {
+                    "$ref" : "#/components/schemas/HsmAssociationInfo"
+                  } ]
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "HSM API" ],
+        "description" : "This method enables you to assign a hardware-backed HSM to the tenant for the specified category.",
+        "operationId" : "post_hsm__tenantid___category_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "category",
+          "in" : "path",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HsmAssociationInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/keys/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Keys Management API" ],
+        "description" : "",
+        "operationId" : "get_keys_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/keys/{tenantid}" : {
+      "get" : {
+        "tags" : [ "Keys Management API" ],
+        "description" : "This method retrieves information about a list of key pairs belonging to a tenant.",
+        "operationId" : "get_keys__tenantid_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "skip",
+          "in" : "query",
+          "description" : "The response paging information, number of records to skip",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "description" : "The response paging information, number of records to skip",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }, {
+          "name" : "take",
+          "in" : "query",
+          "description" : "The response paging information, that is, the number of records to return. The actual number returned may be less than requested.",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "description" : "The response paging information, that is, the number of records to return. The actual number returned may be less than requested.",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }, {
+          "name" : "orderby",
+          "in" : "query",
+          "description" : "Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY', 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC', 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC', 'ID_DESC'.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY', 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC', 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC', 'ID_DESC'.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "category",
+          "in" : "query",
+          "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "schemecodename",
+          "in" : "query",
+          "description" : "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "alias",
+          "in" : "query",
+          "description" : "The alias under which the key pair is stored",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "The alias under which the key pair is stored",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "masterkeyalias",
+          "in" : "query",
+          "description" : "The alias of the wrapping key",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "The alias of the wrapping key",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "createdafter",
+          "in" : "query",
+          "description" : "Only include key pairs which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Only include key pairs which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "createdbefore",
+          "in" : "query",
+          "description" : "Only include key pairs which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Only include key pairs which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "id",
+          "in" : "query",
+          "description" : "Only include key pairs associated with the specified list of key IDs. If specified, other filter parameters will be ignored.",
+          "required" : false,
+          "schema" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : true,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "A map of key IDs to the respective key pair information",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "$ref" : "#/components/schemas/KeyMetaData"
+                  },
+                  "nullable" : false,
+                  "example" : "No example available for this type"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/keys/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
+      "post" : {
+        "tags" : [ "Keys Management API" ],
+        "description" : "This method generates a new key pair for a tenant.",
+        "operationId" : "post_keys__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "alias",
+          "in" : "path",
+          "description" : "The alias under which the new key pair will be stored",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The alias under which the new key pair will be stored",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "hsmcategory",
+          "in" : "path",
+          "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "scheme",
+          "in" : "path",
+          "description" : "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The ID of the newly generated key pair",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/KeyPairIdentifier"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/keys/{tenantid}/schemes/{hsmcategory}" : {
+      "get" : {
+        "tags" : [ "Keys Management API" ],
+        "description" : "This method retrieves a list of supported key schemes for a specified tenant and HSM category.",
+        "operationId" : "get_keys__tenantid__schemes__hsmcategory_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "hsmcategory",
+          "in" : "path",
+          "description" : "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The list of scheme codes which are supported by the associated HSM integration",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "string",
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/keys/{tenantid}/{keyid}" : {
+      "get" : {
+        "tags" : [ "Keys Management API" ],
+        "description" : "This method retrieves a tenant's public key in PEM format.",
+        "operationId" : "get_keys__tenantid___keyid_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "keyid",
+          "in" : "path",
+          "description" : "Identifier of the public key to be retrieved",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier of the public key to be retrieved",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The public key in PEM format",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/maintenance/virtualnode/forcecpiupload" : {
+      "post" : {
+        "tags" : [ "Virtual Node Maintenance API" ],
+        "description" : "Even if CPI with the same metadata has already been uploaded, this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
+        "operationId" : "post_maintenance_virtualnode_forcecpiupload",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "upload" : {
+                    "type" : "string",
+                    "description" : "A content of the file to upload.",
+                    "format" : "binary",
+                    "nullable" : false,
+                    "example" : "No example available for this type"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The response ID which can be used to track the progress of the force CPI upload operation.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CpiUploadResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/maintenance/virtualnode/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Virtual Node Maintenance API" ],
+        "description" : "",
+        "operationId" : "get_maintenance_virtualnode_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/maintenance/virtualnode/{virtualnodeshortid}/vault-schema/force-resync" : {
+      "post" : {
+        "tags" : [ "Virtual Node Maintenance API" ],
+        "description" : "Rollback the virtual node database for the given virtual node short ID. Then apply current CPI migrations. This operation is destructive and will result in user vault data being deleted, but will not have any effect on system tables.",
+        "operationId" : "post_maintenance_virtualnode__virtualnodeshortid__vault_schema_force_resync",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to rollback",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to rollback",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "A list of the shortIDs or the exception encountered"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/members/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Member Lookup API" ],
+        "description" : "",
+        "operationId" : "get_members_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/members/{holdingidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Member Lookup API" ],
+        "description" : "This method retrieves a list of all active and pending members in the membership group.",
+        "operationId" : "get_members__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "Holding identity ID of the requesting member. The result only contains members that are visible to this member",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Holding identity ID of the requesting member. The result only contains members that are visible to this member",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "cn",
+          "in" : "query",
+          "description" : "Common Name (CN) attribute of the X.500 name to filter members by",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Common Name (CN) attribute of the X.500 name to filter members by",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "o",
+          "in" : "query",
+          "description" : "Organization (O) attribute of the X.500 name to filter members by",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Organization (O) attribute of the X.500 name to filter members by",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "ou",
+          "in" : "query",
+          "description" : "Organization Unit (OU) attribute of the X.500 name to filter members by",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Organization Unit (OU) attribute of the X.500 name to filter members by",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "l",
+          "in" : "query",
+          "description" : "Locality (L) attribute of the X.500 name to filter members by",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Locality (L) attribute of the X.500 name to filter members by",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "st",
+          "in" : "query",
+          "description" : "State (ST) attribute of the X.500 name to filter members by",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "State (ST) attribute of the X.500 name to filter members by",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "c",
+          "in" : "query",
+          "description" : "Country (C) attribute of the X.500 name to filter members by",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Country (C) attribute of the X.500 name to filter members by",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RpcMemberInfoList"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/membership/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Member Registration API" ],
+        "description" : "",
+        "operationId" : "get_membership_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/membership/{holdingidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Member Registration API" ],
+        "description" : "This method checks the statuses of all registration requests for a specified holding identity.",
+        "operationId" : "get_membership__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_APPROVAL_FLOW\", \n                \"PENDING_MANUAL_APPROVAL\", \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/RegistrationRequestStatus"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Member Registration API" ],
+        "description" : "This method starts the registration process for a holding identity.",
+        "operationId" : "post_membership__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the requesting virtual node",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the requesting virtual node",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MemberRegistrationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "\n            The registration progress information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegistrationRequestProgress"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/membership/{holdingidentityshorthash}/{registrationrequestid}" : {
+      "get" : {
+        "tags" : [ "Member Registration API" ],
+        "description" : "This method checks the status of the specified registration request for a holding identity.",
+        "operationId" : "get_membership__holdingidentityshorthash___registrationrequestid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the holding identity whose view of the registration progress is to be checked.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "registrationrequestid",
+          "in" : "path",
+          "description" : "The ID of the registration request",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the registration request",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"NEW\", \"PENDING_MEMBER_VERIFICATION\", \"PENDING_APPROVAL_FLOW\", \n                \"PENDING_MANUAL_APPROVAL\", \"PENDING_AUTO_APPROVAL\", \"DECLINED\", or \"APPROVED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "nullable" : true,
+                  "allOf" : [ {
+                    "$ref" : "#/components/schemas/RegistrationRequestStatus"
+                  } ]
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "get_mgm_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/approval/rules" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method retrieves the set of rules the group is currently configured with",
+        "operationId" : "get_mgm__holdingidentityshorthash__approval_rules",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Collection of group approval rules",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/ApprovalRuleInfo"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method adds a rule to the set of group approval rules.",
+        "operationId" : "post_mgm__holdingidentityshorthash__approval_rules",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ApprovalRuleRequestParams"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Details of the newly persisted approval rule",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApprovalRuleInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/approval/rules/{ruleid}" : {
+      "delete" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method deletes a previously added group approval rule.",
+        "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules__ruleid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "ruleid",
+          "in" : "path",
+          "description" : "The ID of the group approval rule to be deleted",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the group approval rule to be deleted",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/info" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method retrieves the group policy from the MGM required to join the membership group.",
+        "operationId" : "get_mgm__holdingidentityshorthash__info",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group to be joined",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group to be joined",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The group policy from the MGM required to join the membership group as a string in JSON format",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method list the allowed  client certificates subjects to be used in mutual TLS connections.",
+        "operationId" : "get_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of the allowed client certificate subjects",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "string",
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects/{subject}" : {
+      "put" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method allows a client certificate with a given subject to be used in mutual TLS connections.",
+        "operationId" : "put_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects__subject_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "subject",
+          "in" : "path",
+          "description" : "The certificate subject.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate subject.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This method disallows a client certificate with a given subject to be used in mutual TLS connections.",
+        "operationId" : "delete_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects__subject_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "subject",
+          "in" : "path",
+          "description" : "The certificate subject.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate subject.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/network/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Network API" ],
+        "description" : "",
+        "operationId" : "get_network_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/network/setup/{holdingidentityshorthash}" : {
+      "put" : {
+        "tags" : [ "Network API" ],
+        "description" : "This method configures a holding identity as a network participant by setting properties required for P2P messaging.",
+        "operationId" : "put_network_setup__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "ID of the holding identity to set up",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the holding identity to set up",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HostedIdentitySetupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/permission" : {
+      "get" : {
+        "tags" : [ "RBAC Permission API" ],
+        "description" : "This method returns permissions which satisfy supplied query criteria.",
+        "operationId" : "get_permission",
+        "parameters" : [ {
+          "name" : "limit",
+          "in" : "query",
+          "description" : "The maximum number of results to return. The value must be in the range [1..1000].",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "description" : "The maximum number of results to return. The value must be in the range [1..1000].",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }, {
+          "name" : "permissiontype",
+          "in" : "query",
+          "description" : "The permission type to be returned.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The permission type to be returned.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "groupvisibility",
+          "in" : "query",
+          "description" : "Optional group visibility for a permission.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Optional group visibility for a permission.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "virtualnode",
+          "in" : "query",
+          "description" : "Optional virtual node the permissions apply to.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Optional virtual node the permissions apply to.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "permissionstringprefix",
+          "in" : "query",
+          "description" : "Optional permission string prefix for permissions to be located.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Optional permission string prefix for permissions to be located.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Permissions which satisfy supplied query criteria",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/PermissionResponseType"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "RBAC Permission API" ],
+        "description" : "This method creates a new permission.",
+        "operationId" : "post_permission",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePermissionType"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created\n    ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PermissionResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/permission/bulk" : {
+      "post" : {
+        "tags" : [ "RBAC Permission API" ],
+        "description" : "This method creates a set of permissions and optionally assigns them to the existing roles.",
+        "operationId" : "post_permission_bulk",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BulkCreatePermissionsRequestType"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "A set of identifiers for permissions created along with role identifiers they were associated with.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BulkCreatePermissionsResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/permission/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "RBAC Permission API" ],
+        "description" : "",
+        "operationId" : "get_permission_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/permission/{id}" : {
+      "get" : {
+        "tags" : [ "RBAC Permission API" ],
+        "description" : "This method returns the permission associated with the specified ID.",
+        "operationId" : "get_permission__id_",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "ID of the permission to be returned.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the permission to be returned.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PermissionResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/role" : {
+      "get" : {
+        "tags" : [ "RBAC Role API" ],
+        "description" : "This method returns an array with information about all roles in the permission system.",
+        "operationId" : "get_role",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "\n        Set of roles with each role having the following attributes: \n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role\n    ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : true,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/RoleResponseType"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "RBAC Role API" ],
+        "description" : "The method creates a new role in the RBAC permission system.",
+        "operationId" : "post_role",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateRoleType"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "\n        Newly created role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/role/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "RBAC Role API" ],
+        "description" : "",
+        "operationId" : "get_role_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/role/{id}" : {
+      "get" : {
+        "tags" : [ "RBAC Role API" ],
+        "description" : "This method gets the details of a role specified by its ID.",
+        "operationId" : "get_role__id_",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "ID of the role to be returned.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the role to be returned.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n        Role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/role/{roleid}/permission/{permissionid}" : {
+      "put" : {
+        "tags" : [ "RBAC Role API" ],
+        "description" : "This method adds the specified permission to the specified role.",
+        "operationId" : "put_role__roleid__permission__permissionid_",
+        "parameters" : [ {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "Identifier for an existing role",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "permissionid",
+          "in" : "path",
+          "description" : "Identifier for an existing permission",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "RBAC Role API" ],
+        "description" : "This method removes the specified permission from the specified role.",
+        "operationId" : "delete_role__roleid__permission__permissionid_",
+        "parameters" : [ {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "Identifier for an existing role",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "permissionid",
+          "in" : "path",
+          "description" : "Identifier for an existing permission",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/user" : {
+      "get" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method returns a user based on the specified login name.",
+        "operationId" : "get_user",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "query",
+          "description" : "The login name of the user to be returned",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user to be returned",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method creates a new user.",
+        "operationId" : "post_user",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateUserType"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/user/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "",
+        "operationId" : "get_user_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/user/{loginname}/permissionsummary" : {
+      "get" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method returns a summary of the user's permissions.",
+        "operationId" : "get_user__loginname__permissionsummary",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "The login name of the user",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            enabled: If true, the user account is enabled; false, the account is disabled\n            lastUpdateTimestamp: The date and time when the user was last updated\n            loginName: The login name of the user\n            permissions: An array of one or more permissions associated with the user\n        ",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserPermissionSummaryResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/user/{loginname}/role/{roleid}" : {
+      "put" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method assigns a specified role to a specified user.",
+        "operationId" : "put_user__loginname__role__roleid_",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "The login name of the user",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "The ID of the role to assign to the user",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the role to assign to the user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method removes the specified role from the specified user.",
+        "operationId" : "delete_user__loginname__role__roleid_",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "The login name of the user",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "The ID of the role to remove from the user",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the role to remove from the user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method lists all virtual nodes in the cluster.",
+        "operationId" : "get_virtualnode",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "List of virtual node details.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VirtualNodes"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method creates a new virtual node.",
+        "operationId" : "post_virtualnode",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VirtualNodeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The details of the created virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VirtualNodeInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "",
+        "operationId" : "get_virtualnode_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode/{holdingidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method returns the VirtualNodeInfo for a given Holding Identity ShortHash.",
+        "operationId" : "get_virtualnode__holdingidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The short hash of the holding identity; obtained during node registration",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The short hash of the holding identity; obtained during node registration",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "VirtualNodeInfo for the specified virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VirtualNodeInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode/{virtualnodeshortid}/cpi/{targetcpifilechecksum}" : {
+      "put" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method upgrades a virtual node's CPI.",
+        "operationId" : "put_virtualnode__virtualnodeshortid__cpi__targetcpifilechecksum_",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to update",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "targetcpifilechecksum",
+          "in" : "path",
+          "description" : "The file checksum of the CPI to upgrade to.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The file checksum of the CPI to upgrade to.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Identifier for the request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AsyncResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
+      "put" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method updates the state of a new virtual node to one of the pre-defined values.",
+        "operationId" : "put_virtualnode__virtualnodeshortid__state__newstate_",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to update",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "newstate",
+          "in" : "path",
+          "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Complete information about updated virtual node which will also contain the updated state.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ApprovalRuleInfo" : {
+        "required" : [ "ruleId", "ruleRegex" ],
+        "type" : "object",
+        "properties" : {
+          "ruleId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "ruleLabel" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ruleRegex" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "ApprovalRuleRequestParams" : {
+        "required" : [ "ruleRegex" ],
+        "type" : "object",
+        "properties" : {
+          "ruleLabel" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "ruleRegex" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "The approval rule information including the regular expression associated with the rule, and an optional label describing the rule"
+      },
+      "AsyncResponse" : {
+        "required" : [ "requestId" ],
+        "type" : "object",
+        "properties" : {
+          "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "BulkCreatePermissionsRequestType" : {
+        "required" : [ "permissionsToCreate", "roleIds" ],
+        "type" : "object",
+        "properties" : {
+          "permissionsToCreate" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/CreatePermissionType"
+            }
+          },
+          "roleIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        },
+        "description" : "The details of the permissions to be created along with existing role identifiers newly created permissions should be associated with."
+      },
+      "BulkCreatePermissionsResponseType" : {
+        "required" : [ "permissionIds", "roleIds" ],
+        "type" : "object",
+        "properties" : {
+          "permissionIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "roleIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        }
+      },
+      "ChangeVirtualNodeStateResponse" : {
+        "required" : [ "holdingIdShortHash", "newState" ],
+        "type" : "object",
+        "properties" : {
+          "holdingIdShortHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "newState" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "ConfigSchemaVersion" : {
+        "required" : [ "major", "minor" ],
+        "type" : "object",
+        "properties" : {
+          "major" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "minor" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
+      "CpiIdentifier" : {
+        "required" : [ "cpiName", "cpiVersion" ],
+        "type" : "object",
+        "properties" : {
+          "cpiName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "cpiVersion" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "signerSummaryHash" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }
+      },
+      "CpiMetadata" : {
+        "required" : [ "cpiFileChecksum", "cpiFileFullChecksum", "cpks", "id", "timestamp" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "cpiFileFullChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "cpks" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/CpkMetadata"
+            }
+          },
+          "groupPolicy" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "$ref" : "#/components/schemas/CpiIdentifier"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          }
+        }
+      },
+      "CpiUploadResponse" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "CpiUploadStatus" : {
+        "required" : [ "cpiFileChecksum", "status" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "CpkIdentifier" : {
+        "required" : [ "name", "version" ],
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "signerSummaryHash" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "CpkMetadata" : {
+        "required" : [ "hash", "id", "libraries", "mainBundle", "timestamp", "type" ],
+        "type" : "object",
+        "properties" : {
+          "hash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "id" : {
+            "$ref" : "#/components/schemas/CpkIdentifier"
+          },
+          "libraries" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "mainBundle" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "type" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "CreatePermissionType" : {
+        "required" : [ "permissionString", "permissionType" ],
+        "type" : "object",
+        "properties" : {
+          "groupVisibility" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "permissionString" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionType" : {
+            "nullable" : false,
+            "example" : "DENY",
+            "enum" : [ "ALLOW", "DENY" ]
+          },
+          "virtualNode" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }
+      },
+      "CreateRoleType" : {
+        "required" : [ "roleName" ],
+        "type" : "object",
+        "properties" : {
+          "groupVisibility" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "roleName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "\n                Details of the role to be created: \n                roleName - name of the role\n                groupVisibility - optional group visibility of the role\n            "
+      },
+      "CreateUserType" : {
+        "required" : [ "enabled", "fullName", "loginName" ],
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "fullName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "initialPassword" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "loginName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "parentGroup" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "passwordExpiry" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
+          }
+        },
+        "description" : "\n                Details of the user to be created with the following parameters:\n                enabled: If true, the user account is enabled; false, the account is disabled\n                fullName: The full name for the new user\n                initialPassword: The initial password for the new user; \n                    the value can be null for Single Sign On (SSO) users\n                loginName: The login name for the new user\n                parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n                passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire"
+      },
+      "FlowStateErrorResponse" : {
+        "required" : [ "message", "type" ],
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "FlowStatusResponse" : {
+        "required" : [ "flowStatus", "holdingIdentityShortHash", "timestamp" ],
+        "type" : "object",
+        "properties" : {
+          "clientRequestId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowError" : {
+            "$ref" : "#/components/schemas/FlowStateErrorResponse"
+          },
+          "flowId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowResult" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowStatus" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "holdingIdentityShortHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          }
+        }
+      },
+      "FlowStatusResponses" : {
+        "required" : [ "flowStatusResponses" ],
+        "type" : "object",
+        "properties" : {
+          "flowStatusResponses" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/FlowStatusResponse"
+            }
+          }
+        }
+      },
+      "GenerateCsrWrapperRequest" : {
+        "required" : [ "x500Name" ],
+        "properties" : {
+          "contextMap" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "description" : "Used to add additional attributes to the CSR; for example, signature spec",
+            "nullable" : true,
+            "example" : "No example available for this type"
+          },
+          "subjectAlternativeNames" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : true,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "x500Name" : {
+            "type" : "string",
+            "description" : "The X.500 name that will be the subject associated with the request",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "GenerateCsrWrapperRequest",
+        "nullable" : false
+      },
+      "GetCPIsResponse" : {
+        "required" : [ "cpis" ],
+        "type" : "object",
+        "properties" : {
+          "cpis" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/CpiMetadata"
+            }
+          }
+        }
+      },
+      "GetConfigResponse" : {
+        "required" : [ "configWithDefaults", "schemaVersion", "section", "sourceConfig", "version" ],
+        "type" : "object",
+        "properties" : {
+          "configWithDefaults" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "sourceConfig" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
+      "HoldingIdentity" : {
+        "required" : [ "fullHash", "groupId", "shortHash", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "fullHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "groupId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "shortHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "HostedIdentitySetupRequest" : {
+        "required" : [ "p2pTlsCertificateChainAlias" ],
+        "type" : "object",
+        "properties" : {
+          "p2pTlsCertificateChainAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "sessionCertificateChainAlias" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "sessionKeyId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "useClusterLevelSessionCertificateAndKey" : {
+            "type" : "boolean",
+            "nullable" : true,
+            "example" : true
+          },
+          "useClusterLevelTlsCertificateAndKey" : {
+            "type" : "boolean",
+            "nullable" : true,
+            "example" : true
+          }
+        },
+        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                useClusterLevelTlsCertificateAndKey: Should the cluster-level P2P TLS certificate type and key be \n                used or the virtual node certificate and key.\n                useClusterLevelSessionCertificateAndKey: Should the cluster-level P2P SESSION certificate type \n                and key be used or the virtual node certificate and key.\n                sessionKeyId: the session key identifier"
+      },
+      "HsmAssociationInfo" : {
+        "required" : [ "category", "deprecatedAt", "hsmId", "id" ],
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "deprecatedAt" : {
+            "type" : "integer",
+            "format" : "int64",
+            "nullable" : false,
+            "example" : 0
+          },
+          "hsmId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "masterKeyAlias" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }
+      },
+      "KeyMetaData" : {
+        "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
+        "type" : "object",
+        "properties" : {
+          "alias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "created" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "hsmCategory" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "keyId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "masterKeyAlias" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "scheme" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "KeyPairIdentifier" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "MemberInfoSubmitted" : {
+        "required" : [ "data" ],
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          }
+        }
+      },
+      "MemberRegistrationRequest" : {
+        "required" : [ "action", "context" ],
+        "type" : "object",
+        "properties" : {
+          "action" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "context" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          }
+        },
+        "description" : "The request sent during registration which contains the requested registration action (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process."
+      },
+      "PermissionAssociationResponseType" : {
+        "required" : [ "createdTimestamp", "id" ],
+        "type" : "object",
+        "properties" : {
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "PermissionResponseType" : {
+        "required" : [ "id", "permissionString", "permissionType", "updateTimestamp", "version" ],
+        "type" : "object",
+        "properties" : {
+          "groupVisibility" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionString" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionType" : {
+            "nullable" : false,
+            "example" : "DENY",
+            "enum" : [ "ALLOW", "DENY" ]
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "virtualNode" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }
+      },
+      "PermissionSummaryResponseType" : {
+        "required" : [ "id", "permissionString", "permissionType" ],
+        "type" : "object",
+        "properties" : {
+          "groupVisibility" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionString" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionType" : {
+            "nullable" : false,
+            "example" : "DENY",
+            "enum" : [ "ALLOW", "DENY" ]
+          },
+          "virtualNode" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }
+      },
+      "PropertyResponseType" : {
+        "required" : [ "key", "lastChangedTimestamp", "value" ],
+        "type" : "object",
+        "properties" : {
+          "key" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "lastChangedTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "value" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "RegistrationRequestProgress" : {
+        "required" : [ "memberInfoSubmitted", "reason", "registrationId", "registrationStatus" ],
+        "type" : "object",
+        "properties" : {
+          "memberInfoSubmitted" : {
+            "$ref" : "#/components/schemas/MemberInfoSubmitted"
+          },
+          "reason" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "registrationId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "registrationSent" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "registrationStatus" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "RegistrationRequestStatus" : {
+        "required" : [ "memberInfoSubmitted", "registrationId", "registrationStatus" ],
+        "type" : "object",
+        "properties" : {
+          "memberInfoSubmitted" : {
+            "$ref" : "#/components/schemas/MemberInfoSubmitted"
+          },
+          "registrationId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "registrationSent" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "registrationStatus" : {
+            "nullable" : false,
+            "example" : "PENDING_MEMBER_VERIFICATION",
+            "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
+          },
+          "registrationUpdated" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
+          }
+        }
+      },
+      "RoleAssociationResponseType" : {
+        "required" : [ "createTimestamp", "roleId" ],
+        "type" : "object",
+        "properties" : {
+          "createTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "roleId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "RoleResponseType" : {
+        "required" : [ "id", "permissions", "roleName", "updateTimestamp", "version" ],
+        "type" : "object",
+        "properties" : {
+          "groupVisibility" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissions" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionAssociationResponseType"
+            }
+          },
+          "roleName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
+      "RpcMemberInfo" : {
+        "required" : [ "memberContext", "mgmContext" ],
+        "type" : "object",
+        "properties" : {
+          "memberContext" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          },
+          "mgmContext" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          }
+        }
+      },
+      "RpcMemberInfoList" : {
+        "required" : [ "members" ],
+        "type" : "object",
+        "properties" : {
+          "members" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/RpcMemberInfo"
+            }
+          }
+        }
+      },
+      "StartFlowParameters" : {
+        "required" : [ "clientRequestId", "flowClassName", "requestBody" ],
+        "type" : "object",
+        "properties" : {
+          "clientRequestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "flowClassName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "requestBody" : {
+            "description" : "Can be any value - string, number, boolean, array or object.",
+            "nullable" : false,
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
+          }
+        },
+        "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestBody: optional start arguments string passed to the flow; defaults to an empty string\n            "
+      },
+      "StartableFlowsResponse" : {
+        "required" : [ "flowClassNames" ],
+        "type" : "object",
+        "properties" : {
+          "flowClassNames" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        }
+      },
+      "UpdateConfigParameters" : {
+        "required" : [ "config", "schemaVersion", "section", "version" ],
+        "type" : "object",
+        "properties" : {
+          "config" : {
+            "description" : "Can be any value - string, number, boolean, array or object.",
+            "nullable" : false,
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "description" : "\n            Details of the updated configuration. Includes:\n            - `section`: the section of the configuration to be updated.\n            - `config`: the updated configuration in JSON or HOCON format.\n            - `schemaVersion`: the schema version of the configuration.\n            - `version`: the version number used for optimistic locking. The request fails if this version does not \n                match the version stored in the database for the corresponding section or -1 if this is a new section \n                for which no configuration has yet been stored."
+      },
+      "UpdateConfigResponse" : {
+        "required" : [ "config", "schemaVersion", "section", "version" ],
+        "type" : "object",
+        "properties" : {
+          "config" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
+      "UserPermissionSummaryResponseType" : {
+        "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "lastUpdateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "loginName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissions" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionSummaryResponseType"
+            }
+          }
+        }
+      },
+      "UserResponseType" : {
+        "required" : [ "enabled", "fullName", "id", "loginName", "properties", "roleAssociations", "ssoAuth", "updateTimestamp", "version" ],
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "fullName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "loginName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "parentGroup" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "passwordExpiry" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "properties" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PropertyResponseType"
+            }
+          },
+          "roleAssociations" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/RoleAssociationResponseType"
+            }
+          },
+          "ssoAuth" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
+      "VirtualNodeInfo" : {
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "flowOperationalStatus", "flowP2pOperationalStatus", "flowStartOperationalStatus", "holdingIdentity", "uniquenessDmlConnectionId", "vaultDbOperationalStatus", "vaultDmlConnectionId" ],
+        "type" : "object",
+        "properties" : {
+          "cpiIdentifier" : {
+            "$ref" : "#/components/schemas/CpiIdentifier"
+          },
+          "cryptoDdlConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnectionId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "flowOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "flowP2pOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "flowStartOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "holdingIdentity" : {
+            "$ref" : "#/components/schemas/HoldingIdentity"
+          },
+          "hsmConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDdlConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDmlConnectionId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "vaultDbOperationalStatus" : {
+            "nullable" : false,
+            "example" : "INACTIVE",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "vaultDdlConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnectionId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "VirtualNodeRequest" : {
+        "required" : [ "cpiFileChecksum", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "cryptoDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "Details of the virtual node to be created"
+      },
+      "VirtualNodes" : {
+        "required" : [ "virtualNodes" ],
+        "type" : "object",
+        "properties" : {
+          "virtualNodes" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/VirtualNodeInfo"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "basicAuth" : {
+        "type" : "http",
+        "scheme" : "basic"
+      }
+    }
+  }
+}

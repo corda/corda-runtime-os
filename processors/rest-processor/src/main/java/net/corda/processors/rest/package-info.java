@@ -1,4 +1,4 @@
 @Export
-package net.corda.processors.rpc;
+package net.corda.processors.rest;
 
 import org.osgi.annotation.bundle.Export;
