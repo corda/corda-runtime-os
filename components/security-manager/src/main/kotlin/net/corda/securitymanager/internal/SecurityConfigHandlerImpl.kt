@@ -14,12 +14,12 @@ import net.corda.schema.configuration.ConfigKeys.SECURITY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SECURITY_POLICY
 import net.corda.securitymanager.SecurityConfigHandler
 import net.corda.securitymanager.SecurityManagerService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 
 /** An implementation of [SecurityConfigHandler]. */
@@ -34,7 +34,7 @@ class SecurityConfigHandlerImpl @Activate constructor(
     private val securityManagerService: SecurityManagerService,
 ): SecurityConfigHandler {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<SecurityConfigHandler>(::eventHandler)

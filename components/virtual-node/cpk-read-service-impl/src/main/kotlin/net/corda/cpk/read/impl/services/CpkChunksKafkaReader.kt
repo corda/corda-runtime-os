@@ -10,8 +10,8 @@ import net.corda.libs.packaging.CpkReader
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.SortedSet
@@ -23,7 +23,7 @@ class CpkChunksKafkaReader(
     private val onCpkAssembled: (SecureHash, Cpk) -> Unit
 ) : CompactedProcessor<CpkChunkId, Chunk> {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // Assuming [CompactedProcessor.onSnapshot] and [CompactedProcessor.onNext] are not called concurrently.

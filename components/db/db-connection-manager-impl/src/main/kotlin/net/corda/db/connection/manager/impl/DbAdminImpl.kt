@@ -3,10 +3,10 @@ package net.corda.db.connection.manager.impl
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.sql.SQLException
 
 @Component(service = [DbAdmin::class])
@@ -16,7 +16,7 @@ class DbAdminImpl @Activate constructor(
 ): DbAdmin {
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun createDbAndUser(

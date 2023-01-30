@@ -9,7 +9,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.Sche
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaObjectModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
 import net.corda.httprpc.server.impl.apigen.processing.toEndpointParameterParameterizedType
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.memberProperties
@@ -22,7 +22,7 @@ internal class SchemaObjectBuilder(
 ) : SchemaBuilder {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val keys: List<Class<*>> = listOf(Any::class.java)

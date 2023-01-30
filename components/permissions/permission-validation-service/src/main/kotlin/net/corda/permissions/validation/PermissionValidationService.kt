@@ -13,10 +13,10 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * Service for performing permission validation using the RBAC permission system.
@@ -37,7 +37,7 @@ class PermissionValidationService @Activate constructor(
 ) : Lifecycle {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionValidationService> { event, _ -> eventHandler(event) }

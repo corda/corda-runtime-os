@@ -3,7 +3,7 @@ package net.corda.httprpc.server.impl.internal
 import io.javalin.http.util.ContextUtil
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.server.impl.context.ClientRequestContext
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 
 /**
  * Internal Context that wrap Javalin's Context.
@@ -14,7 +14,7 @@ import net.corda.v5.base.util.contextLogger
 internal class ParametersRetrieverContext(private val ctx: ClientRequestContext) {
 
     private companion object {
-       val logger = contextLogger()
+       val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val pathParamsMap: Map<String, String?>

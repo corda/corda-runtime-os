@@ -1,11 +1,11 @@
 package net.cordacon.example.rollcall
 
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -14,12 +14,12 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.cordacon.example.rollcall.utils.BaseScriptMaker
 import net.cordacon.example.rollcall.utils.ScriptMaker
 import net.cordacon.example.rollcall.utils.findStudents
+import org.slf4j.LoggerFactory
 
 
 @InitiatingFlow("roll-call")
@@ -30,7 +30,7 @@ class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): ClientStar
 
     private companion object {
         private const val RETRIES: Int = 2
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

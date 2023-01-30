@@ -4,7 +4,6 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -13,17 +12,17 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -96,8 +95,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
-        UtxoTransactionMetadataVerifier(signedTransaction.metadata).verify()
-        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify(signedTransaction.notary)
+        UtxoLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 
 }

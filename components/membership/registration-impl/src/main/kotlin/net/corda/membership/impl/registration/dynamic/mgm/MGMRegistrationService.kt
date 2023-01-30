@@ -35,13 +35,13 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -90,7 +90,7 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private companion object {
-        val logger: Logger = contextLogger()
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // for watching the config changes

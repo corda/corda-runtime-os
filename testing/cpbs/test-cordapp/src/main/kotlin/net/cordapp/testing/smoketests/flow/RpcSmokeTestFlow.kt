@@ -3,11 +3,11 @@ package net.cordapp.testing.smoketests.flow
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
@@ -19,7 +19,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
@@ -31,6 +30,7 @@ import net.cordapp.testing.smoketests.flow.messages.JsonSerializationInput
 import net.cordapp.testing.smoketests.flow.messages.JsonSerializationOutput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 
@@ -39,7 +39,7 @@ import java.util.UUID
 class RpcSmokeTestFlow : ClientStartableFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val commandMap: Map<String, (RpcSmokeTestInput) -> String> = mapOf(

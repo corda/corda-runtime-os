@@ -16,8 +16,8 @@ import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.orm.utils.transaction
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -31,7 +31,7 @@ import javax.persistence.NonUniqueResultException
 class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFactory) : CpiPersistence {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

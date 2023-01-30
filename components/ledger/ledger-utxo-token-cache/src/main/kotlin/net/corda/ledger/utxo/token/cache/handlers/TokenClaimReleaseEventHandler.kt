@@ -1,20 +1,20 @@
 package net.corda.ledger.utxo.token.cache.handlers
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.messaging.api.records.Record
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
-import net.corda.v5.base.util.contextLogger
+import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 
 class TokenClaimReleaseEventHandler(
     private val recordFactory: RecordFactory,
 ) : TokenEventHandler<ClaimRelease> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun handle(

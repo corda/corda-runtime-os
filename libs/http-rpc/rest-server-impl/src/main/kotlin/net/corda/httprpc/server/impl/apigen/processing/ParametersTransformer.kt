@@ -8,7 +8,7 @@ import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.trace
 import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
@@ -50,7 +50,7 @@ private class PathParametersTransformer(
     private val annotation: RestPathParameter
 ) : ParametersTransformer {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun transform(): EndpointParameter {
@@ -74,7 +74,7 @@ private class QueryParametersTransformer(
     private val annotation: RestQueryParameter
 ) : ParametersTransformer {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun transform(): EndpointParameter {
@@ -99,7 +99,7 @@ internal class BodyParametersTransformer(
     private val annotation: RestRequestBodyParameter?
 ) : ParametersTransformer {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun transform(): EndpointParameter {
@@ -136,7 +136,7 @@ internal class BodyParametersTransformer(
 private class BodyParametersExplicitTransformer(private val name: String, private val type: GenericParameterizedType) :
     ParametersTransformer {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun transform(): EndpointParameter {

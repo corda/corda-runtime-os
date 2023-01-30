@@ -25,12 +25,12 @@ import net.corda.membership.httprpc.v1.MemberRegistrationRestResource
 import net.corda.membership.httprpc.v1.NetworkRestResource
 import net.corda.processors.rpc.diff.diff
 import net.corda.utilities.NetworkHostAndPort
-import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.net.URI
 import java.net.http.HttpClient
@@ -41,7 +41,7 @@ import java.net.http.HttpResponse
 class OpenApiCompatibilityTest {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val importantRpcOps = setOf(
             CertificatesRestResource::class.java, // P2P

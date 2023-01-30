@@ -15,7 +15,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.SchemaMode
 import net.corda.httprpc.server.config.RestServerSettingsProvider
 import net.corda.httprpc.server.impl.internal.SwaggerUIRenderer
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.trace
 
 /**
@@ -29,7 +29,7 @@ internal class OpenApiInfoProvider(
 
     internal companion object {
         internal fun String.jsonPath() = "$this.json"
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     val pathForOpenApiUI = "/${configurationsProvider.getBasePath()}/v${configurationsProvider.getApiVersion()}/swagger"

@@ -18,10 +18,10 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.Gateway
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList", "Unused")
 @Component(service = [GatewayProcessor::class])
@@ -43,7 +43,7 @@ class GatewayProcessorImpl @Activate constructor(
 ) : GatewayProcessor {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<GatewayProcessorImpl>(::eventHandler)

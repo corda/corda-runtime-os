@@ -12,11 +12,11 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowWaitingForHandler::class])
 class ExternalEventResponseWaitingForHandler @Activate constructor(
@@ -27,7 +27,7 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
 ) : FlowWaitingForHandler<net.corda.data.flow.state.waiting.external.ExternalEventResponse> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val type = net.corda.data.flow.state.waiting.external.ExternalEventResponse::class.java

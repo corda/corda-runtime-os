@@ -18,13 +18,13 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
@@ -34,7 +34,7 @@ class SigningServiceImpl(
     override val schemeMetadata: CipherSchemeMetadata
 ) : SigningService {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningCachedKey)

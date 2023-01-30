@@ -10,13 +10,13 @@ import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.SerializationContext
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.amqp.DescribedType
 import org.apache.qpid.proton.amqp.UnsignedInteger
 import org.apache.qpid.proton.codec.Data
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.io.NotSerializableException
 import java.lang.reflect.ParameterizedType
@@ -37,7 +37,7 @@ class DeserializationInput constructor(
     private val serializerFactory: SerializerFactory
 ) {
     private val objectHistory: MutableList<Any> = mutableListOf()
-    private val logger = loggerFor<DeserializationInput>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     companion object {
         @VisibleForTesting

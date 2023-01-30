@@ -18,7 +18,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -29,6 +28,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import net.corda.data.identity.HoldingIdentity as HoldingIdentityAvro
 import net.corda.data.virtualnode.VirtualNodeInfo as VirtualNodeInfoAvro
 
@@ -46,7 +46,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private val publisherFactory: PublisherFactory
 ) : VirtualNodeInfoWriteService {
     companion object {
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         internal const val CLIENT_ID = "VIRTUAL_NODE_INFO_WRITER"
     }
 

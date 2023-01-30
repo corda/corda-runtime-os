@@ -23,11 +23,11 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [CertificatesService::class])
 @Suppress("LongParameterList")
@@ -64,7 +64,7 @@ class CertificatesServiceImpl internal constructor(
     )
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val GROUP_NAME = "membership.certificates.service"
         const val CLIENT_NAME = "membership.certificates.service"
     }

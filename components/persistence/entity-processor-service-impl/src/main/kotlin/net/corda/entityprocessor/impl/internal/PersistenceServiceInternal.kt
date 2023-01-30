@@ -1,9 +1,5 @@
 package net.corda.entityprocessor.impl.internal
 
-import java.nio.ByteBuffer
-import javax.persistence.EntityManager
-import javax.persistence.Query
-import javax.persistence.criteria.Selection
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityResponse
@@ -16,8 +12,12 @@ import net.corda.persistence.common.exceptions.InvalidPaginationException
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import javax.persistence.EntityManager
+import javax.persistence.Query
+import javax.persistence.criteria.Selection
 
 
 /**
@@ -53,7 +53,7 @@ class PersistenceServiceInternal(
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
 ) {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private fun SerializationService.toBytes(obj: Any) = ByteBuffer.wrap(serialize(obj).bytes)

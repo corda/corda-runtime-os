@@ -6,9 +6,9 @@ import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeDescriptor
 import net.corda.internal.serialization.model.TypeLoader
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.MissingSerializerException
+import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.util.Collections.singletonList
 
@@ -68,7 +68,7 @@ class DefaultRemoteSerializerFactory(
 ) : RemoteSerializerFactory {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun get(

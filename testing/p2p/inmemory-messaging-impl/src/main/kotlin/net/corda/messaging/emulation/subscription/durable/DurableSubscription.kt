@@ -10,8 +10,8 @@ import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -25,7 +25,7 @@ internal class DurableSubscription<K : Any, V : Any>(
     private val instanceId: Int
 ) : Subscription<K, V> {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(

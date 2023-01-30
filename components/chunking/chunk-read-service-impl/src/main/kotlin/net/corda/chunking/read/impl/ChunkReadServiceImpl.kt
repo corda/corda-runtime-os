@@ -22,12 +22,12 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Suppress("UNUSED")
 @Component(service = [ChunkReadService::class])
@@ -44,7 +44,7 @@ class ChunkReadServiceImpl @Activate constructor(
     private val cpiInfoWriteService: CpiInfoWriteService
 ) : ChunkReadService, LifecycleEventHandler {
     companion object {
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<ChunkReadService>(this)

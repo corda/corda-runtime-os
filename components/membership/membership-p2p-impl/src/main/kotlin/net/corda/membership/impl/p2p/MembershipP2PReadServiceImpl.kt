@@ -26,10 +26,10 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [MembershipP2PReadService::class])
@@ -51,7 +51,7 @@ class MembershipP2PReadServiceImpl @Activate constructor(
 ) : MembershipP2PReadService {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CONSUMER_GROUP = "membership_p2p_read"
         const val MARKER_CONSUMER_GROUP = "membership_p2p_read_markers"

@@ -8,8 +8,8 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -25,7 +25,7 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     StateAndEventSubscription<K, S, E> {
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     internal val stateSubscriptionConfig = subscriptionConfig.copy(

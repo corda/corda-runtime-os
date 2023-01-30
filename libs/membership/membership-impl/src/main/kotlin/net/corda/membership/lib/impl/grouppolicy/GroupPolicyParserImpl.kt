@@ -6,6 +6,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
@@ -17,12 +18,12 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [GroupPolicyParser::class])
 class GroupPolicyParserImpl @Activate constructor(
@@ -30,7 +31,7 @@ class GroupPolicyParserImpl @Activate constructor(
     val memberInfoFactory: MemberInfoFactory
 ) : GroupPolicyParser {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
         const val NULL_GROUP_POLICY = "GroupPolicy file is null."
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
@@ -153,12 +154,13 @@ class GroupPolicyParserImpl @Activate constructor(
         return parsedGroupPolicy?.mgmInfo?.let {
             val now = clock.instant().toString()
             memberInfoFactory.create(
-                it.toSortedMap(),
+                it.filterKeys { !it.equals(SERIAL) }.toSortedMap(),
                 sortedMapOf(
                     CREATION_TIME to now,
                     MODIFIED_TIME to now,
                     STATUS to MEMBER_STATUS_ACTIVE,
-                    IS_MGM to "true"
+                    IS_MGM to "true",
+                    SERIAL to it.get(SERIAL)
                 )
             )
         }

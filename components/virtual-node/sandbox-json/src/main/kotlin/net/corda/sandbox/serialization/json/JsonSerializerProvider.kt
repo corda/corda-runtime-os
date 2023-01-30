@@ -8,16 +8,16 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.getSandboxSingletonServices
 import net.corda.sandboxgroupcontext.getMetadataServices
+import net.corda.sandboxgroupcontext.getSandboxSingletonServices
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
-import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceScope
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 
 /**
  * Configures a sandbox with handwritten JSON serializers and deserializers.
@@ -36,7 +36,7 @@ class JsonSerializerProvider @Activate constructor(
     private val internalJsonDeserializers: List<JsonDeserializer<*>>
 ) : UsedByFlow, UsedByPersistence, UsedByVerification, CustomMetadataConsumer {
     private companion object {
-        private val logger = loggerFor<JsonSerializerProvider>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun accept(context: MutableSandboxGroupContext) {
