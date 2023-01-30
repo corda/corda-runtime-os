@@ -76,7 +76,7 @@ internal class CommonComponents(
         lifecycleCoordinatorFactory,
         messagingConfiguration,
     ).also {
-        groupPolicyProvider.registerListener("$LISTENER_NAME-${it.javaClass.simpleName}") { holdingIdentity, groupPolicy ->
+        groupPolicyProvider.registerListener(LISTENER_NAME) { holdingIdentity, groupPolicy ->
             it.groupAdded(holdingIdentity, groupPolicy)
         }
     }
