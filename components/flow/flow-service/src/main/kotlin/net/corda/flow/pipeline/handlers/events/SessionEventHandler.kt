@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.events
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -12,9 +13,11 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,7 +30,9 @@ class SessionEventHandler @Activate constructor(
     @Reference(service = FlowSandboxService::class)
     private val flowSandboxService: FlowSandboxService,
     @Reference(service = SessionManager::class)
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val cpiInfoReadService: CpiInfoReadService
 ) : FlowEventHandler<SessionEvent> {
 
     private companion object {
@@ -76,8 +81,20 @@ class SessionEventHandler @Activate constructor(
         val sessionId = sessionEvent.sessionId
         val initiatingIdentity = sessionEvent.initiatingIdentity
         val initiatedIdentity = sessionEvent.initiatedIdentity
+
+        val holdingIdentity = initiatedIdentity.toCorda()
+        val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
+        checkNotNull(vNodeInfo) {
+            "Failed to find the virtual node info for holder '${holdingIdentity}' in ${virtualNodeInfoReadService::class.java}"
+        }
+        val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
+        checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
+        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}'" }
+
+        val cpkChecksums = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
+
         val protocolStore = try {
-            flowSandboxService.get(initiatedIdentity.toCorda()).protocolStore
+            flowSandboxService.get(holdingIdentity).protocolStore
         } catch (e: Exception) {
             // We assume that all sandbox creation failures are transient. This likely isn't true, but to handle
             // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
