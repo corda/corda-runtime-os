@@ -2,6 +2,7 @@ package net.corda.membership.impl.synchronisation.dummy
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -149,7 +150,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     override fun deleteApprovalRule(
-        viewOwningIdentity: HoldingIdentity, ruleId: String
+        viewOwningIdentity: HoldingIdentity, ruleId: String, ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)

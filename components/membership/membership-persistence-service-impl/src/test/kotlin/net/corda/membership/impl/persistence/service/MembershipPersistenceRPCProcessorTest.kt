@@ -32,6 +32,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.ApprovalRulesEntity
+import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -416,10 +417,15 @@ class MembershipPersistenceRPCProcessorTest {
 
     @Test
     fun `delete approval rule returns success`() {
-        whenever(entityManager.find(ApprovalRulesEntity::class.java, DUMMY_ID)).thenReturn(mock())
+        whenever(
+            entityManager.find(
+                ApprovalRulesEntity::class.java,
+                ApprovalRulesEntityPrimaryKey(DUMMY_ID, ApprovalRuleType.PREAUTH.name)
+            )
+        ).thenReturn(mock())
         val rq = MembershipPersistenceRequest(
             rqContext,
-            DeleteApprovalRule(DUMMY_ID)
+            DeleteApprovalRule(DUMMY_ID, ApprovalRuleType.PREAUTH)
         )
 
         processor.onNext(rq, responseFuture)

@@ -36,6 +36,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.datamodel.ApprovalRulesEntity
+import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -300,10 +301,11 @@ class MembershipPersistenceTest {
 
             override fun deleteApprovalRule(
                 viewOwningIdentity: HoldingIdentity,
-                ruleId: String
+                ruleId: String,
+                ruleType: ApprovalRuleType
             ) = safeCall {
                 membershipPersistenceClient.deleteApprovalRule(
-                    viewOwningIdentity, ruleId
+                    viewOwningIdentity, ruleId, ruleType
                 )
             }
 
@@ -1108,7 +1110,13 @@ class MembershipPersistenceTest {
         ).getOrThrow()
 
         val approvalRuleEntity = vnodeEmf.use {
-            it.find(ApprovalRulesEntity::class.java, ruleDetails.ruleId)
+            it.find(
+                ApprovalRulesEntity::class.java,
+                ApprovalRulesEntityPrimaryKey(
+                    ruleDetails.ruleId,
+                    ApprovalRuleType.STANDARD.name
+                )
+            )
         }
         with(approvalRuleEntity) {
             assertThat(ruleRegex).isEqualTo(RULE_REGEX)
@@ -1127,10 +1135,20 @@ class MembershipPersistenceTest {
             it.persist(testRule)
         }
 
-        membershipPersistenceClientWrapper.deleteApprovalRule(viewOwningHoldingIdentity, RULE_ID).getOrThrow()
+        membershipPersistenceClientWrapper.deleteApprovalRule(
+            viewOwningHoldingIdentity, RULE_ID, ApprovalRuleType.STANDARD
+        ).getOrThrow()
 
         vnodeEmf.use {
-            assertThat(it.find(ApprovalRulesEntity::class.java, RULE_ID)).isNull()
+            assertThat(
+                it.find(
+                    ApprovalRulesEntity::class.java,
+                    ApprovalRulesEntityPrimaryKey(
+                        RULE_ID,
+                        ApprovalRuleType.STANDARD.name
+                    )
+                )
+            ).isNull()
         }
     }
 

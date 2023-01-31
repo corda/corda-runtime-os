@@ -295,18 +295,24 @@ class MGMRestResourceImpl @Activate constructor(
         override fun deleteGroupApprovalRule(
             holdingIdentityShortHash: String,
             ruleId: String
-        ) = try {
-            executeForCommonErrors(holdingIdentityShortHash) {
-                mgmOpsClient.deleteApprovalRule(it, ruleId)
-            }
-        } catch (e: MembershipPersistenceException) {
-            throw ResourceNotFoundException("${e.message}")
-        }
+        ) = deleteGroupApprovalRule(holdingIdentityShortHash, ruleId, STANDARD)
 
         override fun deletePreAuthGroupApprovalRule(
             holdingIdentityShortHash: String,
             ruleId: String
-        ) = deleteGroupApprovalRule(holdingIdentityShortHash, ruleId)
+        ) = deleteGroupApprovalRule(holdingIdentityShortHash, ruleId, PREAUTH)
+
+        private fun deleteGroupApprovalRule(
+            holdingIdentityShortHash: String,
+            ruleId: String,
+            ruleType: ApprovalRuleType
+        ) = try {
+            executeForCommonErrors(holdingIdentityShortHash) {
+                mgmOpsClient.deleteApprovalRule(it, ruleId, ruleType)
+            }
+        } catch (e: MembershipPersistenceException) {
+            throw ResourceNotFoundException("${e.message}")
+        }
 
         private fun holdingIdentityNotFound(holdingIdentityShortHash: String): Nothing =
             throw ResourceNotFoundException("Holding Identity", holdingIdentityShortHash)

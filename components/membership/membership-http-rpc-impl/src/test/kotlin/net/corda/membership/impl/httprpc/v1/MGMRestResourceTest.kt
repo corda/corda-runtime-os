@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
+import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -236,14 +237,14 @@ class MGMRestResourceTest {
 
             mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
 
-            verify(mgmOpsClient).deleteApprovalRule(eq(HOLDING_IDENTITY_ID.shortHash()), eq(RULE_ID))
+            verify(mgmOpsClient).deleteApprovalRule(eq(HOLDING_IDENTITY_ID.shortHash()), eq(RULE_ID), eq(STANDARD))
             stopService()
         }
 
         @Test
         fun `deleteGroupApprovalRule throws resource not found for invalid member`() {
             startService()
-            whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<CouldNotFindMemberException>())
+            whenever(mgmOpsClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
@@ -255,7 +256,7 @@ class MGMRestResourceTest {
         @Test
         fun `deleteGroupApprovalRule throws resource not found for non-existent rule`() {
             startService()
-            whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
+            whenever(mgmOpsClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<MembershipPersistenceException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
@@ -267,7 +268,7 @@ class MGMRestResourceTest {
         @Test
         fun `deleteGroupApprovalRule throws invalid input for non MGM member`() {
             startService()
-            whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<MemberNotAnMgmException>())
+            whenever(mgmOpsClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
@@ -718,7 +719,7 @@ class MGMRestResourceTest {
         )
 
         private fun whenCallingClientService() = whenever(
-            mgmOpsClient.deleteApprovalRule(any(), any())
+            mgmOpsClient.deleteApprovalRule(any(), any(), eq(PREAUTH))
         )
 
         @BeforeEach
@@ -733,7 +734,8 @@ class MGMRestResourceTest {
 
             verify(mgmOpsClient).deleteApprovalRule(
                 eq(HOLDING_IDENTITY_ID.shortHash()),
-                eq(RULE_ID)
+                eq(RULE_ID),
+                eq(PREAUTH)
             )
         }
 

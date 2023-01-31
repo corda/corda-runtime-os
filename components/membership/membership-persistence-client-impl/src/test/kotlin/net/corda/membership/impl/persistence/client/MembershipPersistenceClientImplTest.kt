@@ -9,6 +9,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
@@ -762,7 +763,8 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                RULE_ID
+                RULE_ID,
+                PREAUTH
             )
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.success())
@@ -776,7 +778,8 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                RULE_ID
+                RULE_ID,
+                PREAUTH
             )
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
@@ -791,11 +794,13 @@ class MembershipPersistenceClientImplTest {
 
             membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                RULE_ID
+                RULE_ID,
+                PREAUTH
             )
 
             val sentRequest = (argument.firstValue.request as? DeleteApprovalRule)!!
             assertThat(sentRequest.ruleId).isEqualTo(RULE_ID)
+            assertThat(sentRequest.ruleType).isEqualTo(PREAUTH)
         }
     }
 

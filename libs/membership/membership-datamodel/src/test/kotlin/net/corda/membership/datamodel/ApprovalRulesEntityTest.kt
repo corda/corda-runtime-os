@@ -20,7 +20,7 @@ class ApprovalRulesEntityTest {
     @Nested
     inner class EqualityAndHashTests {
         @Test
-        fun `entities are equal if rule id matches`() {
+        fun `entities are equal if rule id and rule type match`() {
             val ruleId = randomId
             val e1 = ApprovalRulesEntity(
                 ruleId,
@@ -31,7 +31,7 @@ class ApprovalRulesEntityTest {
             val e2 = ApprovalRulesEntity(
                 ruleId,
                 rule2,
-                ruleType2,
+                ruleType1,
                 ruleLabel2
             )
             assertEquals(e1, e2)
@@ -48,9 +48,28 @@ class ApprovalRulesEntityTest {
             )
             val e2 = ApprovalRulesEntity(
                 randomId,
-                rule2,
+                rule1,
+                ruleType1,
+                ruleLabel1
+            )
+            assertNotEquals(e1, e2)
+            assertNotEquals(e1.hashCode(), e2.hashCode())
+        }
+
+        @Test
+        fun `entities are not equal if rule type does not match`() {
+            val ruleId = randomId
+            val e1 = ApprovalRulesEntity(
+                ruleId,
+                rule1,
+                ruleType1,
+                ruleLabel1
+            )
+            val e2 = ApprovalRulesEntity(
+                ruleId,
+                rule1,
                 ruleType2,
-                ruleLabel2
+                ruleLabel1
             )
             assertNotEquals(e1, e2)
             assertNotEquals(e1.hashCode(), e2.hashCode())

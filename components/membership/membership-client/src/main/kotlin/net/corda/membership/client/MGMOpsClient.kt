@@ -78,11 +78,12 @@ interface MGMOpsClient : Lifecycle {
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param ruleId ID of the group approval rule to be deleted.
+     * @param ruleType The approval rule type for this rule. See [ApprovalRuleType] for the available types.
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [MembershipPersistenceException] If the specified rule does not exist.
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, MembershipPersistenceException::class)
-    fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String)
+    fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType)
 }

@@ -88,6 +88,7 @@ class MGMOpsClientTest {
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
         private const val RULE_ID = "rule-id"
+        private val RULE_TYPE = ApprovalRuleType.STANDARD
 
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
         val clock = TestClock(Instant.ofEpochSecond(100))
@@ -547,7 +548,8 @@ class MGMOpsClientTest {
             whenever(
                 membershipPersistenceClient.deleteApprovalRule(
                     holdingIdentity,
-                    RULE_ID
+                    RULE_ID,
+                    RULE_TYPE
                 )
             ).doReturn(
                 MembershipPersistenceResult.success()
@@ -556,11 +558,13 @@ class MGMOpsClientTest {
             mgmOpsClient.deleteApprovalRule(
                 shortHash,
                 RULE_ID,
+                RULE_TYPE
             )
 
             verify(membershipPersistenceClient).deleteApprovalRule(
                 holdingIdentity,
-                RULE_ID
+                RULE_ID,
+                RULE_TYPE
             )
             mgmOpsClient.stop()
         }
@@ -572,7 +576,7 @@ class MGMOpsClientTest {
 
             assertThrows<CouldNotFindMemberException> {
                 mgmOpsClient.deleteApprovalRule(
-                    ShortHash.of("000000000000"), RULE_ID
+                    ShortHash.of("000000000000"), RULE_ID, RULE_TYPE
                 )
             }
             mgmOpsClient.stop()
@@ -586,7 +590,7 @@ class MGMOpsClientTest {
 
             assertThrows<CouldNotFindMemberException> {
                 mgmOpsClient.deleteApprovalRule(
-                    shortHash, RULE_ID
+                    shortHash, RULE_ID, RULE_TYPE
                 )
             }
             mgmOpsClient.stop()
@@ -604,7 +608,7 @@ class MGMOpsClientTest {
 
             assertThrows<MemberNotAnMgmException> {
                 mgmOpsClient.deleteApprovalRule(
-                    shortHash, RULE_ID
+                    shortHash, RULE_ID, RULE_TYPE
                 )
             }
             mgmOpsClient.stop()
