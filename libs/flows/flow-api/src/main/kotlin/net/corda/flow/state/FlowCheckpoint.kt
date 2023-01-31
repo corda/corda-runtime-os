@@ -1,6 +1,5 @@
 package net.corda.flow.state
 
-import java.nio.ByteBuffer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -10,12 +9,15 @@ import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.serialization.checkpoint.NonSerializable
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import java.nio.ByteBuffer
 
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
  */
 interface FlowCheckpoint : NonSerializable {
+    val cpks: List<SecureHash>
 
     val flowId: String
 

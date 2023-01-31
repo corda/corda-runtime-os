@@ -92,7 +92,7 @@ class SessionEventHandler @Activate constructor(
         check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}'" }
 
         val cpkChecksums = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
-
+        val cpks = context.checkpoint.cpks
         val protocolStore = try {
             flowSandboxService.get(holdingIdentity).protocolStore
         } catch (e: Exception) {
