@@ -519,6 +519,18 @@ class MGMRestResourceTest {
         }
 
         @Test
+        fun `it fails when the holding identity does not exist`() {
+            startService()
+            whenever(
+                mgmOpsClient.generatePreAuthToken(any(), any(), anyOrNull(), anyOrNull())
+            ).doThrow(CouldNotFindMemberException(ShortHash.of(HOLDING_IDENTITY_ID)))
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRpcOps.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, Duration.ofDays(5)))
+            }
+        }
+
+        @Test
         fun `it fails when the holding identity is not an MGM`() {
             startService()
             whenever(
@@ -577,6 +589,18 @@ class MGMRestResourceTest {
         }
 
         @Test
+        fun `it fails when the holding identity does not exist`() {
+            startService()
+            whenever(
+                mgmOpsClient.getPreAuthTokens(any(), anyOrNull(), anyOrNull(), any())
+            ).doThrow(CouldNotFindMemberException(ShortHash.of(HOLDING_IDENTITY_ID)))
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRpcOps.getPreAuthTokens(HOLDING_IDENTITY_ID, null, null, false)
+            }
+        }
+
+        @Test
         fun `it fails when the holding identity is not an MGM`() {
             startService()
             whenever(
@@ -608,6 +632,9 @@ class MGMRestResourceTest {
     }
     @Nested
     inner class RevokePreAuthTokenTest {
+
+        private val tokenId: UUID = UUID.randomUUID()
+
         @Test
         fun `it fails when not ready`() {
             assertThrows<ServiceUnavailableException> {
@@ -624,6 +651,18 @@ class MGMRestResourceTest {
         }
 
         @Test
+        fun `it fails when the holding identity does not exist`() {
+            startService()
+            whenever(
+                mgmOpsClient.revokePreAuthToken(any(), any(), anyOrNull())
+            ).doThrow(CouldNotFindMemberException(ShortHash.of(HOLDING_IDENTITY_ID)))
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRpcOps.revokePreAuthToken(HOLDING_IDENTITY_ID, tokenId.toString())
+            }
+        }
+
+        @Test
         fun `it fails when the holding identity is not an MGM`() {
             startService()
             whenever(
@@ -631,14 +670,13 @@ class MGMRestResourceTest {
             ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
 
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.revokePreAuthToken(HOLDING_IDENTITY_ID, "")
+                mgmRpcOps.revokePreAuthToken(HOLDING_IDENTITY_ID, tokenId.toString())
             }
         }
 
         @Test
         fun `it returns the correct result from the client`() {
             startService()
-            val tokenId = UUID.randomUUID()
             val ttl = Instant.ofEpochSecond(10)
             val remark = "Remark"
             val removalRemark = "RemovalRemark"

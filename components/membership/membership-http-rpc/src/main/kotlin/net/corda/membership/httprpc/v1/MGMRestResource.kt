@@ -111,6 +111,8 @@ interface MGMRestResource : RestResource {
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM.
      * @param request Details of the token to create.
+     *
+     * @return Details of the created token.
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/preauthtoken",
@@ -130,6 +132,8 @@ interface MGMRestResource : RestResource {
      * @param preAuthTokenId The token ID to query for.
      * @param viewInactive Return tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
      * [PreAuthTokenStatus.AUTO_INVALIDATED] as well as [PreAuthTokenStatus.AVAILABLE].
+     *
+     * @return A list tokens matching the query or an empty list, if no tokens match the query.
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/preauthtoken",
@@ -151,6 +155,8 @@ interface MGMRestResource : RestResource {
      * @param holdingIdentityShortHash The holding identity ID of the MGM.
      * @param preAuthTokenId The token ID to revoke.
      * @param remarks Some optional remarks about why the token was revoked.
+     *
+     * @return Details of the revoked token.
      */
     @HttpPUT(
         path = "{holdingIdentityShortHash}/preauthtoken/revoke/{preAuthTokenId}",

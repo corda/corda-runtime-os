@@ -349,13 +349,10 @@ class MGMRestResourceImpl internal constructor(
                     ttlAsInstant,
                     request.remarks
                 ).fromAvro()
+            }  catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
             } catch (e: MemberNotAnMgmException) {
-                throw InvalidInputDataException(
-                    details = mapOf(
-                        "holdingIdentityShortHash" to holdingIdentityShortHash
-                    ),
-                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
-                )
+                invalidInput(holdingIdentityShortHash)
             }
         }
 
@@ -394,13 +391,10 @@ class MGMRestResourceImpl internal constructor(
                     tokenId,
                     viewInactive
                 ).map { it.fromAvro() }
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
             } catch (e: MemberNotAnMgmException) {
-                throw InvalidInputDataException(
-                    details = mapOf(
-                        "holdingIdentityShortHash" to holdingIdentityShortHash
-                    ),
-                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
-                )
+                invalidInput(holdingIdentityShortHash)
             }
         }
 
@@ -420,13 +414,12 @@ class MGMRestResourceImpl internal constructor(
                     tokenId,
                     remarks
                 ).fromAvro()
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
             } catch (e: MemberNotAnMgmException) {
-                throw InvalidInputDataException(
-                    details = mapOf(
-                        "holdingIdentityShortHash" to holdingIdentityShortHash
-                    ),
-                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
-                )
+                invalidInput(holdingIdentityShortHash)
+            } catch  (e: MembershipPersistenceException) {
+                throw ResourceNotFoundException("${e.message}")
             }
         }
 
