@@ -188,7 +188,12 @@ class TestServicesFactory {
             schemeMetadata,
             signingKeyStore,
             cryptoServiceFactory
-        )
+        ).also {
+            it.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+            }
+        }
     }
 
     val hsmService: HSMServiceImpl by lazy {
