@@ -165,8 +165,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
         if (mtls) {
             println(
-                "To onboard members to this group on other cluster please allow those members " +
-                    "client certificates on this MGM. One can use the allowClientCertificate to do this."
+                "To onboard members to this group on other clusters, please add those members' " +
+                    "client certificates subjects to this MGM's allow list. You can do that using the allowClientCertificate command."
             )
         }
     }

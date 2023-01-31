@@ -225,8 +225,8 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (mtls) {
             println(
                 "Using $certificateSubject as client certificate. " +
-                    "The onboarding will fail until the MGM will allow this subject. " +
-                    "One can use the allowClientCertificate to allow it."
+                    "The onboarding will fail until the the subject is added to the MGM's allow list. " +
+                    "You can do that using the allowClientCertificate command."
             )
         }
 

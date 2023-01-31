@@ -13,7 +13,7 @@ import picocli.CommandLine.Parameters
     name = "allowClientCertificate",
     description = [
         "Allow client certificate in mutual TLS.",
-        "This sub command should only be used in for internal development"
+        "This sub command should only be used for internal development"
     ]
 )
 class AllowClientCertificate : Runnable {
@@ -25,7 +25,7 @@ class AllowClientCertificate : Runnable {
     lateinit var cordaClusterName: String
 
     @Parameters(
-        description = ["The MGM short hash"],
+        description = ["The MGM holding identity short hash"],
         paramLabel = "MGM_HASH",
         index = "1"
     )
@@ -72,7 +72,7 @@ class AllowClientCertificate : Runnable {
 
                 println("Success!")
                 mgm.mutualTlsListClientCertificate(mgmShortHash).forEach {
-                    println("Certificate: $it is allowed")
+                    println("Certificate with subject $it is allowed")
                 }
             }
         }
