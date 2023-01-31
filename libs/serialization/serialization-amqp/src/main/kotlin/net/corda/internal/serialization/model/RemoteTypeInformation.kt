@@ -82,7 +82,7 @@ sealed class RemoteTypeInformation {
      * The [RemoteTypeInformation] emitted if we hit a cycle while traversing the graph of related types.
      */
     data class Cycle(override val typeIdentifier: TypeIdentifier) : RemoteTypeInformation() {
-        override val typeDescriptor by lazy { follow.typeDescriptor }
+        override val typeDescriptor by lazy(LazyThreadSafetyMode.PUBLICATION) { follow.typeDescriptor }
         lateinit var follow: RemoteTypeInformation
 
         override fun equals(other: Any?): Boolean = other is Cycle && other.typeIdentifier == typeIdentifier
