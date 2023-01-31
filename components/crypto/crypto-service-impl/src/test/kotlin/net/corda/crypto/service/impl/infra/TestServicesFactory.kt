@@ -25,6 +25,7 @@ import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
+import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
@@ -40,6 +41,8 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 
@@ -172,22 +175,25 @@ class TestServicesFactory {
         }
     }
 
+    val signingService: SigningService by lazy {
+        SigningServiceImpl(
+            signingKeyStore,
+            cryptoServiceFactory,
+            schemeMetadata
+        )
+    }
+
+    val signingServiceFactory: SigningServiceFactory = mock<SigningServiceFactory>().also {
+        whenever(it.getInstance()).thenReturn(signingService)
+    }
+
     val hsmService: HSMServiceImpl by lazy {
         HSMServiceImpl(
             coordinatorFactory,
             configurationReadService,
             hsmStore,
-            opsProxyClient
+            signingServiceFactory
         ).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
-
-    val opsProxyClient: TestCryptoOpsProxyClient by lazy {
-        TestCryptoOpsProxyClient(this).also {
             it.start()
             eventually {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
@@ -215,7 +221,7 @@ class TestServicesFactory {
         CryptoServiceFactoryImpl(
             coordinatorFactory,
             configurationReadService,
-            hsmService,
+            hsmStore,
             object : CryptoServiceProvider<SoftCryptoServiceConfig> {
                 override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
                 override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
@@ -231,14 +237,6 @@ class TestServicesFactory {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
             }
         }
-    }
-
-    val signingService: SigningService by lazy {
-        SigningServiceImpl(
-            signingKeyStore,
-            cryptoServiceFactory,
-            schemeMetadata
-        )
     }
 
     private class CryptoServiceWrapper(

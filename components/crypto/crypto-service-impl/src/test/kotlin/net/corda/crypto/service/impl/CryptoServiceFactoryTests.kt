@@ -33,7 +33,7 @@ class CryptoServiceFactoryTests {
         component = CryptoServiceFactoryImpl(
             factory.coordinatorFactory,
             factory.configurationReadService,
-            factory.hsmService,
+            factory.hsmStore,
             object : CryptoServiceProvider<SoftCryptoServiceConfig> {
                 override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
                 override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
