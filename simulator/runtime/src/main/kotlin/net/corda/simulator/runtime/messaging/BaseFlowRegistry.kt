@@ -3,7 +3,7 @@ package net.corda.simulator.runtime.messaging
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
 class BaseFlowRegistry: FlowRegistry {
@@ -13,7 +13,7 @@ class BaseFlowRegistry: FlowRegistry {
     private val nodeResponderInstances = ConcurrentHashMap<MemberX500Name, ConcurrentHashMap<String, ResponderFlow>>()
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun registerResponderClass(

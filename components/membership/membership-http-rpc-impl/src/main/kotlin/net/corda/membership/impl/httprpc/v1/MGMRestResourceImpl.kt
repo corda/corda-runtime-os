@@ -23,13 +23,14 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.util.regex.PatternSyntaxException
 
 @Component(service = [PluggableRestResource::class])
 class MGMRestResourceImpl @Activate constructor(
@@ -41,7 +42,7 @@ class MGMRestResourceImpl @Activate constructor(
     private val configurationGetService: ConfigurationGetService,
 ) : MGMRestResource, PluggableRestResource<MGMRestResource>, Lifecycle {
     companion object {
-        private val logger: Logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private interface InnerMGMRpcOps {
@@ -255,6 +256,7 @@ class MGMRestResourceImpl @Activate constructor(
 
         override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleInfo: ApprovalRuleRequestParams): ApprovalRuleInfo {
             return try {
+                validateRegex(ruleInfo.ruleRegex)
                 mgmOpsClient.addApprovalRule(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     ApprovalRuleParams(ruleInfo.ruleRegex, ApprovalRuleType.STANDARD, ruleInfo.ruleLabel)
@@ -265,6 +267,8 @@ class MGMRestResourceImpl @Activate constructor(
                 invalidInput(holdingIdentityShortHash)
             } catch (e: MembershipPersistenceException) {
                 throw BadRequestException("${e.message}")
+            } catch (e: PatternSyntaxException) {
+                throw BadRequestException("The regular expression's (${ruleInfo.ruleRegex}) syntax is invalid.")
             }
         }
 
@@ -299,5 +303,9 @@ class MGMRestResourceImpl @Activate constructor(
                 ),
                 message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
             )
+
+        private fun validateRegex(expression: String) {
+            expression.toRegex()
+        }
     }
 }

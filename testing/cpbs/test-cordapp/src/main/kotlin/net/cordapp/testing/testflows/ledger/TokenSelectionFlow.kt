@@ -1,25 +1,25 @@
 package net.cordapp.testing.testflows.ledger
 
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import net.cordapp.testing.testflows.messages.TokenSelectionRequest
 import net.cordapp.testing.testflows.messages.TokenSelectionResponse
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
 class TokenSelectionFlow : ClientStartableFlow {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

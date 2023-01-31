@@ -5,7 +5,7 @@ import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeAll
 class RestServerWebsocketTest : AbstractWebsocketTest() {
     private companion object {
 
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val restServerSettings = RestServerSettings(
             NetworkHostAndPort("localhost", 0),

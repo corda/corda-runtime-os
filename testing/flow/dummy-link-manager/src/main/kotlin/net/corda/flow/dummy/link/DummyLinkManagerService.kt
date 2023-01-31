@@ -2,6 +2,7 @@ package net.corda.flow.dummy.link
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,15 +18,14 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [DummyLinkManagerService::class], immediate = true)
 class DummyLinkManagerService @Activate constructor(
@@ -38,7 +38,7 @@ class DummyLinkManagerService @Activate constructor(
 ) : Lifecycle {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "DummyLinkManagerConsumer"
     }
 

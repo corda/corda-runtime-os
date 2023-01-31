@@ -5,8 +5,8 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -20,7 +20,7 @@ class CordaPublisher(
 ) : Publisher {
 
     private companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val clientId = config.clientId

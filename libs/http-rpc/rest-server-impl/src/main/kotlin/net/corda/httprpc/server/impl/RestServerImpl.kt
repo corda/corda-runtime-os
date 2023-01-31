@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.RestServer
 import net.corda.httprpc.server.config.RestServerSettingsProvider
 import net.corda.httprpc.server.config.impl.RestServerObjectSettingsProvider
@@ -17,7 +17,7 @@ import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.httprpc.server.impl.websocket.deferred.DeferredWebSocketCloserService
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import java.nio.file.Path
@@ -28,13 +28,13 @@ import kotlin.concurrent.write
 @SuppressWarnings("TooGenericExceptionThrown", "LongParameterList")
 class RestServerImpl(
     restResourceImpls: List<PluggableRestResource<out RestResource>>,
-    rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>,
+    restSecurityManagerSupplier: Supplier<RestSecurityManager>,
     restServerSettings: RestServerSettings,
     multiPartDir: Path,
     devMode: Boolean
 ) : RestServer {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Volatile
@@ -50,7 +50,7 @@ class RestServerImpl(
             restServerSettings.context.version,
             resources
         ),
-        RestAuthenticationProviderImpl(createAuthenticationProviders(restServerConfigProvider, rpcSecurityManagerSupplier)),
+        RestAuthenticationProviderImpl(createAuthenticationProviders(restServerConfigProvider, restSecurityManagerSupplier)),
         restServerConfigProvider,
         OpenApiInfoProvider(resources, restServerConfigProvider),
         multiPartDir,
@@ -98,12 +98,12 @@ class RestServerImpl(
 
     private fun createAuthenticationProviders(
         settings: RestServerSettingsProvider,
-        rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
+        restSecurityManagerSupplier: Supplier<RestSecurityManager>
     ): Set<AuthenticationProvider> {
-        val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(rpcSecurityManagerSupplier))
+        val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(restSecurityManagerSupplier))
         val azureAdSettings = settings.getSsoSettings()?.azureAd()
         if (azureAdSettings != null) {
-            result.add(AzureAdAuthenticationProvider.createDefault(azureAdSettings, rpcSecurityManagerSupplier))
+            result.add(AzureAdAuthenticationProvider.createDefault(azureAdSettings, restSecurityManagerSupplier))
         }
         return result
     }

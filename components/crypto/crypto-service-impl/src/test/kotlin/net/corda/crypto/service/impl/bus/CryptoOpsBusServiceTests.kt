@@ -9,13 +9,13 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.slf4j.LoggerFactory
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 
 class CryptoOpsBusServiceTests {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private lateinit var factory: TestServicesFactory

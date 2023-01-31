@@ -14,7 +14,7 @@ import net.corda.httprpc.tools.isDuplexChannel
 import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.httprpc.durablestream.api.isFiniteDurableStreamsMethod
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import java.lang.reflect.InvocationTargetException
@@ -40,7 +40,7 @@ internal class JavalinRouteProviderImpl(
 ) : RouteProvider {
 
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val httpNoAuthRequiredGetRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.GET)
@@ -93,7 +93,7 @@ internal class RouteInfo(
     private val endpoint: Endpoint
 ) {
     private companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     val parameters = mapEndpointParameters(endpoint.parameters)

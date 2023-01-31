@@ -8,9 +8,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.utilities.withMDC
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
@@ -23,7 +23,7 @@ class PersistenceRequestProcessor(
 ) : DurableProcessor<String, LedgerPersistenceRequest> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
     }
 

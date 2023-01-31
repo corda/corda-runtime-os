@@ -32,15 +32,10 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
 ): UtxoRequestHandlerSelector {
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
-        val repository =  UtxoRepositoryImpl(
-            sandbox.getSandboxSingletonService(),
-            sandbox.getSandboxSingletonService(),
-            sandbox.getSandboxSingletonService()
-        )
         val persistenceService = UtxoPersistenceServiceImpl(
             sandbox.getEntityManagerFactory(),
-            repository,
             sandbox.getSandboxSingletonService(),
+            sandbox.getSerializationService(),
             sandbox.getSandboxSingletonService(),
             UTCClock()
         )

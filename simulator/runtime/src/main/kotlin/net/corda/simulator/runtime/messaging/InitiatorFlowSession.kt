@@ -2,7 +2,7 @@ package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.exceptions.ResponderFlowException
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
@@ -27,7 +27,7 @@ class BaseInitiatorFlowSession(
 ) : BlockingQueueFlowSession(flowDetails, from, to, flowContextProperties), InitiatorFlowSession {
 
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var responderSessionClosed: Boolean = false

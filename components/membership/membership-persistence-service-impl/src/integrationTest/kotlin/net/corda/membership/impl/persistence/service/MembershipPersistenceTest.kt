@@ -82,7 +82,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
@@ -102,6 +101,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.time.Instant
@@ -120,7 +120,7 @@ class MembershipPersistenceTest {
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1

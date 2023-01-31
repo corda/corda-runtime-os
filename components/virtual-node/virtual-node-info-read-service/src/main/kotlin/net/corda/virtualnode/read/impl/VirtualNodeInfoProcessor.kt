@@ -2,7 +2,6 @@ package net.corda.virtualnode.read.impl
 
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
@@ -12,6 +11,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -32,7 +32,7 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
     CompactedProcessor<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo> {
 
     companion object {
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /** Holds all the virtual node info we receive off the wire as Avro objects */

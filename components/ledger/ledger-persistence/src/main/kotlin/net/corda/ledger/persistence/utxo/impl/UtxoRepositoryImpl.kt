@@ -7,14 +7,20 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
+import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.utxo.StateRef
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -22,14 +28,28 @@ import javax.persistence.Query
 import javax.persistence.Tuple
 
 @Suppress("TooManyFunctions")
-class UtxoRepositoryImpl(
+/**
+ * Reads and writes ledger transaction data to and from the virtual node vault database.
+ * The component only exists to be created inside a PERSISTENCE sandbox. We denote it
+ * as "corda.marker.only" to force the sandbox to create it, despite it implementing
+ * only the [UsedByPersistence] marker interface.
+ */
+@Component(
+    service = [ UtxoRepository::class, UsedByPersistence::class ],
+    property = [ CORDA_MARKER_ONLY_SERVICE ],
+    scope = PROTOTYPE
+)
+class UtxoRepositoryImpl @Activate constructor(
+    @Reference
     private val digestService: DigestService,
+    @Reference
     private val serializationService: SerializationService,
+    @Reference
     private val wireTransactionFactory: WireTransactionFactory
-) : UtxoRepository {
+) : UtxoRepository, UsedByPersistence {
     private companion object {
         private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun findTransaction(

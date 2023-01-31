@@ -55,7 +55,8 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify coordinator is started on start`() {
-            val vnodeRpcOps = VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
+            val vnodeRpcOps =
+                VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock(), mockClockFactory)
             vnodeRpcOps.start()
 
             verify(mockCoordinator).start()
@@ -63,7 +64,8 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify coordinator is stopped on stop`() {
-            val vnodeRpcOps = VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
+            val vnodeRpcOps =
+                VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock(), mockClockFactory)
             vnodeRpcOps.stop()
 
             verify(mockCoordinator).stop()
@@ -71,7 +73,8 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify coordinator isRunning defers to the coordinator`() {
-            val vnodeRpcOps = VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
+            val vnodeRpcOps =
+                VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock(), mockClockFactory)
             vnodeRpcOps.isRunning
 
             verify(mockCoordinator).isRunning
@@ -79,7 +82,14 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify exception throw if getAllVirtualNodes is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeRestResourceImpl(mockDownCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
+            val vnodeMaintenanceRpcOps = VirtualNodeRestResourceImpl(
+                mockDownCoordinatorFactory,
+                mock(),
+                mock(),
+                mock(),
+                mock(),
+                mockClockFactory
+            )
             assertThrows<IllegalStateException> {
                 vnodeMaintenanceRpcOps.getAllVirtualNodes()
             }
@@ -89,7 +99,14 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify exception throw if createVirtualNode is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeRestResourceImpl(mockDownCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
+            val vnodeMaintenanceRpcOps = VirtualNodeRestResourceImpl(
+                mockDownCoordinatorFactory,
+                mock(),
+                mock(),
+                mock(),
+                mock(),
+                mockClockFactory
+            )
             assertThrows<IllegalStateException> {
                 vnodeMaintenanceRpcOps.createVirtualNode(mock())
             }
@@ -100,7 +117,14 @@ class VirtualNodeRPCOpsImplTest {
         @Test
         fun `verify exception throw if updateVirtualNodeState is performed while coordinator is not running`() {
             val vnodeMaintenanceRpcOps =
-                VirtualNodeRestResourceImpl(mockDownCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
+                VirtualNodeRestResourceImpl(
+                    mockDownCoordinatorFactory,
+                    mock(),
+                    mock(),
+                    mock(),
+                    mock(),
+                    mockClockFactory
+                )
             assertThrows<IllegalStateException> {
                 vnodeMaintenanceRpcOps.updateVirtualNodeState("someId", "someState")
             }

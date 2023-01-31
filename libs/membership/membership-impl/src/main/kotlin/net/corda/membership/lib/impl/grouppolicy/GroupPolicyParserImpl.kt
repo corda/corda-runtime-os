@@ -18,12 +18,12 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [GroupPolicyParser::class])
 class GroupPolicyParserImpl @Activate constructor(
@@ -31,7 +31,7 @@ class GroupPolicyParserImpl @Activate constructor(
     val memberInfoFactory: MemberInfoFactory
 ) : GroupPolicyParser {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
         const val NULL_GROUP_POLICY = "GroupPolicy file is null."
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."

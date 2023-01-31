@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl.security.provider.bearer.oauth
 
 import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.JWTParser
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.impl.security.TestRestResource
 import net.corda.httprpc.server.impl.security.provider.bearer.TestAdminSubject
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
@@ -25,11 +25,11 @@ class JwtAuthenticationProviderTest {
     private val claimExtractor: JwtClaimExtractor = mock()
     private val permission = "InvokeRpc:${TestRestResource::class.java.name}#dummy2"
 
-    private val rpcSecurityManager = mock<RPCSecurityManager>().apply {
+    private val restSecurityManager = mock<RestSecurityManager>().apply {
         whenever(buildSubject(any())).thenReturn(TestAdminSubject(username))
     }
 
-    private val provider = JwtAuthenticationProvider(jwtProcessor, claimExtractor, ::rpcSecurityManager)
+    private val provider = JwtAuthenticationProvider(jwtProcessor, claimExtractor, ::restSecurityManager)
 
     @Test
     fun `supports_basicAuthenticationCredential_shouldReturnFalse`() {

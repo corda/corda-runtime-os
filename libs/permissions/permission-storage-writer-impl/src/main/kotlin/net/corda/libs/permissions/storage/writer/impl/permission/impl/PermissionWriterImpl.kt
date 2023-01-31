@@ -1,19 +1,19 @@
 package net.corda.libs.permissions.storage.writer.impl.permission.impl
 
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
-import net.corda.libs.permissions.storage.common.converter.toDbModelPermissionType
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
+import net.corda.libs.permissions.storage.common.converter.toDbModelPermissionType
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidationUtil
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
-import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Permission
-import net.corda.v5.base.util.contextLogger
+import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.Permission as AvroPermission
 
 class PermissionWriterImpl(
@@ -21,7 +21,7 @@ class PermissionWriterImpl(
 ) : PermissionWriter {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun createPermission(request: CreatePermissionRequest, requestUserId: String, virtualNodeId: String?): AvroPermission {

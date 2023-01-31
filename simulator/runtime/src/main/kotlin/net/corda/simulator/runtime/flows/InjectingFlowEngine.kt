@@ -9,7 +9,7 @@ import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
@@ -40,7 +40,7 @@ class InjectingFlowEngine(
 
     private val userContextProperties = copyFlowContextProperties(userContextProperties)
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val flowId: UUID

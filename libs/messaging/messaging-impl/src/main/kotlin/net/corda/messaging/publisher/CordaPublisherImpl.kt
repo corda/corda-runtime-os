@@ -1,8 +1,6 @@
 package net.corda.messaging.publisher
 
 import net.corda.messagebus.api.configuration.ProducerConfig
-import java.nio.ByteBuffer
-import java.util.concurrent.CompletableFuture
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -14,9 +12,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
 import net.corda.messaging.utils.toCordaProducerRecord
 import net.corda.messaging.utils.toCordaProducerRecords
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.concurrent.CompletableFuture
 
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
@@ -33,7 +33,7 @@ internal class CordaPublisherImpl(
 ) : Publisher {
 
     private companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)

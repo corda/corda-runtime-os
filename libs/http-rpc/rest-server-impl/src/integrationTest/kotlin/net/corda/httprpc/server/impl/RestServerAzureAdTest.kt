@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl
 
 import kong.unirest.HttpStatus
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.RestServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
 import net.corda.httprpc.server.config.models.RestContext
@@ -16,7 +16,7 @@ import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,12 +26,12 @@ import kotlin.test.assertEquals
 class RestServerAzureAdTest {
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private lateinit var restServer: RestServer
     private lateinit var client: TestHttpClient
-    private lateinit var securityManager: RPCSecurityManager
+    private lateinit var securityManager: RestSecurityManager
 
     @BeforeEach
     fun setUp() {

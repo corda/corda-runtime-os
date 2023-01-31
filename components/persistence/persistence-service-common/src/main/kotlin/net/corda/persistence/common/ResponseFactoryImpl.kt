@@ -9,10 +9,10 @@ import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.exceptions.VirtualNodeException
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
 @Component(service = [ResponseFactory::class])
@@ -22,7 +22,7 @@ class ResponseFactoryImpl @Activate constructor(
 ) : ResponseFactory {
 
     private companion object{
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun successResponse(

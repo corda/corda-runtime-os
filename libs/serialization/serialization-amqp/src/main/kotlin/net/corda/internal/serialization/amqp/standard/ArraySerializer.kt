@@ -1,39 +1,40 @@
 package net.corda.internal.serialization.amqp.standard
 
-import net.corda.internal.serialization.model.resolveAgainst
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException
 import net.corda.internal.serialization.amqp.AMQPSerializer
+import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
+import net.corda.internal.serialization.amqp.Descriptor
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.RestrictedType
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.amqp.componentType
 import net.corda.internal.serialization.amqp.isArray
-import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
-import net.corda.internal.serialization.amqp.asClass
-import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.RestrictedType
-import net.corda.internal.serialization.amqp.Descriptor
-import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.redescribe
 import net.corda.internal.serialization.amqp.withDescribed
 import net.corda.internal.serialization.amqp.withList
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.redescribe
-import net.corda.internal.serialization.amqp.AMQPNotSerializableException
+import net.corda.internal.serialization.model.resolveAgainst
 import net.corda.serialization.SerializationContext
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Type
+import kotlin.LazyThreadSafetyMode.PUBLICATION
 
 /**
  * Serialization / deserialization of arrays.
  */
 open class ArraySerializer(override val type: Type, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
     companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         fun make(type: Type, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
-            contextLogger().debug { "Making array serializer, typename=${type.typeName}" }
+            logger.debug { "Making array serializer, typename=${type.typeName}" }
             return when (type) {
                 Array<Char>::class.java -> CharArraySerializer(factory)
                 else -> ArraySerializer(type, factory)
@@ -41,7 +42,7 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
         }
     }
 
-    private val logger = loggerFor<ArraySerializer>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     // because this might be an array of array of primitives (to any recursive depth) and
     // because we care that the lowest type is unboxed we can't rely on the inbuilt type
@@ -71,14 +72,14 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
         }
     }
 
-    override val typeDescriptor: Symbol by lazy {
+    override val typeDescriptor: Symbol by lazy(PUBLICATION) {
         factory.createDescriptor(type)
     }
 
-    internal val elementType: Type by lazy { type.componentType().resolveAgainst(type) }
-    internal open val typeName by lazy { calcTypeName(type) }
+    internal val elementType: Type by lazy(PUBLICATION) { type.componentType().resolveAgainst(type) }
+    internal open val typeName by lazy(PUBLICATION) { calcTypeName(type) }
 
-    internal val typeNotation: TypeNotation by lazy {
+    internal val typeNotation: TypeNotation by lazy(PUBLICATION) {
         RestrictedType(typeName, null, emptyList(), "list", Descriptor(typeDescriptor), emptyList())
     }
 

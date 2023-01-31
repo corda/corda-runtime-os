@@ -3,17 +3,17 @@ package net.corda.sandboxgroupcontext.service.impl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 
 @Component(service = [CurrentSandboxGroupContext::class, UsedByFlow::class])
 class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSerializeAsToken, UsedByFlow {
 
     private companion object {
         @JvmField
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         @JvmField
         val currentSandboxGroupContext = ThreadLocal<SandboxGroupContext?>()
     }

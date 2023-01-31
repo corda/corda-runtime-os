@@ -4,6 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.typesafe.config.ConfigValueFactory
+import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.libs.configuration.merger.ConfigMerger
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
+import net.corda.p2p.app.simulator.AppSimulator.Companion.APP_SIMULATOR_SUBSYSTEM
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
+import net.corda.utilities.time.Clock
+import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -15,19 +28,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.thread
 import kotlin.concurrent.write
-import net.corda.data.identity.HoldingIdentity
-import net.corda.libs.configuration.merger.ConfigMerger
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.app.simulator.AppSimulator.Companion.APP_SIMULATOR_SUBSYSTEM
-import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
-import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
 class Sender(private val publisherFactory: PublisherFactory,
@@ -39,7 +39,7 @@ class Sender(private val publisherFactory: PublisherFactory,
     ): Closeable {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val random = Random()

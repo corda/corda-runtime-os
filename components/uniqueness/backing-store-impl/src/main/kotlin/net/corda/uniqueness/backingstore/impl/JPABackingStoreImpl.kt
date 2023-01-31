@@ -37,7 +37,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -46,6 +45,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
 import javax.persistence.OptimisticLockException
@@ -67,7 +67,7 @@ open class JPABackingStoreImpl @Activate constructor(
 ) : BackingStore {
 
     private companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         // TODO: Replace constants with config
         const val MAX_ATTEMPTS = 10

@@ -41,7 +41,6 @@ import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -53,6 +52,7 @@ import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -98,7 +98,7 @@ class MessageBusIntegrationTests {
             }
         """
 
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
             .create(

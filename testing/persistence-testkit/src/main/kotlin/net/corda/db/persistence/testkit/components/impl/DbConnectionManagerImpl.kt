@@ -1,10 +1,5 @@
 package net.corda.db.persistence.testkit.components.impl
 
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.sql.DataSource
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
@@ -15,13 +10,18 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
-import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.sql.DataSource
 
 private data class NamedDataSource(val id: UUID, val name: String, val dataSource: CloseableDataSource)
 
@@ -33,7 +33,7 @@ class DbConnectionManagerImpl @Activate constructor(
     private val emff: EntityManagerFactoryFactory,
     bundleContext: BundleContext
 ) : DbConnectionManager, DataSourceAdmin {
-    private val logger = loggerFor<DbConnectionManagerImpl>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val dataSources = ConcurrentHashMap<UUID, NamedDataSource>()
     private var smartConfig: SmartConfig? = null
