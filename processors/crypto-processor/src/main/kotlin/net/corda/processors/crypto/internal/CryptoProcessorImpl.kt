@@ -142,13 +142,13 @@ class CryptoProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 val bootstrapConfig = event.config
 
-                logger.info("Crypto processor bootstrapping {}", configurationReadService::class.simpleName)
+                logger.info("Bootstrapping {}", configurationReadService::class.simpleName)
                 configurationReadService.bootstrapConfig(bootstrapConfig)
 
-                logger.info("Crypto processor bootstrapping {}", dbConnectionManager::class.simpleName)
+                logger.info("Bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
 
-                logger.info("Crypto processor bootstrapping {}", cryptoServiceFactory::class.simpleName)
+                logger.info("Bootstrapping {}", cryptoServiceFactory::class.simpleName)
                 cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
             }
             is RegistrationStatusChangeEvent -> {
