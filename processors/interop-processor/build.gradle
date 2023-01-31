@@ -20,6 +20,7 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":osgi-framework-api")
+    implementation project(":components:interop:interop-service")
 
     runtimeOnly "net.corda:corda-avro-schema"
 

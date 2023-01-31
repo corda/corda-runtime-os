@@ -47,6 +47,7 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
         return outputEvents
     }
 
+    // Returns an OUTBOUND message to P2P layer, in the future it will pass a message to FlowProcessor
     private fun getOutputRecord(
         payload: ByteBuffer,
         key: String
@@ -55,10 +56,10 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
         logger.debug { "Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, Event: $sessionEvent"}
 
         return if (sessionEvent != null) {
-            sessionEvent.messageDirection = MessageDirection.INBOUND
+            sessionEvent.messageDirection = MessageDirection.OUTBOUND //
             val sessionId = key
             sessionEvent.sessionId = sessionId
-            //Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
+            //Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent)) //this would be a way to push message downstream, once we have connection with FlowProcessor
             Record(Schemas.P2P.P2P_OUT_TOPIC, sessionId, generateAppMessage(sessionEvent, cordaAvroSerializer))
         } else {
             null

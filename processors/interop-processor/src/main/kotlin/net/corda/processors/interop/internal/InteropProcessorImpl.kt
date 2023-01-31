@@ -1,6 +1,7 @@
 package net.corda.processors.interop.internal
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.interop.service.InteropService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -24,7 +25,9 @@ class InteropProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = InteropService::class)
+    private val interopService: InteropService,
 ) : InteropProcessor {
 
     private companion object {
@@ -33,6 +36,7 @@ class InteropProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
+        ::interopService
     )
 
     private val lifecycleCoordinator =
