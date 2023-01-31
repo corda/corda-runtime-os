@@ -27,7 +27,6 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
-import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -336,8 +335,10 @@ class UtxoReceiveFinalityFlowTest {
     @Test
     fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
         whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
-
-        assertThatThrownBy { callReceiveFinalityFlow() }.isInstanceOf(ContractVerificationException::class.java)
+        whenever(transactionVerifierService.verify(any())).thenThrow(TransactionVerificationException(ID, "Verification error", null))
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(TransactionVerificationException::class.java)
+            .hasMessageContaining("Verification error")
 
         verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
     }
