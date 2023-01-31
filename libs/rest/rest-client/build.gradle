@@ -1,0 +1,46 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Corda REST Client'
+
+dependencies {
+
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-application"
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation "net.corda:corda-crypto"
+
+    api project(":libs:rest:rest")
+    implementation project(":libs:rest:rest-common")
+    implementation project(":libs:rest:rest-tools")
+    implementation project(":libs:rest:json-serialization")
+    implementation project(":libs:utilities")
+
+    implementation "com.konghq:unirest-java:$unirestVersion"
+    implementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation project(":testing:test-utilities")
+
+    testImplementation project(":libs:rest:rest-test-common")
+
+    testRuntimeOnly 'org.osgi:osgi.core'
+
+    integrationTestImplementation project(":libs:rest:rest-server")
+    integrationTestImplementation project(":libs:rest:rest-server-impl")
+    integrationTestImplementation project(':libs:rest:rest-stubs-impl')
+    integrationTestImplementation project(':libs:utilities')
+    integrationTestImplementation project(':libs:rest:ssl-cert-read')
+}
+

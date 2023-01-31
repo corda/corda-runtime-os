@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import kong.unirest.HttpResponse
 import kong.unirest.Unirest
 import kong.unirest.json.JSONObject
+import net.corda.cli.plugins.mgm.Helpers.rpcPasswordFromClusterName
+import net.corda.cli.plugins.mgm.Helpers.urlFromClusterName
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
@@ -24,12 +26,10 @@ import picocli.CommandLine.Parameters
 import java.io.File
 import java.io.InputStream
 import java.math.BigInteger
-import java.net.ServerSocket
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.Date
-import kotlin.concurrent.thread
 
 abstract class BaseOnboard : Runnable {
     private companion object {
@@ -95,64 +95,36 @@ abstract class BaseOnboard : Runnable {
     var caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
 
     @Option(
+        names = ["--mtls", "--mutual-tls", "-m"],
+        description = ["Enable mutual TLS"]
+    )
+    var mtls: Boolean = false
+
+    @Option(
         names = ["--rpc-worker-deployment-name"],
         description = ["The RPC worker deployment name (default to corda-rpc-worker)"]
     )
     var rpcWorkerDeploymentName: String = "corda-rpc-worker"
+
+    @Option(
+        names = ["--tls-certificate-subject"],
+        description = [
+            "The TLS certificate subject. Leave empty to use random certificate subject." +
+                "Will only be used on the first onboard to the cluster."
+        ]
+    )
+    var tlsCertificateSubject: String? = null
 
     protected val json by lazy {
         ObjectMapper()
     }
 
     private val rpcPassword by lazy {
-        if (cordaClusterName != null) {
-            val getSecret = ProcessBuilder().command(
-                "kubectl",
-                "get",
-                "secret",
-                "corda-initial-admin-user",
-                "--namespace",
-                cordaClusterName,
-                "-o",
-                "go-template={{ .data.password | base64decode }}"
-            ).start()
-            if (getSecret.waitFor() != 0) {
-                throw OnboardException("Can not get admin password. ${getSecret.errorStream.reader().readText()}")
-            }
-            getSecret.inputStream.reader().readText()
-        } else {
-            "admin"
-        }
+        rpcPasswordFromClusterName(cordaClusterName)
     }
 
     private val url by lazy {
-        val rpcPort = if (cordaClusterName != null) {
-            val port = ServerSocket(0).use {
-                it.localPort
-            }
-            ProcessBuilder().command(
-                "kubectl",
-                "port-forward",
-                "--namespace",
-                cordaClusterName,
-                "deployment/$rpcWorkerDeploymentName",
-                "$port:8888"
-            )
-                .inheritIO()
-                .start().also { process ->
-                    Runtime.getRuntime().addShutdownHook(
-                        thread(false) {
-                            process.destroy()
-                        }
-                    )
-                }
-            Thread.sleep(2000)
-            port
-        } else {
-            8888
-        }
-
-        "https://localhost:$rpcPort/api/v1"
+        urlFromClusterName(cordaClusterName, rpcWorkerDeploymentName)
     }
 
     protected fun setupClient() {
@@ -216,7 +188,7 @@ abstract class BaseOnboard : Runnable {
             .bodyOrThrow()
             .let {
                 it.`object`.let { reply ->
-                    if (reply.get("state") != "ACTIVE") {
+                    if (reply.get("flowOperationalStatus") != "ACTIVE") {
                         throw OnboardException("Virtual node is not active")
                     }
                     (reply.get("holdingIdentity") as JSONObject).let { holdingIdentity ->
@@ -230,7 +202,16 @@ abstract class BaseOnboard : Runnable {
     }
 
     protected fun assignSoftHsmAndGenerateKey(category: String): String {
-        Unirest.post("/hsm/soft/$holdingId/$category").asJson().bodyOrThrow()
+        repeat(10) {
+            if (
+                Unirest.post("/hsm/soft/$holdingId/$category").asJson().isSuccess
+            ) {
+                return@repeat
+            }
+            println("Could not assign HSM key, will retry in a while")
+            Thread.sleep(300)
+        }
+
         val response = Unirest
             .post("/keys/$holdingId/alias/$holdingId-$category/category/$category/scheme/CORDA.ECDSA.SECP256R1")
             .asJson()
@@ -249,6 +230,9 @@ abstract class BaseOnboard : Runnable {
         } else {
             "corda-p2p-gateway-worker.$cordaClusterName"
         }
+    }
+    protected val certificateSubject by lazy {
+        tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHost, L=London, C=GB"
     }
 
     protected val p2pUrl by lazy {
@@ -277,7 +261,7 @@ abstract class BaseOnboard : Runnable {
         val generateCsrResponse = Unirest.post("/certificates/p2p/$tlsKeyId/")
             .body(
                 mapOf(
-                    "x500Name" to x500Name,
+                    "x500Name" to certificateSubject,
                     "subjectAlternativeNames" to listOf(p2pHost)
                 )
             ).asString()
@@ -350,18 +334,25 @@ abstract class BaseOnboard : Runnable {
         throw OnboardException("Registration had failed!")
     }
 
-    protected fun disableClrChecks() {
+    protected fun configureGateway() {
+        val tlsType = if (mtls) {
+            "MUTUAL"
+        } else {
+            "ONE_WAY"
+        }
         val currentConfig = Unirest.get("/config/corda.p2p.gateway/")
             .asJson()
             .bodyOrThrow()
         val rawConfig = json.readTree(currentConfig.`object`.get("configWithDefaults") as String)
-        val mode = rawConfig.get("sslConfig").get("revocationCheck").get("mode").asText()
-        if (mode != "OFF") {
+        val currentMode = rawConfig.get("sslConfig").get("revocationCheck").get("mode").asText()
+        val currentTlsType = rawConfig.get("sslConfig").get("tlsType").asText()
+        if ((currentMode != "OFF") || (currentTlsType != tlsType)) {
             val newConfig = mapOf(
                 "sslConfig" to mapOf(
                     "revocationCheck" to mapOf(
                         "mode" to "OFF"
-                    )
+                    ),
+                    "tlsType" to tlsType,
                 )
             )
             Unirest.put("/config")
