@@ -115,7 +115,7 @@ class FlowRestResourceImpl @Activate constructor(
         val vNode = getVirtualNode(holdingIdentityShortHash)
 
         if (vNode.flowStartOperationalStatus == OperationalStatus.INACTIVE.name) {
-            throw ServiceUnavailableException("Cannot start flow. Virtual node ${vNode.holdingIdentity.x500Name} is in maintenance mode.")
+            throw ServiceUnavailableException("Cannot start flow. Virtual node $holdingIdentityShortHash is in maintenance mode.")
         }
 
         val clientRequestId = startFlow.clientRequestId
