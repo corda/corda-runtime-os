@@ -24,6 +24,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation 'net.corda:corda-ledger-common'
     implementation project(":libs:packaging:packaging")

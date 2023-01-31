@@ -2,6 +2,9 @@ package net.corda.interop.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.flow.event.SessionEvent
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,6 +16,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -27,17 +33,24 @@ class InteropService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : Lifecycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG)
+        private const val SUBSCRIPTION = "SUBSCRIPTION"
+        private const val CONSUMER_GROUP = "InteropFilterConsumer"
     }
 
     private var registration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
+    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -47,10 +60,8 @@ class InteropService @Activate constructor(
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-                            //LifecycleCoordinatorName.forComponent<FlowExecutor>(),
                         )
                     )
-                //flowExecutor.start()
             }
 
             is RegistrationStatusChangeEvent -> {
@@ -66,19 +77,11 @@ class InteropService @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                //val config = event.config
-
-                /*
-                 * The order is important here we need to ensure the scheduler
-                 * is configured before we configure the executor to prevent a race between receiving the first
-                 * state events and scheduler creating a publisher.
-                 */
-                //flowExecutor.onConfigChange(config)
+                restartInteropProcessor(event)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 
             is StopEvent -> {
-                //flowExecutor.stop()
                 registration?.close()
                 registration = null
             }
@@ -94,5 +97,22 @@ class InteropService @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
+    }
+
+    private fun restartInteropProcessor(event: ConfigChangedEvent) {
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+
+        coordinator.createManagedResource(SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, Schemas.P2P.P2P_IN_TOPIC),
+                InteropProcessor(cordaAvroSerializationFactory),
+                messagingConfig,
+                null
+            ).also {
+                it.start()
+            }
+        }
+
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 }
