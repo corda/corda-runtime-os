@@ -63,8 +63,8 @@ data class UtxoSignedTransactionImpl(
     override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val newSignatures = try {
             transactionSignatureService.sign(id, getMissingSignatories())
-        } catch(_: TransactionNoAvailableKeysException){ // No signatures are needed if no keys are available.
-            listOf()
+        } catch (_: TransactionNoAvailableKeysException) { // No signatures are needed if no keys are available.
+            return Pair(this, emptyList())
         }
         return Pair(
             UtxoSignedTransactionImpl(

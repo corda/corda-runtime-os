@@ -10,25 +10,27 @@ import java.util.Base64
 
 private val base64Decoder = Base64.getDecoder()
 
-fun DigitalSignatureAndMetadata.getDigestSetting(settingKey: String): String {
-    return metadata.properties[settingKey]!!
+fun DigitalSignatureAndMetadata.getMetadata(settingKey: String): String {
+    return requireNotNull(metadata.properties[settingKey]) {
+        "'$settingKey' is not available in the metadata of the signature."
+    }
 }
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestProviderName
-    get() = getDigestSetting(BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY)
+    get() = getMetadata(BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY)
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestAlgorithmName
     get() = DigestAlgorithmName(
-        getDigestSetting(
+        getMetadata(
             BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
         )
     )
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestOptionsLeafPrefix: ByteArray
-    get() = base64Decoder.decode(getDigestSetting(BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY))
+    get() = base64Decoder.decode(getMetadata(BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY))
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestOptionsNodePrefix: ByteArray
-    get() = base64Decoder.decode(getDigestSetting(BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY))
+    get() = base64Decoder.decode(getMetadata(BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY))
 
 fun DigitalSignatureAndMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider: MerkleTreeProvider): MerkleTreeHashDigestProvider =
     merkleTreeProvider.createHashDigestProvider(

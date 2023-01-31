@@ -28,7 +28,7 @@ class TransactionMetadataImpl: TransactionMetadata {
         TODO("Not yet implemented")
     }
 
-    override fun getDigestSettings(): LinkedHashMap<String, String> {
+    override fun getDigestSettings(): Map<String, String> {
         TODO("Not yet implemented")
     }
 

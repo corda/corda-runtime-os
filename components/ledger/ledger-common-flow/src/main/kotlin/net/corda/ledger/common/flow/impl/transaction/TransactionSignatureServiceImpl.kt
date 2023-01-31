@@ -67,8 +67,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
     override fun sign(transactionId: SecureHash, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata> {
         val availableKeys = getAvailableKeysFor(publicKeys)
         return availableKeys.map { publicKey ->
-            val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
-            requireNotNull(signatureSpec) {
+            val signatureSpec = requireNotNull(signatureSpecService.defaultSignatureSpec(publicKey)) {
                 "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"
             }
             val signatureMetadata = getSignatureMetadata(signatureSpec)
@@ -95,8 +94,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         val batchTree = merkleTreeProvider.createTree(transactions.map { it.id.bytes }, hashDigestProvider)
 
         val batchSignaturesWithMeta = availableKeys.map { publicKey ->
-            val signatureSpec = signatureSpecService.defaultSignatureSpec(publicKey)
-            requireNotNull(signatureSpec) {
+            val signatureSpec = requireNotNull(signatureSpecService.defaultSignatureSpec(publicKey)) {
                 "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"
             }
 
@@ -110,12 +108,10 @@ class TransactionSignatureServiceImpl @Activate constructor(
                 signatureSpec
             ) to signatureMetadata
         }
-        val proofs = List(transactions.size) {
-            batchTree.createAuditProof(listOf(it))
-        }
         return List(transactions.size) {
+            val proof = batchTree.createAuditProof(listOf(it))
             batchSignaturesWithMeta.map { (signature, signatureMetadata) ->
-                DigitalSignatureAndMetadata(signature, signatureMetadata, proofs[it])
+                DigitalSignatureAndMetadata(signature, signatureMetadata, proof)
             }
         }
     }
@@ -124,27 +120,25 @@ class TransactionSignatureServiceImpl @Activate constructor(
         val signatureSpec = checkAndGetSignatureSpec(signatureWithMetadata)
 
         val proof = signatureWithMetadata.proof
-        if (proof == null){
-            val signedData = SignableData(transaction.id, signatureWithMetadata.metadata)
-            return digitalSignatureVerificationService.verify(
-                publicKey = signatureWithMetadata.by,
-                signatureSpec = signatureSpec,
-                signatureData = signatureWithMetadata.signature.bytes,
-                clearData = serializationService.serialize(signedData).bytes
-            )
+        val signedHash = if (proof == null) {   // Simple signature
+            transaction.id
+        } else {                                // Batch signature
+
+            confirmSignatureBatchMerkleSettingsMatchWithTransactions(transaction, signatureWithMetadata)
+            confirmHashPrefixesAreDifferent(listOf(transaction))
+
+            require(proof.leaves.filter { transaction.id.bytes contentEquals it.leafData }.size == 1) {
+                "The transaction's id should be proven by the proof."
+            }
+            val hashDigestProvider = signatureWithMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider)
+            val batchTreeRoot = requireNotNull(proof.calculateRoot(hashDigestProvider)) {
+                "The proof's root hash cannot be calculated."
+            }
+            batchTreeRoot
         }
 
-        confirmSignatureBatchMerkleSettingsMatchWithTransactions(transaction, signatureWithMetadata)
-        confirmHashPrefixesAreDifferent(listOf(transaction))
+        val signedData = SignableData(signedHash, signatureWithMetadata.metadata)
 
-        require(proof.leaves.filter{ transaction.id.bytes contentEquals it.leafData }.size == 1) {
-            "The transaction's id should be proven by the proof."
-        }
-        val hashDigestProvider = signatureWithMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider)
-        val batchTreeRoot = requireNotNull(proof.calculateRoot(hashDigestProvider)) {
-            "The proof's root hash cannot be calculated."
-        }
-        val signedData = SignableData(batchTreeRoot, signatureWithMetadata.metadata)
         return digitalSignatureVerificationService.verify(
             publicKey = signatureWithMetadata.by,
             signatureSpec = signatureSpec,
@@ -159,13 +153,18 @@ class TransactionSignatureServiceImpl @Activate constructor(
             "Batch signature supports only $HASH_DIGEST_PROVIDER_TWEAKABLE_NAME."
         }
         require(transactions.map { it.notaryMerkleTreeDigestAlgorithmName }.distinct().size == 1) {
-            "Digest Algorithm names should be the same in a batch to be signed."
+            "Notary merkle tree digest algorithm names should be the same in a batch to be signed."
         }
         require(transactions.map { it.notaryMerkleTreeDigestOptionsLeafPrefix }.distinct().size == 1) {
-            "Digest provider leaf prefixes should be the same in a batch to be signed."
+            "Notary merkle tree digest leaf prefixes should be the same in a batch to be signed."
         }
         require(transactions.map { it.notaryMerkleTreeDigestOptionsNodePrefix }.distinct().size == 1) {
-            "Digest provider node prefixes should be the same in a batch to be signed."
+            "Notary merkle tree digest node prefixes should be the same in a batch to be signed."
+        }
+        require(transactions.none {
+            it.notaryMerkleTreeDigestOptionsLeafPrefix contentEquals it.notaryMerkleTreeDigestOptionsNodePrefix
+        }) {
+            "Notary merkle tree digest node prefixes and leaf prefixes need to be different for each transactions."
         }
         confirmHashPrefixesAreDifferent(transactions)
     }

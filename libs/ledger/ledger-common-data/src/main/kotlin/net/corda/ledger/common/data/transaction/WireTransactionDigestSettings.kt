@@ -22,7 +22,7 @@ const val COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY = "componentMerkleTre
 class WireTransactionDigestSettings {
     companion object {
         private val base64Encoder: Base64.Encoder = Base64.getEncoder()
-        val defaultValues = linkedMapOf(
+        val defaultValues = mapOf(
             NOTARY_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
             NOTARY_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to DigestAlgorithmName.SHA2_256D.name,
             NOTARY_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to

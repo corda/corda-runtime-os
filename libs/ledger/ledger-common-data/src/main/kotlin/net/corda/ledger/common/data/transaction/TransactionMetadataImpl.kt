@@ -7,7 +7,7 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
 @CordaSerializable
-class TransactionMetadataImpl (private val properties: LinkedHashMap<String, Any>) : TransactionMetadata {
+class TransactionMetadataImpl (private val properties: Map<String, Any>) : TransactionMetadata {
 
     operator fun get(key: String): Any? = properties[key]
 
@@ -68,9 +68,9 @@ class TransactionMetadataImpl (private val properties: LinkedHashMap<String, Any
         )
     }
 
-    override fun getDigestSettings(): LinkedHashMap<String, String> {
+    override fun getDigestSettings(): Map<String, String> {
         @Suppress("UNCHECKED_CAST")
-        return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, String>
+        return this[DIGEST_SETTINGS_KEY] as Map<String, String>
     }
 
     override fun getSchemaVersion(): Int {

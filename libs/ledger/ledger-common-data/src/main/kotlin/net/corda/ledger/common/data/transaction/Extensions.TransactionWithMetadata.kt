@@ -11,7 +11,9 @@ import java.util.Base64
 private val base64Decoder = Base64.getDecoder()
 
 fun TransactionWithMetadata.getDigestSetting(settingKey: String): String {
-    return metadata.getDigestSettings()[settingKey]!!
+    return requireNotNull(metadata.getDigestSettings()[settingKey]) {
+        "'$settingKey' digest setting is not available in the metadata of the transaction."
+    }
 }
 
 val TransactionWithMetadata.notaryMerkleTreeDigestProviderName
