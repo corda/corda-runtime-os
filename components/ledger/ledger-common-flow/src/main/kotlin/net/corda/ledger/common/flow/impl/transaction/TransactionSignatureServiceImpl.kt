@@ -93,11 +93,12 @@ class TransactionSignatureServiceImpl @Activate constructor(
         val hashDigestProvider = transactions.first().getNotaryMerkleTreeDigestProvider(merkleTreeProvider)
         val batchTree = merkleTreeProvider.createTree(transactions.map { it.id.bytes }, hashDigestProvider)
 
-        val batchSignaturesWithMeta = availableKeys.map { publicKey ->
-            val signatureSpec = requireNotNull(signatureSpecService.defaultSignatureSpec(publicKey)) {
+        val publicKeysToSigSpecs = availableKeys.associateWith { publicKey ->
+            requireNotNull(signatureSpecService.defaultSignatureSpec(publicKey)) {
                 "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"
             }
-
+        }
+        val batchSignaturesWithMeta = publicKeysToSigSpecs.map{ (publicKey, signatureSpec) ->
             val signatureMetadata =
                 getSignatureMetadata(signatureSpec, getBatchSignatureMetadataSettings(transactions.first()))
             val signableData = SignableData(batchTree.root, signatureMetadata)
@@ -116,7 +117,10 @@ class TransactionSignatureServiceImpl @Activate constructor(
         }
     }
 
-    override fun verifySignature(transaction: TransactionWithMetadata, signatureWithMetadata: DigitalSignatureAndMetadata) {
+    override fun verifySignature(
+        transaction: TransactionWithMetadata,
+        signatureWithMetadata: DigitalSignatureAndMetadata
+    ) {
         val signatureSpec = checkAndGetSignatureSpec(signatureWithMetadata)
 
         val proof = signatureWithMetadata.proof
