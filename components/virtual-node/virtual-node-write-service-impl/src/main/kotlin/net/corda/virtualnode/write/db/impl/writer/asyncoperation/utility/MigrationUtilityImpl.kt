@@ -23,10 +23,10 @@ internal class MigrationUtilityImpl(
 
     override fun runVaultMigrations(
         virtualNodeShortHash: ShortHash,
-        migrationsByCpkFileChecksum: List<CpkDbChangeLogEntity>,
+        migrationChangeLogs: List<CpkDbChangeLogEntity>,
         vaultDdlConnectionId: UUID
     ) {
-        migrationsByCpkFileChecksum
+        migrationChangeLogs
             .groupBy { it.id.cpkFileChecksum }
             .forEach { (cpkFileChecksum, changelogs) ->
                 dbConnectionManager.createDatasource(vaultDdlConnectionId).use {
