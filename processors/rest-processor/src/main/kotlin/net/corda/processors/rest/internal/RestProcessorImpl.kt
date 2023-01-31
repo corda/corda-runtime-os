@@ -1,4 +1,4 @@
-package net.corda.processors.rpc.internal
+package net.corda.processors.rest.internal
 
 import net.corda.components.rpc.RestGateway
 import net.corda.configuration.read.ConfigurationReadService
@@ -26,7 +26,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.processors.rpc.RPCProcessor
+import net.corda.processors.rest.RestProcessor
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -34,10 +34,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
-/** The processor for a `RPCWorker`. */
-@Component(service = [RPCProcessor::class])
+/** The processor for a `RestWorker`. */
+@Component(service = [RestProcessor::class])
 @Suppress("Unused", "LongParameterList")
-class RPCProcessorImpl @Activate constructor(
+class RestProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -76,12 +76,12 @@ class RPCProcessorImpl @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
-) : RPCProcessor {
+) : RestProcessor {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        const val CLIENT_ID_RPC_PROCESSOR = "rpc.processor"
+        const val CLIENT_ID_REST_PROCESSOR = "rest.processor"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -102,27 +102,27 @@ class RPCProcessorImpl @Activate constructor(
         ::membershipPersistenceClient,
         ::groupParametersReaderService,
     )
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RPCProcessorImpl>(dependentComponents, ::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RestProcessorImpl>(dependentComponents, ::eventHandler)
 
     override fun start(bootConfig: SmartConfig) {
-        log.info("RPC processor starting.")
+        log.info("REST processor starting.")
         lifecycleCoordinator.start()
         lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        log.info("RPC processor stopping.")
+        log.info("REST processor stopping.")
         lifecycleCoordinator.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "RPC processor received event $event." }
+        log.debug { "REST processor received event $event." }
         when (event) {
             is StartEvent -> {
                 // Nothing to do
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("RPC processor is ${event.status}")
+                log.info("REST processor is ${event.status}")
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
