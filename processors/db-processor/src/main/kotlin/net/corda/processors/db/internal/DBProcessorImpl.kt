@@ -26,6 +26,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -137,6 +138,8 @@ class DBProcessorImpl @Activate constructor(
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val REGISTRATION = "REGISTRATION"
+        private const val RECONCILERS = "RECONCILERS"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -184,7 +187,6 @@ class DBProcessorImpl @Activate constructor(
         allowedCertificatesReaderWriterService,
     )
 
-    private var configSubscription: AutoCloseable? = null
     private var instanceId: Int? = null
 
     override fun start(bootConfig: SmartConfig) {
@@ -207,13 +209,9 @@ class DBProcessorImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event)
             is BootConfigEvent -> onBootConfigEvent(event)
-            is StopEvent -> onStopEvent()
+            is StopEvent -> {}
             else -> log.error("Unexpected event $event!")
         }
-    }
-
-    private fun onStopEvent() {
-        reconcilers.close()
     }
 
     private fun onBootConfigEvent(event: BootConfigEvent) {
@@ -239,11 +237,13 @@ class DBProcessorImpl @Activate constructor(
     ) {
         log.info("DB processor is ${event.status}")
         if (event.status == LifecycleStatus.UP) {
-            configSubscription = configurationReadService.registerComponentForUpdates(
-                coordinator, setOf(
-                    ConfigKeys.RECONCILIATION_CONFIG
+            coordinator.createManagedResource(REGISTRATION) {
+                configurationReadService.registerComponentForUpdates(
+                    coordinator, setOf(
+                        ConfigKeys.RECONCILIATION_CONFIG
+                    )
                 )
-            )
+            }
         }
         coordinator.updateStatus(event.status)
     }
@@ -253,6 +253,13 @@ class DBProcessorImpl @Activate constructor(
     ) {
         // Creates and starts the rest of the reconcilers
         reconcilers.onConfigChanged(event)
+        lifecycleCoordinator.createManagedResource(RECONCILERS) {
+            object : Resource {
+                override fun close() {
+                    reconcilers.close()
+                }
+            }
+        }
     }
 
     private fun onStartEvent() {
