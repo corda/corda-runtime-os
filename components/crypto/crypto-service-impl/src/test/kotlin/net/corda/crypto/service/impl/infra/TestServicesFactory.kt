@@ -28,6 +28,7 @@ import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
+import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.softhsm.SoftCryptoServiceConfig
 import net.corda.crypto.softhsm.impl.DefaultSoftPrivateKeyWrapping
@@ -41,8 +42,6 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 
@@ -183,8 +182,13 @@ class TestServicesFactory {
         )
     }
 
-    val signingServiceFactory: SigningServiceFactory = mock<SigningServiceFactory>().also {
-        whenever(it.getInstance()).thenReturn(signingService)
+    val signingServiceFactory: SigningServiceFactory by lazy {
+        SigningServiceFactoryImpl(
+            coordinatorFactory,
+            schemeMetadata,
+            signingKeyStore,
+            cryptoServiceFactory
+        )
     }
 
     val hsmService: HSMServiceImpl by lazy {
