@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.serialization
 
+import java.util.UUID
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.serialization.PublicKeySerializer
@@ -55,7 +56,7 @@ class BaseSerializationService(
                 objectReferencesEnabled = false,
                 useCase = SerializationContext.UseCase.Testing,
                 encoding = null,
-                sandboxGroup = SimSandboxGroup()
+                sandboxGroup = SimSandboxGroup(UUID.randomUUID())
             )
             val factory = buildDefaultFactoryNoEvolution(
                 registerMoreSerializers,
@@ -69,6 +70,7 @@ class BaseSerializationService(
         }
 
         private class SimSandboxGroup(
+            override val id: UUID,
             private val classLoader: ClassLoader = ClassLoader.getSystemClassLoader()
         ) : SandboxGroup {
 

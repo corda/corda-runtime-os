@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.security.provider.bearer.azuread
 
 import com.nimbusds.jose.util.DefaultResourceRetriever
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.config.AzureAdSettingsProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.oauth.JwtAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.oauth.JwtProcessor
@@ -14,12 +14,12 @@ import java.util.function.Supplier
 internal class AzureAdAuthenticationProvider(
     private val settings: AzureAdSettingsProvider,
     jwtProcessor: JwtProcessor,
-    rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
+    restSecurityManagerSupplier: Supplier<RestSecurityManager>
 ) :
     JwtAuthenticationProvider(
         jwtProcessor,
         PriorityListJwtClaimExtractor(settings.getPrincipalClaimList()),
-        rpcSecurityManagerSupplier
+        restSecurityManagerSupplier
     ), AuthenticationSchemeProvider {
     companion object {
         const val SCOPE_KEY = "scope"
@@ -31,7 +31,7 @@ internal class AzureAdAuthenticationProvider(
 
         fun createDefault(
             settings: AzureAdSettingsProvider,
-            rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
+            restSecurityManagerSupplier: Supplier<RestSecurityManager>
         ): AzureAdAuthenticationProvider {
             val issuers = AzureAdIssuersImpl(settings).apply {
                 val additionalIssuers = settings.getTrustedIssuers()
@@ -46,7 +46,7 @@ internal class AzureAdAuthenticationProvider(
             val keySelector = AzureAdIssuerJWSKeySelector(issuers, resourceRetriever)
             val processor = AzureAdJwtProcessorImpl(settings, issuers, keySelector)
 
-            return AzureAdAuthenticationProvider(settings, processor, rpcSecurityManagerSupplier)
+            return AzureAdAuthenticationProvider(settings, processor, restSecurityManagerSupplier)
         }
     }
 

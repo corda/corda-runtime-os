@@ -4,14 +4,14 @@ package net.corda.processors.rpc
 import net.corda.httprpc.security.AuthServiceId
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.Password
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import javax.security.auth.login.FailedLoginException
 
 /**
  * Note: We cannot use `FakeSecurityManager` from "net.corda.httprpc.test.utils" as this is non-OSGi module.
  * It cannot be made OSGi module easily as it has a dependency on non-OSGi Unirest library.
  */
-internal class FakeSecurityManager : RPCSecurityManager {
+internal class FakeSecurityManager : RestSecurityManager {
 
     companion object {
         const val USERNAME = "admin"

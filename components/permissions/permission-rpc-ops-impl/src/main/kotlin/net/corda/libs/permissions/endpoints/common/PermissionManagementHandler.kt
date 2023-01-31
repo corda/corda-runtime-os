@@ -6,6 +6,7 @@ import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import java.util.concurrent.TimeoutException
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
@@ -14,6 +15,7 @@ import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import org.slf4j.Logger
@@ -49,6 +51,10 @@ fun <T : Any?> withPermissionManager(
                 details = buildExceptionCauseDetails(e.exceptionType, e.message ?: "Remote permission management error occurred.")
             )
         }
+
+    } catch (e: CordaRPCAPIPartitionException) {
+        logger.warn("Error waiting for permission management response.", e)
+        throw ServiceUnavailableException("Error waiting for permission management response: Repartition Event!")
 
     } catch (e: CordaRPCAPISenderException) {
         logger.warn("Error during sending of permission management request.", e)

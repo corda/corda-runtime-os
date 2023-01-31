@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.security.provider.bearer.azuread
 
 import com.nimbusds.jwt.JWTParser
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.config.AzureAdSettingsProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.TestAdminSubject
 import net.corda.httprpc.server.impl.security.provider.bearer.oauth.JwtProcessor
@@ -24,7 +24,7 @@ class AzureAdAuthenticationProviderTest {
 
     private val settings: AzureAdSettingsProvider = mock()
     private val jwtProcessor: JwtProcessor = mock()
-    private val rpcSecurityManager = mock<RPCSecurityManager>().apply {
+    private val restSecurityManager = mock<RestSecurityManager>().apply {
         whenever(buildSubject(any())).thenReturn(TestAdminSubject(username))
     }
 
@@ -35,7 +35,7 @@ class AzureAdAuthenticationProviderTest {
         whenever(settings.getAuthority()).thenReturn(authority)
         whenever(settings.getPrincipalClaimList()).thenReturn(listOf("random", "name"))
 
-        provider = AzureAdAuthenticationProvider(settings, jwtProcessor, ::rpcSecurityManager)
+        provider = AzureAdAuthenticationProvider(settings, jwtProcessor, ::restSecurityManager)
     }
 
     @Test

@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl
 
 import kong.unirest.HttpStatus
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.server.RestServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
 import net.corda.httprpc.server.config.models.RestContext
@@ -31,7 +31,7 @@ class RestServerAzureAdTest {
 
     private lateinit var restServer: RestServer
     private lateinit var client: TestHttpClient
-    private lateinit var securityManager: RPCSecurityManager
+    private lateinit var securityManager: RestSecurityManager
 
     @BeforeEach
     fun setUp() {
