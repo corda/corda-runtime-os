@@ -1,6 +1,5 @@
 package net.corda.crypto.tck
 
-import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME

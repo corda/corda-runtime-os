@@ -1,8 +1,5 @@
 package net.corda.crypto.service.impl
 
-import com.typesafe.config.Config
-import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
@@ -33,10 +30,6 @@ class CryptoServiceFactoryTests {
             factory.coordinatorFactory,
             factory.configurationReadService,
             factory.hsmService,
-            object : CryptoServiceProvider {
-                override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
-                override fun getInstance(config: Config): CryptoService = factory.cryptoService
-            }
         )
         factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
         factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)

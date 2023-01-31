@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.infra
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
@@ -9,7 +8,6 @@ import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
@@ -19,7 +17,6 @@ import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
-import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.service.CryptoServiceFactory
@@ -214,10 +211,6 @@ class TestServicesFactory {
             coordinatorFactory,
             configurationReadService,
             hsmService,
-            object : CryptoServiceProvider {
-                override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
-                override fun getInstance(config: Config): CryptoService = cryptoService
-            }
         ).also {
             it.start()
             it.bootstrapConfig(bootstrapConfig)

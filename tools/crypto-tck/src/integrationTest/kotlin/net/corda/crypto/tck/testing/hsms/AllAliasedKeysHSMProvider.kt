@@ -1,9 +1,7 @@
 package net.corda.crypto.tck.testing.hsms
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -15,7 +13,7 @@ class AllAliasedKeysHSMProvider @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService
-) : CryptoServiceProvider<AllAliasedKeysHSMConfiguration> {
+) : CryptoServiceProvider {
     companion object {
         const val NAME = "AllAliasedKeysHSM"
     }
@@ -24,5 +22,6 @@ class AllAliasedKeysHSMProvider @Activate constructor(
 
     override val name: String = NAME
 
-    override fun getInstance(config: AllAliasedKeysHSMConfiguration): CryptoService = AllAliasedKeysHSM(config, schemeMetadata, digestService)
+    override fun getInstance(config: AllAliasedKeysHSMConfiguration): CryptoService =
+        AllAliasedKeysHSM(config, schemeMetadata, digestService)
 }

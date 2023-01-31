@@ -9,16 +9,12 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.component.impl.FatalActivationException
 import net.corda.crypto.component.impl.LifecycleNameProvider
 import net.corda.crypto.component.impl.lifecycleNameAsSet
 import net.corda.crypto.config.impl.CryptoHSMConfig
-import net.corda.crypto.config.impl.bootstrapHsmId
-import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.service.CryptoServiceFactory
@@ -56,8 +52,6 @@ class CryptoServiceFactoryImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMService::class)
     private val hsmService: HSMService,
-    @Reference(service = SoftCryptoServiceProvider::class)
-    private val cryptoServiceProvider: CryptoServiceProvider
 ) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
@@ -108,7 +102,6 @@ class CryptoServiceFactoryImpl @Activate constructor(
         bootConfig: SmartConfig,
         event: ConfigChangedEvent,
         private val hsmService: HSMService,
-        private val cryptoServiceProvider: CryptoServiceProvider
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         private val hsmId: String
