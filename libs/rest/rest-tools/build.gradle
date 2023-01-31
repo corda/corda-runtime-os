@@ -3,15 +3,15 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Corda HTTP REST tools'
+description 'Corda REST tools'
 
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-base"
-    implementation project(':libs:http-rpc:rest')
-    implementation project(':libs:http-rpc:rest-common')
+    implementation project(':libs:rest:rest')
+    implementation project(':libs:rest:rest-common')
 
     compileOnly "org.osgi:osgi.annotation"
 }

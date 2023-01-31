@@ -2,21 +2,21 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
-description 'Corda HTTP RPC Server'
+description 'Corda REST Server'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:http-rpc:rest')
-    implementation project(":libs:http-rpc:rest-tools")
-    implementation project(":libs:http-rpc:rest-common")
+    implementation project(':libs:rest:rest')
+    implementation project(":libs:rest:rest-tools")
+    implementation project(":libs:rest:rest-common")
     implementation project(":libs:utilities")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
 
-    api project(':libs:http-rpc:rest-security-read')
+    api project(':libs:rest:rest-security-read')
 
     implementation 'org.slf4j:slf4j-api'
 }

@@ -52,7 +52,7 @@ dependencies {
     e2eTestImplementation project(':libs:configuration:configuration-endpoints')
     e2eTestImplementation project(':libs:crypto:certificate-generation')
     e2eTestImplementation project(':libs:crypto:cipher-suite')
-    e2eTestImplementation project(':libs:http-rpc:rest-client')
+    e2eTestImplementation project(':libs:rest:rest-client')
     e2eTestImplementation project(':libs:permissions:permission-endpoint')
     e2eTestImplementation project(':libs:permissions:permission-common')
     e2eTestImplementation project(':testing:test-utilities')

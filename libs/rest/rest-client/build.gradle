@@ -16,10 +16,10 @@ dependencies {
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
     implementation "net.corda:corda-crypto"
 
-    api project(":libs:http-rpc:rest")
-    implementation project(":libs:http-rpc:rest-common")
-    implementation project(":libs:http-rpc:rest-tools")
-    implementation project(":libs:http-rpc:json-serialization")
+    api project(":libs:rest:rest")
+    implementation project(":libs:rest:rest-common")
+    implementation project(":libs:rest:rest-tools")
+    implementation project(":libs:rest:json-serialization")
     implementation project(":libs:utilities")
 
     implementation "com.konghq:unirest-java:$unirestVersion"
@@ -33,14 +33,14 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":testing:test-utilities")
 
-    testImplementation project(":libs:http-rpc:rest-test-common")
+    testImplementation project(":libs:rest:rest-test-common")
 
     testRuntimeOnly 'org.osgi:osgi.core'
 
-    integrationTestImplementation project(":libs:http-rpc:rest-server")
-    integrationTestImplementation project(":libs:http-rpc:rest-server-impl")
-    integrationTestImplementation project(':libs:http-rpc:rest-stubs-impl')
+    integrationTestImplementation project(":libs:rest:rest-server")
+    integrationTestImplementation project(":libs:rest:rest-server-impl")
+    integrationTestImplementation project(':libs:rest:rest-stubs-impl')
     integrationTestImplementation project(':libs:utilities')
-    integrationTestImplementation project(':libs:http-rpc:ssl-cert-read')
+    integrationTestImplementation project(':libs:rest:ssl-cert-read')
 }
 
