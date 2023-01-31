@@ -56,9 +56,7 @@ class StartFlowTest : FlowServiceTestBase() {
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(CHARLIE_HOLDING_IDENTITY)
         }
-
-        println("FlowMarkedForKillException")
-
+        
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
