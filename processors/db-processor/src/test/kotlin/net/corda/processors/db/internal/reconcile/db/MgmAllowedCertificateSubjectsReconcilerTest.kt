@@ -1,6 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.data.p2p.mtls.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,6 +13,8 @@ import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -48,14 +50,18 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
     private val connectionId = UUID(0, 0)
     private val virtualNodeInfo = mock<VirtualNodeInfo> {
         on { vaultDmlConnectionId } doReturn connectionId
+        on { holdingIdentity } doReturn HoldingIdentity(
+            MemberX500Name.parse("C=GB, CN=Alice, O=Alice Corp, L=LDN"),
+            "Group ID"
+        )
     }
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getAll() } doReturn listOf(virtualNodeInfo)
     }
-    private val dbReader = argumentCaptor<DbReconcilerReader<AllowedCertificateSubject, AllowedCertificateSubject>>()
+    private val dbReader = argumentCaptor<DbReconcilerReader<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>()
     private val reconciler = mock<Reconciler>()
-    private val kafkaReconcilerReader = mock<ReconcilerReader<AllowedCertificateSubject, AllowedCertificateSubject>>()
-    private val kafkaReconcilerWriter = mock<ReconcilerWriter<AllowedCertificateSubject, AllowedCertificateSubject>>()
+    private val kafkaReconcilerReader = mock<ReconcilerReader<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>()
+    private val kafkaReconcilerWriter = mock<ReconcilerWriter<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>()
     private val transaction = mock<EntityTransaction>()
     private val entityManager = mock<EntityManager> {
         on { transaction } doReturn transaction
@@ -72,8 +78,8 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
                 dbReader.capture(),
                 eq(kafkaReconcilerReader),
                 eq(kafkaReconcilerWriter),
-                eq(AllowedCertificateSubject::class.java),
-                eq(AllowedCertificateSubject::class.java),
+                eq(MgmAllowedCertificateSubject::class.java),
+                eq(MgmAllowedCertificateSubject::class.java),
                 any(),
             )
         } doReturn reconciler
@@ -156,16 +162,22 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
             .anySatisfy {
                 assertThat(it.value.subject).isEqualTo("subject 1")
                 assertThat(it.key.subject).isEqualTo("subject 1")
+                assertThat(it.value.groupId).isEqualTo("Group ID")
+                assertThat(it.key.groupId).isEqualTo("Group ID")
                 assertThat(it.isDeleted).isFalse
             }
             .anySatisfy {
                 assertThat(it.value.subject).isEqualTo("subject 2")
                 assertThat(it.key.subject).isEqualTo("subject 2")
+                assertThat(it.value.groupId).isEqualTo("Group ID")
+                assertThat(it.key.groupId).isEqualTo("Group ID")
                 assertThat(it.isDeleted).isTrue
             }
             .anySatisfy {
                 assertThat(it.value.subject).isEqualTo("subject 3")
                 assertThat(it.key.subject).isEqualTo("subject 3")
+                assertThat(it.value.groupId).isEqualTo("Group ID")
+                assertThat(it.key.groupId).isEqualTo("Group ID")
                 assertThat(it.isDeleted).isFalse
             }
     }
