@@ -313,9 +313,9 @@ on_board_node() {
    register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5 $NODE_LEDGER_KEY_ID
 }
 
-ps -ef | grep port-forward | grep $A_RPC_PORT:8888 | awk '{print $2}' |  xargs kill -9 || echo
-ps -ef | grep port-forward | grep $B_RPC_PORT:8888 | awk '{print $2}' |  xargs kill -9 || echo
-ps -ef | grep port-forward | grep $MGM_RPC_PORT:8888 | awk '{print $2}' |  xargs kill -9 || echo
+ps -ef | grep port-forward | grep $A_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
+ps -ef | grep port-forward | grep $B_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
+ps -ef | grep port-forward | grep $MGM_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
 kubectl port-forward --namespace $A_CLUSTER_NAMESPACE deployment/corda-rpc-worker $A_RPC_PORT:8888 &
 kubectl port-forward --namespace $B_CLUSTER_NAMESPACE deployment/corda-rpc-worker $B_RPC_PORT:8888 &
 kubectl port-forward --namespace $MGM_CLUSTER_NAMESPACE deployment/corda-rpc-worker $MGM_RPC_PORT:8888 &
