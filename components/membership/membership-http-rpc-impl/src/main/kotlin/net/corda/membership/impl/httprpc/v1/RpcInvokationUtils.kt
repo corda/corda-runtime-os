@@ -22,7 +22,7 @@ import org.slf4j.Logger
 internal fun <T> tryWithExceptionHandling(
     logger: Logger,
     operation: String,
-    ignoredExceptions: List<Class<out Exception>> = emptyList(),
+    ignoredExceptions: Collection<Class<out Exception>> = emptyList(),
     block: () -> T
 ): T {
     try {
