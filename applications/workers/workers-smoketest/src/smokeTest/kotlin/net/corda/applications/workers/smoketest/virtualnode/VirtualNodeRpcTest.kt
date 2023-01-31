@@ -45,6 +45,8 @@ class VirtualNodeRpcTest {
         private const val ERROR_IS_CLUSTER_RUNNING = "Initial upload failed - is the cluster running?"
         private const val ERROR_HOLDING_ID =
             "Holding id could not be created - this test needs to be run on a clean cluster."
+        private const val ERROR_VNODE_NOT_IN_MAINTENANCE =
+            "Virtual node must be in maintenance to perform an upgrade."
 
         // Server side messages
         private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Invalid CPI.  Unknown Corda-CPI-Format - \"1.0\""
@@ -53,6 +55,7 @@ class VirtualNodeRpcTest {
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, GROUP_ID)
+        private val bobHoldingId: String = getHoldingIdShortHash(bobX500, GROUP_ID)
         private val staticMemberList = listOf(
             aliceX500,
             bobX500
@@ -157,11 +160,7 @@ class VirtualNodeRpcTest {
     @Order(20)
     fun `cannot upload a CPB`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
             val requestId = cpbUpload(TEST_CPB_LOCATION).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
@@ -339,11 +338,7 @@ class VirtualNodeRpcTest {
     @Order(50)
     fun `cannot create duplicate virtual node`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val hash = getCpiChecksum(cpiName)
 
             assertWithRetry {
@@ -387,7 +382,7 @@ class VirtualNodeRpcTest {
                 command { getVNode(aliceHoldingId) }
                 condition { response ->
                     response.code == 200 &&
-                            response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
+                        response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
                 }
             }
         }
@@ -409,53 +404,33 @@ class VirtualNodeRpcTest {
             val (vnodeId, oldState) = vnodesWithStates.last()
             val newState = "maintenance"
 
-            updateVirtualNodeState(vnodeId, newState)
+            eventuallyUpdateVirtualNodeState(vnodeId, newState, "INACTIVE")
+            eventuallyUpdateVirtualNodeState(vnodeId, oldState, "ACTIVE")
+        }
+    }
 
-            assertWithRetry {
-                timeout(Duration.of(60, ChronoUnit.SECONDS))
-                command { vNodeList() }
-                condition {
-                    try {
-                        if (it.code == 200) {
-                            val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
-                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
-                            }
-                            vNodeInfo["flowP2pOperationalStatus"].textValue() == "INACTIVE" &&
-                                    vNodeInfo["flowStartOperationalStatus"].textValue() == "INACTIVE" &&
-                                    vNodeInfo["flowOperationalStatus"].textValue() == "INACTIVE" &&
-                                    vNodeInfo["vaultDbOperationalStatus"].textValue() == "INACTIVE"
-                        } else {
-                            false
+    private fun ClusterBuilder.eventuallyUpdateVirtualNodeState(vnodeId: String, newState: String, expectedOperationalStatuses: String) {
+        updateVirtualNodeState(vnodeId, newState)
+
+        assertWithRetry {
+            timeout(Duration.of(60, ChronoUnit.SECONDS))
+            command { vNodeList() }
+            condition {
+                try {
+                    if (it.code == 200) {
+                        val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
+                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
                         }
-                    } catch (e: Exception) {
-                        println("Failed, repsonse: $it")
+                        vNodeInfo["flowP2pOperationalStatus"].textValue() == expectedOperationalStatuses &&
+                                vNodeInfo["flowStartOperationalStatus"].textValue() == expectedOperationalStatuses &&
+                                vNodeInfo["flowOperationalStatus"].textValue() == expectedOperationalStatuses &&
+                                vNodeInfo["vaultDbOperationalStatus"].textValue() == expectedOperationalStatuses
+                    } else {
                         false
                     }
-                }
-            }
-
-            updateVirtualNodeState(vnodeId, oldState)
-
-            assertWithRetry {
-                timeout(Duration.of(60, ChronoUnit.SECONDS))
-                command { vNodeList() }
-                condition {
-                    try {
-                        if (it.code == 200) {
-                            val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
-                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
-                            }
-                            vNodeInfo["flowP2pOperationalStatus"].textValue() == oldState &&
-                                    vNodeInfo["flowStartOperationalStatus"].textValue() == oldState &&
-                                    vNodeInfo["flowOperationalStatus"].textValue() == oldState &&
-                                    vNodeInfo["vaultDbOperationalStatus"].textValue() == oldState
-                        } else {
-                            false
-                        }
-                    } catch (e: Exception) {
-                        println("Failed, repsonse: $it")
-                        false
-                    }
+                } catch (e: Exception) {
+                    println("Failed, repsonse: $it")
+                    false
                 }
             }
         }
@@ -545,12 +520,7 @@ class VirtualNodeRpcTest {
 
             val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
-            val requestId = forceCpiUpload(
-                CACHE_INVALIDATION_TEST_CPB,
-                GROUP_ID,
-                staticMemberList,
-                cpiName
-            )
+            val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID, staticMemberList, cpiName)
                 .let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
@@ -645,9 +615,8 @@ class VirtualNodeRpcTest {
 
             val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
 
-            val requestId =
-                forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
-                    .let { it.toJson()["id"].textValue() }
+            val requestId = forceCpiUpload(TEST_CPB_LOCATION, GROUP_ID, staticMemberList, cpiName)
+                .let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             assertWithRetry {
@@ -667,11 +636,7 @@ class VirtualNodeRpcTest {
     @Order(101)
     fun `can sync the vault DB again and run a flow from the original CPI that persists a dog entity`() {
         cluster {
-            endpoint(
-                CLUSTER_URI,
-                USERNAME,
-                PASSWORD
-            )
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
 
             runSimplePersistenceCheckFlow("Could persist dog")
@@ -680,25 +645,61 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(110)
-    fun `can upgrade a virtual node's CPI`() {
+    fun `can upload v1 and v2 of a CPI with the same name`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
-            val cpiV1 = getCpiChecksum(upgradeTestingCpiName, "v1")
-
             eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
+        }
+    }
+
+    @Test
+    @Order(111)
+    fun `prepare a virtual node with v1 CPI`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val cpiV1 = getCpiChecksum(upgradeTestingCpiName, "v1")
+            eventuallyCreateVirtualNode(cpiV1, bobX500)
+            eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v1")
+
+            runReturnAStringFlow("upgrade-test-v1", bobHoldingId)
+            runSimplePersistenceCheckFlow("Could persist fish", bobHoldingId)
+        }
+    }
+
+    @Test
+    @Order(112)
+    fun `upgrading without transitioning virtual node to maintenance fails with bad request`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
 
-            val bobVNodeId = eventuallyCreateVirtualNode(cpiV1, bobX500)
-            eventuallyGetVirtualNodeWithCpi(bobVNodeId, upgradeTestingCpiName, "v1")
+            assertWithRetry {
+                command { vNodeUpgrade(bobHoldingId, cpiV2) }
+                condition { it.code == 400 }
+                failMessage(ERROR_VNODE_NOT_IN_MAINTENANCE)
+            }.toJson()
 
-            runReturnAStringFlow("upgrade-test-v1", bobVNodeId)
+        }
+    }
 
-            triggerVirtualNodeUpgrade(bobVNodeId, cpiV2)
-            eventuallyGetVirtualNodeWithCpi(bobVNodeId, upgradeTestingCpiName, "v2")
+    @Test
+    @Order(113)
+    fun `can upgrading a virtual node's CPI when it is in maintenance`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            runReturnAStringFlow("upgrade-test-v2", bobVNodeId)
+            eventuallyUpdateVirtualNodeState(bobHoldingId, "maintenance", "INACTIVE")
+
+            val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
+            triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
+            eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
+
+            runReturnAStringFlow("upgrade-test-v2", bobHoldingId)
+            runSimplePersistenceCheckFlow("Could persist dog", bobHoldingId)
         }
     }
 
@@ -713,7 +714,7 @@ class VirtualNodeRpcTest {
         return vNodeJson["requestId"].textValue()
     }
 
-    private fun ClusterBuilder.eventuallyGetVirtualNodeWithCpi(
+    private fun ClusterBuilder.eventuallyAssertVirtualNodeHasCpi(
         virtualNodeShortHash: String, cpiName: String, cpiVersion: String
     ) = assertWithRetry {
         timeout(Duration.of(30, ChronoUnit.SECONDS))
@@ -736,12 +737,12 @@ class VirtualNodeRpcTest {
         assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
 
-    private fun runSimplePersistenceCheckFlow(expectedResult: String) {
+    private fun runSimplePersistenceCheckFlow(expectedResult: String, holdingId: String = aliceHoldingId) {
         val className = "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow"
 
-        val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+        val requestId = startRpcFlow(holdingId, emptyMap(), className)
 
-        val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+        val flowStatus = awaitRpcFlowFinished(holdingId, requestId)
 
         assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
     }
