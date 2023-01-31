@@ -9,6 +9,7 @@ import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 
 // NOTE: hsmId is part of the bootstrap configuration
@@ -247,7 +248,8 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
 // many dependencies, and is stateless.
 //
 // Longer term, get this from the JSON config schema, or eliminate this function
-fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): Config = ConfigFactory.empty()
+fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
+    SmartConfigFactory.empty()
         .withValue(
             CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
                 mapOf(

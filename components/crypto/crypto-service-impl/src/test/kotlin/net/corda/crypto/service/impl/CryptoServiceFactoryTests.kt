@@ -1,11 +1,11 @@
 package net.corda.crypto.service.impl
 
+import com.typesafe.config.Config
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.crypto.softhsm.SoftCryptoServiceConfig
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.BeforeEach
@@ -33,12 +33,9 @@ class CryptoServiceFactoryTests {
             factory.coordinatorFactory,
             factory.configurationReadService,
             factory.hsmService,
-            object : CryptoServiceProvider<SoftCryptoServiceConfig> {
+            object : CryptoServiceProvider {
                 override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
-                override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
-                override fun getInstance(
-                    config: SoftCryptoServiceConfig,
-                ): CryptoService = factory.cryptoService
+                override fun getInstance(config: Config): CryptoService = factory.cryptoService
             }
         )
         factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)

@@ -1,14 +1,10 @@
 package net.corda.crypto.softhsm.impl
 
+import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.softhsm.KEY_MAP_CACHING_NAME
 import net.corda.crypto.softhsm.KEY_MAP_TRANSIENT_NAME
-import net.corda.crypto.softhsm.SoftCacheConfig
-import net.corda.crypto.softhsm.SoftCryptoServiceConfig
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
-import net.corda.crypto.softhsm.SoftKeyMapConfig
-import net.corda.crypto.softhsm.SoftWrappingConfig
-import net.corda.crypto.softhsm.SoftWrappingKeyMapConfig
 import net.corda.crypto.softhsm.WRAPPING_DEFAULT_NAME
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -30,32 +26,11 @@ class SoftCryptoServiceProviderTests {
     private lateinit var schemeMetadata: CipherSchemeMetadataImpl
     private lateinit var wrappingKeyStore: TestWrappingKeyStore
     private lateinit var component: SoftCryptoServiceProviderImpl
-    private lateinit var defaultConfig: SoftCryptoServiceConfig
+    private lateinit var defaultConfig: Config
 
     @BeforeEach
     fun setup() {
-        defaultConfig = SoftCryptoServiceConfig(
-            keyMap = SoftKeyMapConfig(
-                name = KEY_MAP_CACHING_NAME,
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrappingKeyMap = SoftWrappingKeyMapConfig(
-                name = KEY_MAP_CACHING_NAME,
-                salt = "salt",
-                passphrase = "passphrase",
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrapping = SoftWrappingConfig(
-                name = WRAPPING_DEFAULT_NAME,
-                hsm = null
-            )
-        )
+        defaultConfig = createCustomConfig(KEY_MAP_CACHING_NAME, KEY_MAP_CACHING_NAME)
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         schemeMetadata = CipherSchemeMetadataImpl()
         wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
@@ -112,30 +87,35 @@ class SoftCryptoServiceProviderTests {
         assertNotSame(i1, i2)
     }
 
+    private fun createCustomConfig(keyMapName: String, wrappingKeyMapName: String) = ConfigFactory.parseString(
+        """
+            {
+                "keyMap": {
+                    "name" : "$keyMapName",
+                    "cache": {
+                        "expireAfterAccessMins" : 60,
+                        "maximumSize" : 1000
+                    }
+                },
+                "wrappingKeyMap": {
+                    "name" : "$wrappingKeyMapName",
+                    "salt" : "salt",
+                    "passphrase" : "passphrase",
+                    "cache" : {
+                        "expireAfterAccessMins" : 60,
+                        "maximumSize" : 1000
+                    }
+                }
+                "wrapping" : {
+                    "name" : "$WRAPPING_DEFAULT_NAME",
+                }
+            }
+        """
+    )
+
     @Test
     fun `getInstance should return new instance with custom config each time`() {
-        val customConfig = SoftCryptoServiceConfig(
-            keyMap = SoftKeyMapConfig(
-                name = KEY_MAP_TRANSIENT_NAME,
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrappingKeyMap = SoftWrappingKeyMapConfig(
-                name = KEY_MAP_TRANSIENT_NAME,
-                salt = "salt",
-                passphrase = "passphrase",
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrapping = SoftWrappingConfig(
-                name = WRAPPING_DEFAULT_NAME,
-                hsm = null
-            )
-        )
+        val customConfig = createCustomConfig(KEY_MAP_TRANSIENT_NAME, KEY_MAP_TRANSIENT_NAME)
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
             component.getInstance(customConfig)
@@ -154,28 +134,7 @@ class SoftCryptoServiceProviderTests {
 
     @Test
     fun `getInstance should throw IllegalStateException when creating new instance with unknown soft key map`() {
-        val customConfig = SoftCryptoServiceConfig(
-            keyMap = SoftKeyMapConfig(
-                name = "<unknown name>",
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrappingKeyMap = SoftWrappingKeyMapConfig(
-                name = KEY_MAP_TRANSIENT_NAME,
-                salt = "salt",
-                passphrase = "passphrase",
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrapping = SoftWrappingConfig(
-                name = WRAPPING_DEFAULT_NAME,
-                hsm = null
-            )
-        )
+        val customConfig = createCustomConfig("<unknown name>", KEY_MAP_TRANSIENT_NAME)
         component.start()
         eventually {
             assertTrue(component.isRunning)
@@ -188,28 +147,7 @@ class SoftCryptoServiceProviderTests {
 
     @Test
     fun `getInstance should throw IllegalStateException when creating new instance with unknown wrapping key map`() {
-        val customConfig = SoftCryptoServiceConfig(
-            keyMap = SoftKeyMapConfig(
-                name = KEY_MAP_TRANSIENT_NAME,
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrappingKeyMap = SoftWrappingKeyMapConfig(
-                name = "<unknown name>",
-                salt = "salt",
-                passphrase = "passphrase",
-                cache = SoftCacheConfig(
-                    expireAfterAccessMins = 60,
-                    maximumSize = 1000
-                )
-            ),
-            wrapping = SoftWrappingConfig(
-                name = WRAPPING_DEFAULT_NAME,
-                hsm = null
-            )
-        )
+        val customConfig = createCustomConfig(KEY_MAP_TRANSIENT_NAME, "<unknown name>")
         component.start()
         eventually {
             assertTrue(component.isRunning)

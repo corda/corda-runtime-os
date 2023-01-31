@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CryptoService
@@ -57,8 +56,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMService::class)
     private val hsmService: HSMService,
-    @Reference(service = CryptoServiceProvider::class)
-    private val cryptoServiceProvider: CryptoServiceProvider<*>
+    @Reference(service = SoftCryptoServiceProvider::class)
+    private val cryptoServiceProvider: CryptoServiceProvider
 ) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
@@ -90,7 +89,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         bootConfig = bootConfig ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
         event = event,
         hsmService = hsmService,
-        cryptoServiceProvider = cryptoServiceProvider as CryptoServiceProvider<Any>
+        cryptoServiceProvider = cryptoServiceProvider
     )
 
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
@@ -109,7 +108,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         bootConfig: SmartConfig,
         event: ConfigChangedEvent,
         private val hsmService: HSMService,
-        private val cryptoServiceProvider: CryptoServiceProvider<Any>
+        private val cryptoServiceProvider: CryptoServiceProvider
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         private val hsmId: String

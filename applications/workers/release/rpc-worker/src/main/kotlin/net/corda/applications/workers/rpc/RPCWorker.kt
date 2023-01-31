@@ -58,12 +58,12 @@ class RPCWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, RPCWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        val (config, _) =
+        val config =
             getBootstrapConfig(
                 secretsServiceFactoryResolver,
                 params.defaultParams,
                 configurationValidatorFactory.createConfigValidator(), listOf()
-            )
+            ).bootstrapConfig
 
         processor.start(config)
     }

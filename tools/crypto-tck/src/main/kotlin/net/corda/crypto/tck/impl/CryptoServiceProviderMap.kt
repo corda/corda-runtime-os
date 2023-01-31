@@ -14,12 +14,12 @@ class CryptoServiceProviderMap @Activate constructor (
         cardinality = ReferenceCardinality.AT_LEAST_ONE,
         policyOption = ReferencePolicyOption.GREEDY
     )
-    private val cryptoServiceProviders: List<CryptoServiceProvider<*>>
+    private val cryptoServiceProviders: List<CryptoServiceProvider>
 ) {
     private val map = cryptoServiceProviders.associateBy { it.name }
 
     @Suppress("UNCHECKED_CAST")
-    fun get(name: String): CryptoServiceProvider<Any> = map.getValue(name) as CryptoServiceProvider<Any>
+    fun get(name: String): CryptoServiceProvider = map.getValue(name) as CryptoServiceProvider
 
     fun all() = map.values.toList()
 }

@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl.infra
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
@@ -26,7 +27,6 @@ import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
-import net.corda.crypto.softhsm.SoftCryptoServiceConfig
 import net.corda.crypto.softhsm.impl.DefaultSoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.TransientSoftKeyMap
@@ -214,10 +214,9 @@ class TestServicesFactory {
             coordinatorFactory,
             configurationReadService,
             hsmService,
-            object : CryptoServiceProvider<SoftCryptoServiceConfig> {
+            object : CryptoServiceProvider {
                 override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
-                override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
-                override fun getInstance(config: SoftCryptoServiceConfig): CryptoService = cryptoService
+                override fun getInstance(config: Config): CryptoService = cryptoService
             }
         ).also {
             it.start()

@@ -1,19 +1,15 @@
 package net.corda.crypto.cipher.suite
 
+import net.corda.libs.configuration.SmartConfig
+
 /**
  * Factory to create new instances of the [CryptoService].
  */
-interface CryptoServiceProvider<T : Any> {
+interface CryptoServiceProvider {
     /**
      * The name used to resolve current provider by crypto service factory.
      */
     val name: String
-
-    /**
-     * Class for crypto service specific configuration which must be defined together with particular [CryptoService]
-     * implementation.
-     */
-    val configType: Class<T>
 
     /**
      * Creates a new instance of the [CryptoService] implementation.
@@ -23,5 +19,5 @@ interface CryptoServiceProvider<T : Any> {
      *
      * @throws [net.corda.v5.crypto.exceptions.CryptoException] for general cryptographic exceptions.
      */
-    fun getInstance(config: T): CryptoService
+    fun getInstance(config: SmartConfig): CryptoService
 }

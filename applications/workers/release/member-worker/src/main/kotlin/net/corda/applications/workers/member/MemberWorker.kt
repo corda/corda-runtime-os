@@ -55,11 +55,11 @@ class MemberWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        val (config, _) = getBootstrapConfig(
+        val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator()
-        )
+        ).bootstrapConfig
 
         processor.start(config)
     }

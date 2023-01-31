@@ -50,11 +50,11 @@ class LinkManagerWorker @Activate constructor(
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        val (config, _) = WorkerHelpers.getBootstrapConfig(
+        val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator()
-        )
+        ).bootstrapConfig
 
         linkManagerProcessor.start(config)
     }

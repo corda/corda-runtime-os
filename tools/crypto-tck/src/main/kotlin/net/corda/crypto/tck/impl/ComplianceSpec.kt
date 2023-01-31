@@ -29,10 +29,7 @@ class ComplianceSpec(
     }
 
     fun createService(providers: CryptoServiceProviderMap): CryptoService {
-        // round trip config to ensure that the deserialization can be done
-        val serialized = objectMapper.writeValueAsBytes(options.serviceConfig)
-        val config = objectMapper.readValue(serialized, options.serviceConfig::class.java)
-        val cryptoService = providers.get(options.serviceName).getInstance(config)
+        val cryptoService = providers.get(options.serviceName).getInstance(options.serviceConfig)
         return CryptoServiceDecorator.create(
             cryptoService = cryptoService,
             maxAttempts = options.maxAttempts,

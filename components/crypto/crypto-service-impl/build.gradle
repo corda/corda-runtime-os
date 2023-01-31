@@ -20,6 +20,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:crypto:crypto-client")
