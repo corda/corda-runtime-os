@@ -10,19 +10,19 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     implementation project(":osgi-framework-api")
 
-    implementation project(":libs:http-rpc:rest")
+    implementation project(":libs:rest:rest")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:utilities")
-    implementation project(":libs:http-rpc:rest-tools")
-    implementation project(':libs:http-rpc:rest-security-read')
-    implementation project(':libs:http-rpc:json-serialization')
+    implementation project(":libs:rest:rest-tools")
+    implementation project(':libs:rest:rest-security-read')
+    implementation project(':libs:rest:json-serialization')
     implementation project(':libs:metrics')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
 
-    implementation project(":libs:http-rpc:rest-server")
+    implementation project(":libs:rest:rest-server")
     implementation "net.corda:corda-crypto"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
@@ -45,11 +45,11 @@ dependencies {
     }
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation project(":libs:http-rpc:rest-common")
+    implementation project(":libs:rest:rest-common")
 
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 
-    testImplementation project(":libs:http-rpc:rest-test-common")
+    testImplementation project(":libs:rest:rest-test-common")
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
@@ -68,6 +68,6 @@ dependencies {
 
     integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
-    integrationTestImplementation project(':libs:http-rpc:rest-stubs-impl')
+    integrationTestImplementation project(':libs:rest:rest-stubs-impl')
     integrationTestImplementation project(":testing:test-utilities")
 }

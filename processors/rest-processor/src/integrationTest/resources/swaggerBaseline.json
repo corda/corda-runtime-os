@@ -12,8 +12,7 @@
   ],
   "security": [
     {
-      "basicAuth": [
-      ]
+      "basicAuth": []
     }
   ],
   "tags": [
@@ -258,8 +257,7 @@
         ],
         "description": "",
         "operationId": "get_certificates_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -556,8 +554,7 @@
         ],
         "description": "This method updates a section of the cluster configuration.",
         "operationId": "put_config",
-        "parameters": [
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "requestBody",
           "content": {
@@ -596,8 +593,7 @@
         ],
         "description": "",
         "operationId": "get_config_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -669,8 +665,7 @@
         ],
         "description": "The GET method returns a list of all CPIs uploaded to the cluster.",
         "operationId": "get_cpi",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Details of all of the CPIs uploaded to the cluster.",
@@ -696,8 +691,7 @@
         ],
         "description": "This method uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
         "operationId": "post_cpi",
-        "parameters": [
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "requestBody",
           "content": {
@@ -745,8 +739,7 @@
         ],
         "description": "",
         "operationId": "get_cpi_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -818,8 +811,7 @@
         ],
         "description": "",
         "operationId": "get_flow_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -994,8 +986,7 @@
         ],
         "description": "",
         "operationId": "get_flowclass_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -1110,8 +1101,7 @@
         ],
         "description": "",
         "operationId": "get_hello_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -1142,8 +1132,7 @@
         ],
         "description": "",
         "operationId": "get_hsm_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -1336,8 +1325,7 @@
         ],
         "description": "",
         "operationId": "get_keys_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -1730,8 +1718,7 @@
         ],
         "description": "Even if CPI with the same metadata has already been uploaded, this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         "operationId": "post_maintenance_virtualnode_forcecpiupload",
-        "parameters": [
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "requestBody",
           "content": {
@@ -1779,8 +1766,7 @@
         ],
         "description": "",
         "operationId": "get_maintenance_virtualnode_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -1845,8 +1831,7 @@
         ],
         "description": "",
         "operationId": "get_members_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -1990,8 +1975,7 @@
         ],
         "description": "",
         "operationId": "get_membership_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -2176,8 +2160,7 @@
         ],
         "description": "",
         "operationId": "get_mgm_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -2530,8 +2513,7 @@
         ],
         "description": "",
         "operationId": "get_network_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -2700,8 +2682,7 @@
         ],
         "description": "This method creates a new permission.",
         "operationId": "post_permission",
-        "parameters": [
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "requestBody",
           "content": {
@@ -2740,8 +2721,7 @@
         ],
         "description": "This method creates a set of permissions and optionally assigns them to the existing roles.",
         "operationId": "post_permission_bulk",
-        "parameters": [
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "requestBody",
           "content": {
@@ -2780,8 +2760,7 @@
         ],
         "description": "",
         "operationId": "get_permission_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -2853,8 +2832,7 @@
         ],
         "description": "This method returns an array with information about all roles in the permission system.",
         "operationId": "get_role",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "\n        Set of roles with each role having the following attributes: \n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role\n    ",
@@ -2885,8 +2863,7 @@
         ],
         "description": "The method creates a new role in the RBAC permission system.",
         "operationId": "post_role",
-        "parameters": [
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "requestBody",
           "content": {
@@ -2925,8 +2902,7 @@
         ],
         "description": "",
         "operationId": "get_role_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -3141,8 +3117,7 @@
         ],
         "description": "This method creates a new user.",
         "operationId": "post_user",
-        "parameters": [
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "requestBody",
           "content": {
@@ -3181,8 +3156,7 @@
         ],
         "description": "",
         "operationId": "get_user_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
@@ -3358,8 +3332,7 @@
         ],
         "description": "This method lists all virtual nodes in the cluster.",
         "operationId": "get_virtualnode",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "List of virtual node details.",
@@ -3385,8 +3358,7 @@
         ],
         "description": "This method creates a new virtual node.",
         "operationId": "post_virtualnode",
-        "parameters": [
-        ],
+        "parameters": [],
         "requestBody": {
           "description": "requestBody",
           "content": {
@@ -3425,8 +3397,7 @@
         ],
         "description": "",
         "operationId": "get_virtualnode_getprotocolversion",
-        "parameters": [
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "An integer value specifying the version of the endpoint",
