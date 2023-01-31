@@ -2,7 +2,6 @@ package net.corda.crypto.service.impl
 
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.MasterKeyPolicy
-import net.corda.crypto.config.impl.hsmMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.persistence.HSMStore
 import net.corda.libs.configuration.SmartConfig

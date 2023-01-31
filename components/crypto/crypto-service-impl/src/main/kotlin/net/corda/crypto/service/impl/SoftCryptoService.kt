@@ -19,8 +19,8 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
-import net.corda.crypto.softhsm.SoftKeyMap
-import net.corda.crypto.softhsm.SoftWrappingKeyMap
+import net.corda.crypto.service.SoftKeyMap
+import net.corda.crypto.service.SoftWrappingKeyMap
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME

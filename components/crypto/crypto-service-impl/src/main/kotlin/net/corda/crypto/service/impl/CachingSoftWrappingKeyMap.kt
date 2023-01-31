@@ -6,9 +6,9 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.service.SoftWrappingKeyMap
+import net.corda.crypto.service.WRAPPING_KEY_ENCODING_VERSION
 import net.corda.crypto.softhsm.SoftCacheConfig
-import net.corda.crypto.softhsm.SoftWrappingKeyMap
-import net.corda.crypto.softhsm.WRAPPING_KEY_ENCODING_VERSION
 import java.util.concurrent.TimeUnit
 
 class CachingSoftWrappingKeyMap(

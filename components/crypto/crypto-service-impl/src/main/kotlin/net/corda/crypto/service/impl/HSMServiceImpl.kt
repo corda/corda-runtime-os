@@ -8,8 +8,6 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
-import net.corda.crypto.config.impl.hsmService
-import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.impl.retrying.BackoffStrategy

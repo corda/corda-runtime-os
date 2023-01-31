@@ -3,8 +3,14 @@
 package net.corda.crypto.service.impl
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.crypto.config.impl.CryptoBusProcessorConfig
+import net.corda.crypto.config.impl.CryptoConnectionsFactoryConfig
+import net.corda.crypto.config.impl.CryptoHSMConfig
+import net.corda.crypto.config.impl.CryptoHSMServiceConfig
+import net.corda.crypto.config.impl.CryptoSigningServiceConfig
+import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.config.impl.PrivateKeyPolicy
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.libs.configuration.SmartConfig
@@ -168,8 +174,6 @@ fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
         "Could not generate a crypto configuration due to missing key: $CRYPTO_CONFIG"
     )
 
-fun SmartConfig.toConfigurationSecrets(): ConfigurationSecrets = ConfigurationSecretsImpl(this)
-
 fun Config.cryptoConnectionFactory(): CryptoConnectionsFactoryConfig =
     try {
         CryptoConnectionsFactoryConfig(getConfig(CRYPTO_CONNECTION_FACTORY_OBJ)!!)
@@ -248,7 +252,7 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
 //
 // Longer term, get this from the JSON config schema, or eliminate this function
 fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
-    SmartConfigFactory.empty()
+    SmartConfigFactory.createWithoutSecurityServices().empty()
         .withValue(
             CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
                 mapOf(

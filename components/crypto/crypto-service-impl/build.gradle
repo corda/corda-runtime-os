@@ -8,6 +8,7 @@ description 'Crypto service components'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
@@ -26,6 +27,7 @@ dependencies {
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-component-core-impl")
     implementation project(":components:crypto:crypto-persistence")
+    implementation project(":components:crypto:crypto-hes-core-impl")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(':libs:crypto:crypto-config-impl')

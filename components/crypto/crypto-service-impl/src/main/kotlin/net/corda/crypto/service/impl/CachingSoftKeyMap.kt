@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.service.PrivateKeyMaterial
+import net.corda.crypto.service.SoftKeyMap
 import net.corda.crypto.service.SoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.SoftCacheConfig
 import java.security.KeyPair

@@ -1,10 +1,10 @@
 package net.corda.crypto.service.impl
 
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
-import net.corda.crypto.softhsm.PRIVATE_KEY_ENCODING_VERSION
-import net.corda.crypto.softhsm.PrivateKeyMaterial
-import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
-import net.corda.crypto.softhsm.SoftWrappingKeyMap
+import net.corda.crypto.service.PRIVATE_KEY_ENCODING_VERSION
+import net.corda.crypto.service.PrivateKeyMaterial
+import net.corda.crypto.service.SoftPrivateKeyWrapping
+import net.corda.crypto.service.SoftWrappingKeyMap
 import java.security.PrivateKey
 
 class DefaultSoftPrivateKeyWrapping(

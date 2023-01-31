@@ -9,16 +9,6 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.WrappingKeyStore
-import net.corda.crypto.softhsm.KEY_MAP_CACHING_NAME
-import net.corda.crypto.softhsm.KEY_MAP_TRANSIENT_NAME
-import net.corda.crypto.softhsm.SoftCacheConfig
-import net.corda.crypto.softhsm.SoftCryptoServiceProvider
-import net.corda.crypto.softhsm.SoftKeyMap
-import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
-import net.corda.crypto.softhsm.SoftWrappingKeyMap
-import net.corda.crypto.softhsm.SoftWrappingKeyMapConfig
-import net.corda.crypto.softhsm.WRAPPING_DEFAULT_NAME
-import net.corda.crypto.softhsm.WRAPPING_HSM_NAME
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
