@@ -1,4 +1,7 @@
-package net.corda.crypto.cipher.suite
+package net.corda.crypto.component.impl
+
+import net.corda.crypto.cipher.suite.ConfigurationSecrets
+import net.corda.crypto.cipher.suite.CryptoService
 
 /**
  * Factory to create new instances of the [CryptoService].

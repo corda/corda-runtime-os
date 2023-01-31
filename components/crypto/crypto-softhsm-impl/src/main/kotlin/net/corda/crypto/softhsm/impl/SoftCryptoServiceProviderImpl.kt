@@ -3,9 +3,9 @@ package net.corda.crypto.softhsm.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
+import net.corda.crypto.component.impl.CryptoServiceProvider
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.aes.WrappingKey

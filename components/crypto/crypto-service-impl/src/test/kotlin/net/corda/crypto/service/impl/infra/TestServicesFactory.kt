@@ -9,13 +9,13 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.component.impl.CryptoServiceProvider
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createTestCryptoConfig

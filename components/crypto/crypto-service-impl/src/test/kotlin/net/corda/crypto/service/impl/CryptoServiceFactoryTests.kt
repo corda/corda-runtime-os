@@ -2,7 +2,7 @@ package net.corda.crypto.service.impl
 
 import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
+import net.corda.crypto.component.impl.CryptoServiceProvider
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
