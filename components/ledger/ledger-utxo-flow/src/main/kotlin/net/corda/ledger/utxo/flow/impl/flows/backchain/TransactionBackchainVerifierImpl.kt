@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifierService
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.base.annotations.Suspendable
@@ -24,7 +24,9 @@ import org.slf4j.LoggerFactory
 )
 class TransactionBackchainVerifierImpl @Activate constructor(
     @Reference(service = UtxoLedgerPersistenceService::class)
-    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
+    @Reference(service = UtxoLedgerTransactionVerifierService::class)
+    private val utxoLedgerTransactionVerifierService: UtxoLedgerTransactionVerifierService
 ) : TransactionBackchainVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -40,7 +42,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                 ?: throw CordaRuntimeException("Transaction does not exist locally") // TODO what to do if transaction disappears
             try {
                 log.trace { "Backchain resolution of $resolvingTransactionId - Verifying transaction $transactionId" }
-                UtxoLedgerTransactionVerifier(transaction.toLedgerTransaction()).verify()
+                utxoLedgerTransactionVerifierService.verify(transaction.toLedgerTransaction())
                 log.trace { "Backchain resolution of $resolvingTransactionId - Verified transaction $transactionId" }
             } catch (e: Exception) {
                 // TODO revisit what exceptions get caught
