@@ -21,16 +21,11 @@ class StartFlowEventHandler @Activate constructor(
     override val type = StartFlow::class.java
 
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
-        println("********StartFlowEventHandler.PreProcess flowStartArgs ***********")
-
         context.checkpoint.initFlowState(context.inputEventPayload.startContext)
         context.checkpoint.waitingFor =  WaitingFor(WaitingForStartFlow)
 
         val holdingIdentity = context.inputEventPayload.startContext.identity.toCorda()
-
-//        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash)
         val virtualNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
-        println("virtualNodeInfo.flowStartOperationalStatus: ${virtualNodeInfo?.flowStartOperationalStatus}")
 
         if (virtualNodeInfo?.flowStartOperationalStatus == OperationalStatus.INACTIVE) {
             throw FlowMarkedForKillException(

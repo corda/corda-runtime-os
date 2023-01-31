@@ -128,42 +128,23 @@ class FlowServiceTestContext @Activate constructor(
     ) {
         val emptyUUID = UUID(0, 0)
 
-        println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-        println("$flowP2pOperationalStatus")
-        println("$flowStartOperationalStatus")
-        println("$flowOperationalStatus")
-        println("$vaultDbOperationalStatus")
-        print(holdingId.toString())
-        println(holdingId.x500Name)
-        println(holdingId.toCorda())
-        println(holdingId.toCorda().shortHash)
-
-        val vnodeInfo = VirtualNodeInfo(
-            holdingId.toCorda(),
-            getCpiIdentifier(cpiId),
-            emptyUUID,
-            emptyUUID,
-            emptyUUID,
-            emptyUUID,
-            emptyUUID,
-            emptyUUID,
-            emptyUUID,
-            flowP2pOperationalStatus = flowP2pOperationalStatus,
-            flowStartOperationalStatus = flowStartOperationalStatus,
-            flowOperationalStatus = flowOperationalStatus,
-            vaultDbOperationalStatus = vaultDbOperationalStatus,
-            timestamp = Instant.now()
-        )
-
-        println("vnodeInfo.flowStartOperationalStatus: ${vnodeInfo.flowStartOperationalStatus}")
-        println("vnodeInfo.flowStartOperationalStatus: ${vnodeInfo.flowOperationalStatus}")
-
         virtualNodeInfoReadService.addOrUpdate(
-            vnodeInfo
-//            flowP2pOperationalStatus = flowP2pOperationalStatus,
-//            flowStartOperationalStatus = flowStartOperationalStatus,
-//            flowOperationalStatus = flowOperationalStatus,
-//            vaultDbOperationalStatus = vaultDbOperationalStatus,
+            VirtualNodeInfo(
+                holdingId.toCorda(),
+                getCpiIdentifier(cpiId),
+                emptyUUID,
+                emptyUUID,
+                emptyUUID,
+                emptyUUID,
+                emptyUUID,
+                emptyUUID,
+                emptyUUID,
+                flowP2pOperationalStatus = flowP2pOperationalStatus,
+                flowStartOperationalStatus = flowStartOperationalStatus,
+                flowOperationalStatus = flowOperationalStatus,
+                vaultDbOperationalStatus = vaultDbOperationalStatus,
+                timestamp = Instant.now()
+            )
         )
     }
 

@@ -26,8 +26,6 @@ class StartFlowTest : FlowServiceTestBase() {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
         }
 
-        println("printing")
-
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
@@ -68,9 +66,8 @@ class StartFlowTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-//                nullStateRecord()
-//                markedForDlq() ?
-//                noFlowEvents()
+                nullStateRecord()
+                noFlowEvents()
                 flowStatus(
                     state = FlowStates.KILLED,
 //                    errorType = FlowProcessingExceptionTypes.FLOW_FAILED,
