@@ -16,6 +16,7 @@ import net.corda.httprpc.exception.ForbiddenException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.ws.DuplexChannel
@@ -35,6 +36,7 @@ import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
@@ -111,6 +113,11 @@ class FlowRestResourceImpl @Activate constructor(
         }
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
+
+        if (vNode.flowStartOperationalStatus == OperationalStatus.INACTIVE.name) {
+            throw ServiceUnavailableException("Cannot start flow. Virtual node ${vNode.holdingIdentity.x500Name} is in maintenance mode.")
+        }
+
         val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
