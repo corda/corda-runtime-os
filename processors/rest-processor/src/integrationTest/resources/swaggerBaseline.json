@@ -3732,6 +3732,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3870,6 +3871,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -4155,6 +4157,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4198,6 +4201,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4234,6 +4238,7 @@
             "example" : "string"
           },
           "status" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -4339,6 +4344,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
@@ -4681,16 +4687,19 @@
             "example" : "string"
           },
           "flowOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -4714,6 +4723,7 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
