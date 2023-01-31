@@ -146,17 +146,15 @@ class HSMServiceImpl @Activate constructor(
                 }
 
                 val signingService = signingServiceFactory.getInstance()
-                executor.executeWithRetry {
-                    signingService
-                        .createWrappingKey(
-                            hsmId = association.hsmId,
-                            failIfExists = false,
-                            masterKeyAlias = association.masterKeyAlias!!,
-                            context = mapOf(
-                                CRYPTO_TENANT_ID to association.tenantId
-                            )
-                    )
-                }
+                signingService
+                    .createWrappingKey(
+                        hsmId = association.hsmId,
+                        failIfExists = false,
+                        masterKeyAlias = association.masterKeyAlias!!,
+                        context = mapOf(
+                            CRYPTO_TENANT_ID to association.tenantId
+                        )
+                )
             }
         }
 
