@@ -28,8 +28,6 @@ import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 import java.time.Instant
 
-const val BATCH_SIGNATURE_KEY = "batchSignature"
-
 const val BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY = "notaryMerkleTreeDigestProviderName"
 const val BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY = "notaryMerkleTreeDigestAlgorithmName"
 const val BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY = "notaryMerkleTreeDigestOptionsLeafPrefixB64"
@@ -139,7 +137,8 @@ class TransactionSignatureServiceImpl @Activate constructor(
     override fun verifySignature(transaction: TransactionWithMetadata, signatureWithMetadata: DigitalSignatureAndMetadata) {
         val signatureSpec = checkAndGetSignatureSpec(signatureWithMetadata)
 
-        if (signatureWithMetadata.metadata.properties.getOrDefault(BATCH_SIGNATURE_KEY, "false") == "false"){
+        val proof = signatureWithMetadata.proof
+        if (proof == null){
             val signedData = SignableData(transaction.id, signatureWithMetadata.metadata)
             return digitalSignatureVerificationService.verify(
                 publicKey = signatureWithMetadata.by,
@@ -147,10 +146,6 @@ class TransactionSignatureServiceImpl @Activate constructor(
                 signatureData = signatureWithMetadata.signature.bytes,
                 clearData = serializationService.serialize(signedData).bytes
             )
-        }
-
-        val proof = requireNotNull(signatureWithMetadata.proof) {
-            "Batch signature should have a Merkle Proof attached."
         }
 
         require(transaction.notaryMerkleTreeDigestProviderName == signatureWithMetadata.batchMerkleTreeDigestProviderName ) {
@@ -207,8 +202,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
             linkedMapOf(
                 "cpiName" to cpiSummary.name,
                 "cpiVersion" to cpiSummary.version,
-                "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString(),
-                BATCH_SIGNATURE_KEY to (batchSettings != emptyMap<String, String>()).toString()
+                "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString()
             ) + batchSettings
         )
     }
