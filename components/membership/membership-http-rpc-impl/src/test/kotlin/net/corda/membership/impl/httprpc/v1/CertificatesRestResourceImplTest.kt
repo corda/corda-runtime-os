@@ -9,6 +9,7 @@ import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -17,6 +18,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -162,6 +164,23 @@ class CertificatesRestResourceImplTest {
                     null,
                 )
             }
+        }
+
+        @Test
+        fun `it throws ServiceUnavailableException when repartition event happens while trying to retrieve key`() {
+            whenever(cryptoOpsClient.lookup(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                certificatesOps.generateCsr(
+                    holdingIdentityShortHash,
+                    keyId,
+                    x500Name,
+                    null,
+                    null,
+                )
+            }
+
+            assertThat(details.message).isEqualTo("Could not find key with ID keyId for id: Repartition Event!")
         }
 
         @Test
@@ -389,6 +408,22 @@ class CertificatesRestResourceImplTest {
                 "$certificateText\n$certificateText\n$certificateText"
             )
         }
+
+        @Test
+        fun `repartition event during operation throws ServiceUnavailableException`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+            whenever(certificatesClient.importCertificates(CertificateUsage.P2P_TLS, null, "alias", certificateText))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                certificatesOps.importCertificateChain("p2p-tls", null, "alias", listOf(certificate))
+            }
+
+            assertThat(details.message).isEqualTo("Could not import certificate: Repartition Event!")
+        }
     }
 
     @Nested
@@ -450,6 +485,20 @@ class CertificatesRestResourceImplTest {
                     "012301230123",
                 )
             }
+        }
+
+        @Test
+        fun `it throws an exception if repartition event occurs while waiting for response`() {
+            whenever(certificatesClient.getCertificateAliases(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                certificatesOps.getCertificateAliases(
+                    CertificateUsage.RPC_API_TLS.publicName,
+                    "012301230123",
+                )
+            }
+
+            assertThat(details.message).isEqualTo("Could not get certificate aliases: Repartition Event!")
         }
     }
 
@@ -530,6 +579,23 @@ class CertificatesRestResourceImplTest {
                     "alias",
                 )
             }
+        }
+
+
+        @Test
+        fun `it throws an exception if repartition event occurs while waiting for response`() {
+            whenever(certificatesClient.retrieveCertificates(null, CertificateUsage.P2P_SESSION, "alias"))
+                .doThrow(CordaRPCAPIPartitionException("repartition"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                certificatesOps.getCertificateChain(
+                    CertificateUsage.P2P_SESSION.publicName,
+                    null,
+                    "alias",
+                )
+            }
+
+            assertThat(details.message).isEqualTo("Could not get certificate chain: Repartition Event!")
         }
     }
 }

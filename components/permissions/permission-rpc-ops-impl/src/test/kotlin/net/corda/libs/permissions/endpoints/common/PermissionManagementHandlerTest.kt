@@ -2,9 +2,11 @@ package net.corda.libs.permissions.endpoints.common
 
 import java.util.concurrent.TimeoutException
 import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -102,6 +104,19 @@ internal class PermissionManagementHandlerTest {
         assertEquals(2, e.details.size)
         assertEquals(UnexpectedPermissionResponseException::class.java.name, e.details["cause"])
         assertEquals("unexpected exception", e.details["reason"])
+    }
+
+    @Test
+    fun `test CordaRPCAPIPartitionException returns ServiceUnavailableException`() {
+
+        val e = assertThrows<ServiceUnavailableException> {
+            withPermissionManager(permissionManager, logger){
+                throw CordaRPCAPIPartitionException("Repartition event.")
+            }
+        }
+
+        assertEquals("Error waiting for permission management response: Repartition Event!", e.message)
+        assertEquals(0, e.details.size)
     }
 
     @Test

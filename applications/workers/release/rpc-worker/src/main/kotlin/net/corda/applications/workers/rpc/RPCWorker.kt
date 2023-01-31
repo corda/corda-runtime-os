@@ -14,7 +14,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.processors.rpc.RPCProcessor
+import net.corda.processors.rest.RestProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -25,8 +25,8 @@ import picocli.CommandLine.Mixin
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class RPCWorker @Activate constructor(
-    @Reference(service = RPCProcessor::class)
-    private val processor: RPCProcessor,
+    @Reference(service = RestProcessor::class)
+    private val processor: RestProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)

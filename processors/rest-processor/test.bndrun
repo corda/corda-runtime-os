@@ -1,0 +1,27 @@
+-tester: biz.aQute.tester.junit-platform
+-runfw: org.apache.felix.framework
+-runee: JavaSE-11
+-runtrace: true
+-resolve.effective: resolve,active
+# -runjdb: 5005
+
+-runsystempackages: \
+    sun.security.x509
+
+-runrequires: \
+    bnd.identity;id='junit-jupiter-engine',\
+    bnd.identity;id='junit-platform-launcher',\
+    bnd.identity;id='slf4j.simple',\
+    bnd.identity;id='net.corda.rest-processor',\
+    bnd.identity;id='net.corda.virtual-node-rpcops-service-impl',\
+    bnd.identity;id='net.corda.virtual-node-rpcops-maintenance-impl',\
+    bnd.identity;id='net.corda.permission-rpc-ops-impl',\
+    bnd.identity;id='net.corda.membership-http-rpc-impl',\
+    bnd.identity;id='net.corda.configuration-rpcops-service-impl',\
+    bnd.identity;id='org.webjars.swagger-ui',\
+    bnd.identity;id='org.eclipse.jetty.websocket.server',\
+    bnd.identity;id='rest-processor-tests'
+
+-runstartlevel: \
+    order=sortbynameversion,\
+    begin=-1

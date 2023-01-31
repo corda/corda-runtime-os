@@ -83,7 +83,7 @@ class CorDappCustomSerializer(
         proxyType = types[PROXY_TYPE]
     }
 
-    private val proxySerializer: ObjectSerializer by lazy {
+    private val proxySerializer: ObjectSerializer by lazy(LazyThreadSafetyMode.PUBLICATION) {
         ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
     }
 
