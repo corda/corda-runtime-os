@@ -3,7 +3,6 @@ package net.corda.p2p.linkmanager.utilities
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
@@ -76,11 +75,11 @@ fun mockMembers(members: Collection<HoldingIdentity>): MembershipGroupReaderProv
     return object : MembershipGroupReaderProvider {
         override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader {
             return mock {
-                on { lookup(any()) } doAnswer {
+                on { lookup(name = any(), filter = any()) } doAnswer {
                     val name = it.arguments[0] as MemberX500Name
                     identities[HoldingIdentity(name, holdingIdentity.groupId)]
                 }
-                on { lookupBySessionKey(any()) } doAnswer {
+                on { lookupBySessionKey(sessionKeyHash = any(), filter = any()) } doAnswer {
                     val key = it.arguments[0] as PublicKeyHash
                     hashToInfo[key]
                 }

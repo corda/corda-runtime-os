@@ -13,6 +13,7 @@ import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.read.MembershipStatusFilter
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
@@ -104,18 +105,18 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
         members = memberList
     }
 
-    override fun lookup(): Collection<MemberInfo> = members
+    override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> = members
 
-    override fun lookup(name: MemberX500Name): MemberInfo? = members.firstOrNull { it.holdingIdentity.x500Name == name }
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? = members.firstOrNull { it.holdingIdentity.x500Name == name }
 
-    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

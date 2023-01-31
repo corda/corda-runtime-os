@@ -166,10 +166,10 @@ class MgmSynchronisationServiceImplTest {
     private val groupParameters: GroupParameters = mock()
     private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn memberInfos
-        on { lookup(eq(MemberX500Name.parse(mgmName))) } doReturn mgmInfo
-        on { lookup(eq(MemberX500Name.parse(aliceName))) } doReturn aliceInfo
-        on { lookup(eq(MemberX500Name.parse(bobName))) } doReturn bobInfo
-        on { lookup(eq(MemberX500Name.parse(daisyName))) } doReturn daisyInfo
+        on { lookup(eq(MemberX500Name.parse(mgmName)), any()) } doReturn mgmInfo
+        on { lookup(eq(MemberX500Name.parse(aliceName)), any()) } doReturn aliceInfo
+        on { lookup(eq(MemberX500Name.parse(bobName)), any()) } doReturn bobInfo
+        on { lookup(eq(MemberX500Name.parse(daisyName)), any()) } doReturn daisyInfo
         on { groupParameters } doReturn groupParameters
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {

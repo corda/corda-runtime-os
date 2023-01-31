@@ -1,12 +1,15 @@
 package net.corda.membership.impl.read.reader
 
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHash
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipStatusFilter
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
@@ -31,23 +34,26 @@ class MembershipGroupReaderImpl(
     override val groupParameters: GroupParameters?
         get() = groupParametersReaderService.get(holdingIdentity)
 
-    override fun lookup(): Collection<MemberInfo> = memberList.filter { it.isActiveOrPending() }
+    override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> =
+        memberList.filterBy(filter)
 
-    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? =
-        memberList.singleOrNull { it.isActiveOrPending() && ledgerKeyHash in it.ledgerKeyHashes }
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? =
+        memberList.filterBy(filter).singleOrNull { ledgerKeyHash in it.ledgerKeyHashes }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =
-        memberList.singleOrNull { it.isActiveOrPending() && sessionKeyHash == it.sessionKeyHash }
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? =
+        memberList.filterBy(filter).singleOrNull { sessionKeyHash == it.sessionKeyHash }
 
     override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup by lazy {
         NotaryVirtualNodeLookupImpl(this)
     }
 
-    override fun lookup(name: MemberX500Name) = memberList.singleOrNull {
-        it.isActiveOrPending() && it.name == name
-    }
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? =
+        memberList.filterBy(filter).singleOrNull { it.name == name }
 
-    private fun MemberInfo.isActiveOrPending(): Boolean {
-        return isActive || status == MEMBER_STATUS_PENDING
+    private fun List<MemberInfo>.filterBy(filter: MembershipStatusFilter): List<MemberInfo> {
+        if (filter == MembershipStatusFilter.PENDING) {
+            return this.filter { it.status == MEMBER_STATUS_PENDING }
+        }
+        return this.filter { it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED }
     }
 }

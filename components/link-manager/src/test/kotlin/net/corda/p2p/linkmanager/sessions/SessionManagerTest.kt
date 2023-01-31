@@ -554,7 +554,7 @@ class SessionManagerTest {
 
         sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
-        verify(otherMembershipGroupReader, times(2)).lookupBySessionKey(any())
+        verify(otherMembershipGroupReader, times(2)).lookupBySessionKey(any(), any())
         verify(membershipGroupReaderProvider).getGroupReader(carol)
         verify(membershipGroupReaderProvider).getGroupReader(david)
     }
@@ -827,7 +827,7 @@ class SessionManagerTest {
         whenever(protocolResponder.getSession()).thenReturn(session)
         sessionManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
 
-        verify(otherMembershipGroupReader, atLeast(2)).lookupBySessionKey(any())
+        verify(otherMembershipGroupReader, atLeast(2)).lookupBySessionKey(any(), any())
         verify(membershipGroupReaderProvider, atLeastOnce()).getGroupReader(carol)
         verify(membershipGroupReaderProvider, atLeastOnce()).getGroupReader(david)
     }

@@ -11,6 +11,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.read.GroupParametersReaderService
+import net.corda.membership.read.MembershipStatusFilter
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.membership.GroupParameters
@@ -37,6 +38,7 @@ class MembershipGroupReaderImplTest {
 
     private val aliceName = TestProperties.aliceName
     private val aliceIdGroup1 = HoldingIdentity(aliceName, GROUP_ID_1)
+    private val bobName = TestProperties.bobName
     private val memberCache: MemberListCache = mock()
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)
@@ -58,8 +60,16 @@ class MembershipGroupReaderImplTest {
     private val mockedSuspendedMgmProvidedContext = mock<MGMContext> {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_SUSPENDED
     }
-    private val suspendedMemberInfo: MemberInfo = mock {
+    private val aliceSuspendedMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
+        on { ledgerKeys } doReturn listOf(mockLedgerKey)
+        on { sessionInitiationKey } doReturn mockSessionKey
+        on { memberProvidedContext } doReturn mockedSuspendedMemberProvidedContext
+        on { mgmProvidedContext } doReturn mockedSuspendedMgmProvidedContext
+        on { isActive } doReturn false
+    }
+    private val bobSuspendedMemberInfo: MemberInfo = mock {
+        on { name } doReturn bobName
         on { ledgerKeys } doReturn listOf(mockLedgerKey)
         on { sessionInitiationKey } doReturn mockSessionKey
         on { memberProvidedContext } doReturn mockedSuspendedMemberProvidedContext
@@ -75,7 +85,7 @@ class MembershipGroupReaderImplTest {
     private val mockedActiveMgmProvidedContext = mock<MGMContext> {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
     }
-    private val activeMemberInfo: MemberInfo = mock {
+    private val aliceActiveMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
         on { ledgerKeys } doReturn listOf(mockLedgerKey)
         on { sessionInitiationKey } doReturn mockSessionKey
@@ -87,7 +97,7 @@ class MembershipGroupReaderImplTest {
     private val mockedPendingMgmProvidedContext = mock<MGMContext> {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_PENDING
     }
-    private val pendingMemberInfo: MemberInfo = mock {
+    private val alicePendingMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
         on { memberProvidedContext } doReturn mockedActiveMemberProvidedContext
         on { mgmProvidedContext } doReturn mockedPendingMgmProvidedContext
@@ -109,21 +119,28 @@ class MembershipGroupReaderImplTest {
 
     @Test
     fun `lookup known member with active status based on name`() {
-        mockMemberList(listOf(activeMemberInfo))
-        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookup(aliceName))
+        mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo))
+        assertEquals(aliceActiveMemberInfo, membershipGroupReaderImpl.lookup(aliceName))
     }
 
     @Test
     fun `lookup known member with non active status based on name`() {
-        mockMemberList(listOf(suspendedMemberInfo))
-        assertNull(membershipGroupReaderImpl.lookup(aliceName))
+        mockMemberList(listOf(aliceSuspendedMemberInfo))
+        assertEquals(aliceSuspendedMemberInfo, membershipGroupReaderImpl.lookup(aliceName))
     }
 
     @Test
     fun `lookup known member with pending status based on name`() {
-        mockMemberList(listOf(pendingMemberInfo))
-        assertEquals(pendingMemberInfo, membershipGroupReaderImpl.lookup(aliceName))
+        mockMemberList(listOf(alicePendingMemberInfo))
+        assertEquals(alicePendingMemberInfo, membershipGroupReaderImpl.lookup(aliceName, MembershipStatusFilter.PENDING))
     }
+
+    @Test
+    fun `lookup known member with pending status based on name with non-pending filter`() {
+        mockMemberList(listOf(alicePendingMemberInfo))
+        assertNull(membershipGroupReaderImpl.lookup(aliceName))
+    }
+
 
     @Test
     fun `lookup non-existing member based on name`() {
@@ -133,14 +150,20 @@ class MembershipGroupReaderImplTest {
 
     @Test
     fun `lookup known member with active status based on ledger public key hash`() {
-        mockMemberList(listOf(activeMemberInfo))
-        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash))
+        mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo))
+        assertEquals(aliceActiveMemberInfo, membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash))
+    }
+
+    @Test
+    fun `lookup known member with pending status based on ledger public key hash`() {
+        mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo))
+        assertEquals(alicePendingMemberInfo, membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash, MembershipStatusFilter.PENDING))
     }
 
     @Test
     fun `lookup known member with non active status based on ledger public key hash`() {
-        mockMemberList(listOf(suspendedMemberInfo))
-        assertNull(membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash))
+        mockMemberList(listOf(aliceSuspendedMemberInfo))
+        assertEquals(aliceSuspendedMemberInfo, membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash))
     }
 
     @Test
@@ -151,20 +174,20 @@ class MembershipGroupReaderImplTest {
 
     @Test
     fun `lookup member based on ledger public key hash using session key fails`() {
-        mockMemberList(listOf(activeMemberInfo))
+        mockMemberList(listOf(aliceActiveMemberInfo))
         assertNull(membershipGroupReaderImpl.lookupByLedgerKey(mockSessionKeyHash))
     }
 
     @Test
     fun `lookup known member with active status based on session public key hash`() {
-        mockMemberList(listOf(activeMemberInfo))
-        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
+        mockMemberList(listOf(aliceActiveMemberInfo))
+        assertEquals(aliceActiveMemberInfo, membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
     }
 
     @Test
     fun `lookup known member with non active status based on session public key hash`() {
-        mockMemberList(listOf(suspendedMemberInfo))
-        assertNull(membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
+        mockMemberList(listOf(aliceSuspendedMemberInfo, alicePendingMemberInfo))
+        assertEquals(aliceSuspendedMemberInfo, membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
     }
 
     @Test
@@ -175,14 +198,20 @@ class MembershipGroupReaderImplTest {
 
     @Test
     fun `lookup member based on session public key hash using ledger key fails`() {
-        mockMemberList(listOf(activeMemberInfo))
+        mockMemberList(listOf(aliceActiveMemberInfo))
         assertNull(membershipGroupReaderImpl.lookupBySessionKey(mockLedgerKeyHash))
     }
 
     @Test
-    fun `lookup returns active members only`() {
-        mockMemberList(listOf(suspendedMemberInfo, activeMemberInfo))
-        assertEquals(listOf(activeMemberInfo), membershipGroupReaderImpl.lookup())
+    fun `lookup returns pending members only`() {
+        mockMemberList(listOf(aliceSuspendedMemberInfo, alicePendingMemberInfo, bobSuspendedMemberInfo))
+        assertEquals(listOf(alicePendingMemberInfo), membershipGroupReaderImpl.lookup(MembershipStatusFilter.PENDING))
+    }
+
+    @Test
+    fun `lookup returns active or suspended members only`() {
+        mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo, bobSuspendedMemberInfo))
+        assertEquals(listOf(aliceActiveMemberInfo, bobSuspendedMemberInfo), membershipGroupReaderImpl.lookup())
     }
 
     @Test

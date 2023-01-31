@@ -45,6 +45,7 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -147,7 +148,7 @@ class MembershipP2PProcessorTest {
         on { encodeAsByteArray(eq(mgmKey)) } doReturn KEY_BYTES
     }
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup(eq(mgm.toCorda().x500Name)) } doReturn mgmInfo
+        on { lookup(eq(mgm.toCorda().x500Name), any()) } doReturn mgmInfo
     }
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(eq(mgm.toCorda())) } doReturn groupReader

@@ -228,7 +228,7 @@ class MemberSynchronisationServiceImplTest {
     private val memberInfo = mock<MemberInfo>()
     private val groupReader = mock<MembershipGroupReader> {
         on { lookup() } doReturn emptyList()
-        on { lookup(any()) } doReturn memberInfo
+        on { lookup(name = any(), filter = any()) } doReturn memberInfo
     }
     private val groupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(member) } doReturn groupReader

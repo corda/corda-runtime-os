@@ -188,7 +188,7 @@ class MGMResourceClientTest {
     }
 
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup(eq(mgmX500Name)) } doReturn alice
+        on { lookup(eq(mgmX500Name), any()) } doReturn alice
     }
 
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
