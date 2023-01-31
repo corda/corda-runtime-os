@@ -21,23 +21,21 @@ const val COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY = "componentMerkleTre
 
 class WireTransactionDigestSettings {
     companion object {
+        private val base64Encoder: Base64.Encoder = Base64.getEncoder()
         val defaultValues = linkedMapOf(
             NOTARY_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
             NOTARY_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to DigestAlgorithmName.SHA2_256D.name,
-
             NOTARY_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to
-                    Base64.getEncoder().encodeToString("notaryLeaf".toByteArray(Charsets.UTF_8)),
+                    base64Encoder.encodeToString("notaryLeaf".toByteArray(Charsets.UTF_8)),
             NOTARY_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to
-                    Base64.getEncoder().encodeToString("notaryNode".toByteArray(Charsets.UTF_8)),
-
+                    base64Encoder.encodeToString("notaryNode".toByteArray(Charsets.UTF_8)),
 
             ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
             ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to DigestAlgorithmName.SHA2_256D.name,
-
             ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to
-                    Base64.getEncoder().encodeToString("leaf".toByteArray(Charsets.UTF_8)),
+                    base64Encoder.encodeToString("leaf".toByteArray(Charsets.UTF_8)),
             ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to
-                    Base64.getEncoder().encodeToString("node".toByteArray(Charsets.UTF_8)),
+                    base64Encoder.encodeToString("node".toByteArray(Charsets.UTF_8)),
 
             COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to HASH_DIGEST_PROVIDER_NONCE_NAME,
             COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to DigestAlgorithmName.SHA2_256D.name,

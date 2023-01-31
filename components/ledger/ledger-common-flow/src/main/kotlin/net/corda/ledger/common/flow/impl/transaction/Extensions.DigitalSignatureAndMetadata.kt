@@ -8,9 +8,12 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import java.util.Base64
 
+private val base64Decoder = Base64.getDecoder()
+
 fun DigitalSignatureAndMetadata.getDigestSetting(settingKey: String): String {
     return metadata.properties[settingKey]!!
 }
+
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestProviderName
     get() = getDigestSetting(BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY)
 
@@ -22,10 +25,10 @@ val DigitalSignatureAndMetadata.batchMerkleTreeDigestAlgorithmName
     )
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestOptionsLeafPrefix: ByteArray
-    get() = Base64.getDecoder().decode(getDigestSetting(BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY))
+    get() = base64Decoder.decode(getDigestSetting(BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY))
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestOptionsNodePrefix: ByteArray
-    get() = Base64.getDecoder().decode(getDigestSetting(BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY))
+    get() = base64Decoder.decode(getDigestSetting(BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY))
 
 fun DigitalSignatureAndMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider: MerkleTreeProvider): MerkleTreeHashDigestProvider =
     merkleTreeProvider.createHashDigestProvider(
