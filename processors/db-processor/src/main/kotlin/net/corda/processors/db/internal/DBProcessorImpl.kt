@@ -187,8 +187,6 @@ class DBProcessorImpl @Activate constructor(
         allowedCertificatesReaderWriterService,
     )
 
-    private var instanceId: Int? = null
-
     override fun start(bootConfig: SmartConfig) {
         log.info("DB processor starting.")
         lifecycleCoordinator.start()
@@ -216,7 +214,7 @@ class DBProcessorImpl @Activate constructor(
 
     private fun onBootConfigEvent(event: BootConfigEvent) {
         val bootstrapConfig = event.config
-        instanceId = bootstrapConfig.getInt(INSTANCE_ID)
+        val instanceId = bootstrapConfig.getInt(INSTANCE_ID)
 
         log.info("Bootstrapping DB connection Manager")
         dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
