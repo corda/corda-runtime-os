@@ -30,6 +30,16 @@ class CryptoServiceFactoryTests {
         tenantId1 = UUID.randomUUID().toString()
         tenantId2 = UUID.randomUUID().toString()
         factory = TestServicesFactory()
+        factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
+        factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
+        factory.hsmService.assignSoftHSM(tenantId2, CryptoConsts.Categories.TLS)
+
+        val cryptoServiceFactoryCoordinator = (factory.cryptoServiceFactory as CryptoServiceFactoryImpl).lifecycleCoordinator
+        cryptoServiceFactoryCoordinator.close()
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, cryptoServiceFactoryCoordinator.status)
+        }
+
         component = CryptoServiceFactoryImpl(
             factory.coordinatorFactory,
             factory.configurationReadService,
@@ -43,9 +53,6 @@ class CryptoServiceFactoryTests {
                 ): CryptoService = factory.cryptoService
             }
         )
-        factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
-        factory.hsmService.assignSoftHSM(tenantId2, CryptoConsts.Categories.TLS)
     }
 
     @Test
@@ -91,14 +98,14 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        factory.hsmService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.hsmStore.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertThrows<IllegalStateException> {
             component.impl
         }
-        factory.hsmService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        factory.hsmStore.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
