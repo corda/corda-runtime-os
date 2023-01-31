@@ -36,6 +36,44 @@
         "componentMerkleTreeEntropyAlgorithmName"
       ],
       "properties": {
+        "notaryMerkleTreeDigestProviderName": {
+          "title": "Notary Merkle tree digest provider name",
+          "type": "string",
+          "description": "Class name of the digest provider for the notary Merkle tree.",
+          "default": "",
+          "examples": [
+            "TweakableHashDigestProvider"
+          ],
+          "pattern": "^.*$"
+        },
+        "notaryMerkleTreeDigestAlgorithmName": {
+          "title": "Notary Merkle tree digest algorithm name",
+          "type": "string",
+          "description": "Algorithm name of the digest provider for the notary Merkle tree.",
+          "default": "",
+          "examples": [
+            "SHA-256D"
+          ],
+          "pattern": "^.*$"
+        },
+        "notaryMerkleTreeDigestOptionsLeafPrefixB64": {
+          "title": "Notary Merkle tree digest options leaf prefix base64 encoded",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "bGVhZg=="
+          ],
+          "pattern": "^.*$"
+        },
+        "notaryMerkleTreeDigestOptionsNodePrefixB64": {
+          "title": "Notary Merkle tree digest options node prefix base64 encoded",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "bm9kZQ=="
+          ],
+          "pattern": "^.*$"
+        },
         "rootMerkleTreeDigestProviderName": {
           "title": "Root Merkle tree digest provider name",
           "type": "string",

@@ -50,7 +50,8 @@ class WireTransactionFactoryImpl @Activate constructor(
         privacySalt: PrivacySalt
     ): WireTransaction {
         checkComponentGroups(componentGroupLists)
-        val metadata = parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+        val metadata =
+            parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
         val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
             componentGroupLists.getOrElse(index) { arrayListOf() }
