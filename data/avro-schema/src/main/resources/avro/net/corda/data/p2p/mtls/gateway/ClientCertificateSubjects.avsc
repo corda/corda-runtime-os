@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "ClientCertificateSubjects",
+  "doc": "Certificate subject to allow TLS connections from by the gateway",
+  "namespace": "net.corda.data.p2p.mtls.gateway",
+  "fields": [
+    {
+      "doc": "The certificate subject",
+      "name": "subject",
+      "type": "string"
+    }
+  ]
+}

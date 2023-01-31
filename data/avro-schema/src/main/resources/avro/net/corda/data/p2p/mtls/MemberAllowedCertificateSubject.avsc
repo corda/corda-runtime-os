@@ -1,6 +1,7 @@
 {
   "type": "record",
-  "name": "ClientCertificateSubject",
+  "name": "MemberAllowedCertificateSubject",
+  "doc": "Certificate subject to allow mutual TLS connections from the member info list",
   "namespace": "net.corda.data.p2p.mtls",
   "fields": [
     {

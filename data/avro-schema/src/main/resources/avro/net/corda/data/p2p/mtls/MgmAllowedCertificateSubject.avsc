@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "MgmAllowedCertificateSubject",
+  "doc": "Certificate subject to allow mutual TLS connections from the MGM allowed list",
+  "namespace": "net.corda.data.p2p.mtls",
+  "fields": [
+    {
+      "doc": "The certificate subject",
+      "name": "subject",
+      "type": "string"
+    },
+    {
+      "doc": "The group ID",
+      "name": "groupId",
+      "type": "string"
+    }
+  ]
+}
