@@ -8,6 +8,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifierService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
@@ -54,6 +55,7 @@ class UtxoReceiveFinalityFlowTest {
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
+    private val transactionVerifierService = mock<UtxoLedgerTransactionVerifierService>()
     private val flowEngine = mock<FlowEngine>()
 
     private val session = mock<FlowSession>()
@@ -345,6 +347,7 @@ class UtxoReceiveFinalityFlowTest {
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.transactionSignatureService = transactionSignatureService
+        flow.transactionVerifierService = transactionVerifierService
         flow.flowEngine = flowEngine
         flow.call()
     }
