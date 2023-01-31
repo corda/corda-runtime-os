@@ -44,7 +44,7 @@ class InteropService @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG)
         private const val SUBSCRIPTION = "SUBSCRIPTION"
-        private const val CONSUMER_GROUP = "InteropFilterConsumer"
+        private const val CONSUMER_GROUP = "InteropConsumer"
     }
 
     private var registration: RegistrationHandle? = null

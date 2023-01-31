@@ -22,8 +22,7 @@
     co.paralleluniverse.quasar.verbose=false
 
 -runrequires: \
-    bnd.identity;id='flow-service-tests',\
-    bnd.identity;id='net.corda.flow-service',\
+    bnd.identity;id='net.corda.interop-service',\
     bnd.identity;id='net.corda.application-impl',\
     bnd.identity;id='net.corda.db-message-bus-impl',\
     bnd.identity;id='net.corda.virtual-node-info-read-service-fake',\
