@@ -39,13 +39,13 @@ class PeekTransactionFlow : RPCStartableFlow {
 
         val txId = requestObject.transactionId
 
-        log.info("Utxo finding transaction $txId")
+        log.info("Utxo finding transaction $txId for taking a peek")
         val ledgerTransaction = ledgerService.findLedgerTransaction(SecureHash.parse(txId))
 
 
         val resultString = marshallingService.format(extractStates(ledgerTransaction))
 
-        log.info("Utxo finding transaction $txId's result: $resultString")
+        log.info("Utxo transaction $txId peeking result: $resultString")
         return resultString
     }
 

@@ -82,7 +82,6 @@ class TestPeekTransactionFlow {
             whenever(goodRequest.getRequestBodyAs<PeekTransactionParameters>(jsonMarshallingService)).thenReturn(body)
 
             val result = flow.call(goodRequest)
-            println(result)
             val resObj = jsonMarshallingService.parse<PeekTransactionResponse>(result)
             Assertions.assertThat(resObj.inputs).isEmpty()
             Assertions.assertThat(resObj.outputs).hasSize(1)
