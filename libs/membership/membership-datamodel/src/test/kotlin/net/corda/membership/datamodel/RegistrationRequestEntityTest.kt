@@ -57,7 +57,7 @@ class RegistrationRequestEntityTest {
     }
 
     @Test
-    fun `entities are equal if registration id does not match`() {
+    fun `entities are not equal if registration id does not match`() {
         val e1 = RegistrationRequestEntity(
             randomId,
             HOLDING_ID_1,
