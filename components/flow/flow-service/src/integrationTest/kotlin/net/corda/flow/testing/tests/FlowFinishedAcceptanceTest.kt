@@ -25,6 +25,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
+            virtualNode(CPI1, CHARLIE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
