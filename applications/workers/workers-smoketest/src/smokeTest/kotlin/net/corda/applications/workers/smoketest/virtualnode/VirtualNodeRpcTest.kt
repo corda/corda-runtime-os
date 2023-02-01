@@ -31,6 +31,7 @@ import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCA
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
+import net.corda.e2etest.utilities.getFlowStatus
 
 /**
  * Any 'unordered' tests are run *last*
@@ -405,6 +406,12 @@ class VirtualNodeRpcTest {
             val newState = "maintenance"
 
             eventuallyUpdateVirtualNodeState(vnodeId, newState, "INACTIVE")
+
+            val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 503)
+            getFlowStatus(aliceHoldingId, requestId, 404)
+
+
             eventuallyUpdateVirtualNodeState(vnodeId, oldState, "ACTIVE")
         }
     }
@@ -688,7 +695,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(113)
-    fun `can upgrading a virtual node's CPI when it is in maintenance`() {
+    fun `can upgrade a virtual node's CPI when it is in maintenance`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -697,6 +704,8 @@ class VirtualNodeRpcTest {
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
             triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
+
+            eventuallyUpdateVirtualNodeState(bobHoldingId, "active", "ACTIVE")
 
             runReturnAStringFlow("upgrade-test-v2", bobHoldingId)
             runSimplePersistenceCheckFlow("Could persist dog", bobHoldingId)
