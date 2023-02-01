@@ -31,6 +31,7 @@ import net.corda.applications.workers.smoketest.TEST_CPB_WITHOUT_CHANGELOGS_LOCA
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
+import net.corda.e2etest.utilities.getFlowStatus
 
 /**
  * Any 'unordered' tests are run *last*
@@ -408,7 +409,8 @@ class VirtualNodeRpcTest {
 
             val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
             val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 503)
-            awaitRpcFlowFinished(aliceHoldingId, requestId, 404)
+            getFlowStatus(aliceHoldingId, requestId, 404)
+
 
             eventuallyUpdateVirtualNodeState(vnodeId, oldState, "ACTIVE")
         }
