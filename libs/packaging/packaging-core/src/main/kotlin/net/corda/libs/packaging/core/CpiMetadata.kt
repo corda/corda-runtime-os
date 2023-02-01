@@ -15,7 +15,7 @@ data class CpiMetadata(
     companion object {
         fun fromAvro(other: CpiMetadataAvro) = CpiMetadata(
             CpiIdentifier.fromAvro(other.id),
-            SecureHash(other.hash.algorithm, other.hash.serverHash.array()),
+            SecureHash(other.hash.algorithm, other.hash.bytes.array()),
             other.cpks.map { CpkMetadata.fromAvro(it) },
             other.groupPolicy,
             other.version,
