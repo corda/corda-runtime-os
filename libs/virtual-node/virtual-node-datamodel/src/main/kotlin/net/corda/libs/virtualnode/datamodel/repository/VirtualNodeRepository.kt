@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
+import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
@@ -46,12 +47,20 @@ interface VirtualNodeRepository {
     /**
      * Upgrade the CPI associated with a virtual node.
      */
+    @Suppress("LongParameterList")
     fun upgradeVirtualNodeCpi(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        cpiName: String,
-        cpiVersion: String,
-        cpiSignerSummaryHash: String
+        cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String,
+        requestId: String, requestTimestamp: Instant, serializedRequest: String
+    ): VirtualNodeInfo
+
+    /**
+     * Complete an in-progress operation on a virtual node.
+     */
+    fun completeOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String
     ): VirtualNodeInfo
 }
 

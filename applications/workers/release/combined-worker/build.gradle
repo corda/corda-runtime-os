@@ -74,7 +74,7 @@ dependencies {
     implementation project(':processors:db-processor')
     implementation project(':processors:flow-processor')
     implementation project(':processors:member-processor')
-    implementation project(':processors:rpc-processor')
+    implementation project(':processors:rest-processor')
     implementation project(':processors:uniqueness-processor')
     implementation project(':processors:verification-processor')
     implementation project(':processors:link-manager-processor')

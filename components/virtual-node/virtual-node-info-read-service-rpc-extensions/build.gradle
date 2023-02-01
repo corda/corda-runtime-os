@@ -10,7 +10,7 @@ dependencies {
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation project(':libs:http-rpc:rest')
+    implementation project(':libs:rest:rest')
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
 
