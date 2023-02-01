@@ -98,7 +98,9 @@ class ConsensualSignedTransactionBase(
 
     override val id = ledgerTransaction.id
     override val metadata: TransactionMetadata
-        get() = TransactionMetadataImpl()
+        get() {
+            TODO("Not yet implemented")
+        }
 
     internal fun addSignature(
         publicKey: PublicKey,
