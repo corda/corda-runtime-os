@@ -26,6 +26,7 @@ import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
+import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.DatabaseConfig
@@ -48,6 +49,8 @@ class CombinedWorker @Activate constructor(
     private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
+    @Reference(service = VerificationProcessor::class)
+    private val verificationProcessor: VerificationProcessor,
     @Reference(service = RPCProcessor::class)
     private val rpcProcessor: RPCProcessor,
     @Reference(service = MemberProcessor::class)
@@ -134,6 +137,7 @@ class CombinedWorker @Activate constructor(
         dbProcessor.start(config)
         uniquenessProcessor.start()
         flowProcessor.start(config)
+        verificationProcessor.start(config)
         memberProcessor.start(config)
         rpcProcessor.start(config)
         linkManagerProcessor.start(config)
@@ -147,6 +151,7 @@ class CombinedWorker @Activate constructor(
         uniquenessProcessor.stop()
         dbProcessor.stop()
         flowProcessor.stop()
+        verificationProcessor.stop()
         memberProcessor.stop()
         rpcProcessor.stop()
         linkManagerProcessor.stop()

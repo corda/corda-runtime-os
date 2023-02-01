@@ -8,11 +8,14 @@ import net.corda.sandboxgroupcontext.RequireSandboxJSON
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -92,3 +95,10 @@ class VerificationSandboxServiceImpl @Activate constructor(
             null
         )
 }
+
+fun SandboxGroupContext.getSerializationService(): SerializationService =
+    getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
+        ?: throw CordaRuntimeException(
+            "Verification serialization service not found within the sandbox for identity: " +
+                    "${virtualNodeContext.holdingIdentity}"
+        )

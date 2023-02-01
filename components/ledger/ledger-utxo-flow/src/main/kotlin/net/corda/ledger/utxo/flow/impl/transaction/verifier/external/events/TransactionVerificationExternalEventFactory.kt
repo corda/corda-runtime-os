@@ -51,8 +51,8 @@ class TransactionVerificationExternalEventFactory(
     private fun TransactionVerificationResponseAvro.fromAvro() =
         TransactionVerificationResult(
             verificationStatus.fromAvro(),
-            verificationFailure.errorType,
-            verificationFailure.errorMessage
+            verificationFailure?.errorType,
+            verificationFailure?.errorMessage
         )
 
     private fun TransactionVerificationStatusAvro.fromAvro() = when(this) {

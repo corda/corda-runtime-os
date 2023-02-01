@@ -48,8 +48,8 @@ class TransactionMetadataFactoryImpl @Activate constructor(
             CordaPackageSummaryImpl(
                 name = cpk.cpkId.name,
                 version = cpk.cpkId.version,
-                signerSummaryHash = cpk.cpkId.signerSummaryHash.toHexString(),
-                fileChecksum = cpk.fileChecksum.toHexString()
+                signerSummaryHash = cpk.cpkId.signerSummaryHash.toString(),
+                fileChecksum = cpk.fileChecksum.toString()
             )
         }
 }

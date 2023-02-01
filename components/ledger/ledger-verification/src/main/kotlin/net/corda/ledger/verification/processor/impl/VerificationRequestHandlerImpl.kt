@@ -12,16 +12,21 @@ import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.transaction.verifier.UtxoLedgerTransactionVerifier
 import net.corda.ledger.verification.processor.ResponseFactory
 import net.corda.ledger.verification.processor.VerificationRequestHandler
+import net.corda.ledger.verification.sanbox.impl.getSerializationService
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class VerificationRequestHandlerImpl(private val responseFactory: ResponseFactory): VerificationRequestHandler {
+    companion object {
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun handleRequest(sandbox: SandboxGroupContext, request: TransactionVerificationRequestAvro): Record<*, *> {
-        val serializationService = sandbox.getSandboxSingletonService<SerializationService>()
+        val serializationService = sandbox.getSerializationService()
         val ledgerTransaction = request.getLedgerTransaction(serializationService)
         return try {
             UtxoLedgerTransactionVerifier(ledgerTransaction).verify()
@@ -30,6 +35,7 @@ class VerificationRequestHandlerImpl(private val responseFactory: ResponseFactor
                 TransactionVerificationResult(TransactionVerificationStatus.VERIFIED).toAvro()
             )
         } catch (e: Exception) {
+            log.error("Error verifying ledger transaction with ID ${ledgerTransaction.id}", e)
             responseFactory.successResponse(
                 request.flowExternalEventContext,
                 TransactionVerificationResult(
@@ -44,10 +50,12 @@ class VerificationRequestHandlerImpl(private val responseFactory: ResponseFactor
     private fun TransactionVerificationResult.toAvro() =
         TransactionVerificationResponseAvro(
             status.toAvro(),
-            ExceptionEnvelopeAvro(
-                errorType,
-                errorMessage
-            )
+            if (errorType != null) {
+                ExceptionEnvelopeAvro(
+                    errorType,
+                    errorMessage ?: errorType
+                )
+            } else null
         )
 
     private fun TransactionVerificationStatus.toAvro() = when(this) {
