@@ -2,7 +2,6 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.membership.common.ApprovalRuleDetails
-import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
