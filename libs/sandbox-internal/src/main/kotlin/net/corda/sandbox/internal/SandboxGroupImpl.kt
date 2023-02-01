@@ -11,7 +11,6 @@ import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import org.osgi.framework.Bundle
 import java.util.Collections.unmodifiableMap
 
@@ -30,8 +29,13 @@ internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
 
-    companion object {
-        val logger = contextLogger()
+    private companion object {
+        private val logger = contextLogger()
+
+        private fun Throwable.withSuppressed(exceptions: Iterable<Throwable>): Throwable {
+            exceptions.forEach(::addSuppressed)
+            return this
+        }
     }
 
     override val metadata: Map<Bundle, CpkMetadata> = unmodifiableMap(cpkSandboxes.associate { cpk ->
@@ -57,17 +61,17 @@ internal class SandboxGroupImpl(
     }
 
     override fun loadClassFromMainBundles(className: String): Class<*> {
+        val suppressed = mutableListOf<Exception>()
         return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
-                logger.debug {
-                    "Could not load class $className from sandbox ${sandbox.cpkMetadata.mainBundle}: ${e.message}"
-                }
+                suppressed += e
                 null
             }
         }.singleOrNull()
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
+                .withSuppressed(suppressed)
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
