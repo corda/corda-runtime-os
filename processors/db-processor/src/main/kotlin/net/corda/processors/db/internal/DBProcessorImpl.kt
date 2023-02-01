@@ -26,7 +26,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -139,7 +138,6 @@ class DBProcessorImpl @Activate constructor(
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val REGISTRATION = "REGISTRATION"
-        private const val RECONCILERS = "RECONCILERS"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -207,7 +205,7 @@ class DBProcessorImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event)
             is BootConfigEvent -> onBootConfigEvent(event)
-            is StopEvent -> {}
+            is StopEvent -> onStopEvent()
             else -> log.error("Unexpected event $event!")
         }
     }
@@ -251,19 +249,16 @@ class DBProcessorImpl @Activate constructor(
     ) {
         // Creates and starts the rest of the reconcilers
         reconcilers.onConfigChanged(event)
-        lifecycleCoordinator.createManagedResource(RECONCILERS) {
-            object : Resource {
-                override fun close() {
-                    reconcilers.close()
-                }
-            }
-        }
     }
 
     private fun onStartEvent() {
         // First Config reconciliation needs to run at least once. It cannot wait for its configuration as
         // it is the one to offer the DB Config (therefore its own configuration too) to `ConfigurationReadService`.
         reconcilers.updateConfigReconciler(3600000)
+    }
+
+    private fun onStopEvent() {
+        reconcilers.close()
     }
 
     data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
