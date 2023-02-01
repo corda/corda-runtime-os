@@ -11,9 +11,11 @@ import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
 
-fun createMockConsumerAndAddRecords(topic: String,
-                                    numberOfRecords: Long,
-                                    offsetResetStrategy: OffsetResetStrategy):
+fun createMockConsumerAndAddRecords(
+    topic: String,
+    numberOfRecords: Long,
+    offsetResetStrategy: OffsetResetStrategy,
+):
         Pair<MockConsumer<Any, Any>, TopicPartition> {
     val topicPartition = TopicPartition(topic, 1)
     val partitions = mutableListOf(topicPartition)
@@ -30,7 +32,7 @@ fun createMockConsumerAndAddRecords(topic: String,
     consumer.updateEndOffsets(partitionsEndMap)
 
     val records = generateMockConsumerRecordList(numberOfRecords, topic, 1)
-    records.forEach{ consumer.addRecord(it) }
+    records.forEach { consumer.addRecord(it) }
 
     return Pair(consumer, topicPartition)
 }
@@ -41,10 +43,15 @@ fun createMockConsumerAndAddRecords(topic: String,
  * @return List of ConsumerRecord
  */
 @Suppress("UNCHECKED_CAST")
-fun generateMockConsumerRecordList(numberOfRecords: Long, topic: String, partition: Int, startOffset: Long = 0) : List<ConsumerRecord<Any, Any>> {
+fun generateMockConsumerRecordList(
+    numberOfRecords: Long,
+    topic: String,
+    partition: Int,
+    startOffset: Long = 0,
+): List<ConsumerRecord<Any, Any>> {
     val records = mutableListOf<ConsumerRecord<Any, Any>>()
     for (i in 0 until numberOfRecords) {
-        val record = ConsumerRecord(topic, partition, i+startOffset, "key$i", "value$i")
+        val record = ConsumerRecord(topic, partition, i + startOffset, "key$i", "value$i")
         records.add(record as ConsumerRecord<Any, Any>)
     }
     return records
@@ -79,12 +86,15 @@ fun generateConsumerRecords(records: List<ConsumerRecord<Any, Any>>, topic: Stri
  * @return list of chunked records
  */
 @Suppress("UNCHECKED_CAST")
-fun generateMockChunkedConsumerRecordsList(numberOfRecords: Long, topic: String, partition: Int, startOffset: Long = 0, buildFinalChunk:
-Boolean = true):
+fun generateMockChunkedConsumerRecordsList(
+    numberOfRecords: Long, topic: String, partition: Int, startOffset: Long = 0,
+    buildFinalChunk:
+    Boolean = true,
+):
         List<ConsumerRecord<Any, Any>> {
     val records = mutableListOf<ConsumerRecord<Any, Any>>()
     val id = UUID.randomUUID().toString()
-    for (i in 1 until numberOfRecords-1) {
+    for (i in 1 until numberOfRecords - 1) {
         val record = ConsumerRecord(topic, partition, startOffset + i, buildChunkKey(id, i), buildChunk(id, "value$i", i))
         records.add(record as ConsumerRecord<Any, Any>)
     }
@@ -119,7 +129,7 @@ fun buildFinalChunk(id: String, partNumber: Long): Chunk {
         .build()
 }
 
-fun buildChunkKey(id: String, partNumber: Long) : ChunkKey {
+fun buildChunkKey(id: String, partNumber: Long): ChunkKey {
     return ChunkKey.newBuilder()
         .setRequestId(id)
         .setRealKey(ByteBuffer.wrap(id.toByteArray()))
