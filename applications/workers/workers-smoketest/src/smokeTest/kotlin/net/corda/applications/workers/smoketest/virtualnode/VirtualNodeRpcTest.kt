@@ -693,7 +693,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(113)
-    fun `can upgrading a virtual node's CPI when it is in maintenance`() {
+    fun `can upgrade a virtual node's CPI when it is in maintenance`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -702,6 +702,8 @@ class VirtualNodeRpcTest {
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
             triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
+
+            eventuallyUpdateVirtualNodeState(bobHoldingId, "active", "ACTIVE")
 
             runReturnAStringFlow("upgrade-test-v2", bobHoldingId)
             runSimplePersistenceCheckFlow("Could persist dog", bobHoldingId)
