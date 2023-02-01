@@ -55,25 +55,20 @@ class UtxoDemoFlow : ClientStartableFlow {
         log.info("Utxo flow demo starting...")
         try {
             val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
-            log.info(">>Utxo flow demo starting...01")
 
             val myInfo = memberLookup.myInfo()
-            log.info(">>Utxo flow demo starting...02")
             val members = request.members.map { x500 ->
                 requireNotNull(memberLookup.lookup(MemberX500Name.parse(x500))) {
                     "Member $x500 does not exist in the membership group"
                 }
             }
-            log.info(">>Utxo flow demo starting...03")
             val testUtxoState = TestUtxoState(
                 request.input,
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
             )
-            log.info(">>Utxo flow demo starting...04")
 
             val notary = notaryLookup.notaryServices.single()
             val txBuilder = utxoLedgerService.getTransactionBuilder()
-            log.info(">>Utxo flow demo starting...05")
 
             val signedTransaction = txBuilder
                 .setNotary(Party(notary.name, notary.publicKey))
@@ -82,31 +77,24 @@ class UtxoDemoFlow : ClientStartableFlow {
                 .addCommand(TestCommand())
                 .addSignatories(testUtxoState.participants)
                 .toSignedTransaction()
-            log.info(">>Utxo flow demo starting...06")
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
-
-            log.info(">>Utxo flow demo starting...07")
 
             return try {
                 val finalizedSignedTransaction = utxoLedgerService.finalize(
                     signedTransaction,
                     sessions
                 )
-                log.info(">>Utxo flow demo starting...08")
                 finalizedSignedTransaction.id.toString().also {
-                    log.info("Utxo flow demo starting...09")
                     log.info("Success! Response: $it")
                 }
 
             } catch (e: Exception) {
-                log.info(">>Utxo flow demo starting...10")
                 log.warn("Finality failed", e)
                 "Finality failed, ${e.message}"
             }
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because:'${e.message}'")
-            log.info(">>Utxo flow demo starting...11")
             throw e
         }
     }
@@ -124,23 +112,17 @@ class UtxoResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        log.info(">>Utxo flow demo starting...21")
         try {
             val finalizedSignedTransaction = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->
-                log.info(">>Utxo flow demo starting...22")
                 val state = ledgerTransaction.outputContractStates.first() as TestUtxoState
                 if (state.testField == "fail") {
-                    log.info(">>Utxo flow demo starting...23")
                     log.info("Failed to verify the transaction - ${ledgerTransaction.id}")
                     throw IllegalStateException("Failed verification")
                 }
-                log.info(">>Utxo flow demo starting...24")
                 log.info("Verified the transaction- ${ledgerTransaction.id}")
             }
-            log.info(">>Utxo flow demo starting...25")
             log.info("Finished responder flow - ${finalizedSignedTransaction.id}")
         } catch (e: Exception) {
-            log.info(">>Utxo flow demo starting...26")
             log.warn("Exceptionally finished responder flow", e)
         }
     }
