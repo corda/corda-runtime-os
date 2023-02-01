@@ -181,7 +181,7 @@ class GroupParametersReconcilerTest {
 
             assertThat(groupParametersReconciler.dbReconcilerReader).isNotNull
 
-            val output = groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()
+            val output = groupParametersReconciler.dbReconcilerReader.getAllVersionedRecords()
             assertThat(output).isNotNull
 
             val records = output?.collect(Collectors.toList())
@@ -207,7 +207,7 @@ class GroupParametersReconcilerTest {
             groupParametersReconciler.updateInterval(1000)
 
             // call terminal operation to process stream
-            groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()?.count()
+            groupParametersReconciler.dbReconcilerReader.getAllVersionedRecords()?.count()
 
             verify(dbConnectionManager, times(2)).createEntityManagerFactory(any(), any())
             verify(em1).criteriaBuilder
@@ -223,7 +223,7 @@ class GroupParametersReconcilerTest {
         fun `Consuming the versioned records stream closes resources`() {
             groupParametersReconciler.updateInterval(1000)
 
-            val stream = groupParametersReconciler.dbReconcilerReader?.getAllVersionedRecords()
+            val stream = groupParametersReconciler.dbReconcilerReader.getAllVersionedRecords()
             verify(emf1, never()).close()
             verify(emf2, never()).close()
             verify(em1, never()).close()

@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
 class VirtualNodeReconciler(
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     dbConnectionManager: DbConnectionManager,
     private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerReader: ReconcilerReader<HoldingIdentity, VirtualNodeInfo>,
@@ -26,16 +26,21 @@ class VirtualNodeReconciler(
         )
     }
 
-    private var dbReconciler: DbReconcilerReader<HoldingIdentity, VirtualNodeInfo>? = null
-    private var reconciler: Reconciler? = null
-
     private val reconciliationContextFactory = {
         Stream.of(ClusterReconciliationContext(dbConnectionManager))
     }
 
+    private val dbReconciler = DbReconcilerReader(
+        coordinatorFactory,
+        HoldingIdentity::class.java,
+        VirtualNodeInfo::class.java,
+        dependencies,
+        reconciliationContextFactory,
+        getAllVirtualNodesDBVersionedRecords
+    )
+    private var reconciler: Reconciler? = null
+
     override fun close() {
-        dbReconciler?.stop()
-        dbReconciler = null
         reconciler?.stop()
         reconciler = null
     }
@@ -43,23 +48,11 @@ class VirtualNodeReconciler(
     override fun updateInterval(intervalMillis: Long) {
         log.debug("Reconciliation interval set to $intervalMillis ms")
 
-        if (dbReconciler == null) {
-            dbReconciler =
-                DbReconcilerReader(
-                    coordinatorFactory,
-                    HoldingIdentity::class.java,
-                    VirtualNodeInfo::class.java,
-                    dependencies,
-                    reconciliationContextFactory,
-                    getAllVirtualNodesDBVersionedRecords
-                ).also {
-                    it.start()
-                }
-        }
+        dbReconciler.start()
 
         if (reconciler == null) {
             reconciler = reconcilerFactory.create(
-                dbReader = dbReconciler!!,
+                dbReader = dbReconciler,
                 kafkaReader = reconcilerReader,
                 writer = reconcilerWriter,
                 keyClass = HoldingIdentity::class.java,

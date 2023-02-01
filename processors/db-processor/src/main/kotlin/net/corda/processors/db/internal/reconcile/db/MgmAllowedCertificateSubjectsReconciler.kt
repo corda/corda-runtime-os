@@ -19,7 +19,7 @@ import javax.persistence.EntityManager
 
 @Suppress("LongParameterList")
 internal class MgmAllowedCertificateSubjectsReconciler(
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     jpaEntitiesRegistry: JpaEntitiesRegistry,
@@ -54,25 +54,23 @@ internal class MgmAllowedCertificateSubjectsReconciler(
         virtualNodeInfoReadService.getAll().stream().map {
             VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
         }
-    private var dbReconcilerReader: DbReconcilerReader<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>? = null
+    private var dbReconcilerReader = DbReconcilerReader(
+        coordinatorFactory,
+        MgmAllowedCertificateSubject::class.java,
+        MgmAllowedCertificateSubject::class.java,
+        dependencies,
+        ::reconciliationContextFactory,
+        ::getAllAllowedSubjects
+    )
+
     private var reconciler: Reconciler? = null
     override fun updateInterval(intervalMillis: Long) {
-        if (dbReconcilerReader == null) {
-            dbReconcilerReader = DbReconcilerReader(
-                coordinatorFactory,
-                MgmAllowedCertificateSubject::class.java,
-                MgmAllowedCertificateSubject::class.java,
-                dependencies,
-                ::reconciliationContextFactory,
-                ::getAllAllowedSubjects
-            ).also {
-                it.start()
-            }
-        }
+        dbReconcilerReader.start()
+
         reconciler = reconciler.let { reconciler ->
             if (reconciler == null) {
                 reconcilerFactory.create(
-                    dbReader = dbReconcilerReader!!,
+                    dbReader = dbReconcilerReader,
                     kafkaReader = kafkaReconcilerReader,
                     writer = kafkaReconcilerWriter,
                     keyClass = MgmAllowedCertificateSubject::class.java,
@@ -102,8 +100,6 @@ internal class MgmAllowedCertificateSubjectsReconciler(
     }
 
     override fun close() {
-        dbReconcilerReader?.stop()
-        dbReconcilerReader = null
         reconciler?.stop()
         reconciler = null
     }

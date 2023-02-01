@@ -32,7 +32,7 @@ import kotlin.concurrent.withLock
 @Suppress("LongParameterList")
 class GroupParametersReconciler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
@@ -63,15 +63,26 @@ class GroupParametersReconciler(
                 "persistenceUnitName '${CordaDb.Vault.persistenceUnitName}' is not registered."
             )
 
+    private val reconciliationContextFactory = {
+        virtualNodeInfoReadService.getAll().stream().map {
+            VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
+        }
+    }
+
     @VisibleForTesting
-    internal var dbReconcilerReader: DbReconcilerReader<HoldingIdentity, GroupParameters>? = null
+    internal val dbReconcilerReader = DbReconcilerReader(
+        coordinatorFactory,
+        HoldingIdentity::class.java,
+        GroupParameters::class.java,
+        dependencies,
+        reconciliationContextFactory,
+        ::getAllGroupParametersDBVersionedRecords
+    )
     @VisibleForTesting
     internal var reconciler: Reconciler? = null
 
     override fun close() {
         lock.withLock {
-            dbReconcilerReader?.stop()
-            dbReconcilerReader = null
             reconciler?.stop()
             reconciler = null
         }
@@ -81,22 +92,11 @@ class GroupParametersReconciler(
         logger.debug { "Group parameters reconciliation interval set to $intervalMillis ms" }
 
         lock.withLock {
-            if (dbReconcilerReader == null) {
-                dbReconcilerReader = DbReconcilerReader(
-                    coordinatorFactory,
-                    HoldingIdentity::class.java,
-                    GroupParameters::class.java,
-                    dependencies,
-                    reconciliationContextFactory,
-                    ::getAllGroupParametersDBVersionedRecords
-                ).also {
-                    it.start()
-                }
-            }
+            dbReconcilerReader.start()
 
             if (reconciler == null) {
                 reconciler = reconcilerFactory.create(
-                    dbReader = dbReconcilerReader!!,
+                    dbReader = dbReconcilerReader,
                     kafkaReader = kafkaReconcilerReader,
                     writer = kafkaReconcilerWriter,
                     keyClass = HoldingIdentity::class.java,
@@ -107,12 +107,6 @@ class GroupParametersReconciler(
                 logger.info("Updating Group Parameters ${Reconciler::class.java.name}")
                 reconciler!!.updateInterval(intervalMillis)
             }
-        }
-    }
-
-    private val reconciliationContextFactory = {
-        virtualNodeInfoReadService.getAll().stream().map {
-            VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
         }
     }
 
