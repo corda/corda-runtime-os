@@ -98,6 +98,26 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     }
 }
 
+fun getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): FlowStatus {
+    return  cluster {
+        endpoint(
+            CLUSTER_URI,
+            USERNAME,
+            PASSWORD
+        )
+
+        ObjectMapper().readValue(
+            assertWithRetry {
+                command { flowStatus(holdingId, requestId) }
+                timeout(Duration.ofMinutes(6))
+                condition {
+                    it.code == expectedCode
+                }
+            }.body, FlowStatus::class.java
+        )
+    }
+}
+
 fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     return cluster {
         endpoint(

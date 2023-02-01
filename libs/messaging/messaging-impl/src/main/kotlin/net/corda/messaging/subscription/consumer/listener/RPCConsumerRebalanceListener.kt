@@ -20,21 +20,24 @@ class RPCConsumerRebalanceListener<RESPONSE>(
     private val partitions = mutableListOf<CordaTopicPartition>()
 
     override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
+        super.onPartitionsRevoked(partitions)
+
         tracker.removePartitions(partitions.toList())
         this.partitions.removeAll(partitions)
-        if (this.partitions.isEmpty()){
+        if (this.partitions.isEmpty()) {
             lifecycleStatusUpdater.updateLifecycleStatus(LifecycleStatus.DOWN)
         }
-        super.onPartitionsRevoked(partitions)
     }
 
     override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
-        if (this.partitions.isEmpty()){
+        super.onPartitionsAssigned(partitions)
+
+        if (this.partitions.isEmpty() && partitions.isNotEmpty()) {
             lifecycleStatusUpdater.updateLifecycleStatus(LifecycleStatus.UP)
         }
         tracker.addPartitions(partitions.toList())
         this.partitions.addAll(partitions)
-        super.onPartitionsAssigned(partitions)
+
     }
 
     fun getPartitions(): List<CordaTopicPartition> {

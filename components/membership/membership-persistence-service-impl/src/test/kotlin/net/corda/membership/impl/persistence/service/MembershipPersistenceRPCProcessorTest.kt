@@ -11,22 +11,29 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
+import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
+import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
+import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
+import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -34,7 +41,9 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
+import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler.Companion.toAvro
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -84,6 +93,7 @@ class MembershipPersistenceRPCProcessorTest {
     private val ourX500Name = MemberX500Name.parse("O=Alice, L=London, C=GB").toString()
     private val ourGroupId = UUID.randomUUID().toString()
     private val ourRegistrationId = UUID.randomUUID().toString()
+    private val preAuthTokenId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, ourGroupId)
     private val context = "context".toByteArray()
     private val vaultDmlConnectionId = UUID(30, 0)
@@ -109,6 +119,15 @@ class MembershipPersistenceRPCProcessorTest {
     private val groupPolicyQuery: TypedQuery<GroupPolicyEntity> = mock {
         on { resultList } doReturn emptyList()
     }
+    private val typedPreAuthTokenQuery: TypedQuery<PreAuthTokenEntity> = mock {
+        on { resultList } doReturn emptyList()
+    }
+    private val preAuthTokenRoot = mock<Root<PreAuthTokenEntity>>()
+    private val preAuthTokenQuery = mock<CriteriaQuery<PreAuthTokenEntity>> {
+        on { from(PreAuthTokenEntity::class.java) } doReturn preAuthTokenRoot
+        on { select(any()) } doReturn mock
+        on { where() } doReturn mock
+    }
 
     private val entityTransaction: EntityTransaction = mock()
     private val ruleTypePath = mock<Path<String>>()
@@ -125,6 +144,7 @@ class MembershipPersistenceRPCProcessorTest {
     }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(ApprovalRulesEntity::class.java) } doReturn query
+        on { createQuery(PreAuthTokenEntity::class.java) } doReturn preAuthTokenQuery
         on { equal(ruleTypePath, ApprovalRuleType.STANDARD.name) } doReturn predicate
         on { equal(ruleRegexPath, DUMMY_RULE) } doReturn predicate
         on { and(predicate, predicate) } doReturn predicate
@@ -132,12 +152,21 @@ class MembershipPersistenceRPCProcessorTest {
     private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
         on { resultList } doReturn emptyList()
     }
+    private val revokedAuthToken = PreAuthToken(
+        "", "", Instant.ofEpochMilli(100), PreAuthTokenStatus.REVOKED, null, null
+    )
+    private val preAuthTokenEntity = PreAuthTokenEntity(
+        "", "", Instant.ofEpochMilli(100), PreAuthTokenStatus.AVAILABLE.toString(), null, null
+    )
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
         on { find(RegistrationRequestEntity::class.java, ourRegistrationId) } doReturn registrationRequest
+        on { find(PreAuthTokenEntity::class.java, preAuthTokenId) } doReturn preAuthTokenEntity
         on { createQuery(any(), eq(GroupPolicyEntity::class.java)) } doReturn groupPolicyQuery
         on { criteriaBuilder } doReturn criteriaBuilder
         on { createQuery(query) } doReturn approvalRulesQuery
+        on { createQuery(preAuthTokenQuery) } doReturn typedPreAuthTokenQuery
+        on { merge(preAuthTokenEntity) } doReturn preAuthTokenEntity
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager
@@ -460,4 +489,77 @@ class MembershipPersistenceRPCProcessorTest {
             }
         }
     }
+
+    @Test
+    fun `query pre auth token rules returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            QueryPreAuthToken(null, null, null)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(PreAuthTokenQueryResponse::class.java)
+            assertThat((payload as PreAuthTokenQueryResponse).tokens)
+                .isEqualTo(emptyList<PreAuthToken>())
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `add pre auth token rules returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            AddPreAuthToken("", "", Instant.ofEpochMilli(100), null)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNull()
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `revoke pre auth token rules returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            RevokePreAuthToken(preAuthTokenId, null)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(RevokePreAuthTokenResponse::class.java)
+            assertThat((payload as RevokePreAuthTokenResponse).preAuthToken)
+                .isEqualTo(revokedAuthToken)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
 }
