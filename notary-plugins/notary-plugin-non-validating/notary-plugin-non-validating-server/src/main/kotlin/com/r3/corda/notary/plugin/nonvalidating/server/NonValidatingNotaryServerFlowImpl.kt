@@ -157,7 +157,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             session.send(uniquenessResult.toNotarisationResponse(signature))
         } catch (e: Exception) {
-            // @todo without the stacktrace none of the useful part was logged.
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
             session.send(
                 NotarisationResponse(

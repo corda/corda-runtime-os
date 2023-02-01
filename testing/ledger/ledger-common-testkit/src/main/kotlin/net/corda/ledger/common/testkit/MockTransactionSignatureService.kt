@@ -2,14 +2,13 @@ package net.corda.ledger.common.testkit
 
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import java.security.PublicKey
 
 private class MockTransactionSignatureService: TransactionSignatureService {
-    override fun sign(transactionId: SecureHash, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata> =
+    override fun sign(transaction: TransactionWithMetadata, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata> =
         listOf(getSignatureWithMetadataExample())
-    override fun sign(
+    override fun signBatch(
         transactions: List<TransactionWithMetadata>,
         publicKeys: Iterable<PublicKey>
     ): List<List<DigitalSignatureAndMetadata>> =

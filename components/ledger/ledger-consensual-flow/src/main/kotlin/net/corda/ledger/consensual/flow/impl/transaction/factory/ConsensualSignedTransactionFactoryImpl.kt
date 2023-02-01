@@ -67,7 +67,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
 
         val signaturesWithMetadata =
             transactionSignatureService.sign(
-                wireTransaction.id,
+                wireTransaction,
                 consensualTransactionBuilder.states.flatMap { it.participants }
             )
         return ConsensualSignedTransactionImpl(

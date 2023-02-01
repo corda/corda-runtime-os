@@ -46,7 +46,7 @@ class ConsensualSignedTransactionImpl(
     @Suspendable
     override fun addMissingSignatures(): Pair<ConsensualSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
         val newSignatures = try {
-            transactionSignatureService.sign(id, getMissingSignatories())
+            transactionSignatureService.sign(this, getMissingSignatories())
         } catch (_: TransactionNoAvailableKeysException) { // No signatures are needed if no keys are available.
             return Pair(this, emptyList())
         }

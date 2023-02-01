@@ -62,14 +62,16 @@ class TransactionSignatureServiceImpl @Activate constructor(
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
 
     @Suspendable
-    override fun sign(transactionId: SecureHash, publicKeys: Iterable<PublicKey>): List<DigitalSignatureAndMetadata> {
-        val availableKeys = getAvailableKeysFor(publicKeys)
-        return availableKeys.map { publicKey ->
+    override fun sign(
+        transaction: TransactionWithMetadata,
+        publicKeys: Iterable<PublicKey>
+    ): List<DigitalSignatureAndMetadata> {
+        return getAvailableKeysFor(publicKeys).map { publicKey ->
             val signatureSpec = requireNotNull(signatureSpecService.defaultSignatureSpec(publicKey)) {
                 "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"
             }
             val signatureMetadata = getSignatureMetadata(signatureSpec)
-            val signableData = SignableData(transactionId, signatureMetadata)
+            val signableData = SignableData(transaction.id, signatureMetadata)
             val signature = signingService.sign(
                 serializationService.serialize(signableData).bytes,
                 publicKey,
@@ -80,23 +82,22 @@ class TransactionSignatureServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun sign(
+    override fun signBatch(
         transactions: List<TransactionWithMetadata>,
         publicKeys: Iterable<PublicKey>
     ): List<List<DigitalSignatureAndMetadata>> {
         confirmBatchSigningRequirements(transactions)
 
-        val availableKeys = getAvailableKeysFor(publicKeys)
-
-        val hashDigestProvider = transactions.first().getNotaryMerkleTreeDigestProvider(merkleTreeProvider)
-        val batchTree = merkleTreeProvider.createTree(transactions.map { it.id.bytes }, hashDigestProvider)
-
-        val publicKeysToSigSpecs = availableKeys.associateWith { publicKey ->
+        val publicKeysToSigSpecs = getAvailableKeysFor(publicKeys).associateWith { publicKey ->
             requireNotNull(signatureSpecService.defaultSignatureSpec(publicKey)) {
                 "There are no available signature specs for this public key. ($publicKey ${publicKey.algorithm})"
             }
         }
-        val batchSignaturesWithMeta = publicKeysToSigSpecs.map{ (publicKey, signatureSpec) ->
+
+        val hashDigestProvider = transactions.first().getNotaryMerkleTreeDigestProvider(merkleTreeProvider)
+        val batchTree = merkleTreeProvider.createTree(transactions.map { it.id.bytes }, hashDigestProvider)
+
+        val batchSignaturesWithMeta = publicKeysToSigSpecs.map { (publicKey, signatureSpec) ->
             val signatureMetadata =
                 getSignatureMetadata(signatureSpec, getBatchSignatureMetadataSettings(transactions.first()))
             val signableData = SignableData(batchTree.root, signatureMetadata)
@@ -133,10 +134,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
                 "The transaction's id should be proven by the proof."
             }
             val hashDigestProvider = signatureWithMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider)
-            val batchTreeRoot = requireNotNull(proof.calculateRoot(hashDigestProvider)) {
-                "The proof's root hash cannot be calculated."
-            }
-            batchTreeRoot
+            proof.calculateRoot(hashDigestProvider)
         }
 
         val signedData = SignableData(signedHash, signatureWithMetadata.metadata)

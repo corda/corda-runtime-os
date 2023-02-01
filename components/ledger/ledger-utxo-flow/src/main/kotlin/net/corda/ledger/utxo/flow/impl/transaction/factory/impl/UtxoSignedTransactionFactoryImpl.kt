@@ -75,7 +75,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         val signaturesWithMetadata =
             transactionSignatureService.sign(
-                wireTransaction.id,
+                wireTransaction,
                 utxoTransactionBuilder.signatories
             )
         return UtxoSignedTransactionImpl(
