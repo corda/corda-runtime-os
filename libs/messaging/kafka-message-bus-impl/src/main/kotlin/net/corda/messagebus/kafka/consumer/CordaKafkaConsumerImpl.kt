@@ -1,5 +1,9 @@
 package net.corda.messagebus.kafka.consumer
 
+import java.io.ByteArrayOutputStream
+import java.time.Duration
+import net.corda.data.chunking.Chunk
+import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
@@ -10,12 +14,16 @@ import net.corda.messagebus.kafka.utils.toCordaTopicPartition
 import net.corda.messagebus.kafka.utils.toCordaTopicPartitions
 import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messagebus.kafka.utils.toTopicPartitions
+import net.corda.messaging.api.chunking.ConsumerChunkService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.v5.base.util.trace
+import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.InvalidOffsetException
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.KafkaException
@@ -30,17 +38,21 @@ import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Duration
 
 /**
  * Wrapper for a Kafka Consumer.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val config: ResolvedConsumerConfig,
-    private val consumer: Consumer<K, V>,
+    private val consumer: Consumer<Any, Any>,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
+    private val consumerChunkService: ConsumerChunkService<K, V>,
+    private val vClazz: Class<V>,
+    private val onSerializationError: (ByteArray) -> Unit,
 ) : CordaConsumer<K, V> {
+
+    private val bufferedChunksByPartition = mutableMapOf<Int, MutableMap<ChunkKey, Chunk>>()
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -79,16 +91,108 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             }
         }
 
-        return consumerRecords.map {
+        return consumerRecords.mapNotNull {
+            parseRecord(it)
+        }
+    }
+
+    /**
+     * Take a record polled and process it.
+     * If it is a chunk, then check to see if the chunks can be reassemnbled and returned.
+     * If the expected type of the Consumer is of type [Chunk] then do not try to reassemble chunks.
+     * If the record is a normal records, verify the consumer is not waiting on more chunks and return the record.
+     * @param consumerRecord record to parse
+     * @return Complete record safe to return from the consumer, or null if it is a partial chunk
+     */
+    private fun parseRecord(consumerRecord: ConsumerRecord<Any, Any>): CordaConsumerRecord<K, V>? {
+        val partition = consumerRecord.partition()
+        val value = consumerRecord.value()
+        val key = consumerRecord.key()
+        return if (key is ChunkKey && vClazz != Chunk::class && value is Chunk) {
+            getRecordIfComplete(key, value, consumerRecord)
+        } else {
+            verifyNoPartialChunks(partition)
             CordaConsumerRecord(
-                it.topic().removePrefix(config.topicPrefix),
-                it.partition(),
-                it.offset(),
-                it.key(),
-                it.value(),
-                it.timestamp(),
+                consumerRecord.topic().removePrefix(config.topicPrefix),
+                consumerRecord.partition(),
+                consumerRecord.offset(),
+                uncheckedCast(consumerRecord.key()),
+                uncheckedCast(consumerRecord.value()),
+                consumerRecord.timestamp(),
             )
-        }.sortedBy { it.timestamp }
+        }
+    }
+
+    /**
+     * This shouldn't be possible but if we somehow end up with partial incomplete chunks, then DLQ the chunks.
+     * Chunks are always expected to be committed via transactions so normal records should not be interleaved with buffered chunks.
+     * @param partition partition to verify no partial chunks interleaved with complete records.
+     */
+    private fun verifyNoPartialChunks(partition: Int) {
+        val chunks = bufferedChunksByPartition[partition]
+        if (chunks != null && chunks.isNotEmpty()) {
+            val out = ByteArrayOutputStream()
+            chunks.values.forEach { out.write(it.data.array()) }
+            onSerializationError(out.toByteArray())
+            bufferedChunksByPartition.remove(partition)
+        }
+    }
+
+    /**
+     * Take a [chunk] from a [consumerRecord] and add it to the [bufferedChunksByPartition].
+     * If the chunk contains a checksum, then the consumerChunkService can be used to reassemble the chunks.
+     * Clear the [bufferedChunksByPartition] as no more chunks are expected for this case.
+     * If the [consumerChunkService] returns null then the deserialization error will be handled by the [consumerChunkService]
+     * @param chunkKey The record key deserialized as a [ChunkKey]
+     * @param chunk The record value deserialized as a [Chunk]
+     * @param consumerRecord the consumer record for the chunk. Can be used to set properties on the reassembled object.
+     * @return The reassembled chunks as a ConsumerRecord. Null if this record is not complete.
+     */
+    private fun getRecordIfComplete(
+        chunkKey: ChunkKey,
+        chunk: Chunk,
+        consumerRecord: ConsumerRecord<Any, Any>,
+    ): CordaConsumerRecord<K, V>? {
+        val partition = consumerRecord.partition()
+        val chunksRead = addChunk(chunkKey, chunk, partition)
+        //We know that the final chunk will have a checksum for message bus level chunking.
+        // If it doesn't then this will be caught by [verifyNoPartialChunks]
+        return if (chunk.checksum != null) {
+            bufferedChunksByPartition.remove(partition)
+            //if deserialization fails onError handling executed within consumerChunkService
+            consumerChunkService.assembleChunks(chunksRead)?.let {
+                CordaConsumerRecord(
+                    consumerRecord.topic().removePrefix(config.topicPrefix),
+                    partition,
+                    consumerRecord.offset(),
+                    it.first,
+                    it.second,
+                    consumerRecord.timestamp(),
+                )
+            }
+        } else {
+            log.trace { "Read chunk with part number ${chunk.partNumber} and requestId ${chunk.requestId}" }
+            null
+        }
+    }
+
+    /**
+     * Buffer a chunk into the object [bufferedChunksByPartition]
+     * @param chunkKey chunk key for the chunk to buffer
+     * @param chunk chunk value to buffer
+     * @param partition the partition for this chunk
+     * @return The partial chunks read so far for this partition
+     */
+    private fun addChunk(
+        chunkKey: ChunkKey,
+        chunk: Chunk,
+        partition: Int,
+    ): MutableMap<ChunkKey, Chunk> {
+        return bufferedChunksByPartition.computeIfAbsent(partition) {
+            mutableMapOf()
+        }.apply {
+            this[chunkKey] = chunk
+        }
     }
 
     override fun resetToLastCommittedPositions(offsetStrategy: CordaOffsetResetStrategy) {
@@ -227,7 +331,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
             }
         }
-            // Safeguard, should never happen in newer versions of Kafka
+        // Safeguard, should never happen in newer versions of Kafka
             ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. " +
                     "Kafka may not have completed startup.")
 

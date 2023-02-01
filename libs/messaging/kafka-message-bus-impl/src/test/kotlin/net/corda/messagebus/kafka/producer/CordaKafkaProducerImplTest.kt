@@ -6,6 +6,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
+import net.corda.messaging.api.chunking.ConsumerChunkService
 import net.corda.messaging.api.chunking.ProducerChunkService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -21,8 +22,8 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.InvalidProducerEpochException
 import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.errors.TimeoutException
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -47,8 +48,9 @@ class CordaKafkaProducerImplTest {
     private val producer: Producer<Any, Any> = mock()
     private val consumer: Consumer<Any, Any> = mock()
     private val producerChunkService: ProducerChunkService = mock()
+    private val consumerChunkService: ConsumerChunkService<Any, Any> = mock()
     private val mockedCallback: CordaProducer.Callback = mock()
-    private val cordaConsumer = CordaKafkaConsumerImpl(consumerConfig, consumer, null)
+    private val cordaConsumer = CordaKafkaConsumerImpl(consumerConfig, consumer, null, consumerChunkService, Any::class.java, { })
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
     private val record: CordaProducerRecord<Any, Any> = CordaProducerRecord("topic", "key", "value")

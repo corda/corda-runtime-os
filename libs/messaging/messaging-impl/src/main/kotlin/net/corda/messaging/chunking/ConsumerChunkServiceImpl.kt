@@ -8,7 +8,6 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messaging.api.chunking.ConsumerChunkService
-import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 
@@ -41,7 +40,7 @@ class ConsumerChunkServiceImpl<K : Any, V : Any>(
             validateBytes(dataSingleArray, checksum.array())
             valueDeserializer.deserialize(dataSingleArray)
         } catch (ex: IllegalArgumentException) {
-            logger.debug { "Failed to deserialize chunks due to: ${ex.message} " }
+            logger.warn("Failed to deserialize chunks due to: ${ex.message} ")
             onError.accept(dataSingleArray)
             null
         }
