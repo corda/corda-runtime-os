@@ -177,10 +177,11 @@ class CryptoProcessorImpl @Activate constructor(
                             coordinator.postEvent(AssociateHSM())
                         }
                     } else {
-                        throw IllegalArgumentException(
+                        logger.error(
                             "Unexpected registration for received ${RegistrationStatusChangeEvent::class.java.simpleName}: "
                                     + "${event.registration}"
                         )
+                        setStatus(LifecycleStatus.ERROR, coordinator)
                     }
                 } else {
                     dependenciesUp = false
