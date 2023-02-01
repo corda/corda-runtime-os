@@ -41,7 +41,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.charlieName
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.charlieX500Name
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicy
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicyFails
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySessionKey
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
@@ -55,6 +54,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishDefa
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishGatewayConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.register
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
@@ -369,8 +369,7 @@ class MemberProcessorIntegrationTest {
      */
     @Test
     fun `Register and view static member list`() {
-        val aliceResult = getRegistrationResult(registrationProxy, aliceHoldingIdentity)
-        assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, aliceResult.outcome)
+        register(registrationProxy, aliceHoldingIdentity)
 
         val aliceGroupReader = eventually {
             membershipGroupReaderProvider.getGroupReader(aliceHoldingIdentity).also {
@@ -381,8 +380,7 @@ class MemberProcessorIntegrationTest {
 
         assertLookupSize(aliceGroupReader, 1)
 
-        val bobResult = getRegistrationResult(registrationProxy, bobHoldingIdentity)
-        assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, bobResult.outcome)
+        register(registrationProxy, bobHoldingIdentity)
 
         val aliceMemberInfo = lookup(aliceGroupReader, aliceX500Name)
         val bobMemberInfo = lookup(aliceGroupReader, bobX500Name)

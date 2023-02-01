@@ -22,10 +22,11 @@ interface RegistrationProxy : Lifecycle {
      * NOT_SUBMITTED is returned if something goes wrong while creating the request.
      *
      * @throws [RegistrationProtocolSelectionException] when the registration protocol could not be selected.
+     * @throws [MembershipRegistrationException] when the registration fail.
      */
     fun register(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>,
-    ): MembershipRequestRegistrationResult
+    )
 }

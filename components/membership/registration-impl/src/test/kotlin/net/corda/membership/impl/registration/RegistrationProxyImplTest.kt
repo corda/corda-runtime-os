@@ -37,13 +37,12 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Pr
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -56,13 +55,6 @@ import org.mockito.kotlin.whenever
 import java.util.UUID
 
 class RegistrationProxyImplTest {
-    companion object {
-        val registrationResult1 =
-            MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED, "mock1")
-        val registrationResult2 =
-            MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED, "mock2")
-    }
-
     private val registrationProtocol1 = RegistrationProtocol1()
     private val registrationId = UUID(6, 6)
     private val registrationProtocol2 = RegistrationProtocol2()
@@ -156,11 +148,15 @@ class RegistrationProxyImplTest {
         startComponentAndDependencies()
         val identity1 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity1)
-        assertEquals(registrationResult1, registrationProxy.register(registrationId, identity1, mock()))
+        assertDoesNotThrow {
+            registrationProxy.register(registrationId, identity1, mock())
+        }
 
         val identity2 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol2::class.java.name), identity2)
-        assertEquals(registrationResult2, registrationProxy.register(registrationId, identity2, mock()))
+        assertDoesNotThrow {
+            registrationProxy.register(registrationId, identity2, mock())
+        }
     }
 
     @Test
@@ -283,7 +279,9 @@ class RegistrationProxyImplTest {
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult = registrationResult1
+        ) {
+
+        }
     }
 
     class RegistrationProtocol2 : AbstractRegistrationProtocol() {
@@ -291,13 +289,16 @@ class RegistrationProxyImplTest {
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult = registrationResult2
+        ) {
+
+        }
     }
 
     abstract class AbstractRegistrationProtocol : MemberRegistrationService {
         var started = 0
-        override fun register(registrationId: UUID, member: HoldingIdentity, context: Map<String, String>) =
-            MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED, "mock")
+        override fun register(registrationId: UUID, member: HoldingIdentity, context: Map<String, String>) {
+
+        }
 
         override val isRunning = true
         override fun start() { started += 1 }

@@ -70,11 +70,6 @@ class MemberOpsServiceProcessor(
             RegistrationStatusRpcRequest::class.java to { it.RegistrationStatusRequestHandler() },
             RegistrationStatusSpecificRpcRequest::class.java to { it.RegistrationStatusSpecificRpcRequestHandler() },
         )
-
-        /**
-         * Temporarily hardcoded to 1.
-         */
-        private const val REGISTRATION_PROTOCOL_VERSION = 1
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {

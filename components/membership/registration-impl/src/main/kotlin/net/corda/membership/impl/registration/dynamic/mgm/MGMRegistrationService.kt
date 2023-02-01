@@ -26,8 +26,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -86,7 +85,7 @@ class MGMRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult
+        )
     }
 
     private companion object {
@@ -140,18 +139,16 @@ class MGMRegistrationService @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
+    ) = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationService {
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult =
-            MembershipRequestRegistrationResult(
-                MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                "Registration failed. Reason: MGMRegistrationService is not running."
-            )
+        ) = throw MembershipRegistrationException(
+            "Registration failed. Reason: MGMRegistrationService is not running."
+        )
 
         override fun close() = Unit
     }
@@ -182,8 +179,8 @@ class MGMRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult {
-            return try {
+        ) {
+            try {
                 mgmRegistrationContextValidator.validate(context)
 
                 val mgmInfo = mgmRegistrationMemberInfoHandler.buildAndPersist(
@@ -209,28 +206,20 @@ class MGMRegistrationService @Activate constructor(
                 groupParametersWriterService.put(member, groupParameters)
 
                 mgmRegistrationOutputPublisher.publish(mgmInfo)
-
-                MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
             } catch (ex: MGMRegistrationContextValidationException) {
-                buildNotSubmittedResponse(ex.reason)
+                throw MembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {
-                buildNotSubmittedResponse(ex.reason)
+                throw MembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationGroupPolicyHandlingException) {
-                buildNotSubmittedResponse(ex.reason)
-            } catch (ex: MGMRegistrationOutputPublisherException){
-                buildNotSubmittedResponse(ex.reason)
+                throw MembershipRegistrationException(ex.reason, ex)
+            } catch (ex: MGMRegistrationOutputPublisherException) {
+                throw MembershipRegistrationException(ex.reason, ex)
+            } catch (ex: MembershipRegistrationException) {
+                throw ex
             } catch (e: Exception) {
-                buildNotSubmittedResponse("Registration failed. Reason: ${e.message}")
+                throw MembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
             }
         }
-
-        private fun buildNotSubmittedResponse(reason: String): MembershipRequestRegistrationResult {
-            return MembershipRequestRegistrationResult(
-                MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                reason
-            )
-        }
-
         override fun close() {
             publisher.close()
         }

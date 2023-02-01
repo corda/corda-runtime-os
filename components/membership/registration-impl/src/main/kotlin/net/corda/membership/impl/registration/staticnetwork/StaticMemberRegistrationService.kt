@@ -55,9 +55,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -156,10 +154,9 @@ class StaticMemberRegistrationService @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ): MembershipRequestRegistrationResult {
+    ) {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
-            return MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
+            throw MembershipRegistrationException(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
             )
         }
@@ -172,9 +169,9 @@ class StaticMemberRegistrationService @Activate constructor(
                     context
                 )
         } catch (ex: MembershipSchemaValidationException) {
-            return MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. The registration context is invalid: " + ex.message
+            throw MembershipRegistrationException(
+                "Registration failed. The registration context is invalid: " + ex.message,
+                ex,
             )
         }
         try {
@@ -199,14 +196,13 @@ class StaticMemberRegistrationService @Activate constructor(
             persistGroupParameters(memberInfo, staticMemberList)
 
             persistRegistrationRequest(registrationId, memberInfo)
+        } catch (e: MembershipRegistrationException) {
+            logger.warn("Registration failed. Reason:", e)
+            throw e
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason:", e)
-            return MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: ${e.message}"
-            )
+            throw MembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         }
-        return MembershipRequestRegistrationResult(SUBMITTED)
     }
 
     private fun List<Record<*, *>>.publish() {
@@ -226,7 +222,7 @@ class StaticMemberRegistrationService @Activate constructor(
         val groupParameters = groupParametersFactory.create(groupParametersList)
 
         // Persist group parameters for this member, and publish to Kafka.
-        persistenceClient.persistGroupParameters(holdingIdentity, groupParameters)
+        persistenceClient.persistGroupParameters(holdingIdentity, groupParameters).getOrThrow()
         groupParametersWriterService.put(holdingIdentity, groupParameters)
 
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
@@ -240,7 +236,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     .map { HoldingIdentity(it, memberInfo.groupId) }
                     .filter { virtualNodeInfoReadService.get(it) != null }
                     .forEach {
-                        persistenceClient.persistGroupParameters(it, groupParameters)
+                        persistenceClient.persistGroupParameters(it, groupParameters).getOrThrow()
                         groupParametersWriterService.put(it, groupParameters)
                     }
             }.join()
@@ -263,7 +259,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     KeyValuePairList(emptyList())
                 )
             )
-        )
+        ).getOrThrow()
     }
 
     /**
