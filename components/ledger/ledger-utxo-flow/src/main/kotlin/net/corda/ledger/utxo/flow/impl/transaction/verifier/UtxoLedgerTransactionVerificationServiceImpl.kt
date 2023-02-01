@@ -20,16 +20,16 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
 
 @Component(
-    service = [ UtxoLedgerTransactionVerifierService::class, UsedByFlow::class ],
+    service = [ UtxoLedgerTransactionVerificationService::class, UsedByFlow::class ],
     property = [ CORDA_SYSTEM_SERVICE ],
     scope = PROTOTYPE
 )
-class UtxoLedgerTransactionVerifierServiceImpl @Activate constructor(
+class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
-) : UtxoLedgerTransactionVerifierService, UsedByFlow, SingletonSerializeAsToken {
+) : UtxoLedgerTransactionVerificationService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun verify(transaction: UtxoLedgerTransaction) {

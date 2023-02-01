@@ -5,7 +5,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifierService
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateAndRefExample
@@ -39,7 +39,7 @@ class TransactionBackchainVerifierImplTest {
     }
 
     private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
-    private val utxoLedgerTransactionVerifierService = mock<UtxoLedgerTransactionVerifierService>()
+    private val utxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
 
     private val metadata = mock<TransactionMetadata>()
 
@@ -56,7 +56,7 @@ class TransactionBackchainVerifierImplTest {
 
     private val transactionBackchainVerifier = TransactionBackchainVerifierImpl(
         utxoLedgerPersistenceService,
-        utxoLedgerTransactionVerifierService
+        utxoLedgerTransactionVerificationService
     )
 
     @BeforeEach
@@ -112,7 +112,7 @@ class TransactionBackchainVerifierImplTest {
     @Test
     fun `updates the statuses of transactions that pass verification even when a later transaction fails verification`() {
         whenever(ledgerTransaction3.inputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
-        whenever(utxoLedgerTransactionVerifierService.verify(ledgerTransaction3)).thenThrow(VERIFICATION_EXCEPTION)
+        whenever(utxoLedgerTransactionVerificationService.verify(ledgerTransaction3)).thenThrow(VERIFICATION_EXCEPTION)
         assertThat(transactionBackchainVerifier.verify(RESOLVING_TX_ID, topologicalSort())).isFalse
         verify(utxoLedgerPersistenceService).updateStatus(TX_ID_1, VERIFIED)
         verify(utxoLedgerPersistenceService).updateStatus(TX_ID_2, VERIFIED)
@@ -122,7 +122,7 @@ class TransactionBackchainVerifierImplTest {
     @Test
     fun `returns false when a single transaction fails verification`() {
         whenever(ledgerTransaction1.inputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
-        whenever(utxoLedgerTransactionVerifierService.verify(ledgerTransaction1)).thenThrow(VERIFICATION_EXCEPTION)
+        whenever(utxoLedgerTransactionVerificationService.verify(ledgerTransaction1)).thenThrow(VERIFICATION_EXCEPTION)
         assertThat(transactionBackchainVerifier.verify(RESOLVING_TX_ID, topologicalSort())).isFalse
         verify(ledgerTransaction2, never()).inputStateAndRefs
         verify(ledgerTransaction3, never()).inputStateAndRefs

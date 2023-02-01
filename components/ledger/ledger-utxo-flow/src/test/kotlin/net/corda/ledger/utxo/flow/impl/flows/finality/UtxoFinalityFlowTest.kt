@@ -9,7 +9,7 @@ import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifierService
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
@@ -65,7 +65,7 @@ class UtxoFinalityFlowTest {
     private val memberLookup = mock<MemberLookup>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
-    private val transactionVerifierService = mock<UtxoLedgerTransactionVerifierService>()
+    private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
     private val pluggableNotaryClientFlowFactory = mock<PluggableNotaryClientFlowFactory>()
@@ -725,7 +725,7 @@ class UtxoFinalityFlowTest {
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging
         flow.persistenceService = persistenceService
-        flow.transactionVerifierService = transactionVerifierService
+        flow.transactionVerificationService = transactionVerificationService
         flow.pluggableNotaryClientFlowFactory = pluggableNotaryClientFlowFactory
         flow.flowEngine = flowEngine
         flow.call()

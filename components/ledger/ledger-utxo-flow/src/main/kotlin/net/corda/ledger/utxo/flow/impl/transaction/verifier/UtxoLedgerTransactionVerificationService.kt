@@ -4,9 +4,9 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 /**
- * [UtxoLedgerTransactionVerifierService] verifies UTXO ledger transactions.
+ * [UtxoLedgerTransactionVerificationService] verifies UTXO ledger transactions.
  */
-interface UtxoLedgerTransactionVerifierService {
+interface UtxoLedgerTransactionVerificationService {
     /**
      * Verify UTXO ledger transaction.
      *

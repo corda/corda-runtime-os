@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.flow.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifierService
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -32,7 +32,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     lateinit var persistenceService: UtxoLedgerPersistenceService
 
     @CordaInject
-    lateinit var transactionVerifierService: UtxoLedgerTransactionVerifierService
+    lateinit var transactionVerificationService: UtxoLedgerTransactionVerificationService
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
@@ -98,7 +98,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
-        transactionVerifierService.verify(signedTransaction.toLedgerTransaction())
+        transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
     }
 
 }

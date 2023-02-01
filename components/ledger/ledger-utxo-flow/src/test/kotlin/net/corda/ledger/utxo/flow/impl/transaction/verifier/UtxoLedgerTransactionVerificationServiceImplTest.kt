@@ -22,7 +22,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 
-class UtxoLedgerTransactionVerifierServiceImplTest {
+class UtxoLedgerTransactionVerificationServiceImplTest {
 
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
@@ -31,12 +31,12 @@ class UtxoLedgerTransactionVerifierServiceImplTest {
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
-    private lateinit var utxoLedgerTransactionVerifier: UtxoLedgerTransactionVerifierServiceImpl
+    private lateinit var verificationService: UtxoLedgerTransactionVerificationServiceImpl
     private val argumentCaptor = argumentCaptor<Class<TransactionVerificationExternalEventFactory>>()
 
     @BeforeEach
     fun setup() {
-        utxoLedgerTransactionVerifier = UtxoLedgerTransactionVerifierServiceImpl(
+        verificationService = UtxoLedgerTransactionVerificationServiceImpl(
             externalEventExecutor,
             serializationService
         )
@@ -66,7 +66,7 @@ class UtxoLedgerTransactionVerifierServiceImplTest {
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
 
         assertDoesNotThrow {
-            utxoLedgerTransactionVerifier.verify(transaction)
+            verificationService.verify(transaction)
         }
 
         verify(serializationService).serialize(any())
@@ -97,7 +97,7 @@ class UtxoLedgerTransactionVerifierServiceImplTest {
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
 
         val exception = assertThrows<TransactionVerificationException> {
-            utxoLedgerTransactionVerifier.verify(transaction)
+            verificationService.verify(transaction)
         }
 
         assertThat(exception.transactionId).isEqualTo(transactionId)
