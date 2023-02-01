@@ -37,7 +37,7 @@ import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
 private val log =
-    LoggerFactory.getLogger("net.corda.httprpc.server.impl.SchemaModelProvider.kt")
+    LoggerFactory.getLogger("net.corda.rest.server.impl.SchemaModelProvider.kt")
 
 /**
  * [SchemaModelProvider] is responsible for providing a [SchemaModel] from the passed argument(s).

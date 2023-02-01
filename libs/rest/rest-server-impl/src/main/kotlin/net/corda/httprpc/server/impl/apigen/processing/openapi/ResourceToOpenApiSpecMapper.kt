@@ -39,7 +39,7 @@ import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
 
 private val log =
-    LoggerFactory.getLogger("net.corda.httprpc.server.impl.apigen.processing.openapi.ResourceToOpenApiSpecMapper.kt")
+    LoggerFactory.getLogger("net.corda.rest.server.impl.apigen.processing.openapi.ResourceToOpenApiSpecMapper.kt")
 
 private const val MULTIPART_CONTENT_TYPE = "multipart/form-data"
 private const val APPLICATION_JSON_CONTENT_TYPE = "application/json"

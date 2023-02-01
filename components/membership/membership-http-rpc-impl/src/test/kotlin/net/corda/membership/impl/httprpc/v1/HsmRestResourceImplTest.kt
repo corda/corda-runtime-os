@@ -6,7 +6,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.TLS
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.RPC_API
+import net.corda.crypto.core.CryptoTenants.REST_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -15,7 +15,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
+import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -175,10 +175,10 @@ class HsmRestResourceImplTest {
 
         @Test
         fun `assignHsm will not verify the tenantId from RPC tenant`() {
-            whenever(hsmRegistrationClient.assignHSM(RPC_API, LEDGER, emptyMap())).doReturn(
+            whenever(hsmRegistrationClient.assignHSM(REST_API, LEDGER, emptyMap())).doReturn(
                 HSMAssociationInfo(
                     "id1",
-                    RPC_API,
+                    REST_API,
                     "hsm-id",
                     LEDGER,
                     "master-key-alias",
@@ -186,7 +186,7 @@ class HsmRestResourceImplTest {
                 )
             )
 
-            ops.assignHsm(RPC_API, LEDGER)
+            ops.assignHsm(REST_API, LEDGER)
 
             verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(tenantIdShortHash)
         }

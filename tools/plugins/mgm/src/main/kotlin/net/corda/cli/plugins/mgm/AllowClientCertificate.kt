@@ -4,7 +4,7 @@ import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.cli.plugins.mgm.Helpers.baseUrlFromClusterName
 import net.corda.cli.plugins.mgm.Helpers.rpcPasswordFromClusterName
-import net.corda.membership.httprpc.v1.MGMRestResource
+import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters

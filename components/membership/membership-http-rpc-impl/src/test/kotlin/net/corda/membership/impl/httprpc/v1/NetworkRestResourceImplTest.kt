@@ -10,7 +10,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
-import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested

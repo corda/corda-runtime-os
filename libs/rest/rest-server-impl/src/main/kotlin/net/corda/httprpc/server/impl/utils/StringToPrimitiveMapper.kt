@@ -4,7 +4,7 @@ import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
-private val log = LoggerFactory.getLogger("net.corda.httprpc.server.utils.StringToPrimitiveMapper.kt")
+private val log = LoggerFactory.getLogger("net.corda.rest.server.utils.StringToPrimitiveMapper.kt")
 
 @Suppress("ComplexMethod")
 fun <T> String.mapTo(clazz: Class<T>): T {

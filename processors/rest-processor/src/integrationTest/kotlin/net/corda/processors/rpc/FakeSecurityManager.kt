@@ -8,7 +8,7 @@ import net.corda.httprpc.security.read.RestSecurityManager
 import javax.security.auth.login.FailedLoginException
 
 /**
- * Note: We cannot use `FakeSecurityManager` from "net.corda.httprpc.test.utils" as this is non-OSGi module.
+ * Note: We cannot use `FakeSecurityManager` from "net.corda.rest.test.utils" as this is non-OSGi module.
  * It cannot be made OSGi module easily as it has a dependency on non-OSGi Unirest library.
  */
 internal class FakeSecurityManager : RestSecurityManager {

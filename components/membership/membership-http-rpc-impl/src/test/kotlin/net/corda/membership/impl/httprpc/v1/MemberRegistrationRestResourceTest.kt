@@ -12,7 +12,7 @@ import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
-import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

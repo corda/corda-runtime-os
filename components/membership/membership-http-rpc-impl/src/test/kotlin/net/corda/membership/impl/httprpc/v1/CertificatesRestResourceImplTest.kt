@@ -19,7 +19,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name

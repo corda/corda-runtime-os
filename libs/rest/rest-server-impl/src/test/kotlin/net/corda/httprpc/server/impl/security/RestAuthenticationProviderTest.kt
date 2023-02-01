@@ -27,7 +27,7 @@ class RestAuthenticationProviderTest {
     private val subject: AuthorizingSubject = mock()
     private val password = "password"
     private val userAlice = User("Alice", password, setOf("ALL"))
-    private val userBob = User("Bob", password, setOf("InvokeRpc:net.corda.httprpc.server.security.TestRestResource#dummy2"))
+    private val userBob = User("Bob", password, setOf("InvokeRpc:net.corda.rest.server.security.TestRestResource#dummy2"))
     private val restAuthProvider = RestAuthenticationProviderImpl(setOf(authenticationProvider1, authenticationProvider2))
 
     private companion object {

@@ -12,7 +12,7 @@ class QueryParametersResolverTest {
         val result = TestHealthCheckAPI::hello2.javaMethod!!.queryParametersFrom(arrayOf("test 1", "test 2"))
 
         // "test+1" is a URL encoded version of "test 1". "test 2" value is ignored in this case as it is listed as path parameter
-        // in net.corda.httprpc.test.TestHealthCheckAPI::hello2
+        // in net.corda.rest.test.TestHealthCheckAPI::hello2
         assertEquals("test+1", result["id"])
     }
 

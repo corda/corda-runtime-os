@@ -10,7 +10,7 @@ import java.time.temporal.TemporalAmount
 import java.util.*
 import java.time.ZonedDateTime
 
-private val log = LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.schema.OpenApiExample.kt")
+private val log = LoggerFactory.getLogger("net.corda.rest.server.apigen.processing.openapi.schema.OpenApiExample.kt")
 private val instant = Instant.parse("2022-06-24T10:15:30.00Z")
 private val dateAsString = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(Date(instant.toEpochMilli()))
 private val zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("GMT"))

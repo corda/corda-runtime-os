@@ -10,7 +10,7 @@ import java.lang.reflect.WildcardType
 import kotlin.reflect.KParameter
 import kotlin.reflect.jvm.javaType
 
-private val log = LoggerFactory.getLogger("net.corda.httprpc.server.impl.apigen.processing.GenericTypeUtilities.kt")
+private val log = LoggerFactory.getLogger("net.corda.rest.server.impl.apigen.processing.GenericTypeUtilities.kt")
 
 fun KParameter.getParameterizedTypes(): List<GenericParameterizedType> {
     return when (val type = this.type.javaType) {

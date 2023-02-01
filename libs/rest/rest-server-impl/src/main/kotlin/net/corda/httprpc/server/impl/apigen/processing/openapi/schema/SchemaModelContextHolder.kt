@@ -6,7 +6,7 @@ import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
 private val log =
-    LoggerFactory.getLogger("net.corda.httprpc.server.impl.SchemaModelContextHolder.kt")
+    LoggerFactory.getLogger("net.corda.rest.server.impl.SchemaModelContextHolder.kt")
 
 /**
  * [SchemaModelContextHolder] is responsible for keeping track of discovered schemas,

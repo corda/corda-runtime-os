@@ -19,8 +19,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-import net.corda.membership.httprpc.v1.CertificatesRestResource
-import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME

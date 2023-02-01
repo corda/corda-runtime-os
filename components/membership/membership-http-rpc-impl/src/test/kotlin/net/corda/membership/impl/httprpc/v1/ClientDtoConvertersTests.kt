@@ -3,9 +3,9 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
-import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
-import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
+import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
+import net.corda.membership.rest.v1.types.response.RegistrationRequestStatus
+import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest

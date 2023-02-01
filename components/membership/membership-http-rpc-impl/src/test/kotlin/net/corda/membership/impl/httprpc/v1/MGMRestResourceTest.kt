@@ -16,10 +16,10 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
-import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
-import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
-import net.corda.membership.httprpc.v1.types.response.PreAuthToken
-import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
+import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.rest.v1.types.response.PreAuthToken
+import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG

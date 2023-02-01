@@ -16,7 +16,7 @@ dependencies {
     implementation project(":components:membership:certificates-client")
     implementation project(":components:membership:membership-client")
     implementation project(":components:membership:membership-group-read")
-    implementation project(":components:membership:membership-http-rpc")
+    implementation project(":components:membership:membership-rest")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:virtual-node:virtual-node-info-read-service-rpc-extensions")
     implementation project(':components:configuration:configuration-read-service')
