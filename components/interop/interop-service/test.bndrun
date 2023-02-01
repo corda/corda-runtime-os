@@ -1,17 +1,11 @@
 -tester: biz.aQute.tester.junit-platform
--runfw: org.apache.felix.framework
+-runfw: org.apache.felix.framework;
 -runee: JavaSE-11
 -runtrace: true
 
 # Enable debugging.
 # -runjdb: 1044
 
--resolve.effective: resolve,active
-
--runvm: \
-    -Djava.util.logging.config.file=${.}/logging.properties,\
-    -Djava.io.tmpdir=${task.temporaryDir},\
-    --add-opens, 'java.base/java.net=ALL-UNNAMED'
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
     javax.xml.stream.events;version=1.0.0,\
@@ -19,17 +13,29 @@
     sun.security.x509
 
 -runproperties: \
-    co.paralleluniverse.quasar.verbose=false
+    org.slf4j.simpleLogger.defaultLogLevel=info,\
+    org.slf4j.simpleLogger.showShortLogName=true,\
+    org.slf4j.simpleLogger.showThreadName=false,\
+    org.slf4j.simpleLogger.showDateTime=true,\
+    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 -runrequires: \
     bnd.identity;id='net.corda.interop-service',\
-    bnd.identity;id='net.corda.application-impl',\
+    bnd.identity;id='net.corda.lifecycle-impl',\
+    bnd.identity;id='net.corda.configuration-read-service-impl',\
+    bnd.identity;id='${project.archivesBaseName}-tests',\
+    bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.db-message-bus-impl',\
-    bnd.identity;id='net.corda.virtual-node-info-read-service-fake',\
-    bnd.identity;id='net.corda.cpi-info-read-service-fake',\
+    bnd.identity;id='net.corda.db-orm-impl',\
+    bnd.identity;id='net.corda.schema-registry-impl',\
+    bnd.identity;id='net.bytebuddy.byte-buddy',\
+    bnd.identity;id='org.hsqldb.hsqldb',\
+    bnd.identity;id='org.osgi.service.jdbc',\
+    bnd.identity;id='org.ops4j.pax.jdbc.hsqldb',\
+    bnd.identity;id='org.postgresql.jdbc',\
     bnd.identity;id='junit-jupiter-engine',\
-    bnd.identity;id='junit-platform-launcher',\
-    bnd.identity;id='slf4j.simple'
+    bnd.identity;id='slf4j.simple',\
+    bnd.identity;id='junit-platform-launcher'
 
 -runstartlevel: \
     order=sortbynameversion,\

@@ -1,4 +1,4 @@
-package net.corda.interop.service
+package net.corda.interop
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -11,8 +11,8 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
@@ -43,7 +43,6 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
                 }
             }
         }
-
         return outputEvents
     }
 
@@ -53,7 +52,7 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
         key: String
     ) : Record<String, AppMessage>? {
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
-        logger.debug { "Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, Event: $sessionEvent"}
+        logger.info ( "Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, Event: $sessionEvent")
 
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.OUTBOUND //
@@ -86,4 +85,4 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
         )
         return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
     }
-    }
+}

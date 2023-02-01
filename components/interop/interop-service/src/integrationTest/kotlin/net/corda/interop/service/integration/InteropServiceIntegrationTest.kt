@@ -1,4 +1,4 @@
-package net.corda.interop.service
+package net.corda.interop.service.integration
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
@@ -11,20 +11,20 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.app.AppMessage
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.interop.InteropService
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -39,11 +39,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.io.File
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+// To run the test:
+// ./gradlew :components:interop:interop-service:integrationTest
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InteropServiceIntegrationTest {
@@ -87,7 +90,6 @@ class InteropServiceIntegrationTest {
     @Test
     fun `verify events are forwarded to the correct topic`() {
         interopService.start()
-
         val testId = "test1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
 
@@ -130,13 +132,22 @@ class InteropServiceIntegrationTest {
             )
         )
 
-        publisher.publish(listOf(sessionRecord, sessionRecord, invalidRecord))
+        val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
+        val nonInteropSessionRecord = Record(
+            P2P_IN_TOPIC, testId, AppMessage(
+                AuthenticatedMessage(
+                    nonInteropFlowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
+                )
+            )
+        )
+
+        publisher.publish(listOf(sessionRecord, sessionRecord, nonInteropSessionRecord, invalidRecord))
 
         //validate mapper receives 2 inits
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2),
+            TestFlowSessionFilterProcessor("$testId", mapperLatch, 2),
             bootConfig,
             null
         )
@@ -145,6 +156,7 @@ class InteropServiceIntegrationTest {
         p2pOutSub.close()
 
         interopService.stop()
+        //assertTrue(true)
     }
 
     private fun setupConfig(publisher: Publisher) {
@@ -207,6 +219,7 @@ class TestFlowSessionFilterProcessor(
 
     override fun onNext(events: List<Record<String, AuthenticatedMessage>>): List<Record<*, *>> {
         for (event in events) {
+            File(event.toString()).printWriter().use { out -> out.println(key) }
             if (event.key == key) {
                 recordCount++
                 if (recordCount > expectedRecordCount) {

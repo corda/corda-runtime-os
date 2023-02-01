@@ -1,7 +1,7 @@
 package net.corda.processors.interop.internal
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.service.InteropService
+import net.corda.interop.InteropService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator

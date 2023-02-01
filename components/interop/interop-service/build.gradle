@@ -1,81 +1,46 @@
 plugins {
     id 'corda.common-publishing'
-    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description "Interop service"
 
 dependencies {
-    compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation project(":components:configuration:configuration-read-service")
-
-    implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
-
-    implementation project(":libs:utilities")
+    implementation project(":libs:flows:session-manager")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
-    implementation 'net.corda:corda-ledger-common'
-    implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-topic-schema"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
-    implementation "com.esotericsoftware:kryo:$kryoVersion"
-
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-
-    testImplementation project(":libs:flows:session-manager-impl")
-    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
-    testImplementation project(":libs:lifecycle:lifecycle-impl")
-    testImplementation project(":libs:lifecycle:registry")
-    testImplementation project(":testing:flow:flow-utilities")
-    testImplementation project(':testing:test-utilities')
-
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testImplementation project(":libs:flows:utils")
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
-    integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
-    integrationTestImplementation project(':testing:cpi-info-read-service-fake')
 
-    integrationTestRuntimeOnly project(':libs:application:application-impl')
-    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
-    integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
-    integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
-    integrationTestRuntimeOnly project(":components:virtual-node:cpk-read-service-impl")
-
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-}
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
-def jar = tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-interop-service'
-
-    bundle {
-        bnd """\
-Import-Package:\
-    org.apache.avro.specific,\
-    *
-"""
-    }
+    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }

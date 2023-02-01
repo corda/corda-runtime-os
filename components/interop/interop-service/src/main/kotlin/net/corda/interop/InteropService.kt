@@ -1,4 +1,4 @@
-package net.corda.interop.service
+package net.corda.interop
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -11,24 +11,21 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList", "Unused")
-@Component(service = [InteropService::class])
+@Component(service = [InteropService::class], immediate = true)
 class InteropService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -42,50 +39,59 @@ class InteropService @Activate constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG)
-        private const val SUBSCRIPTION = "SUBSCRIPTION"
         private const val CONSUMER_GROUP = "InteropConsumer"
+        private const val SUBSCRIPTION = "SUBSCRIPTION"
+        private const val REGISTRATION = "REGISTRATION"
+        private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
 
-    private var registration: RegistrationHandle? = null
-    private var configHandle: AutoCloseable? = null
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                registration?.close()
-                registration =
+                coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
                         )
                     )
-            }
-
-            is RegistrationStatusChangeEvent -> {
-                if (event.status == LifecycleStatus.UP) {
-                    configHandle?.close()
-                    configHandle = configurationReadService.registerComponentForUpdates(
-                        coordinator,
-                        configSections
-                    )
-                }else {
-                    coordinator.updateStatus(event.status)
                 }
             }
-
+            is RegistrationStatusChangeEvent -> {
+                if (event.status == LifecycleStatus.UP) {
+                    coordinator.createManagedResource(CONFIG_HANDLE) {
+                        configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(MESSAGING_CONFIG)
+                        )
+                    }
+                } else {
+                    coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
+                }
+            }
             is ConfigChangedEvent -> {
                 restartInteropProcessor(event)
-                coordinator.updateStatus(LifecycleStatus.UP)
-            }
-
-            is StopEvent -> {
-                registration?.close()
-                registration = null
             }
         }
+    }
+
+    private fun restartInteropProcessor(event: ConfigChangedEvent) {
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+
+        coordinator.createManagedResource(SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
+                InteropProcessor(cordaAvroSerializationFactory),
+                messagingConfig,
+                null
+            ).also {
+                it.start()
+            }
+        }
+
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override val isRunning: Boolean
@@ -99,20 +105,8 @@ class InteropService @Activate constructor(
         coordinator.stop()
     }
 
-    private fun restartInteropProcessor(event: ConfigChangedEvent) {
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-
-        coordinator.createManagedResource(SUBSCRIPTION) {
-            subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, Schemas.P2P.P2P_IN_TOPIC),
-                InteropProcessor(cordaAvroSerializationFactory),
-                messagingConfig,
-                null
-            ).also {
-                it.start()
-            }
-        }
-
-        coordinator.updateStatus(LifecycleStatus.UP)
+    @Deactivate
+    fun close() {
+        coordinator.close()
     }
 }
