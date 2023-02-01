@@ -93,7 +93,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    private fun consensualMetadata() = linkedMapOf(
+    private fun consensualMetadata() = mapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
         TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to ConsensualComponentGroup.values().size

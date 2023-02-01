@@ -232,7 +232,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         return DigitalSignatureMetadata(
             Instant.now(),
             signatureSpec,
-            linkedMapOf(
+            mapOf(
                 "cpiName" to cpiSummary.name,
                 "cpiVersion" to cpiSummary.version,
                 "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString()

@@ -98,7 +98,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         signaturesWithMetaData
     )
 
-    private fun utxoMetadata() = linkedMapOf(
+    private fun utxoMetadata() = mapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
         TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
