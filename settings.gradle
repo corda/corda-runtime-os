@@ -484,15 +484,15 @@ if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
 gradleEnterprise {
     server = gradleEnterpriseUrl
     allowUntrustedServer = false
+    def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
+    accessKey = apiKey
     buildScan {
-        def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
         if (apiKey?.trim()) {
             publishAlways()
             capture {
                 taskInputFiles = true
             }
             uploadInBackground = false
-            accessKey = apiKey
         }
     }
     buildCache {
@@ -500,19 +500,14 @@ gradleEnterprise {
             enabled = true
             removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
         }
-        remote(HttpBuildCache) {
-            url = "${gradleEnterpriseUrl}/cache/"
-            credentials {
-                username = settings.ext.find('BUILD_CACHE_CREDENTIALS_USR') ?: System.getenv('BUILD_CACHE_CREDENTIALS_USR')
-                password = settings.ext.find('BUILD_CACHE_CREDENTIALS_PSW') ?: System.getenv('BUILD_CACHE_CREDENTIALS_PSW')
-            }
+        remote(gradleEnterprise.buildCache) {
             // For the remote build cache we will populate cache only from Jenkins, all machines can pull from cache however.
             if (System.getenv().containsKey("JENKINS_URL")) {
                 push = true
                 enabled = true
             } else {
                 push = false
-                enabled = false
+                enabled = true
             }
         }
     }
