@@ -101,6 +101,7 @@ class FlowEventProcessorImplTest {
 
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
         whenever(eventPreProcessing()).thenReturn(this)
+        whenever(virtualNodeFlowOperationalChecks()).thenReturn(this)
         whenever(runOrContinue(any())).thenReturn(this)
         whenever(setCheckpointSuspendedOn()).thenReturn(this)
         whenever(setWaitingFor()).thenReturn(this)
