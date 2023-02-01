@@ -43,6 +43,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -965,6 +967,150 @@ class MGMOpsClientTest {
             assertThat(subjects).containsExactly(
                 mgmX500Name
             )
+        }
+    }
+
+    @Nested
+    inner class GeneratePreAuthTokenTest {
+        @Test
+        fun `it should fail when client is not ready`() {
+            mgmOpsClient.start()
+
+            assertThrows<IllegalStateException> {
+                mgmOpsClient.generatePreAuthToken(shortHash, mgmX500Name, null, null)
+            }
+        }
+
+        @Test
+        fun `it should fail when not an MGM`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmOpsClient.generatePreAuthToken(shortHash, mgmX500Name, null, null)
+            }
+        }
+
+        @Test
+        fun `it return the correct value`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val ttl = Instant.ofEpochSecond(100)
+            val ownerX500Name = MemberX500Name.parse("CN=Bob,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
+            val remark = "A remark"
+            val uuidCaptor = argumentCaptor<UUID>()
+            whenever(
+                membershipPersistenceClient.generatePreAuthToken(
+                    eq(holdingIdentity), uuidCaptor.capture(), eq(ownerX500Name), eq(ttl), eq(remark)
+                )
+            ).doReturn(
+                MembershipPersistenceResult.success()
+            )
+
+            val token = mgmOpsClient.generatePreAuthToken(shortHash, ownerX500Name, ttl, remark)
+
+            assertThat(token).isEqualTo(
+                PreAuthToken(uuidCaptor.firstValue.toString(), ownerX500Name.toString(), ttl, PreAuthTokenStatus.AVAILABLE, remark, null)
+            )
+        }
+    }
+
+    @Nested
+    inner class GetPreAuthTokensTest {
+        @Test
+        fun `it should fail when client is not ready`() {
+            mgmOpsClient.start()
+
+            assertThrows<IllegalStateException> {
+                mgmOpsClient.getPreAuthTokens(shortHash, null, null, false)
+            }
+        }
+
+        @Test
+        fun `it should fail when not an MGM`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmOpsClient.getPreAuthTokens(shortHash, null, null, false)
+            }
+        }
+
+        @Test
+        fun `it return the correct value`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val ownerX500Name = MemberX500Name.parse("CN=Bob,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
+            val tokenId = UUID.randomUUID()
+            val viewInactive = false
+            val mockToken1 = mock<PreAuthToken>()
+            val mockToken2 = mock<PreAuthToken>()
+            whenever(
+                membershipQueryClient.queryPreAuthTokens(holdingIdentity, ownerX500Name, tokenId, viewInactive)
+            ).doReturn(
+                MembershipQueryResult.Success(listOf(mockToken1, mockToken2))
+            )
+
+            val queryResult = mgmOpsClient.getPreAuthTokens(shortHash, ownerX500Name, tokenId, viewInactive)
+
+            assertThat(queryResult).containsExactly(mockToken1, mockToken2)
+        }
+    }
+
+    @Nested
+    inner class RevokePreAuthToken {
+        private val tokenId = UUID.randomUUID()
+
+        @Test
+        fun `it should fail when client is not ready`() {
+            mgmOpsClient.start()
+
+            assertThrows<IllegalStateException> {
+                mgmOpsClient.revokePreAuthToken(shortHash, tokenId, null)
+            }
+        }
+
+        @Test
+        fun `it should fail when not an MGM`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmOpsClient.revokePreAuthToken(shortHash, tokenId, null)
+            }
+        }
+
+        @Test
+        fun `it return the correct value`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val ownerX500Name = MemberX500Name.parse("CN=Bob,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
+            val ttl = Instant.ofEpochSecond(100)
+            val token = PreAuthToken(tokenId.toString(), ownerX500Name.toString(), ttl, PreAuthTokenStatus.REVOKED, "", "")
+            whenever(
+                membershipPersistenceClient.revokePreAuthToken(holdingIdentity, tokenId, null)
+            ).doReturn(
+                MembershipPersistenceResult.Success(token)
+            )
+
+            val revokedToken = mgmOpsClient.revokePreAuthToken(shortHash, tokenId, null)
+
+            assertThat(revokedToken).isEqualTo(token)
         }
     }
 }

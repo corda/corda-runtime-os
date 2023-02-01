@@ -20,29 +20,48 @@ import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRestResource
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
+import net.corda.membership.httprpc.v1.types.response.PreAuthToken
+import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 import java.util.regex.PatternSyntaxException
+import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
-@SuppressWarnings("TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
-class MGMRestResourceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class MGMRestResourceImpl internal constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = MGMOpsClient::class)
     private val mgmOpsClient: MGMOpsClient,
-    @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
+    private val clock: Clock = UTCClock(),
 ) : MGMRestResource, PluggableRestResource<MGMRestResource>, Lifecycle {
+
+    @Activate constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = MGMOpsClient::class)
+        mgmOpsClient: MGMOpsClient,
+        @Reference(service = ConfigurationGetService::class)
+        configurationGetService: ConfigurationGetService,
+    ) : this(
+        coordinatorFactory,
+        mgmOpsClient,
+        configurationGetService,
+        UTCClock()
+    )
 
     private interface InnerMGMRpcOps {
         fun generateGroupPolicy(holdingIdentityShortHash: String): String
@@ -57,8 +76,16 @@ class MGMRestResourceImpl @Activate constructor(
         fun mutualTlsListClientCertificate(
             holdingIdentityShortHash: String,
         ): Collection<String>
+        fun generatePreAuthToken(holdingIdentityShortHash: String, request: PreAuthTokenRequest): PreAuthToken
+        fun getPreAuthTokens(
+            holdingIdentityShortHash: String,
+            ownerX500Name: String?,
+            preAuthTokenId: String?,
+            viewInactive: Boolean
+        ): Collection<PreAuthToken>
+        fun revokePreAuthToken(holdingIdentityShortHash: String, preAuthTokenId: String, remarks: String? = null): PreAuthToken
 
-        fun addGroupApprovalRule(
+        fuaddGroupApprovalRule(
             holdingIdentityShortHash: String,
             ruleInfo: ApprovalRuleRequestParams
         ): ApprovalRuleInfo
@@ -130,6 +157,19 @@ class MGMRestResourceImpl @Activate constructor(
 
     override fun mutualTlsListClientCertificate(holdingIdentityShortHash: String) =
         impl.mutualTlsListClientCertificate(holdingIdentityShortHash)
+
+    override fun generatePreAuthToken(holdingIdentityShortHash: String, request: PreAuthTokenRequest) =
+        impl.generatePreAuthToken(holdingIdentityShortHash, request)
+
+    override fun getPreAuthTokens(
+        holdingIdentityShortHash: String,
+        ownerX500Name: String?,
+        preAuthTokenId: String?,
+        viewInactive: Boolean
+    ) = impl.getPreAuthTokens(holdingIdentityShortHash, ownerX500Name, preAuthTokenId, viewInactive)
+
+    override fun revokePreAuthToken(holdingIdentityShortHash: String, preAuthTokenId: String, remarks: String?) =
+        impl.revokePreAuthToken(holdingIdentityShortHash, preAuthTokenId, remarks)
 
     override fun addGroupApprovalRule(holdingIdentityShortHash: String, ruleParams: ApprovalRuleRequestParams) =
         impl.addGroupApprovalRule(holdingIdentityShortHash, ruleParams)
@@ -210,11 +250,30 @@ class MGMRestResourceImpl @Activate constructor(
             ruleId: String
         ): Nothing = throwNotRunningException()
 
+        override fun generatePreAuthToken(
+            holdingIdentityShortHash: String,
+            request: PreAuthTokenRequest
+        ): PreAuthToken  = throwNotRunningException()
+
+        override fun getPreAuthTokens(
+            holdingIdentityShortHash: String,
+            ownerX500Name: String?,
+            preAuthTokenId: String?,
+            viewInactive: Boolean
+        ): Collection<PreAuthToken>  = throwNotRunningException()
+
+        override fun revokePreAuthToken(
+            holdingIdentityShortHash: String,
+            preAuthTokenId: String,
+            remarks: String?
+        ): PreAuthToken  = throwNotRunningException()
+
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
         }
     }
 
+    @Suppress("TooManyFunctions")
     private inner class ActiveImpl : InnerMGMRpcOps {
 
         override fun generateGroupPolicy(
@@ -246,6 +305,106 @@ class MGMRestResourceImpl @Activate constructor(
             verifyMutualTlsIsRunning()
             return executeForCommonErrors(holdingIdentityShortHash) { shortHash ->
                 mgmOpsClient.mutualTlsListClientCertificate(shortHash).map { it.toString() }
+            }
+        }
+
+        override fun generatePreAuthToken(
+            holdingIdentityShortHash: String,
+            request: PreAuthTokenRequest
+        ): PreAuthToken {
+            val ownerX500 = try {
+                MemberX500Name.parse(request.ownerX500Name)
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "ownerX500Name" to request.ownerX500Name
+                    ),
+                    message = "ownerX500Name is not a valid X500 name: ${e.message}",
+                )
+            }
+
+            val ttlAsInstant =  request.ttl?.let{ ttl ->
+                clock.instant() + ttl
+            }
+
+            return try {
+                mgmOpsClient.generatePreAuthToken(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    ownerX500,
+                    ttlAsInstant,
+                    request.remarks
+                ).fromAvro()
+            }  catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                invalidInput(holdingIdentityShortHash)
+            }
+        }
+
+        override fun getPreAuthTokens(
+            holdingIdentityShortHash: String,
+            ownerX500Name: String?,
+            preAuthTokenId: String?,
+            viewInactive: Boolean
+        ): Collection<PreAuthToken> {
+            val ownerX500 = ownerX500Name?. let {
+                try {
+                    MemberX500Name.parse(it)
+                } catch (e: IllegalArgumentException) {
+                    throw InvalidInputDataException(
+                        details = mapOf(
+                            "ownerX500Name" to ownerX500Name
+                        ),
+                        message = "ownerX500Name is not a valid X500 name: ${e.message}",
+                    )
+                }
+            }
+
+            val tokenId = preAuthTokenId?.let { try {
+                UUID.fromString(it)
+            } catch (e: java.lang.IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    details = mapOf("preAuthTokenId" to it),
+                    message = "tokenId is not a valid pre auth token."
+                )
+            }
+            }
+            return try {
+                mgmOpsClient.getPreAuthTokens(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    ownerX500,
+                    tokenId,
+                    viewInactive
+                ).map { it.fromAvro() }
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                invalidInput(holdingIdentityShortHash)
+            }
+        }
+
+        override fun revokePreAuthToken(holdingIdentityShortHash: String, preAuthTokenId: String, remarks: String?): PreAuthToken {
+            val tokenId =  try {
+                UUID.fromString(preAuthTokenId)
+            } catch (e: java.lang.IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    details = mapOf("preAuthTokenId" to preAuthTokenId),
+                    message = "tokenId is not a valid pre auth token."
+                )
+            }
+
+            return try {
+                mgmOpsClient.revokePreAuthToken(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    tokenId,
+                    remarks
+                ).fromAvro()
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
+            } catch (e: MemberNotAnMgmException) {
+                invalidInput(holdingIdentityShortHash)
+            } catch  (e: MembershipPersistenceException) {
+                throw ResourceNotFoundException("${e.message}")
             }
         }
 
@@ -322,6 +481,16 @@ class MGMRestResourceImpl @Activate constructor(
                 details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
                 message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
             )
+
+        private fun AvroPreAuthToken.fromAvro(): PreAuthToken =
+            PreAuthToken(this.id, this.ownerX500Name, this.ttl, status.fromAvro(), this.creationRemark, this.removalRemark)
+
+        private fun AvroPreAuthTokenStatus.fromAvro(): PreAuthTokenStatus = when(this) {
+            AvroPreAuthTokenStatus.AVAILABLE -> PreAuthTokenStatus.AVAILABLE
+            AvroPreAuthTokenStatus.REVOKED -> PreAuthTokenStatus.REVOKED
+            AvroPreAuthTokenStatus.CONSUMED -> PreAuthTokenStatus.CONSUMED
+            AvroPreAuthTokenStatus.AUTO_INVALIDATED -> PreAuthTokenStatus.AUTO_INVALIDATED
+        }
 
         private fun validateRegex(expression: String) {
             expression.toRegex()

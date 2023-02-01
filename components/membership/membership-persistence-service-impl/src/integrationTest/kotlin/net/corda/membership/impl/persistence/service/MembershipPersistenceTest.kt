@@ -106,6 +106,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.time.Instant
+import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
 
@@ -288,6 +289,26 @@ class MembershipPersistenceTest {
                 membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
                     mgmHoldingIdentity, subject
                 )
+            }
+
+            override fun generatePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                preAuthTokenId: UUID,
+                ownerX500Name: MemberX500Name,
+                ttl: Instant?,
+                remarks: String?
+            )= safeCall {
+                membershipPersistenceClient.generatePreAuthToken(
+                    mgmHoldingIdentity, preAuthTokenId, ownerX500Name, ttl, remarks
+                )
+            }
+
+            override fun revokePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                preAuthTokenId: UUID,
+                remarks: String?
+            ) = safeCall {
+                membershipPersistenceClient.revokePreAuthToken(mgmHoldingIdentity, preAuthTokenId, remarks)
             }
 
             override fun addApprovalRule(

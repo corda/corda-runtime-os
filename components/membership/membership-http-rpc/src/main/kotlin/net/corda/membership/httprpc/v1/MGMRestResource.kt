@@ -3,13 +3,17 @@ package net.corda.membership.httprpc.v1
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpDELETE
 import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.httprpc.annotations.RestPathParameter
+import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
+import net.corda.membership.httprpc.v1.types.response.PreAuthToken
+import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -101,6 +105,70 @@ interface MGMRestResource : RestResource {
         @RestPathParameter(description = "The holding identity ID of the MGM.")
         holdingIdentityShortHash: String,
     ): Collection<String>
+
+    /**
+     * Generate a preAuthToken.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param request Details of the token to create.
+     *
+     * @return Details of the created token.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/preauthtoken",
+    )
+    fun generatePreAuthToken(
+        @RestPathParameter
+        holdingIdentityShortHash: String,
+        @RestRequestBodyParameter
+        request: PreAuthTokenRequest
+    ): PreAuthToken
+
+    /**
+     * Query for preAuthTokens.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param ownerX500Name The X500 name of the member to query for.
+     * @param preAuthTokenId The token ID to query for.
+     * @param viewInactive Return tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
+     * [PreAuthTokenStatus.AUTO_INVALIDATED] as well as [PreAuthTokenStatus.AVAILABLE].
+     *
+     * @return A list tokens matching the query or an empty list, if no tokens match the query.
+     */
+    @HttpGET(
+        path = "{holdingIdentityShortHash}/preauthtoken",
+    )
+    fun getPreAuthTokens(
+        @RestPathParameter
+        holdingIdentityShortHash: String,
+        @RestQueryParameter(required = false)
+        ownerX500Name: String? = null,
+        @RestQueryParameter(required = false)
+        preAuthTokenId: String? = null,
+        @RestQueryParameter(required = false)
+        viewInactive: Boolean = false
+    ): Collection<PreAuthToken>
+
+    /**
+     * Revoke a preAuthToken.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param preAuthTokenId The token ID to revoke.
+     * @param remarks Some optional remarks about why the token was revoked.
+     *
+     * @return Details of the revoked token.
+     */
+    @HttpPUT(
+        path = "{holdingIdentityShortHash}/preauthtoken/revoke/{preAuthTokenId}",
+    )
+    fun revokePreAuthToken(
+        @RestPathParameter
+        holdingIdentityShortHash: String,
+        @RestPathParameter
+        preAuthTokenId: String,
+        @RestRequestBodyParameter(required = false)
+        remarks: String? = null
+    ): PreAuthToken
 
     /**
      * The [addGroupApprovalRule] method enables you to add a regular expression rule to configure the approval
