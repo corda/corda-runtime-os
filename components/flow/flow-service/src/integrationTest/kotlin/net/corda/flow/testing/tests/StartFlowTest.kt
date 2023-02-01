@@ -59,7 +59,6 @@ class StartFlowTest : FlowServiceTestBase() {
     @Test
     fun `RPC Start Flow - Retry scenario 1 - Fail then succeeds`() {
         given {
-            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
@@ -114,7 +113,6 @@ class StartFlowTest : FlowServiceTestBase() {
     @Test
     fun `RPC Start Flow - Retry scenario 2 - Hit the retry limit and fail the flow`() {
         given {
-            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
@@ -146,7 +144,9 @@ class StartFlowTest : FlowServiceTestBase() {
                 flowStatus(
                     state = FlowStates.FAILED,
                     errorType = FlowProcessingExceptionTypes.FLOW_FAILED,
-                    errorMessage = "Execution failed with \"Failed to create the sandbox: Failed to find the virtual node info for holder 'HoldingIdentity(x500Name=${BOB_HOLDING_IDENTITY.x500Name}, groupId=${BOB_HOLDING_IDENTITY.groupId})' in class net.corda.virtualnode.read.fake.VirtualNodeInfoReadServiceFake\" after 1 retry attempts."
+                    errorMessage = "Execution failed with \"Failed to find the virtual node info for holder " +
+                            "'HoldingIdentity(x500Name=${BOB_HOLDING_IDENTITY.x500Name}, groupId=${BOB_HOLDING_IDENTITY.groupId})'\" " +
+                            "after 1 retry attempts."
                 )
             }
         }
