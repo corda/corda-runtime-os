@@ -10,7 +10,6 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.v5.base.util.debug
 import org.osgi.framework.Bundle
 import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableSortedMap
@@ -37,6 +36,11 @@ internal class SandboxGroupImpl(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private fun Throwable.withSuppressed(exceptions: Iterable<Throwable>): Throwable {
+            exceptions.forEach(::addSuppressed)
+            return this
+        }
     }
 
     override val metadata: SortedMap<Bundle, CpkMetadata> = unmodifiableSortedMap(cpkSandboxes.associateTo(TreeMap()) { cpk ->
@@ -62,17 +66,17 @@ internal class SandboxGroupImpl(
     }
 
     override fun loadClassFromMainBundles(className: String): Class<*> {
+        val suppressed = mutableListOf<Exception>()
         return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
-                logger.debug {
-                    "Could not load class $className from sandbox ${sandbox.cpkMetadata.mainBundle}: ${e.message}"
-                }
+                suppressed += e
                 null
             }
         }.singleOrNull()
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
+                .withSuppressed(suppressed)
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
