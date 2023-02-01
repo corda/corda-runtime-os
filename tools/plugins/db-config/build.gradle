@@ -23,6 +23,8 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
+    runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"

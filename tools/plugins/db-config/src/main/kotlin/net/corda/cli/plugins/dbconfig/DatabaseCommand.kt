@@ -8,7 +8,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
-class Database(wrapper: PluginWrapper) : Plugin(wrapper) {
+class DatabaseCommand(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     companion object {
         val classLoader = this::class.java.classLoader
