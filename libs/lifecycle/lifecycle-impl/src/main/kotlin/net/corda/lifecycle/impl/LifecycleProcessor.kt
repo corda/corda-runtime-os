@@ -1,7 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,9 +13,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ScheduledFuture
 
 /**
  * Perform processing of lifecycle events.
@@ -39,7 +39,7 @@ internal class LifecycleProcessor(
 ) {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         internal const val STARTED_REASON = "Component has been started"
         internal const val STOPPED_REASON = "Component has been stopped"

@@ -13,11 +13,11 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.reconciliation.VersionedRecord
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -35,7 +35,7 @@ class CpiInfoReadServiceFake internal constructor(
     ) : this(emptyList(), emptyList(), coordinatorFactory)
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val cpiData = cpiMetadatas.associateBy { it.cpiId }.toMutableMap()

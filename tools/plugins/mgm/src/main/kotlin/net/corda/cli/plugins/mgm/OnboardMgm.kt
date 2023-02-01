@@ -77,6 +77,11 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override val registrationContext by lazy {
+        val tlsType = if (mtls) {
+            "Mutual"
+        } else {
+            "OneWay"
+        }
         mapOf(
             "corda.session.key.id" to sessionKeyId,
             "corda.ecdh.key.id" to ecdhKeyId,
@@ -86,7 +91,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
             "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
             "corda.group.key.session.policy" to "Distinct",
-            "corda.group.tls.type" to "OneWay",
+            "corda.group.tls.type" to tlsType,
             "corda.group.pki.session" to "NoPKI",
             "corda.group.pki.tls" to "Standard",
             "corda.group.tls.version" to "1.3",
@@ -146,9 +151,9 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
         setupClient()
 
-        createTlsKeyIdNeeded()
+        configureGateway()
 
-        disableClrChecks()
+        createTlsKeyIdNeeded()
 
         register()
 
@@ -157,5 +162,12 @@ class OnboardMgm : Runnable, BaseOnboard() {
         println("MGM Member $x500Name was onboarded")
 
         saveGroupPolicy()
+
+        if (mtls) {
+            println(
+                "To onboard members to this group on other clusters, please add those members' " +
+                    "client certificates subjects to this MGM's allow list. You can do that using the allowClientCertificate command."
+            )
+        }
     }
 }

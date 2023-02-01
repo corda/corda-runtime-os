@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.cache
 
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -41,7 +41,7 @@ interface MemberDataCache<T> {
     class Impl<T> : MemberDataCache<T> {
 
         companion object {
-            val logger = contextLogger()
+            val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
         private val cache = ConcurrentHashMap<HoldingIdentity, T>()

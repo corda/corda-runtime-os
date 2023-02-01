@@ -8,8 +8,8 @@ import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 import java.io.Writer
 import java.sql.Connection
 import java.util.UUID
@@ -32,7 +32,7 @@ class LiquibaseSchemaMigratorImpl(
         // default schema
         // NOTE: may need to become variable depending on the DB type
         const val DEFAULT_DB_SCHEMA = "PUBLIC"
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun updateDb(datasource: Connection, dbChange: DbChange, tag: String?) {

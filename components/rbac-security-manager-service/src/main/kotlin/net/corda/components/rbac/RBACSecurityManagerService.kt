@@ -1,6 +1,6 @@
 package net.corda.components.rbac
 
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.security.read.rbac.RBACSecurityManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,10 +15,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [RBACSecurityManagerService::class])
 class RBACSecurityManagerService @Activate constructor(
@@ -29,10 +29,10 @@ class RBACSecurityManagerService @Activate constructor(
 ) : Lifecycle {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    val securityManager: RPCSecurityManager
+    val securityManager: RestSecurityManager
         get() {
             validateRpcSecurityManagerRunning()
             return innerSecurityManager!!
@@ -52,7 +52,7 @@ class RBACSecurityManagerService @Activate constructor(
 
     @Volatile
     @VisibleForTesting
-    internal var innerSecurityManager: RPCSecurityManager? = null
+    internal var innerSecurityManager: RestSecurityManager? = null
 
     @VisibleForTesting
     internal var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<RBACSecurityManagerService>(::processEvent)

@@ -20,10 +20,10 @@ import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.withMDC
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) =
@@ -45,7 +45,7 @@ class EntityMessageProcessor(
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
     }
 

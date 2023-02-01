@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -13,11 +14,18 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import javax.persistence.EntityManager
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 
 /** A factory for [VirtualNodeWriter]s. */
 @Suppress("LongParameterList")
@@ -32,6 +40,10 @@ internal class VirtualNodeWriterFactory(
         ::findCurrentCpkChangeLogsForCpi
 ) {
 
+    private companion object {
+        const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
+    }
+
     /**
      * Creates a [VirtualNodeWriter].
      *
@@ -40,13 +52,38 @@ internal class VirtualNodeWriterFactory(
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
     fun create(messagingConfig: SmartConfig): VirtualNodeWriter {
-        val vnodePublisher = createPublisher(messagingConfig)
-        val subscription = createRPCSubscription(messagingConfig, vnodePublisher)
-        return VirtualNodeWriter(subscription, vnodePublisher)
+        val virtualNodeInfoPublisher = createPublisher(messagingConfig)
+        val rpcSubscription = createRPCSubscription(messagingConfig, virtualNodeInfoPublisher)
+        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig, virtualNodeInfoPublisher)
+        return VirtualNodeWriter(rpcSubscription, asyncOperationSubscription, virtualNodeInfoPublisher)
     }
 
     /**
-     * Creates a [Publisher] using the provided [config] and [instanceId].
+     * Create a subscription for handling asynchronous virtual node operations.
+     */
+    private fun createAsyncOperationSubscription(
+        messagingConfig: SmartConfig,
+        virtualNodeInfoPublisher: Publisher,
+    ): Subscription<String, VirtualNodeAsynchronousRequest> {
+        val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
+        val oldVirtualNodeEntityRepository = VirtualNodeEntityRepository(this.dbConnectionManager.getClusterEntityManagerFactory())
+        val migrationUtility = MigrationUtilityImpl(dbConnectionManager, LiquibaseSchemaMigratorImpl())
+
+        val virtualNodeUpgradeHandler = VirtualNodeUpgradeOperationHandler(
+            this.dbConnectionManager.getClusterEntityManagerFactory(),
+            oldVirtualNodeEntityRepository,
+            virtualNodeInfoPublisher,
+            migrationUtility
+        )
+        val asyncOperationProcessor = VirtualNodeAsyncOperationProcessor(virtualNodeUpgradeHandler)
+
+        return subscriptionFactory.createDurableSubscription(
+            subscriptionConfig, asyncOperationProcessor, messagingConfig, null
+        )
+    }
+
+    /**
+     * Creates a [Publisher] using the provided [config].
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */

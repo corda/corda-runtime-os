@@ -3,7 +3,7 @@ package net.corda.membership.certificate.publisher.impl
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.p2p.mtls.ClientCertificateSubject
+import net.corda.data.p2p.mtls.MemberAllowedCertificateSubject
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_DECLINED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
@@ -70,7 +70,7 @@ internal class ProcessorTest {
             val records = processor.onNext(events)
 
             val keyToSubject = records.map {
-                it.key to (it.value as? ClientCertificateSubject)?.subject
+                it.key to (it.value as? MemberAllowedCertificateSubject)?.subject
             }.filter {
                 it.second != null
             }.toMap()

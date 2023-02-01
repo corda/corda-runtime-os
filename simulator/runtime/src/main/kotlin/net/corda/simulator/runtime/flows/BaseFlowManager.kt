@@ -1,12 +1,12 @@
 package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.runtime.utils.accessField
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.io.Closeable
 
 /**
@@ -15,7 +15,7 @@ import java.io.Closeable
 class BaseFlowManager : FlowManager {
 
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun call(requestData: RestRequestBody, flow: ClientStartableFlow) : String {

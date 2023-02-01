@@ -13,6 +13,7 @@ import net.corda.kotlin.reflect.types.jvmSuperClasses
 import net.corda.kotlin.reflect.types.toSignature
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap
+import kotlin.LazyThreadSafetyMode.PUBLICATION
 import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -270,7 +271,7 @@ sealed class KotlinClassImpl<T : Any> constructor(
         klazz: KClass<T>,
         kClassPool: KClassPool
     ): KotlinClassImpl<T>(clazz, klazz, kClassPool) {
-        private val jMembers by lazy {
+        private val jMembers by lazy(PUBLICATION) {
             JavaMembers(clazz, allSuperKotlinClasses)
         }
 

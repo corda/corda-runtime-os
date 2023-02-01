@@ -11,12 +11,12 @@ import net.corda.serialization.InternalDirectSerializer
 import net.corda.serialization.InternalProxySerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaThrowable
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
+import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.lang.reflect.Type
 import java.security.AccessControlContext
@@ -112,7 +112,7 @@ class CachingCustomSerializerRegistry(
     ) : this(descriptorBasedSerializerRegistry, emptySet(), sandboxGroup)
 
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val customSerializerNames: List<String>

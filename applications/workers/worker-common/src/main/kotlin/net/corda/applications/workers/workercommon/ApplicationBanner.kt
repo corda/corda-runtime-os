@@ -4,10 +4,10 @@ import net.corda.application.addon.CordaAddonResolver
 import net.corda.application.banner.ConsolePrinter
 import net.corda.application.banner.StartupBanner
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [ApplicationBanner::class])
 class ApplicationBanner(
@@ -25,7 +25,7 @@ class ApplicationBanner(
     ):this(startupBanner, addonResolver, ConsolePrinter())
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     fun show(name: String, platformInfoProvider: PlatformInfoProvider) {

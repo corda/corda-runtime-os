@@ -1,11 +1,11 @@
 package net.corda.lifecycle.domino.logic.util
 
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentLinkedDeque
 
 class ResourcesHolder : AutoCloseable {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     private val resources = ConcurrentLinkedDeque<AutoCloseable>()
 

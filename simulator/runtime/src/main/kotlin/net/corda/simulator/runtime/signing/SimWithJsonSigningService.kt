@@ -2,9 +2,9 @@ package net.corda.simulator.runtime.signing
 
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 /**
@@ -18,7 +18,7 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
     private val jsonMarshallingService = SimpleJsonMarshallingService()
 
     companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

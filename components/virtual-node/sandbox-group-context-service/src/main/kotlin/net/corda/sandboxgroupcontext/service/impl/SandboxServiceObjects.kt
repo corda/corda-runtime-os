@@ -1,9 +1,9 @@
 package net.corda.sandboxgroupcontext.service.impl
 
-import java.lang.reflect.InvocationTargetException
-import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.ServiceObjects
 import org.osgi.framework.ServiceReference
+import org.slf4j.LoggerFactory
+import java.lang.reflect.InvocationTargetException
 
 class SandboxServiceObjects(
     private val reference: ServiceReference<*>,
@@ -11,7 +11,7 @@ class SandboxServiceObjects(
     private val sandboxServices: SatisfiedServiceReferences
 ) : ServiceObjects<Any> {
     private companion object {
-        private val logger = loggerFor<SandboxServiceObjects>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val closeables = mutableListOf<AutoCloseable>()

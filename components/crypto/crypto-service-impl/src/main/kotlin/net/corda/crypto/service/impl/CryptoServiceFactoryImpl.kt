@@ -23,18 +23,18 @@ import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
-import net.corda.crypto.service.HSMService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -56,8 +56,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
-    @Reference(service = HSMService::class)
-    private val hsmService: HSMService,
+    @Reference(service = HSMStore::class)
+    private val hsmStore: HSMStore,
     @Reference(service = CryptoServiceProvider::class)
     private val cryptoServiceProvider: CryptoServiceProvider<*>
 ) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
@@ -67,13 +67,13 @@ class CryptoServiceFactoryImpl @Activate constructor(
     upstream = DependenciesTracker.Default(
         setOf(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-            LifecycleCoordinatorName.forComponent<HSMService>()
+            LifecycleCoordinatorName.forComponent<HSMStore>()
         ) + ((cryptoServiceProvider as? LifecycleNameProvider)?.lifecycleNameAsSet() ?: emptySet())
     ),
     configKeys = setOf(CRYPTO_CONFIG)
 ), CryptoServiceFactory {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val jsonMapper = JsonMapper
             .builder()
@@ -90,7 +90,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
         bootConfig = bootConfig ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
         event = event,
-        hsmService = hsmService,
+        hsmStore = hsmStore,
         cryptoServiceProvider = cryptoServiceProvider as CryptoServiceProvider<Any>
     )
 
@@ -109,14 +109,13 @@ class CryptoServiceFactoryImpl @Activate constructor(
     class Impl(
         bootConfig: SmartConfig,
         event: ConfigChangedEvent,
-        private val hsmService: HSMService,
+        private val hsmStore: HSMStore,
         private val cryptoServiceProvider: CryptoServiceProvider<Any>
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         private val hsmId: String
 
         private val cryptoConfig: SmartConfig
-
         private val hsmConfig: CryptoHSMConfig
 
         init {
@@ -149,7 +148,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         fun findInstance(tenantId: String, category: String): CryptoServiceRef {
             logger.debug { "Getting the crypto service for tenantId '$tenantId', category '$category'." }
-            val association = hsmService.findAssignedHSM(tenantId, category)
+            val association = hsmStore.findTenantAssociation(tenantId, category)
                 ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
             if(association.hsmId != hsmId) {
                 throw InvalidParamsException(

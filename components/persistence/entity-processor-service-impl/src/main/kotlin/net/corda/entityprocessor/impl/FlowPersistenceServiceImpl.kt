@@ -3,8 +3,8 @@ package net.corda.entityprocessor.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.entityprocessor.EntityProcessorFactory
 import net.corda.entityprocessor.EntityProcessor
+import net.corda.entityprocessor.EntityProcessorFactory
 import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
@@ -20,12 +20,12 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [FlowPersistenceService::class])
@@ -47,7 +47,7 @@ class FlowPersistenceServiceImpl  @Activate constructor(
     private var entityProcessor: EntityProcessor? = null
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dependentComponents = DependentComponents.of(

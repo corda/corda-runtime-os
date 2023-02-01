@@ -8,6 +8,7 @@ object MembershipEntities {
         MemberSignatureEntity::class.java,
         GroupParametersEntity::class.java,
         MutualTlsAllowedClientCertificateEntity::class.java,
-        ApprovalRulesEntity::class.java,
+        PreAuthTokenEntity::class.java,
+        ApprovalRulesEntity::class.java
     )
 }

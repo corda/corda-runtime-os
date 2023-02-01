@@ -2,16 +2,16 @@ package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
-import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.RequestHandler
+import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.consensual.ConsensualRequestHandlerSelector
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [DelegatedRequestHandlerSelector::class])
 class DelegatedRequestHandlerSelectorImpl @Activate constructor(
@@ -21,8 +21,8 @@ class DelegatedRequestHandlerSelectorImpl @Activate constructor(
     private val utxoRequestHandlerSelector: UtxoRequestHandlerSelector,
 ) : DelegatedRequestHandlerSelector {
 
-    companion object {
-        val log = contextLogger()
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {

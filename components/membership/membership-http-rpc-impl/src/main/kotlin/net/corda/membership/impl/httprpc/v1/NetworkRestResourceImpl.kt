@@ -13,12 +13,12 @@ import net.corda.membership.certificate.client.CertificatesResourceNotFoundExcep
 import net.corda.membership.httprpc.v1.NetworkRestResource
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.security.SignatureException
 
 @Component(service = [PluggableRestResource::class])
@@ -30,7 +30,7 @@ class NetworkRestResourceImpl @Activate constructor(
 ) : NetworkRestResource, PluggableRestResource<NetworkRestResource>, Lifecycle {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun setupHostedIdentities(
