@@ -156,7 +156,6 @@ class InteropServiceIntegrationTest {
         p2pOutSub.close()
 
         interopService.stop()
-        //assertTrue(true)
     }
 
     private fun setupConfig(publisher: Publisher) {
