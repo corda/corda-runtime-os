@@ -90,7 +90,8 @@ class FlowEventPipelineImpl(
         }
         val holdingIdentity = context.checkpoint.holdingIdentity
         val virtualNode = virtualNodeInfoReadService.get(holdingIdentity)
-            ?: throw FlowTransientException("Virtual node for holdingIdentity '${holdingIdentity.shortHash}' not found")
+            ?: throw FlowTransientException("Failed to find the virtual node info for holder " +
+                    "'HoldingIdentity(x500Name=${holdingIdentity.x500Name}, groupId=${holdingIdentity.groupId})'")
 
         if (virtualNode.flowOperationalStatus == OperationalStatus.INACTIVE) {
             throw FlowMarkedForKillException("Flow operational status is ${virtualNode.flowOperationalStatus.name}")
