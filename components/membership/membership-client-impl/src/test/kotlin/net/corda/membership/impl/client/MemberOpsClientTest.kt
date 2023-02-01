@@ -2,19 +2,19 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.async.request.MembershipAsyncRequest
+import net.corda.data.membership.async.request.RegistrationAction
+import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
-import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus.SUBMITTED
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus.NOT_SUBMITTED
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.SmartConfig
@@ -34,13 +34,17 @@ import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
-import net.corda.membership.lib.toMap
+import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -91,6 +95,7 @@ class MemberOpsClientTest {
     }
 
     private val rpcSender = mock<RPCSender<MembershipRpcRequest, MembershipRpcResponse>>()
+    private val asyncPublisher = mock<Publisher>()
 
     private val publisherFactory = mock<PublisherFactory> {
         on {
@@ -99,6 +104,8 @@ class MemberOpsClientTest {
                 any()
             )
         } doReturn rpcSender
+
+        on { createPublisher(any(), any()) } doReturn asyncPublisher
     }
 
     private val configurationReadService: ConfigurationReadService = mock {
@@ -148,44 +155,6 @@ class MemberOpsClientTest {
         assertTrue(memberOpsClient.isRunning)
         memberOpsClient.stop()
         assertFalse(memberOpsClient.isRunning)
-    }
-
-    @Test
-    fun `rpc sender sends the expected request - starting registration process`() {
-        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
-        val response = RegistrationRpcResponse(
-            "Registration-ID",
-            clock.instant(),
-            SUBMITTED,
-            "",
-            1,
-            KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-            KeyValuePairList(emptyList())
-        )
-        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
-            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
-            CompletableFuture.completedFuture(
-                MembershipRpcResponse(
-                    MembershipRpcResponseContext(
-                        requestContext.requestId,
-                        requestContext.requestTimestamp,
-                        clock.instant()
-                    ),
-                    response,
-                )
-            )
-        }
-        memberOpsClient.start()
-        setUpRpcSender()
-        memberOpsClient.startRegistration(request)
-        memberOpsClient.stop()
-
-        val requestSent = rpcRequest.firstValue.request as RegistrationRpcRequest
-
-        assertThat(requestSent.holdingIdentityId)
-            .isEqualTo(request.holdingIdentityShortHash.toString())
-        assertThat(requestSent.registrationAction.name).isEqualTo(request.action.name)
-        assertThat(requestSent.context.toMap()).isEqualTo(request.context)
     }
 
     @Test
@@ -293,14 +262,8 @@ class MemberOpsClientTest {
                         rpcRequest.requestContext.requestTimestamp,
                         clock.instant()
                     ),
-                    RegistrationRpcResponse(
-                        "RegistrationID",
-                        clock.instant(),
-                        SUBMITTED,
-                        "",
-                        1,
-                        KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                        KeyValuePairList(emptyList())
+                    RegistrationsStatusResponse(
+                        emptyList(),
                     )
                 )
             )
@@ -325,14 +288,8 @@ class MemberOpsClientTest {
                         clock.instant().plusMillis(10000000),
                         clock.instant()
                     ),
-                    RegistrationRpcResponse(
-                        "RegistrationID",
-                        clock.instant(),
-                        SUBMITTED,
-                        "",
-                        1,
-                        KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                        KeyValuePairList(emptyList())
+                    RegistrationsStatusResponse(
+                        emptyList(),
                     )
                 )
             )
@@ -633,7 +590,6 @@ class MemberOpsClientTest {
         }
     }
 
-
     @Test
     fun `checkSpecificRegistrationProgress sends the correct data`() {
         val requestCapture = argumentCaptor<MembershipRpcRequest>()
@@ -666,17 +622,55 @@ class MemberOpsClientTest {
 
     @Test
     fun `startRegistration should add exception message to reason field if exception happened`() {
-        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
-        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
-            throw IllegalArgumentException("Exception happened.")
-        }
+        val future = CompletableFuture.failedFuture<Unit>(
+            CordaRuntimeException(
+                "Ooops."
+            )
+        )
+        whenever(asyncPublisher.publish(any())).doReturn(listOf(future))
         memberOpsClient.start()
         setUpRpcSender()
+
         val result = memberOpsClient.startRegistration(request)
+
         assertSoftly {
             it.assertThat(result.reason)
-                .isEqualTo("Failed to send request and receive response for membership RPC operation. Exception happened.")
-            it.assertThat(result.registrationStatus).isEqualTo(NOT_SUBMITTED.toString())
+                .isEqualTo(
+                    "Ooops."
+                )
+            it.assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.NOT_SUBMITTED)
         }
+    }
+
+    @Test
+    fun `startRegistration publish the correct data`() {
+        val records = argumentCaptor<List<Record<*, *>>>()
+        whenever(asyncPublisher.publish(records.capture())).doReturn(emptyList())
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        memberOpsClient.startRegistration(request)
+
+        assertThat(records.firstValue).hasSize(1)
+            .anySatisfy { record ->
+                assertThat(record.topic).isEqualTo(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
+                val value = record.value as? MembershipAsyncRequest
+                val request = value?.request as? RegistrationAsyncRequest
+                assertThat(request?.requestId).isEqualTo(record.key)
+                assertThat(request?.holdingIdentityId).isEqualTo(HOLDING_IDENTITY_ID)
+                assertThat(request?.registrationAction).isEqualTo(RegistrationAction.REQUEST_JOIN)
+                assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
+            }
+    }
+
+    @Test
+    fun `startRegistration return submitted`() {
+        whenever(asyncPublisher.publish(any())).doReturn(emptyList())
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        val result = memberOpsClient.startRegistration(request)
+
+        assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
     }
 }

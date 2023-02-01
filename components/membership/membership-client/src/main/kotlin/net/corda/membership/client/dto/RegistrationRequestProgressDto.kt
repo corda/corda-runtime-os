@@ -14,7 +14,7 @@ import java.time.Instant
 data class RegistrationRequestProgressDto(
     val registrationRequestId: String,
     val registrationSent: Instant?,
-    val registrationStatus: String,
+    val registrationStatus: SubmittedRegistrationStatus,
     val reason: String,
     val memberInfoSubmitted: MemberInfoSubmittedDto
 )

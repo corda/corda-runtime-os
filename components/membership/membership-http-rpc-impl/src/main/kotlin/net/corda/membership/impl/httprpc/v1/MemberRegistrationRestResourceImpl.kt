@@ -15,24 +15,21 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component(service = [PluggableRestResource::class])
 class MemberRegistrationRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MemberOpsClient::class)
-    private val memberOpsClient: MemberOpsClient
+    private val memberOpsClient: MemberOpsClient,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : MemberRegistrationRestResource, PluggableRestResource<MemberRegistrationRestResource>, Lifecycle {
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     private interface InnerMemberRegistrationRpcOps {
         fun startRegistration(
             holdingIdentityShortHash: String,
@@ -45,8 +42,6 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             registrationRequestId: String
         ): RegistrationRequestStatus?
     }
-
-    private val className = this::class.java.simpleName
 
     override val protocolVersion = 1
 
@@ -129,7 +124,13 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             holdingIdentityShortHash: String,
             memberRegistrationRequest: MemberRegistrationRequest,
         ): RegistrationRequestProgress {
-            return memberOpsClient.startRegistration(memberRegistrationRequest.toDto(holdingIdentityShortHash)).fromDto()
+            val dto = memberRegistrationRequest.toDto(holdingIdentityShortHash)
+            virtualNodeInfoReadService.getByHoldingIdentityShortHash(dto.holdingIdentityShortHash)
+                ?: throw ResourceNotFoundException(
+                    "holdingIdentityShortHash",
+                    holdingIdentityShortHash,
+                )
+            return memberOpsClient.startRegistration(dto).fromDto()
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {

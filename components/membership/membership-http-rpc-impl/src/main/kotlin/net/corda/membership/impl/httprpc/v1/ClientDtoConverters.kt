@@ -29,7 +29,7 @@ fun MemberRegistrationRequest.toDto(holdingIdentityShortHash: String) = MemberRe
 fun RegistrationRequestProgressDto.fromDto() = RegistrationRequestProgress(
     registrationRequestId,
     registrationSent,
-    registrationStatus,
+    registrationStatus.toString(),
     reason,
     memberInfoSubmitted.fromDto()
 )
