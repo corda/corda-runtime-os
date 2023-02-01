@@ -33,6 +33,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -95,14 +96,17 @@ class CryptoProcessorImpl @Activate constructor(
         ::hsmStore,
         ::signingServiceFactory,
         ::cryptoOspService,
-        ::cryptoFlowOpsBusService,
-        ::cryptoOpsClient,
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
         ::hsmRegistration,
         ::dbConnectionManager,
         ::vnodeInfo
+    )
+
+    private val cryptoOpsClientAndDependentComponents = DependentComponents.of(
+        ::cryptoOpsClient,
+        ::cryptoFlowOpsBusService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
@@ -153,11 +157,30 @@ class CryptoProcessorImpl @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    dependenciesUp = true
-                    if (hsmAssociated) {
-                        setStatus(event.status, coordinator)
+                    if (event.registration == dependentComponents.registration) {
+                        // At this point `CryptoOpsBusServiceImpl` is UP, meaning RPC subscription created for
+                        // FLOW_OPS_MESSAGE_TOPIC is created so now it should be safe to create RPC sender for this topic
+                        // which is what `CryptoOpsClientImpl` is doing. Otherwise we might end up creating the RPC sender
+                        // before the subscription is created. We used to get:
+                        // "CordaRPCAPISenderException: No partitions for topic crypto.ops.rpc.resp. Couldn't send."
+                        logger.debug {
+                            "Dependent components are UP so now registering and starting " +
+                                    "crypto ops client and its dependent components"
+                        }
+                        cryptoOpsClientAndDependentComponents.registerAndStartAll(coordinator)
+                    } else if (event.registration == cryptoOpsClientAndDependentComponents.registration) {
+                        logger.debug { "All dependent components are UP" }
+                        dependenciesUp = true
+                        if (hsmAssociated) {
+                            setStatus(event.status, coordinator)
+                        } else {
+                            coordinator.postEvent(AssociateHSM())
+                        }
                     } else {
-                        coordinator.postEvent(AssociateHSM())
+                        throw IllegalArgumentException(
+                            "Unexpected registration for received ${RegistrationStatusChangeEvent::class.java.simpleName}: "
+                                    + "${event.registration}"
+                        )
                     }
                 } else {
                     dependenciesUp = false
