@@ -12,7 +12,6 @@ import net.corda.ledger.common.data.transaction.notaryMerkleTreeDigestOptionsNod
 import net.corda.ledger.common.data.transaction.notaryMerkleTreeDigestProviderName
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafPrefix
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefix
-import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -45,8 +44,7 @@ const val BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY = "batchMerkleTre
 @Suppress("Unused", "LongParameterList")
 @Component(
     service = [TransactionSignatureService::class, UsedByFlow::class],
-    scope = ServiceScope.PROTOTYPE,
-    property = [ CORDA_SYSTEM_SERVICE ] //@todo ?
+    scope = ServiceScope.PROTOTYPE
 )
 class TransactionSignatureServiceImpl @Activate constructor(
     @Reference(service = SerializationService::class)
