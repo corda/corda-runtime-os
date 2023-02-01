@@ -254,18 +254,11 @@ class OutputAssertionsImpl(
     override fun flowStatus(state: FlowStates, result: String?, errorType: String?, errorMessage: String?) {
         asserts.add { testRun ->
             assertNotNull(testRun.response)
-            println("in assertion")
-            println("flowID$flowId, state:$state, result:$result, errorType:$errorType, errorMessage:$errorMessage")
-            println("testrun: $testRun")
-            println("testrun.response: ${testRun.response}")
-            println("testrun.response.responseEvents: ${testRun.response?.responseEvents}")
             assertTrue(
                 testRun.response!!.responseEvents.any {
-                    println("it.key ${it.key}")
-                    println("it.key ${it.value}")
                     matchStatusRecord(flowId, state, result, errorType, errorMessage, it)
                 },
-                "??? ${testRun.response} Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
+                "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
             )
         }
     }
@@ -307,17 +300,10 @@ class OutputAssertionsImpl(
         record: Record<*, *>
     ): Boolean {
         if (record.value !is FlowStatus) {
-            println("***returning false from mathcStatusREcord")
             return false
         }
 
         val payload = record.value as FlowStatus
-        println("flowId $flowId, payload ${payload.flowId}")
-        println("$state, payload ${payload.flowStatus}")
-        println("$result, payload ${payload.result}")
-        println("$errorType, payload${payload.error?.errorType}")
-        println("$errorMessage, payload ${payload.error?.errorMessage}")
-
         return flowId == payload.flowId
                 && payload.flowStatus == state
                 && payload.result == result

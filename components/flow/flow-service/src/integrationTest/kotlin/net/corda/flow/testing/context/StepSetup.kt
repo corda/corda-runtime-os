@@ -17,7 +17,8 @@ interface StepSetup {
         flowP2pOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE,
         flowStartOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE,
         flowOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE,
-        vaultDbOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE,)
+        vaultDbOperationalStatus: OperationalStatus = VirtualNodeInfo.DEFAULT_INITIAL_STATE
+    )
 
     fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash)
 
