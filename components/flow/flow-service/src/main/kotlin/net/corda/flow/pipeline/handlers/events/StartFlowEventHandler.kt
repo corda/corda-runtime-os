@@ -29,7 +29,8 @@ class StartFlowEventHandler @Activate constructor(
 
         if (virtualNodeInfo?.flowStartOperationalStatus == OperationalStatus.INACTIVE) {
             throw FlowMarkedForKillException(
-                "flowStartOperationalStatus is INACTIVE, new flows cannot be started for ${holdingIdentity.x500Name}"
+                "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with " +
+                        "shortHash ${holdingIdentity.shortHash}"
             )
         }
 
