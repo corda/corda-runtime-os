@@ -48,7 +48,7 @@ class InteropWorker @Activate constructor(
         logger.info("Flow worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
 
-        applicationBanner.show("Flow Worker", platformInfoProvider)
+        applicationBanner.show("InterOp Worker", platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")
