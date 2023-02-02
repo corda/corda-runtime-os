@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@beta2') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',
@@ -15,4 +15,5 @@ cordaPipeline(
     publishToMavenS3Repository: true,
     // allow publishing an installer to a download site
     publishToDownloadSiteTask: ':tools:plugins:publish',
+    enableNotifications: false
     )
