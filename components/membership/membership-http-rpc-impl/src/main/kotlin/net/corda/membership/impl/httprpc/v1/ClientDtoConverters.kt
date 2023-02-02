@@ -48,7 +48,8 @@ fun RegistrationRequestStatusDto.fromDto() = RegistrationRequestStatus(
 )
 
 fun RegistrationStatusDto.fromDto() = when (this) {
-    RegistrationStatusDto.NEW -> RegistrationStatus.NEW
+    RegistrationStatusDto.SUBMITTED -> RegistrationStatus.SUBMITTED
+    RegistrationStatusDto.PENDING_MGM_NETWORK_ACCESS -> RegistrationStatus.PENDING_MGM_NETWORK_ACCESS
     RegistrationStatusDto.PENDING_MEMBER_VERIFICATION -> RegistrationStatus.PENDING_MEMBER_VERIFICATION
     RegistrationStatusDto.PENDING_APPROVAL_FLOW -> RegistrationStatus.PENDING_APPROVAL_FLOW
     RegistrationStatusDto.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL

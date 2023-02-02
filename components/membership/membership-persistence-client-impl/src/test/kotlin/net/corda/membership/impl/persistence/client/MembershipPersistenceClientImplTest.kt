@@ -131,7 +131,7 @@ class MembershipPersistenceClientImplTest {
     }
     private val registrationId = "Group ID 1"
     private val ourRegistrationRequest = RegistrationRequest(
-        RegistrationStatus.NEW,
+        RegistrationStatus.PENDING_MGM_NETWORK_ACCESS,
         registrationId,
         ourHoldingIdentity,
         ByteBuffer.wrap("123".toByteArray()),
@@ -378,7 +378,7 @@ class MembershipPersistenceClientImplTest {
 
             assertThat(firstValue.request).isInstanceOf(PersistRegistrationRequest::class.java)
             assertThat((firstValue.request as PersistRegistrationRequest).status)
-                .isEqualTo(RegistrationStatus.NEW)
+                .isEqualTo(RegistrationStatus.PENDING_MGM_NETWORK_ACCESS)
             with((firstValue.request as PersistRegistrationRequest).registrationRequest) {
                 assertThat(registrationId)
                     .isEqualTo(this@MembershipPersistenceClientImplTest.registrationId)

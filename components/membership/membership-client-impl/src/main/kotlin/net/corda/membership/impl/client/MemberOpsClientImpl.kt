@@ -375,7 +375,8 @@ class MemberOpsClientImpl @Activate constructor(
 
     private fun RegistrationStatus.toDto(): RegistrationStatusDto {
         return when (this) {
-            RegistrationStatus.NEW -> RegistrationStatusDto.NEW
+            RegistrationStatus.SUBMITTED -> RegistrationStatusDto.SUBMITTED
+            RegistrationStatus.PENDING_MGM_NETWORK_ACCESS -> RegistrationStatusDto.PENDING_MGM_NETWORK_ACCESS
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
             RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatusDto.PENDING_APPROVAL_FLOW
             RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusDto.PENDING_MANUAL_APPROVAL

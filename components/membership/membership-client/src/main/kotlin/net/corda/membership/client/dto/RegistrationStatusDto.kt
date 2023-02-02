@@ -1,7 +1,8 @@
 package net.corda.membership.client.dto
 
 enum class RegistrationStatusDto {
-    NEW,
+    SUBMITTED,
+    PENDING_MGM_NETWORK_ACCESS,
     PENDING_MEMBER_VERIFICATION,
     PENDING_APPROVAL_FLOW,
     PENDING_MANUAL_APPROVAL,

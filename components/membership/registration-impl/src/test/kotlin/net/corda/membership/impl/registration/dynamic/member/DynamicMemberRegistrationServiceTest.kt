@@ -410,7 +410,7 @@ class DynamicMemberRegistrationServiceTest {
 
             registrationService.register(registrationResultId, member, context)
 
-            assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.NEW)
+            assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.PENDING_MGM_NETWORK_ACCESS)
         }
 
         @Test

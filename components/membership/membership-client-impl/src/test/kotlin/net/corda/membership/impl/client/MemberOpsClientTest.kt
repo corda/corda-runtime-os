@@ -445,7 +445,7 @@ class MemberOpsClientTest {
                 RegistrationStatusDetails(
                     clock.instant().plusSeconds(10),
                     clock.instant().plusSeconds(20),
-                    RegistrationStatus.NEW,
+                    RegistrationStatus.PENDING_MGM_NETWORK_ACCESS,
                     "registration id 2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
@@ -496,7 +496,7 @@ class MemberOpsClientTest {
                     registrationId = "registration id 2",
                     registrationSent = clock.instant().plusSeconds(10),
                     registrationUpdated = clock.instant().plusSeconds(20),
-                    registrationStatus = RegistrationStatusDto.NEW,
+                    registrationStatus = RegistrationStatusDto.PENDING_MGM_NETWORK_ACCESS,
                     memberInfoSubmitted = MemberInfoSubmittedDto(
                         mapOf(
                             "registrationProtocolVersion" to "1",
