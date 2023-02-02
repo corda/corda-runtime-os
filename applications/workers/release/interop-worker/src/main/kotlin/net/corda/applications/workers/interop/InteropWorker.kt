@@ -43,9 +43,9 @@ class InteropWorker @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    /** Parses the arguments, then initialises and starts the [flowProcessor] and [verificationProcessor]. */
+    /** Parses the arguments, then initialises and starts the [interopProcessor]. */
     override fun startup(args: Array<String>) {
-        logger.info("Flow worker starting.")
+        logger.info("InterOp worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
 
         applicationBanner.show("InterOp Worker", platformInfoProvider)

@@ -88,7 +88,7 @@ class InteropServiceIntegrationTest {
     }
 
     @Test
-    fun `verify events are forwarded to the correct topic`() {
+    fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
         val testId = "test1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
