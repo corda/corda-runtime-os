@@ -62,5 +62,16 @@ interface VirtualNodeRepository {
         entityManager: EntityManager,
         holdingIdentityShortHash: String
     ): VirtualNodeInfo
+
+    /**
+     * Create a virtual node operation holding the details of a rejected request.
+     */
+    fun rejectedOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        requestId: String,
+        requestTimestamp: Instant,
+        reason: String
+    )
 }
 

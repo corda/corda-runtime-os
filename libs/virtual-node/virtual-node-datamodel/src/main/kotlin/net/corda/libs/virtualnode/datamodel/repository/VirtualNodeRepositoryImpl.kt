@@ -164,6 +164,24 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             .toVirtualNodeInfo()
     }
 
+    override fun rejectedOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        requestId: String,
+        requestTimestamp: Instant,
+        reason: String
+    ) {
+        entityManager.persist(
+            VirtualNodeOperationEntity(
+                UUID.randomUUID().toString(),
+                requestId,
+                reason,
+                VirtualNodeOperationState.VALIDATION_FAILED,
+                requestTimestamp
+            )
+        )
+    }
+
     private fun findEntity(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeEntity? {
         val queryBuilder = with(entityManager.criteriaBuilder!!) {
             val queryBuilder = createQuery(VirtualNodeEntity::class.java)!!

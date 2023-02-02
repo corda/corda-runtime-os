@@ -57,5 +57,5 @@ internal class VirtualNodeOperationEntity(
 }
 
 enum class VirtualNodeOperationState {
-    IN_PROGRESS, COMPLETED, ABORTED
+    IN_PROGRESS, COMPLETED, ABORTED, VALIDATION_FAILED
 }

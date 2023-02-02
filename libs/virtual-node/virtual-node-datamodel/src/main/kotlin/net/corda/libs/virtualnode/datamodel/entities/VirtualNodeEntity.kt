@@ -140,6 +140,7 @@ internal class VirtualNodeEntity(
             flowStartOperationalStatus,
             flowOperationalStatus,
             vaultDbOperationalStatus,
+            operationInProgress?.id,
             entityVersion,
             insertTimestamp!!,
             isDeleted
