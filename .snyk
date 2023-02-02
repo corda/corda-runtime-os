@@ -12,4 +12,11 @@ ignore:
           HTTPS connections with other gateways.
         expires: 2022-10-20T15:45:03.904Z
         created: 2022-09-20T15:45:03.911Z
+  SNYK-JAVA-ORGYAML-3152153:
+    - '*':
+        reason: >-
+          We are not exposed because we don’t accept yaml based input in any of
+          the components affected.
+        expires: 2023-05-04T15:56:09.202Z
+        created: 2023-02-02T15:56:09.216Z
 patch: {}
