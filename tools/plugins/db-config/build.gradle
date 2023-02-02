@@ -31,7 +31,7 @@ dependencies {
 }
 
 cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.dbconfig.Database'
+    cliPluginClass = 'net.corda.cli.plugins.dbconfig.DatabaseBootstrapAndUpgrade'
     cliPluginDescription = 'Plugin for generating the initial database migrations.'
 }
 

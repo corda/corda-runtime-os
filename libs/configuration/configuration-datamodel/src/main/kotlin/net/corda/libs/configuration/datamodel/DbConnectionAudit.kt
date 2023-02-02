@@ -34,7 +34,8 @@ data class DbConnectionAudit (
     @SequenceGenerator(
         name = DB_CONNECTION_AUDIT_GENERATOR,
         sequenceName = DbSchema.DB_CONNECTION_AUDIT_ID_SEQUENCE,
-        allocationSize = DbSchema.DB_CONNECTION_AUDIT_ID_SEQUENCE_ALLOC_SIZE
+        allocationSize = DbSchema.DB_CONNECTION_AUDIT_ID_SEQUENCE_ALLOC_SIZE,
+        schema = DbSchema.CONFIG
     )
     @GeneratedValue(strategy = SEQUENCE, generator = DB_CONNECTION_AUDIT_GENERATOR)
     @Column(name = "change_number", nullable = false)

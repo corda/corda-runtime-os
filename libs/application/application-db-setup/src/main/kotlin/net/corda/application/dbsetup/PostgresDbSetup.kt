@@ -42,10 +42,12 @@ class PostgresDbSetup(
     companion object {
         private const val DB_DRIVER = "org.postgresql.Driver"
 
-        private val changelogFiles = mapOf(
-            "net/corda/db/schema/config/db.changelog-master.xml" to null,
-            "net/corda/db/schema/messagebus/db.changelog-master.xml" to null,
-            "net/corda/db/schema/rbac/db.changelog-master.xml" to null,
+        // It is mandatory to supply a schema name in this list so the Db migration step can always set a valid schema
+        // search path, which is required for the public schema too. For the public schema use "PUBLIC".
+        private val changelogFiles: Map<String, String> = mapOf(
+            "net/corda/db/schema/config/db.changelog-master.xml" to "CONFIG",
+            "net/corda/db/schema/messagebus/db.changelog-master.xml" to "PUBLIC",
+            "net/corda/db/schema/rbac/db.changelog-master.xml" to "RBAC",
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO"
         )
 
@@ -126,18 +128,14 @@ class PostgresDbSetup(
                     }
                     val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
                     val schemaMigrator = LiquibaseSchemaMigratorImpl()
-                    if (schema != null) {
-                        createDbSchema(schema)
-                        connection.prepareStatement("SET search_path TO $schema;").execute()
-                        schemaMigrator.updateDb(connection, dbChange, schema)
-                    } else {
-                        schemaMigrator.updateDb(connection, dbChange)
-                    }
+                    createDbSchemaIfRequired(schema)
+                    connection.prepareStatement("SET search_path TO $schema;").execute()
+                    schemaMigrator.updateDb(connection, dbChange, schema)
                 }
             }
     }
 
-    private fun createDbSchema(schema: String) {
+    private fun createDbSchemaIfRequired(schema: String) {
         log.info("Create SCHEMA $schema.")
         adminConnection()
             .use { connection ->

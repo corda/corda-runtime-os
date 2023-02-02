@@ -54,94 +54,98 @@ class Spec(
     var outputDir: String = "."
 
     @CommandLine.Option(
-        names = ["-d", "--database-url"],
+        names = ["--jdbc-url"],
         description = ["JDBC Url of database. If not specified runs in offline mode"]
     )
-    var jdbcUrl: String = ""
+    var jdbcUrl: String? = null
 
     @CommandLine.Option(
         names = ["-u", "--user"],
         description = ["Database username"]
     )
-    var user: String = ""
+    var user: String? = null
 
     @CommandLine.Option(
         names = ["-p", "--password"],
         description = ["Database password"]
     )
-    var password: String = ""
+    var password: String? = null
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
     override fun run() {
-        val parentClassLoader = DatabaseCommand.classLoader
         if (clearChangeLog == true) {
             deleteFile(databaseChangeLogFile)
         }
 
-        val files = mapOf(
+        mapOf(
             "net/corda/db/schema/config/db.changelog-master.xml" to DbMetadata(),
             // messagebus is forced into the public schema for legacy reasons
             "net/corda/db/schema/messagebus/db.changelog-master.xml" to DbMetadata(defaultSchemaName = "public"),
             "net/corda/db/schema/rbac/db.changelog-master.xml" to DbMetadata(),
             "net/corda/db/schema/crypto/db.changelog-master.xml" to DbMetadata()
-        )
+        ).filterOnSchemasToGenerate().also { logger.info("Using the following schemas $it") }.forEach(::generateSql)
+    }
 
-        val filteredFiles = if (schemasToGenerate.isEmpty()) files else files.filter { file ->
+    private fun Map<String, DbMetadata>.filterOnSchemasToGenerate() =
+        if (schemasToGenerate.isEmpty()) this else this.filter { file ->
             schemasToGenerate.any { schemaName ->
                 file.key.contains(schemaName)
             }
         }
 
-        logger.info("Using the following schemas $filteredFiles")
+    private fun generateSql(file: Map.Entry<String, DbMetadata>) {
+        // Grabs dirname above db.changelog-master.xml to derive the package
+        val test = "([a-zA-Z0-9]+)/db\\.changelog-master\\.xml".toRegex()
+        // Make .sql output file
+        val schemaDefinitionName = checkNotNull(test.find(file.key)).groupValues.last()
+        val outputFileName = "${outputDir.removeSuffix("/")}/${schemaDefinitionName}.sql"
+        val schemaName = file.value.defaultSchemaName ?: schemaDefinitionName
 
+        // This is a workaround to make liquibase play nicely with the logger that's on the class loader
+        val oldCl = Thread.currentThread().contextClassLoader
+        Thread.currentThread().contextClassLoader = DatabaseBootstrapAndUpgrade.classLoader
+
+        writerFactory(outputFileName).use { outputFile ->
+            writeSchemaToFile(schemaName, outputFile, file)
+        }
+
+        Thread.currentThread().contextClassLoader = oldCl
+    }
+
+    private fun writeSchemaToFile(
+        schemaName: String,
+        outputFile: FileWriter,
+        file: Map.Entry<String, DbMetadata>
+    ) {
+        // A curious feature of the liquibase connection is that if you attempt to generate multiple sql files against
+        // the same one, only the first one ends up generating offline sql when using offline mode. Note that multiple
+        // connections don't overwrite any previous databasechangelog.csv, it is still appended to on each invocation.
         val (connection, database) = connectionAndDatabase()
         connection.use {
-            filteredFiles.forEach { file ->
-                // Grabs dirname above db.changelog-master.xml to derive the package
-                val test = "([a-zA-Z0-9]+)/db\\.changelog-master\\.xml".toRegex()
-                // Make .sql output file
-                val schemaDefinitionName = checkNotNull(test.find(file.key)).groupValues.last()
-                val outputFileName = "${outputDir.removeSuffix("/")}/${schemaDefinitionName}.sql"
-                val schemaName = file.value.defaultSchemaName ?: schemaDefinitionName
-                val outputFile = writerFactory(outputFileName)
-                // This is a workaround to make liquibase play nicely with the logger that's on the class loader
-                val oldCl = Thread.currentThread().contextClassLoader
-                Thread.currentThread().contextClassLoader = parentClassLoader
+            if (ignoreSchemaSql == false) {
+                // Our Liquibase files contain no schema information deliberately. Each db.changelog-master.xml
+                // represents an isolated data set which could be put into its own database and therefore be separately
+                // permissioned. If requested this tool will:
+                // 1) Specify a schema for the current file in order that the tables get created under that schema
+                // 2) Ensure liquibase uses that schema for any tracking tables
+                // 3) Adds SQL to the output file to create the schema if it doesn't exist
 
-                if (ignoreSchemaSql == false) {
-                    // Our Liquibase files contain no schema information deliberately. Each db.changelog-master.xml
-                    // represents an isolated data set which could be put into its own database and therefore be separately
-                    // permissioned. If requested this tool will:
-                    // 1) Specify a schema for the current file in order that the tables get created under that schema
-                    // 2) Ensure liquibase uses that schema for any tracking tables
-                    // 3) Adds SQL to the output file to create the schema if it doesn't exist
-
-                    database.defaultSchemaName = schemaName // our tables
-                    database.liquibaseSchemaName = schemaName // liquibase tracking tables
-                    outputFile.write(System.lineSeparator())
-                    outputFile.write("CREATE TABLE IF NOT EXISTS public.marker (field INTEGER NOT NULL);") // @@@ temp
-                    outputFile.write(System.lineSeparator()) // @@@ temp
-                    outputFile.write("CREATE SCHEMA IF NOT EXISTS ${schemaName};")
-                    outputFile.write(System.lineSeparator())
-                    outputFile.write(System.lineSeparator())
-                }
-
-                liquibaseFactory(file.key, database)
-                    .update(
-                        Contexts(),
-                        outputFile
-                    )
-                outputFile.flush()
-                outputFile.close()
-                Thread.currentThread().contextClassLoader = oldCl
+                database.defaultSchemaName = schemaName // our tables
+                database.liquibaseSchemaName = schemaName // liquibase tracking tables
+                outputFile.write(System.lineSeparator())
+                outputFile.write("CREATE SCHEMA IF NOT EXISTS ${schemaName};")
+                outputFile.write(System.lineSeparator())
+                outputFile.write(System.lineSeparator())
             }
+
+            liquibaseFactory(file.key, database).update(Contexts(), outputFile)
         }
     }
 
-    private fun connectionAndDatabase() = if (jdbcUrl.isEmpty()) {
+    private fun connectionAndDatabase() = if (jdbcUrl == null) {
         val database = PostgresDatabase()
         val connection = OfflineConnection("offline:postgresql", ClassLoaderResourceAccessor())
         database.connection = connection

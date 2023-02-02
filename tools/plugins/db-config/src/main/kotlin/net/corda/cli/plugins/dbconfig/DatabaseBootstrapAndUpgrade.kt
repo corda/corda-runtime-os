@@ -8,7 +8,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
-class DatabaseCommand(wrapper: PluginWrapper) : Plugin(wrapper) {
+class DatabaseBootstrapAndUpgrade(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     companion object {
         val classLoader = this::class.java.classLoader
@@ -24,6 +24,6 @@ class DatabaseCommand(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     @Extension
-    @CommandLine.Command(name = "database", subcommands = [Spec::class], description = ["Does Database Bootstrapping"])
+    @CommandLine.Command(name = "database", subcommands = [Spec::class], description = ["Does Database bootstrapping and upgrade"])
     class PluginEntryPoint : CordaCliPlugin
 }
