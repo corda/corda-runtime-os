@@ -96,7 +96,7 @@ class InteropServiceIntegrationTest {
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
-        // Test config updates don't break Flow Session Filter Service
+        // Test config updates don't break Interop Service
         republishConfig(publisher)
 
         val identity = HoldingIdentity(testId, testId)
@@ -147,7 +147,7 @@ class InteropServiceIntegrationTest {
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestFlowSessionFilterProcessor("$testId", mapperLatch, 2),
+            P2POutMessageCounter("$testId", mapperLatch, 2),
             bootConfig,
             null
         )
@@ -205,7 +205,7 @@ class InteropServiceIntegrationTest {
 }
 
 
-class TestFlowSessionFilterProcessor(
+class P2POutMessageCounter(
     private val key: String,
     private val latch: CountDownLatch,
     private val expectedRecordCount: Int

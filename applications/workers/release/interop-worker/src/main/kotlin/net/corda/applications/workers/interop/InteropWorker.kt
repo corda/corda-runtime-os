@@ -24,7 +24,7 @@ import picocli.CommandLine.Mixin
 @Component(service = [Application::class])
 class InteropWorker @Activate constructor(
     @Reference(service = InteropProcessor::class)
-    private val flowProcessor: InteropProcessor,
+    private val interopProcessor: InteropProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
@@ -65,12 +65,12 @@ class InteropWorker @Activate constructor(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator())
 
-        flowProcessor.start(config)
+        interopProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Flow worker stopping.")
-        flowProcessor.stop()
+        interopProcessor.stop()
         workerMonitor.stop()
     }
 }

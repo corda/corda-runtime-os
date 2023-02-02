@@ -12,7 +12,6 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
@@ -58,7 +57,8 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
             sessionEvent.messageDirection = MessageDirection.OUTBOUND //
             val sessionId = key
             sessionEvent.sessionId = sessionId
-            //Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent)) //this would be a way to push message downstream, once we have connection with FlowProcessor
+            //Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
+            // this would be a way to push message downstream, once we have connection with FlowProcessor
             Record(Schemas.P2P.P2P_OUT_TOPIC, sessionId, generateAppMessage(sessionEvent, cordaAvroSerializer))
         } else {
             null
@@ -68,17 +68,16 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
 
-    fun generateAppMessage(
+    private fun generateAppMessage(
         sessionEvent: SessionEvent,
-        sessionEventSerializer: CordaAvroSerializer<SessionEvent>//,
-        //flowConfig: SmartConfig
+        sessionEventSerializer: CordaAvroSerializer<SessionEvent>
     ): AppMessage {
         val sourceIdentity = sessionEvent.initiatedIdentity
         val destinationIdentity = sessionEvent.initiatingIdentity
         val header = AuthenticatedMessageHeader(
             destinationIdentity,
             sourceIdentity,
-            Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli()), // + flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)),
+            Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli()),
             sessionEvent.sessionId + "-" + UUID.randomUUID(),
             "",
             SUBSYSTEM
