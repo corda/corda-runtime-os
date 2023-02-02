@@ -17,20 +17,20 @@ fun DigitalSignatureAndMetadata.getMetadata(settingKey: String): String {
 }
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestProviderName
-    get() = getMetadata(BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY)
+    get() = getMetadata(SIGNATURE_BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY)
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestAlgorithmName
     get() = DigestAlgorithmName(
         getMetadata(
-            BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
+            SIGNATURE_BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
         )
     )
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestOptionsLeafPrefix: ByteArray
-    get() = base64Decoder.decode(getMetadata(BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY))
+    get() = base64Decoder.decode(getMetadata(SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY))
 
 val DigitalSignatureAndMetadata.batchMerkleTreeDigestOptionsNodePrefix: ByteArray
-    get() = base64Decoder.decode(getMetadata(BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY))
+    get() = base64Decoder.decode(getMetadata(SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY))
 
 fun DigitalSignatureAndMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider: MerkleTreeProvider): MerkleTreeHashDigestProvider =
     merkleTreeProvider.createHashDigestProvider(

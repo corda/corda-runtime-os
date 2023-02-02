@@ -37,10 +37,10 @@ import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 import java.time.Instant
 
-const val BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY = "batchMerkleTreeDigestProviderName"
-const val BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY = "batchMerkleTreeDigestAlgorithmName"
-const val BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY = "batchMerkleTreeDigestOptionsLeafPrefixB64"
-const val BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY = "batchMerkleTreeDigestOptionsNodePrefixB64"
+const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY = "batchMerkleTreeDigestProviderName"
+const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY = "batchMerkleTreeDigestAlgorithmName"
+const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY = "batchMerkleTreeDigestOptionsLeafPrefixB64"
+const val SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY = "batchMerkleTreeDigestOptionsNodePrefixB64"
 
 @Suppress("Unused", "LongParameterList")
 @Component(
@@ -245,10 +245,10 @@ class TransactionSignatureServiceImpl @Activate constructor(
     }
 
     private fun getBatchSignatureMetadataSettings(transaction: TransactionWithMetadata): Map<String, String> = mapOf(
-        BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to transaction.batchMerkleTreeDigestProviderName,
-        BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to transaction.batchMerkleTreeDigestAlgorithmName.name,
-        BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to transaction.batchMerkleTreeDigestOptionsLeafPrefixB64,
-        BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to transaction.batchMerkleTreeDigestOptionsNodePrefixB64
+        SIGNATURE_BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to transaction.batchMerkleTreeDigestProviderName,
+        SIGNATURE_BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to transaction.batchMerkleTreeDigestAlgorithmName.name,
+        SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to transaction.batchMerkleTreeDigestOptionsLeafPrefixB64,
+        SIGNATURE_BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to transaction.batchMerkleTreeDigestOptionsNodePrefixB64
     )
 }
 
