@@ -36,28 +36,28 @@
         "componentMerkleTreeEntropyAlgorithmName"
       ],
       "properties": {
-        "notaryMerkleTreeDigestProviderName": {
-          "title": "Notary Merkle tree digest provider name",
+        "batchMerkleTreeDigestProviderName": {
+          "title": "Batch Merkle tree digest provider name",
           "type": "string",
-          "description": "Class name of the digest provider for the notary Merkle tree.",
+          "description": "Class name of the digest provider for the batch Merkle tree.",
           "default": "",
           "examples": [
             "TweakableHashDigestProvider"
           ],
           "pattern": "^.*$"
         },
-        "notaryMerkleTreeDigestAlgorithmName": {
-          "title": "Notary Merkle tree digest algorithm name",
+        "batchMerkleTreeDigestAlgorithmName": {
+          "title": "Batch Merkle tree digest algorithm name",
           "type": "string",
-          "description": "Algorithm name of the digest provider for the notary Merkle tree.",
+          "description": "Algorithm name of the digest provider for the batch Merkle tree.",
           "default": "",
           "examples": [
             "SHA-256D"
           ],
           "pattern": "^.*$"
         },
-        "notaryMerkleTreeDigestOptionsLeafPrefixB64": {
-          "title": "Notary Merkle tree digest options leaf prefix base64 encoded",
+        "batchMerkleTreeDigestOptionsLeafPrefixB64": {
+          "title": "Batch Merkle tree digest options leaf prefix base64 encoded",
           "type": "string",
           "default": "",
           "examples": [
@@ -65,8 +65,8 @@
           ],
           "pattern": "^.*$"
         },
-        "notaryMerkleTreeDigestOptionsNodePrefixB64": {
-          "title": "Notary Merkle tree digest options node prefix base64 encoded",
+        "batchMerkleTreeDigestOptionsNodePrefixB64": {
+          "title": "Batch Merkle tree digest options node prefix base64 encoded",
           "type": "string",
           "default": "",
           "examples": [
