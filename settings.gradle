@@ -144,7 +144,7 @@ gradleEnterprise {
                 enabled = true
             } else {
                 push = false
-                enabled = true
+                enabled = apiKey?.trim() ? true : false
             }
         }
     }
