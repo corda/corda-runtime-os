@@ -3,6 +3,8 @@ package net.corda.membership.impl.client
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.toWire
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.async.request.MembershipAsyncRequest
@@ -28,6 +30,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
@@ -35,6 +38,8 @@ import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -45,7 +50,10 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TO
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -53,6 +61,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -61,6 +70,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
@@ -111,11 +121,29 @@ class MemberOpsClientTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
-
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+    }
+    private val holdingIdentity = mock<HoldingIdentity>()
+    private val virtualNodeInfo = mock<VirtualNodeInfo> {
+        on { holdingIdentity } doReturn holdingIdentity
+    }
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
+        on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_ID)) } doReturn virtualNodeInfo
+    }
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+    }
     private val memberOpsClient = MemberOpsClientImpl(
         lifecycleCoordinatorFactory,
         publisherFactory,
-        configurationReadService
+        configurationReadService,
+        membershipPersistenceClient,
+        virtualNodeInfoReadService,
+        cordaAvroSerializationFactory,
     )
 
     private val messagingConfig: SmartConfig = mock()
@@ -147,7 +175,6 @@ class MemberOpsClientTest {
         RegistrationActionDto.REQUEST_JOIN,
         mapOf("property" to "test"),
     )
-
 
     @Test
     fun `starting and stopping the service succeeds`() {
@@ -672,5 +699,59 @@ class MemberOpsClientTest {
         val result = memberOpsClient.startRegistration(request)
 
         assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
+    }
+
+    @Test
+    fun `startRegistration throws CouldNotFindMemberException for unknown member`() {
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).doReturn(null)
+        whenever(asyncPublisher.publish(any())).doReturn(emptyList())
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        assertThrows<CouldNotFindMemberException> {
+            memberOpsClient.startRegistration(request)
+        }
+    }
+
+    @Test
+    fun `startRegistration persist the correct data`() {
+        whenever(asyncPublisher.publish(any())).doReturn(emptyList())
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        memberOpsClient.startRegistration(request)
+
+        verify(membershipPersistenceClient).persistRegistrationRequest(
+            eq(holdingIdentity),
+            argThat {
+                status == RegistrationStatus.SUBMITTED &&
+                    requester == holdingIdentity &&
+                    memberContext == ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+            },
+        )
+    }
+
+    @Test
+    fun `startRegistration will fail if persistence failed`() {
+        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
+            .doReturn(MembershipPersistenceResult.Failure("Ooops"))
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        val result = memberOpsClient.startRegistration(request)
+
+        assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `startRegistration will not try to register if persistence failed`() {
+        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
+            .doReturn(MembershipPersistenceResult.Failure("Ooops"))
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        memberOpsClient.startRegistration(request)
+
+        verify(asyncPublisher, never()).publish(any())
     }
 }

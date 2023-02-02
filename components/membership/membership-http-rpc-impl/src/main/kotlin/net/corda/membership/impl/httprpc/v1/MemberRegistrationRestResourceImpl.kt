@@ -7,6 +7,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.httprpc.v1.MemberRegistrationRestResource
@@ -15,7 +16,6 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,8 +27,6 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MemberOpsClient::class)
     private val memberOpsClient: MemberOpsClient,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : MemberRegistrationRestResource, PluggableRestResource<MemberRegistrationRestResource>, Lifecycle {
     private interface InnerMemberRegistrationRpcOps {
         fun startRegistration(
@@ -125,12 +123,14 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             memberRegistrationRequest: MemberRegistrationRequest,
         ): RegistrationRequestProgress {
             val dto = memberRegistrationRequest.toDto(holdingIdentityShortHash)
-            virtualNodeInfoReadService.getByHoldingIdentityShortHash(dto.holdingIdentityShortHash)
-                ?: throw ResourceNotFoundException(
+            try {
+                return memberOpsClient.startRegistration(dto).fromDto()
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException(
                     "holdingIdentityShortHash",
                     holdingIdentityShortHash,
                 )
-            return memberOpsClient.startRegistration(dto).fromDto()
+            }
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {

@@ -5,6 +5,7 @@ import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
@@ -23,9 +24,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import kotlin.test.assertFailsWith
@@ -44,9 +45,6 @@ class MemberRegistrationRestResourceTest {
         on { isRunning } doAnswer { coordinatorIsRunning }
         on { start() } doAnswer { coordinatorIsRunning = true }
         on { stop() } doAnswer { coordinatorIsRunning = false }
-    }
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getByHoldingIdentityShortHash(holdingIdShortHash) } doReturn mock()
     }
 
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
@@ -68,7 +66,6 @@ class MemberRegistrationRestResourceTest {
     private val memberRegistrationRpcOps = MemberRegistrationRestResourceImpl(
         lifecycleCoordinatorFactory,
         memberOpsClient,
-        virtualNodeInfoReadService,
     )
 
     private val registrationRequest = MemberRegistrationRequest(
@@ -98,9 +95,10 @@ class MemberRegistrationRestResourceTest {
     fun `starting registration with invalid member will fail`() {
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.activate("")
+        whenever(memberOpsClient.startRegistration(any())).doThrow(CouldNotFindMemberException(holdingIdShortHash))
 
         assertThrows<ResourceNotFoundException> {
-            memberRegistrationRpcOps.startRegistration("123456789000", registrationRequest)
+            memberRegistrationRpcOps.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
         }
     }
 

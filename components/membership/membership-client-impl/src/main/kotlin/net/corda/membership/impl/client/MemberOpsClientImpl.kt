@@ -2,6 +2,10 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
@@ -24,6 +28,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
@@ -32,7 +37,9 @@ import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -49,15 +56,18 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.TimeoutException
 
 @Component(service = [MemberOpsClient::class])
+@Suppress("LongParameterList")
 class MemberOpsClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -65,6 +75,12 @@ class MemberOpsClientImpl @Activate constructor(
     val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : MemberOpsClient {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -78,6 +94,9 @@ class MemberOpsClientImpl @Activate constructor(
 
         private val TIMEOUT = 20.seconds
     }
+
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
     private interface InnerMemberOpsClient : AutoCloseable {
         fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
@@ -215,7 +234,28 @@ class MemberOpsClientImpl @Activate constructor(
     ) : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {
             val requestId = UUID.randomUUID().toString()
+            val holdingIdentity =
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(memberRegistrationRequest.holdingIdentityShortHash)
+                    ?.holdingIdentity
+                    ?: throw CouldNotFindMemberException(memberRegistrationRequest.holdingIdentityShortHash)
             try {
+                val context = keyValuePairListSerializer.serialize(
+                    memberRegistrationRequest.context.toWire()
+                )
+                membershipPersistenceClient.persistRegistrationRequest(
+                    holdingIdentity,
+                    RegistrationRequest(
+                        RegistrationStatus.SUBMITTED,
+                        requestId,
+                        holdingIdentity,
+                        ByteBuffer.wrap(context),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap(byteArrayOf()),
+                            ByteBuffer.wrap(byteArrayOf()),
+                            KeyValuePairList(emptyList())
+                        ),
+                    )
+                ).getOrThrow()
                 asyncPublisher.publish(
                     listOf(
                         Record(
