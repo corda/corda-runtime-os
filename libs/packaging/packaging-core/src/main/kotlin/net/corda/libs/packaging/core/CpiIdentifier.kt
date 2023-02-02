@@ -22,7 +22,7 @@ data class CpiIdentifier(
         fun fromAvro(other: CpiIdentifierAvro) = CpiIdentifier(
             other.name,
             other.version,
-            other.signerSummaryHash.let { SecureHash(it.algorithm, it.serverHash.array()) },
+            other.signerSummaryHash.let { SecureHash(it.algorithm, it.bytes.array()) },
         )
     }
 
