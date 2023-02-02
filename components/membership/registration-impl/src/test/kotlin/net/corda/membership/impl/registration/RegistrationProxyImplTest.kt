@@ -37,6 +37,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Pr
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.membership.registration.MemberRegistrationService
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -186,7 +187,7 @@ class RegistrationProxyImplTest {
         doReturn(false).whenever(coordinator).isRunning
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(registrationId, identity, mock()) }
+        assertThrows<NotReadyMembershipRegistrationException> { registrationProxy.register(registrationId, identity, mock()) }
     }
 
     @Test
@@ -195,7 +196,7 @@ class RegistrationProxyImplTest {
         doReturn(LifecycleStatus.DOWN).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(registrationId, identity, mock()) }
+        assertThrows<NotReadyMembershipRegistrationException> { registrationProxy.register(registrationId, identity, mock()) }
     }
 
     @Test
@@ -204,7 +205,7 @@ class RegistrationProxyImplTest {
         doReturn(LifecycleStatus.ERROR).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(registrationId, identity, mock()) }
+        assertThrows<NotReadyMembershipRegistrationException> { registrationProxy.register(registrationId, identity, mock()) }
     }
 
     @Test

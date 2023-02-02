@@ -13,6 +13,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.registration.MemberRegistrationService
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -139,7 +140,7 @@ class RegistrationProxyImpl @Activate constructor(
             member: HoldingIdentity,
             context: Map<String, String>
         ) =
-            throw IllegalStateException("RegistrationProxy currently inactive.")
+            throw NotReadyMembershipRegistrationException("RegistrationProxy currently inactive.")
     }
 
     private inner class ActiveImpl: InnerRegistrationProxy {

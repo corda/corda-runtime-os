@@ -68,7 +68,8 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -496,7 +497,7 @@ class MGMRegistrationServiceTest {
             whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
                 .doReturn(MembershipPersistenceResult.Failure("Nop"))
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationRequest, mgm, properties)
             }
 
@@ -505,7 +506,7 @@ class MGMRegistrationServiceTest {
 
         @Test
         fun `registration fails when coordinator is not running`() {
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationRequest, mgm, mock())
             }
 
@@ -521,7 +522,7 @@ class MGMRegistrationServiceTest {
             registrationService.start()
             properties.entries.apply {
                 for (index in indices) {
-                    assertThrows<MembershipRegistrationException> {
+                    assertThrows<InvalidMembershipRegistrationException> {
                         registrationService.register(registrationRequest, mgm, testProperties)
                     }
                     elementAt(index).let { testProperties.put(it.key, it.value) }
@@ -540,7 +541,7 @@ class MGMRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationRequest, mgm, testProperties)
             }
 
@@ -573,7 +574,7 @@ class MGMRegistrationServiceTest {
 
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationRequest, mgm, properties)
             }
 
@@ -589,7 +590,7 @@ class MGMRegistrationServiceTest {
             registrationService.start()
             whenever(virtualNodeInfoReadService.get(eq(mgm))).doReturn(null)
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationRequest, mgm, properties)
             }
 

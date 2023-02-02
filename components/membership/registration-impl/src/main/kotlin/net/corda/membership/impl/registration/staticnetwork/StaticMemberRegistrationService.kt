@@ -54,8 +54,11 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -169,7 +172,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     context
                 )
         } catch (ex: MembershipSchemaValidationException) {
-            throw MembershipRegistrationException(
+            throw InvalidMembershipRegistrationException(
                 "Registration failed. The registration context is invalid: " + ex.message,
                 ex,
             )
@@ -196,12 +199,15 @@ class StaticMemberRegistrationService @Activate constructor(
             persistGroupParameters(memberInfo, staticMemberList)
 
             persistRegistrationRequest(registrationId, memberInfo)
-        } catch (e: MembershipRegistrationException) {
+        } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration failed. Reason:", e)
             throw e
+        } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
+            logger.warn("Registration failed. Reason:", e)
+            throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason:", e)
-            throw MembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
+            throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         }
     }
 

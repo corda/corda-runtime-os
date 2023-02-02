@@ -3,7 +3,7 @@ package net.corda.membership.service.impl
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.membership.lib.toMap
-import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -49,12 +49,14 @@ internal class MemberOpsAsyncProcessor(
         val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
         val holdingIdentity =
             virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw MembershipRegistrationException(
+                ?: throw NotReadyMembershipRegistrationException(
                     "Could not find holding identity associated with ${request.holdingIdentityId}"
                 )
         try {
             val registrationId = UUID.fromString(request.requestId)
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
+        } catch (e: NotReadyMembershipRegistrationException) {
+            throw e
         } catch (e: Exception) {
             logger.warn("Registration ${request.requestId} failed.", e)
         }

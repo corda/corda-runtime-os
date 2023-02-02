@@ -21,12 +21,12 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -146,7 +146,7 @@ class MGMRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) = throw MembershipRegistrationException(
+        ) = throw NotReadyMembershipRegistrationException(
             "Registration failed. Reason: MGMRegistrationService is not running."
         )
 
@@ -198,7 +198,7 @@ class MGMRegistrationService @Activate constructor(
                 val groupParametersPersistenceResult =
                     membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
                 if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
-                    throw MembershipPersistenceException(groupParametersPersistenceResult.errorMsg)
+                    throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
                 }
 
                 // Publish group parameters to Kafka
@@ -207,17 +207,19 @@ class MGMRegistrationService @Activate constructor(
 
                 mgmRegistrationOutputPublisher.publish(mgmInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
-                throw MembershipRegistrationException(ex.reason, ex)
+                throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {
-                throw MembershipRegistrationException(ex.reason, ex)
+                throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationGroupPolicyHandlingException) {
-                throw MembershipRegistrationException(ex.reason, ex)
+                throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationOutputPublisherException) {
-                throw MembershipRegistrationException(ex.reason, ex)
-            } catch (ex: MembershipRegistrationException) {
+                throw NotReadyMembershipRegistrationException(ex.reason, ex)
+            } catch (ex: InvalidMembershipRegistrationException) {
+                throw ex
+            } catch (ex: NotReadyMembershipRegistrationException) {
                 throw ex
             } catch (e: Exception) {
-                throw MembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
+                throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
             }
         }
         override fun close() {

@@ -73,7 +73,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
-import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
@@ -470,7 +471,7 @@ class DynamicMemberRegistrationServiceTest {
     inner class FailedRegistrationTests {
         @Test
         fun `registration fails when coordinator is not running`() {
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, mock())
             }
 
@@ -492,7 +493,7 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.start()
             val testContext = context - propertyName
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, testContext)
             }
         }
@@ -506,7 +507,7 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, testProperties)
             }
             assertThat(exception)
@@ -520,7 +521,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
         }
@@ -531,7 +532,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
         }
@@ -558,7 +559,7 @@ class DynamicMemberRegistrationServiceTest {
 
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
 
@@ -574,7 +575,7 @@ class DynamicMemberRegistrationServiceTest {
             whenever(mgmInfo.ecdhKey).thenReturn(null)
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
             assertThat(exception).hasMessageContaining(
@@ -589,7 +590,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, registrationContext)
             }
         }
@@ -600,7 +601,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, registrationContext)
             }
         }
@@ -615,7 +616,7 @@ class DynamicMemberRegistrationServiceTest {
             )
             whenever(virtualNodeInfoReadService.get(eq(noVNodeMember))).thenReturn(null)
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, noVNodeMember, context)
             }
 
@@ -629,7 +630,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
 
@@ -646,7 +647,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
 
@@ -667,7 +668,7 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, testProperties)
             }
         }
@@ -700,7 +701,7 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, testProperties)
             }
         }
@@ -737,7 +738,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, registrationContext)
             }
 
@@ -770,7 +771,7 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, testProperties)
             }
         }
@@ -801,7 +802,7 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, testProperties)
             }
 

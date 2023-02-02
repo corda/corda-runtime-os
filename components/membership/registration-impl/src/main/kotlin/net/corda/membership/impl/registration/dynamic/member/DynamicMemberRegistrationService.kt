@@ -69,9 +69,11 @@ import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -224,7 +226,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             context: Map<String, String>
         ) {
             logger.warn("DynamicMemberRegistrationService is currently inactive.")
-            throw MembershipRegistrationException(
+            throw NotReadyMembershipRegistrationException(
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
             )
         }
@@ -247,7 +249,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         context
                     )
             } catch (ex: MembershipSchemaValidationException) {
-                throw MembershipRegistrationException(
+                throw InvalidMembershipRegistrationException(
                     "Registration failed. The registration context is invalid. " + ex.message,
                     ex
                 )
@@ -255,7 +257,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             try {
                 validateContext(context)
             } catch (ex: IllegalArgumentException) {
-                throw MembershipRegistrationException(
+                throw InvalidMembershipRegistrationException(
                     "Registration failed. The registration context is invalid: " + ex.message,
                     ex,
                 )
@@ -348,12 +350,15 @@ class DynamicMemberRegistrationService @Activate constructor(
                 ).getOrThrow()
 
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            } catch (e: MembershipRegistrationException) {
+            } catch (e: InvalidMembershipRegistrationException) {
                 logger.warn("Registration failed.", e)
                 throw e
+            } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
+                logger.warn("Registration failed.", e)
+                throw NotReadyMembershipRegistrationException("Could not persist request: ${e.message}", e)
             } catch (e: Exception) {
                 logger.warn("Registration failed.", e)
-                throw MembershipRegistrationException(
+                throw InvalidMembershipRegistrationException(
                     "Registration failed. Reason: ${e.message}",
                     e,
                 )

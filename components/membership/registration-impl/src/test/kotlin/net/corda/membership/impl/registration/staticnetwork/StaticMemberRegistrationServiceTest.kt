@@ -70,6 +70,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
@@ -434,7 +435,7 @@ class StaticMemberRegistrationServiceTest {
             setUpPublisher()
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, bob, mockContext)
             }
 
@@ -449,7 +450,7 @@ class StaticMemberRegistrationServiceTest {
             setUpPublisher()
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, charlie, mockContext)
             }
 
@@ -463,7 +464,7 @@ class StaticMemberRegistrationServiceTest {
             setUpPublisher()
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, eric, mockContext)
             }
 
@@ -490,7 +491,7 @@ class StaticMemberRegistrationServiceTest {
             setUpPublisher()
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, daisy, mockContext)
             }
 
@@ -507,7 +508,7 @@ class StaticMemberRegistrationServiceTest {
             setUpPublisher()
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, mock())
             }
 
@@ -526,7 +527,7 @@ class StaticMemberRegistrationServiceTest {
                 "corda.roles.0" to "notary",
             )
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, context)
             }
         }
@@ -553,7 +554,7 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.start()
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, mockContext)
             }
 
@@ -569,7 +570,7 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             whenever(virtualNodeInfoReadService.get((alice))).thenReturn(null)
 
-            val exception = assertThrows<MembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, mockContext)
             }
 
@@ -604,7 +605,7 @@ class StaticMemberRegistrationServiceTest {
                 "corda.roles.0" to "nop",
             )
 
-            assertThrows<MembershipRegistrationException> {
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, context)
             }
         }

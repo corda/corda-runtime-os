@@ -5,7 +5,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
-import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.HoldingIdentity
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -103,7 +105,7 @@ class MemberOpsAsyncProcessorTest {
     fun `onNext with invalid id will throw an exception`() {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).doReturn(null)
         val id = UUID(0, 1)
-        assertThrows<MembershipRegistrationException> {
+        assertThrows<NotReadyMembershipRegistrationException> {
             processor.onNext(
                 listOf(
                     Record(
@@ -157,5 +159,71 @@ class MemberOpsAsyncProcessorTest {
         )
 
         verifyNoInteractions(registrationProxy)
+    }
+
+    @Test
+    fun `onNext with invalid request will do nothing`() {
+        val id = UUID(0, 1)
+        whenever(registrationProxy.register(any(), any(), any()))
+            .doThrow(InvalidMembershipRegistrationException("oops"))
+
+        assertDoesNotThrow {
+            processor.onNext(
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                id.toString(),
+                                RegistrationAction.REQUEST_JOIN,
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value"
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `onNext with not ready error will throw an exception`() {
+        val id = UUID(0, 1)
+        whenever(registrationProxy.register(any(), any(), any()))
+            .doThrow(NotReadyMembershipRegistrationException("oops"))
+
+        assertThrows<NotReadyMembershipRegistrationException> {
+            processor.onNext(
+                listOf(
+                    Record(
+                        "topic",
+                        "key",
+                        MembershipAsyncRequest(
+                            RegistrationAsyncRequest(
+                                shortHash.value,
+                                id.toString(),
+                                RegistrationAction.REQUEST_JOIN,
+                                KeyValuePairList(
+                                    listOf(
+                                        KeyValuePair(
+                                            "key",
+                                            "value"
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                    )
+                )
+            )
+        }
     }
 }
