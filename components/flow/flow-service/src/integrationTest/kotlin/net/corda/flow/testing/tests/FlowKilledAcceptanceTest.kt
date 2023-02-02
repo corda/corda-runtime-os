@@ -1,6 +1,5 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.FlowKey
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.virtualnode.OperationalStatus
 import org.junit.jupiter.api.BeforeEach
@@ -55,7 +54,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
-                scheduleFlowMapperCleanupEvents(FlowKey(INITIATED_SESSION_ID_1, BOB_HOLDING_IDENTITY).toString())
             }
         }
     }
