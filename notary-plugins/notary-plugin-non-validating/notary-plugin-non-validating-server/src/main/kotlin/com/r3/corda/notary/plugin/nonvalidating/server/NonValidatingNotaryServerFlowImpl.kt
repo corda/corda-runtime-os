@@ -81,12 +81,18 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         clientService: LedgerUniquenessCheckerClientService,
         serializationService: SerializationService,
         signatureVerifier: DigitalSignatureVerificationService,
-        memberLookup: MemberLookup
+        memberLookup: MemberLookup,
+        merkleTreeFactory: MerkleTreeFactory,
+        signingService: SigningService,
+        digestService: DigestService
     ) : this() {
         this.clientService = clientService
         this.serializationService = serializationService
         this.signatureVerifier = signatureVerifier
         this.memberLookup = memberLookup
+        this.merkleTreeFactory = merkleTreeFactory
+        this.signingService = signingService
+        this.digestService = digestService
     }
 
     /**
