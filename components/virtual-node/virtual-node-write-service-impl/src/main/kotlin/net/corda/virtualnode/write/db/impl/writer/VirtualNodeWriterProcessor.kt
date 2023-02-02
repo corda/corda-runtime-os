@@ -9,6 +9,8 @@ import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeOperationStatus
+import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -52,6 +54,7 @@ import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import org.slf4j.LoggerFactory
 import java.lang.System.currentTimeMillis
 import java.time.Instant
@@ -86,10 +89,11 @@ internal class VirtualNodeWriterProcessor(
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
+    private val virtualNodeOperationStatusHandler: VirtualNodeOperationStatusHandler,
     private val getCurrentChangelogsForCpi: (EntityManager, String, String, String) -> List<CpkDbChangeLogEntity> =
         ::findCurrentCpkChangeLogsForCpi,
     private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl(),
-    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
+    private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
@@ -427,6 +431,7 @@ internal class VirtualNodeWriterProcessor(
             is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
             is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
             is VirtualNodeDBResetRequest -> resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeOperationStatusRequest -> virtualNodeOperationStatusHandler.handle(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
