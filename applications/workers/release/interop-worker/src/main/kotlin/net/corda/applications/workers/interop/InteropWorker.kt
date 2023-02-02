@@ -69,7 +69,7 @@ class InteropWorker @Activate constructor(
     }
 
     override fun shutdown() {
-        logger.info("Flow worker stopping.")
+        logger.info("InterOp worker stopping.")
         interopProcessor.stop()
         workerMonitor.stop()
     }
