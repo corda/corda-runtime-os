@@ -26,6 +26,7 @@ dependencies {
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":libs:application:application-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
