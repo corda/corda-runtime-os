@@ -75,7 +75,7 @@ class InteropWorker @Activate constructor(
     }
 }
 
-/** Additional parameters for the flow worker are added here. */
+/** Additional parameters for the interop worker are added here. */
 private class InteropWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
