@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.endpoints.v1
 
+import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
@@ -87,6 +88,23 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String
     ): VirtualNodeInfo
+
+    /**
+     * Returns the VirtualNodeOperationStatus for a given [HoldingIdentity].
+     *
+     * @throws 'ResourceNotFoundException' If the virtual node was not found.
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpGET(
+        path = "status/{holdingIdentityShortHash}",
+        title = "Gets the VirtualNodeOperationStatus for a HoldingIdentityShortHash",
+        description = "This method returns the VirtualNodeOperationStatus for a given Holding Identity ShortHash.",
+        responseDescription = "VirtualNodeOperationStatus for the specified virtual node."
+    )
+    fun getVirtualNodeStatus(
+        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        holdingIdentityShortHash: String
+    ): VirtualNodeOperationStatus
 
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.

@@ -11,6 +11,8 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeOperationStatus
+import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
@@ -233,6 +235,33 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         }
 
         return ResponseEntity.accepted(AsyncResponse(requestId))
+    }
+
+    override fun getVirtualNodeStatus(holdingIdentityShortHash: String): VirtualNodeOperationStatus {
+        val instant = clock.instant()
+        // Lookup actor to keep track of which RPC user triggered an update
+        val actor = CURRENT_REST_CONTEXT.get().principal
+        logger.debug { "Received request for status of VirtualNode $holdingIdentityShortHash by $actor at $instant" }
+        if (!isRunning) throw IllegalStateException(
+            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+        )
+
+        // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
+        val rpcRequest = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeOperationStatusRequest(holdingIdentityShortHash)
+        )
+        // Actually send request and await response message on bus
+        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
+        logger.debug { "Received response Operation Status for $holdingIdentityShortHash by $actor" }
+
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeOperationStatus -> {
+                resolvedResponse
+            }
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
     }
 
     private fun sendAsynchronousRequest(
