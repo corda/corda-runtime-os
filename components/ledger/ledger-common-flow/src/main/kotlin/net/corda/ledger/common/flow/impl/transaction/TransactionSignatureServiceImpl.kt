@@ -12,6 +12,7 @@ import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestOptionsNode
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestProviderName
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafPrefix
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefix
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -59,6 +60,8 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider
 ) : TransactionSignatureService, SingletonSerializeAsToken, UsedByFlow {
 
     @Suspendable
@@ -233,6 +236,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
             Instant.now(),
             signatureSpec,
             mapOf(
+                "platformVersion" to platformInfoProvider.activePlatformVersion.toString(),
                 "cpiName" to cpiSummary.name,
                 "cpiVersion" to cpiSummary.version,
                 "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString()
