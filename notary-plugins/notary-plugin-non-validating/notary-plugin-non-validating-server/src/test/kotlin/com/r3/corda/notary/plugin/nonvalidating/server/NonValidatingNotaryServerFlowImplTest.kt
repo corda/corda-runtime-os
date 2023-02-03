@@ -93,7 +93,7 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     @Test
-    fun `Non-validating notary should respond with error if the key that is not part of the notary composite key`() {
+    fun `Non-validating notary should respond with error if the specified key that is not part of the notary composite key`() {
         // We sign with a key that is not part of the notary composite key
         createAndCallServer(mockSuccessfulUniquenessClientService(), currentVNodeNotaryKey = mock()) {
             assertThat(responseFromServer).hasSize(1)

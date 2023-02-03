@@ -154,9 +154,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 signBatch(listOf(txDetails.id), requestPayload.notaryKey).rootSignature
             } else null
 
-            val notarisationResponse = uniquenessResult.toNotarisationResponse(signature)
-
-            session.send(notarisationResponse)
+            session.send(uniquenessResult.toNotarisationResponse(signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e")
             session.send(
