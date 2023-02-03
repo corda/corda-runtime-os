@@ -1,7 +1,8 @@
 #!/bin/bash
 
-source settings.sh
 set -e
+SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
+source "$SCRIPT_DIR/settings.sh"
 
 create_mgm_group_policy() {
 echo '{
@@ -12,8 +13,16 @@ echo '{
 }' > $1
 }
 
-disable_revocation () {
-   curl --fail-with-body -s -S --insecure -u admin:admin -X PUT  -d '{ "section" : "corda.p2p.gateway" , "config": "{ \"sslConfig\": { \"revocationCheck\": { \"mode\": \"OFF\" }  }  }", "schemaVersion": {"major": 1, "minor": 0}, "version": 0}' https://$1/api/v1/config
+config_gateway() {
+   config_version=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/config/corda.p2p.gateway/ | jq -r '.version')
+   if [[ $MTLS == "Y" ]]; then
+     tls_type="MUTUAL"
+   else
+     tls_type="ONE_WAY"
+   fi
+   raw_config=$(jq -n --arg tls_type "$tls_type" '.sslConfig.revocationCheck.mode="OFF" | .sslConfig.tlsType=$tls_type')
+   body=$(jq -n --arg raw_config "$raw_config" --arg version $config_version '.section="corda.p2p.gateway" | .config=$raw_config |.schemaVersion.major=1 | .schemaVersion.minor=0| .version=$version')
+   curl --fail-with-body -s -S --insecure -u admin:admin -X PUT  -d "$body" https://$1/api/v1/config
 }
 
 build_cli_tool() {
@@ -21,7 +30,7 @@ build_cli_tool() {
    cd $CORDA_CLI_DIR
    ./gradlew build
 
-   cd $WORKING_DIR/$REPO_TOP_LEVEL_DIR
+   cd $REPO_TOP_LEVEL_DIR
    ./gradlew :tools:plugins:package:build :tools:plugins:mgm:build
    cd $WORKING_DIR
    cp $REPO_TOP_LEVEL_DIR/tools/plugins/package/build/libs/package-cli-plugin-*.jar $REPO_TOP_LEVEL_DIR/tools/plugins/mgm/build/libs/mgm-cli*.jar $CORDA_CLI_DIR/build/plugins/
@@ -42,20 +51,37 @@ build_cpi() {
 
    rm -f signingkeys.pfx
    keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, L=London, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
-   keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file gradle-plugin-default-key.pem
+   keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file "$SCRIPT_DIR/gradle-plugin-default-key.pem"
 
    $CORDA_CLI_DIR/build/generatedScripts/corda-cli.sh package create-cpi --cpb test-cordapp-5.0.0.0-SNAPSHOT-package.cpb --group-policy $1 --cpi-name "test cordapp" --cpi-version "1.0.0.0-SNAPSHOT" --file test-cordapp-5.0.0.0-SNAPSHOT-package.cpi --keystore signingkeys.pfx --storepass "keystore password" --key "signing key 1" 
 }
 
 trust_cpi_keys() {
-   curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@gradle-plugin-default-key.pem https://$1/api/v1/certificates/cluster/code-signer
+   curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@"$SCRIPT_DIR/gradle-plugin-default-key.pem" https://$1/api/v1/certificates/cluster/code-signer
    keytool -exportcert -rfc -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -file signingkey1.pem
    curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@signingkey1.pem https://$1/api/v1/certificates/cluster/code-signer
 }
 
+allow_client_certificate() {
+  curl --fail-with-body --insecure -u admin:admin -X PUT  https://$1/api/v1/mgm/$3/mutual-tls/allowed-client-certificate-subjects/"$2"
+}
 upload_cpi() {
    local CPI_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -F upload=@$2 https://$1/api/v1/cpi/ | jq -M '.["id"]' | tr -d '"')
    echo $CPI_ID
+}
+
+wait_for_cpi() {
+   n=0
+   until [ "$n" -ge 25 ];  do
+     cpi_status=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/cpi/status/$2 | jq -r .status)
+     if [[ "$cpi_status" == "OK" ]]; then
+       break
+     else
+       echo "CPI status is $cpi_status, waiting a bit"
+       n=$((n+1))
+       sleep 5
+     fi
+   done
 }
 
 cpi_checksum() {
@@ -120,6 +146,11 @@ register_node() {
 
 register_mgm() {
     local TLS_TRUST_STORE=$(cat ./ca/ca/root-certificate.pem | awk 1 ORS='\\n')
+    if [[ $MTLS == "Y" ]]; then
+      tls_type="Mutual"
+    else
+      tls_type="OneWay"
+    fi
 
     local REG_CONTEXT='{
       "corda.session.key.id": "'$3'",
@@ -131,14 +162,32 @@ register_mgm() {
       "corda.group.pki.session": "NoPKI",
       "corda.group.pki.tls": "Standard",
       "corda.group.tls.version": "1.3",
-      "corda.group.tls.type": "OneWay",
+      "corda.group.tls.type": "'$tls_type'",
       "corda.endpoints.0.connectionURL": "'$4'",
       "corda.endpoints.0.protocolVersion": "1",
       "corda.group.truststore.tls.0" : "'$TLS_TRUST_STORE'",
       "corda.group.truststore.session.0" : "'$TLS_TRUST_STORE'"
     }'
-    echo $REG_CONTEXT
+    echo $REG_CONTEXT | jq
     register $1 $2 "$REG_CONTEXT"
+}
+
+wait_for_approve() {
+  n=0
+  until [ "$n" -ge 25 ];  do
+    registrationStatus=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq -r .registrationStatus)
+    if [[ "$registrationStatus" == "APPROVED" ]]; then
+      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
+      break
+    elif [[ "$registrationStatus" == "DECLINED" ]]; then
+      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
+      exit -1
+    else
+      echo "Registration status is $registrationStatus, waiting a bit"
+      n=$((n+1))
+      sleep 5
+    fi
+  done
 }
 
 register() {
@@ -147,8 +196,11 @@ register() {
     echo "Registering using:"
     echo $COMMAND | jq
 
-    # Register MGM
-    curl --fail-with-body -s -S --insecure -u admin:admin -d " $COMMAND " https://$1/api/v1/membership/$2 | jq
+    # Register
+    registrationId=$(curl --fail-with-body -s -S --insecure -u admin:admin -d " $COMMAND " https://$1/api/v1/membership/$2 | jq -r .registrationId)
+
+    # Wait for registration to be approve
+    wait_for_approve $1 $2 $registrationId
 }
 
 complete_network_setup() {
@@ -161,7 +213,7 @@ extract_group_policy() {
 
 on_board_mgm() {
 
-   disable_revocation $MGM_RPC
+   config_gateway $MGM_RPC
 
    create_mgm_group_policy ./GroupPolicy.json
 
@@ -172,7 +224,8 @@ on_board_mgm() {
    CPI_ID=$(upload_cpi $MGM_RPC ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
 
    echo "MGM CPI ID $CPI_ID"
-   sleep 120
+
+   wait_for_cpi $MGM_RPC $CPI_ID
 
    CPI_CHECKSUM=$(cpi_checksum $MGM_RPC $CPI_ID)
 
@@ -218,23 +271,28 @@ on_board_mgm() {
 }
 
 on_board_node() {
-   disable_revocation $1
+   config_gateway $1
 
    cp ./GroupPolicy-out.json ./GroupPolicy.json
 
    build_cpi ./GroupPolicy.json
+
+   if [[ $MTLS == "Y" ]]; then
+     allow_client_certificate $MGM_RPC $2 $MGM_HOLDING_ID_SHORT_HASH
+   fi
 
    trust_cpi_keys $1
 
    CPI_ID=$(upload_cpi $1 ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
 
    echo "NODE $2 CPI ID $CPI_ID"
-   sleep 120
-   
+
+   wait_for_cpi $1 $CPI_ID
+
    CPI_CHECKSUM=$(cpi_checksum $1 $CPI_ID)
 
    NODE_HOLDING_ID_SHORT_HASH=$(create_vnode $1 $CPI_CHECKSUM $2)
- 
+
    NODE_SESSION_KEY_ID=$(assign_hsm_and_generate_session_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
    echo Node $2 Session Key Id: $NODE_SESSION_KEY_ID
 
@@ -255,6 +313,9 @@ on_board_node() {
    register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5 $NODE_LEDGER_KEY_ID
 }
 
+ps -ef | grep port-forward | grep $A_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
+ps -ef | grep port-forward | grep $B_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
+ps -ef | grep port-forward | grep $MGM_RPC_PORT:8888 | awk '{print $2}' |  xargs kill || echo
 kubectl port-forward --namespace $A_CLUSTER_NAMESPACE deployment/corda-rpc-worker $A_RPC_PORT:8888 &
 kubectl port-forward --namespace $B_CLUSTER_NAMESPACE deployment/corda-rpc-worker $B_RPC_PORT:8888 &
 kubectl port-forward --namespace $MGM_CLUSTER_NAMESPACE deployment/corda-rpc-worker $MGM_RPC_PORT:8888 &
