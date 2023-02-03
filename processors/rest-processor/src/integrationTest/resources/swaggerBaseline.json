@@ -1993,7 +1993,7 @@
     "/mgm/{holdingidentityshorthash}/approval/rules" : {
       "get" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method retrieves the set of rules the group is currently configured with",
+        "description" : "This API retrieves the set of rules the group is currently configured with",
         "operationId" : "get_mgm__holdingidentityshorthash__approval_rules",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2033,7 +2033,7 @@
       },
       "post" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method adds a rule to the set of group approval rules.",
+        "description" : "This API adds a rule to the set of group approval rules.",
         "operationId" : "post_mgm__holdingidentityshorthash__approval_rules",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2081,7 +2081,7 @@
     "/mgm/{holdingidentityshorthash}/approval/rules/preauth" : {
       "get" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method retrieves the set of rules the group is currently configured with for registration request with a pre-auth token.",
+        "description" : "This API retrieves the set of rules the group is currently configured with for registration request with a pre-auth token.",
         "operationId" : "get_mgm__holdingidentityshorthash__approval_rules_preauth",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2169,7 +2169,7 @@
     "/mgm/{holdingidentityshorthash}/approval/rules/preauth/{ruleid}" : {
       "delete" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method deletes a group approval rule for registrations including a pre-auth token.",
+        "description" : "This API deletes a group approval rule for registrations including a pre-auth token.",
         "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules_preauth__ruleid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2210,7 +2210,7 @@
     "/mgm/{holdingidentityshorthash}/approval/rules/{ruleid}" : {
       "delete" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method deletes a previously added group approval rule.",
+        "description" : "This API deletes a previously added group approval rule.",
         "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules__ruleid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2251,7 +2251,7 @@
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method retrieves the group policy from the MGM required to join the membership group.",
+        "description" : "This API retrieves the group policy from the MGM required to join the membership group.",
         "operationId" : "get_mgm__holdingidentityshorthash__info",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2290,7 +2290,7 @@
     "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects" : {
       "get" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method list the allowed  client certificates subjects to be used in mutual TLS connections.",
+        "description" : "This API list the allowed  client certificates subjects to be used in mutual TLS connections.",
         "operationId" : "get_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2333,7 +2333,7 @@
     "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects/{subject}" : {
       "put" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method allows a client certificate with a given subject to be used in mutual TLS connections.",
+        "description" : "This API allows a client certificate with a given subject to be used in mutual TLS connections.",
         "operationId" : "put_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects__subject_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2372,7 +2372,7 @@
       },
       "delete" : {
         "tags" : [ "MGM API" ],
-        "description" : "This method disallows a client certificate with a given subject to be used in mutual TLS connections.",
+        "description" : "This API disallows a client certificate with a given subject to be used in mutual TLS connections.",
         "operationId" : "delete_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects__subject_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -3861,7 +3861,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4000,7 +3999,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -4286,7 +4284,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4330,7 +4327,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4367,7 +4363,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -4473,7 +4468,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
@@ -4816,19 +4810,16 @@
             "example" : "string"
           },
           "flowOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -4852,7 +4843,6 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
