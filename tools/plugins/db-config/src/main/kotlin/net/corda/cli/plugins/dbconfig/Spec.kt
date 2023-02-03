@@ -15,17 +15,16 @@ import java.io.File
 import java.io.FileWriter
 import java.nio.file.Files.deleteIfExists
 import java.nio.file.Path
+import java.sql.Connection
 import java.sql.DriverManager
 
 
-@CommandLine.Command(name = "spec", description = ["Does database schema generation from liquibase"])
-class Spec(
-    private val databaseChangeLogFile: Path = Path.of("./databasechangelog.csv"),
-    private val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
-    private val liquibaseFactory: (String, Database) -> Liquibase =
-        { file: String, database: Database -> Liquibase(file, ClassLoaderResourceAccessor(), database) },
-    private val deleteFile: (Path) -> Unit = { path -> deleteIfExists(path) }
-) : Runnable {
+@CommandLine.Command(
+    name = "spec",
+    description = ["Does database schema generation from liquibase. Can run offline or connect to a live database for " +
+            "migration to a new version."]
+)
+class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
     @CommandLine.Option(
         names = ["-c", "--clear-change-log"],
         description = ["Automatically delete the changelogCSV in the PWD to force generation of the sql files"]
@@ -75,9 +74,27 @@ class Spec(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
+    data class SpecConfig(
+        val databaseChangeLogFile: Path = Path.of("./databasechangelog.csv"),
+        val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
+        val liquibaseFactory: (String, Database) -> Liquibase =
+            { file: String, database: Database -> Liquibase(file, ClassLoaderResourceAccessor(), database) },
+        val deleteFile: (Path) -> Unit = { path -> deleteIfExists(path) },
+        val jdbcConnectionFactory: (String?, String?, String?) -> Connection = { jdbcUrl, user, password ->
+            DriverManager.getConnection(
+                jdbcUrl,
+                user,
+                password
+            )
+        },
+        val jdbcDatabaseFactory: (Connection) -> Database = { connection ->
+            DatabaseFactory.getInstance().findCorrectDatabaseImplementation(JdbcConnection(connection))
+        }
+    )
+
     override fun run() {
         if (clearChangeLog == true) {
-            deleteFile(databaseChangeLogFile)
+            config.deleteFile(config.databaseChangeLogFile)
         }
 
         mapOf(
@@ -108,7 +125,7 @@ class Spec(
         val oldCl = Thread.currentThread().contextClassLoader
         Thread.currentThread().contextClassLoader = DatabaseBootstrapAndUpgrade.classLoader
 
-        writerFactory(outputFileName).use { outputFile ->
+        config.writerFactory(outputFileName).use { outputFile ->
             writeSchemaToFile(schemaName, outputFile, file)
         }
 
@@ -141,7 +158,7 @@ class Spec(
                 outputFile.write(System.lineSeparator())
             }
 
-            liquibaseFactory(file.key, database).update(Contexts(), outputFile)
+            config.liquibaseFactory(file.key, database).update(Contexts(), outputFile)
         }
     }
 
@@ -152,8 +169,8 @@ class Spec(
         connection.attached(database)
         Pair(connection, database)
     } else {
-        val connection = DriverManager.getConnection(jdbcUrl, user, password)
-        val database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(JdbcConnection(connection))
+        val connection = config.jdbcConnectionFactory(jdbcUrl, user, password)
+        val database = config.jdbcDatabaseFactory(connection)
         Pair(connection, database)
     }
 }
