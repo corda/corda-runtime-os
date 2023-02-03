@@ -28,6 +28,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("TooManyFunctions")
 @Component(service = [FlowSessionManager::class])
 class FlowSessionManagerImpl @Activate constructor(
     @Reference(service = SessionManager::class)
