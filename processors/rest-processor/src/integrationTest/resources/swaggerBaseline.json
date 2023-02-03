@@ -4346,8 +4346,8 @@
           "registrationStatus" : {
             "type" : "object",
             "nullable" : false,
-            "example" : "PENDING_MGM_NETWORK_ACCESS",
-            "enum" : [ "SUBMITTED", "PENDING_MGM_NETWORK_ACCESS", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
+            "example" : "SENT_TO_MGM",
+            "enum" : [ "NEW", "SENT_TO_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
           },
           "registrationUpdated" : {
             "type" : "string",

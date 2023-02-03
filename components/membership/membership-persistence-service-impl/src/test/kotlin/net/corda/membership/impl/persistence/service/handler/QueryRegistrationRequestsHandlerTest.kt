@@ -109,7 +109,7 @@ class QueryRegistrationRequestsHandlerTest {
                 RegistrationRequestEntity(
                     it,
                     shortHash.value,
-                    "PENDING_MGM_NETWORK_ACCESS",
+                    "SENT_TO_MGM",
                     Instant.ofEpochSecond(500),
                     Instant.ofEpochSecond(600),
                     byteArrayOf(1, 2, 3)

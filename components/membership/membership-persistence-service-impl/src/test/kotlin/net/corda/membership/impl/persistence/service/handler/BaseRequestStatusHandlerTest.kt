@@ -48,7 +48,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "PENDING_MGM_NETWORK_ACCESS",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -116,7 +116,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "PENDING_MGM_NETWORK_ACCESS",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -143,7 +143,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "PENDING_MGM_NETWORK_ACCESS",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -170,7 +170,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "PENDING_MGM_NETWORK_ACCESS",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -196,7 +196,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "PENDING_MGM_NETWORK_ACCESS",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -216,7 +216,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "PENDING_MGM_NETWORK_ACCESS",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
