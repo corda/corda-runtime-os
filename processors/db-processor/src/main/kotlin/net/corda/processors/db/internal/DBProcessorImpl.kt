@@ -23,10 +23,8 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -49,7 +47,6 @@ import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
@@ -57,6 +54,7 @@ import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
@@ -138,7 +136,8 @@ class DBProcessorImpl @Activate constructor(
     }
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val REGISTRATION = "REGISTRATION"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -186,13 +185,6 @@ class DBProcessorImpl @Activate constructor(
         allowedCertificatesReaderWriterService,
     )
 
-    // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
-    //  into 2 parts.
-    private var dbManagerRegistrationHandler: RegistrationHandle? = null
-    private var configSubscription: AutoCloseable? = null
-    private var bootstrapConfig: SmartConfig? = null
-    private var instanceId: Int? = null
-
     override fun start(bootConfig: SmartConfig) {
         log.info("DB processor starting.")
         lifecycleCoordinator.start()
@@ -211,22 +203,16 @@ class DBProcessorImpl @Activate constructor(
         when (event) {
             is StartEvent -> onStartEvent()
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> reconcilers.onConfigChanged(event)
+            is ConfigChangedEvent -> onConfigChangedEvent(event)
             is BootConfigEvent -> onBootConfigEvent(event)
             is StopEvent -> onStopEvent()
             else -> log.error("Unexpected event $event!")
         }
     }
 
-    private fun onStopEvent() {
-        reconcilers.close()
-        dbManagerRegistrationHandler?.close()
-        dbManagerRegistrationHandler = null
-    }
-
     private fun onBootConfigEvent(event: BootConfigEvent) {
         val bootstrapConfig = event.config
-        instanceId = bootstrapConfig.getInt(INSTANCE_ID)
+        val instanceId = bootstrapConfig.getInt(INSTANCE_ID)
 
         log.info("Bootstrapping DB connection Manager")
         dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
@@ -237,36 +223,42 @@ class DBProcessorImpl @Activate constructor(
         log.info("Bootstrapping config write service with instance id: $instanceId")
         configWriteService.bootstrapConfig(bootstrapConfig)
 
-        this.bootstrapConfig = bootstrapConfig
+        log.info("Bootstrapping config read service")
+        configurationReadService.bootstrapConfig(bootstrapConfig)
     }
 
     private fun onRegistrationStatusChangeEvent(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        if (event.registration == dbManagerRegistrationHandler) {
-            log.info("Bootstrapping config read service")
-            configurationReadService.bootstrapConfig(bootstrapConfig!!)
-        } else {
-            log.info("DB processor is ${event.status}")
-            if (event.status == LifecycleStatus.UP) {
-                configSubscription = configurationReadService.registerComponentForUpdates(
+        log.info("DB processor is ${event.status}")
+        if (event.status == LifecycleStatus.UP) {
+            coordinator.createManagedResource(REGISTRATION) {
+                configurationReadService.registerComponentForUpdates(
                     coordinator, setOf(
                         ConfigKeys.RECONCILIATION_CONFIG
                     )
                 )
             }
-            coordinator.updateStatus(event.status)
         }
+        coordinator.updateStatus(event.status)
+    }
+
+    private fun onConfigChangedEvent(
+        event: ConfigChangedEvent,
+    ) {
+        // Creates and starts the rest of the reconcilers
+        reconcilers.onConfigChanged(event)
     }
 
     private fun onStartEvent() {
         // First Config reconciliation needs to run at least once. It cannot wait for its configuration as
         // it is the one to offer the DB Config (therefore its own configuration too) to `ConfigurationReadService`.
         reconcilers.updateConfigReconciler(3600000)
-        dbManagerRegistrationHandler = lifecycleCoordinator.followStatusChangesByName(
-            setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
-        )
+    }
+
+    private fun onStopEvent() {
+        reconcilers.close()
     }
 
     data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent

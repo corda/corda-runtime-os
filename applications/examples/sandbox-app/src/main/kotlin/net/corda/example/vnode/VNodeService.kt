@@ -1,18 +1,18 @@
 package net.corda.example.vnode
 
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
-import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 interface VNodeService {
     fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo
@@ -38,7 +38,7 @@ class VNodeServiceImpl @Activate constructor(
     @Reference
     private val virtualNodeLoader: VirtualNodeLoader
 ) : VNodeService {
-    private val logger = loggerFor<VNodeService>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     init {
         sandboxGroupContextComponent.initCache(1)

@@ -192,7 +192,7 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
         serializer: InternalProxySerializer<T, P>,
         factory: SerializerFactory
     ) : CustomSerializerImpl<T>(serializer) {
-        private val proxySerializer: ObjectSerializer by lazy {
+        private val proxySerializer: ObjectSerializer by lazy(LazyThreadSafetyMode.PUBLICATION) {
             ObjectSerializer.make(factory.getTypeInformation(serializer.proxyType), factory)
         }
 

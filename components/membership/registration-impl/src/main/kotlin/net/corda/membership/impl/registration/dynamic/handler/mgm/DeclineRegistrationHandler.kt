@@ -15,8 +15,8 @@ import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinute
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class DeclineRegistrationHandler(
@@ -31,7 +31,7 @@ internal class DeclineRegistrationHandler(
     ),
 ) : RegistrationHandler<DeclineRegistration> {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     override fun invoke(
         state: RegistrationState?,

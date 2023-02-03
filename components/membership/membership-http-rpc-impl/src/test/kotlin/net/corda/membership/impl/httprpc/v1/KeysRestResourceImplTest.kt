@@ -15,6 +15,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -22,6 +23,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -40,11 +42,11 @@ import java.time.Instant
 
 class KeysRestResourceImplTest {
     private companion object {
-        val TENANT_ID = "tenantId"
-        val CATEGORY = "CATEGORY"
-        val ALIAS = "alias"
-        val SCHEME = "scheme"
-        val EXCEPTION_MSG = "exception happened"
+        const val ALIAS = "alias"
+        const val SCHEME = "scheme"
+        const val CATEGORY = "CATEGORY"
+        const val TENANT_ID = "tenantId"
+        const val EXCEPTION_MSG = "exception happened"
     }
 
     private val cryptoOpsClient = mock<CryptoOpsClient>()
@@ -240,6 +242,54 @@ class KeysRestResourceImplTest {
         }
 
         @Test
+        fun `listKeys will throw ServiceUnavailableException when repartition event happens while trying to lookup keys for tenant`() {
+            whenever(cryptoOpsClient.lookup(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                keysOps.listKeys(
+                    tenantId = TENANT_ID,
+                    skip = 4,
+                    take = 400,
+                    orderBy = ALIAS,
+                    category = null,
+                    alias = null,
+                    masterKeyAlias = null,
+                    createdAfter = null,
+                    createdBefore = null,
+                    schemeCodeName = null,
+                    ids = listOf("key1"),
+                )
+            }
+
+            assertThat(details.message).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
+        }
+
+        @Test
+        @Suppress("MaxLineLength")
+        fun `listKeys will throw ServiceUnavailableException when repartition event happens while trying to lookup filtered keys for tenant`() {
+            whenever(cryptoOpsClient.lookup(TENANT_ID, 4, 400, CryptoKeyOrderBy.ALIAS, emptyMap()))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                keysOps.listKeys(
+                    tenantId = TENANT_ID,
+                    skip = 4,
+                    take = 400,
+                    orderBy = ALIAS,
+                    category = null,
+                    alias = null,
+                    masterKeyAlias = null,
+                    createdAfter = null,
+                    createdBefore = null,
+                    schemeCodeName = null,
+                    ids = null
+                )
+            }
+
+            assertThat(details.message).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
+        }
+
+        @Test
         fun `generateKeyPair returns the generated public key ID`() {
             val publicKey = mock<PublicKey> {
                 on { encoded } doReturn byteArrayOf(1, 2, 3)
@@ -280,6 +330,18 @@ class KeysRestResourceImplTest {
         }
 
         @Test
+        fun `generateKeyPair throws ServiceUnavailableException when repartition event happens while trying to generate the keyPair`() {
+            whenever(cryptoOpsClient.generateKeyPair(TENANT_ID, CATEGORY.uppercase(), ALIAS, SCHEME))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                keysOps.generateKeyPair(tenantId = TENANT_ID, alias = ALIAS, hsmCategory = CATEGORY, scheme = SCHEME)
+            }
+
+            assertThat(details.message).isEqualTo("Could not generate key pair for tenant $TENANT_ID: Repartition Event!")
+        }
+
+        @Test
         fun `generateKeyPem returns the keys PEMs`() {
             val keyId = "keyId"
             val holdingIdentityShortHash = "holdingIdentityShortHash"
@@ -309,6 +371,19 @@ class KeysRestResourceImplTest {
         }
 
         @Test
+        fun `generateKeyPem throws ServiceUnavailableException when repartition event happens while trying to lookup keys for tenant`() {
+            whenever(cryptoOpsClient.lookup(any(), any()))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                keysOps.generateKeyPem(TENANT_ID, "keyId")
+            }
+
+            assertThat(details.message).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
+
+        }
+
+        @Test
         fun `listSchemes return list of schemes`() {
             whenever(cryptoOpsClient.getSupportedSchemes(TENANT_ID, CATEGORY.uppercase())).doReturn(listOf("one", "two"))
 
@@ -316,6 +391,19 @@ class KeysRestResourceImplTest {
 
             assertThat(schemes).containsExactlyInAnyOrder("one", "two")
         }
+
+        @Test
+        fun `listSchemes throws ServiceUnavailableException when repartition event happens while trying to retrieve schemes`() {
+            whenever(cryptoOpsClient.getSupportedSchemes(any(), any()))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
+
+            val details = assertThrows<ServiceUnavailableException> {
+                keysOps.listSchemes(TENANT_ID, CATEGORY)
+            }
+
+            assertThat(details.message).isEqualTo("Could not list supported schemes for tenant $TENANT_ID: Repartition Event!")
+        }
+
 
         @Test
         fun `InvalidParamsException is mapped to InvalidInputException`() {

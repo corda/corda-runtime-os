@@ -1,9 +1,9 @@
 package net.corda.ledger.verification.sanbox.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.ledger.verification.sanbox.VerificationSandboxService
 import net.corda.ledger.verification.exceptions.NotReadyException
 import net.corda.ledger.verification.exceptions.VirtualNodeException
+import net.corda.ledger.verification.sanbox.VerificationSandboxService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
@@ -12,17 +12,20 @@ import net.corda.sandboxgroupcontext.RequireSandboxJSON
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
-import net.corda.v5.base.util.contextLogger
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * This is a sandbox service that is internal to this component.
@@ -44,7 +47,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
     private val cpiInfoService: CpiInfoReadService
 ) : VerificationSandboxService {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpiId: CpiIdentifier): SandboxGroupContext {
@@ -104,3 +107,10 @@ class VerificationSandboxServiceImpl @Activate constructor(
             null
         )
 }
+
+fun SandboxGroupContext.getSerializationService(): SerializationService =
+    getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
+        ?: throw CordaRuntimeException(
+            "Verification serialization service not found within the sandbox for identity: " +
+                    "${virtualNodeContext.holdingIdentity}"
+        )

@@ -5,11 +5,11 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 interface TestStableKeyPairDecryptor : StableKeyPairDecryptor
@@ -21,7 +21,7 @@ internal class TestStableKeyPairDecryptorImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : TestStableKeyPairDecryptor {
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator =

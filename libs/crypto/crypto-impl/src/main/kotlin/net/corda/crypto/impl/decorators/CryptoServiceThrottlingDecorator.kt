@@ -7,10 +7,10 @@ import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoThrottlingException
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 class CryptoServiceThrottlingDecorator(
@@ -18,7 +18,7 @@ class CryptoServiceThrottlingDecorator(
 ) : CryptoService {
     companion object {
         private const val MAX_RETRY_GUARD: Int = 10
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private fun <R> executeWithBackingOff(block: () -> R): R {

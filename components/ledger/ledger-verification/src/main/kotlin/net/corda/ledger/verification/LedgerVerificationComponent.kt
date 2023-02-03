@@ -3,7 +3,7 @@ package net.corda.ledger.verification
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
+import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
@@ -21,12 +21,12 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 @Component(service = [LedgerVerificationComponent::class])
@@ -45,10 +45,10 @@ class LedgerVerificationComponent @Activate constructor(
     private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory
 ) : Lifecycle {
     private var configHandle: Resource? = null
-    private var verificationProcessorSubscription: Subscription<String, VerifyContractsRequest>? = null
+    private var verificationProcessorSubscription: Subscription<String, TransactionVerificationRequest>? = null
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dependentComponents = DependentComponents.of(

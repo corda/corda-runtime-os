@@ -9,7 +9,6 @@ import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
@@ -21,7 +20,6 @@ import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRestResource
 import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -48,6 +46,7 @@ import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
 import java.security.PublicKey
@@ -67,7 +66,7 @@ class CertificatesRestResourceImpl @Activate constructor(
 ) : CertificatesRestResource, PluggableRestResource<CertificatesRestResource>, Lifecycle {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val defaultCodeNameToSpec = mapOf(
             ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
@@ -99,10 +98,12 @@ class CertificatesRestResourceImpl @Activate constructor(
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {
-        val key = cryptoOpsClient.lookup(
-            tenantId = tenantId,
-            ids = listOf(keyId)
-        ).firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
+        val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
+            cryptoOpsClient.lookup(
+                tenantId = tenantId,
+                ids = listOf(keyId)
+            )
+        }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
         val publicKey = keyEncodingService.decodePublicKey(key.publicKey.array())
 
         val extensionsGenerator = ExtensionsGenerator()
@@ -190,16 +191,14 @@ class CertificatesRestResourceImpl @Activate constructor(
                 details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
             )
         }
-        try {
+
+        tryWithExceptionHandling(logger, "import certificate") {
             certificatesClient.importCertificates(
                 usageType,
                 holdingIdentityShortHash,
                 alias,
                 rawCertificates.joinToString(separator = "\n"),
             )
-        } catch (e: Exception) {
-            logger.warn("Could not import certificate", e)
-            throw InternalServerException("Could not import certificate: ${e.message}")
         }
     }
 
@@ -214,15 +213,13 @@ class CertificatesRestResourceImpl @Activate constructor(
         } ?: throw InvalidInputDataException(
             details = mapOf("usage" to "Unknown usage: $usage")
         )
-        return try {
+
+        return tryWithExceptionHandling(logger, "get certificate aliases") {
             certificatesClient.getCertificateAliases(
                 usageType,
                 holdingIdentityShortHash,
-            ).toList()
-        } catch (e: Exception) {
-            logger.warn("Could not get certificate aliases", e)
-            throw InternalServerException("Could not get certificate aliases: ${e.message}")
-        }
+            )
+        }.toList()
     }
 
     override fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
@@ -241,18 +238,14 @@ class CertificatesRestResourceImpl @Activate constructor(
         } ?: throw InvalidInputDataException(
             details = mapOf("usage" to "Unknown usage: $usage")
         )
-        return try {
+
+        return tryWithExceptionHandling(logger, "get certificate chain") {
             certificatesClient.retrieveCertificates(
                 holdingIdentityShortHash,
                 usageType,
                 alias
-            ) ?: throw ResourceNotFoundException(alias, "alias")
-        } catch (e: ResourceNotFoundException) {
-            throw e
-        } catch (e: Exception) {
-            logger.warn("Could not get certificate aliases", e)
-            throw InternalServerException("Could not get certificate aliases: ${e.message}")
-        }
+            )
+        } ?: throw ResourceNotFoundException(alias, "alias")
     }
 
     override val targetInterface = CertificatesRestResource::class.java

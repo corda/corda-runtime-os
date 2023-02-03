@@ -9,10 +9,10 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
-import java.util.*
+import org.slf4j.LoggerFactory
+import java.util.Properties
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
@@ -20,7 +20,7 @@ import java.util.*
 internal class MessageBusConfigResolver(private val smartConfigFactory: SmartConfigFactory) {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val ENFORCED_CONFIG_FILE = "kafka-messaging-enforced.conf"
         private const val DEFAULT_CONFIG_FILE = "kafka-messaging-defaults.conf"

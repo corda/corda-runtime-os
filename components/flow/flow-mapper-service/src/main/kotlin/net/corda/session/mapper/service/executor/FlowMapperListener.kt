@@ -7,9 +7,9 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.util.concurrent.TimeUnit
 
@@ -22,7 +22,7 @@ class FlowMapperListener(
     private val scheduledTasks = scheduledTaskState.tasks
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun onPartitionSynced(states: Map<String, FlowMapperState>) {

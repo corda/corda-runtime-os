@@ -11,7 +11,6 @@ import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.classload.OsgiDelegatedClassLoader
-import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.osgi.framework.FrameworkUtil
@@ -19,7 +18,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.*
+import org.slf4j.LoggerFactory
+import java.util.Properties
 
 /**
  * Generate a Kafka Consumer.
@@ -31,7 +31,7 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
 ) : CordaConsumerBuilder {
 
     companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun <K : Any, V : Any> createConsumer(

@@ -7,7 +7,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -26,7 +26,7 @@ class BlockingDominoTile(componentName: String,
 ): DominoTile() {
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val coordinatorName: LifecycleCoordinatorName by lazy {

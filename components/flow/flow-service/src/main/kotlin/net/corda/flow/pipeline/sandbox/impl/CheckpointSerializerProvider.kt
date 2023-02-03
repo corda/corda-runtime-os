@@ -11,13 +11,13 @@ import net.corda.sandboxgroupcontext.getSandboxSingletonServices
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceScope
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 
 /**
  * This component allows [FlowSandboxServiceImpl] to create and install a
@@ -37,7 +37,7 @@ class CheckpointSerializerProvider @Activate constructor(
     private val checkpointInternalCustomSerializers: List<CheckpointInternalCustomSerializer<*>>
 ) : UsedByFlow, CustomMetadataConsumer {
     private companion object {
-        private val logger = loggerFor<CheckpointSerializerProvider>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun accept(context: MutableSandboxGroupContext) {

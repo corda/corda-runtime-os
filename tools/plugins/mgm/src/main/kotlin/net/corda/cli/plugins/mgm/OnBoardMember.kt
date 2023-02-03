@@ -182,8 +182,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
             .replace('=', '_')
     }
     private fun createCpi(cpbFile: File, cpiFile: File) {
-        println("Using the cpb file is not recommended." +
-                " It is advised to create CPI using the package create-cpi command.")
+        println(
+            "Using the cpb file is not recommended." +
+                " It is advised to create CPI using the package create-cpi command."
+        )
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
         creator.cpbFileName = cpbFile.absolutePath
@@ -216,11 +218,20 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
         setupClient()
 
+        configureGateway()
+
         createTlsKeyIdNeeded()
+
+        if (mtls) {
+            println(
+                "Using $certificateSubject as client certificate. " +
+                    "The onboarding will fail until the the subject is added to the MGM's allow list. " +
+                    "You can do that using the allowClientCertificate command."
+            )
+        }
 
         setupNetwork()
 
-        disableClrChecks()
         println("Provided registration context: ")
         println(registrationContext)
 
@@ -229,8 +240,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (waitForFinalStatus) {
             println("Member $x500Name was onboarded.")
         } else {
-            println("Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                    "MGM may need to approve your request manually.")
+            println(
+                "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                    "MGM may need to approve your request manually."
+            )
         }
     }
 }

@@ -9,10 +9,10 @@ import net.corda.utilities.clearMDC
 import net.corda.utilities.setMDC
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.Serializable
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -29,7 +29,7 @@ class FlowFiberImpl(
     private fun interface SerializableFiberWriter : FiberWriter, Serializable
 
     companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Transient

@@ -15,7 +15,6 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.test.util.waitWhile
-import net.corda.v5.base.util.loggerFor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -33,6 +32,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -60,7 +60,7 @@ class CompactedSubscriptionImplTest {
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
     private open class TestProcessor : CompactedProcessor<String, String> {
-        private val log = loggerFor<TestProcessor>()
+        private val log = LoggerFactory.getLogger(this::class.java)
 
         override val keyClass: Class<String>
             get() = String::class.java

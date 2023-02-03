@@ -21,13 +21,13 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.processors.flow.FlowProcessor
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.session.mapper.service.FlowMapperService
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList", "Unused")
 @Component(service = [FlowProcessor::class])
@@ -59,7 +59,7 @@ class FlowProcessorImpl @Activate constructor(
 ) : FlowProcessor {
 
     private companion object {
-        val log: Logger = contextLogger()
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val dependentComponents = DependentComponents.of(

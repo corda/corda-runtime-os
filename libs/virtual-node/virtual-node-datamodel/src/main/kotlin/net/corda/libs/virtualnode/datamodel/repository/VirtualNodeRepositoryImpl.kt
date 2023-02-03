@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
+import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
@@ -13,6 +14,8 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
 
 class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     /**
@@ -122,6 +125,43 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             }
             return it.merge(updatedVirtualNodeInstance).toVirtualNodeInfo()
         }
+    }
+
+    override fun upgradeVirtualNodeCpi(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String,
+        requestId: String, requestTimestamp: Instant, serializedRequest: String
+    ): VirtualNodeInfo {
+        val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
+            ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+        virtualNode.cpiName = cpiName
+        virtualNode.cpiVersion = cpiVersion
+        virtualNode.cpiSignerSummaryHash = cpiSignerSummaryHash
+        virtualNode.operationInProgress = VirtualNodeOperationEntity(
+            UUID.randomUUID().toString(),
+            requestId,
+            serializedRequest,
+            VirtualNodeOperationState.IN_PROGRESS,
+            requestTimestamp
+        )
+        val updatedVirtualNode = entityManager.merge(virtualNode)
+        return updatedVirtualNode.toVirtualNodeInfo()
+    }
+
+    override fun completeOperation(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeInfo {
+        val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
+            ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+
+        val operation: VirtualNodeOperationEntity = virtualNode.operationInProgress ?: return virtualNode.toVirtualNodeInfo()
+
+        operation.latestUpdateTimestamp = Instant.now()
+        operation.state = VirtualNodeOperationState.COMPLETED
+        virtualNode.operationInProgress = null
+
+        entityManager.merge(operation)
+        return entityManager.merge(virtualNode)
+            .toVirtualNodeInfo()
     }
 
     private fun findEntity(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeEntity? {

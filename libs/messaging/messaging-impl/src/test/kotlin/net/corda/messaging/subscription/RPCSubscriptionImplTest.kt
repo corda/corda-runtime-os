@@ -23,7 +23,6 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.test.util.waitWhile
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -41,6 +40,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
@@ -420,7 +420,7 @@ class RPCSubscriptionImplTest {
 
     private class TestProcessor(val responseStatus: ResponseStatus) :
         RPCResponderProcessor<HoldingIdentity, HoldingIdentity> {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         var failNext = false
         val incomingRecords = mutableListOf<HoldingIdentity>()

@@ -3,18 +3,23 @@ package net.corda.membership.persistence.client
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import java.time.Instant
+import java.util.UUID
 
 /**
  * Interface to be implemented by the service which requires membership persistence outside of the DB worker.
  * This client handles persistence over RPC.
  */
+@Suppress("TooManyFunctions")
 interface MembershipPersistenceClient : Lifecycle {
     /**
      * Persists a list of member info records as viewed by a specific holding identity.
@@ -186,6 +191,41 @@ interface MembershipPersistenceClient : Lifecycle {
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,
     ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Adds a new pre auth token to the database.
+     *
+     * @param mgmHoldingIdentity The holding identity of the mgm.
+     * @param preAuthTokenId A unique token identifier of the pre auth token.
+     * @param ownerX500Name The X500 name of the owner of the pre auth token.
+     * @param ttl A timestamp for when the pre auth token expires. If null the token never expires.
+     * @param remarks An optional remark added when the token was created.
+     *
+     * @return membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
+     */
+    fun generatePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        preAuthTokenId: UUID,
+        ownerX500Name: MemberX500Name,
+        ttl: Instant?,
+        remarks: String?
+    ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Revoke an existing pre auth token in the database.
+     *
+     * @param mgmHoldingIdentity The holding identity of the mgm.
+     * @param preAuthTokenId The unique token identifier of the pre auth token being revoked.
+     * @param remarks An optional remark about why the token was revoked.
+     *
+     * @return membership persistence result with the updated token.
+     */
+    fun revokePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        preAuthTokenId: UUID,
+        remarks: String?
+    ): MembershipPersistenceResult<PreAuthToken>
 
     /**
      * Persists the specified approval rule.

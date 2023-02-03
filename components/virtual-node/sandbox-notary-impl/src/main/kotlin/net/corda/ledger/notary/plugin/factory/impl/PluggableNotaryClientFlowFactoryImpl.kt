@@ -11,7 +11,6 @@ import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.getMetadataServices
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
@@ -23,6 +22,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 
 @Component(
     service = [ PluggableNotaryClientFlowFactory::class, UsedByFlow::class, UsedByVerification::class, UsedByPersistence::class ],
@@ -38,7 +38,7 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
     UsedByVerification, CustomMetadataConsumer {
 
     private companion object {
-        val logger = loggerFor<PluggableNotaryClientFlowFactoryImpl>()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val pluggableNotaryClientFlowProviders = mutableMapOf<String, PluggableNotaryClientFlowProvider>()

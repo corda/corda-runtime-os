@@ -2,7 +2,7 @@ package net.corda.db.admin.impl
 
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.net.URLEncoder
@@ -58,7 +58,7 @@ class ClassloaderChangeLog(
     companion object {
         const val CLASS_LOADER_PREFIX = "classloader://"
 
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val allChangeFiles = mutableSetOf<String>()

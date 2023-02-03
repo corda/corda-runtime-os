@@ -1,0 +1,9 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <include file="migration/v1/fish-migration-v1.0.xml"/>
+    <include file="migration/v1/owner-migration-v1.0.xml"/>
+    <include file="migration/v2/remove-owner-and-fish-migration-v1.0.xml"/>
+    <include file="migration/v2/dogs-migration-v1.0.xml"/>
+</databaseChangeLog>

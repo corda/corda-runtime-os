@@ -14,11 +14,11 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
@@ -56,7 +56,7 @@ class DbConnectionManagerImpl (
                 { d -> Thread.sleep(d.toMillis()) })
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val eventHandler = DbConnectionManagerEventHandler(this)

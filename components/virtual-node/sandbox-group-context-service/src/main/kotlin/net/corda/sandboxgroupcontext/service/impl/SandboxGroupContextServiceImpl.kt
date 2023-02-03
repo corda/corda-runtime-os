@@ -1,23 +1,12 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
 package net.corda.sandboxgroupcontext.service.impl
 
-import java.security.AccessControlContext
-import java.security.AccessControlException
-import java.time.Duration
-import java.util.Collections.singleton
-import java.util.Collections.unmodifiableSet
-import java.util.Deque
-import java.util.Hashtable
-import java.util.LinkedList
-import java.util.SortedMap
-import java.util.TreeMap
-import java.util.concurrent.CompletableFuture
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.metrics.CordaMetrics
-import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.RequireCordaSystem
 import net.corda.sandbox.RequireCordaSystem.CORDA_SYSTEM_NAMESPACE
+import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
@@ -36,7 +25,6 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
@@ -57,6 +45,19 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
+import org.slf4j.LoggerFactory
+import java.security.AccessControlContext
+import java.security.AccessControlException
+import java.time.Duration
+import java.util.Collections.singleton
+import java.util.Collections.unmodifiableSet
+import java.util.Deque
+import java.util.Hashtable
+import java.util.LinkedList
+import java.util.SortedMap
+import java.util.TreeMap
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
 typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>, Any>>
 
@@ -95,14 +96,11 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         private val uninjectableFilter = FrameworkUtil.createFilter(CORDA_UNINJECTABLE_FILTER)
         private val markerOnlyFilter = FrameworkUtil.createFilter(CORDA_MARKER_ONLY_FILTER)
         private val systemFilter = FrameworkUtil.createFilter(CORDA_SYSTEM_FILTER)
-        private val logger = loggerFor<SandboxGroupContextServiceImpl>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private val sandboxServiceProperties = Hashtable<String, Any?>().apply {
-            put(CORDA_SANDBOX, true)
-        }
-
-        private fun ServiceReference<*>.copyPropertiesForSandbox(): Hashtable<String, Any?> {
-            return Hashtable(sandboxServiceProperties).also { props ->
+        private fun ServiceReference<*>.copyPropertiesForSandbox(sandboxId: UUID): Hashtable<String, Any?> {
+            return Hashtable<String, Any?>().also { props ->
+                props[CORDA_SANDBOX] = sandboxId
                 propertyKeys.forEach { key ->
                     props[key] = getProperty(key)
                 }
@@ -196,7 +194,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 val sandboxGroupContext = SandboxGroupContextImpl(vnc, sandboxGroup)
 
                 // Register common OSGi services for use within this sandbox.
-                val commonServiceRegistrations = registerCommonServices(vnc, sandboxGroup.metadata.keys)?.let {
+                val commonServiceRegistrations = registerCommonServices(sandboxGroupContext)?.let {
                     sandboxGroupContext.putObjectByKey(SANDBOX_SINGLETONS, it.first)
                     it.second
                 }
@@ -204,6 +202,9 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 // Run the caller's initializer.
                 val initializerAutoCloseable =
                     initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
+
+                logger.debug("Created {} sandbox {} for holding identity={}",
+                    vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity)
 
                 // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
 
@@ -224,9 +225,12 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         }
     }
 
-    private fun registerCommonServices(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): Pair<Set<*>, Collection<AutoCloseable>>? {
+    private fun registerCommonServices(sandboxGroupContext: SandboxGroupContext): Pair<Set<*>, Collection<AutoCloseable>>? {
+        val sandboxGroup = sandboxGroupContext.sandboxGroup
+        val bundles = sandboxGroup.metadata.keys
         val targetContext = bundles.firstOrNull()?.bundleContext ?: return null
-        return createSandboxServiceContext(vnc, bundles).registerInjectables(targetContext)
+        return createSandboxServiceContext(sandboxGroup.id, sandboxGroupContext.virtualNodeContext, bundles)
+            .registerInjectables(targetContext)
     }
 
     /**
@@ -250,7 +254,11 @@ class SandboxGroupContextServiceImpl @Activate constructor(
      * Identify which of these services should be registered with the OSGi framework.
      */
     @Suppress("ComplexMethod")
-    private fun createSandboxServiceContext(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): SandboxServiceContext {
+    private fun createSandboxServiceContext(
+        sandboxId: UUID,
+        vnc: VirtualNodeContext,
+        bundles: Iterable<Bundle>
+    ): SandboxServiceContext {
         val injectables = mutableMapOf<ServiceReference<*>, ServiceDefinition>()
         val serviceIndex = mutableMapOf<String, MutableSet<ServiceReference<*>>>()
 
@@ -309,7 +317,13 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             serviceIndex[markerName] = emptyImmutableSet
         }
 
-        return SandboxServiceContext(bundleContext, serviceComponentRuntime, serviceIndex, injectables)
+        return SandboxServiceContext(
+            sandboxId = sandboxId,
+            sourceContext = bundleContext,
+            serviceComponentRuntime,
+            serviceIndex,
+            injectables
+        )
     }
 
     override fun registerMetadataServices(
@@ -318,8 +332,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         isMetadataService: (Class<*>) -> Boolean,
         serviceMarkerType: Class<*>
     ): AutoCloseable {
-        val groupMetadata = sandboxGroupContext.sandboxGroup.metadata
-        val services = groupMetadata.flatMap { (mainBundle, cpkMetadata) ->
+        val group = sandboxGroupContext.sandboxGroup
+        val services = group.metadata.flatMap { (mainBundle, cpkMetadata) ->
             // Fetch metadata classes provided by each CPK main bundle.
             serviceNames(cpkMetadata).mapNotNull { serviceName ->
                 mainBundle.loadMetadataService(serviceName, isMetadataService)
@@ -327,7 +341,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         }
 
         // Register each metadata service as an OSGi service for its host main bundle.
-        val (instances, registrations) = registerMetadataServices(serviceMarkerType.name, services)
+        val (instances, registrations) = registerMetadataServices(group.id, serviceMarkerType.name, services)
         (sandboxGroupContext as? MutableSandboxGroupContext)?.putObjectByKey(serviceMarkerType.name, instances)
         return AutoCloseable {
             registrations.forEach { registration ->
@@ -337,6 +351,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
     }
 
     private fun registerMetadataServices(
+        sandboxId: UUID,
         serviceMarkerTypeName: String,
         services: Iterable<Pair<Class<*>, Bundle>>
     ): Pair<Set<Any>, Deque<AutoCloseable>> {
@@ -358,7 +373,9 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 val registration = serviceBundle.bundleContext.registerService(
                     serviceInterfaces.toTypedArray(),
                     serviceObj,
-                    sandboxServiceProperties
+                    Hashtable<String, Any?>().also { props ->
+                        props[CORDA_SANDBOX] = sandboxId
+                    }
                 )
 
                 logger.info("Registered Metadata Service [{}] for bundle [{}][{}]",
@@ -440,6 +457,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
      * likely require several other - possible non-injectable - services as parameters
      * too. The algorithm is therefore a bit tricky.
      *
+     * @property sandboxId unique identifier for our sandbox instance.
      * @property sourceContext the [BundleContext] of [SandboxGroupContextComponentImpl].
      * @property serviceComponentRuntime a reference to OSGi's [ServiceComponentRuntime].
      * @property injectables the services we know we still need to create.
@@ -465,6 +483,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
      * anything new.
      */
     private class SandboxServiceContext(
+        private val sandboxId: UUID,
         private val sourceContext: BundleContext,
         private val serviceComponentRuntime: ServiceComponentRuntime,
         private val serviceIndex: Map<String, MutableSet<ServiceReference<*>>>,
@@ -596,7 +615,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 val serviceRegistration = targetContext.registerService(
                     serviceClassNames.toTypedArray(),
                     serviceObj,
-                    serviceFactory.serviceReference.copyPropertiesForSandbox()
+                    serviceFactory.serviceReference.copyPropertiesForSandbox(sandboxId)
                 )
                 if (logger.isDebugEnabled) {
                     logger.debug("Registered sandbox service {}[{}] for bundle [{}][{}]",

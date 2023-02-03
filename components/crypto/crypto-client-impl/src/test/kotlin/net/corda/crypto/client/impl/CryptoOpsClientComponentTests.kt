@@ -48,7 +48,6 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -71,6 +70,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
@@ -80,7 +80,7 @@ import kotlin.test.assertTrue
 
 class CryptoOpsClientComponentTests {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @JvmStatic
         fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
