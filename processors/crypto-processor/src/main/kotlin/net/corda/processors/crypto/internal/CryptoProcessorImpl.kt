@@ -118,6 +118,8 @@ class CryptoProcessorImpl @Activate constructor(
 
     @Volatile
     private var dependenciesUp: Boolean = false
+    private var dependentComponentsUp = false
+    private var cryptoOpsClientAndDependentComponentsUp = false
 
     private val tmpAssignmentFailureCounter = AtomicInteger(0)
 
@@ -166,16 +168,21 @@ class CryptoProcessorImpl @Activate constructor(
                         // Coordination is happening here/ at this level as there is no dependency between `CryptoOpsClientImpl` and
                         // `CryptoOpsBusServiceImpl`.
                         // We used to get: "CordaRPCAPISenderException: No partitions for topic crypto.ops.rpc.resp. Couldn't send."
+                        dependentComponentsUp = true
                         if (cryptoOpsClientAndDependentComponents.registration == null) {
-                            logger.debug { "Dependent components are UP" }
+                            logger.debug {
+                                "Dependent components are UP" +
+                                        "Registering and starting crypto ops client and its dependent components"
+                            }
                             cryptoOpsClientAndDependentComponents.registerAndStartAll(coordinator)
                         } else {
-                            logger.debug { "Dependent components are UP. Crypto ops client and its dependent components are already UP" }
-                            coordinator.postEvent(AllDependenciesAreUp)
+                            if (cryptoOpsClientAndDependentComponentsUp)
+                                coordinator.postEvent(AllDependenciesAreUp)
                         }
                     } else if (event.registration == cryptoOpsClientAndDependentComponents.registration) {
-                        logger.debug { "Registering and starting crypto ops client and its dependent components" }
-                        coordinator.postEvent(AllDependenciesAreUp)
+                        cryptoOpsClientAndDependentComponentsUp = true
+                        if (dependentComponentsUp)
+                            coordinator.postEvent(AllDependenciesAreUp)
                     } else {
                         logger.error(
                             "Unexpected registration for received ${RegistrationStatusChangeEvent::class.java.simpleName}: "
@@ -184,6 +191,11 @@ class CryptoProcessorImpl @Activate constructor(
                         setStatus(LifecycleStatus.ERROR, coordinator)
                     }
                 } else {
+                    if (event.registration == dependentComponents.registration) {
+                        dependentComponentsUp = false
+                    } else if (event.registration == cryptoOpsClientAndDependentComponents.registration) {
+                        cryptoOpsClientAndDependentComponentsUp = false
+                    }
                     dependenciesUp = false
                     setStatus(event.status, coordinator)
                 }
