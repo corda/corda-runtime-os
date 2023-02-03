@@ -33,6 +33,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -109,7 +110,8 @@ class CryptoProcessorImpl @Activate constructor(
         ::cryptoFlowOpsBusService
     )
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
+    @VisibleForTesting
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
     @Volatile
     private var hsmAssociated: Boolean = false
@@ -158,24 +160,24 @@ class CryptoProcessorImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
                     if (event.registration == dependentComponents.registration) {
-                        // At this point `CryptoOpsBusServiceImpl` is UP, meaning RPC subscription created for
-                        // FLOW_OPS_MESSAGE_TOPIC is created so now it should be safe to create RPC sender for this topic
-                        // which is what `CryptoOpsClientImpl` is doing. Otherwise we might end up creating the RPC sender
-                        // before the subscription is created. We used to get:
-                        // "CordaRPCAPISenderException: No partitions for topic crypto.ops.rpc.resp. Couldn't send."
-                        logger.debug {
-                            "Dependent components are UP so now registering and starting " +
-                                    "crypto ops client and its dependent components"
-                        }
-                        cryptoOpsClientAndDependentComponents.registerAndStartAll(coordinator)
-                    } else if (event.registration == cryptoOpsClientAndDependentComponents.registration) {
-                        logger.debug { "All dependent components are UP" }
-                        dependenciesUp = true
-                        if (hsmAssociated) {
-                            setStatus(event.status, coordinator)
+                        // The lifecycle bootstrapping has been done in two phases in an attempt to make sure
+                        // RPC sender created for FLOW_OPS_MESSAGE_TOPIC (through `CryptoOpsClientImpl`) will
+                        // happen after RPC subscription for that topic is created first (through `CryptoOpsBusServiceImpl`)
+                        // We used to get: "CordaRPCAPISenderException: No partitions for topic crypto.ops.rpc.resp. Couldn't send."
+                        if (cryptoOpsClientAndDependentComponents.registration == null) {
+                            logger.debug {
+                                "Dependent components are UP. Now registering and starting " +
+                                        "crypto ops client and its dependent components"
+                            }
+                            cryptoOpsClientAndDependentComponents.registerAndStartAll(coordinator)
                         } else {
-                            coordinator.postEvent(AssociateHSM())
+                            logger.debug {
+                                "Dependent components are UP. Crypto ops client and its dependent components are already UP"
+                            }
+                            coordinator.postEvent(AllDependenciesAreUp)
                         }
+                    } else if (event.registration == cryptoOpsClientAndDependentComponents.registration) {
+                        coordinator.postEvent(AllDependenciesAreUp)
                     } else {
                         logger.error(
                             "Unexpected registration for received ${RegistrationStatusChangeEvent::class.java.simpleName}: "
@@ -186,6 +188,15 @@ class CryptoProcessorImpl @Activate constructor(
                 } else {
                     dependenciesUp = false
                     setStatus(event.status, coordinator)
+                }
+            }
+            is AllDependenciesAreUp -> {
+                logger.debug { "All dependent components are UP" }
+                dependenciesUp = true
+                if (hsmAssociated) {
+                    setStatus(LifecycleStatus.UP, coordinator)
+                } else {
+                    coordinator.postEvent(AssociateHSM())
                 }
             }
             is AssociateHSM -> {
@@ -254,5 +265,7 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     class AssociateHSM : LifecycleEvent
+
+    object AllDependenciesAreUp : LifecycleEvent
 }
 

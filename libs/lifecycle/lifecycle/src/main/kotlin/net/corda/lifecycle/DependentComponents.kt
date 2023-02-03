@@ -77,23 +77,19 @@ class DependentComponents private constructor(private val map: Map<LifecycleCoor
         return with(map, component,componentType, instanceId)
     }
 
-    val registration: RegistrationHandle
-        get() = _registration
-            ?: throw IllegalStateException("Not started ${DependentComponents::class.java.simpleName}")
-
-    private var _registration: RegistrationHandle? = null
+    var registration: RegistrationHandle? = null
 
     val coordinatorNames: Set<LifecycleCoordinatorName> = map.keys
 
     fun stopAll() {
         map.values.forEach { it.stop() }
-        _registration?.close()
-        _registration = null
+        registration?.close()
+        registration = null
     }
 
     fun registerAndStartAll(coordinator: LifecycleCoordinator) {
-        _registration?.close()
-        _registration = coordinator.followStatusChangesByName(map.keys)
+        registration?.close()
+        registration = coordinator.followStatusChangesByName(map.keys)
         map.values.forEach { it.start() }
     }
 }

@@ -86,4 +86,7 @@ dependencies {
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
