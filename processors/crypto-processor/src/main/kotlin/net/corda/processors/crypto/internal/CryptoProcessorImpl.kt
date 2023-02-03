@@ -162,7 +162,9 @@ class CryptoProcessorImpl @Activate constructor(
                     if (event.registration == dependentComponents.registration) {
                         // The lifecycle bootstrapping has been done in two phases in an attempt to make sure
                         // RPC sender created for FLOW_OPS_MESSAGE_TOPIC (through `CryptoOpsClientImpl`) will
-                        // happen after RPC subscription for that topic is created first (through `CryptoOpsBusServiceImpl`)
+                        // happen after the creation of the RPC subscription for that topic (through `CryptoOpsBusServiceImpl`).
+                        // Coordination is happening here/ at this level as there is no dependency between `CryptoOpsClientImpl` and
+                        // `CryptoOpsBusServiceImpl`.
                         // We used to get: "CordaRPCAPISenderException: No partitions for topic crypto.ops.rpc.resp. Couldn't send."
                         if (cryptoOpsClientAndDependentComponents.registration == null) {
                             logger.debug {
