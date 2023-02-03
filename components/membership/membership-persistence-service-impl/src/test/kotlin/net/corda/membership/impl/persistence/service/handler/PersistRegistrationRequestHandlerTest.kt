@@ -121,7 +121,7 @@ class PersistRegistrationRequestHandlerTest {
     )
 
     private fun getPersistRegistrationRequest() = PersistRegistrationRequest(
-        RegistrationStatus.PENDING_MGM_NETWORK_ACCESS,
+        RegistrationStatus.SENT_TO_MGM,
         ourHoldingIdentity.toAvro(),
         MembershipRegistrationRequest(
             ourRegistrationId,
@@ -159,7 +159,7 @@ class PersistRegistrationRequestHandlerTest {
             val entity = this as RegistrationRequestEntity
             assertThat(entity.registrationId).isEqualTo(ourRegistrationId)
             assertThat(entity.holdingIdentityShortHash).isEqualTo(ourHoldingIdentity.shortHash.value)
-            assertThat(entity.status).isEqualTo(RegistrationStatus.PENDING_MGM_NETWORK_ACCESS.toString())
+            assertThat(entity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())
         }

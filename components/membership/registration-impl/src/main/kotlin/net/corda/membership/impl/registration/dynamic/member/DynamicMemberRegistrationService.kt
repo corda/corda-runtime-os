@@ -342,7 +342,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
-                        status = RegistrationStatus.PENDING_MGM_NETWORK_ACCESS,
+                        status = RegistrationStatus.SENT_TO_MGM,
                         registrationId = registrationId.toString(),
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),

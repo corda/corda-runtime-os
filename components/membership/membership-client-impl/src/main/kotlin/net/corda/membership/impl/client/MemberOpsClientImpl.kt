@@ -245,7 +245,7 @@ class MemberOpsClientImpl @Activate constructor(
                 membershipPersistenceClient.persistRegistrationRequest(
                     holdingIdentity,
                     RegistrationRequest(
-                        RegistrationStatus.SUBMITTED,
+                        RegistrationStatus.NEW,
                         requestId,
                         holdingIdentity,
                         ByteBuffer.wrap(context),
@@ -415,13 +415,14 @@ class MemberOpsClientImpl @Activate constructor(
 
     private fun RegistrationStatus.toDto(): RegistrationStatusDto {
         return when (this) {
-            RegistrationStatus.SUBMITTED -> RegistrationStatusDto.SUBMITTED
-            RegistrationStatus.PENDING_MGM_NETWORK_ACCESS -> RegistrationStatusDto.PENDING_MGM_NETWORK_ACCESS
+            RegistrationStatus.NEW -> RegistrationStatusDto.NEW
+            RegistrationStatus.SENT_TO_MGM -> RegistrationStatusDto.SENT_TO_MGM
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
             RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatusDto.PENDING_APPROVAL_FLOW
             RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusDto.PENDING_MANUAL_APPROVAL
             RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusDto.PENDING_AUTO_APPROVAL
             RegistrationStatus.DECLINED -> RegistrationStatusDto.DECLINED
+            RegistrationStatus.INVALID -> RegistrationStatusDto.INVALID
             RegistrationStatus.APPROVED -> RegistrationStatusDto.APPROVED
         }
     }
