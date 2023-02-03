@@ -53,11 +53,11 @@ internal class ReplayScheduler<M>(
     private val replayCalculator = AtomicReference<ReplayCalculator>()
     data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
     // Compute on this map is used during add/remove operations to ensure these are performed atomically.
-    private val replayingMessageIdsPerSessionCounterparties =
-        ConcurrentHashMap<SessionManager.SessionCounterparties, MutableSet<MessageId>>()
+    private val replayingMessageIdsPerCounterparties =
+        ConcurrentHashMap<SessionManager.Counterparties, MutableSet<MessageId>>()
     private val replayInfoPerMessageId = ConcurrentHashMap<MessageId, ReplayInfo>()
     data class QueuedMessage<M>(val originalAttemptTimestamp: Long, val uniqueId: MessageId, val message: M)
-    private val queuedMessagesPerSessionCounterparties = ConcurrentHashMap<SessionManager.SessionCounterparties, MessageQueue<M>>()
+    private val queuedMessagesPerSessionCounterparties = ConcurrentHashMap<SessionManager.Counterparties, MessageQueue<M>>()
 
     /**
      * A Queue of QueuedMessages where messages can be removed from the queue by messageId.
@@ -205,13 +205,13 @@ internal class ReplayScheduler<M>(
         originalAttemptTimestamp: Long,
         messageId: MessageId,
         message: M,
-        counterparties: SessionManager.SessionCounterparties
+        counterparties: SessionManager.Counterparties
     ) {
         dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }
-            replayingMessageIdsPerSessionCounterparties.compute(counterparties) { _, replayingMessagesForSessionCounterparties ->
+            replayingMessageIdsPerCounterparties.compute(counterparties) { _, replayingMessagesForSessionCounterparties ->
                 when {
                     replayingMessagesForSessionCounterparties == null -> {
                         scheduleForReplay(originalAttemptTimestamp, messageId, message)
@@ -241,8 +241,8 @@ internal class ReplayScheduler<M>(
         replayInfoPerMessageId[messageId] = ReplayInfo(firstReplayPeriod, future)
     }
 
-    fun removeFromReplay(messageId: MessageId, counterparties: SessionManager.SessionCounterparties) {
-        replayingMessageIdsPerSessionCounterparties.compute(counterparties) { _, replayingMessagesForSessionCounterparties ->
+    fun removeFromReplay(messageId: MessageId, counterparties: SessionManager.Counterparties) {
+        replayingMessageIdsPerCounterparties.compute(counterparties) { _, replayingMessagesForSessionCounterparties ->
             val removed = replayInfoPerMessageId.remove(messageId)?.future?.cancel(false) ?: false
             replayingMessagesForSessionCounterparties?.remove(messageId)
             if (removed) {
@@ -262,7 +262,7 @@ internal class ReplayScheduler<M>(
     }
 
     fun removeAllMessagesFromReplay() {
-        replayingMessageIdsPerSessionCounterparties.forEach { (sessionCounterparties, messageIds) ->
+        replayingMessageIdsPerCounterparties.forEach { (sessionCounterparties, messageIds) ->
             messageIds.forEach { messageId ->
                 removeFromReplay(messageId, sessionCounterparties)
             }

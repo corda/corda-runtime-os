@@ -164,12 +164,12 @@ internal class DeliveryTracker(
 
         val listener = object : StateAndEventListener<String, AuthenticatedMessageDeliveryState> {
 
-            private val trackedSessionCounterparties = ConcurrentHashMap<String, SessionManager.SessionCounterparties>()
+            private val trackedSessionCounterparties = ConcurrentHashMap<String, SessionManager.Counterparties>()
 
             override fun onPostCommit(updatedStates: Map<String, AuthenticatedMessageDeliveryState?>) {
                 for ((key, state) in updatedStates) {
                     if (state != null) {
-                        val sessionCounterparties = sessionCounterpartiesFromState(state)
+                        val sessionCounterparties = counterpartiesFromState(state)
                         trackedSessionCounterparties[key] = sessionCounterparties
                         replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
                     } else {
@@ -181,22 +181,22 @@ internal class DeliveryTracker(
 
             override fun onPartitionLost(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
-                    replayScheduler.removeFromReplay(key, sessionCounterpartiesFromState(state))
+                    replayScheduler.removeFromReplay(key, counterpartiesFromState(state))
                     trackedSessionCounterparties.remove(key)
                 }
             }
 
             override fun onPartitionSynced(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
-                    val sessionCounterparties = sessionCounterpartiesFromState(state)
+                    val sessionCounterparties = counterpartiesFromState(state)
                     trackedSessionCounterparties[key] = sessionCounterparties
                     replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
                 }
             }
 
-            private fun sessionCounterpartiesFromState(state: AuthenticatedMessageDeliveryState): SessionManager.SessionCounterparties {
+            private fun counterpartiesFromState(state: AuthenticatedMessageDeliveryState): SessionManager.Counterparties {
                 val header = state.message.message.header
-                return SessionManager.SessionCounterparties(
+                return SessionManager.Counterparties(
                     header.source.toCorda(),
                     header.destination.toCorda()
                 )

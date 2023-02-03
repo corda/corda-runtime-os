@@ -1,5 +1,6 @@
 package net.corda.membership.impl.read.reader
 
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
@@ -9,7 +10,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHash
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.read.MembershipStatusFilter
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
@@ -53,6 +53,8 @@ class MembershipGroupReaderImpl(
     private fun List<MemberInfo>.filterBy(filter: MembershipStatusFilter): List<MemberInfo> {
         if (filter == MembershipStatusFilter.PENDING) {
             return this.filter { it.status == MEMBER_STATUS_PENDING }
+        } else if (filter == MembershipStatusFilter.ACTIVE) {
+            return this.filter { it.status == MEMBER_STATUS_ACTIVE }
         }
         return this.filter { it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED }
     }

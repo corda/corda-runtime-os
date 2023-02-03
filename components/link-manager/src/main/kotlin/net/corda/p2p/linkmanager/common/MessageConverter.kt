@@ -8,6 +8,7 @@ import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
@@ -114,6 +115,7 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
+                MembershipStatusFilter.ACTIVE_OR_SUSPENDED,
             )
         }
 
@@ -136,6 +138,7 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
+                message.message.header.statusFilter,
             )
         }
 
@@ -161,6 +164,7 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
+                MembershipStatusFilter.ACTIVE_OR_SUSPENDED
             )
         }
 
@@ -187,6 +191,7 @@ class MessageConverter {
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
+            filter: MembershipStatusFilter,
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -211,7 +216,7 @@ class MessageConverter {
                 }
             }
 
-            val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination)
+            val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination, filter)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null

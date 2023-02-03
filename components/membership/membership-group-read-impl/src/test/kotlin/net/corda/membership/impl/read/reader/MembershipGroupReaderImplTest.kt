@@ -1,5 +1,6 @@
 package net.corda.membership.impl.read.reader
 
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
@@ -11,7 +12,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.read.GroupParametersReaderService
-import net.corda.membership.read.MembershipStatusFilter
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.membership.GroupParameters
@@ -124,19 +124,22 @@ class MembershipGroupReaderImplTest {
     }
 
     @Test
-    fun `lookup known member with non active status based on name`() {
-        mockMemberList(listOf(aliceSuspendedMemberInfo))
-        assertEquals(aliceSuspendedMemberInfo, membershipGroupReaderImpl.lookup(aliceName))
+    fun `lookup known member with suspended status based on name`() {
+        mockMemberList(listOf(aliceSuspendedMemberInfo, alicePendingMemberInfo))
+        assertEquals(
+            aliceSuspendedMemberInfo,
+            membershipGroupReaderImpl.lookup(aliceName, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+        )
     }
 
     @Test
     fun `lookup known member with pending status based on name`() {
-        mockMemberList(listOf(alicePendingMemberInfo))
+        mockMemberList(listOf(alicePendingMemberInfo, aliceActiveMemberInfo))
         assertEquals(alicePendingMemberInfo, membershipGroupReaderImpl.lookup(aliceName, MembershipStatusFilter.PENDING))
     }
 
     @Test
-    fun `lookup known member with pending status based on name with non-pending filter`() {
+    fun `lookup known member with pending status based on name with active filter`() {
         mockMemberList(listOf(alicePendingMemberInfo))
         assertNull(membershipGroupReaderImpl.lookup(aliceName))
     }
@@ -157,13 +160,19 @@ class MembershipGroupReaderImplTest {
     @Test
     fun `lookup known member with pending status based on ledger public key hash`() {
         mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo))
-        assertEquals(alicePendingMemberInfo, membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash, MembershipStatusFilter.PENDING))
+        assertEquals(
+            alicePendingMemberInfo,
+            membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash, MembershipStatusFilter.PENDING)
+        )
     }
 
     @Test
-    fun `lookup known member with non active status based on ledger public key hash`() {
-        mockMemberList(listOf(aliceSuspendedMemberInfo))
-        assertEquals(aliceSuspendedMemberInfo, membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash))
+    fun `lookup known member with suspended status based on ledger public key hash`() {
+        mockMemberList(listOf(aliceSuspendedMemberInfo, alicePendingMemberInfo))
+        assertEquals(
+            aliceSuspendedMemberInfo,
+            membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+        )
     }
 
     @Test
@@ -180,14 +189,17 @@ class MembershipGroupReaderImplTest {
 
     @Test
     fun `lookup known member with active status based on session public key hash`() {
-        mockMemberList(listOf(aliceActiveMemberInfo))
+        mockMemberList(listOf(aliceActiveMemberInfo, aliceSuspendedMemberInfo))
         assertEquals(aliceActiveMemberInfo, membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
     }
 
     @Test
-    fun `lookup known member with non active status based on session public key hash`() {
+    fun `lookup known member with suspended status based on session public key hash`() {
         mockMemberList(listOf(aliceSuspendedMemberInfo, alicePendingMemberInfo))
-        assertEquals(aliceSuspendedMemberInfo, membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
+        assertEquals(
+            aliceSuspendedMemberInfo,
+            membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+        )
     }
 
     @Test
@@ -211,7 +223,19 @@ class MembershipGroupReaderImplTest {
     @Test
     fun `lookup returns active or suspended members only`() {
         mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo, bobSuspendedMemberInfo))
-        assertEquals(listOf(aliceActiveMemberInfo, bobSuspendedMemberInfo), membershipGroupReaderImpl.lookup())
+        assertEquals(
+            listOf(aliceActiveMemberInfo, bobSuspendedMemberInfo),
+            membershipGroupReaderImpl.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+        )
+    }
+
+    @Test
+    fun `lookup returns active members only`() {
+        mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo, bobSuspendedMemberInfo))
+        assertEquals(
+            listOf(aliceActiveMemberInfo),
+            membershipGroupReaderImpl.lookup()
+        )
     }
 
     @Test

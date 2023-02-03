@@ -16,6 +16,7 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.membership.lookup
+import net.corda.p2p.linkmanager.sessions.OutboundSessionPool
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.utilities.time.Clock
@@ -31,7 +32,8 @@ internal class InMemorySessionReplayer(
     messagingConfiguration: SmartConfig,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val clock: Clock
+    private val clock: Clock,
+    private val outboundSessionPool: OutboundSessionPool,
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -73,7 +75,7 @@ internal class InMemorySessionReplayer(
     fun addMessageForReplay(
         uniqueId: String,
         messageReplay: SessionMessageReplay,
-        counterparties: SessionManager.SessionCounterparties
+        counterparties: SessionManager.Counterparties
     ) {
         dominoTile.withLifecycleLock {
             if (!isRunning) {
@@ -83,7 +85,7 @@ internal class InMemorySessionReplayer(
         }
     }
 
-    fun removeMessageFromReplay(uniqueId: String, counterparties: SessionManager.SessionCounterparties) {
+    fun removeMessageFromReplay(uniqueId: String, counterparties: SessionManager.Counterparties) {
         replayScheduler.removeFromReplay(uniqueId, counterparties)
     }
 
@@ -112,8 +114,13 @@ internal class InMemorySessionReplayer(
         val message = MessageConverter.createLinkOutMessage(messageReplay.message, messageReplay.source, destinationMemberInfo, networkType)
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
+        val sessionCounterparties = outboundSessionPool.getSessionCounterParties(messageReplay.sessionId)
+        if (sessionCounterparties == null) {
+            logger.warn("")
+            return
+        }
         messageReplay.sentSessionMessageCallback(
-            SessionManager.SessionCounterparties(messageReplay.source, messageReplay.dest),
+            sessionCounterparties,
             messageReplay.sessionId
         )
     }

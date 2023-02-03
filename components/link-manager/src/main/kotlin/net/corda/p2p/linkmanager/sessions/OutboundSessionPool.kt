@@ -89,6 +89,13 @@ internal class OutboundSessionPool(
     }
 
     /**
+     * Get counterparties for a specific session identified by [sessionId].
+     */
+    fun getSessionCounterParties(sessionId: String): SessionManager.SessionCounterparties? {
+        return counterpartiesForSessionId[sessionId]
+    }
+
+    /**
      * update the session pool once session negotiation is complete
      */
     fun updateAfterSessionEstablished(session: Session) {

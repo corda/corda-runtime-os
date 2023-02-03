@@ -226,7 +226,13 @@ internal class OutboundMessageProcessor(
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             }
-        } else if (membershipGroupReaderProvider.lookup(source, destination) != null) {
+        } else if (
+            membershipGroupReaderProvider.lookup(
+                source,
+                destination,
+                messageAndKey.message.header.statusFilter
+            ) != null
+        ) {
             val markers = if (isReplay) {
                 emptyList()
             } else {

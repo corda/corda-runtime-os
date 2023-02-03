@@ -5,6 +5,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
 
@@ -23,7 +24,14 @@ internal interface SessionManager : LifecycleWithDominoTile {
 
     data class SessionCounterparties(
         val ourId: HoldingIdentity,
-        val counterpartyId: HoldingIdentity
+        val counterpartyId: HoldingIdentity,
+        val status: MembershipStatusFilter,
+        val serial: Long,
+    )
+
+    data class Counterparties(
+        val ourId: HoldingIdentity,
+        val counterpartyId: HoldingIdentity,
     )
 
     sealed class SessionState {

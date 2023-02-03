@@ -31,9 +31,9 @@ interface MembershipGroupReader {
      * [filter] should be only used by the P2P and membership layers. Everywhere else we must use the default value.
      *
      * @param filter Indicate what statuses you are looking for. By default, it will return the latest
-     * active or suspended version.
+     * active version.
      */
-    fun lookup(filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED): Collection<MemberInfo>
+    fun lookup(filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE): Collection<MemberInfo>
 
     /**
      * Looks up a group member matching the public key SHA-256 hash as visible by the member represented
@@ -44,11 +44,11 @@ interface MembershipGroupReader {
      *
      * @param ledgerKeyHash Hash of the ledger key belonging to the member to be looked up.
      * @param filter Indicates what statuses you are looking for. By default, it will return the latest
-     * active or suspended version.
+     * active version.
      */
     fun lookupByLedgerKey(
         ledgerKeyHash: PublicKeyHash,
-        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
     ): MemberInfo?
 
     /**
@@ -60,9 +60,9 @@ interface MembershipGroupReader {
      *
      * @param name MemberX500Name of the member to lookup.
      * @param filter Indicates what statuses you are looking for. By default, it will return the latest
-     * active or suspended version.
+     * active version.
      */
-    fun lookup(name: MemberX500Name, filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED): MemberInfo?
+    fun lookup(name: MemberX500Name, filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE): MemberInfo?
 
     /**
      * Looks up a group member matching the public key SHA-256 hash as visible by the member represented
@@ -73,11 +73,11 @@ interface MembershipGroupReader {
      *
      * @param sessionKeyHash Hash of the session key belonging to the member to be looked up.
      * @param filter Indicates what statuses you are looking for. By default, it will return the latest
-     * active or suspended version.
+     * active version.
      */
     fun lookupBySessionKey(
         sessionKeyHash: PublicKeyHash,
-        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+        filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
     ): MemberInfo?
 
     /**
