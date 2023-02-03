@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.data.transaction
 
-enum class ContractVerificationStatus {
+enum class TransactionVerificationStatus {
     INVALID,
     VERIFIED
 }

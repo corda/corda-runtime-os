@@ -7,7 +7,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByVerification
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -20,7 +19,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class, UsedByVerification::class ],
+    service = [ InternalCustomSerializer::class, UsedByFlow::class ],
     property = [ CORDA_UNINJECTABLE_SERVICE ],
     scope = PROTOTYPE
 )
@@ -32,7 +31,7 @@ class UtxoSignedTransactionSerializer @Activate constructor(
     @Reference(service = UtxoLedgerTransactionFactory::class)
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
 ) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(),
-    UsedByFlow, UsedByVerification {
+    UsedByFlow {
 
     override val type = UtxoSignedTransactionInternal::class.java
 

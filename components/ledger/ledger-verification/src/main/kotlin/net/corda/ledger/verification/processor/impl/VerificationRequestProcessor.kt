@@ -1,6 +1,6 @@
 package net.corda.ledger.verification.processor.impl
 
-import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
+import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.ResponseFactory
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sanbox.VerificationSandboxService
@@ -20,7 +20,7 @@ class VerificationRequestProcessor(
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
     private val responseFactory: ResponseFactory
-) : DurableProcessor<String, VerifyContractsRequest> {
+) : DurableProcessor<String, TransactionVerificationRequest> {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -29,9 +29,9 @@ class VerificationRequestProcessor(
 
     override val keyClass = String::class.java
 
-    override val valueClass = VerifyContractsRequest::class.java
+    override val valueClass = TransactionVerificationRequest::class.java
 
-    override fun onNext(events: List<Record<String, VerifyContractsRequest>>): List<Record<*, *>> {
+    override fun onNext(events: List<Record<String, TransactionVerificationRequest>>): List<Record<*, *>> {
         log.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
         return events
