@@ -1151,7 +1151,7 @@ class MembershipPersistenceTest {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
         }
-        val testRule = ApprovalRulesEntity(RULE_ID, RULE_REGEX, ApprovalRuleType.STANDARD.name, RULE_LABEL)
+        val testRule = ApprovalRulesEntity(RULE_ID, ApprovalRuleType.STANDARD.name, RULE_REGEX, RULE_LABEL)
         vnodeEmf.transaction {
             it.persist(testRule)
         }
@@ -1185,8 +1185,8 @@ class MembershipPersistenceTest {
         val rule1 = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
         val rule2 = ApprovalRuleDetails("rule-id-2", "rule-regex-2", "rule-label-2")
         val entities = listOf(
-            ApprovalRulesEntity(rule1.ruleId, rule1.ruleRegex, ApprovalRuleType.STANDARD.name, rule1.ruleLabel),
-            ApprovalRulesEntity(rule2.ruleId, rule2.ruleRegex, ApprovalRuleType.STANDARD.name, rule2.ruleLabel)
+            ApprovalRulesEntity(rule1.ruleId, ApprovalRuleType.STANDARD.name, rule1.ruleRegex, rule1.ruleLabel),
+            ApprovalRulesEntity(rule2.ruleId, ApprovalRuleType.STANDARD.name, rule2.ruleRegex, rule2.ruleLabel)
         )
         vnodeEmf.transaction { em ->
             entities.forEach { em.persist(it) }

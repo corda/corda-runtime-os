@@ -22,12 +22,12 @@ class ApprovalRulesEntity(
     @Column(name = "rule_id", nullable = false, updatable = false)
     val ruleId: String,
 
-    @Column(name = "rule_regex", nullable = false, updatable = false)
-    val ruleRegex: String,
-
     @Id
     @Column(name = "rule_type", nullable = false, updatable = false)
     val ruleType: String,
+
+    @Column(name = "rule_regex", nullable = false, updatable = false)
+    val ruleRegex: String,
 
     @Column(name = "rule_label", nullable = true, updatable = false)
     val ruleLabel: String? = null

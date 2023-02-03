@@ -303,7 +303,7 @@ class MGMRestResourceImpl internal constructor(
             subject: String
         ) {
             verifyMutualTlsIsRunning()
-            val subjectName = parseCertificateSubject(subject)
+            val subjectName = MemberX500Name.parse("subject", subject)
             handleCommonErrors(holdingIdentityShortHash) {
                 mgmOpsClient.mutualTlsAllowClientCertificate(it, subjectName)
             }
@@ -311,7 +311,7 @@ class MGMRestResourceImpl internal constructor(
 
         override fun mutualTlsDisallowClientCertificate(holdingIdentityShortHash: String, subject: String) {
             verifyMutualTlsIsRunning()
-            val subjectName = parseCertificateSubject(subject)
+            val subjectName = MemberX500Name.parse("subject", subject)
             handleCommonErrors(holdingIdentityShortHash) {
                 mgmOpsClient.mutualTlsDisallowClientCertificate(it, subjectName)
             }
@@ -331,7 +331,7 @@ class MGMRestResourceImpl internal constructor(
             val ttlAsInstant = request.ttl?.let { ttl ->
                 clock.instant() + ttl
             }
-            val x500Name = parseX500Name("ownerX500Name", request.ownerX500Name)
+            val x500Name = MemberX500Name.parse("ownerX500Name", request.ownerX500Name)
             return handleCommonErrors(holdingIdentityShortHash) { shortHash ->
                 mgmOpsClient.generatePreAuthToken(
                     shortHash,
@@ -349,7 +349,7 @@ class MGMRestResourceImpl internal constructor(
             viewInactive: Boolean
         ): Collection<PreAuthToken> {
             val ownerX500 = ownerX500Name?.let {
-                parseX500Name("ownerX500Name", it)
+                MemberX500Name.parse("ownerX500Name", it)
             }
             val tokenId = preAuthTokenId?.let {
                 parsePreAuthTokenId(it)
@@ -457,7 +457,7 @@ class MGMRestResourceImpl internal constructor(
                 message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
             )
 
-        fun parsePreAuthTokenId(preAuthTokenId: String): UUID {
+        private fun parsePreAuthTokenId(preAuthTokenId: String): UUID {
             return try {
                 UUID.fromString(preAuthTokenId)
             } catch (e: IllegalArgumentException) {
@@ -468,9 +468,9 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
-        fun parseX500Name(keyName: String, x500Name: String): MemberX500Name {
+        private fun MemberX500Name.Companion.parse(keyName: String, x500Name: String): MemberX500Name {
             return try {
-                MemberX500Name.parse(x500Name)
+                parse(x500Name)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     details = mapOf(keyName to x500Name),
@@ -498,7 +498,7 @@ class MGMRestResourceImpl internal constructor(
             try {
                 expression.toRegex()
             } catch (e: PatternSyntaxException) {
-                throw BadRequestException("The regular expression's syntax is invalid.")
+                throw BadRequestException("The regular expression's syntax is invalid.\n${e.message}")
             }
         }
 
@@ -508,17 +508,6 @@ class MGMRestResourceImpl internal constructor(
             if (TlsType.getClusterType(configurationGetService::getSmartConfig) != TlsType.MUTUAL) {
                 throw BadRequestException(
                     message = "This cluster is configure to use one way TLS. Mutual TLS APIs can not be called.",
-                )
-            }
-        }
-
-        private fun parseCertificateSubject(subject: String): MemberX500Name {
-            return try {
-                MemberX500Name.parse(subject)
-            } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(
-                    details = mapOf("subject" to subject),
-                    message = "Subject is not a valid X500 name: ${e.message}",
                 )
             }
         }

@@ -44,7 +44,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/info",
-        description = "This method retrieves the group policy from the MGM required to join the membership group.",
+        description = "This API retrieves the group policy from the MGM required to join the membership group.",
         responseDescription = "The group policy from the MGM required to join the membership group as a string " +
                 "in JSON format"
     )
@@ -61,7 +61,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpPUT(
         path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/{subject}",
-        description = "This method allows a client certificate with a " +
+        description = "This API allows a client certificate with a " +
             "given subject to be used in mutual TLS connections.",
     )
     fun mutualTlsAllowClientCertificate(
@@ -79,7 +79,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpDELETE(
         path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/{subject}",
-        description = "This method disallows a client certificate with a " +
+        description = "This API disallows a client certificate with a " +
                 "given subject to be used in mutual TLS connections.",
     )
     fun mutualTlsDisallowClientCertificate(
@@ -97,7 +97,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects",
-        description = "This method list the allowed  client certificates subjects " +
+        description = "This API list the allowed  client certificates subjects " +
                 "to be used in mutual TLS connections.",
         responseDescription = "List of the allowed client certificate subjects",
     )
@@ -190,7 +190,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/approval/rules",
-        description = "This method adds a rule to the set of group approval rules.",
+        description = "This API adds a rule to the set of group approval rules.",
         responseDescription = "Details of the newly persisted approval rule"
     )
     fun addGroupApprovalRule(
@@ -219,7 +219,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/approval/rules",
-        description = "This method retrieves the set of rules the group is currently configured with",
+        description = "This API retrieves the set of rules the group is currently configured with",
         responseDescription = "Collection of group approval rules"
     )
     fun getGroupApprovalRules(
@@ -241,7 +241,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpDELETE(
         path = "{holdingIdentityShortHash}/approval/rules/{ruleId}",
-        description = "This method deletes a previously added group approval rule."
+        description = "This API deletes a previously added group approval rule."
     )
     fun deleteGroupApprovalRule(
         @RestPathParameter(description = "The holding identity ID of the MGM of the membership group")
@@ -292,7 +292,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/approval/rules/preauth",
-        description = "This method retrieves the set of rules the group is currently configured with for " +
+        description = "This API retrieves the set of rules the group is currently configured with for " +
                 "registration request with a pre-auth token.",
         responseDescription = "A collection of group approval rules."
     )
@@ -310,7 +310,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpDELETE(
         path = "{holdingIdentityShortHash}/approval/rules/preauth/{ruleId}",
-        description = "This method deletes a group approval rule for registrations including a pre-auth token."
+        description = "This API deletes a group approval rule for registrations including a pre-auth token."
     )
     fun deletePreAuthGroupApprovalRule(
         @RestPathParameter(description = "The holding identity ID of the MGM.")

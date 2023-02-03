@@ -24,14 +24,14 @@ class ApprovalRulesEntityTest {
             val ruleId = randomId
             val e1 = ApprovalRulesEntity(
                 ruleId,
-                rule1,
                 ruleType1,
+                rule1,
                 ruleLabel1
             )
             val e2 = ApprovalRulesEntity(
                 ruleId,
-                rule2,
                 ruleType1,
+                rule2,
                 ruleLabel2
             )
             assertEquals(e1, e2)
@@ -42,14 +42,14 @@ class ApprovalRulesEntityTest {
         fun `entities are not equal if rule id does not match`() {
             val e1 = ApprovalRulesEntity(
                 randomId,
-                rule1,
                 ruleType1,
+                rule1,
                 ruleLabel1
             )
             val e2 = ApprovalRulesEntity(
                 randomId,
-                rule1,
                 ruleType1,
+                rule1,
                 ruleLabel1
             )
             assertNotEquals(e1, e2)
@@ -61,14 +61,14 @@ class ApprovalRulesEntityTest {
             val ruleId = randomId
             val e1 = ApprovalRulesEntity(
                 ruleId,
-                rule1,
                 ruleType1,
+                rule1,
                 ruleLabel1
             )
             val e2 = ApprovalRulesEntity(
                 ruleId,
-                rule1,
                 ruleType2,
+                rule1,
                 ruleLabel1
             )
             assertNotEquals(e1, e2)
@@ -79,8 +79,8 @@ class ApprovalRulesEntityTest {
         fun `same instance is equal`() {
             val e1 = ApprovalRulesEntity(
                 randomId,
-                rule1,
                 ruleType1,
+                rule1,
                 ruleLabel1
             )
             assertEquals(e1, e1)
@@ -91,10 +91,10 @@ class ApprovalRulesEntityTest {
         fun `same instance is not equal to null`() {
             assertNotEquals(
                 ApprovalRulesEntity(
-                randomId,
-                rule1,
-                ruleType1,
-                ruleLabel1
+                    randomId,
+                    ruleType1,
+                    rule1,
+                    ruleLabel1
                 ),
                 null
             )
@@ -104,10 +104,10 @@ class ApprovalRulesEntityTest {
         fun `same instance is not equal to different class type`() {
             assertNotEquals(
                 ApprovalRulesEntity(
-                randomId,
-                rule1,
-                ruleType1,
-                ruleLabel1
+                    randomId,
+                    ruleType1,
+                    rule1,
+                    ruleLabel1
                 ),
                 ""
             )
