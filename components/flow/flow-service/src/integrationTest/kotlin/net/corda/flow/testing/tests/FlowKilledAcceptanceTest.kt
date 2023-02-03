@@ -52,8 +52,10 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
+                sessionErrorEvents(INITIATED_SESSION_ID_1)
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
             }
         }
     }

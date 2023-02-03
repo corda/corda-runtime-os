@@ -6,6 +6,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -13,9 +14,12 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.records.Record
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
@@ -27,8 +31,26 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [FlowSessionManager::class])
 class FlowSessionManagerImpl @Activate constructor(
     @Reference(service = SessionManager::class)
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory,
 ) : FlowSessionManager {
+
+    override fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant):
+            List<Record<*, FlowMapperEvent>> {
+        return checkpoint.sessions
+            .filter { it.status == SessionStateType.ERROR }
+            .map { sessionState ->
+                sessionManager.getMessagesToSend(
+                    sessionState,
+                    instant,
+                    flowConfig,
+                    checkpoint.flowKey.identity
+                )
+            }
+            .flatMap { (_, events) -> events }
+            .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
+    }
 
     override fun sendInitMessage(
         checkpoint: FlowCheckpoint,
@@ -247,6 +269,7 @@ class FlowSessionManagerImpl @Activate constructor(
             sessionState.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX) -> {
                 Pair(sessionState.counterpartyIdentity, checkpointIdentity)
             }
+
             else -> Pair(checkpointIdentity, sessionState.counterpartyIdentity)
         }
     }

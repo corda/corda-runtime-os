@@ -110,7 +110,7 @@ class FlowSessionManagerImplTest {
     private val checkpoint = mock<FlowCheckpoint>()
     private val flowStack = mock<FlowStack>()
 
-    private val flowSessionManager = FlowSessionManagerImpl(sessionManager)
+    private val flowSessionManager = FlowSessionManagerImpl(sessionManager, mock())
 
     @BeforeEach
     fun setup() {
