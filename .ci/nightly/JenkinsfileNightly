@@ -10,6 +10,7 @@ cordaPipeline(
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true,
+    runResiliencyTests: true,
     gradleAdditionalArgs: '-Dscan.tag.Nightly-Build',
     generateSbom: true
-    )
+)
