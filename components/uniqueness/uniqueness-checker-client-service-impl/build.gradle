@@ -30,8 +30,6 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(':libs:ledger:ledger-common-data')
-    testImplementation project(':testing:ledger:ledger-utxo-testkit')
 
     testImplementation project(":testing:crypto-testkit")
 }

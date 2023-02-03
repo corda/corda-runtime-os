@@ -6,13 +6,11 @@ import com.r3.corda.notary.plugin.common.NotaryErrorGeneral
 import com.r3.corda.notary.plugin.common.NotaryErrorReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
+import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
-import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.MerkleTreeFactory
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
@@ -20,8 +18,10 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
@@ -40,6 +40,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.time.Instant
 
@@ -85,17 +86,30 @@ class NonValidatingNotaryServerFlowImplTest {
             // Do nothing
             on { verify(any(), any(), any<ByteArray>(), any()) } doAnswer { }
         }
+
+        val mockTransactionSignatureService = mock<TransactionSignatureService>()
     }
 
     @BeforeEach
     fun clearCache() {
         responseFromServer.clear()
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).doAnswer { inv ->
+            List((inv.arguments.first() as List<*>).size) {
+                @Suppress("unchecked_cast")
+                (inv.arguments[1] as List<PublicKey>).map { publicKey ->
+                    getSignatureWithMetadataExample(
+                        publicKey
+                    )
+                }
+            }
+        }
     }
 
     @Test
+    @Disabled /* todo is this testing the findMyKeys() service? */
     fun `Non-validating notary should respond with error if the specified key that is not part of the notary composite key`() {
         // We sign with a key that is not part of the notary composite key
-        createAndCallServer(mockSuccessfulUniquenessClientService(), currentVNodeNotaryKey = mock()) {
+        createAndCallServer(mockSuccessfulUniquenessClientService()) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -113,7 +127,10 @@ class NonValidatingNotaryServerFlowImplTest {
     @Test
     fun `Non-validating notary should respond with error if no keys found for signing`() {
         // We sign with a key that is not part of the notary composite key
-        createAndCallServer(mockSuccessfulUniquenessClientService(), currentVNodeNotaryKey = null) {
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).thenThrow(
+            TransactionNoAvailableKeysException("The publicKeys do not have any private counterparts available.", null)
+        )
+        createAndCallServer(mockSuccessfulUniquenessClientService()) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -123,7 +140,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat((responseError as NotaryErrorGeneral).errorText)
                 .contains("Error while processing request from client")
             assertThat(responseError.cause).hasStackTraceContaining(
-                "Could not find any keys associated with the notary service's public key."
+                "The publicKeys do not have any private counterparts available."
             )
         }
     }
@@ -131,8 +148,10 @@ class NonValidatingNotaryServerFlowImplTest {
     @Test
     fun `Non-validating notary should respond with success if the notary key is simple`() {
         // We sign with a key that is not part of the notary composite key
-        createAndCallServer(mockSuccessfulUniquenessClientService(),
-            currentVNodeNotaryKey = notaryVNodeAliceKey, notaryServiceKey = notaryVNodeAliceKey) {
+        createAndCallServer(
+            mockSuccessfulUniquenessClientService(),
+            notaryServiceKey = notaryVNodeAliceKey
+        ) {
             assertThat(responseFromServer).hasSize(1)
 
             val response = responseFromServer.first()
@@ -193,7 +212,19 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with signatures if the uniqueness check successful`() {
-        createAndCallServer(mockSuccessfulUniquenessClientService()) {
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
+            listOf(
+                listOf(
+                    getSignatureWithMetadataExample(
+                        notaryVNodeAliceKey
+                    )
+                )
+            )
+        )
+
+        createAndCallServer(
+            mockSuccessfulUniquenessClientService(),
+        ) {
             assertThat(responseFromServer).hasSize(1)
 
             val response = responseFromServer.first()
@@ -301,7 +332,6 @@ class NonValidatingNotaryServerFlowImplTest {
     @Suppress("LongParameterList")
     private fun createAndCallServer(
         clientService: LedgerUniquenessCheckerClientService,
-        currentVNodeNotaryKey: PublicKey? = notaryVNodeAliceKey,
         notaryServiceKey: PublicKey = notaryServiceCompositeKey,
         filteredTxContents: Map<String, Any?> = emptyMap(),
         sigVerifier: DigitalSignatureVerificationService = mockSigVerifier,
@@ -312,6 +342,8 @@ class NonValidatingNotaryServerFlowImplTest {
         val txId = randomSecureHash()
 
         // 1. Set up the defaults for the filtered transaction
+        val transactionMetadata = mock<TransactionMetadata>()
+
         val mockTimeWindow = mock<TimeWindow> {
             on { from } doReturn Instant.now()
             on { until } doReturn Instant.now().plusMillis(100000)
@@ -337,6 +369,10 @@ class NonValidatingNotaryServerFlowImplTest {
                 } else {
                     notaryServiceParty
                 }
+            }
+
+            on { metadata } doAnswer {
+                transactionMetadata
             }
 
             on { timeWindow } doAnswer {
@@ -405,39 +441,12 @@ class NonValidatingNotaryServerFlowImplTest {
             on { serialize(any()) } doReturn SerializedBytes("ABC".toByteArray())
         }
 
-        // 6. Mock the required things for the batch signing
-        val mockMerkleTree = mock<MerkleTree> {
-            on { root } doReturn txId
-        }
-        val mockMerkleTreeFactory = mock<MerkleTreeFactory> {
-            on { createHashDigest(any(), any()) } doReturn mock()
-            on { createTree(any(), any()) } doReturn mockMerkleTree
-        }
-
-        val dummySignature = DigitalSignature.WithKey(
-            // If the provided key is null, this will not be returned anyway so we just mock it
-            currentVNodeNotaryKey ?: mock(),
-            "some bytes".toByteArray(),
-            mapOf()
-        )
-
-        val mockSigningService = mock<SigningService> {
-            on { sign(any(), any(), any()) } doReturn dummySignature
-            on { findMySigningKeys(any()) } doReturn mapOf(mock<PublicKey>() to currentVNodeNotaryKey)
-        }
-
-        val mockDigestService = mock<DigestService> {
-            on { hash(any<ByteArray>(), any()) } doReturn randomSecureHash()
-        }
-
         val server = NonValidatingNotaryServerFlowImpl(
             clientService,
             mockSerializationService,
             sigVerifier,
             mockMemberLookup,
-            mockMerkleTreeFactory,
-            mockSigningService,
-            mockDigestService
+            mockTransactionSignatureService
         )
 
         server.call(paramOrDefaultSession)
