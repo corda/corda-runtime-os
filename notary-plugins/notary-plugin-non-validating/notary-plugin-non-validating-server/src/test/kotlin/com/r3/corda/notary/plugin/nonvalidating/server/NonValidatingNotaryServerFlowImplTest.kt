@@ -106,25 +106,6 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     @Test
-    @Disabled /* todo is this testing the findMyKeys() service? */
-    fun `Non-validating notary should respond with error if the specified key that is not part of the notary composite key`() {
-        // We sign with a key that is not part of the notary composite key
-        createAndCallServer(mockSuccessfulUniquenessClientService()) {
-            assertThat(responseFromServer).hasSize(1)
-
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseFromServer.first().signatures).isEmpty()
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
-                .contains("Error while processing request from client")
-            assertThat(responseError.cause).hasStackTraceContaining(
-                "The notary key selected for signing is not associated with the notary service key."
-            )
-        }
-    }
-
-    @Test
     fun `Non-validating notary should respond with error if no keys found for signing`() {
         // We sign with a key that is not part of the notary composite key
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenThrow(
