@@ -15,5 +15,5 @@ cordaPipeline(
     publishToMavenS3Repository: true,
     // allow publishing an installer to a download site
     publishToDownloadSiteTask: ':tools:plugins:publish',
-    runResiliencyTests: false,
+    runResiliencyTests: true,
 )
