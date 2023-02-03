@@ -14,8 +14,10 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
+import net.corda.libs.virtualnode.datamodel.entities.OperationType
 
 class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     /**
@@ -143,6 +145,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             requestId,
             serializedRequest,
             VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE,
             requestTimestamp
         )
         val updatedVirtualNode = entityManager.merge(virtualNode)
@@ -168,16 +171,20 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         requestId: String,
+        serializedRequest: String,
         requestTimestamp: Instant,
-        reason: String
+        reason: String,
+        operationType: VirtualNodeOperationType
     ) {
         entityManager.persist(
             VirtualNodeOperationEntity(
                 UUID.randomUUID().toString(),
                 requestId,
-                reason,
+                serializedRequest,
                 VirtualNodeOperationState.VALIDATION_FAILED,
-                requestTimestamp
+                OperationType.from(operationType),
+                requestTimestamp,
+                errors = reason
             )
         )
     }

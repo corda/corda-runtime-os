@@ -33,6 +33,7 @@ import kotlin.streams.toList
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
+import net.corda.libs.virtualnode.datamodel.entities.OperationType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeRepositoryTest {
@@ -275,7 +276,8 @@ class VirtualNodeRepositoryTest {
         val operationId = UUID.randomUUID().toString()
         val requestId = UUID.randomUUID().toString()
 
-        val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS, Instant.now())
+        val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE, Instant.now())
         val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString(), operation)
 
         entityManagerFactory.createEntityManager().transaction {

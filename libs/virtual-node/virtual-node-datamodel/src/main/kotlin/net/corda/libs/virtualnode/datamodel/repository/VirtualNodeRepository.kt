@@ -8,6 +8,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 
 /**
  * Interface for CRUD operations for a virtual node.
@@ -66,12 +67,15 @@ interface VirtualNodeRepository {
     /**
      * Create a virtual node operation holding the details of a rejected request.
      */
+    @Suppress("LongParameterList")
     fun rejectedOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         requestId: String,
+        serializedRequest: String,
         requestTimestamp: Instant,
-        reason: String
+        reason: String,
+        operationType: VirtualNodeOperationType
     )
 }
 

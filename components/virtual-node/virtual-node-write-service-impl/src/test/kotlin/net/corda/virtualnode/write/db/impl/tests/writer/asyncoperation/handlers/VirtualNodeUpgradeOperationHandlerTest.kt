@@ -33,6 +33,7 @@ import javax.persistence.EntityTransaction
 import javax.persistence.PersistenceException
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 
@@ -138,11 +139,13 @@ class VirtualNodeUpgradeOperationHandlerTest {
         timestamp = Instant.now()
     )
     private val requestId = "req1"
+    private val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
 
     private fun withUpgradeValidationFailure(reason: String, block: () -> Any?) {
         val result = block.invoke()
-        verify(virtualNodeRepository, times(1))
-            .rejectedOperation(eq(em), eq(vnodeId), eq(requestId), any(), eq("$reason (request $requestId)"))
+        verify(virtualNodeRepository, times(1)).rejectedOperation(
+            eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE)
+        )
         assertThat(result).isNull()
     }
 
@@ -184,11 +187,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             .thenReturn(null)
 
         withUpgradeValidationFailure("Holding identity $vnodeId not found") {
-            handler.handle(
-                Instant.now(),
-                requestId,
-                VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
-            )
+            handler.handle(Instant.now(), requestId, request)
         }
     }
 
@@ -207,7 +206,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             handler.handle(
                 Instant.now(),
                 requestId,
-                VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+                request
             )
         }
     }
@@ -229,7 +228,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             handler.handle(
                 Instant.now(),
                 requestId,
-                VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+                request
             )
         }
     }
@@ -243,7 +242,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             handler.handle(
                 Instant.now(),
                 requestId,
-                VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+                request
             )
         }
     }
@@ -259,7 +258,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             handler.handle(
                 Instant.now(),
                 requestId,
-                VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+                request
             )
         }
     }
@@ -276,7 +275,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             handler.handle(
                 Instant.now(),
                 requestId,
-                VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+                request
             )
         }
     }
@@ -296,7 +295,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             handler.handle(
                 Instant.now(),
                 requestId,
-                VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+                request
             )
         }
 
@@ -306,7 +305,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `upgrade handler successfully persists and publishes vnode info`() {
         val requestTimestamp = Instant.now()
-        val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
@@ -343,7 +341,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `upgrade handler throws when running migrations`() {
         val requestTimestamp = Instant.now()
-        val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
@@ -382,7 +380,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `upgrade handler successfully persists, runs migrations with vault ddl, publishes vnode info and completes operation`() {
         val requestTimestamp = Instant.now()
-        val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
@@ -432,7 +429,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `upgrade handler successfully persists, no migrations required`() {
         val requestTimestamp = Instant.now()
-        val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
         val migrationUtility = mock<MigrationUtility>() {
             whenever(it.isVaultSchemaAndTargetCpiInSync(any(), any())).thenReturn(false)
         }

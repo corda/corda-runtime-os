@@ -10,6 +10,7 @@ import javax.persistence.Id
 import javax.persistence.Table
 import javax.persistence.Version
 import net.corda.db.schema.DbSchema.CONFIG
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 
 @Entity
 @Table(name = "virtual_node_operation", schema = CONFIG)
@@ -29,6 +30,10 @@ internal class VirtualNodeOperationEntity(
     @Column(name = "state", nullable = false)
     var state: VirtualNodeOperationState,
 
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "operation_type", nullable = false)
+    var operationType: OperationType,
+
     @Column(name = "request_timestamp")
     var requestTimestamp: Instant,
 
@@ -37,6 +42,9 @@ internal class VirtualNodeOperationEntity(
 
     @Column(name = "heartbeat_timestamp")
     var heartbeatTimestamp: Instant? = null,
+
+    @Column(name = "errors")
+    var errors: String? = null,
 
     @Version
     @Column(name = "entity_version", nullable = false)
@@ -58,4 +66,14 @@ internal class VirtualNodeOperationEntity(
 
 enum class VirtualNodeOperationState {
     IN_PROGRESS, COMPLETED, ABORTED, VALIDATION_FAILED
+}
+
+enum class OperationType {
+    CREATE, UPGRADE;
+
+    companion object {
+        fun from(operationType: VirtualNodeOperationType): OperationType {
+            return valueOf(operationType.name)
+        }
+    }
 }

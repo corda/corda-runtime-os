@@ -7,6 +7,7 @@ import javax.persistence.EntityManagerFactory
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -53,7 +54,13 @@ internal class VirtualNodeUpgradeOperationHandler(
             logger.info("Virtual node upgrade validation failed: ${e.message}")
             entityManagerFactory.createEntityManager().transaction { em ->
                 virtualNodeRepository.rejectedOperation(
-                    em, request.virtualNodeShortHash, requestId, requestTimestamp, "${e.reason} (request ${e.requestId})"
+                    em,
+                    request.virtualNodeShortHash,
+                    requestId,
+                    request.toString(),
+                    requestTimestamp,
+                    e.reason,
+                    VirtualNodeOperationType.UPGRADE
                 )
             }
         }
@@ -100,6 +107,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         publishVirtualNodeInfo(completeVirtualNodeOperation(request.virtualNodeShortHash))
     }
 
+    @Suppress("ThrowsCount")
     private fun validateUpgradeRequest(em: EntityManager, request: VirtualNodeUpgradeRequest, requestId: String): CpiMetadataLite {
         val currentVirtualNode = virtualNodeRepository.find(em, ShortHash.Companion.of(request.virtualNodeShortHash))
             ?: throw VirtualNodeUpgradeRejectedException("Holding identity ${request.virtualNodeShortHash} not found", requestId)
