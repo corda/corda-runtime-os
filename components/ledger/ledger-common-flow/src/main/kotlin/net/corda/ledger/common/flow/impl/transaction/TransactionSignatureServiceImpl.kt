@@ -169,6 +169,10 @@ class TransactionSignatureServiceImpl @Activate constructor(
         }) {
             "Notary merkle tree digest node prefixes and leaf prefixes need to be different for each transactions."
         }
+        val algorithms = transactions.map { it.id.algorithm }.distinct()
+        require(algorithms.size == 1) {
+            "Cannot sign a batch with multiple hash algorithms: $algorithms"
+        }
         confirmHashPrefixesAreDifferent(transactions)
     }
 
