@@ -89,7 +89,7 @@ class SessionEventHandlerTest {
             )
         ).thenReturn(updatedSessionState)
 
-        whenever(flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
+        whenever(flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)
 
         whenever(sandboxGroupContext.protocolStore)
             .thenReturn(

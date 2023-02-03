@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.sessions
 
-import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.sandbox.SandboxGroup
 
 /**
@@ -14,5 +13,5 @@ interface FlowProtocolStoreFactory {
      * @param sandboxGroup The sandbox to create the flow protocol store for.
      * @param cpiMetadata CPI metadata for the CPI installed into this sandbox.
      */
-    fun create(sandboxGroup: SandboxGroup, cpiMetadata: CpiMetadata) : FlowProtocolStore
+    fun create(sandboxGroup: SandboxGroup) : FlowProtocolStore
 }

@@ -46,7 +46,7 @@ class InitiateFlowRequestServiceTest {
                 any()
             )
         ).thenReturn(sessionState1)
-        whenever(testContext.flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
+        whenever(testContext.flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)

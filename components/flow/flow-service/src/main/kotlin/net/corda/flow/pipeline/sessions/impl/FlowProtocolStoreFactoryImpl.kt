@@ -57,12 +57,11 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
 
     override fun create(
         sandboxGroup: SandboxGroup,
-        cpiMetadata: CpiMetadata
     ): FlowProtocolStore {
         val initiatorToProtocol = mutableMapOf<String, List<FlowProtocol>>()
         val protocolToResponder = mutableMapOf<FlowProtocol, String>()
 
-        cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.flows }.forEach { flow ->
+        sandboxGroup.metadata.flatMap { it.value.cordappManifest.flows }.forEach { flow ->
             logger.trace { "Reading flow $flow for protocols" }
             val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
             extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)

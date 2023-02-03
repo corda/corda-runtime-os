@@ -9,8 +9,6 @@ import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companio
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.FLOW_PROTOCOL_STORE
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.NON_INJECTABLE_SINGLETONS
 import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
-import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
@@ -23,6 +21,7 @@ import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.sandboxgroupcontext.service.registerNotaryPluginProviders
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -55,29 +54,20 @@ class FlowSandboxServiceImpl @Activate constructor(
         const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
     }
 
-    override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
-        val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
-        checkNotNull(vNodeInfo) {
-            "Failed to find the virtual node info for holder '${holdingIdentity}' in ${virtualNodeInfoReadService::class.java}"
-        }
-
-        val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
-        checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
-        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}'" }
-
+    override fun get(holdingIdentity: HoldingIdentity, cpks: Collection<SecureHash>): FlowSandboxGroupContext {
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,
-            cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum),
+            cpks.toSet(),
             SandboxGroupType.FLOW,
             null
         )
 
         if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkFileChecksums)) {
-            throw IllegalStateException("The sandbox can't find one or more of the CPKs for CPI '${cpiMetadata.cpiId}'")
+            throw IllegalStateException("The sandbox can't find one or more of the CPKs $cpks ")
         }
 
         val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext, cpiMetadata)
+            initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext)
         }
 
         return FlowSandboxGroupContextImpl.fromContext(sandboxGroupContext)
@@ -86,7 +76,6 @@ class FlowSandboxServiceImpl @Activate constructor(
     private fun initialiseSandbox(
         dependencyInjectionFactory: SandboxDependencyInjectorFactory,
         sandboxGroupContext: MutableSandboxGroupContext,
-        cpiMetadata: CpiMetadata
     ): AutoCloseable {
         val sandboxGroup = sandboxGroupContext.sandboxGroup
         val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
@@ -108,7 +97,7 @@ class FlowSandboxServiceImpl @Activate constructor(
 
         sandboxGroupContext.putObjectByKey(
             FLOW_PROTOCOL_STORE,
-            flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata)
+            flowProtocolStoreFactory.create(sandboxGroup)
         )
 
         // User custom serialization support, no exceptions thrown so user code doesn't kill the flow service

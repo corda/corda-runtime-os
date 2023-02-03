@@ -14,6 +14,12 @@ class StartFlowEventHandler : FlowEventHandler<StartFlow> {
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
         context.checkpoint.initFlowState(context.inputEventPayload.startContext)
         context.checkpoint.waitingFor =  WaitingFor(WaitingForStartFlow)
+
+        val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
+        val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
+        val cpkChecksums = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
+
+        context.checkpoint.cpks =
         return context
     }
 }
