@@ -115,14 +115,16 @@ class CryptoProcessorImplTest {
     fun `dependentComponents going DOWN brings crypto processor DOWN`() {
         dependentComponents.forEach(lifecycleTest::bringDependencyDown)
         assertEquals(LifecycleStatus.DOWN, lifecycleTest.testClass.status)
+        lifecycleTest.verifyIsUp<CryptoOpsClient>()
+        lifecycleTest.verifyIsUp<CryptoFlowOpsBusService>()
     }
 
     @Test
     @Order(25)
     fun `dependentComponents going back UP brings crypto processor back UP`() {
         dependentComponents.forEach(lifecycleTest::bringDependencyUp)
-        assertEquals(LifecycleStatus.UP, lifecycleTest.testClass.status)
         lifecycleTest.verifyIsUp<CryptoOpsClient>()
         lifecycleTest.verifyIsUp<CryptoFlowOpsBusService>()
+        assertEquals(LifecycleStatus.UP, lifecycleTest.testClass.status)
     }
 }
