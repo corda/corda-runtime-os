@@ -3,6 +3,7 @@ package net.corda.membership.service.impl
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.membership.lib.toMap
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.DurableProcessor
@@ -11,6 +12,7 @@ import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.lang.IllegalArgumentException
 import java.util.UUID
 
 internal class MemberOpsAsyncProcessor(
@@ -55,10 +57,12 @@ internal class MemberOpsAsyncProcessor(
         try {
             val registrationId = UUID.fromString(request.requestId)
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
-        } catch (e: NotReadyMembershipRegistrationException) {
-            throw e
-        } catch (e: Exception) {
+        } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration ${request.requestId} failed.", e)
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Registration ${request.requestId} failed.", e)
+        } catch (e: Exception) {
+            throw e
         }
     }
 }

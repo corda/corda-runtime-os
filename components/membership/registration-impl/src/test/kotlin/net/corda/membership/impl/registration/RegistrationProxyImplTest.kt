@@ -280,9 +280,7 @@ class RegistrationProxyImplTest {
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) {
-
-        }
+        ) = Unit
     }
 
     class RegistrationProtocol2 : AbstractRegistrationProtocol() {
@@ -290,19 +288,19 @@ class RegistrationProxyImplTest {
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) {
-
-        }
+        ) = Unit
     }
 
     abstract class AbstractRegistrationProtocol : MemberRegistrationService {
         var started = 0
-        override fun register(registrationId: UUID, member: HoldingIdentity, context: Map<String, String>) {
-
-        }
+        override fun register(
+            registrationId: UUID,
+            member: HoldingIdentity,
+            context: Map<String, String>
+        ) = Unit
 
         override val isRunning = true
         override fun start() { started += 1 }
-        override fun stop() {}
+        override fun stop() = Unit
     }
 }

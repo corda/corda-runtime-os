@@ -219,7 +219,7 @@ class MGMRegistrationService @Activate constructor(
             } catch (ex: NotReadyMembershipRegistrationException) {
                 throw ex
             } catch (e: Exception) {
-                throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
+                throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
             }
         }
         override fun close() {

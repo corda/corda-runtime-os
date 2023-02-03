@@ -616,7 +616,7 @@ class DynamicMemberRegistrationServiceTest {
             )
             whenever(virtualNodeInfoReadService.get(eq(noVNodeMember))).thenReturn(null)
 
-            val exception = assertThrows<InvalidMembershipRegistrationException> {
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationResultId, noVNodeMember, context)
             }
 
@@ -630,7 +630,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val exception = assertThrows<InvalidMembershipRegistrationException> {
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
 
@@ -647,7 +647,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val exception = assertThrows<InvalidMembershipRegistrationException> {
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
 
@@ -738,7 +738,7 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            assertThrows<InvalidMembershipRegistrationException> {
+            assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, registrationContext)
             }
 

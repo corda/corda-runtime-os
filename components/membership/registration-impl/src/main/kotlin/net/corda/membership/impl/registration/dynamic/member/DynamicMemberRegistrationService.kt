@@ -235,6 +235,7 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerRegistrationService {
+        @Suppress("LongMethod")
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
@@ -353,12 +354,19 @@ class DynamicMemberRegistrationService @Activate constructor(
             } catch (e: InvalidMembershipRegistrationException) {
                 logger.warn("Registration failed.", e)
                 throw e
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Registration failed.", e)
+                throw InvalidMembershipRegistrationException(
+                    "Registration failed. Reason: ${e.message}",
+                    e,
+                )
             } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
                 logger.warn("Registration failed.", e)
                 throw NotReadyMembershipRegistrationException("Could not persist request: ${e.message}", e)
             } catch (e: Exception) {
+                e.printStackTrace()
                 logger.warn("Registration failed.", e)
-                throw InvalidMembershipRegistrationException(
+                throw NotReadyMembershipRegistrationException(
                     "Registration failed. Reason: ${e.message}",
                     e,
                 )

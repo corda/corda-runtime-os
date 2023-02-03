@@ -202,12 +202,15 @@ class StaticMemberRegistrationService @Activate constructor(
         } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration failed. Reason:", e)
             throw e
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Registration failed. Reason:", e)
+            throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
             logger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason:", e)
-            throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
+            throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         }
     }
 

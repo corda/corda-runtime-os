@@ -72,6 +72,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -570,7 +571,7 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             whenever(virtualNodeInfoReadService.get((alice))).thenReturn(null)
 
-            val exception = assertThrows<InvalidMembershipRegistrationException> {
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, mockContext)
             }
 
