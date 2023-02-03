@@ -8,6 +8,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
@@ -26,7 +27,6 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
-import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -54,6 +54,7 @@ class UtxoReceiveFinalityFlowTest {
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
+    private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
 
     private val session = mock<FlowSession>()
@@ -334,8 +335,10 @@ class UtxoReceiveFinalityFlowTest {
     @Test
     fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
         whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
-
-        assertThatThrownBy { callReceiveFinalityFlow() }.isInstanceOf(ContractVerificationException::class.java)
+        whenever(transactionVerificationService.verify(any())).thenThrow(TransactionVerificationException(ID, "Verification error", null))
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(TransactionVerificationException::class.java)
+            .hasMessageContaining("Verification error")
 
         verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
     }
@@ -345,6 +348,7 @@ class UtxoReceiveFinalityFlowTest {
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
         flow.transactionSignatureService = transactionSignatureService
+        flow.transactionVerificationService = transactionVerificationService
         flow.flowEngine = flowEngine
         flow.call()
     }

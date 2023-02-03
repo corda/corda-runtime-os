@@ -1,9 +1,9 @@
-package net.corda.ledger.utxo.flow.impl.transaction.verifier
+package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
 import net.corda.v5.ledger.utxo.StateAndRef
-
 
 private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)
 

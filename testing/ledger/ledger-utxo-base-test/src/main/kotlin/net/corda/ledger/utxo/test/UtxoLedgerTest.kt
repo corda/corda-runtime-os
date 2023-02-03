@@ -12,11 +12,13 @@ import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFiltered
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import org.mockito.kotlin.mock
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
     val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
+    val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
     private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
         FilteredTransactionFactoryImpl(
@@ -37,7 +39,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockTransactionSignatureService(),
         transactionMetadataFactory,
         wireTransactionFactory,
-        utxoLedgerTransactionFactory
+        utxoLedgerTransactionFactory,
+        mockUtxoLedgerTransactionVerificationService
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(
         utxoFilteredTransactionFactory,

@@ -14,4 +14,13 @@ dependencies {
 
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:sandbox-types')
+    implementation project(':libs:serialization:serialization-internal')
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+    testImplementation project(':testing:ledger:ledger-common-base-test')
+    testImplementation project(':testing:ledger:ledger-utxo-testkit')
+    testImplementation project(':testing:test-serialization')
 }

@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.transaction.verifier
+package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
