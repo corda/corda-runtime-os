@@ -167,18 +167,14 @@ class CryptoProcessorImpl @Activate constructor(
                         // `CryptoOpsBusServiceImpl`.
                         // We used to get: "CordaRPCAPISenderException: No partitions for topic crypto.ops.rpc.resp. Couldn't send."
                         if (cryptoOpsClientAndDependentComponents.registration == null) {
-                            logger.debug {
-                                "Dependent components are UP. Now registering and starting " +
-                                        "crypto ops client and its dependent components"
-                            }
+                            logger.debug { "Dependent components are UP" }
                             cryptoOpsClientAndDependentComponents.registerAndStartAll(coordinator)
                         } else {
-                            logger.debug {
-                                "Dependent components are UP. Crypto ops client and its dependent components are already UP"
-                            }
+                            logger.debug { "Dependent components are UP. Crypto ops client and its dependent components are already UP" }
                             coordinator.postEvent(AllDependenciesAreUp)
                         }
                     } else if (event.registration == cryptoOpsClientAndDependentComponents.registration) {
+                        logger.debug { "Registering and starting crypto ops client and its dependent components" }
                         coordinator.postEvent(AllDependenciesAreUp)
                     } else {
                         logger.error(
