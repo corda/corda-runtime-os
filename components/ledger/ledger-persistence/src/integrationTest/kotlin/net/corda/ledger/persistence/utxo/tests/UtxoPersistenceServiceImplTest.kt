@@ -24,11 +24,10 @@ import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
-import net.corda.test.util.time.TestClock
+import net.corda.test.util.time.AutoTickTestClock
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
@@ -66,6 +66,7 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PublicKey
 import java.security.spec.ECGenParameterSpec
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -89,9 +90,10 @@ class UtxoPersistenceServiceImplTest {
 
     companion object {
         // Truncating to millis as on Windows builds the micros are lost after fetching the data from Postgres
-        private val TEST_CLOCK: Clock = TestClock(Instant.now().truncatedTo(ChronoUnit.MILLIS))
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
         private const val TIMEOUT_MILLIS = 10000L
+        private val testClock = AutoTickTestClock(
+            Instant.now().truncatedTo(ChronoUnit.MILLIS), Duration.ofSeconds(1))
         private val seedSequence = AtomicInteger((0..Int.MAX_VALUE / 2).random())
         private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
         private val publicKeyExample: PublicKey = KeyPairGenerator.getInstance("RSA")
@@ -129,7 +131,7 @@ class UtxoPersistenceServiceImplTest {
                 repository,
                 serializationService,
                 digestService,
-                TEST_CLOCK
+                testClock
             )
         }
     }
@@ -162,7 +164,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find unconsumed relevant transaction states`() {
-        val createdTs = TEST_CLOCK.instant()
+        val createdTs = testClock.instant()
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = createSignedTransaction(createdTs)
         val transaction2 = createSignedTransaction(createdTs)
@@ -238,30 +240,39 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `update transaction status`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        var floorDateTime = nextTime()
+
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        assertTransactionStatus(transaction.id.toString(), UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction.id.toString(), UNVERIFIED, entityFactory, floorDateTime)
+
+        floorDateTime = nextTime()
 
         persistenceService.updateStatus(transaction.id.toString(), VERIFIED)
 
-        assertTransactionStatus(transaction.id.toString(), VERIFIED, entityFactory)
+        assertTransactionStatus(transaction.id.toString(), VERIFIED, entityFactory, floorDateTime)
+
     }
 
     @Test
     fun `update transaction status does not affect other transactions`() {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        var floorDateTime = nextTime()
+
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = persistTransactionViaEntity(entityFactory)
         val transaction2 = persistTransactionViaEntity(entityFactory)
 
-        assertTransactionStatus(transaction1.id.toString(), UNVERIFIED, entityFactory)
-        assertTransactionStatus(transaction2.id.toString(), UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction1.id.toString(), UNVERIFIED, entityFactory, floorDateTime)
+        assertTransactionStatus(transaction2.id.toString(), UNVERIFIED, entityFactory, floorDateTime)
+
+        floorDateTime = nextTime()
 
         persistenceService.updateStatus(transaction1.id.toString(), VERIFIED)
 
-        assertTransactionStatus(transaction1.id.toString(), VERIFIED, entityFactory)
-        assertTransactionStatus(transaction2.id.toString(), UNVERIFIED, entityFactory)
+        assertTransactionStatus(transaction1.id.toString(), VERIFIED, entityFactory, floorDateTime)
+        assertTransactionStatus(transaction2.id.toString(), UNVERIFIED, entityFactory, floorDateTime)
     }
 
     @Test
@@ -411,7 +422,7 @@ class UtxoPersistenceServiceImplTest {
         entityFactory: UtxoEntityFactory,
         signedTransaction: SignedTransactionContainer,
         account: String = "Account",
-        createdTs: Instant = TEST_CLOCK.instant(),
+        createdTs: Instant = testClock.instant(),
         status: TransactionStatus = UNVERIFIED
     ): Any {
         return entityFactory.createUtxoTransactionEntity(
@@ -453,19 +464,32 @@ class UtxoPersistenceServiceImplTest {
             }
     }
 
-    private fun assertTransactionStatus(transactionId: String, status: TransactionStatus, entityFactory: UtxoEntityFactory) {
+    /**
+     * Checks the transaction status. [floorDateTime] should be the lowest value that is a valid
+     * time for the next value of `updated` for the record. The function will verify that this
+     * field is at least the floor time.
+     */
+    private fun assertTransactionStatus(
+        transactionId: String, status: TransactionStatus,
+        entityFactory: UtxoEntityFactory,
+        floorDateTime: Instant) {
         entityManagerFactory.transaction { em ->
             val dbTransaction = em.find(entityFactory.utxoTransaction, transactionId)
             val statuses = dbTransaction.field<Collection<Any>?>("statuses")
             assertThat(statuses)
                 .isNotNull
                 .hasSize(1)
-            assertThat(statuses?.single()?.field<String>("status")).isEqualTo(status.value)
+            with(statuses?.single()!!) {
+                assertAll(
+                    { assertThat(field<String>("status")).isEqualTo(status.value) },
+                    { assertThat(field<Instant>("updated")).isAfterOrEqualTo(floorDateTime) }
+                )
+            }
         }
     }
 
     private fun createSignedTransaction(
-        createdTs: Instant = TEST_CLOCK.instant(),
+        createdTs: Instant = testClock.instant(),
         seed: String = seedSequence.incrementAndGet().toString()
     ): SignedTransactionContainer {
         val transactionMetadata = transactionMetadataExample(
@@ -574,4 +598,6 @@ class UtxoPersistenceServiceImplTest {
 
     private fun digest(algorithm: String, data: ByteArray) =
         SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(data))
+
+    private fun nextTime() = testClock.peekTime()
 }

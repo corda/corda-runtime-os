@@ -2,15 +2,13 @@ package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
-import net.corda.ledger.utxo.data.transaction.ContractVerificationResult
-import net.corda.ledger.utxo.data.transaction.ContractVerificationStatus
+import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
+import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.VerifyContractsExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -24,7 +22,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 
-class UtxoLedgerTransactionVerifierComponentTest {
+class UtxoLedgerTransactionVerificationServiceImplTest {
 
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
@@ -33,12 +31,12 @@ class UtxoLedgerTransactionVerifierComponentTest {
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
-    private lateinit var utxoLedgerTransactionVerifier: UtxoLedgerTransactionVerifierComponent
-    private val argumentCaptor = argumentCaptor<Class<VerifyContractsExternalEventFactory>>()
+    private lateinit var verificationService: UtxoLedgerTransactionVerificationServiceImpl
+    private val argumentCaptor = argumentCaptor<Class<TransactionVerificationExternalEventFactory>>()
 
     @BeforeEach
     fun setup() {
-        utxoLedgerTransactionVerifier = UtxoLedgerTransactionVerifierComponent(
+        verificationService = UtxoLedgerTransactionVerificationServiceImpl(
             externalEventExecutor,
             serializationService
         )
@@ -47,10 +45,11 @@ class UtxoLedgerTransactionVerifierComponentTest {
     }
 
     @Test
-    fun `contracts verification executes successfully`() {
-        val expectedObj = ContractVerificationResult(
-            ContractVerificationStatus.VERIFIED,
-            emptyList()
+    fun `verification of valid transaction`() {
+        val expectedObj = TransactionVerificationResult(
+            TransactionVerificationStatus.VERIFIED,
+            errorType = null,
+            errorMessage = null
         )
         whenever(
             externalEventExecutor.execute(
@@ -67,18 +66,19 @@ class UtxoLedgerTransactionVerifierComponentTest {
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
 
         assertDoesNotThrow {
-            utxoLedgerTransactionVerifier.verifyContracts(transaction)
+            verificationService.verify(transaction)
         }
 
         verify(serializationService).serialize(any())
-        assertThat(argumentCaptor.firstValue).isEqualTo(VerifyContractsExternalEventFactory::class.java)
+        assertThat(argumentCaptor.firstValue).isEqualTo(TransactionVerificationExternalEventFactory::class.java)
     }
 
     @Test
-    fun `contracts verification executes unsuccessfully`() {
-        val expectedObj = ContractVerificationResult(
-            ContractVerificationStatus.INVALID,
-            listOf(mock<ContractVerificationFailureImpl>())
+    fun `verification of invalid transaction results with exception`() {
+        val expectedObj = TransactionVerificationResult(
+            TransactionVerificationStatus.INVALID,
+            errorType = "net.corda.v5.ledger.utxo.ContractVerificationException",
+            errorMessage = "Contract verification failed"
         )
         whenever(
             externalEventExecutor.execute(
@@ -96,13 +96,16 @@ class UtxoLedgerTransactionVerifierComponentTest {
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
         whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
 
-        val exception = assertThrows<ContractVerificationException> {
-            utxoLedgerTransactionVerifier.verifyContracts(transaction)
+        val exception = assertThrows<TransactionVerificationException> {
+            verificationService.verify(transaction)
         }
+
         assertThat(exception.transactionId).isEqualTo(transactionId)
-        assertThat(exception.failureReasons).isEqualTo(expectedObj.failureReasons)
+        assertThat(exception.status).isEqualTo(expectedObj.status)
+        assertThat(exception.originalExceptionClassName).isEqualTo(expectedObj.errorType)
+        assertThat(exception.status).isEqualTo(expectedObj.status)
 
         verify(serializationService).serialize(any())
-        assertThat(argumentCaptor.firstValue).isEqualTo(VerifyContractsExternalEventFactory::class.java)
+        assertThat(argumentCaptor.firstValue).isEqualTo(TransactionVerificationExternalEventFactory::class.java)
     }
 }

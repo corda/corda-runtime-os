@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.utxo.transaction.verifier.UtxoTransactionVerifier
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 
 /**
