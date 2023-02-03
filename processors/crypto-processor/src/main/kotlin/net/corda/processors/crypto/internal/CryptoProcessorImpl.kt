@@ -105,13 +105,13 @@ class CryptoProcessorImpl @Activate constructor(
         ::vnodeInfo
     )
 
+    @VisibleForTesting
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
+
     private val cryptoOpsClientAndDependentComponents = DependentComponents.of(
         ::cryptoOpsClient,
         ::cryptoFlowOpsBusService
     )
-
-    @VisibleForTesting
-    val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
     @Volatile
     private var hsmAssociated: Boolean = false
