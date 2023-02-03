@@ -1,0 +1,10 @@
+{
+  "type": "enum",
+  "name": "TransactionVerificationStatus",
+  "namespace": "net.corda.ledger.utxo.verification",
+  "symbols": [
+    "VERIFIED",
+    "INVALID"
+  ],
+  "doc": "Transaction verification status."
+}

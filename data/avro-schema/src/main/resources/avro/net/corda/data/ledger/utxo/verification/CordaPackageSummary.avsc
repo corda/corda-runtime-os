@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "CordaPackageSummary",
-  "namespace": "net.corda.ledger.utxo.contract.verification",
+  "namespace": "net.corda.ledger.utxo.verification",
   "fields": [
     {
       "name": "name",
