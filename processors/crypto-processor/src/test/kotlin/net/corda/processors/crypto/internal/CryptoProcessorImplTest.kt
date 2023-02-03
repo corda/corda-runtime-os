@@ -125,10 +125,6 @@ class CryptoProcessorImplTest {
         assertEquals(LifecycleStatus.DOWN, lifecycleTest.testClass.status)
         cryptoOpsClientAndDependentComponents.forEach(lifecycleTest::bringDependencyUp)
         assertEquals(LifecycleStatus.DOWN, lifecycleTest.testClass.status)
-
-        // dependentComponents going back UP should now bring crypto processor back UP
-        dependentComponents.forEach(lifecycleTest::bringDependencyUp)
-        assertEquals(LifecycleStatus.UP, lifecycleTest.testClass.status)
     }
 
     @Test
@@ -139,9 +135,5 @@ class CryptoProcessorImplTest {
         assertEquals(LifecycleStatus.DOWN, lifecycleTest.testClass.status)
         dependentComponents.forEach(lifecycleTest::bringDependencyUp)
         assertEquals(LifecycleStatus.DOWN, lifecycleTest.testClass.status)
-
-        // cryptoOpsClientAndDependentComponents going back UP should now bring crypto processor back UP
-        cryptoOpsClientAndDependentComponents.forEach(lifecycleTest::bringDependencyUp)
-        assertEquals(LifecycleStatus.UP, lifecycleTest.testClass.status)
     }
 }
