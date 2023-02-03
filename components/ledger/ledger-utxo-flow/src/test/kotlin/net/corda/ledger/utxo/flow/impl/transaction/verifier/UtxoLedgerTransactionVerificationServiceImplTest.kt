@@ -63,7 +63,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         val transactionMetadata = mock<TransactionMetadata>()
         whenever(transaction.wireTransaction).thenReturn(wireTransaction)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
-        whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
+        whenever(transactionMetadata.getCpiMetadata()).thenReturn(mock())
 
         assertDoesNotThrow {
             verificationService.verify(transaction)
@@ -94,7 +94,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         whenever(transaction.id).thenReturn(transactionId)
         whenever(transaction.wireTransaction).thenReturn(wireTransaction)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
-        whenever(transactionMetadata.getCpkMetadata()).thenReturn(listOf(mock()))
+        whenever(transactionMetadata.getCpiMetadata()).thenReturn(mock())
 
         val exception = assertThrows<TransactionVerificationException> {
             verificationService.verify(transaction)
