@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
+import java.lang.Exception
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -18,10 +19,12 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MigrationsFailedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeUpgradeRejectedException
 import org.slf4j.LoggerFactory
 
@@ -51,21 +54,52 @@ internal class VirtualNodeUpgradeOperationHandler(
         try {
             upgradeVirtualNodeCpi(requestTimestamp, requestId, request)
         } catch (e: VirtualNodeUpgradeRejectedException) {
-            logger.info("Virtual node upgrade validation failed: ${e.message}")
-            entityManagerFactory.createEntityManager().transaction { em ->
-                virtualNodeRepository.rejectedOperation(
-                    em,
-                    request.virtualNodeShortHash,
-                    requestId,
-                    request.toString(),
-                    requestTimestamp,
-                    e.reason,
-                    VirtualNodeOperationType.UPGRADE
-                )
-            }
+            logger.info("Virtual node upgrade (request $requestId) validation failed: ${e.message}")
+            handleValidationFailed(request, requestId, requestTimestamp, e)
+        } catch (e: MigrationsFailedException) {
+            logger.warn("Virtual node upgrade (request $requestId) failed to run migrations: ${e.message}")
+            handleMigrationsFailed(request, requestId, requestTimestamp, e)
         }
 
         return null
+    }
+
+    private fun handleMigrationsFailed(
+        request: VirtualNodeUpgradeRequest,
+        requestId: String,
+        requestTimestamp: Instant,
+        e: MigrationsFailedException
+    ) {
+        entityManagerFactory.createEntityManager().transaction { em ->
+            virtualNodeRepository.failedMigrationsOperation(
+                em,
+                request.virtualNodeShortHash,
+                requestId,
+                request.toString(),
+                requestTimestamp,
+                e.reason,
+                VirtualNodeOperationType.UPGRADE
+            )
+        }
+    }
+
+    private fun handleValidationFailed(
+        request: VirtualNodeUpgradeRequest,
+        requestId: String,
+        requestTimestamp: Instant,
+        e: VirtualNodeUpgradeRejectedException
+    ) {
+        entityManagerFactory.createEntityManager().transaction { em ->
+            virtualNodeRepository.rejectedOperation(
+                em,
+                request.virtualNodeShortHash,
+                requestId,
+                request.toString(),
+                requestTimestamp,
+                e.reason,
+                VirtualNodeOperationType.UPGRADE
+            )
+        }
     }
 
     private fun upgradeVirtualNodeCpi(
@@ -74,9 +108,9 @@ internal class VirtualNodeUpgradeOperationHandler(
         request: VirtualNodeUpgradeRequest
     ) {
         val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
-                val targetCpi = validateUpgradeRequest(em, request, requestId)
-                upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi)
-            }
+            val targetCpi = validateUpgradeRequest(em, request, requestId)
+            upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi)
+        }
 
         publishVirtualNodeInfo(upgradedVNodeInfo)
 
@@ -177,11 +211,21 @@ internal class VirtualNodeUpgradeOperationHandler(
         request: VirtualNodeUpgradeRequest
     ) {
         logger.info("Vault DDL connection found for virtual node, preparing to run CPI migrations (request $requestId)")
-        migrationUtility.runVaultMigrations(
-            ShortHash.of(request.virtualNodeShortHash),
-            changelogs,
-            vaultDdlConnectionId
-        )
+        try {
+            migrationUtility.runVaultMigrations(
+                ShortHash.of(request.virtualNodeShortHash),
+                changelogs,
+                vaultDdlConnectionId
+            )
+        } catch (e: VirtualNodeWriteServiceException) {
+            val backupMsg = "Migrations failed for virtual node upgrade (request $requestId)"
+            val msg = e.cause?.message ?: e.message
+            throw MigrationsFailedException(msg ?: backupMsg, e)
+        } catch (e: Exception) {
+            val backupMsg = "Migrations failed for virtual node upgrade (request $requestId)"
+            val msg = e.message ?: e.message
+            throw MigrationsFailedException(msg ?: backupMsg, e)
+        }
 
         // todo cs - as part of https://r3-cev.atlassian.net/browse/CORE-9046
 //        if (!migrationUtility.isVaultSchemaAndTargetCpiInSync(changelogs, vaultDmlConnectionId)) {

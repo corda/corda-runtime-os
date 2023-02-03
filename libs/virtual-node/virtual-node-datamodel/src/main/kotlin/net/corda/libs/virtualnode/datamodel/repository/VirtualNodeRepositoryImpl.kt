@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
+import java.lang.IllegalArgumentException
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
@@ -187,6 +188,28 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
                 errors = reason
             )
         )
+    }
+
+    override fun failedMigrationsOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        requestId: String,
+        serializedRequest: String,
+        requestTimestamp: Instant,
+        reason: String,
+        operationType: VirtualNodeOperationType
+    ) {
+        val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
+            ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+
+        val failedOperation = virtualNode.operationInProgress
+            ?: throw IllegalArgumentException("When failing migrations on a virtual node, there should be a current operation in progress")
+
+        failedOperation.latestUpdateTimestamp = Instant.now()
+        failedOperation.state = VirtualNodeOperationState.MIGRATIONS_FAILED
+        failedOperation.errors = reason
+
+        entityManager.merge(virtualNode)
     }
 
     private fun findEntity(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeEntity? {

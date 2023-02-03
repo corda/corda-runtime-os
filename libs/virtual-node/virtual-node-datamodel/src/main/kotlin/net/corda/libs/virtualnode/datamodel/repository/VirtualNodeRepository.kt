@@ -77,5 +77,19 @@ interface VirtualNodeRepository {
         reason: String,
         operationType: VirtualNodeOperationType
     )
+
+    /**
+     * Update a virtual node operation with failure details caused by failure to run migrations.
+     */
+    @Suppress("LongParameterList")
+    fun failedMigrationsOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        requestId: String,
+        serializedRequest: String,
+        requestTimestamp: Instant,
+        reason: String,
+        operationType: VirtualNodeOperationType
+    )
 }
 

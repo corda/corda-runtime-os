@@ -30,11 +30,11 @@ import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import javax.persistence.PersistenceException
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 
 class VirtualNodeUpgradeOperationHandlerTest {
@@ -113,7 +113,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
     )
     private val vaultDdlConnectionId = UUID.randomUUID()
 
-    // todo cs - when we add operationinProgress to avro type, add it to there virtualNodeInfo objects
     private val inProgressOpVnodeInfo = VirtualNodeInfo(
         mockHoldingIdentity,
         targetCpiId,
@@ -124,6 +123,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         null,
         UUID.randomUUID(),
         UUID.randomUUID(),
+        operationInProgress = "someOperationId",
         timestamp = Instant.now()
     )
     private val migrationsCompleteVnodeInfo = VirtualNodeInfo(
@@ -144,6 +144,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private fun withUpgradeValidationFailure(reason: String, block: () -> Any?) {
         val result = block.invoke()
         verify(virtualNodeRepository, times(1)).rejectedOperation(
+            eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE)
+        )
+        assertThat(result).isNull()
+    }
+
+    private fun withMigrationFailure(reason: String, block: () -> Any?) {
+        val result = block.invoke()
+        verify(virtualNodeRepository, times(1)).failedMigrationsOperation(
             eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE)
         )
         assertThat(result).isNull()
@@ -339,7 +347,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     }
 
     @Test
-    fun `upgrade handler throws when running migrations`() {
+    fun `migrations thrown an exception, operation is written with the details`() {
         val requestTimestamp = Instant.now()
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
@@ -351,12 +359,13 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString), eq(requestId), eq(requestTimestamp), eq(request.toString())
             )
         ).thenReturn(inProgressOpVnodeInfo)
-        whenever(migrationUtility.runVaultMigrations(any(), any(), any())).thenThrow(PersistenceException("Some liquibase exception"))
+        whenever(migrationUtility.runVaultMigrations(any(), any(), any()))
+            .thenThrow(VirtualNodeWriteServiceException("Outer exception", Exception("Inner exception")))
 
         val vnodeInfoCapture =
             argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
 
-        assertThrows<PersistenceException> {
+        withMigrationFailure("Inner exception") {
             handler.handle(requestTimestamp, requestId, request)
         }
 
@@ -392,38 +401,19 @@ class VirtualNodeUpgradeOperationHandlerTest {
         ).thenReturn(inProgressOpVnodeInfo)
         whenever(virtualNodeRepository.completeOperation(em, request.virtualNodeShortHash)).thenReturn(migrationsCompleteVnodeInfo)
 
-        val inProgressVNodeInfoCapture =
+        val vnodeInfoRecordsCapture =
             argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
-        // todo cs - when we add virtual node info, separate these publishes (one should be in progress operation, the other complete)
-//        val upgradeCompleteVNodeInfoCapture =
-//            argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
 
         handler.handle(requestTimestamp, requestId, request)
 
-        verify(virtualNodeInfoPublisher, times(2)).publish(inProgressVNodeInfoCapture.capture())
+        verify(virtualNodeInfoPublisher, times(2)).publish(vnodeInfoRecordsCapture.capture())
         verify(migrationUtility).runVaultMigrations(
             eq(ShortHash.of(request.virtualNodeShortHash)),
             eq(cpkDbChangelogs),
             eq(vaultDdlConnectionId)
         )
-        // todo cs - when we add virtual node info, separate these publishes (one should be in progress operation, the other complete)
-//        verify(virtualNodeInfoPublisher, times(1)).publish(upgradeCompleteVNodeInfoCapture.capture())
 
-        val publishedRecordList = inProgressVNodeInfoCapture.firstValue
-        assertThat(publishedRecordList).isNotNull
-        assertThat(publishedRecordList).hasSize(1)
-
-        val publishedRecord = publishedRecordList[0]
-        assertThat(publishedRecord.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
-
-        assertThat(publishedRecord.key.groupId).isEqualTo(groupName)
-        assertThat(publishedRecord.key.x500Name).isEqualTo(x500Name.toString())
-
-        assertThat(publishedRecord.value).isNotNull
-        assertThat(publishedRecord.value!!.cpiIdentifier.name).isEqualTo(cpiName)
-        assertThat(publishedRecord.value!!.cpiIdentifier.version).isEqualTo("v2")
-
-        // todo cs - after we add operationInProgress to virtualNodeInfo, assertions here that after completion, it is null
+        assertSuccessfulVirtualNodeInfoPublishing(vnodeInfoRecordsCapture.firstValue, vnodeInfoRecordsCapture.secondValue)
     }
 
     @Test
@@ -445,28 +435,51 @@ class VirtualNodeUpgradeOperationHandlerTest {
         whenever(migrationUtility.isVaultSchemaAndTargetCpiInSync(cpkDbChangelogs, vaultDmlConnectionId)).thenReturn(true)
         whenever(virtualNodeRepository.completeOperation(em, request.virtualNodeShortHash)).thenReturn(migrationsCompleteVnodeInfo)
 
-        val inProgressVNodeInfoCapture =
+        val vnodeInfoRecordsCapture =
             argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
 
         handler.handle(requestTimestamp, requestId, request)
 
-        verify(virtualNodeInfoPublisher, times(2)).publish(inProgressVNodeInfoCapture.capture())
+        verify(virtualNodeInfoPublisher, times(2)).publish(vnodeInfoRecordsCapture.capture())
         verify(migrationUtility, times(0)).runVaultMigrations(any(), any(), any())
 
-        val publishedRecordList = inProgressVNodeInfoCapture.firstValue
-        assertThat(publishedRecordList).isNotNull
-        assertThat(publishedRecordList).hasSize(1)
+        assertSuccessfulVirtualNodeInfoPublishing(vnodeInfoRecordsCapture.firstValue, vnodeInfoRecordsCapture.secondValue)
+    }
 
-        val publishedRecord = publishedRecordList[0]
-        assertThat(publishedRecord.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
+    private fun assertSuccessfulVirtualNodeInfoPublishing(
+        inProgressRecord: List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>,
+        completedRecord: List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>
+    ) {
+        assertThat(inProgressRecord).isNotNull
+        assertThat(inProgressRecord).hasSize(1)
 
-        assertThat(publishedRecord.key.groupId).isEqualTo(groupName)
-        assertThat(publishedRecord.key.x500Name).isEqualTo(x500Name.toString())
+        val preMigrationPublish = inProgressRecord[0]
+        assertThat(preMigrationPublish.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
 
-        assertThat(publishedRecord.value).isNotNull
-        assertThat(publishedRecord.value!!.cpiIdentifier.name).isEqualTo(cpiName)
-        assertThat(publishedRecord.value!!.cpiIdentifier.version).isEqualTo("v2")
+        assertThat(preMigrationPublish.key.groupId).isEqualTo(groupName)
+        assertThat(preMigrationPublish.key.x500Name).isEqualTo(x500Name.toString())
 
-        // todo cs - after we add operationInProgress to virtualNodeInfo, assertions here that after completion, it is null
+        val preMigrationVirtualNodeInfo = preMigrationPublish.value
+        assertThat(preMigrationVirtualNodeInfo).isNotNull
+        assertThat(preMigrationVirtualNodeInfo!!.cpiIdentifier.version).isEqualTo("v2")
+        assertThat(preMigrationVirtualNodeInfo.cpiIdentifier.version).isEqualTo("v2")
+        assertThat(preMigrationVirtualNodeInfo.cpiIdentifier.name).isEqualTo(cpiName)
+        assertThat(preMigrationVirtualNodeInfo.operationInProgress).isNotNull
+        assertThat(preMigrationVirtualNodeInfo.operationInProgress).isEqualTo("someOperationId")
+
+        assertThat(completedRecord).isNotNull
+        assertThat(completedRecord).hasSize(1)
+
+        val postMigrationPublish = completedRecord[0]
+        assertThat(postMigrationPublish.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
+
+        assertThat(postMigrationPublish.key.groupId).isEqualTo(groupName)
+        assertThat(postMigrationPublish.key.x500Name).isEqualTo(x500Name.toString())
+
+        val postMigrationVnodeInfo = postMigrationPublish.value
+        assertThat(postMigrationVnodeInfo).isNotNull
+        assertThat(postMigrationVnodeInfo!!.cpiIdentifier.name).isEqualTo(cpiName)
+        assertThat(postMigrationVnodeInfo.cpiIdentifier.version).isEqualTo("v2")
+        assertThat(postMigrationVnodeInfo.operationInProgress).isNull()
     }
 }
