@@ -9,6 +9,6 @@ interface SecretsCreateService {
      * @param plainText secret
      * @return [Config] object that contains everything needed to be able to retrieve the secret.
      */
-    fun createValue(plainText: String): Config
+    fun createValue(plainText: String, key: String): Config
 }
 

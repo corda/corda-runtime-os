@@ -112,22 +112,24 @@ class DbConfigSubcommand : Runnable {
     }
 }
 
+@Suppress("LongParameterList")
 fun createDbConfig(
     jdbcUrl: String,
     username: String,
     password: String,
     jdbcPoolMaxSize: Int,
-    secretsService: SecretsCreateService
+    secretsService: SecretsCreateService,
+    key: String = "database-poassword"
 ): String {
     return "{\"database\":{" +
             "\"jdbc\":" +
             "{\"url\":\"$jdbcUrl\"}," +
-            "\"pass\":${createSecureConfig(secretsService, password)}," +
+            "\"pass\":${createSecureConfig(secretsService, password, key)}," +
             "\"user\":\"$username\"," +
             "\"pool\":" +
             "{\"max_size\":$jdbcPoolMaxSize}}}"
 }
 
-fun createSecureConfig(secretsService: SecretsCreateService, value: String): String {
-    return secretsService.createValue(value).root().render(ConfigRenderOptions.concise())
+fun createSecureConfig(secretsService: SecretsCreateService, value: String, key: String): String {
+    return secretsService.createValue(value, key).root().render(ConfigRenderOptions.concise())
 }

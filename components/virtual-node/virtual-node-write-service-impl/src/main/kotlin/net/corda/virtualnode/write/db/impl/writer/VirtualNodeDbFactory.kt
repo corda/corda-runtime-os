@@ -154,7 +154,8 @@ class VirtualNodeDbFactory(
             val config = createDbConfig(
                 smartConfigFactory, user, password.concatToString(),
                 jdbcUrl = jdbcUrl,
-                maxPoolSize = maxPoolSize
+                maxPoolSize = maxPoolSize,
+                key = "cluster-database-password"
             )
             return DbConnection(
                 getConnectionName(holdingIdentityShortHash),
