@@ -4712,6 +4712,11 @@
             "nullable" : true,
             "example" : "string"
           },
+          "operationInProgress" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
           "uniquenessDdlConnectionId" : {
             "type" : "string",
             "nullable" : true,

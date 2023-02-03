@@ -40,7 +40,7 @@ data class VirtualNodeInfo(
     val flowOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
     /** Current state of the virtual node instance */
     val vaultDbOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
-    /** Populated when an operation is in progress on this virtual node */
+    /** The requestId of an operation that is in progress on this virtual node. Null if no operation is in progress */
     val operationInProgress: String? = null,
     /** Version of this vnode */
     val version: Int = -1,

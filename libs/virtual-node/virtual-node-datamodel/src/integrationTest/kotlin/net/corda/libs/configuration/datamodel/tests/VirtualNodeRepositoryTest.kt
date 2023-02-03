@@ -250,11 +250,7 @@ class VirtualNodeRepositoryTest {
         assertThat(upgradeVirtualNodeInfo.cpiIdentifier.signerSummaryHash).isEqualTo(signerSummaryHash)
 
         val foundEntity = entityManagerFactory.createEntityManager().transaction {
-            val query = "from ${VirtualNodeEntity::class.java.simpleName} vnode JOIN FETCH vnode.operationInProgress " +
-                    "where vnode.holdingIdentityId = :holdingIdentity"
-            it.createQuery(query, VirtualNodeEntity::class.java)
-                .setParameter("holdingIdentity", holdingIdentityShortHash)
-                .singleResult
+            it.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
         }
 
         assertThat(foundEntity).isNotNull
