@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.ResponseFactory
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.crypto.SecureHash
@@ -24,15 +25,17 @@ class VerificationRequestProcessorTest {
     private companion object {
         const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val ALICE_X500_HOLDING_ID = HoldingIdentity(ALICE_X500, "group1")
-        const val CPK_CHECKSUM = "SHA-256:1212121212121212"
-        const val SIGNER_SUMMARY_HASH = "SHA-256:3434343434343434"
+        const val CPI_NAME = "test.cpi"
+        const val CPI_VERSION = "1.0"
+        const val CPI_CHECKSUM = "SHA-256:1212121212121212"
+        const val CPI_SIGNER_SUMMARY_HASH = "SHA-256:3434343434343434"
     }
 
     private val verificationSandboxService = mock<VerificationSandboxService>()
     private val verificationRequestHandler = mock<VerificationRequestHandler>()
     private val responseFactory = mock<ResponseFactory>()
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
-    private val cpkChecksums = setOf(SecureHash.parse(CPK_CHECKSUM))
+    private val cpiId = CpiIdentifier(CPI_NAME, CPI_VERSION, SecureHash.parse(CPI_SIGNER_SUMMARY_HASH))
     private val sandbox = mock<SandboxGroupContext>()
 
     private val verificationRequestProcessor = VerificationRequestProcessor(
@@ -43,7 +46,7 @@ class VerificationRequestProcessorTest {
 
     @BeforeEach
     fun setup() {
-        whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkChecksums)).thenReturn(sandbox)
+        whenever(verificationSandboxService.get(cordaHoldingIdentity, cpiId)).thenReturn(sandbox)
     }
 
     @Test
@@ -100,8 +103,6 @@ class VerificationRequestProcessorTest {
             timestamp = Instant.MIN
             flowExternalEventContext = ExternalEventContext(requestId, "f1", KeyValuePairList())
             holdingIdentity = ALICE_X500_HOLDING_ID
-            cpkMetadata = listOf(
-                CordaPackageSummary("cpk1", "1.0", SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
-            )
+            cpiMetadata = CordaPackageSummary(CPI_NAME, CPI_VERSION, CPI_SIGNER_SUMMARY_HASH, CPI_CHECKSUM)
         }
 }
