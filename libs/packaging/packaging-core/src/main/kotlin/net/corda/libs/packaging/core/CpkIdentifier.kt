@@ -24,7 +24,7 @@ data class CpkIdentifier(
             return CpkIdentifier(
                 other.name,
                 other.version,
-                SecureHash(other.signerSummaryHash.algorithm, other.signerSummaryHash.serverHash.array())
+                SecureHash(other.signerSummaryHash.algorithm, other.signerSummaryHash.bytes.array())
             )
         }
     }
