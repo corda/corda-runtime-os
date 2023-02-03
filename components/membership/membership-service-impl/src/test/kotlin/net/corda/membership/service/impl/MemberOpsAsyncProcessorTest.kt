@@ -5,6 +5,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
@@ -35,10 +37,12 @@ class MemberOpsAsyncProcessorTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getByHoldingIdentityShortHash(shortHash) } doReturn info
     }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
 
     private val processor = MemberOpsAsyncProcessor(
         registrationProxy,
         virtualNodeInfoReadService,
+        membershipPersistenceClient,
     )
 
     @Test
@@ -159,39 +163,44 @@ class MemberOpsAsyncProcessorTest {
         )
 
         verifyNoInteractions(registrationProxy)
+        verifyNoInteractions(membershipPersistenceClient)
     }
 
     @Test
-    fun `onNext with invalid request will do nothing`() {
+    fun `onNext with invalid request will persist the invalid state`() {
         val id = UUID(0, 1)
         whenever(registrationProxy.register(any(), any(), any()))
             .doThrow(InvalidMembershipRegistrationException("oops"))
 
-        assertDoesNotThrow {
-            processor.onNext(
-                listOf(
-                    Record(
-                        "topic",
-                        "key",
-                        MembershipAsyncRequest(
-                            RegistrationAsyncRequest(
-                                shortHash.value,
-                                id.toString(),
-                                RegistrationAction.REQUEST_JOIN,
-                                KeyValuePairList(
-                                    listOf(
-                                        KeyValuePair(
-                                            "key",
-                                            "value"
-                                        )
+        processor.onNext(
+            listOf(
+                Record(
+                    "topic",
+                    "key",
+                    MembershipAsyncRequest(
+                        RegistrationAsyncRequest(
+                            shortHash.value,
+                            id.toString(),
+                            RegistrationAction.REQUEST_JOIN,
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(
+                                        "key",
+                                        "value"
                                     )
                                 )
                             )
-                        ),
-                    )
+                        )
+                    ),
                 )
             )
-        }
+        )
+
+        verify(membershipPersistenceClient).setRegistrationRequestStatus(
+            identity,
+            id.toString(),
+            RegistrationStatus.INVALID,
+        )
     }
 
     @Test

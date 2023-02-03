@@ -173,6 +173,7 @@ class MemberOpsServiceTest {
                 virtualNodeInfoReadService,
                 membershipGroupReaderProvider,
                 membershipQueryClient,
+                mock(),
             )
         }
     }

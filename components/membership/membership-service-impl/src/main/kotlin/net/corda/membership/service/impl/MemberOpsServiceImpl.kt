@@ -16,6 +16,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationProxy
@@ -51,7 +52,9 @@ class MemberOpsServiceImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
-): MemberOpsService {
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+) : MemberOpsService {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val RPC_GROUP_NAME = "membership.ops.rpc"
@@ -178,7 +181,9 @@ class MemberOpsServiceImpl @Activate constructor(
                     MEMBERSHIP_ASYNC_REQUEST_TOPIC,
                 ),
                 MemberOpsAsyncProcessor(
-                    registrationProxy, virtualNodeInfoReadService
+                    registrationProxy,
+                    virtualNodeInfoReadService,
+                    membershipPersistenceClient,
                 ),
                 messagingConfig,
                 null,

@@ -2,7 +2,9 @@ package net.corda.membership.service.impl
 
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.toMap
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
@@ -18,6 +20,7 @@ import java.util.UUID
 internal class MemberOpsAsyncProcessor(
     private val registrationProxy: RegistrationProxy,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val membershipPersistenceClient: MembershipPersistenceClient,
 ) : DurableProcessor<String, MembershipAsyncRequest> {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -54,12 +57,20 @@ internal class MemberOpsAsyncProcessor(
                 ?: throw NotReadyMembershipRegistrationException(
                     "Could not find holding identity associated with ${request.holdingIdentityId}"
                 )
+        val registrationId = try {
+            UUID.fromString(request.requestId)
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Registration ${request.requestId} failed., Invalid request ID.", e)
+            return
+        }
         try {
-            val registrationId = UUID.fromString(request.requestId)
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
         } catch (e: InvalidMembershipRegistrationException) {
-            logger.warn("Registration ${request.requestId} failed.", e)
-        } catch (e: IllegalArgumentException) {
+            membershipPersistenceClient.setRegistrationRequestStatus(
+                holdingIdentity,
+                registrationId.toString(),
+                RegistrationStatus.INVALID,
+            )
             logger.warn("Registration ${request.requestId} failed.", e)
         } catch (e: Exception) {
             throw e
