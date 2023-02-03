@@ -23,4 +23,5 @@ dependencies {
     cordapp project(':testing:bundles:cpk-for-duplicate-changelog-testing')
     // Common and API packages pulled in as transitive dependencies through client
     cordapp project(':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client')
+    cordapp project(':testing:cpbs:ledger-utxo-demo-contract')
 }

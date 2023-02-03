@@ -20,8 +20,15 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-ledger-common'
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
+
     implementation project(':components:configuration:configuration-read-service')
-    implementation project(':components:db:db-connection-manager')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
@@ -29,28 +36,21 @@ dependencies {
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:flows:external-event-responses')
     implementation project(':libs:ledger:ledger-common-data')
-    implementation project(':libs:ledger:ledger-consensual-data')
     implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':libs:messaging:messaging')
+    implementation project(":libs:serialization:json-validator")
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(":libs:serialization:json-validator")
 
+    runtimeOnly project(':components:virtual-node:sandbox-amqp')
+    runtimeOnly project(':components:virtual-node:sandbox-json')
     runtimeOnly project(':libs:crypto:merkle-impl')
 
-    implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda:corda-db-schema'
-    implementation 'net.corda:corda-ledger-common'
-    implementation 'net.corda:corda-ledger-consensual'
-    implementation 'net.corda:corda-ledger-utxo'
-    implementation 'net.corda:corda-topic-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation 'org.slf4j:slf4j-api'
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(':testing:db-testkit')
-
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
