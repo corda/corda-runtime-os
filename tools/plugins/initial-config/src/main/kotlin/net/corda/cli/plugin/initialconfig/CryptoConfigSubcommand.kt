@@ -81,8 +81,12 @@ class CryptoConfigSubcommand : Runnable {
         } else {
             softHsmRootSalt!!
         })
-        val wrappingPassphraseSecret = smartConfigFactory.makeSecret(wrappingPassphraseDefined).toSafeConfig().root()
-        val wrappingSaltSecret = smartConfigFactory.makeSecret(wrappingSaltDefined).toSafeConfig().root()
+        val wrappingPassphraseSecret =
+            smartConfigFactory.makeSecret(wrappingPassphraseDefined, "corda-master-wrapping-key-passphrase")
+                .toSafeConfig()
+                .root()
+        val wrappingSaltSecret =
+            smartConfigFactory.makeSecret(wrappingSaltDefined, "corda-master-wrapping-key-salt").toSafeConfig().root()
         val config = createDefaultCryptoConfig(wrappingPassphraseSecret, wrappingSaltSecret).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
