@@ -24,6 +24,8 @@ dependencies {
     kapt "org.pf4j:pf4j:${pf4jVersion}"
 
     implementation project(":tools:plugins:package")
+    implementation project(':tools:plugins:plugins-http-rpc')
+    implementation project(':components:membership:membership-http-rpc')
 
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"

@@ -9,10 +9,8 @@ import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -22,7 +20,6 @@ import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRestResource
 import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
-import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -101,7 +98,7 @@ class CertificatesRestResourceImpl @Activate constructor(
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {
-        val key = tryWithExceptionHandling("find key with ID $keyId for $tenantId") {
+        val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
             cryptoOpsClient.lookup(
                 tenantId = tenantId,
                 ids = listOf(keyId)
@@ -195,7 +192,7 @@ class CertificatesRestResourceImpl @Activate constructor(
             )
         }
 
-        tryWithExceptionHandling("import certificate") {
+        tryWithExceptionHandling(logger, "import certificate") {
             certificatesClient.importCertificates(
                 usageType,
                 holdingIdentityShortHash,
@@ -217,7 +214,7 @@ class CertificatesRestResourceImpl @Activate constructor(
             details = mapOf("usage" to "Unknown usage: $usage")
         )
 
-        return tryWithExceptionHandling("get certificate aliases") {
+        return tryWithExceptionHandling(logger, "get certificate aliases") {
             certificatesClient.getCertificateAliases(
                 usageType,
                 holdingIdentityShortHash,
@@ -242,7 +239,7 @@ class CertificatesRestResourceImpl @Activate constructor(
             details = mapOf("usage" to "Unknown usage: $usage")
         )
 
-        return tryWithExceptionHandling("get certificate chain") {
+        return tryWithExceptionHandling(logger, "get certificate chain") {
             certificatesClient.retrieveCertificates(
                 holdingIdentityShortHash,
                 usageType,
@@ -289,21 +286,6 @@ class CertificatesRestResourceImpl @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
-    }
-
-    private fun<T> tryWithExceptionHandling(
-        operation: String,
-        block: () -> T
-    ): T {
-        try {
-            return block()
-        } catch (repartitionException: CordaRPCAPIPartitionException) {
-            logger.warn("Could not $operation", repartitionException)
-            throw ServiceUnavailableException("Could not $operation: Repartition Event!")
-        } catch (e: Exception) {
-            logger.warn("Could not $operation", e)
-            throw InternalServerException("Could not $operation: ${e.message}")
-        }
     }
 
     private inner class CsrContentSigner(

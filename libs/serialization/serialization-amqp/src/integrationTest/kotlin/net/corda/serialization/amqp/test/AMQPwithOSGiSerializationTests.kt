@@ -1,6 +1,7 @@
 package net.corda.serialization.amqp.test
 
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.CordaSerializationEncoding.SNAPPY
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope
@@ -51,7 +52,7 @@ import java.util.concurrent.TimeUnit
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class AMQPwithOSGiSerializationTests {
-    private val testSerializationContext = AMQP_STORAGE_CONTEXT
+    private val testSerializationContext = AMQP_STORAGE_CONTEXT.withEncoding(SNAPPY)
 
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()

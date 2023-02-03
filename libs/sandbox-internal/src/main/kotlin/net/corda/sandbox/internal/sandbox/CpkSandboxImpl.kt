@@ -5,6 +5,7 @@ import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE
 import org.osgi.framework.wiring.BundleWiring
 import java.util.UUID
 
@@ -15,10 +16,6 @@ internal class CpkSandboxImpl(
     override val mainBundle: Bundle,
     privateBundles: Set<Bundle>
 ) : SandboxImpl(id, setOf(mainBundle), privateBundles), CpkSandbox {
-    private companion object {
-        private const val PACKAGE_WIRING = "osgi.wiring.package"
-    }
-
     override fun loadClassFromMainBundle(className: String): Class<*> = try {
         mainBundle.loadClass(className).also { clazz ->
             if (!accept(clazz)) {
@@ -42,8 +39,8 @@ internal class CpkSandboxImpl(
     }
 
     private fun Bundle.exports(clazz: Class<*>): Boolean {
-        return adapt(BundleWiring::class.java).getCapabilities(PACKAGE_WIRING).any { capability ->
-            capability.attributes[PACKAGE_WIRING] == clazz.packageName
+        return adapt(BundleWiring::class.java).getCapabilities(PACKAGE_NAMESPACE).any { capability ->
+            capability.attributes[PACKAGE_NAMESPACE] == clazz.packageName
         }
     }
 }
