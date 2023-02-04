@@ -88,14 +88,10 @@ class IssueLandTitleFlow: ClientStartableFlow {
             .addSignatories(listOf(landTitleState.issuer))
 
         val signedTransaction = transaction.toSignedTransaction()
-
         val flowSession = flowMessaging.initiateFlow(owner.name)
-
         val finalizedSignedTransaction = utxoLedgerService.finalize(
-            signedTransaction,
-            listOf(flowSession)
+            signedTransaction, listOf(flowSession)
         )
-
         return finalizedSignedTransaction.id.toString()
     }
 }

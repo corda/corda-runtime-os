@@ -4,9 +4,7 @@ import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
 import net.corda.simulator.runtime.serialization.BaseSerializationService
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -16,24 +14,24 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.MessageDigest
 import java.security.PublicKey
+import java.util.Objects
 
-@CordaSerializable
 data class UtxoLedgerTransactionBase(
-    override val attachments: List<Attachment>,
-    override val commands: List<Command>,
+    val ledgerInfo: UtxoStateLedgerInfo,
     override val inputStateAndRefs: List<StateAndRef<*>>,
-    override val inputStateRefs: List<StateRef>,
-    override val referenceStateAndRefs: List<StateAndRef<*>>,
-    override val referenceStateRefs: List<StateRef>,
-    override val signatories: List<PublicKey>,
-    override val timeWindow: TimeWindow,
-    override val outputContractStates : List<ContractState>,
-    val notary: Party
+    override val referenceStateAndRefs: List<StateAndRef<*>>
 ) : UtxoLedgerTransaction {
 
     val bytes: ByteArray by lazy {
         val serializer = BaseSerializationService()
-        serializer.serialize(this).bytes
+        serializer.serialize(ledgerInfo.commands).bytes
+            .plus(serializer.serialize(ledgerInfo.inputStateRefs).bytes)
+            .plus(serializer.serialize(ledgerInfo.notary).bytes)
+            .plus(serializer.serialize(ledgerInfo.referenceStateRefs).bytes)
+            .plus(serializer.serialize(ledgerInfo.signatories).bytes)
+            .plus(serializer.serialize(ledgerInfo.timeWindow).bytes)
+            .plus(serializer.serialize(ledgerInfo.outputStates).bytes)
+            .plus(serializer.serialize(ledgerInfo.attachments).bytes)
     }
 
     override val id: SecureHash by lazy {
@@ -44,16 +42,29 @@ data class UtxoLedgerTransactionBase(
     //TODO Implement encumbrance
     override val outputStateAndRefs: List<StateAndRef<*>>
         get() {
-            return outputContractStates.mapIndexed { index, contractState ->
+            return ledgerInfo.outputStates.mapIndexed { index, contractState ->
                 val stateRef = StateRef(id, index)
-                val transactionState = TransactionStateImpl(contractState, notary, null)
+                val transactionState = TransactionStateImpl(contractState, ledgerInfo.notary, null)
                 StateAndRefImpl(transactionState, stateRef)
             }
         }
+    override val attachments: List<Attachment>
+        get() = emptyList() // TODO Not yet Implemented
+    override val commands: List<Command>
+        get() = ledgerInfo.commands
+
+    override val inputStateRefs: List<StateRef>
+        get() = ledgerInfo.inputStateRefs
 
     override fun getAttachment(id: SecureHash): Attachment {
         TODO("Not yet implemented")
     }
+    override val referenceStateRefs: List<StateRef>
+        get() = ledgerInfo.referenceStateRefs
+    override val signatories: List<PublicKey>
+        get() = ledgerInfo.signatories
+    override val timeWindow: TimeWindow
+        get() = ledgerInfo.timeWindow
 
     override fun <T : Command> getCommands(type: Class<T>): List<T> {
         return commands.filterIsInstance(type)
@@ -81,6 +92,17 @@ data class UtxoLedgerTransactionBase(
 
     override fun <T : ContractState> getOutputStates(type: Class<T>): List<T> {
         return outputContractStates.filterIsInstance(type)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if(this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as UtxoLedgerTransactionBase
+        return this.id == other.id
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(id)
     }
 
 }

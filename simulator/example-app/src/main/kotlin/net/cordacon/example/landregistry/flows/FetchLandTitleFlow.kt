@@ -73,7 +73,6 @@ class FetchLandTitleFlow : ClientStartableFlow {
 
         return jsonMarshallingService.format(landTitleList)
     }
-
 }
 
 data class Filter(

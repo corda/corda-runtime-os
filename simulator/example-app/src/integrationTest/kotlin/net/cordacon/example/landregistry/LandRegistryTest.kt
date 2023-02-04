@@ -3,7 +3,12 @@ package net.cordacon.example.landregistry
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
-import net.cordacon.example.landregistry.flows.*
+import net.cordacon.example.landregistry.flows.IssueLandTitleFlow
+import net.cordacon.example.landregistry.flows.IssueLandTitleResponderFlow
+import net.cordacon.example.landregistry.flows.LandRegistryRequest
+import net.cordacon.example.landregistry.flows.TransferLandTitleFlow
+import net.cordacon.example.landregistry.flows.TransferLandTitleRequest
+import net.cordacon.example.landregistry.flows.TransferLandTitleResponderFlow
 import net.cordacon.example.utils.createMember
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

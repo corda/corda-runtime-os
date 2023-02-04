@@ -20,25 +20,17 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.ledger.utxo.transaction.getOutputStates
 import java.security.PublicKey
 import java.time.Instant
+import java.util.Objects
 
 @Suppress("LongParameterList")
 class UtxoSignedTransactionBase(
-    override val commands: List<Command>,
-    override val inputStateRefs: List<StateRef>,
-    override val notary: Party,
-    override val referenceStateRefs: List<StateRef>,
-    override val signatories: List<PublicKey>,
     override val signatures: List<DigitalSignatureAndMetadata>,
-    override val timeWindow: TimeWindow,
-    private val outputStates: List<ContractState>,
-    private val attachments: List<SecureHash>,
+    private val ledgerInfo: UtxoStateLedgerInfo,
     private val signingService: SigningService,
     private val serializer: SerializationService,
     private val persistenceService: PersistenceService,
@@ -50,26 +42,25 @@ class UtxoSignedTransactionBase(
             entity: UtxoTransactionEntity,
             signingService: SigningService,
             serializer: SerializationService,
-            config: SimulatorConfiguration,
-            persistenceService: PersistenceService
+            persistenceService: PersistenceService,
+            config: SimulatorConfiguration
         ): UtxoSignedTransaction {
 
-            val ledgerTx: UtxoLedgerTransactionBase = serializer.deserialize(
-                entity.stateData
-            )
             val signatures = entity.signatures.map {
                 serializer.deserialize(it.signatureWithKey, DigitalSignatureAndMetadata::class.java)
             }
             return UtxoSignedTransactionBase(
-                ledgerTx.commands,
-                ledgerTx.inputStateRefs,
-                ledgerTx.notary,
-                ledgerTx.referenceStateRefs,
-                ledgerTx.signatories,
                 signatures,
-                ledgerTx.timeWindow,
-                ledgerTx.getOutputStates(),
-                emptyList(),
+                UtxoStateLedgerInfo(
+                    serializer.deserialize(entity.commandData),
+                    serializer.deserialize(entity.inputData),
+                    serializer.deserialize(entity.notaryData),
+                    serializer.deserialize(entity.referenceStateDate),
+                    serializer.deserialize(entity.signatoriesDate),
+                    serializer.deserialize(entity.timeWindowDate),
+                    serializer.deserialize(entity.outputData),
+                    serializer.deserialize(entity.attachmentData)
+                ),
                 signingService,
                 serializer,
                 persistenceService,
@@ -78,86 +69,18 @@ class UtxoSignedTransactionBase(
         }
     }
 
-    override val metadata: TransactionMetadata
-        get() {
-            TODO()
-        }
-
-    // TODO Populate Empty list
-    private val ledgerTransaction =
-        UtxoLedgerTransactionBase(
-            emptyList(),
-            commands,
-            toInputStateAndRef(),
-            inputStateRefs,
-            emptyList(),
-            referenceStateRefs,
-            signatories,
-            timeWindow,
-            outputStates,
-            notary
-        )
-
-    override val id: SecureHash = ledgerTransaction.id
-
-    override val outputStateAndRefs: List<StateAndRef<*>>
-        get() {
-            return ledgerTransaction.outputStateAndRefs
-        }
-
-    override fun toLedgerTransaction(): UtxoLedgerTransaction {
-        return ledgerTransaction
-    }
-
-    private fun toInputStateAndRef(): List<StateAndRef<*>>{
-        return inputStateRefs.map {
-            val entity = persistenceService.query("UtxoTransactionEntity.findByTransactionId",
-                UtxoTransactionEntity::class.java)
-                .setParameter("transactionId", String(it.transactionHash.bytes))
-                .execute().firstOrNull()
-                ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
-                         String(it.transactionHash.bytes))
-            val tx = fromEntity(entity, signingService, serializer, config, persistenceService)
-            val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[it.index],
-                notary, null)
-            StateAndRefImpl(ts, it)
-        }
-    }
-
-    internal fun addSignature(
-        publicKeys: List<PublicKey>,
-        timestamp: Instant = config.clock.instant()
-    ): UtxoSignedTransactionBase {
-        val myKeys = signingService.findMySigningKeys(publicKeys.toSet())
-        val signatures = myKeys.values.filterNotNull().map { signWithMetadata(it, timestamp) }
-        return addSignatures(signatures)
-    }
-
-    internal fun addSignatures(signatures: List<DigitalSignatureAndMetadata>): UtxoSignedTransactionBase {
-        return UtxoSignedTransactionBase(
-            commands, inputStateRefs, notary, referenceStateRefs, signatories,
-            signatures = this.signatures.plus(signatures),
-            timeWindow,
-            outputStates,
-            attachments,
-            signingService,
-            serializer,
-            persistenceService,
-            config
-        )
-    }
-
-    private fun signWithMetadata(key: PublicKey, timestamp: Instant) : DigitalSignatureAndMetadata {
-        val signature = signingService.sign(ledgerTransaction.bytes, key, SignatureSpec.ECDSA_SHA256)
-        return DigitalSignatureAndMetadata(signature,
-            DigitalSignatureMetadata(timestamp, SignatureSpec.ECDSA_SHA256, mapOf()))
-    }
-
     internal fun toEntity(): UtxoTransactionEntity{
         val serializer = BaseSerializationService()
         val transactionEntity = UtxoTransactionEntity(
             String(id.bytes),
-            serializer.serialize(ledgerTransaction).bytes
+            serializer.serialize(ledgerInfo.commands).bytes,
+            serializer.serialize(ledgerInfo.inputStateRefs).bytes,
+            serializer.serialize(ledgerInfo.notary).bytes,
+            serializer.serialize(ledgerInfo.referenceStateRefs).bytes,
+            serializer.serialize(ledgerInfo.signatories).bytes,
+            serializer.serialize(ledgerInfo.timeWindow).bytes,
+            serializer.serialize(ledgerInfo.outputStates).bytes,
+            serializer.serialize(ledgerInfo.attachments).bytes
         )
         val signatureEntities = signatures.mapIndexed { index, signature ->
             val signatureWithKey = serializer.serialize(signature).bytes
@@ -174,7 +97,7 @@ class UtxoSignedTransactionBase(
     }
 
     internal fun toOutputsEntity() : List<UtxoTransactionOutputEntity> {
-        return outputStates.mapIndexed{ index, contractState ->
+        return ledgerInfo.outputStates.mapIndexed{ index, contractState ->
             UtxoTransactionOutputEntity(
                 id.toString(),
                 contractState::class.java.name,
@@ -183,4 +106,96 @@ class UtxoSignedTransactionBase(
             )
         }
     }
+
+    override val metadata: TransactionMetadata
+        get() {
+            TODO()
+        }
+    override val notary: Party
+        get() = ledgerInfo.notary
+
+    // TODO referenceState
+    private val ledgerTransaction =
+        UtxoLedgerTransactionBase(
+            ledgerInfo,
+            toInputStateAndRef(),
+            listOf()
+        )
+
+    override val id: SecureHash = ledgerTransaction.id
+
+    override val outputStateAndRefs: List<StateAndRef<*>>
+        get() {
+            return ledgerTransaction.outputStateAndRefs
+        }
+    override val commands: List<Command>
+        get() = ledgerInfo.commands
+    override val inputStateRefs: List<StateRef>
+        get() = ledgerInfo.inputStateRefs
+
+    override val referenceStateRefs: List<StateRef>
+        get() = ledgerInfo.referenceStateRefs
+    override val signatories: List<PublicKey>
+        get() = ledgerInfo.signatories
+    override val timeWindow: TimeWindow
+        get() = ledgerInfo.timeWindow
+
+    override fun toLedgerTransaction(): UtxoLedgerTransaction {
+        return ledgerTransaction
+    }
+
+    // TODO refactor?
+    private fun toInputStateAndRef(): List<StateAndRef<*>>{
+        return ledgerInfo.inputStateRefs.map {
+            val entity = persistenceService.query("UtxoTransactionEntity.findByTransactionId",
+                UtxoTransactionEntity::class.java)
+                .setParameter("transactionId", String(it.transactionHash.bytes))
+                .execute().firstOrNull()
+                ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
+                         String(it.transactionHash.bytes))
+            val tx = fromEntity(entity, signingService, serializer, persistenceService, config)
+            val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[it.index],
+                notary, null)
+            StateAndRefImpl(ts, it)
+        }
+    }
+
+    internal fun addSignatures(
+        publicKeys: List<PublicKey>,
+        timestamp: Instant = config.clock.instant()
+    ): UtxoSignedTransactionBase {
+        val myKeys = signingService.findMySigningKeys(publicKeys.toSet())
+        val signatures = myKeys.values.filterNotNull().map { signWithMetadata(it, timestamp) }
+        return addSignatureAndMetadata(signatures)
+    }
+
+    internal fun addSignatureAndMetadata(signatures: List<DigitalSignatureAndMetadata>): UtxoSignedTransactionBase {
+        return UtxoSignedTransactionBase(
+            signatures = this.signatures.plus(signatures),
+            ledgerInfo,
+            signingService,
+            serializer,
+            persistenceService,
+            config
+        )
+    }
+
+    private fun signWithMetadata(key: PublicKey, timestamp: Instant) : DigitalSignatureAndMetadata {
+        val signature = signingService.sign(ledgerTransaction.bytes, key, SignatureSpec.ECDSA_SHA256)
+        return DigitalSignatureAndMetadata(signature,
+            DigitalSignatureMetadata(timestamp, SignatureSpec.ECDSA_SHA256, mapOf()))
+    }
+
+
+    override fun equals(other: Any?): Boolean {
+        if(this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as UtxoSignedTransactionBase
+        return this.id == other.id
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(id)
+    }
+
 }

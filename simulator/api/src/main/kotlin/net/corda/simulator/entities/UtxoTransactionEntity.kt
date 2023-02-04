@@ -17,6 +17,7 @@ import javax.persistence.JoinColumn
 import javax.persistence.Embeddable
 
 
+@Suppress("LongParameterList")
 @NamedQuery(
     name = "UtxoTransactionEntity.findByTransactionId",
     query = "from UtxoTransactionEntity t left join fetch t.signatures where t.id= :transactionId"
@@ -28,8 +29,29 @@ class UtxoTransactionEntity(
     @Column(name="id")
     val id: String,
 
-    @Column(name="state_data")
-    val stateData: ByteArray,
+    @Column(name="command_data")
+    val commandData: ByteArray,
+
+    @Column(name="input_data")
+    val inputData: ByteArray,
+
+    @Column(name="notary_data")
+    val notaryData: ByteArray,
+
+    @Column(name="reference_state_data")
+    val referenceStateDate: ByteArray,
+
+    @Column(name="signatories_data")
+    val signatoriesDate: ByteArray,
+
+    @Column(name="time_window_data")
+    val timeWindowDate: ByteArray,
+
+    @Column(name="output_data")
+    val outputData: ByteArray,
+
+    @Column(name="attachment_data")
+    val attachmentData: ByteArray,
 
     @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
     val signatures: MutableSet<UtxoTransactionSignatureEntity> = mutableSetOf(),

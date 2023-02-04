@@ -115,10 +115,6 @@ data class UtxoTransactionBuilderBase(
 
     override fun toSignedTransaction(): UtxoSignedTransaction = sign()
 
-//    @Deprecated("To be replaced with parameter-less version")
-//    override fun toSignedTransaction(signatory: PublicKey): UtxoSignedTransaction =
-//        sign(listOf(signatory))
-
     fun sign(): UtxoSignedTransaction {
         val signatories = this.signatories
         check(!alreadySigned) { "The transaction cannot be signed twice." }
@@ -127,23 +123,24 @@ data class UtxoTransactionBuilderBase(
         }
         verifyTx()
 
-        // TODO Fix empty lists
         val unsignedTx = UtxoSignedTransactionBase(
-            commands,
-            inputStateRefs,
-            notary!!,
-            referenceStateRefs,
-            this.signatories,
             emptyList(),
-            timeWindow!!,
-            outputStates,
-            attachments,
+            UtxoStateLedgerInfo(
+                commands,
+                inputStateRefs,
+                notary!!,
+                referenceStateRefs,
+                signatories,
+                timeWindow!!,
+                outputStates,
+                attachments
+            ),
             signingService,
             serializer,
             persistenceService,
             configuration,
         )
-        val signedTx = unsignedTx.addSignature(signatories)
+        val signedTx = unsignedTx.addSignatures(signatories)
         alreadySigned = true
         return signedTx
     }

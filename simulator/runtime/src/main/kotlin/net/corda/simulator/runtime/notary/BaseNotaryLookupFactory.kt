@@ -17,21 +17,15 @@ class BaseNotaryLookupFactory: NotaryLookupFactory {
             override val notaryServices: Collection<NotaryInfo>
                 get() = listOf(notaryInfo)
 
-            override fun isNotaryVirtualNode(virtualNodeName: MemberX500Name): Boolean {
-                if(virtualNodeName == notaryInfo.name)
-                    return true
-                return false
-            }
+            override fun isNotaryVirtualNode(virtualNodeName: MemberX500Name): Boolean =
+                virtualNodeName == notaryInfo.name
 
-            override fun lookup(notaryServiceName: MemberX500Name): NotaryInfo? {
-                if(notaryServiceName == notaryInfo.name)
-                    return notaryInfo
-                return null
-            }
+            override fun lookup(notaryServiceName: MemberX500Name): NotaryInfo? =
+                if (notaryServiceName == notaryInfo.name) notaryInfo else null
+
         }
     }
 }
-
 
 data class BaseNotaryInfo(
     override val name: MemberX500Name,

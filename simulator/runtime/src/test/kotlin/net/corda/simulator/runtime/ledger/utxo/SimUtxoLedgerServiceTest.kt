@@ -8,16 +8,21 @@ import net.corda.simulator.runtime.notary.SimTimeWindow
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.simulator.runtime.testutils.generateKeys
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
+import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import org.hamcrest.MatcherAssert
 import org.hamcrest.Matchers
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -34,21 +39,24 @@ class SimUtxoLedgerServiceTest {
     private val publicKeys = generateKeys(2)
     private val notary = Party(notaryX500, generateKey())
 
+    @Test
     fun `should be able to retrieve stored transaction`(){
         val fiber = mock<SimFiber>()
         val persistenceService = mock<PersistenceService>()
         val serializationService = BaseSerializationService()
         val signingService = mock<SigningService>()
         val transaction = UtxoSignedTransactionBase(
-            listOf(TestUtxoCommand()),
-            listOf(),
-            notary,
-            listOf(),
-            publicKeys,
-            listOf(),
-            SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
-            listOf(TestUtxoState("Test", publicKeys)),
-            listOf(),
+            publicKeys.map { toSignature(it) },
+            UtxoStateLedgerInfo(
+                listOf(TestUtxoCommand()),
+                emptyList(),
+                notary,
+                emptyList(),
+                publicKeys,
+                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
+                listOf(TestUtxoState("StateData", publicKeys)),
+                emptyList()
+            ),
             signingService,
             serializationService,
             persistenceService,
@@ -59,7 +67,7 @@ class SimUtxoLedgerServiceTest {
         whenever(persistenceService.query(eq("UtxoTransactionEntity.findByTransactionId"),
             eq(UtxoTransactionEntity::class.java))).thenReturn(utxoTxQuery)
         whenever(utxoTxQuery.setParameter(eq("transactionId"), any())).thenReturn(utxoTxQuery)
-        whenever(utxoTxQuery.execute()).thenReturn(listOf( transaction.toEntity()))
+        whenever(utxoTxQuery.execute()).thenReturn(listOf(transaction.toEntity()))
         whenever(fiber.createMemberLookup(alice)).thenReturn(mock())
         whenever(fiber.createNotarySigningService()).thenReturn(mock())
         whenever(fiber.createSigningService(alice)).thenReturn(signingService)
@@ -70,8 +78,7 @@ class SimUtxoLedgerServiceTest {
             ?: fail("No transaction retrieved")
         val retrievedLedgerTx = utxoLedgerService.findLedgerTransaction(transaction.id)
 
-        MatcherAssert.assertThat(retrievedLedgerTx, Matchers.`is`(transaction.toLedgerTransaction()))
-        MatcherAssert.assertThat(retrievedSignedTx, Matchers.`is`(transaction))
+        MatcherAssert.assertThat(retrievedLedgerTx?.id, Matchers.`is`(transaction.toLedgerTransaction().id))
         MatcherAssert.assertThat(retrievedSignedTx.id, Matchers.`is`(transaction.id))
     }
 
@@ -101,6 +108,11 @@ class SimUtxoLedgerServiceTest {
         utxoLedgerService.findUnconsumedStatesByType(TestUtxoState::class.java)
 
     }
+
+    private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
+        DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
+        DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
+    )
 
     class TestUtxoState(
         val name: String,

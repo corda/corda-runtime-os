@@ -44,7 +44,28 @@
             <column name="id" type="VARCHAR(64)">
                 <constraints nullable="false" primaryKey="true" unique="true"/>
             </column>
-            <column name="state_data" type="VARBINARY(1048576)">
+            <column name="command_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="input_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="notary_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="reference_state_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="signatories_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="time_window_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="output_data" type="VARBINARY(1048576)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="attachment_data" type="VARBINARY(1048576)">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
         </createTable>
@@ -68,7 +89,6 @@
                        tableName="utxo_transaction_signature"/>
         <createTable tableName="utxo_transaction_output">
             <column name="id" type="VARCHAR(512)">
-<!--                <constraints nullable="false" foreignKeyName="fk_utxo_transaction_output" references="utxo_transaction(id)"/>-->
                 <constraints nullable="false"/>
             </column>
             <column name="type" type="TEXT">

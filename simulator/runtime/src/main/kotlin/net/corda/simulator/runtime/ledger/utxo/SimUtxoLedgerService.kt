@@ -61,7 +61,7 @@ class SimUtxoLedgerService(
         val entity = getSignedTxEntity(id) ?: return null
 
         return UtxoSignedTransactionBase
-            .fromEntity(entity, signingService, serializationService, configuration, persistenceService)
+            .fromEntity(entity, signingService, serializationService, persistenceService, configuration)
     }
 
     private fun getSignedTxEntity(id: SecureHash): UtxoTransactionEntity?{
@@ -83,12 +83,23 @@ class SimUtxoLedgerService(
                         utxoTransactionOutputEntity.transactionId
                 )
 
-            val ledgerTx: UtxoLedgerTransactionBase = serializationService.deserialize(
-                signedTxEntity.stateData
+            val ledgerTx = UtxoLedgerTransactionBase(
+                UtxoStateLedgerInfo(
+                    serializationService.deserialize(signedTxEntity.commandData),
+                    serializationService.deserialize(signedTxEntity.inputData),
+                    serializationService.deserialize(signedTxEntity.notaryData),
+                    serializationService.deserialize(signedTxEntity.referenceStateDate),
+                    serializationService.deserialize(signedTxEntity.signatoriesDate),
+                    serializationService.deserialize(signedTxEntity.timeWindowDate),
+                    serializationService.deserialize(signedTxEntity.outputData),
+                    serializationService.deserialize(signedTxEntity.attachmentData)
+                ),
+                listOf(),
+                listOf()
             )
             val stateRef = StateRef(ledgerTx.id, utxoTransactionOutputEntity.index)
             val transactionState = TransactionStateImpl(
-                ledgerTx.outputContractStates[utxoTransactionOutputEntity.index] as T, ledgerTx.notary,
+                ledgerTx.outputContractStates[utxoTransactionOutputEntity.index] as T, ledgerTx.ledgerInfo.notary,
                 null)
             StateAndRefImpl(transactionState, stateRef)
         }

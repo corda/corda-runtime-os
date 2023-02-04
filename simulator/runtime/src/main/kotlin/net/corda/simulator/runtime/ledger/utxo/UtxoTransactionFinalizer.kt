@@ -37,13 +37,7 @@ class UtxoTransactionFinalizer(
         val finalSignedTransaction = sessions.fold(signedTransaction) {
                 tx, sess ->
             sess.send(signedTransaction)
-//            while (true){
-//                val txIds = sess.receive<Set<SecureHash>>()
-//                if(txIds.size == 0)
-//                    break
-//                sess.send()
-//            }
-            (tx as UtxoSignedTransactionBase).addSignatures(sess.receive())
+            (tx as UtxoSignedTransactionBase).addSignatureAndMetadata(sess.receive())
         }
 
         verifySignatures(finalSignedTransaction)
@@ -105,7 +99,7 @@ class UtxoTransactionFinalizer(
         val notaryX500 = MemberX500Name.parse("CN=SimulatorNotaryService, OU=Simulator, O=R3, L=London, C=GB")
         val notaryKey = memberLookup.lookup(notaryX500)!!.ledgerKeys.first()
         val signatures = sign(finalTransaction, listOf(notaryKey), notarySigningService)
-        return (finalTransaction as UtxoSignedTransactionBase).addSignatures(signatures)
+        return (finalTransaction as UtxoSignedTransactionBase).addSignatureAndMetadata(signatures)
     }
 
     private fun sign(signedTransaction: UtxoSignedTransaction, publicKeys: List<PublicKey>,
