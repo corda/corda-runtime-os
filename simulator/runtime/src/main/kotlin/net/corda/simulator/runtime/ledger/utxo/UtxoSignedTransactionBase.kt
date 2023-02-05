@@ -144,8 +144,8 @@ class UtxoSignedTransactionBase(
         return ledgerTransaction
     }
 
-    // TODO refactor?
-    private fun toInputStateAndRef(): List<StateAndRef<*>>{
+    // TODO refactor
+    private fun toInputStateAndRef(): List<StateAndRef<*>> {
         return ledgerInfo.inputStateRefs.map {
             val entity = persistenceService.query("UtxoTransactionEntity.findByTransactionId",
                 UtxoTransactionEntity::class.java)
