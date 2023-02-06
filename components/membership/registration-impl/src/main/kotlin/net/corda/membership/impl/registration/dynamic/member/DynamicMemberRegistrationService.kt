@@ -364,7 +364,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 logger.warn("Registration failed.", e)
                 throw NotReadyMembershipRegistrationException("Could not persist request: ${e.message}", e)
             } catch (e: Exception) {
-                e.printStackTrace()
                 logger.warn("Registration failed.", e)
                 throw NotReadyMembershipRegistrationException(
                     "Registration failed. Reason: ${e.message}",

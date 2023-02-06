@@ -1,7 +1,7 @@
 package net.corda.membership.registration
 
 /**
- * Exception thrown during membership registration if the registration request can not be approved.
+ * Exception thrown during membership registration if the registration request is invalid.
  */
 class InvalidMembershipRegistrationException(
     message: String,
