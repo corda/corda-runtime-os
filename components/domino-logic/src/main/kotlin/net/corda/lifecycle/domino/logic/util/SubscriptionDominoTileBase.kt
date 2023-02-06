@@ -164,6 +164,7 @@ abstract class SubscriptionDominoTileBase(
                 if (notReady.isEmpty()) {
                     logger.info("All dependencies are started now, starting subscription.")
                     createAndStartSubscription()
+                    updateState(Started)
                 } else {
                     logger.info("The status of $name had started. Waiting for $notReady.")
                 }
