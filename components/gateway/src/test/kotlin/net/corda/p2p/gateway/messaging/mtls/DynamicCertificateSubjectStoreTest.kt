@@ -20,7 +20,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-class DynamicCertificateSubjectStoreTest {
+internal class DynamicCertificateSubjectStoreTest {
     private companion object {
         const val TOPIC = "Topic"
         const val KEY_1 = "key1"
