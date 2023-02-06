@@ -103,15 +103,14 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
     }
 }
 
-    @CordaInject
-    lateinit var utxoLedgerService: UtxoLedgerService
 
 @InitiatedBy("utxo-evolve-protocol")
 class UtxoEvolveResponderFlow : ResponderFlow {
 
-
     private val log = LoggerFactory.getLogger(this::class.java)
 
+    @CordaInject
+    lateinit var utxoLedgerService: UtxoLedgerService
 
     @Suspendable
     override fun call(session: FlowSession) {
