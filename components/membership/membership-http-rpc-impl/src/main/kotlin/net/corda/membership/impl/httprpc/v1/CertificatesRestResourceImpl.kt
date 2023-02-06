@@ -4,6 +4,8 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -20,6 +22,7 @@ import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRestResource
 import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -27,7 +30,10 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
+import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.apache.commons.validator.routines.InetAddressValidator
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -63,6 +69,8 @@ class CertificatesRestResourceImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CertificatesClient::class)
     private val certificatesClient: CertificatesClient,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : CertificatesRestResource, PluggableRestResource<CertificatesRestResource>, Lifecycle {
 
     private companion object {
@@ -104,6 +112,18 @@ class CertificatesRestResourceImpl @Activate constructor(
                 ids = listOf(keyId)
             )
         }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
+        val principal = when (key.category) {
+            CryptoConsts.Categories.SESSION_INIT -> validateSessionCertificateSubject(
+                tenantId,
+                x500Name,
+            )
+            CryptoConsts.Categories.TLS -> {
+                validateMemberSessionCertificateSubject(x500Name).x500Principal
+            }
+            else -> {
+                validateX500Name(x500Name)
+            }
+        }
         val publicKey = keyEncodingService.decodePublicKey(key.publicKey.array())
 
         val extensionsGenerator = ExtensionsGenerator()
@@ -128,7 +148,7 @@ class CertificatesRestResourceImpl @Activate constructor(
         val signer = CsrContentSigner(spec, publicKey, tenantId)
 
         val p10Builder = JcaPKCS10CertificationRequestBuilder(
-            X500Principal(x500Name), publicKey
+            principal, publicKey
         )
 
         p10Builder
@@ -310,5 +330,54 @@ class CertificatesRestResourceImpl @Activate constructor(
                 outputStream.toByteArray(),
             ).bytes
         }
+    }
+
+    private fun validateX500Name(x500Name: String): X500Principal {
+        return try {
+            X500Principal(x500Name)
+        } catch (e: IllegalArgumentException) {
+            throw InvalidInputDataException(
+                "The X500 name of the certificate is invalid: ${e.message}.",
+                mapOf("x500Name" to x500Name)
+            )
+        }
+    }
+    private fun validateMemberSessionCertificateSubject(x500Name: String): MemberX500Name {
+        return try {
+            MemberX500Name.parse(x500Name)
+        } catch (e: IllegalArgumentException) {
+            throw InvalidInputDataException(
+                "The X500 name of the certificate is invalid: ${e.message}.",
+                mapOf("x500Name" to x500Name)
+            )
+        }
+    }
+
+    private fun validateSessionCertificateSubject(
+        tenantId: String,
+        x500Name: String,
+    ): X500Principal {
+        val name = validateMemberSessionCertificateSubject(x500Name)
+        if (tenantId == P2P) {
+            val exists = virtualNodeInfoReadService.getAll().any {
+                it.holdingIdentity.x500Name == name
+            }
+            if (!exists) {
+                throw InvalidInputDataException(
+                    "Can not generate cluster session certificate with subject $name. No member with that name.",
+                    mapOf("x500Name" to x500Name)
+                )
+            }
+        } else {
+            val memberId = ShortHash.parseOrThrow(tenantId)
+            val member = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(memberId)
+            if (member.holdingIdentity.x500Name != name) {
+                throw InvalidInputDataException(
+                    "Can not generate session certificate for ${member.holdingIdentity.x500Name} with subject $name.",
+                    mapOf("x500Name" to x500Name)
+                )
+            }
+        }
+        return name.x500Principal
     }
 }
