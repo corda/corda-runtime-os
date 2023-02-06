@@ -191,6 +191,31 @@ bootstrap:
           key: ""
   # Configuration for database bootstrap
   db:
+    cluster:
+      # the bootstrap cluster database password configuration
+      password:
+        # -- the bootstrap cluster database password
+        value: ""
+        # the bootstrap cluster database password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the bootstrap cluster database password secret key reference
+          secretKeyRef:
+            # -- the bootstrap cluster database password secret name
+            name: ""
+            # -- the bootstrap cluster database password secret key
+            key: ""
+      # the bootstrap cluster database user configuration
+      username:
+        # -- the bootstrap cluster database user
+        value: ""
+        # the bootstrap cluster database user secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the bootstrap cluster database user secret key reference
+          secretKeyRef:
+            # -- the bootstrap cluster database user secret name
+            name: ""
+            # -- the bootstrap cluster database user secret key
+            key: ""
     # -- Indicates whether DB bootstrap is enabled as part of installation
     enabled: true
     # crypto configuration
@@ -202,7 +227,7 @@ bootstrap:
         # -- maximum JDBC connection pool size for crypto DB
         maxSize: 5
       # the username configuration 
-      username: 
+      username:
         # -- the username, defaults to a value randomly-generated on install
         value: "crypto_user"
         # the username secret configuration; used in preference to value if name is set
