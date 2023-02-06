@@ -13,27 +13,23 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.days
-import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.common.Party
+import net.corda.v5.base.util.loggerFor
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-/**
- * Example utxo flow.
- * TODO expand description
- */
+@InitiatingFlow("utxo-evolve-protocol")
+class UtxoDemoEvolveFlow : ClientStartableFlow {
 
-@InitiatingFlow("utxo-flow-protocol")
-class UtxoDemoFlow : ClientStartableFlow {
-    data class InputMessage(val input: String, val members: List<String>, val notary: String)
+    data class EvolveMessage(val update: String, val transactionId: String, val index: Int)
+    data class EvolveResponse( val transactionId: String?, val errorMessage: String?)
 
-    private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
+    class EvolveFlowError(message: String): Exception(message)
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -47,69 +43,77 @@ class UtxoDemoFlow : ClientStartableFlow {
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
-    @CordaInject
-    lateinit var notaryLookup: NotaryLookup
+    private val log = LoggerFactory.getLogger(this::class.java)
+
 
     @Suspendable
     override fun call(requestBody: RestRequestBody): String {
         log.info("Utxo flow demo starting...")
-        try {
-            val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
+        val response = try {
+            val request = requestBody.getRequestBodyAs<EvolveMessage>(jsonMarshallingService)
 
-            val myInfo = memberLookup.myInfo()
-            val members = request.members.map { x500 ->
+            val inputTx = utxoLedgerService.findLedgerTransaction(SecureHash.parse(request.transactionId)) ?:
+                throw EvolveFlowError( "Failed to find transaction ${request.transactionId}")
+
+            val prevStates = inputTx.outputStateAndRefs
+            if (prevStates.size <= request.index)
+                throw EvolveFlowError( "Invalid state index ${request.index} - transaction " +
+                        "${request.transactionId} only has ${prevStates.size + 1} outputs.")
+
+            val input = prevStates[request.index]
+            val inputState = input.state.contractState as? TestUtxoState ?:
+                throw EvolveFlowError( "State ${prevStates[request.index].ref} is not of type TestUtxoState")
+
+            val output =
+                TestUtxoState(
+                    request.update,
+                    inputState.participants,
+                    inputState.participantNames)
+
+            val members = output.participantNames.map { x500 ->
                 requireNotNull(memberLookup.lookup(MemberX500Name.parse(x500))) {
                     "Member $x500 does not exist in the membership group"
                 }
             }
-            val testUtxoState = TestUtxoState(
-                request.input,
-                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first(),
-                request.members + listOf(myInfo.name.toString())
-            )
 
-            val notary = notaryLookup.notaryServices.single()
-            val txBuilder = utxoLedgerService.getTransactionBuilder()
-
-            val signedTransaction = txBuilder
-                .setNotary(Party(notary.name, notary.publicKey))
-                .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(1.days.toMillis()))
-                .addOutputState(testUtxoState)
+            val signedTransaction = utxoLedgerService.getTransactionBuilder()
                 .addCommand(TestCommand())
-                .addSignatories(testUtxoState.participants)
+                .addOutputState(output)
+                .addInputState(input.ref)
+                .setNotary(input.state.notary)
+                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .addSignatories(output.participants)
                 .toSignedTransaction()
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
 
-            return try {
-                val finalizedSignedTransaction = utxoLedgerService.finalize(
+            val finalizedSignedTransaction = utxoLedgerService.finalize(
                     signedTransaction,
                     sessions
                 )
-                finalizedSignedTransaction.id.toString().also {
-                    log.info("Success! Response: $it")
-                }
 
-            } catch (e: Exception) {
-                log.warn("Finality failed", e)
-                "Finality failed, ${e.message}"
+            val transactionId = finalizedSignedTransaction.id.toString()
+            EvolveResponse(transactionId, null).also {
+                log.info("Success! Response: $it")
             }
-        } catch (e: Exception) {
-            log.warn("Failed to process utxo flow for request body '$requestBody' because:'${e.message}'")
-            throw e
         }
+        catch (e: Exception){
+            EvolveResponse(null,"Flow failed: ${e.message}")
+        }
+
+        return jsonMarshallingService.format(response)
     }
 }
 
-@InitiatedBy("utxo-flow-protocol")
-class UtxoResponderFlow : ResponderFlow {
-
-    private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
+
+@InitiatedBy("utxo-evolve-protocol")
+class UtxoEvolveResponderFlow : ResponderFlow {
+
+
+    private val log = LoggerFactory.getLogger(this::class.java)
+
 
     @Suspendable
     override fun call(session: FlowSession) {
