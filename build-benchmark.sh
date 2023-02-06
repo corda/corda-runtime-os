@@ -23,7 +23,8 @@ gradle_run() {
 echo "Using ${MAX_WORKERS} workers"
 
 echo "Building without cache"
-gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache clean publishOSGiImage"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache clean"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache publishOSGiImage"
 gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache publishOSGiImage"
 
 echo "Building with cache"
