@@ -43,7 +43,8 @@ class UtxoDemoFlow : RPCStartableFlow {
     @BelongsToContract(TestContract::class)
     class TestUtxoState(
         val testField: String,
-        override val participants: List<PublicKey>
+        override val participants: List<PublicKey>,
+        val participantNames: List<String>
     ) : ContractState
 
     class TestCommand : Command
@@ -81,7 +82,8 @@ class UtxoDemoFlow : RPCStartableFlow {
             }
             val testUtxoState = TestUtxoState(
                 request.input,
-                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
+                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first(),
+                request.members + listOf(myInfo.name.toString())
             )
 
             val notary = notaryLookup.notaryServices.single()
