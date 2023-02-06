@@ -60,12 +60,16 @@ val TransactionWithMetadata.rootMerkleTreeDigestAlgorithmName
     )
 
 val TransactionWithMetadata.rootMerkleTreeDigestOptionsLeafPrefix: ByteArray
-    get() = Base64.getDecoder()
-        .decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY))
+    get() = base64Decoder.decode(rootMerkleTreeDigestOptionsLeafPrefixB64)
+
+val TransactionWithMetadata.rootMerkleTreeDigestOptionsLeafPrefixB64: String
+    get() = getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY)
 
 val TransactionWithMetadata.rootMerkleTreeDigestOptionsNodePrefix: ByteArray
-    get() = Base64.getDecoder()
-        .decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY))
+    get() = base64Decoder.decode(rootMerkleTreeDigestOptionsNodePrefixB64)
+
+val TransactionWithMetadata.rootMerkleTreeDigestOptionsNodePrefixB64: String
+    get() = getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY)
 
 fun TransactionWithMetadata.getRootMerkleTreeDigestProvider(merkleTreeProvider: MerkleTreeProvider): MerkleTreeHashDigestProvider =
     merkleTreeProvider.createHashDigestProvider(

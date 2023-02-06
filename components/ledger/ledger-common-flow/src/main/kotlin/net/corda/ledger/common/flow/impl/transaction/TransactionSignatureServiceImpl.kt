@@ -1,8 +1,13 @@
 package net.corda.ledger.common.flow.impl.transaction
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.ledger.common.data.transaction.BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
+import net.corda.ledger.common.data.transaction.BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
+import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.SignableData
+import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.getBatchMerkleTreeDigestProvider
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestAlgorithmName
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestOptionsLeafPrefix
@@ -11,7 +16,9 @@ import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestOptionsNode
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestOptionsNodePrefixB64
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestProviderName
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafPrefix
+import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafPrefixB64
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefix
+import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefixB64
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigestService
@@ -134,7 +141,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
             confirmHashPrefixesAreDifferent(listOf(transaction))
 
             require(proof.leaves.filter { transaction.id.bytes contentEquals it.leafData }.size == 1) {
-                "The transaction's id should be proven by the proof."
+                "The transaction id should be proven by the proof."
             }
             val hashDigestProvider = signatureWithMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider)
             proof.calculateRoot(hashDigestProvider)
@@ -156,18 +163,43 @@ class TransactionSignatureServiceImpl @Activate constructor(
             "Batch signature supports only $HASH_DIGEST_PROVIDER_TWEAKABLE_NAME."
         }
         require(transactions.map { it.batchMerkleTreeDigestAlgorithmName }.distinct().size == 1) {
-            "Notary merkle tree digest algorithm names should be the same in a batch to be signed."
+            "Batch merkle tree digest algorithm names should be the same in a batch to be signed."
         }
         require(transactions.map { it.batchMerkleTreeDigestOptionsLeafPrefix }.distinct().size == 1) {
-            "Notary merkle tree digest leaf prefixes should be the same in a batch to be signed."
+            "Batch merkle tree digest leaf prefixes should be the same in a batch to be signed."
         }
         require(transactions.map { it.batchMerkleTreeDigestOptionsNodePrefix }.distinct().size == 1) {
-            "Notary merkle tree digest node prefixes should be the same in a batch to be signed."
+            "Batch merkle tree digest node prefixes should be the same in a batch to be signed."
         }
         require(transactions.none {
             it.batchMerkleTreeDigestOptionsLeafPrefix contentEquals it.batchMerkleTreeDigestOptionsNodePrefix
         }) {
-            "Notary merkle tree digest node prefixes and leaf prefixes need to be different for each transactions."
+            "Batch merkle tree digest node prefixes and leaf prefixes need to be different for each transactions."
+        }
+
+        require(transactions.all {
+            it.batchMerkleTreeDigestOptionsLeafPrefixB64 contentEquals
+                    WireTransactionDigestSettings.defaultValues[BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY]
+        }) {
+            "Batch merkle tree digest leaf prefixes can only be the default values."
+        }
+        require(transactions.all {
+            it.batchMerkleTreeDigestOptionsNodePrefixB64 contentEquals
+                    WireTransactionDigestSettings.defaultValues[BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY]
+        }) {
+            "Batch merkle tree digest node prefixes can only be the default values."
+        }
+        require(transactions.all {
+            it.rootMerkleTreeDigestOptionsLeafPrefixB64 contentEquals
+                    WireTransactionDigestSettings.defaultValues[ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY]
+        }) {
+            "Root merkle tree digest leaf prefixes can only be the default values."
+        }
+        require(transactions.all {
+            it.rootMerkleTreeDigestOptionsNodePrefixB64 contentEquals
+                    WireTransactionDigestSettings.defaultValues[ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY]
+        }) {
+            "Root merkle tree digest node prefixes can only be the default values."
         }
 
         // TODO CORE-6615 This check needs to be reconsidered in the future
@@ -180,10 +212,10 @@ class TransactionSignatureServiceImpl @Activate constructor(
 
     private fun confirmHashPrefixesAreDifferent(transactions: List<TransactionWithMetadata>) {
         require(transactions.none { it.batchMerkleTreeDigestOptionsLeafPrefix contentEquals it.rootMerkleTreeDigestOptionsLeafPrefix }) {
-            "The transaction can be batch signed only if its root and the notary leaf prefixes are different."
+            "The transaction can be batch signed only if the leaf prefixes for its root and the batch tree are different."
         }
         require(transactions.none { it.batchMerkleTreeDigestOptionsNodePrefix contentEquals it.rootMerkleTreeDigestOptionsNodePrefix }) {
-            "The transaction can be batch signed only if its root and the notary node prefixes are different."
+            "The transaction can be batch signed only if the node prefixes for its root and the batch tree are different."
         }
     }
 
@@ -204,22 +236,22 @@ class TransactionSignatureServiceImpl @Activate constructor(
         signatureWithMetadata: DigitalSignatureAndMetadata
     ) {
         require(transaction.batchMerkleTreeDigestProviderName == signatureWithMetadata.batchMerkleTreeDigestProviderName) {
-            "Batch signature's digest provider should match with the transaction's notary merkle digest provider."
+            "Batch signature digest provider should match with the transaction batch merkle digest provider."
         }
         require(transaction.batchMerkleTreeDigestAlgorithmName == signatureWithMetadata.batchMerkleTreeDigestAlgorithmName) {
-            "Batch signature's algorithm should match with the transaction's notary merkle algorithm name."
+            "Batch signature algorithm should match with the transaction batch merkle algorithm name."
         }
         require(
             transaction.batchMerkleTreeDigestOptionsLeafPrefix contentEquals
                     signatureWithMetadata.batchMerkleTreeDigestOptionsLeafPrefix
         ) {
-            "Batch signature's leaf prefix should match with the transaction's notary merkle leaf prefix."
+            "Batch signature leaf prefix should match with the transaction batch merkle leaf prefix."
         }
         require(
             transaction.batchMerkleTreeDigestOptionsNodePrefix contentEquals
                     signatureWithMetadata.batchMerkleTreeDigestOptionsNodePrefix
         ) {
-            "Batch signature's node prefix should match with the transaction's notary merkle node prefix."
+            "Batch signature node prefix should match with the transaction batch merkle node prefix."
         }
     }
 
@@ -228,7 +260,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
 
         val compatibleSpecs = signatureSpecService.compatibleSignatureSpecs(signatureWithMetadata.by)
         require(signatureSpec in compatibleSpecs) {
-            "The signature spec in the signature's metadata ('$signatureSpec') is incompatible with its key!"
+            "The signature spec in the signature metadata ('$signatureSpec') is incompatible with its key!"
         }
         return signatureSpec
     }

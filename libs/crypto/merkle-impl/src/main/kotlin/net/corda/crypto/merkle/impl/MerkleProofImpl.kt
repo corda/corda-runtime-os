@@ -27,13 +27,13 @@ class MerkleProofImpl(
 
     @Suppress("NestedBlockDepth", "ComplexMethod")
     /**
-     * The verification process reconstructs the Merkle tree's root element from the proof.
+     * The verification process reconstructs the root element of the Merkle tree from the proof.
      * Then it compares it with the input parameter to check if they match.
      *
      * It walks through the levels of the tree from bottom to up following the same logic as the
      * proof or tree creation. [MerkleTreeImpl.createAuditProof]
      * It recreates the routes towards the root element from the items in the leaves to be proven with using
-     * the proof's hashes when they are needed.
+     * the proof hashes when they are needed.
      */
     override fun calculateRoot(digest: MerkleTreeHashDigest): SecureHash {
         if (digest !is MerkleTreeHashDigestProvider) {
@@ -85,7 +85,7 @@ class MerkleProofImpl(
                     }
                     if (hashIndex >= hashes.size) {                 // We'll need one more hash to continue. So if
                         throw MerkleProofRebuildFailureException(   // we do not have more, the proof is incorrect.
-                            "MerkleProof root hash calculation requires a non-existing hash"
+                            "MerkleProof root calculation requires more hashes than the proof has."
                         )
                     }
                                                                     // We pair the current element with a
