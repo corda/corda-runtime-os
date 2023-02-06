@@ -31,6 +31,20 @@ import java.time.Instant
 class UtxoDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>, val notary: String)
 
+    class TestContract : Contract {
+        override fun verify(transaction: UtxoLedgerTransaction) {
+        }
+    }
+
+    @BelongsToContract(TestContract::class)
+    class TestUtxoState(
+        val testField: String,
+        override val participants: List<PublicKey>,
+        val participantNames: List<String>
+    ) : ContractState
+
+    class TestCommand : Command
+
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

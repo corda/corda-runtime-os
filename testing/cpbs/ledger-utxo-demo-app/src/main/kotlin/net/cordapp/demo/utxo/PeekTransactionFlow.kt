@@ -1,15 +1,14 @@
 package net.cordapp.demo.utxo
 
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.cordapp.demo.utxo.contract.TestUtxoState
-import org.slf4j.LoggerFactory
 
 data class PeekTransactionParameters(val transactionId: String)
 
@@ -20,10 +19,10 @@ data class PeekTransactionResponse(
     val errorMessage: String?
 )
 
-class PeekTransactionFlow : ClientStartableFlow {
+class PeekTransactionFlow : RPCStartableFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log = loggerFor<PeekTransactionFlow>()
     }
 
     @CordaInject
@@ -33,7 +32,7 @@ class PeekTransactionFlow : ClientStartableFlow {
     lateinit var marshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Utxo peek transaction flow starting...")
         val requestObject =
             requestBody.getRequestBodyAs(marshallingService, PeekTransactionParameters::class.java)
@@ -58,7 +57,7 @@ class PeekTransactionFlow : ClientStartableFlow {
         }
         val inputStates =
             try {
-                ledgerTransaction.getInputStateAndRefs(TestUtxoState::class.java)
+                ledgerTransaction.getInputStateAndRefs(UtxoDemoFlow.TestUtxoState::class.java)
                     .map { it.state.contractState.toResult() }
             } catch (e: Exception){
                 return PeekTransactionResponse(inputs = emptyList(), outputs = emptyList(),
@@ -67,7 +66,7 @@ class PeekTransactionFlow : ClientStartableFlow {
 
         val outputStates =
             try {
-                ledgerTransaction.getOutputStateAndRefs(TestUtxoState::class.java)
+                ledgerTransaction.getOutputStateAndRefs(UtxoDemoFlow.TestUtxoState::class.java)
                     .map { it.state.contractState.toResult() }
             } catch (e: Exception){
                 return PeekTransactionResponse(inputs = emptyList(), outputs = emptyList(),
