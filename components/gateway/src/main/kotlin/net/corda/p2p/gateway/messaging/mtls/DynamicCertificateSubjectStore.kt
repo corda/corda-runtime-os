@@ -39,7 +39,7 @@ class DynamicCertificateSubjectStore(
     )
 
     fun subjectAllowed(subject: CertificateSubject): Boolean {
-        return certificateSubjects[subject] != null
+        return certificateSubjects.containsKey(subject)
     }
 
     private fun addSource(subject: CertificateSubject, source: String) {
@@ -49,11 +49,9 @@ class DynamicCertificateSubjectStore(
     }
 
     private fun removeSource(subject: CertificateSubject, source: String) {
-        certificateSubjects.compute(subject) { _, sources ->
-            sources?.remove(source)
-            if (sources?.isNotEmpty() == true) {
-                sources
-            } else {
+        certificateSubjects.computeIfPresent(subject) { _, sources ->
+            sources.remove(source)
+            sources.ifEmpty {
                 null
             }
         }
