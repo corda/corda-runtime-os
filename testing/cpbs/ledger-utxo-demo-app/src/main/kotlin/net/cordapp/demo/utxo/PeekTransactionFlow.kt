@@ -5,7 +5,6 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
