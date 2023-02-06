@@ -11,6 +11,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigImpl
@@ -39,7 +40,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.io.File
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
@@ -91,9 +91,10 @@ class InteropServiceIntegrationTest {
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
         val testId = "test1"
+        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", \"parameters\" : [ { \"denomination\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
-
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+        val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
         // Test config updates don't break Interop Service
@@ -113,11 +114,12 @@ class InteropServiceIntegrationTest {
                 ByteBuffer.wrap("".toByteArray())
             )
         )
+        val interopMessage = InteropMessage("InteropMessageID-01", payload, "")
 
-        val sessionRecord = Record(
+        val interopRecord = Record(
             P2P_IN_TOPIC, testId, AppMessage(
                 AuthenticatedMessage(
-                    flowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
+                    flowHeader, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
                 )
             )
         )
@@ -141,13 +143,13 @@ class InteropServiceIntegrationTest {
             )
         )
 
-        publisher.publish(listOf(sessionRecord, sessionRecord, nonInteropSessionRecord, invalidRecord))
+        publisher.publish(listOf(interopRecord, interopRecord, nonInteropSessionRecord, invalidRecord))
 
         //validate mapper receives 2 inits
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            P2POutMessageCounter("$testId", mapperLatch, 2),
+            P2POutMessageCounter(testId, mapperLatch, 2),
             bootConfig,
             null
         )
@@ -209,16 +211,16 @@ class P2POutMessageCounter(
     private val key: String,
     private val latch: CountDownLatch,
     private val expectedRecordCount: Int
-) : DurableProcessor<String, AuthenticatedMessage> {
+) : DurableProcessor<String, AppMessage> {
 
     override val keyClass = String::class.java
-    override val valueClass = AuthenticatedMessage::class.java
+    override val valueClass = AppMessage::class.java
 
     private var recordCount = 0
 
-    override fun onNext(events: List<Record<String, AuthenticatedMessage>>): List<Record<*, *>> {
+    override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
         for (event in events) {
-            File(event.toString()).printWriter().use { out -> out.println(key) }
+            println("Event : $event")
             if (event.key == key) {
                 recordCount++
                 if (recordCount > expectedRecordCount) {
