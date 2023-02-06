@@ -203,7 +203,7 @@ internal class StartRegistrationHandler(
 
     private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
         return RegistrationRequest(
-            RegistrationStatus.SENT_TO_MGM,
+            RegistrationStatus.RECEIVER_BY_MGM,
             memberRegistrationRequest.registrationId,
             source.toCorda(),
             memberRegistrationRequest.memberContext,
