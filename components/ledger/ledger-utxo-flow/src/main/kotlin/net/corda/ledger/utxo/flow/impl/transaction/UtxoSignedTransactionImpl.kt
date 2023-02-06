@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -12,6 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -60,7 +61,11 @@ data class UtxoSignedTransactionImpl(
 
     @Suspendable
     override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
-        val newSignatures = transactionSignatureService.sign(id, getMissingSignatories())
+        val newSignatures = try {
+            transactionSignatureService.sign(this, getMissingSignatories())
+        } catch (_: TransactionNoAvailableKeysException) { // No signatures are needed if no keys are available.
+            return Pair(this, emptyList())
+        }
         return Pair(
             UtxoSignedTransactionImpl(
                 serializationService,
@@ -76,7 +81,7 @@ data class UtxoSignedTransactionImpl(
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter {
             try {
-                transactionSignatureService.verifySignature(id, it)
+                transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
                 false
@@ -91,7 +96,7 @@ data class UtxoSignedTransactionImpl(
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter {
             try {
-                transactionSignatureService.verifySignature(id, it)
+                transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
                 throw TransactionVerificationException(

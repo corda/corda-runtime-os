@@ -72,7 +72,7 @@ class ConsensualReceiveFinalityFlow(
     @Suspendable
     private fun verifyExistingSignatures(initialTransaction: ConsensualSignedTransactionInternal) {
         initialTransaction.signatures.forEach {
-            verifySignature(initialTransaction.id, it) { message ->
+            verifySignature(initialTransaction, it) { message ->
                 session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             }
         }
