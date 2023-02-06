@@ -104,9 +104,7 @@ class UtxoDemoEvolveFlow : RPCStartableFlow {
 @InitiatedBy("utxo-evolve-protocol")
 class UtxoEvolveResponderFlow : ResponderFlow {
 
-    private companion object {
-        val log = contextLogger()
-    }
+    private val log = LoggerFactory.getLogger(this::class.java)
 
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
