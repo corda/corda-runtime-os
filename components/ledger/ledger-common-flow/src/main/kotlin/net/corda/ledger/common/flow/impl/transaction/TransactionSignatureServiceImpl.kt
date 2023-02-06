@@ -141,7 +141,8 @@ class TransactionSignatureServiceImpl @Activate constructor(
             confirmHashPrefixesAreDifferent(listOf(transaction))
 
             require(proof.leaves.filter { transaction.id.bytes contentEquals it.leafData }.size == 1) {
-                ""The transaction id cannot not be found in the provided Merkle proof for the the batch signature - the signature cannot be verified.""
+                "The transaction id cannot not be found in the provided Merkle proof for the the batch signature" +
+                        " - the signature cannot be verified."
             }
             val hashDigestProvider = signatureWithMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider)
             proof.calculateRoot(hashDigestProvider)
