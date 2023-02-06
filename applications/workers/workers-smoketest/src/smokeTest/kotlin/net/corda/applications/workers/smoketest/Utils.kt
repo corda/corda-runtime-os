@@ -25,6 +25,10 @@ const val TEST_NOTARY_CPI_NAME = "test-notary-server-cordapp"
 const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-server.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/test-cordapp.cpb"
 
+const val ERROR_CPI_NOT_UPLOADED =
+    "CPI has not been uploaded during this run - this test needs to be run on a clean cluster."
+const val ERROR_IS_CLUSTER_RUNNING = "Initial upload failed - is the cluster running?"
+
 val CLUSTER_URI = URI(System.getProperty("rpcHost"))
 
 // BUG:  Not sure if we should be requiring clients to use a method similar to this because we
