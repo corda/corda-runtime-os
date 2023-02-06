@@ -1,4 +1,12 @@
 bootstrap:
+  db:
+    cluster:
+      username:
+        value: "bootstrap-user"
+      password:
+        valueFrom:
+          secretKeyRef:
+            key: "password"
   kafka:
     sasl:
       username:
