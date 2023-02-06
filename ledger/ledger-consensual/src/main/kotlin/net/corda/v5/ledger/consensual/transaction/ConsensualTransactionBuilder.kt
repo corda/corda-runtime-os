@@ -3,7 +3,7 @@ package net.corda.v5.ledger.consensual.transaction
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 
 /**
  * Defines a builder for [ConsensualSignedTransaction]s.
@@ -38,7 +38,7 @@ interface ConsensualTransactionBuilder {
      *
      * @throws IllegalStateException when called a second time on the same object to prevent
      *      unintentional duplicate transactions.
-     * @throws CordaRuntimeException if none of the required keys are available to sign the transaction.
+     * @throws TransactionNoAvailableKeysException if none of the required keys are available to sign the transaction.
      */
     @Suspendable
     fun toSignedTransaction(): ConsensualSignedTransaction

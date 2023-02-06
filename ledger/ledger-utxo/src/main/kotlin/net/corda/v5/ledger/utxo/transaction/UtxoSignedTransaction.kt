@@ -3,9 +3,8 @@ package net.corda.v5.ledger.utxo.transaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -31,12 +30,7 @@ import java.security.PublicKey
  * Thus adding or removing a signature does not change it.
  */
 @DoNotImplement
-interface UtxoSignedTransaction {
-    /**
-     * @property id The ID of the transaction.
-     */
-    val id: SecureHash
-
+interface UtxoSignedTransaction: TransactionWithMetadata {
     /**
      * @property signatures The signatures that have been applied to the transaction.
      */
@@ -66,11 +60,6 @@ interface UtxoSignedTransaction {
      * @property timeWindow The validity time window for completing/notarising this transaction
      */
     val timeWindow: TimeWindow
-
-    /**
-     * @property metadata The metadata for this transaction
-     */
-    val metadata: TransactionMetadata
 
     /**
      * @property commands The list of commands for this transaction

@@ -35,4 +35,17 @@ interface MerkleProof {
         root: SecureHash,
         digest: MerkleTreeHashDigest
     ): Boolean
+
+    /**
+     * Rebuilds the [MerkleTree] from the [MerkleProof] and returns its root [SecureHash].
+     *
+     * @param digest The tree's digest.
+     *
+     * @returns Root hash of the tree.
+     *
+     * @throws MerkleProofRebuildFailureException if the calculation of the root hash failed.
+     */
+    fun calculateRoot(
+        digest: MerkleTreeHashDigest
+    ): SecureHash
 }

@@ -2,7 +2,7 @@ package net.corda.v5.ledger.consensual.transaction
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.DoNotImplement
-import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 
 /**
  * Defines a signed Consensual transaction.
@@ -23,12 +23,7 @@ import net.corda.v5.crypto.SecureHash
  * Thus adding or removing a signature does not change it.
  */
 @DoNotImplement
-interface ConsensualSignedTransaction {
-    /**
-     * @property id The ID of the transaction.
-     */
-    val id: SecureHash
-
+interface ConsensualSignedTransaction: TransactionWithMetadata {
     /**
      * @property signatures The signatures that have been applied to the transaction.
      */

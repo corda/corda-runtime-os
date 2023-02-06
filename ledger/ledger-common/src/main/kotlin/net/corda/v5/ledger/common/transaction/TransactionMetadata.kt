@@ -53,7 +53,7 @@ interface TransactionMetadata {
      *
      * @return The digest settings as map.
      */
-    fun getDigestSettings(): LinkedHashMap<String, Any>
+    fun getDigestSettings(): Map<String, String>
 
     /**
      * Gets the version of the metadata JSON schema to parse this metadata entity.
