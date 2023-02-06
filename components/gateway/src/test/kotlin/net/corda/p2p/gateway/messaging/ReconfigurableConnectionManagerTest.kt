@@ -52,7 +52,6 @@ class ReconfigurableConnectionManagerTest {
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        @Suppress("UNCHECKED_CAST")
         configHandler = (context.arguments()[6] as ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler)
     }
 
@@ -66,7 +65,7 @@ class ReconfigurableConnectionManagerTest {
     @Test
     fun `acquire will throw an exception if configuration is not ready`() {
         assertThrows<IllegalStateException> {
-            connectionManager.acquire(DestinationInfo(URI("http://www.r3.com:3000"), "", null, mock()))
+            connectionManager.acquire(DestinationInfo(URI("http://www.r3.com:3000"), "", null, mock(), null))
         }
     }
 
@@ -79,7 +78,8 @@ class ReconfigurableConnectionManagerTest {
             URI("http://www.r3.com:3000"),
             "",
             null,
-            mock()
+            mock(),
+            null,
         )
 
         connectionManager

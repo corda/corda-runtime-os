@@ -13,16 +13,24 @@ import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
-internal class ConnectionConfigReader(
+internal class GatewayConfigReader(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService
 ): LifecycleWithDominoTile {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ConnectionConfigReader::class.java)
+        private val logger = LoggerFactory.getLogger(GatewayConfigReader::class.java)
     }
 
-    var connectionConfig = ConnectionConfiguration()
+    private var gatewayConfiguration : GatewayConfiguration? = null
+
+    val connectionConfig
+        get() =
+            gatewayConfiguration?.connectionConfig ?: ConnectionConfiguration()
+
+    val sslConfiguration
+        get() =
+            gatewayConfiguration?.sslConfig
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -40,12 +48,11 @@ internal class ConnectionConfigReader(
             oldConfiguration: GatewayConfiguration?,
             resources: ResourcesHolder
         ): CompletableFuture<Unit> {
-            if (newConfiguration.connectionConfig != oldConfiguration?.connectionConfig) {
+            if (newConfiguration != oldConfiguration) {
                 logger.info("New configuration, connection settings updated to ${newConfiguration.connectionConfig}.")
-                connectionConfig = newConfiguration.connectionConfig
+                gatewayConfiguration = newConfiguration
             }
             return CompletableFuture.completedFuture(Unit)
         }
-
     }
 }
