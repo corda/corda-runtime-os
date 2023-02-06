@@ -578,19 +578,15 @@ Bootstrap cluster DB credentials environment variables
       {{- if .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name }}
       name: {{ .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify bootstrap.db.cluster.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
-      {{- else }}
-      {{- if .Values.bootstrap.db.cluster.username.value }}
+      {{- else if .Values.bootstrap.db.cluster.username.value }}
       name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
       key: "username"
-      {{- else }}
-      {{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
+      {{- else if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
       name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "username"
-      {{- end }}
-      {{- end }}
       {{- end }}
 
 - name: PGPASSWORD
@@ -599,19 +595,15 @@ Bootstrap cluster DB credentials environment variables
       {{- if .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name }}
       name: {{ .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify bootstrap.db.cluster.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
-      {{- else }}
-      {{- if .Values.bootstrap.db.cluster.password.value }}
+      {{- else if .Values.bootstrap.db.cluster.password.value }}
       name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
       key: "password"
-      {{- else}}
-      {{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
+      {{- else if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
       name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
       {{- else}}
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "password"
-      {{- end }}
-      {{- end }}
       {{- end }}
 {{- end -}}
 

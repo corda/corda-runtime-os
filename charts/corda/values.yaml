@@ -191,6 +191,7 @@ bootstrap:
           key: ""
   # Configuration for database bootstrap
   db:
+    # Bootstrap cluster database configuration
     cluster:
       # the bootstrap cluster database password configuration
       password:
