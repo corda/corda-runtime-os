@@ -417,7 +417,7 @@ class MemberOpsClientImpl @Activate constructor(
         return when (this) {
             RegistrationStatus.NEW -> RegistrationStatusDto.NEW
             RegistrationStatus.SENT_TO_MGM -> RegistrationStatusDto.SENT_TO_MGM
-            RegistrationStatus.RECEIVER_BY_MGM -> RegistrationStatusDto.RECEIVER_BY_MGM
+            RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatusDto.RECEIVED_BY_MGM
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
             RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatusDto.PENDING_APPROVAL_FLOW
             RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusDto.PENDING_MANUAL_APPROVAL
