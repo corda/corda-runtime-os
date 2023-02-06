@@ -12,7 +12,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import java.util.concurrent.ConcurrentHashMap
 
-class DynamicCertificateSubjectStore(
+internal class DynamicCertificateSubjectStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
