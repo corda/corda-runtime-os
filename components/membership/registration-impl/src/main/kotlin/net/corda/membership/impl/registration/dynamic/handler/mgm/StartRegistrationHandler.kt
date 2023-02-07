@@ -8,7 +8,6 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -91,27 +90,7 @@ internal class StartRegistrationHandler(
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
 
-
-            fun validatePreAuthTokenUsage() {
-                val token = try {
-                    pendingMemberInfo.preAuthToken
-                } catch (e: IllegalArgumentException) {
-                    with("Registration failed due to invalid format for the provided pre-auth token.") {
-                        logger.debug(this, e)
-                        throw InvalidRegistrationRequestException(this)
-                    }
-                }
-
-                token?.let {
-                    val tokenQueryResult = membershipQueryClient.queryPreAuthTokens(
-                        mgmHoldingIdentity = mgmHoldingId,
-                        ownerX500Name = pendingMemberInfo.name,
-                        preAuthTokenId = it,
-                        viewInactive = false
-                    ).getOrThrow()
-                }
-            }
-            validatePreAuthTokenUsage()
+            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
 
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
@@ -244,6 +223,46 @@ internal class StartRegistrationHandler(
                 validateRegistrationRequest(
                     it.isNotBlank()
                 ) { "Registering member has specified an invalid notary service plugin type." }
+            }
+        }
+    }
+
+    /**
+     * Fail to validate a registration request if a pre-auth token is present in the registration context, and
+     * it is not a valid UUID or it is not currently an active token for the registering member.
+     */
+    private fun validatePreAuthTokenUsage(mgmHoldingId: HoldingIdentity, pendingMemberInfo: MemberInfo) {
+        try {
+            pendingMemberInfo.preAuthToken?.let {
+                membershipQueryClient.queryPreAuthTokens(
+                    mgmHoldingIdentity = mgmHoldingId,
+                    ownerX500Name = pendingMemberInfo.name,
+                    preAuthTokenId = it,
+                    viewInactive = false
+                ).getOrThrow().apply {
+                    validateRegistrationRequest(isNotEmpty()) {
+                        logger.warn(
+                            "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' attempted to " +
+                                    "register with invalid pre-auth token '$it'."
+                        )
+                        "Registration attempted to use a pre-auth token which is " +
+                                "not currently active for this member."
+                    }
+                    logger.info(
+                        "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' has provided " +
+                                "valid pre-auth token '$it' during registration."
+                    )
+                }
+            }
+        } catch (e: IllegalArgumentException) {
+            with("Registration failed due to invalid format for the provided pre-auth token.") {
+                logger.debug(this, e)
+                throw InvalidRegistrationRequestException(this)
+            }
+        } catch (e: MembershipQueryResult.QueryException) {
+            with("Registration failed due to failure to query configured pre-auth tokens.") {
+                logger.debug(this, e)
+                throw InvalidRegistrationRequestException(this)
             }
         }
     }
