@@ -293,7 +293,7 @@ class GatewayIntegrationTest : TestBase() {
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
-                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null)
                 HttpClient(
                     serverInfo,
                     bobSslConfig,
@@ -350,7 +350,7 @@ class GatewayIntegrationTest : TestBase() {
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
-                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null)
                 HttpClient(
                     serverInfo,
                     bobSslConfig,
@@ -397,7 +397,8 @@ class GatewayIntegrationTest : TestBase() {
                     serverAddress,
                     SniCalculator.calculateCorda5Sni(serverAddress),
                     null,
-                    truststoreKeyStore
+                    truststoreKeyStore,
+                    null,
                 )
                 HttpClient(
                     serverInfo,
@@ -521,7 +522,8 @@ class GatewayIntegrationTest : TestBase() {
                                 url,
                                 aliceSNI[0],
                                 null,
-                                truststoreKeyStore
+                                truststoreKeyStore,
+                                null,
                             ),
                             aliceSslConfig,
                             NioEventLoopGroup(1),
@@ -576,7 +578,7 @@ class GatewayIntegrationTest : TestBase() {
             ).usingLifecycle {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
-                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore)
+                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore, null)
                     val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, ConnectionConfiguration())
                     client.start()
                     val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-$index"))
@@ -951,7 +953,7 @@ class GatewayIntegrationTest : TestBase() {
         ) {
             val serverInfo = DestinationInfo(
                 server, server.host, null,
-                trustStore
+                trustStore, null
             )
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage(UUID.randomUUID().toString(), linkInMessage.payload)
