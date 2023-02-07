@@ -3,8 +3,11 @@ package net.corda.simulator.runtime.ledger.utxo
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
+import net.corda.simulator.runtime.ledger.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -19,7 +22,7 @@ import java.util.Objects
 data class UtxoLedgerTransactionBase(
     val ledgerInfo: UtxoStateLedgerInfo,
     override val inputStateAndRefs: List<StateAndRef<*>>,
-    override val referenceStateAndRefs: List<StateAndRef<*>>
+    override val referenceStateAndRefs: List<StateAndRef<*>>,
 ) : UtxoLedgerTransaction {
 
     val bytes: ByteArray by lazy {
@@ -55,6 +58,10 @@ data class UtxoLedgerTransactionBase(
 
     override val inputStateRefs: List<StateRef>
         get() = ledgerInfo.inputStateRefs
+    override val metadata: TransactionMetadata
+        get() =  SimTransactionMetadata()
+    override val notary: Party
+        get() = ledgerInfo.notary
 
     override fun getAttachment(id: SecureHash): Attachment {
         TODO("Not yet implemented")
@@ -106,3 +113,4 @@ data class UtxoLedgerTransactionBase(
     }
 
 }
+
