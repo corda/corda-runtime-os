@@ -5,6 +5,7 @@ import java.time.Instant
 @Suppress("LongParameterList")
 class SigningCachedKey(
     val id: String,
+    val shortId: String,
     val tenantId: String,
     val category: String,
     val alias: String?,

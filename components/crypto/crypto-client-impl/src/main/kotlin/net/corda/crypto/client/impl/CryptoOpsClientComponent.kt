@@ -3,6 +3,7 @@ package net.corda.crypto.client.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
@@ -44,7 +45,9 @@ class CryptoOpsClientComponent @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = ConfigurationReadService::class)
-    configurationReadService: ConfigurationReadService
+    configurationReadService: ConfigurationReadService,
+    @Reference(service = PlatformDigestService::class)
+    private val digestService: PlatformDigestService
 ) : AbstractConfigurableComponent<CryptoOpsClientComponent.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
@@ -62,13 +65,16 @@ class CryptoOpsClientComponent @Activate constructor(
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        Impl(publisherFactory, schemeMetadata, event)
+        Impl(publisherFactory, schemeMetadata, event, digestService)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         impl.ops.getSupportedSchemes(tenantId, category)
 
     override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
-        impl.ops.filterMyKeys(tenantId, candidateKeys)
+        impl.ops.filterMyKeys(tenantId, candidateKeys, true)
+
+    override fun filterMyKeysByFullIds(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
+        impl.ops.filterMyKeys(tenantId, candidateKeys, false)
 
     override fun generateKeyPair(
         tenantId: String,
@@ -152,7 +158,7 @@ class CryptoOpsClientComponent @Activate constructor(
         )
 
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
-        impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
+        impl.ops.filterMyKeysProxy(tenantId, candidateKeys, usingShortId = false)
 
     override fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys =
         impl.ops.lookUpForKeysByIdsProxy(tenantId, candidateKeys)
@@ -182,7 +188,8 @@ class CryptoOpsClientComponent @Activate constructor(
     class Impl(
         publisherFactory: PublisherFactory,
         schemeMetadata: CipherSchemeMetadata,
-        event: ConfigChangedEvent
+        event: ConfigChangedEvent,
+        digestService: PlatformDigestService
     ) : AbstractImpl {
         private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse> = publisherFactory.createRPCSender(
             RPCConfig(
@@ -195,10 +202,12 @@ class CryptoOpsClientComponent @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         ).also { it.start() }
 
-        val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
-            schemeMetadata = schemeMetadata,
-            sender = sender
-        )
+        val ops: CryptoOpsClientImpl =
+            CryptoOpsClientImpl(
+                schemeMetadata,
+                sender,
+                digestService
+            )
 
         override val downstream: DependenciesTracker = DependenciesTracker.Default(setOf(sender.subscriptionName))
 

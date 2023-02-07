@@ -104,6 +104,7 @@ class CryptoOpsBusProcessor(
             )
         }
 
+        // `ByIdsRpcQuery` to be made to hold both full ids and short ids for extra parsing validation
         fun handleByIdsRpcQuery(request: ByIdsRpcQuery): CryptoSigningKeys {
             val found = signingService.lookup(context.tenantId, request.keys)
             return CryptoSigningKeys(found.map { it.toAvro() })

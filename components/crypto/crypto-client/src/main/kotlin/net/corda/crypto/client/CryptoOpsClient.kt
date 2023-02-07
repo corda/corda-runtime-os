@@ -36,6 +36,8 @@ interface CryptoOpsClient : Lifecycle {
      */
     fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey>
 
+    fun filterMyKeysByFullIds(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey>
+
     /**
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *

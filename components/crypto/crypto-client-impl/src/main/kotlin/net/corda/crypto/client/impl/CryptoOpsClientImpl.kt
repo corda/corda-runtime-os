@@ -1,9 +1,12 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.fullId
+import net.corda.crypto.core.publicKeyFullIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
@@ -48,7 +51,8 @@ import java.util.UUID
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
     private val schemeMetadata: CipherSchemeMetadata,
-    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
+    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
+    private val digestService: PlatformDigestService
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -69,31 +73,55 @@ class CryptoOpsClientImpl(
         return response!!.codes
     }
 
-    fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
+    fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        byShortId: Boolean
+    ): Collection<PublicKey> {
+        val publicKeyIds =
+            if (byShortId) {
+                candidateKeys.map {
+                    publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
+                }
+            } else {
+                candidateKeys.map {
+                    it.fullId(schemeMetadata, digestService)
+                }
+            }
+
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            candidateKeys.joinToString { it.toStringShort().take(12) + ".." }
+            publicKeyIds.joinToString { "$it.." }
         )
-        val request = createRequest(
-            tenantId = tenantId,
-            request = ByIdsRpcQuery(
-                candidateKeys.map {
-                    publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
-                }
+
+        val request =
+            createRequest(
+                tenantId = tenantId,
+                request = ByIdsRpcQuery(publicKeyIds)
             )
-        )
         val response = request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)
         return response!!.keys.map {
             schemeMetadata.decodePublicKey(it.publicKey.array())
         }
     }
 
-    fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys {
-        val publicKeyIds = candidateKeys.map {
-            publicKeyIdFromBytes(it.array())
-        }
+    // This is coming from flow requests, therefore this
+    fun filterMyKeysProxy(
+        tenantId: String,
+        candidateKeys: Iterable<ByteBuffer>,
+        usingShortId: Boolean): CryptoSigningKeys {
+        val publicKeyIds =
+            if (usingShortId) {
+                candidateKeys.map {
+                    publicKeyIdFromBytes(it.array())
+                }
+            } else {
+                candidateKeys.map {
+                    publicKeyFullIdFromBytes(it.array(), digestService)
+                }
+            }
         return lookUpForKeysByIdsProxy(tenantId, publicKeyIds)
     }
 
@@ -355,8 +383,11 @@ class CryptoOpsClientImpl(
         allowNoContentValue: Boolean = false,
         retries: Int = 3
     ): RESPONSE? = try {
+        // TODO the below to be reverted
+        println(timeout)
         val response = retry(retries, logger) {
-            sender.sendRequest(this).getOrThrow(timeout)
+            // TODO the below to be reverted
+            sender.sendRequest(this).getOrThrow(Duration.ofSeconds(200000))
         }
         check(
             response.context.requestingComponent == context.requestingComponent &&

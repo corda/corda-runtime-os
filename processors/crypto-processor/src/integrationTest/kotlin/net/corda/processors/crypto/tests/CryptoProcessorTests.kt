@@ -847,6 +847,25 @@ class CryptoProcessorTests {
         assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
     }
 
+    @Test
+    fun `filterMyKeys and filterMyKeysByFullIds both return same keys for the same query`() {
+        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1")
+        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2")
+
+        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1")
+        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2")
+        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3")
+
+        val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
+        val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
+        val allKeys = vnodeKeys + vnode2Keys
+
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+        assertEquals(vnodeKeys, opsClient.filterMyKeysByFullIds(vnodeId, allKeys))
+        assertEquals(vnode2Keys, opsClient.filterMyKeysByFullIds(vnodeId2, allKeys))
+    }
+
     private fun generateLedgerKey(tenantId: String, keyAlias: String): PublicKey =
         opsClient.generateKeyPair(
             tenantId = tenantId,
