@@ -2,6 +2,9 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.fullId
+import net.corda.crypto.core.publicKeyFullIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
@@ -21,6 +24,8 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
@@ -47,7 +52,8 @@ class CryptoFlowOpsTransformerImpl(
     private val requestingComponent: String,
     private val responseTopic: String,
     private val keyEncodingService: KeyEncodingService,
-    private val requestValidityWindowSeconds: Long = 300
+    private val requestValidityWindowSeconds: Long = 300,
+    private val digestService: DigestService
 ) : CryptoFlowOpsTransformer {
 
     override fun createFilterMyKeys(
@@ -60,8 +66,7 @@ class CryptoFlowOpsTransformerImpl(
             tenantId = tenantId,
             request = ByIdsFlowQuery(
                 candidateKeys.map {
-                    val keyBytes = keyEncodingService.encodeAsByteArray(it)
-                    publicKeyIdFromBytes(keyBytes)
+                    it.fullId(keyEncodingService, digestService)
                 }
             ),
             flowExternalEventContext = flowExternalEventContext
@@ -202,3 +207,10 @@ class CryptoFlowOpsTransformerImpl(
         return response as EXPECTED
     }
 }
+
+fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): String =
+    digestService.hash(
+        keyEncodingService.encodeAsByteArray(this),
+        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
+    )
+        .toString()
