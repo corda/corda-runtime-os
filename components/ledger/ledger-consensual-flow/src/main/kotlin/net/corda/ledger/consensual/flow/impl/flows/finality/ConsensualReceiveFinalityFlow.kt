@@ -107,6 +107,7 @@ class ConsensualReceiveFinalityFlow(
         return signedTransaction
     }
 
+    @Suspendable
     private fun verifyAllReceivedSignatures(transaction: ConsensualSignedTransactionInternal) {
         log.debug { "Verifying signatures of transaction: ${transaction.id}" }
         try {

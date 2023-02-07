@@ -101,6 +101,7 @@ class ConsensualFinalityFlow(
         return transaction to signaturesReceivedFromSessions
     }
 
+    @Suspendable
     private fun verifyAllReceivedSignatures(
         transaction: ConsensualSignedTransactionInternal,
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>

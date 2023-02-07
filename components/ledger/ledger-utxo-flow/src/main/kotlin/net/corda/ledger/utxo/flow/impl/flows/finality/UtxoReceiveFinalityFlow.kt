@@ -108,6 +108,7 @@ class UtxoReceiveFinalityFlow(
         return signedTransaction
     }
 
+    @Suspendable
     private fun verifyAllReceivedSignatures(transaction: UtxoSignedTransactionInternal) {
         log.debug { "Verifying signatures of transaction: ${transaction.id}" }
         try {

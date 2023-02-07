@@ -110,6 +110,7 @@ class UtxoFinalityFlow(
         return transaction to signaturesReceivedFromSessions
     }
 
+    @Suspendable
     private fun verifyAllReceivedSignatures(
         transaction: UtxoSignedTransactionInternal,
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
