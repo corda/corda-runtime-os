@@ -1,5 +1,7 @@
 package net.corda.flow.testing.context
 
+import net.bytebuddy.dynamic.scaffold.MethodGraph.Linked
+import net.corda.crypto.cipher.suite.schemes.all
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
@@ -166,6 +168,22 @@ class OutputAssertionsImpl(
     override fun flowDidNotResume() {
         asserts.add { testRun ->
             assertNull(testRun.flowContinuation, "Not expecting the flow to resume")
+        }
+    }
+
+    override fun flowResumedWithData(value: Map<String, ByteArray>) {
+        asserts.add { testRun ->
+            assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
+            val resumedWith = (testRun.flowContinuation as FlowContinuation.Run).value
+
+            if (resumedWith is LinkedHashMap<*, *>) {
+                assertEquals(value.keys, resumedWith.keys)
+                value.values.zip(resumedWith.values).forEach { pair ->
+                    assertArrayEquals(pair.component1(), pair.component2() as ByteArray,
+                        "Expected flow to resume with $value but was $resumedWith"
+                    )
+                }
+            }
         }
     }
 
