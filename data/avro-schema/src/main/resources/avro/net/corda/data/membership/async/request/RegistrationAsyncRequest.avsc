@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "name": "RegistrationRpcRequest",
-  "namespace": "net.corda.data.membership.rpc.request",
+  "name": "RegistrationAsyncRequest",
+  "namespace": "net.corda.data.membership.async.request",
   "doc": "Request to start the registration process.",
   "fields": [
     {
@@ -10,11 +10,19 @@
       "type": "string"
     },
     {
+      "name": "requestId",
+      "doc": "ID of the request.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
       "name": "registrationAction",
       "doc": "The action to take during registration.",
       "type": {
         "type": "enum",
-        "name": "RegistrationRpcAction",
+        "name": "RegistrationAction",
         "symbols": ["REQUEST_JOIN"]
       }
     },

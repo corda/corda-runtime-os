@@ -91,6 +91,12 @@ topics:
     producers:
       - db
     config:
+  MembershipAsyncRequestTopic:
+    name: membership.async.request
+    consumers:
+      - membership
+    producers:
+      - rpc
   MembershipStaticNetworkTopic:
     name: membership.static.network
     consumers:

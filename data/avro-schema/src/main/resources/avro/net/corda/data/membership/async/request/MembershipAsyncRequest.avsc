@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "MembershipAsyncRequest",
+  "namespace": "net.corda.data.membership.async.request",
+  "doc": "Asynchronous operations request for membership groups.",
+  "fields": [
+    {
+      "name": "request",
+      "doc": "Request's payload, depends on the requested operation.",
+      "type": [
+        "RegistrationAsyncRequest"
+      ]
+    }
+  ]
+}
