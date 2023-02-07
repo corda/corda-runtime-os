@@ -157,7 +157,8 @@ internal class ProcessMemberVerificationResponseHandler(
                     "Pre-auth token is incorrectly formatted and should have been handled when " +
                             "starting the registration.", e
                 )
-                null
+                throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. " +
+                        "A valid UUID is expected.")
             }
         }?.let {
             val validTokensForMember = membershipQueryClient
