@@ -9,6 +9,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -25,8 +26,9 @@ class DynamicCertificateSubjectStoreTest {
         const val TOPIC = "Topic"
         const val KEY_1 = "key1"
         const val KEY_2 = "key2"
-        const val SUBJECT_1 = "Subject 1"
-        const val SUBJECT_2 = "Subject 2"
+        const val SUBJECT_1 = "O=Alice, L=London, C=GB"
+        const val SUBJECT_2 = "O=Bob, L=London, C=GB"
+        const val SUBJECT_3 = "O=Carol, L=London, C=GB"
     }
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val nodeConfiguration = mock<SmartConfig>()
@@ -53,9 +55,9 @@ class DynamicCertificateSubjectStoreTest {
     fun `onSnapshot adds subjects to the store`() {
         processor.firstValue.onSnapshot(mapOf(KEY_1 to ClientCertificateSubjects(SUBJECT_1), KEY_2 to ClientCertificateSubjects(SUBJECT_2)))
 
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed(SUBJECT_1)).isTrue
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed(SUBJECT_2)).isTrue
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed("Not a Subject")).isFalse
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_1))).isTrue
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_2))).isTrue
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_3))).isFalse
     }
 
     @Test
@@ -63,9 +65,9 @@ class DynamicCertificateSubjectStoreTest {
         processor.firstValue.onNext(Record(TOPIC, KEY_1, ClientCertificateSubjects(SUBJECT_1)), null, emptyMap())
         processor.firstValue.onNext(Record(TOPIC, KEY_2, ClientCertificateSubjects(SUBJECT_2)), null, emptyMap())
 
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed(SUBJECT_1)).isTrue
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed(SUBJECT_2)).isTrue
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed("Not a Subject")).isFalse
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_1))).isTrue
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_2))).isTrue
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_3))).isFalse
     }
 
     @Test
@@ -73,15 +75,59 @@ class DynamicCertificateSubjectStoreTest {
         processor.firstValue.onNext(Record(TOPIC, KEY_1, ClientCertificateSubjects(SUBJECT_1)), null, emptyMap())
         processor.firstValue.onNext(Record(TOPIC, KEY_2, ClientCertificateSubjects(SUBJECT_1)), null, emptyMap())
 
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed(SUBJECT_1)).isTrue
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_1))).isTrue
 
         processor.firstValue.onNext(Record(TOPIC, KEY_1, null), ClientCertificateSubjects(SUBJECT_1), emptyMap())
 
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed(SUBJECT_1)).isTrue
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_1))).isTrue
 
         processor.firstValue.onNext(Record(TOPIC, KEY_2, null), ClientCertificateSubjects(SUBJECT_1), emptyMap())
 
-        assertThat(dynamicCertificateSubjectStore.subjectAllowed(SUBJECT_1)).isFalse
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_1))).isFalse
     }
 
+    @Test
+    fun `onNext will add the normalizes subject`() {
+        processor.firstValue.onNext(
+            Record(
+                TOPIC,
+                KEY_1,
+                ClientCertificateSubjects(
+                    "C=GB,  O=Alice, L=London"
+                )
+            ),
+            null,
+            emptyMap(),
+        )
+
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_1))).isTrue
+    }
+
+    @Test
+    fun `onNext will remove the normalizes subject`() {
+        processor.firstValue.onNext(
+            Record(
+                TOPIC,
+                KEY_1,
+                ClientCertificateSubjects(
+                    SUBJECT_1
+                )
+            ),
+            null,
+            emptyMap(),
+        )
+        processor.firstValue.onNext(
+            Record(
+                TOPIC,
+                KEY_1,
+                null,
+            ),
+            ClientCertificateSubjects(
+                "C=GB,  O=Alice, L=London"
+            ),
+            emptyMap(),
+        )
+
+        assertThat(dynamicCertificateSubjectStore.subjectAllowed(MemberX500Name.parse(SUBJECT_1))).isFalse
+    }
 }
