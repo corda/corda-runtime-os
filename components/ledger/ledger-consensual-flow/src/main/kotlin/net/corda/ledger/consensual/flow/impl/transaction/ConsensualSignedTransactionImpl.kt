@@ -2,13 +2,15 @@ package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
@@ -31,6 +33,9 @@ class ConsensualSignedTransactionImpl(
     override val id: SecureHash
         get() = wireTransaction.id
 
+    override val metadata: TransactionMetadata
+        get() = wireTransaction.metadata
+
     override fun toLedgerTransaction(): ConsensualLedgerTransaction =
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializationService)
 
@@ -40,7 +45,11 @@ class ConsensualSignedTransactionImpl(
 
     @Suspendable
     override fun addMissingSignatures(): Pair<ConsensualSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
-        val newSignatures = transactionSignatureService.sign(id, getMissingSignatories())
+        val newSignatures = try {
+            transactionSignatureService.sign(this, getMissingSignatories())
+        } catch (_: TransactionNoAvailableKeysException) { // No signatures are needed if no keys are available.
+            return Pair(this, emptyList())
+        }
         return Pair(
             ConsensualSignedTransactionImpl(
                 serializationService,
@@ -55,7 +64,7 @@ class ConsensualSignedTransactionImpl(
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter{
             try {
-                transactionSignatureService.verifySignature(id, it)
+                transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
                 false
@@ -71,7 +80,7 @@ class ConsensualSignedTransactionImpl(
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter{
             try {
-                transactionSignatureService.verifySignature(id, it)
+                transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
                 throw TransactionVerificationException(

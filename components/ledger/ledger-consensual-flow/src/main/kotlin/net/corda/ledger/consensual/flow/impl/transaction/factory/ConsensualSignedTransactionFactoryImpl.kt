@@ -4,7 +4,7 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
@@ -18,7 +18,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -68,12 +67,9 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
 
         val signaturesWithMetadata =
             transactionSignatureService.sign(
-                wireTransaction.id,
+                wireTransaction,
                 consensualTransactionBuilder.states.flatMap { it.participants }
             )
-        if (signaturesWithMetadata.isEmpty()){
-            throw CordaRuntimeException("None of the required keys were available to sign the transaction.")
-        }
         return ConsensualSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
@@ -97,7 +93,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    private fun consensualMetadata() = linkedMapOf(
+    private fun consensualMetadata() = mapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
         TransactionMetadataImpl.NUMBER_OF_COMPONENT_GROUPS to ConsensualComponentGroup.values().size
