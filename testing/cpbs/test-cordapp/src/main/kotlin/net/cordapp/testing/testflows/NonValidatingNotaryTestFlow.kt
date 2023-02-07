@@ -204,7 +204,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
 
                     repeat(outputStateCount) {
                         builder = builder.addOutputState(
-                            TestUtxoState("test", emptyList())
+                            TestUtxoState("test", emptyList(), emptyList())
                         )
                     }
 
