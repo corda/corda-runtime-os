@@ -48,7 +48,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "NEW",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -62,7 +62,7 @@ class BaseRequestStatusHandlerTest {
             softly.assertThat(details.registrationId).isEqualTo("id")
             softly.assertThat(details.registrationSent).isEqualTo(Instant.ofEpochSecond(500))
             softly.assertThat(details.registrationLastModified).isEqualTo(Instant.ofEpochSecond(600))
-            softly.assertThat(details.registrationStatus).isEqualTo(RegistrationStatus.NEW)
+            softly.assertThat(details.registrationStatus).isEqualTo(RegistrationStatus.SENT_TO_MGM)
             softly.assertThat(details.registrationProtocolVersion).isEqualTo(12)
             softly.assertThat(details.memberProvidedContext).isEqualTo(
                 KeyValuePairList(
@@ -116,7 +116,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "NEW",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -143,7 +143,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "NEW",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -170,7 +170,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "NEW",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -196,7 +196,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "NEW",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)
@@ -216,7 +216,7 @@ class BaseRequestStatusHandlerTest {
         val entity = RegistrationRequestEntity(
             "id",
             "short-hash",
-            "NEW",
+            "SENT_TO_MGM",
             Instant.ofEpochSecond(500),
             Instant.ofEpochSecond(600),
             byteArrayOf(1, 2, 3)

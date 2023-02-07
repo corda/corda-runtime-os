@@ -124,7 +124,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
     fun `invoke updates registration request status`() {
         val registrationId = "regId"
         val registrationRequestEntity = mock<RegistrationRequestEntity> {
-            on { status } doReturn "NEW"
+            on { status } doReturn "SENT_TO_MGM"
         }
         whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())

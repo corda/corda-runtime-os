@@ -468,12 +468,12 @@ class MembershipPersistenceTest {
     @Test
     fun `registration requests can persist over RPC topic`() {
         val registrationId = randomUUID().toString()
-        val status = RegistrationStatus.NEW
+        val status = RegistrationStatus.SENT_TO_MGM
 
         val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -935,7 +935,7 @@ class MembershipPersistenceTest {
         val requestEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
 
         val approveResult = membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
             viewOwningHoldingIdentity,
@@ -988,7 +988,7 @@ class MembershipPersistenceTest {
         val requestEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
 
         membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsDeclined(
             viewOwningHoldingIdentity,
@@ -1036,7 +1036,7 @@ class MembershipPersistenceTest {
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
-                    RegistrationStatus.NEW,
+                    RegistrationStatus.SENT_TO_MGM,
                     registrationId,
                     holdingId,
                     ByteBuffer.wrap(
@@ -1071,7 +1071,7 @@ class MembershipPersistenceTest {
         val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -1099,7 +1099,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
         assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
-        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.NEW.name)
+        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.name)
 
         val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
             viewOwningHoldingIdentity,
@@ -1222,7 +1222,7 @@ class MembershipPersistenceTest {
         return membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 member,
                 ByteBuffer.wrap(
