@@ -84,6 +84,9 @@ class MemberInfoExtension {
         /** Key name for MGM property. */
         const val IS_MGM = "corda.mgm"
 
+        /** Key name for MGM property. */
+        const val PRE_AUTH_TOKEN = "corda.auth.token"
+
         /** Key name for the ID of the registration in which the current member info was approved. */
         const val REGISTRATION_ID = "corda.registration.id"
 
@@ -217,7 +220,7 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.preAuthToken: UUID?
-            get() = memberProvidedContext.parseOrNull("corda.auth.token") ?: null
+            get() = memberProvidedContext.parseOrNull(PRE_AUTH_TOKEN)
 
         /**
          * Return the notary details if the member is a notary.

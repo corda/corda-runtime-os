@@ -8,6 +8,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -90,21 +91,27 @@ internal class StartRegistrationHandler(
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
 
-            try {
-                pendingMemberInfo.preAuthToken
-            } catch (e: IllegalArgumentException) {
-                val err = "Registration failed due to invalid format of pre-auth token."
-                logger.info(err)
-                logger.debug(err, e)
-                throw InvalidRegistrationRequestException(err)
-            }?.let {
-                membershipQueryClient.queryPreAuthTokens(
-                    mgmHoldingIdentity = mgmHoldingId,
-                    ownerX500Name = pendingMemberInfo.name,
-                    preAuthTokenId = it,
-                    viewInactive = false
-                )
+
+            fun validatePreAuthTokenUsage() {
+                val token = try {
+                    pendingMemberInfo.preAuthToken
+                } catch (e: IllegalArgumentException) {
+                    with("Registration failed due to invalid format for the provided pre-auth token.") {
+                        logger.debug(this, e)
+                        throw InvalidRegistrationRequestException(this)
+                    }
+                }
+
+                token?.let {
+                    val tokenQueryResult = membershipQueryClient.queryPreAuthTokens(
+                        mgmHoldingIdentity = mgmHoldingId,
+                        ownerX500Name = pendingMemberInfo.name,
+                        preAuthTokenId = it,
+                        viewInactive = false
+                    ).getOrThrow()
+                }
             }
+            validatePreAuthTokenUsage()
 
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
