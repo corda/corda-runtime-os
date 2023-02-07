@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.dummy
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -98,9 +99,11 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ruleParams: ApprovalRuleParams,
     ): MembershipPersistenceResult<ApprovalRuleDetails> = MembershipPersistenceResult.Failure("Unsupported")
 
+
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleId: String,
+        ruleType: ApprovalRuleType,
     ) = MembershipPersistenceResult.success()
 
     override val isRunning = true
