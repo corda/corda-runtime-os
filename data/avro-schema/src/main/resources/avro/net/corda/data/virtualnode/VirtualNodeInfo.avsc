@@ -64,6 +64,10 @@
       "type": "string"
     },
     {
+      "name": "operationInProgress",
+      "type": [ "null", "string" ]
+    },
+    {
       "name": "version",
       "type": "int"
     },

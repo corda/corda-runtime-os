@@ -251,6 +251,9 @@
             <column name="state" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
+            <column name="operation_type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
             <column name="errors" type="TEXT">
                 <constraints nullable="true"/>
             </column>
