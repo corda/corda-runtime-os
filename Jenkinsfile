@@ -4,7 +4,7 @@ cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',
     nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: false,
-    createPostgresDb: false,
+    createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
     publishHelmChart: true,
