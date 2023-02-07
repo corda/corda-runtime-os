@@ -128,7 +128,8 @@ class CryptoOpsClientComponentTests {
             coordinatorFactory = coordinatorFactory,
             publisherFactory = publisherFactory,
             schemeMetadata = schemeMetadata,
-            configurationReadService = configurationReadService
+            configurationReadService = configurationReadService,
+            digestService = mock()
         )
     }
 
