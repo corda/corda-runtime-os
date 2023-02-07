@@ -6,6 +6,8 @@ import java.nio.ByteBuffer
 import java.time.ZonedDateTime
 import java.util.*
 
+//TODO : All facade classed are copied from WEFT project, and in future it can be replaced by facade component
+
 /**
  * A [FacadeParameterType] is the type of a [FacadeParameter]. It is always one of a small set of primitive types, or
  * a [QualifiedType] qualifying a primitive type with a [FacadeTypeQualifier] which identifies a more complex type.

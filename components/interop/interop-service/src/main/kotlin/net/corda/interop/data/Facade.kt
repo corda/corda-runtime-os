@@ -1,6 +1,6 @@
 package net.corda.interop.data
 
-
+//TODO : All facade classed are copied from WEFT project, and in future it can be replaced by facade component
 /**
  * A [HierarchicalName] is a sequence of [String] identifiers similar to the path section of a URI.
  */
