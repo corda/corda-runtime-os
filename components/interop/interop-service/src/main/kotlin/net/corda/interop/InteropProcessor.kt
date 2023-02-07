@@ -24,13 +24,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         const val SUBSYSTEM = "interop"
     }
 
-    private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
-        cordaAvroSerializationFactory.createAvroDeserializer(
-            {},
-            InteropMessage::class.java
-        )
-    private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> =
-        cordaAvroSerializationFactory.createAvroSerializer({})
+    private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> = cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
+    private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
 
     override fun onNext(
         events: List<Record<String, AppMessage>>
@@ -57,7 +52,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         //following logging is added just check serialisation/de-serialisation result and can be removed later
         logger.info ( "Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, facade request: $interopMessage" )
         if(interopMessage != null) {
-            logger.info("Converted interop message to facade request : $InteropMessageTransformer.getFacadeRequest(interopMessage)}")
+            logger.info("Converted interop message to facade request : ${InteropMessageTransformer.getFacadeRequest(interopMessage)}")
         }
 
         return if (interopMessage != null) {
