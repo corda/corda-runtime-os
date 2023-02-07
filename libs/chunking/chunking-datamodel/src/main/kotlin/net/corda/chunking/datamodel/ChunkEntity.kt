@@ -12,7 +12,7 @@ import javax.persistence.Table
  */
 @Entity
 @IdClass(ChunkEntityPrimaryKey::class)
-@Table(name = "file_upload", schema = DbSchema.CONFIG)
+@Table(name = "file_upload")
 data class ChunkEntity(
     @Id
     @Column(name = "request_id", nullable = false)

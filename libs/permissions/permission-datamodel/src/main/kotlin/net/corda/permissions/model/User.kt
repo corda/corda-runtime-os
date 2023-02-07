@@ -15,7 +15,7 @@ import javax.persistence.Version
 
 @Suppress("LongParameterList")
 @Entity
-@Table(name = "rbac_user", schema = DbSchema.RBAC)
+@Table(name = "rbac_user")
 class User(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

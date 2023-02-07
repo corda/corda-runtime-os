@@ -87,6 +87,14 @@ class CombinedWorker @Activate constructor(
         }
 
         val params = getParams(args, CombinedWorkerParams())
+        // Extract the schemaless db url from the params, the combined worker needs this to set up all the schemas which
+        // it does in the same db.
+        val dbUrl = checkNotNull(params.databaseParams[DatabaseConfig.JDBC_URL])
+        // Add the config schema to the JDBC URL in the params so that any processors which need the JDBC URL are using
+        // the config schema.
+        params.addSchemaToJdbcUrl("CONFIG")
+        params.addDatabaseParam(DatabaseConfig.JDBC_URL + "_messagebus", dbUrl + "?currentSchema=MESSAGEBUS")
+
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         if (params.hsmId.isBlank()) {
             // the combined worker may use SOFT HSM by default unlike the crypto worker
@@ -103,8 +111,6 @@ class CombinedWorker @Activate constructor(
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
-        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.JDBC_URL))
-            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
         val dbName = dbUrl.split("/").last().split("?").first()
         val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
             config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
@@ -169,4 +175,19 @@ private class CombinedWorkerParams {
 
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
+
+    /**
+     * Combined worker parameter for JDBC URL should be the schemaless database URL because the combined worker sets up
+     * schemas itself. However, Corda processors all expect the JDBC URL in the config to point to the config schema
+     * directly, so the name of that schema must be added to the params that are used to create the config.
+     */
+    fun addSchemaToJdbcUrl(schema: String) {
+        val databaseParamsWithSchema = databaseParams.toMutableMap()
+        databaseParamsWithSchema[DatabaseConfig.JDBC_URL] += "?currentSchema=$schema"
+        databaseParams = databaseParamsWithSchema.toMap()
+    }
+
+    fun addDatabaseParam(key: String, value: String) {
+        databaseParams += Pair(key, value)
+    }
 }

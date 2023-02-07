@@ -1,6 +1,5 @@
 package net.corda.libs.virtualnode.datamodel.entities
 
-import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VIRTUAL_NODE_DB_TABLE
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
@@ -42,7 +41,7 @@ import javax.persistence.Version
  * @param operationInProgress Details of the current operation in progress.
  */
 @Entity
-@Table(name = VIRTUAL_NODE_DB_TABLE, schema = CONFIG)
+@Table(name = VIRTUAL_NODE_DB_TABLE)
 @Suppress("LongParameterList")
 internal class VirtualNodeEntity(
     @Id

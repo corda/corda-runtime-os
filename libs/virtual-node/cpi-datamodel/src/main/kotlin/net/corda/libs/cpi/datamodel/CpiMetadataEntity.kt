@@ -34,7 +34,7 @@ import javax.persistence.Version
  * @property isDeleted Flag used for soft db deletes
  */
 @Entity
-@Table(name = "cpi", schema = DbSchema.CONFIG)
+@Table(name = "cpi")
 @IdClass(CpiMetadataEntityKey::class)
 @Suppress("LongParameterList")
 data class CpiMetadataEntity(

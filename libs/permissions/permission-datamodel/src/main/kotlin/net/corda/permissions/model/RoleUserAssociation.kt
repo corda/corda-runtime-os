@@ -15,7 +15,7 @@ import javax.persistence.Table
  * A user can be associated with many roles and one role can be associated in many different users and groups.
  */
 @Entity
-@Table(name = "rbac_role_user_rel", schema = DbSchema.RBAC)
+@Table(name = "rbac_role_user_rel")
 class RoleUserAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

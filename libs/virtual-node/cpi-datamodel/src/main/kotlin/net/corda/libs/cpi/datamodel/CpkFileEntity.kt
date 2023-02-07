@@ -29,7 +29,7 @@ const val QUERY_PARAM_ID = "id"
  * @property insertTimestamp when the CPK Data was inserted.
  */
 @Entity
-@Table(name = "cpk_file", schema = DbSchema.CONFIG)
+@Table(name = "cpk_file")
 @NamedQuery(
     name = QUERY_NAME_UPDATE_CPK_FILE_DATA,
     query = "UPDATE CpkFileEntity f" +

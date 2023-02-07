@@ -15,7 +15,7 @@ import javax.persistence.Table
  */
 @Entity
 @IdClass(ChunkPropertyEntityPrimaryKey::class)
-@Table(name = "file_upload_props", schema = DbSchema.CONFIG)
+@Table(name = "file_upload_props")
 data class ChunkPropertyEntity(
 
     @Id

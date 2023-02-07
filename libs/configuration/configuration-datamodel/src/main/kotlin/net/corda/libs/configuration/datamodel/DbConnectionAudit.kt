@@ -28,14 +28,13 @@ import javax.persistence.Table
  * @property config DB configuration section that can be parsed as SmartConfig.
  */
 @Entity
-@Table(name = DbSchema.DB_CONNECTION_AUDIT_TABLE, schema = DbSchema.CONFIG)
+@Table(name = DbSchema.DB_CONNECTION_AUDIT_TABLE)
 data class DbConnectionAudit (
     @Id
     @SequenceGenerator(
         name = DB_CONNECTION_AUDIT_GENERATOR,
         sequenceName = DbSchema.DB_CONNECTION_AUDIT_ID_SEQUENCE,
-        allocationSize = DbSchema.DB_CONNECTION_AUDIT_ID_SEQUENCE_ALLOC_SIZE,
-        schema = DbSchema.CONFIG
+        allocationSize = DbSchema.DB_CONNECTION_AUDIT_ID_SEQUENCE_ALLOC_SIZE
     )
     @GeneratedValue(strategy = SEQUENCE, generator = DB_CONNECTION_AUDIT_GENERATOR)
     @Column(name = "change_number", nullable = false)

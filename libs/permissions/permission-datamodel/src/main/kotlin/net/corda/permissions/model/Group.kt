@@ -14,7 +14,7 @@ import javax.persistence.Table
 import javax.persistence.Version
 
 @Entity
-@Table(name = "rbac_group", schema = DbSchema.RBAC)
+@Table(name = "rbac_group")
 class Group(
     @Id
     @Column(name = "id", nullable = false)

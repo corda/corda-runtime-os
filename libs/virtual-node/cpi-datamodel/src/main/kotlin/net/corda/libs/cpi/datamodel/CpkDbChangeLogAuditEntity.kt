@@ -12,7 +12,7 @@ import net.corda.db.schema.DbSchema
  */
 @Suppress("LongParameterList")
 @Entity
-@Table(name = "cpk_db_change_log_audit", schema = DbSchema.CONFIG)
+@Table(name = "cpk_db_change_log_audit")
 class CpkDbChangeLogAuditEntity(
     @Id
     val id: String,

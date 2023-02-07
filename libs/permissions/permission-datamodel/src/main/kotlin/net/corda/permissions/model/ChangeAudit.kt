@@ -10,7 +10,7 @@ import javax.persistence.Id
 import javax.persistence.Table
 
 @Entity
-@Table(name = "rbac_change_audit", schema = DbSchema.RBAC)
+@Table(name = "rbac_change_audit")
 class ChangeAudit(
     @Id
     @Column(name = "id", nullable = false)

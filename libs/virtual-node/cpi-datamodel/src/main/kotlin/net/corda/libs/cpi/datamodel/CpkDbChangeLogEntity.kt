@@ -15,7 +15,7 @@ import javax.persistence.Version
  * Representation of a DB ChangeLog (Liquibase) file associated with a CPK.
  */
 @Entity
-@Table(name = "cpk_db_change_log", schema = DbSchema.CONFIG)
+@Table(name = "cpk_db_change_log")
 class CpkDbChangeLogEntity(
     @EmbeddedId
     var id: CpkDbChangeLogKey,

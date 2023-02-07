@@ -15,7 +15,7 @@ import javax.persistence.Table
  * A role can be associated with many permissions and a permission maybe associated in multiple roles.
  */
 @Entity
-@Table(name = "rbac_role_perm_rel", schema = DbSchema.RBAC)
+@Table(name = "rbac_role_perm_rel")
 class RolePermissionAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

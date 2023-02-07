@@ -33,7 +33,8 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
 
     @CommandLine.Option(
         names = ["-s", "--schemas"],
-        description = ["File of schema files to generate. Default is all schemas"],
+        description = ["List of schema files to generate. Default is all schemas. Options are: config, messagebus, rbac, " +
+                "crypto"],
         split = ","
     )
     var schemasToGenerate: List<String> = emptyList<String>()
@@ -97,36 +98,34 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
             config.deleteFile(config.databaseChangeLogFile)
         }
 
-        mapOf(
-            "net/corda/db/schema/config/db.changelog-master.xml" to DbMetadata(),
-            // messagebus is forced into the public schema for legacy reasons
-            "net/corda/db/schema/messagebus/db.changelog-master.xml" to DbMetadata(defaultSchemaName = "public"),
-            "net/corda/db/schema/rbac/db.changelog-master.xml" to DbMetadata(),
-            "net/corda/db/schema/crypto/db.changelog-master.xml" to DbMetadata()
+        listOf(
+            "net/corda/db/schema/config/db.changelog-master.xml",
+            "net/corda/db/schema/messagebus/db.changelog-master.xml",
+            "net/corda/db/schema/rbac/db.changelog-master.xml",
+            "net/corda/db/schema/crypto/db.changelog-master.xml"
         ).filterOnSchemasToGenerate().also { logger.info("Using the following schemas $it") }.forEach(::generateSql)
     }
 
-    private fun Map<String, DbMetadata>.filterOnSchemasToGenerate() =
+    private fun List<String>.filterOnSchemasToGenerate() =
         if (schemasToGenerate.isEmpty()) this else this.filter { file ->
             schemasToGenerate.any { schemaName ->
-                file.key.contains(schemaName)
+                file.contains(schemaName)
             }
         }
 
-    private fun generateSql(file: Map.Entry<String, DbMetadata>) {
+    private fun generateSql(filename: String) {
         // Grabs dirname above db.changelog-master.xml to derive the package
         val test = "([a-zA-Z0-9]+)/db\\.changelog-master\\.xml".toRegex()
         // Make .sql output file
-        val schemaDefinitionName = checkNotNull(test.find(file.key)).groupValues.last()
-        val outputFileName = "${outputDir.removeSuffix("/")}/${schemaDefinitionName}.sql"
-        val schemaName = file.value.defaultSchemaName ?: schemaDefinitionName
+        val schemaName = checkNotNull(test.find(filename)).groupValues.last()
+        val outputFileName = "${outputDir.removeSuffix("/")}/${schemaName}.sql"
 
         // This is a workaround to make liquibase play nicely with the logger that's on the class loader
         val oldCl = Thread.currentThread().contextClassLoader
         Thread.currentThread().contextClassLoader = DatabaseBootstrapAndUpgrade.classLoader
 
         config.writerFactory(outputFileName).use { outputFile ->
-            writeSchemaToFile(schemaName, outputFile, file)
+            writeSchemaToFile(schemaName, outputFile, filename)
         }
 
         Thread.currentThread().contextClassLoader = oldCl
@@ -135,7 +134,7 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
     private fun writeSchemaToFile(
         schemaName: String,
         outputFile: FileWriter,
-        file: Map.Entry<String, DbMetadata>
+        filename: String
     ) {
         // A curious feature of the liquibase connection is that if you attempt to generate multiple sql files against
         // the same one, only the first one ends up generating offline sql when using offline mode. Note that multiple
@@ -158,7 +157,7 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
                 outputFile.write(System.lineSeparator())
             }
 
-            config.liquibaseFactory(file.key, database).update(Contexts(), outputFile)
+            config.liquibaseFactory(filename, database).update(Contexts(), outputFile)
         }
     }
 

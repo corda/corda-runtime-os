@@ -18,7 +18,7 @@ import javax.persistence.Version
  */
 @Suppress("LongParameterList")
 @Entity
-@Table(name = "rbac_perm", schema = DbSchema.RBAC)
+@Table(name = "rbac_perm")
 class Permission(
     @Id
     @Column(name = "id", nullable = false)
