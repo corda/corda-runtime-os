@@ -55,6 +55,7 @@ class SimFiberBase(
     init {
         registerNotary()
     }
+
     override val members : Map<MemberX500Name, MemberInfo>
         get() = memberInfos
 
@@ -102,6 +103,10 @@ class SimFiberBase(
 
     override fun createNotaryLookup(): NotaryLookup {
         return notaryLookupFactory.createNotaryLookup(this, notaryInfo)
+    }
+
+    override fun getNotary(): NotaryInfo {
+        return notaryInfo
     }
 
     private fun registerNotary(){

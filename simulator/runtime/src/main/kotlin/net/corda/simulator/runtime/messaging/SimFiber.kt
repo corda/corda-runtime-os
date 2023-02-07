@@ -12,6 +12,7 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import java.io.Closeable
 import java.security.PublicKey
 
@@ -86,6 +87,12 @@ interface SimFiber : Closeable, HasMemberInfos, FlowRegistry {
      * @return A [NotaryLookup] containing notary details.
      */
     fun createNotaryLookup(): NotaryLookup
+
+    /**
+     *
+     * @return A [NotaryInfo] containing notary details.
+     */
+    fun getNotary(): NotaryInfo
 
 }
 

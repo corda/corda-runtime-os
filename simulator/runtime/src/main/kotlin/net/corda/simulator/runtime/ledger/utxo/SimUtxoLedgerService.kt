@@ -11,6 +11,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -77,30 +78,32 @@ class SimUtxoLedgerService(
             UtxoTransactionOutputEntity::class.java)
             .setParameter("type", stateClass.canonicalName)
             .execute()
+        val notaryInfo = fiber.getNotary()
+        val notary = Party(notaryInfo.name, notaryInfo.publicKey)
         val stateAndRefs = result.map{ utxoTransactionOutputEntity ->
-            val signedTxEntity = getSignedTxEntity(SecureHash.parse(utxoTransactionOutputEntity.transactionId))
-                ?: throw IllegalArgumentException("Transaction not found for transaction id: " +
-                        utxoTransactionOutputEntity.transactionId
-                )
-
-            val ledgerTx = UtxoLedgerTransactionBase(
-                UtxoStateLedgerInfo(
-                    serializationService.deserialize(signedTxEntity.commandData),
-                    serializationService.deserialize(signedTxEntity.inputData),
-                    serializationService.deserialize(signedTxEntity.notaryData),
-                    serializationService.deserialize(signedTxEntity.referenceStateDate),
-                    serializationService.deserialize(signedTxEntity.signatoriesDate),
-                    serializationService.deserialize(signedTxEntity.timeWindowDate),
-                    serializationService.deserialize(signedTxEntity.outputData),
-                    serializationService.deserialize(signedTxEntity.attachmentData)
-                ),
-                listOf(),
-                listOf()
-            )
-            val stateRef = StateRef(ledgerTx.id, utxoTransactionOutputEntity.index)
-            val transactionState = TransactionStateImpl(
-                ledgerTx.outputContractStates[utxoTransactionOutputEntity.index] as T, ledgerTx.ledgerInfo.notary,
-                null)
+//            val signedTxEntity = getSignedTxEntity(SecureHash.parse(utxoTransactionOutputEntity.transactionId))
+//                ?: throw IllegalArgumentException("Transaction not found for transaction id: " +
+//                        utxoTransactionOutputEntity.transactionId
+//                )
+//
+//            val ledgerTx = UtxoLedgerTransactionBase(
+//                UtxoStateLedgerInfo(
+//                    serializationService.deserialize(signedTxEntity.commandData),
+//                    serializationService.deserialize(signedTxEntity.inputData),
+//                    serializationService.deserialize(signedTxEntity.notaryData),
+//                    serializationService.deserialize(signedTxEntity.referenceStateDate),
+//                    serializationService.deserialize(signedTxEntity.signatoriesDate),
+//                    serializationService.deserialize(signedTxEntity.timeWindowDate),
+//                    serializationService.deserialize(signedTxEntity.outputData),
+//                    serializationService.deserialize(signedTxEntity.attachmentData)
+//                ),
+//                listOf(),
+//                listOf()
+//            )
+            val stateRef = StateRef(SecureHash.parse(utxoTransactionOutputEntity.transactionId),
+                utxoTransactionOutputEntity.index)
+            val contractState = serializationService.deserialize<ContractState>(utxoTransactionOutputEntity.stateData)
+            val transactionState = TransactionStateImpl(contractState as T, notary, null)
             StateAndRefImpl(transactionState, stateRef)
         }
         return stateAndRefs

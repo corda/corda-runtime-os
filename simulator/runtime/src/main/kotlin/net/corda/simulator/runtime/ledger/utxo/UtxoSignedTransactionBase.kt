@@ -97,10 +97,13 @@ class UtxoSignedTransactionBase(
     }
 
     internal fun toOutputsEntity() : List<UtxoTransactionOutputEntity> {
+        val serializer = BaseSerializationService()
         return ledgerInfo.outputStates.mapIndexed{ index, contractState ->
+            val stateData = serializer.serialize(contractState).bytes
             UtxoTransactionOutputEntity(
                 id.toString(),
                 contractState::class.java.name,
+                stateData,
                 index,
                 false
             )

@@ -26,7 +26,7 @@ import javax.persistence.Embeddable
 @Table(name = "utxo_transaction")
 class UtxoTransactionEntity(
     @Id
-    @Column(name="id")
+    @Column(name="tx_id")
     val id: String,
 
     @Column(name="command_data")
@@ -91,7 +91,7 @@ class UtxoTransactionEntity(
 class UtxoTransactionSignatureEntity(
     @Id
     @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
+    @JoinColumn(name = "tx_id", nullable = false, updatable = false)
     val transaction: UtxoTransactionEntity,
 
     @Id
@@ -128,11 +128,14 @@ class UtxoTransactionSignatureEntity(
 )
 class UtxoTransactionOutputEntity(
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(name = "tx_id", nullable = false, updatable = false)
     val transactionId: String,
 
     @Column(name = "type", nullable = true)
     val type: String?,
+
+    @Column(name="state_data")
+    val stateData: ByteArray,
 
     @Id
     @Column(name = "index", nullable = false)
