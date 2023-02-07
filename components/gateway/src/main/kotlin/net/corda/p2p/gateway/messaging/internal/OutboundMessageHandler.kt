@@ -19,6 +19,7 @@ import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
+import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.types.MemberX500Name
@@ -63,6 +64,11 @@ internal class OutboundMessageHandler(
         subscriptionFactory,
         messagingConfiguration
     )
+    private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        messagingConfiguration
+    )
 
     private val subscriptionConfig = SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC)
     private val outboundSubscription = {
@@ -80,12 +86,13 @@ internal class OutboundMessageHandler(
         setOf(connectionManager.dominoTile.toNamedLifecycle(), connectionConfigReader.dominoTile.toNamedLifecycle())
     )
 
+    private val dependencies = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile, dynamicCertificateSubjectStore.dominoTile)
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         onClose = { retryThreadPool.shutdown() },
-        dependentChildren = listOf(outboundSubscriptionTile.coordinatorName, trustStoresMap.dominoTile.coordinatorName),
-        managedChildren = listOf(outboundSubscriptionTile.toNamedLifecycle(), trustStoresMap.dominoTile.toNamedLifecycle()),
+        dependentChildren = dependencies.map { it.coordinatorName },
+        managedChildren = dependencies.map { it.toNamedLifecycle() },
     )
 
     private val retryThreadPool = retryThreadPoolFactory()

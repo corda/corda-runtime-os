@@ -119,13 +119,15 @@ val RpcMemberInfo.name get() = memberContext["corda.name"] ?: fail("Could not fi
 fun E2eCluster.assertOnlyMgmIsInMemberList(
     holdingId: String,
     mgmName: String
-) = lookupMembers(holdingId).also { result ->
-    assertThat(result)
-        .hasSize(1)
-        .allSatisfy {
-            assertThat(it.status).isEqualTo("ACTIVE")
-            assertThat(it.name).isEqualTo(mgmName)
-        }
+) = eventually(duration = 1.minutes) {
+    lookupMembers(holdingId).also { result ->
+        assertThat(result)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.status).isEqualTo("ACTIVE")
+                assertThat(it.name).isEqualTo(mgmName)
+            }
+    }
 }
 
 fun E2eCluster.getGroupId(

@@ -2,17 +2,20 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.async.request.MembershipAsyncRequest
+import net.corda.data.membership.async.request.RegistrationAction
+import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.RegistrationRpcAction
-import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.helper.getConfig
@@ -25,6 +28,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
@@ -32,11 +36,18 @@ import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
+import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.concurrent.getOrThrow
@@ -45,34 +56,47 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.TimeoutException
 
 @Component(service = [MemberOpsClient::class])
+@Suppress("LongParameterList")
 class MemberOpsClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
     val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
-    val configurationReadService: ConfigurationReadService
+    val configurationReadService: ConfigurationReadService,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : MemberOpsClient {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val ERROR_MSG = "Service is in an incorrect state for calling."
 
-        const val CLIENT_ID = "membership.ops.rpc"
+        const val RPC_CLIENT_ID = "membership.ops.rpc"
+        const val ASYNC_CLIENT_ID = "membership.ops.async"
         const val GROUP_NAME = "membership.ops.rpc"
 
         private val clock = UTCClock()
 
         private val TIMEOUT = 20.seconds
     }
+
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
     private interface InnerMemberOpsClient : AutoCloseable {
         fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
@@ -94,8 +118,6 @@ class MemberOpsClientImpl @Activate constructor(
     private var componentHandle: AutoCloseable? = null
 
     private val coordinator = coordinatorFactory.createCoordinator<MemberOpsClient>(::processEvent)
-
-    private val className = this::class.java.simpleName
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -144,7 +166,7 @@ class MemberOpsClientImpl @Activate constructor(
                         configHandle?.close()
                         configHandle = configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                            setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
                         )
                     }
 
@@ -157,19 +179,26 @@ class MemberOpsClientImpl @Activate constructor(
 
             is ConfigChangedEvent -> {
                 impl.close()
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 impl = ActiveImpl(
                     publisherFactory.createRPCSender(
                         RPCConfig(
                             groupName = GROUP_NAME,
-                            clientName = CLIENT_ID,
+                            clientName = RPC_CLIENT_ID,
                             requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
                             requestType = MembershipRpcRequest::class.java,
                             responseType = MembershipRpcResponse::class.java
                         ),
-                        event.config.getConfig(MESSAGING_CONFIG)
+                        messagingConfig,
                     ).also {
                         it.start()
-                    }
+                    },
+                    publisherFactory.createPublisher(
+                        PublisherConfig(
+                            ASYNC_CLIENT_ID
+                        ),
+                        messagingConfig,
+                    )
                 )
                 coordinator.updateStatus(LifecycleStatus.UP, "Dependencies are UP and configuration received.")
             }
@@ -200,54 +229,70 @@ class MemberOpsClientImpl @Activate constructor(
     }
 
     private inner class ActiveImpl(
-        val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
+        private val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>,
+        private val asyncPublisher: Publisher,
     ) : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {
             val requestId = UUID.randomUUID().toString()
+            val holdingIdentity =
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(memberRegistrationRequest.holdingIdentityShortHash)
+                    ?.holdingIdentity
+                    ?: throw CouldNotFindMemberException(memberRegistrationRequest.holdingIdentityShortHash)
             try {
-                val request = MembershipRpcRequest(
-                    MembershipRpcRequestContext(
-                        requestId,
-                        clock.instant()
-                    ),
-                    RegistrationRpcRequest(
-                        memberRegistrationRequest.holdingIdentityShortHash.toString(),
-                        RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
-                        memberRegistrationRequest.context.toWire()
-                    )
+                val context = keyValuePairListSerializer.serialize(
+                    memberRegistrationRequest.context.toWire()
                 )
-
-                val response: RegistrationRpcResponse = request.sendRequest()
-
-                return response.toDto()
-            } catch (e: TimeoutException) {
-                // The request timed out, but we did manage to submit it to Kafka. This might result in a state change
-                // in the system, but now we cannot tell whether the other side picked the request up. This is not
-                // idempotent (and is equally likely to hit the timeout again on retry anyway), so our best bet is to
-                // return success and get the client to check the registration status.
-                //
-                // This should probably be changed to not use the RPC pattern at all, and instead use an async pattern.
-                logger.debug { "Request $requestId timed out for ${memberRegistrationRequest.holdingIdentityShortHash}" }
+                membershipPersistenceClient.persistRegistrationRequest(
+                    holdingIdentity,
+                    RegistrationRequest(
+                        RegistrationStatus.NEW,
+                        requestId,
+                        holdingIdentity,
+                        ByteBuffer.wrap(context),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap(byteArrayOf()),
+                            ByteBuffer.wrap(byteArrayOf()),
+                            KeyValuePairList(emptyList())
+                        ),
+                    )
+                ).getOrThrow()
+                asyncPublisher.publish(
+                    listOf(
+                        Record(
+                            MEMBERSHIP_ASYNC_REQUEST_TOPIC,
+                            requestId,
+                            MembershipAsyncRequest(
+                                RegistrationAsyncRequest(
+                                    memberRegistrationRequest.holdingIdentityShortHash.toString(),
+                                    requestId,
+                                    RegistrationAction.valueOf(memberRegistrationRequest.action.name),
+                                    memberRegistrationRequest.context.toWire()
+                                )
+                            )
+                        )
+                    )
+                ).forEach {
+                    it.join()
+                }
                 return RegistrationRequestProgressDto(
                     requestId,
-                    null,
-                    RegistrationRpcStatus.SUBMITTED.toString(),
+                    clock.instant(),
+                    SubmittedRegistrationStatus.SUBMITTED,
                     "Submitting registration request was successful.",
-                    MemberInfoSubmittedDto(
-                        mapOf()
-                    )
+                    MemberInfoSubmittedDto(memberRegistrationRequest.context)
                 )
-
             } catch (e: Exception) {
                 logger.warn(
                     "Could not submit registration request for holding identity ID" +
-                            " [${memberRegistrationRequest.holdingIdentityShortHash}].", e
+                        " [${memberRegistrationRequest.holdingIdentityShortHash}].",
+                    e
                 )
+                val cause = e.cause ?: e
                 return RegistrationRequestProgressDto(
                     requestId,
                     null,
-                    RegistrationRpcStatus.NOT_SUBMITTED.toString(),
-                    e.message ?: "No cause was provided for failure.",
+                    SubmittedRegistrationStatus.NOT_SUBMITTED,
+                    cause.message ?: "No cause was provided for failure.",
                     MemberInfoSubmittedDto(emptyMap())
                 )
             }
@@ -308,7 +353,7 @@ class MemberOpsClientImpl @Activate constructor(
             } catch (e: Exception) {
                 logger.warn(
                     "Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
-                            " [${holdingIdentityShortHash}].", e
+                            " [$holdingIdentityShortHash].", e
                 )
                 return null
             }
@@ -337,21 +382,6 @@ class MemberOpsClientImpl @Activate constructor(
                 )
             )
 
-        @Suppress("SpreadOperator")
-        private fun RegistrationRpcResponse.toDto(): RegistrationRequestProgressDto =
-            RegistrationRequestProgressDto(
-                this.registrationId,
-                this.registrationSent,
-                this.registrationStatus.toString(),
-                this.reason ?: "Submitting registration request was successful.",
-                MemberInfoSubmittedDto(
-                    mapOf(
-                        "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
-                        *this.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
-                        *this.additionalInfo.items.map { it.key to it.value }.toTypedArray()
-                    )
-                )
-            )
 
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
@@ -386,11 +416,14 @@ class MemberOpsClientImpl @Activate constructor(
     private fun RegistrationStatus.toDto(): RegistrationStatusDto {
         return when (this) {
             RegistrationStatus.NEW -> RegistrationStatusDto.NEW
+            RegistrationStatus.SENT_TO_MGM -> RegistrationStatusDto.SENT_TO_MGM
+            RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatusDto.RECEIVED_BY_MGM
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
             RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatusDto.PENDING_APPROVAL_FLOW
             RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusDto.PENDING_MANUAL_APPROVAL
             RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusDto.PENDING_AUTO_APPROVAL
             RegistrationStatus.DECLINED -> RegistrationStatusDto.DECLINED
+            RegistrationStatus.INVALID -> RegistrationStatusDto.INVALID
             RegistrationStatus.APPROVED -> RegistrationStatusDto.APPROVED
         }
     }

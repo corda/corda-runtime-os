@@ -18,7 +18,6 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -203,10 +202,10 @@ class MemberProcessorTestUtils {
          * Registration is not a call expected to happen repeatedly in quick succession so allowing more time in
          * between calls for a more realistic set up.
          */
-        fun getRegistrationResult(
+        fun register(
             registrationProxy: RegistrationProxy,
             holdingIdentity: HoldingIdentity
-        ): MembershipRequestRegistrationResult {
+        ) {
             val context = mapOf(KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME)
             return eventually(
                 waitBetween = Duration.ofMillis(1000)
