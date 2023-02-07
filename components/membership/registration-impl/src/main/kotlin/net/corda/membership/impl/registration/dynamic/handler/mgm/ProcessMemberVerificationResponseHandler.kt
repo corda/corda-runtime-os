@@ -16,6 +16,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.lib.toMap
@@ -33,6 +34,7 @@ import net.corda.v5.membership.MemberContext
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class ProcessMemberVerificationResponseHandler(
@@ -54,7 +56,11 @@ internal class ProcessMemberVerificationResponseHandler(
 
     override val commandType = ProcessMemberVerificationResponse::class.java
 
-    override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationResponse): RegistrationHandlerResult {
+    override fun invoke(
+        state: RegistrationState?,
+        key: String,
+        command: ProcessMemberVerificationResponse
+    ): RegistrationHandlerResult {
         if (state == null) throw MissingRegistrationStateException
         val registrationId = state.registrationId
         val mgm = state.mgm
@@ -92,7 +98,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 ),
                 minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL)
             )
-            val approveRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
+            val finaliseRegistrationRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
                     "$registrationId-${mgm.toCorda().shortHash}",
@@ -102,7 +108,7 @@ internal class ProcessMemberVerificationResponseHandler(
 
             listOfNotNull(
                 persistStatusMessage,
-                approveRecord,
+                finaliseRegistrationRecord,
             )
         } catch (e: Exception) {
             logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
@@ -127,26 +133,55 @@ internal class ProcessMemberVerificationResponseHandler(
         member: HoldingIdentity,
         registrationId: String
     ): RegistrationStatus {
-        val proposedMemberInfo = membershipQueryClient.queryRegistrationRequestStatus(mgm, registrationId)
-            .getOrThrow()?.memberContext?.toMap() ?: throw CordaRuntimeException(
-            "Could not read the proposed MemberInfo for registration request (ID=$registrationId) submitted by ${member.x500Name}."
-        )
+        val proposedMemberInfo = membershipQueryClient
+            .queryRegistrationRequestStatus(mgm, registrationId)
+            .getOrThrow()
+            ?.memberContext
+            ?.toMap()
+            ?: throw CordaRuntimeException(
+                "Could not read the proposed MemberInfo for registration request " +
+                        "(ID=$registrationId) submitted by ${member.x500Name}."
+            )
 
-        val activeMemberInfo = with(membershipGroupReaderProvider.getGroupReader(mgm)) {
-            lookup(member.x500Name)?.memberProvidedContext?.toMap()
-        }
+        val activeMemberInfo = membershipGroupReaderProvider
+            .getGroupReader(mgm)
+            .lookup(member.x500Name)
+            ?.memberProvidedContext
+            ?.toMap()
 
-        val rules = membershipQueryClient.getApprovalRules(mgm, ApprovalRuleType.STANDARD).getOrThrow()
-            .map { RegistrationRule.Impl(it.ruleRegex.toRegex()) }
-
-        return with(RegistrationRulesEngine.Impl(rules)) {
-            if (requiresManualApproval(proposedMemberInfo, activeMemberInfo)) {
-                RegistrationStatus.PENDING_MANUAL_APPROVAL
-            } else {
-                RegistrationStatus.PENDING_AUTO_APPROVAL
+        val preAuthToken = proposedMemberInfo[PRE_AUTH_TOKEN]?.let {
+            try {
+                UUID.fromString(it)
+            } catch (e: IllegalArgumentException) {
+                logger.warn(
+                    "Pre-auth token is incorrectly formatted and should have been handled when " +
+                            "starting the registration.", e
+                )
+                null
+            }
+        }?.let {
+            val validTokensForMember = membershipQueryClient
+                .queryPreAuthTokens(mgm, member.x500Name, it, false)
+                .getOrThrow()
+            if (validTokensForMember.isEmpty()) {
+                throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. " +
+                        "It may have been consumed already or the ID is incorrect.")
             }
         }
+
+        val rules = membershipQueryClient
+            .getApprovalRules(mgm, ApprovalRuleType.STANDARD)
+            .getOrThrow()
+            .map { RegistrationRule.Impl(it.ruleRegex.toRegex()) }
+
+        return if (RegistrationRulesEngine.Impl(rules).requiresManualApproval(proposedMemberInfo, activeMemberInfo)) {
+            RegistrationStatus.PENDING_MANUAL_APPROVAL
+        } else {
+            RegistrationStatus.PENDING_AUTO_APPROVAL
+        }
     }
+
+    class InvalidPreAuthTokenException(msg: String): CordaRuntimeException(msg)
 
     private fun MemberContext.toMap() = entries.associate { it.key to it.value }
 }
