@@ -33,6 +33,8 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
+    api project(":components:crypto:crypto-softhsm-impl")
+
     testImplementation 'net.corda:corda-application'
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")
