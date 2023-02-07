@@ -2,6 +2,7 @@ package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
+import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.notary.SimTimeWindow
@@ -16,19 +17,21 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
-import org.hamcrest.MatcherAssert
-import org.hamcrest.Matchers
+import net.corda.v5.membership.NotaryInfo
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import java.security.PublicKey
 import java.time.Instant
 
@@ -70,13 +73,10 @@ class SimUtxoLedgerServiceTest {
         val createdBuilder = ledgerService.getTransactionBuilder()
 
         // Then it should be created by the factory
-        MatcherAssert.assertThat(createdBuilder, Matchers.`is`(builder))
+        assertThat(createdBuilder, `is`(builder))
 
         // Using the same services we passed in
-        MatcherAssert.assertThat(
-            capture,
-            Matchers.`is`(Triple(signingService, persistenceService, config))
-        )
+        assertThat(capture, `is`(Triple(signingService, persistenceService, config)))
     }
 
     @Test
@@ -104,11 +104,8 @@ class SimUtxoLedgerServiceTest {
             config
         )
 
-        val utxoTxQuery = mock<ParameterizedQuery<UtxoTransactionEntity>>()
-        whenever(persistenceService.query(eq("UtxoTransactionEntity.findByTransactionId"),
-            eq(UtxoTransactionEntity::class.java))).thenReturn(utxoTxQuery)
-        whenever(utxoTxQuery.setParameter(eq("transactionId"), any())).thenReturn(utxoTxQuery)
-        whenever(utxoTxQuery.execute()).thenReturn(listOf(transaction.toEntity()))
+        whenever(persistenceService.find(eq(UtxoTransactionEntity::class.java), eq(String(transaction.id.bytes))))
+            .thenReturn(transaction.toEntity())
         whenever(fiber.createMemberLookup(alice)).thenReturn(mock())
         whenever(fiber.createNotarySigningService()).thenReturn(mock())
         whenever(fiber.createSigningService(alice)).thenReturn(signingService)
@@ -121,8 +118,53 @@ class SimUtxoLedgerServiceTest {
         val retrievedLedgerTx = utxoLedgerService.findLedgerTransaction(transaction.id)
 
         // Then it should be converted successfully back into a transaction again
-        MatcherAssert.assertThat(retrievedLedgerTx?.id, Matchers.`is`(transaction.toLedgerTransaction().id))
-        MatcherAssert.assertThat(retrievedSignedTx, Matchers.`is`(transaction))
+        assertThat(retrievedLedgerTx?.id, `is`(transaction.toLedgerTransaction().id))
+        assertThat(retrievedSignedTx, `is`(transaction))
+    }
+
+    @Test
+    fun `should be able to retrieve unconsumed states`(){
+        // Given a persistence service in which we stored a transaction output entity
+        val fiber = mock<SimFiber>()
+        val serializationService = BaseSerializationService()
+        val persistenceService = mock<PersistenceService>()
+        val testState = TestUtxoState("StateData", publicKeys)
+        val utxoTxOutputEntity = UtxoTransactionOutputEntity(
+            "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
+            TestUtxoState::class.java.canonicalName,
+            serializationService.serialize(testState).bytes,
+            2,
+            false
+        )
+        val utxoOutputQueryResult = listOf(utxoTxOutputEntity)
+
+        val utxoOutputQuery = mock<ParameterizedQuery<UtxoTransactionOutputEntity>>()
+        whenever(persistenceService.query(eq("UtxoTransactionOutputEntity.findUnconsumedStatesByType"),
+            eq(UtxoTransactionOutputEntity::class.java))).thenReturn(utxoOutputQuery)
+        whenever(utxoOutputQuery.setParameter(eq("type"), any())).thenReturn(utxoOutputQuery)
+        whenever(utxoOutputQuery.execute()).thenReturn(utxoOutputQueryResult)
+        whenever(fiber.createMemberLookup(any())).thenReturn(mock())
+        whenever(fiber.createSigningService(any())).thenReturn(mock())
+        whenever(fiber.createNotarySigningService()).thenReturn(mock())
+        whenever(fiber.getOrCreatePersistenceService(any())).thenReturn(persistenceService)
+
+        val notaryInfo = mock<NotaryInfo>()
+        whenever(fiber.getNotary()).thenReturn(notaryInfo)
+        whenever(notaryInfo.name).thenReturn(notary.name)
+        whenever(notaryInfo.publicKey).thenReturn(notary.owningKey)
+
+        // When we retrieve the unconsumed state from the ledger service
+        val utxoLedgerService = SimUtxoLedgerService(alice, fiber, config)
+        val stateAndRefs = utxoLedgerService.findUnconsumedStatesByType(TestUtxoState::class.java)
+
+        // Then it should be converted into StateAndRef
+        assertThat(stateAndRefs.size, `is`(1))
+        assertThat(stateAndRefs[0].state.contractState.name, `is`(testState.name))
+        assertThat(stateAndRefs[0].state.contractState.participants, `is`(testState.participants))
+        assertThat(stateAndRefs[0].state.notary, `is`(notary))
+        assertThat(stateAndRefs[0].ref.transactionHash, `is`(SecureHash.parse(utxoTxOutputEntity.transactionId)))
+        assertThat(stateAndRefs[0].ref.index, `is`(utxoTxOutputEntity.index))
+
     }
 
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(

@@ -18,10 +18,6 @@ import javax.persistence.Embeddable
 
 
 @Suppress("LongParameterList")
-@NamedQuery(
-    name = "UtxoTransactionEntity.findByTransactionId",
-    query = "from UtxoTransactionEntity t left join fetch t.signatures where t.id= :transactionId"
-)
 @Entity
 @Table(name = "utxo_transaction")
 class UtxoTransactionEntity(
@@ -83,10 +79,6 @@ class UtxoTransactionEntity(
 
 @Entity
 @Table(name = "utxo_transaction_signature")
-@NamedQuery(
-    name = "UtxoTransactionSignatureEntity.findByTransactionId",
-    query = "from UtxoTransactionSignatureEntity where transaction.id = :transactionId"
-)
 @IdClass(UtxoTransactionEntityId::class)
 class UtxoTransactionSignatureEntity(
     @Id

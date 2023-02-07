@@ -59,17 +59,9 @@ class SimUtxoLedgerService(
     }
 
     override fun findSignedTransaction(id: SecureHash): UtxoSignedTransaction? {
-        val entity = getSignedTxEntity(id) ?: return null
-
+        val entity = persistenceService.find(UtxoTransactionEntity::class.java, String(id.bytes))?: return null
         return UtxoSignedTransactionBase
             .fromEntity(entity, signingService, serializationService, persistenceService, configuration)
-    }
-
-    private fun getSignedTxEntity(id: SecureHash): UtxoTransactionEntity?{
-        return persistenceService.query("UtxoTransactionEntity.findByTransactionId",
-            UtxoTransactionEntity::class.java)
-            .setParameter("transactionId", String(id.bytes))
-            .execute().firstOrNull()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -80,26 +72,7 @@ class SimUtxoLedgerService(
             .execute()
         val notaryInfo = fiber.getNotary()
         val notary = Party(notaryInfo.name, notaryInfo.publicKey)
-        val stateAndRefs = result.map{ utxoTransactionOutputEntity ->
-//            val signedTxEntity = getSignedTxEntity(SecureHash.parse(utxoTransactionOutputEntity.transactionId))
-//                ?: throw IllegalArgumentException("Transaction not found for transaction id: " +
-//                        utxoTransactionOutputEntity.transactionId
-//                )
-//
-//            val ledgerTx = UtxoLedgerTransactionBase(
-//                UtxoStateLedgerInfo(
-//                    serializationService.deserialize(signedTxEntity.commandData),
-//                    serializationService.deserialize(signedTxEntity.inputData),
-//                    serializationService.deserialize(signedTxEntity.notaryData),
-//                    serializationService.deserialize(signedTxEntity.referenceStateDate),
-//                    serializationService.deserialize(signedTxEntity.signatoriesDate),
-//                    serializationService.deserialize(signedTxEntity.timeWindowDate),
-//                    serializationService.deserialize(signedTxEntity.outputData),
-//                    serializationService.deserialize(signedTxEntity.attachmentData)
-//                ),
-//                listOf(),
-//                listOf()
-//            )
+        val stateAndRefs = result.map { utxoTransactionOutputEntity ->
             val stateRef = StateRef(SecureHash.parse(utxoTransactionOutputEntity.transactionId),
                 utxoTransactionOutputEntity.index)
             val contractState = serializationService.deserialize<ContractState>(utxoTransactionOutputEntity.stateData)

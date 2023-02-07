@@ -150,12 +150,9 @@ class UtxoSignedTransactionBase(
     // TODO refactor
     private fun toInputStateAndRef(): List<StateAndRef<*>> {
         return ledgerInfo.inputStateRefs.map {
-            val entity = persistenceService.query("UtxoTransactionEntity.findByTransactionId",
-                UtxoTransactionEntity::class.java)
-                .setParameter("transactionId", String(it.transactionHash.bytes))
-                .execute().firstOrNull()
+            val entity = persistenceService.find(UtxoTransactionEntity::class.java, String(it.transactionHash.bytes))
                 ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
-                         String(it.transactionHash.bytes))
+                    String(it.transactionHash.bytes))
             val tx = fromEntity(entity, signingService, serializer, persistenceService, config)
             val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[it.index],
                 notary, null)
