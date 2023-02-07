@@ -16,8 +16,10 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
+import kotlin.reflect.full.isSubclassOf
 
 @CordaSystemFlow
 class UtxoFinalityFlow(
@@ -77,6 +79,7 @@ class UtxoFinalityFlow(
                 session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
                 log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
+                persistInvalidTransaction(initialTransaction)
                 throw e
             }
         }
@@ -87,6 +90,7 @@ class UtxoFinalityFlow(
                 val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
                         "$transactionId with message: ${failure.message}"
                 log.warn(message)
+                persistInvalidTransaction(initialTransaction)
                 CordaRuntimeException(message)
             }
 
@@ -127,6 +131,7 @@ class UtxoFinalityFlow(
                     "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
+            persistInvalidTransaction(transaction)
             throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
         }
     }
@@ -172,8 +177,17 @@ class UtxoFinalityFlow(
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
-            val message = "Notarization failed with ${e.message}."
-            flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
+            val (message, failureReason) = if (e::class.isSubclassOf(NotaryError::class)){
+                persistInvalidTransaction(transaction)
+                "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.UNRECOVERABLE
+            } else {
+                "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.OTHER
+            }
+
+            flowMessaging.sendAll(
+                Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
+                sessions.toSet()
+            )
             log.warn(message)
             throw e
         }
@@ -186,9 +200,16 @@ class UtxoFinalityFlow(
         }
 
         if (notarySignatures.isEmpty()) {
-            val message = "Notary $notary did not return any signatures after requesting notarization of transaction $transactionId"
+            val message =
+                "Notary $notary did not return any signatures after requesting notarization of transaction $transactionId"
             log.warn(message)
-            flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
+            persistInvalidTransaction(transaction)
+            flowMessaging.sendAll(
+                Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                    message,
+                    FinalityNotarizationFailureType.UNRECOVERABLE.value
+                ), sessions.toSet()
+            )
             throw CordaRuntimeException(message)
         }
         var notarizedTransaction = transaction
@@ -197,7 +218,12 @@ class UtxoFinalityFlow(
                 verifyAndAddNotarySignature(notarizedTransaction, signature)
             } catch (e: Exception) {
                 val message = e.message ?: "Notary signature verification failed."
-                flowMessaging.sendAll(Payload.Failure<List<DigitalSignatureAndMetadata>>(message), sessions.toSet())
+                flowMessaging.sendAll(
+                    Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                        message,
+                        FinalityNotarizationFailureType.UNRECOVERABLE.value
+                    ), sessions.toSet()
+                )
                 throw e
             }
         }

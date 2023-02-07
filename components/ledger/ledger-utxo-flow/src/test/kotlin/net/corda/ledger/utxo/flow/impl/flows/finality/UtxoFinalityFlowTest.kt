@@ -20,6 +20,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
@@ -29,8 +30,8 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -230,7 +231,76 @@ class UtxoFinalityFlowTest {
     }
 
     @Test
-    fun `receiving valid signatures over a transaction then failing notarisation throws`() {
+    fun `receiving valid signatures over a transaction then permanent failing notarisation throws and invalidates tx`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
+
+        whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureAlice1,
+                    signatureAlice2
+                )
+            )
+        )
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
+            Payload.Success(
+                listOf(
+                    signatureBob
+                )
+            )
+        )
+        whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+
+        @CordaSerializable
+        data class TestNotaryError(
+            val errorText: String
+        ) : NotaryError, CordaRuntimeException(errorText)
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(TestNotaryError("notarisation error"))
+
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(TestNotaryError::class.java)
+            .hasMessage("notarisation error")
+
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
+
+        verify(initialTx).addSignature(signatureAlice1)
+        verify(updatedTxSomeSigs).addSignature(signatureAlice2)
+        verify(updatedTxSomeSigs).addSignature(signatureBob)
+        verify(updatedTxAllSigs, never()).addSignature(signatureNotary)
+
+        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.INVALID)
+
+        verify(sessionAlice).receive(Payload::class.java)
+        verify(sessionBob).receive(Payload::class.java)
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
+        verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
+        verify(flowMessaging).sendAll(
+            Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                "Notarization failed permanently with notarisation error.",
+                FinalityNotarizationFailureType.UNRECOVERABLE.value
+            ), sessions
+        )
+    }
+
+    @Test
+    fun `receiving valid signatures over a transaction then non-permanent failing notarisation throws, but does not invalidate tx`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -274,6 +344,7 @@ class UtxoFinalityFlowTest {
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
 
         verify(sessionAlice).receive(Payload::class.java)
         verify(sessionBob).receive(Payload::class.java)
@@ -284,7 +355,12 @@ class UtxoFinalityFlowTest {
             )
         )
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
-        verify(flowMessaging).sendAll(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>(), eq(sessions))
+        verify(flowMessaging).sendAll(
+            Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                "Notarization failed with notarisation error.",
+                FinalityNotarizationFailureType.OTHER.value
+            ), sessions
+        )
     }
 
     @Test
@@ -332,6 +408,7 @@ class UtxoFinalityFlowTest {
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
         verify(sessionAlice).receive(Payload::class.java)
@@ -393,6 +470,7 @@ class UtxoFinalityFlowTest {
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
         verify(sessionAlice).receive(Payload::class.java)
@@ -457,6 +535,7 @@ class UtxoFinalityFlowTest {
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
         verify(sessionAlice).receive(Payload::class.java)
@@ -516,6 +595,7 @@ class UtxoFinalityFlowTest {
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
 
         verify(sessionAlice).receive(Payload::class.java)
@@ -596,6 +676,7 @@ class UtxoFinalityFlowTest {
         verify(updatedTxSomeSigs, never()).addSignature(any())
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(initialTx, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -617,6 +698,7 @@ class UtxoFinalityFlowTest {
         verify(updatedTxSomeSigs, never()).addSignature(signatureBob)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(initialTx, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -650,6 +732,7 @@ class UtxoFinalityFlowTest {
         verify(updatedTxSomeSigs, never()).addSignature(signatureBob)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxSomeSigs, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -682,6 +765,7 @@ class UtxoFinalityFlowTest {
         verify(updatedTxSomeSigs, never()).addSignature(signatureBob)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxSomeSigs, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -690,17 +774,24 @@ class UtxoFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        whenever(updatedTxAllSigs.verifySignatures()).thenThrow(TransactionVerificationException(TX_ID, "failed", null))
+        whenever(updatedTxAllSigs.verifySignatures()).thenThrow(
+            TransactionMissingSignaturesException(
+                TX_ID,
+                setOf(),
+                "failed"
+            )
+        )
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionVerificationException::class.java)
-            .hasMessageContaining("failed")
+            .isInstanceOf(TransactionMissingSignaturesException::class.java)
+            .hasMessageContaining("is missing signatures for signatories")
 
         verify(initialTx).addSignature(signatureAlice1)
         verify(updatedTxSomeSigs).addSignature(signatureAlice2)
         verify(updatedTxSomeSigs).addSignature(signatureBob)
 
         verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(updatedTxAllSigs, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 

@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -40,6 +41,7 @@ class UtxoReceiveFinalityFlow(
             session.send(payload)
             transaction
         } else {
+            log.warn("Failed to validate transaction: ${initialTransaction.id}")
             persistInvalidTransaction(initialTransaction)
             val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Transaction validation failed for transaction $transactionId when signature was requested"
@@ -100,13 +102,6 @@ class UtxoReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun persistInvalidTransaction(transaction: UtxoSignedTransactionInternal) {
-        log.warn("Failed to validate transaction: ${transaction.id}")
-        persistenceService.persist(transaction, TransactionStatus.INVALID)
-        log.debug { "Recorded transaction as invalid: ${transaction.id}" }
-    }
-
-    @Suspendable
     private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): UtxoSignedTransactionInternal {
         log.debug { "Waiting for other parties' signatures for transaction: ${transaction.id}" }
         val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
@@ -122,7 +117,12 @@ class UtxoReceiveFinalityFlow(
 
     private fun verifyAllReceivedSignatures(transaction: UtxoSignedTransactionInternal) {
         log.debug { "Verifying signatures of transaction: ${transaction.id}" }
-        transaction.verifySignatures()
+        try {
+            transaction.verifySignatures()
+        } catch (e: Exception) {
+            persistInvalidTransaction(transaction)
+            throw e
+        }
     }
 
     @Suspendable
@@ -134,12 +134,17 @@ class UtxoReceiveFinalityFlow(
             val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
                     "${transaction.id} with message: ${failure.message}"
             log.warn(message)
+            val reason = failure.reason
+            if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.UNRECOVERABLE) {
+                persistInvalidTransaction(transaction)
+            }
             CordaRuntimeException(message)
         }
 
         if (notarySignatures.isEmpty()) {
             val message = "No notary signature received for transaction: ${transaction.id}"
             log.warn(message)
+            persistInvalidTransaction(transaction)
             throw CordaRuntimeException(message)
 
         }

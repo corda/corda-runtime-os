@@ -144,11 +144,34 @@ class UtxoReceiveFinalityFlowTest {
         verify(signedTransaction).addMissingSignatures()
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
 
     @Test
-    fun `receiving a transaction that passes verification then a failure from notarisation throws`() {
+    fun `receiving a transaction that passes verification then unrecoverable failure from notarisation throws and invalidates tx`() {
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(Payload::class.java)).thenReturn(
+            Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                "Notarisation error",
+                FinalityNotarizationFailureType.UNRECOVERABLE.value
+            )
+        )
+
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Notarisation error")
+
+        verify(signedTransaction).addMissingSignatures()
+        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
+        verify(session).send(Payload.Success(listOf(signature1, signature2)))
+    }
+
+    @Test
+    fun `receiving a transaction that passes verification then a non-unrecoverable failure from notarisation throws and does not invalidate tx`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Failure<List<DigitalSignatureAndMetadata>>("Notarisation error"))
@@ -160,6 +183,7 @@ class UtxoReceiveFinalityFlowTest {
         verify(signedTransaction).addMissingSignatures()
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
 
@@ -180,6 +204,7 @@ class UtxoReceiveFinalityFlowTest {
         verify(signedTransaction).addMissingSignatures()
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
 
@@ -197,6 +222,7 @@ class UtxoReceiveFinalityFlowTest {
         verify(signedTransaction).addMissingSignatures()
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
     }
 
@@ -225,7 +251,7 @@ class UtxoReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a transaction that fails validation with an IllegalArgumentException sends a failure payload and throws an exception`() {
+    fun `receiving a transaction that fails validation with an IllegalArgumentException sends a failure payload, throws an exception and invalidates tx`() {
         assertThatThrownBy { callReceiveFinalityFlow { throw IllegalArgumentException() } }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Transaction validation failed for transaction")
@@ -237,7 +263,7 @@ class UtxoReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a transaction that fails validation with an IllegalStateException sends a failure payload and throws an exception`() {
+    fun `receiving a transaction that fails validation with an IllegalStateException sends a failure payload, throws an exception and invalidates tx`() {
         assertThatThrownBy { callReceiveFinalityFlow { throw IllegalStateException() } }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Transaction validation failed for transaction")
@@ -249,7 +275,7 @@ class UtxoReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a transaction that fails validation with a CordaRuntimeException sends a failure payload and throws an exception`() {
+    fun `receiving a transaction that fails validation with a CordaRuntimeException sends a failure payload, throws an exception and invalidates tx`() {
         assertThatThrownBy { callReceiveFinalityFlow { throw CordaRuntimeException("") } }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Transaction validation failed for transaction")
@@ -261,7 +287,7 @@ class UtxoReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a transaction that throws an unexpected exception during validation throws an exception`() {
+    fun `receiving a transaction that throws an unexpected exception during validation throws an exception and does not invalidate tx`() {
         assertThatThrownBy { callReceiveFinalityFlow { throw FileNotFoundException("message!") } }
             .isInstanceOf(FileNotFoundException::class.java)
             .hasMessage("message!")
@@ -304,6 +330,7 @@ class UtxoReceiveFinalityFlowTest {
             .hasMessage("Verifying signature failed!!")
 
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -318,6 +345,7 @@ class UtxoReceiveFinalityFlowTest {
             .hasMessageContaining("There are missing signatures")
 
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
     }
 
@@ -329,7 +357,7 @@ class UtxoReceiveFinalityFlowTest {
 
         callReceiveFinalityFlow()
 
-       verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
     }
 
     @Test

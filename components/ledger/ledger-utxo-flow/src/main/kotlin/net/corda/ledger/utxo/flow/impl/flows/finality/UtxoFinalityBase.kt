@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -17,6 +18,25 @@ import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
+import java.security.InvalidParameterException
+
+/**
+ * Initiator will notify the receiver side with UNRECOVERABLE if the notarization error cannot be recovered and the
+ * transaction can be updated to INVALID.
+ */
+enum class FinalityNotarizationFailureType(val value: String) {
+    UNRECOVERABLE("U"),
+    OTHER("O");
+
+    companion object {
+        fun String.toFinalityNotarizationFailureType() = when {
+            this.equals(UNRECOVERABLE.value, ignoreCase = true) -> UNRECOVERABLE
+            this.equals(OTHER.value, ignoreCase = true) -> OTHER
+            else -> throw InvalidParameterException("FinalityNotarizationFailureType '$this' is not supported")
+        }
+    }
+
+}
 
 @CordaSystemFlow
 abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
@@ -65,7 +85,9 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         transaction: UtxoSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata
     ): UtxoSignedTransactionInternal {
-        verifySignature(transaction, signature)
+        verifySignature(transaction, signature) {
+            persistInvalidTransaction(transaction)
+        }
         return transaction.addSignature(signature)
     }
 
@@ -91,6 +113,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
             val message ="Failed to verify transaction's signature($signature) by notary ${transaction.notary} for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
+            persistInvalidTransaction(transaction)
             throw e
         }
         return transaction.addSignature(signature)
@@ -99,6 +122,12 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
+    }
+
+    @Suspendable
+    protected fun persistInvalidTransaction(transaction: UtxoSignedTransactionInternal) {
+        persistenceService.persist(transaction, TransactionStatus.INVALID)
+        log.debug { "Recorded transaction as invalid: ${transaction.id}" }
     }
 
 }
