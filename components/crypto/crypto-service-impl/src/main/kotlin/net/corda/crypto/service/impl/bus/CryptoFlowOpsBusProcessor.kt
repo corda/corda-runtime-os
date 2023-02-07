@@ -105,6 +105,7 @@ class CryptoFlowOpsBusProcessor(
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
         return when (request) {
+            // This is not currently being used anywhere
             is FilterMyKeysFlowQuery ->
                 cryptoOpsClient.filterMyKeysProxy(
                     tenantId = context.tenantId,

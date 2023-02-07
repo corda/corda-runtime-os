@@ -107,21 +107,11 @@ class CryptoOpsClientImpl(
         }
     }
 
-    // This is coming from flow requests, therefore this
-    fun filterMyKeysProxy(
-        tenantId: String,
-        candidateKeys: Iterable<ByteBuffer>,
-        usingShortId: Boolean): CryptoSigningKeys {
-        val publicKeyIds =
-            if (usingShortId) {
-                candidateKeys.map {
-                    publicKeyIdFromBytes(it.array())
-                }
-            } else {
-                candidateKeys.map {
-                    publicKeyFullIdFromBytes(it.array(), digestService)
-                }
-            }
+    // This path is not currently used
+    fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys {
+        val publicKeyIds = candidateKeys.map {
+            publicKeyIdFromBytes(it.array())
+        }
         return lookUpForKeysByIdsProxy(tenantId, publicKeyIds)
     }
 
