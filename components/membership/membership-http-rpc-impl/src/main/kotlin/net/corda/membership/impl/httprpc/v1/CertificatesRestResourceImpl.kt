@@ -347,7 +347,7 @@ class CertificatesRestResourceImpl @Activate constructor(
             MemberX500Name.parse(x500Name)
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(
-                "The X500 name of the certificate is invalid: ${e.message}.",
+                "The X500 name of the certificate is not a valid Corda X500 name: ${e.message}.",
                 mapOf("x500Name" to x500Name)
             )
         }
