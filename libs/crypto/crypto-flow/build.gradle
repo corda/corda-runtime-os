@@ -9,12 +9,12 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-
-    implementation "net.corda:corda-avro-schema"
     api project(':libs:crypto:cipher-suite')
 
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:crypto:cipher-suite-impl")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
