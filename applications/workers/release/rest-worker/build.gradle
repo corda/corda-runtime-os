@@ -4,7 +4,7 @@ plugins {
     id 'corda.docker-app'
 }
 
-description 'RPC Worker'
+description 'REST Worker'
 
 sourceSets {
     e2eTest {
