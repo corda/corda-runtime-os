@@ -156,6 +156,7 @@ class SigningServiceGeneralTests {
     fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
         val existingKey = SigningCachedKey(
             id = UUID.randomUUID().toString(),
+            shortId = UUID.randomUUID().toString(),
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             alias = "alias1",

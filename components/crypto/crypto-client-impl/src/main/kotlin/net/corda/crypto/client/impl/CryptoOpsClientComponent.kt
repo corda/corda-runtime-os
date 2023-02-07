@@ -151,6 +151,7 @@ class CryptoOpsClientComponent @Activate constructor(
             filter = filter
         )
 
+    // TODO This needs to break into two
     override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> =
         impl.ops.lookup(
             tenantId = tenantId,

@@ -13,6 +13,10 @@ import java.security.PublicKey
 fun publicKeyIdFromBytes(publicKey: ByteArray): String =
     PublicKeyHash.calculate(publicKey).id
 
+// TODO this needs to be removed, only adding it for now for convenience
+fun publicKeyFullIdFromBytes(publicKey: ByteArray): String =
+    PublicKeyHash.calculate(publicKey).value
+
 // TODO rename the following to publicKeyIdFromBytes when existing `publicKeyIdFromBytes` gets renamed to publicKeyShortIdFromBytes
 fun publicKeyFullIdFromBytes(publicKey: ByteArray, digestService: PlatformDigestService): String =
     // TODO default digest algorithm needs to selected through default digest service

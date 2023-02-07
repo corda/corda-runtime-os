@@ -1,6 +1,8 @@
 package net.corda.crypto.service.impl.infra
 
+import net.corda.crypto.core.publicKeyFullIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.publicKeyShortIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
@@ -39,11 +41,16 @@ class TestSigningKeyStore(
 
     override fun save(tenantId: String, context: SigningKeySaveContext) = lock.withLock {
         val now = Instant.now()
+        val publicKeyId: String
+        val publicKeyShortId: String
         val record = when (context) {
             is SigningPublicKeySaveContext -> {
                 val encodedKey = context.key.publicKey.encoded
+                publicKeyId = publicKeyFullIdFromBytes(encodedKey)
+                publicKeyShortId = publicKeyShortIdFromBytes(encodedKey)
                 SigningCachedKey(
-                    id = publicKeyIdFromBytes(encodedKey),
+                    id = publicKeyId,
+                    shortId = publicKeyShortId,
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -61,8 +68,11 @@ class TestSigningKeyStore(
             }
             is SigningWrappedKeySaveContext -> {
                 val encodedKey = context.key.publicKey.encoded
+                publicKeyId = publicKeyFullIdFromBytes(encodedKey)
+                publicKeyShortId = publicKeyShortIdFromBytes(encodedKey)
                 SigningCachedKey(
-                    id = publicKeyIdFromBytes(encodedKey),
+                    id = publicKeyId,
+                    shortId = publicKeyShortId,
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,

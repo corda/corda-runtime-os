@@ -82,7 +82,8 @@ class CryptoFlowOpsBusProcessorTests {
             requestingComponent = componentName,
             responseTopic = responseTopic,
             keyEncodingService = keyEncodingService,
-            requestValidityWindowSeconds = ttl
+            requestValidityWindowSeconds = ttl,
+            digestService = mock()
         )
 
     private fun mockPublicKey(): PublicKey {
