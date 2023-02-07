@@ -13,7 +13,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
@@ -23,7 +22,6 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.membership.MemberInfo
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -46,7 +44,6 @@ class ConsensualReceiveFinalityFlowTest {
 
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<ConsensualLedgerPersistenceService>()
-    private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
 
     private val session = mock<FlowSession>()
@@ -85,8 +82,6 @@ class ConsensualReceiveFinalityFlowTest {
 
         whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
         whenever(ledgerTransaction.requiredSignatories).thenReturn(setOf(publicKeyExample))
-
-        whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
 
     @Test
@@ -188,12 +183,12 @@ class ConsensualReceiveFinalityFlowTest {
 
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(signedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
     }
 
     private fun callReceiveFinalityFlow(validator: ConsensualTransactionValidator = ConsensualTransactionValidator { }) {
         val flow = ConsensualReceiveFinalityFlow(session, validator)
         flow.persistenceService = persistenceService
-        flow.serializationService = serializationService
         flow.transactionSignatureService = transactionSignatureService
         flow.call()
     }

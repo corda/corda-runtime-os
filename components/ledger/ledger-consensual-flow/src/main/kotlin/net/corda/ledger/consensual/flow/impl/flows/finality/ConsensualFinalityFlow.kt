@@ -3,7 +3,6 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -12,11 +11,11 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
@@ -26,7 +25,7 @@ class ConsensualFinalityFlow(
 ) : ConsensualFinalityBase() {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val transactionId = initialTransaction.id
@@ -36,12 +35,6 @@ class ConsensualFinalityFlow(
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
-
-    @CordaInject
-    lateinit var persistenceService: ConsensualLedgerPersistenceService
-
-    @CordaInject
-    lateinit var serializationService: SerializationService
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
@@ -77,6 +70,7 @@ class ConsensualFinalityFlow(
                 session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
                 log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
+                persistInvalidTransaction(initialTransaction)
                 throw e
             }
         }
@@ -87,6 +81,7 @@ class ConsensualFinalityFlow(
                 val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
                         "$transactionId with message: ${failure.message}"
                 log.warn(message)
+                persistInvalidTransaction(initialTransaction)
                 CordaRuntimeException(message)
             }
 
@@ -127,6 +122,7 @@ class ConsensualFinalityFlow(
                     "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
+            persistInvalidTransaction(transaction)
             throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
         }
     }
