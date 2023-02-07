@@ -91,7 +91,7 @@ class InteropServiceIntegrationTest {
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
         val testId = "test1"
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", \"parameters\" : [ { \"denomination\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
+        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
@@ -114,7 +114,7 @@ class InteropServiceIntegrationTest {
                 ByteBuffer.wrap("".toByteArray())
             )
         )
-        val interopMessage = InteropMessage("InteropMessageID-01", payload, "")
+        val interopMessage = InteropMessage("InteropMessageID-01", payload)
 
         val interopRecord = Record(
             P2P_IN_TOPIC, testId, AppMessage(

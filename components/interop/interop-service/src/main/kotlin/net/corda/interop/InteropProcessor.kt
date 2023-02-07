@@ -13,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.util.UUID
 
 //Based on FlowP2PFilter
 @Suppress("Unused")
@@ -51,12 +52,12 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         val interopMessage  = cordaAvroDeserializer.deserialize(payload.array())
         //following logging is added just check serialisation/de-serialisation result and can be removed later
         logger.info ( "Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, facade request: $interopMessage" )
-        if(interopMessage != null) {
-            logger.info("Converted interop message to facade request : ${InteropMessageTransformer.getFacadeRequest(interopMessage)}")
-        }
-
         return if (interopMessage != null) {
-            Record(Schemas.P2P.P2P_OUT_TOPIC, key, generateAppMessage(header, interopMessage, cordaAvroSerializer))
+            val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
+            logger.info("Converted interop message to facade request : $facadeRequest")
+            val message : InteropMessage = InteropMessageTransformer.getInteropMessage(interopMessage.messageId, facadeRequest)
+            logger.info("Converted facade request to interop message : $message")
+            Record(Schemas.P2P.P2P_OUT_TOPIC, key, generateAppMessage(header, message, cordaAvroSerializer))
         } else {
             null
         }
@@ -70,9 +71,17 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         interopMessage: InteropMessage,
         interopMessageSerializer: CordaAvroSerializer<InteropMessage>
     ): AppMessage {
+        val responseHeader = AuthenticatedMessageHeader(
+            header.source,
+            header.destination,
+            header.ttl,
+            header.messageId + "-" + UUID.randomUUID(),
+            "",
+            SUBSYSTEM
+        )
         return AppMessage(
             AuthenticatedMessage(
-                header,
+                responseHeader,
                 ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
             )
         )

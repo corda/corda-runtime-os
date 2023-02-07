@@ -19,8 +19,7 @@ class InteropMessageTransformer {
 
         fun getInteropMessage(
             messageId: String,
-            request: FacadeRequest,
-            response: FacadeResponse
+            request: FacadeRequest
         ): InteropMessage {
             val mapper = ObjectMapper()
             return InteropMessage(messageId, mapper.writeValueAsString(request))
