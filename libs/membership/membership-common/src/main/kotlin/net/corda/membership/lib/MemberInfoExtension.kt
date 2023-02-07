@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory
 import java.net.URL
 import java.security.PublicKey
 import java.time.Instant
+import java.util.UUID
 
 class MemberInfoExtension {
     companion object {
@@ -210,6 +211,13 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.isMgm: Boolean
             get() = mgmProvidedContext.parseOrNull(IS_MGM) ?: false
+
+        /**
+         * Returns the pre-auth token from the member info if it is present, and it is a valid UUID.
+         */
+        @JvmStatic
+        val MemberInfo.preAuthToken: UUID?
+            get() = memberProvidedContext.parseOrNull("corda.auth.token") ?: null
 
         /**
          * Return the notary details if the member is a notary.

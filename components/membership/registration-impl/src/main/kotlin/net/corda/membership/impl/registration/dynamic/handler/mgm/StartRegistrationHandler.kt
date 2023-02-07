@@ -23,6 +23,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -88,6 +89,23 @@ internal class StartRegistrationHandler(
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
+
+            try {
+                pendingMemberInfo.preAuthToken
+            } catch (e: IllegalArgumentException) {
+                val err = "Registration failed due to invalid format of pre-auth token."
+                logger.info(err)
+                logger.debug(err, e)
+                throw InvalidRegistrationRequestException(err)
+            }?.let {
+                membershipQueryClient.queryPreAuthTokens(
+                    mgmHoldingIdentity = mgmHoldingId,
+                    ownerX500Name = pendingMemberInfo.name,
+                    preAuthTokenId = it,
+                    viewInactive = false
+                )
+            }
+
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
@@ -147,8 +165,6 @@ internal class StartRegistrationHandler(
             Pair(DeclineRegistration("Failed to verify registration request due to: [${ex.message}]"), emptyList())
         }
 
-
-
         return RegistrationHandlerResult(
             RegistrationState(
                 registrationRequest.registrationId,
@@ -166,7 +182,7 @@ internal class StartRegistrationHandler(
     private fun validateRegistrationRequest(condition: Boolean, errorMsg: () -> String) {
         if (!condition) {
             with(errorMsg.invoke()) {
-                logger.error(this)
+                logger.info(this)
                 throw InvalidRegistrationRequestException(this)
             }
         }
@@ -175,15 +191,15 @@ internal class StartRegistrationHandler(
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
         val memberContext = keyValuePairListDeserializer
             .deserialize(registrationRequest.memberContext.array())
-            ?.items?.associate { it.key to it.value }?.toSortedMap()
+            ?.items?.associate { it.key to it.value }
             ?: emptyMap()
-        validateRegistrationRequest(memberContext.entries.isNotEmpty()) {
+        validateRegistrationRequest(memberContext.isNotEmpty()) {
             "Empty member context in the registration request."
         }
 
         val now = clock.instant().toString()
         return memberInfoFactory.create(
-            memberContext.entries.associate { it.key to it.value }.toSortedMap(),
+            memberContext.toSortedMap(),
             sortedMapOf(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
