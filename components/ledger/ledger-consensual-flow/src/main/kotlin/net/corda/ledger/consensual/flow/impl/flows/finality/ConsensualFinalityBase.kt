@@ -1,6 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualTransactionMetadataVerifier
@@ -10,7 +10,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import org.slf4j.LoggerFactory
 
@@ -26,16 +26,16 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
 
     @Suspendable
     protected fun verifySignature(
-        transactionId: SecureHash,
+        transaction: TransactionWithMetadata,
         signature: DigitalSignatureAndMetadata,
         onFailure: ((message: String) -> Unit)? = null
     ) {
         try {
-            transactionSignatureService.verifySignature(transactionId, signature)
-            log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transactionId" }
+            transactionSignatureService.verifySignature(transaction, signature)
+            log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transaction.id" }
         } catch (e: Exception) {
             val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
-                    "transaction ${transactionId}. Message: ${e.message}"
+                    "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             if (onFailure != null)
                 onFailure(message)
@@ -48,7 +48,7 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
         transaction: ConsensualSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata
     ): ConsensualSignedTransactionInternal {
-        verifySignature(transaction.id, signature)
+        verifySignature(transaction, signature)
         return transaction.addSignature(signature)
     }
 

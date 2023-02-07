@@ -66,7 +66,7 @@ class UtxoReceiveFinalityFlow(
     @Suspendable
     private fun verifyExistingSignatures(initialTransaction: UtxoSignedTransactionInternal) {
         initialTransaction.signatures.forEach {
-            verifySignature(initialTransaction.id, it) { message ->
+            verifySignature(initialTransaction, it) { message ->
                 session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             }
         }
