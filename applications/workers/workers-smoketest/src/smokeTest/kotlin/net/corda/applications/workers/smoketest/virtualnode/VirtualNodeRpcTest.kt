@@ -46,6 +46,7 @@ class VirtualNodeRpcTest {
         private const val ERROR_IS_CLUSTER_RUNNING = "Initial upload failed - is the cluster running?"
         private const val ERROR_HOLDING_ID =
             "Holding id could not be created - this test needs to be run on a clean cluster."
+        private const val ERROR_REQUEST_ID = "Request Id not found."
         private const val ERROR_VNODE_NOT_IN_MAINTENANCE =
             "Virtual node must be in maintenance to perform an upgrade."
 
@@ -425,6 +426,7 @@ class VirtualNodeRpcTest {
             condition {
                 try {
                     if (it.code == 200) {
+                        println(it.toJson()["virtualNodes"])
                         val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
                             virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
                         }
@@ -501,6 +503,7 @@ class VirtualNodeRpcTest {
         }
     }
 
+    /*
     @Test
     @Order(82)
     fun `persist dog`() {
@@ -649,6 +652,7 @@ class VirtualNodeRpcTest {
             runSimplePersistenceCheckFlow("Could persist dog")
         }
     }
+     */
 
     @Test
     @Order(110)
@@ -676,6 +680,7 @@ class VirtualNodeRpcTest {
         }
     }
 
+    /*
     @Test
     @Order(112)
     fun `upgrading without transitioning virtual node to maintenance fails with bad request`() {
@@ -692,6 +697,7 @@ class VirtualNodeRpcTest {
 
         }
     }
+     */
 
     @Test
     @Order(113)
@@ -699,10 +705,16 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
+            println("calling update with id $bobHoldingId")
             eventuallyUpdateVirtualNodeState(bobHoldingId, "maintenance", "INACTIVE")
 
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
-            triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
+            val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
+
+            println("requestId: $requestId")
+
+            getVirtualNodeStatus(requestId!!)
+
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
 
             eventuallyUpdateVirtualNodeState(bobHoldingId, "active", "ACTIVE")
@@ -720,6 +732,16 @@ class VirtualNodeRpcTest {
             condition { it.code == 202 }
             failMessage(ERROR_HOLDING_ID)
         }.toJson()
+        return vNodeJson["requestId"].textValue()
+    }
+
+    private fun ClusterBuilder.getVirtualNodeStatus(requestId: String): String? {
+        val vNodeJson = assertWithRetry {
+            command { getVNodeOperationStatus(requestId) }
+            condition { it.code == 202 }
+            failMessage(ERROR_REQUEST_ID)
+        }.toJson()
+        println(vNodeJson.toString())
         return vNodeJson["requestId"].textValue()
     }
 

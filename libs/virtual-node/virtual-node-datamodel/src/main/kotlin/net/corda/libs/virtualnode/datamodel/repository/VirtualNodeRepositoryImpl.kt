@@ -1,11 +1,13 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
+import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import java.lang.IllegalArgumentException
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.datamodel.dto.OperationStatusLite
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -54,6 +56,19 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             .resultList
             .singleOrNull()
             ?.toVirtualNodeInfo()
+    }
+
+    override fun findVirtualNodeOperation(entityManager: EntityManager, requestId: String) : OperationStatusLite {
+        entityManager.transaction{
+            val operationStatus = entityManager.createQuery("from ${VirtualNodeOperationStatus::class.java.simpleName} where requestId = :requestId")
+                .setParameter("requestId", requestId)
+                .resultList
+
+            println(operationStatus)
+            println(operationStatus.get(0))
+
+            return OperationStatusLite("123")
+        }
     }
 
     /**

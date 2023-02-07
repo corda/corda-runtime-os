@@ -2,6 +2,7 @@ package net.corda.libs.virtualnode.datamodel.repository
 
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.datamodel.dto.OperationStatusLite
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -23,6 +24,8 @@ interface VirtualNodeRepository {
      * Find a virtual node identified by the given holdingIdentity short hash
      */
     fun find(entityManager: EntityManager, holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
+
+    fun findVirtualNodeOperation(entityManager: EntityManager, requestId: String) : OperationStatusLite
 
     /**
      * Persist a holding identity with the given holdingId and CPI.

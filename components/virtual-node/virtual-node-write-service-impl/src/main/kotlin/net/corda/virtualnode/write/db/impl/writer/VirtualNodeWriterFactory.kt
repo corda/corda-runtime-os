@@ -25,6 +25,9 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyn
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import javax.persistence.EntityManager
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 
 /** A factory for [VirtualNodeWriter]s. */
@@ -112,7 +115,8 @@ internal class VirtualNodeWriterFactory(
         val virtualNodeEntityRepository =
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
-        val virtualNodeOperationStatusHandler(dbConnectionManager, )
+        val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(dbConnectionManager, virtualNodeRepository)
         val processor = VirtualNodeWriterProcessor(
             vnodePublisher,
             dbConnectionManager,
@@ -120,7 +124,9 @@ internal class VirtualNodeWriterFactory(
             vnodeDbFactory,
             groupPolicyParser,
             UTCClock(),
-            getCurrentChangeLogsForCpi
+            virtualNodeOperationStatusHandler,
+            getCurrentChangelogsForCpi = getCurrentChangeLogsForCpi,
+            virtualNodeRepository = virtualNodeRepository
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)
