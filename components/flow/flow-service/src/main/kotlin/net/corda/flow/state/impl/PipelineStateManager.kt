@@ -7,6 +7,8 @@ import net.corda.data.flow.state.checkpoint.RetryState
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
+import net.corda.v5.crypto.SecureHash
+import java.nio.ByteBuffer
 import java.time.Instant
 import kotlin.math.min
 import kotlin.math.pow
@@ -31,6 +33,9 @@ class PipelineStateManager(
         // Reset the max sleep time
         state.maxFlowSleepDuration = config.getInt(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION)
     }
+
+    val cpk: Set<SecureHash>
+        get() = state.cpks.map { SecureHash(it.algorithm, it.serverHash.array()) }.toSet()
 
     val retryState: RetryState?
         get() = state.retryState
@@ -63,6 +68,15 @@ class PipelineStateManager(
 
     fun markRetrySuccess() {
         state.retryState = null
+    }
+
+    fun populateCpks(cpks: Set<SecureHash>) {
+
+        if (state.cpks.isNullOrEmpty()) {
+            state.cpks = cpks.map { net.corda.data.crypto.SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
+        } else {
+            throw IllegalStateException("cpk list ${state.cpks} cannot be updated to $cpks once set")
+        }
     }
 
     fun setPendingPlatformError(type: String, message: String) {

@@ -1,12 +1,12 @@
 package net.corda.flow.pipeline.handlers.events
 
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
@@ -16,7 +16,6 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,8 +29,8 @@ class SessionEventHandler @Activate constructor(
     private val flowSandboxService: FlowSandboxService,
     @Reference(service = SessionManager::class)
     private val sessionManager: SessionManager,
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val cpiInfoReadService: CpiInfoReadService
+    @Reference(service = CheckpointInitializer::class)
+    private val checkpointInitializer: CheckpointInitializer
 ) : FlowEventHandler<SessionEvent> {
 
     private companion object {
@@ -107,8 +106,7 @@ class SessionEventHandler @Activate constructor(
             .setCreatedTimestamp(Instant.now())
             .build()
 
-        context.checkpoint.initFlowState(startContext)
-        context.checkpoint.waitingFor = WaitingFor(WaitingForSessionInit(sessionId))
+        checkpointInitializer.initialize(context.checkpoint, startContext, WaitingFor(WaitingForSessionInit(sessionId)))
     }
 
     private fun discardSessionEvent(context: FlowEventContext<SessionEvent>, sessionEvent: SessionEvent) {

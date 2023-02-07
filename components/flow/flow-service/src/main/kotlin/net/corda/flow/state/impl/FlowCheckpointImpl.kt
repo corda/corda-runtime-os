@@ -110,8 +110,8 @@ class FlowCheckpointImpl(
     override val inRetryState: Boolean
         get() = pipelineStateManager.retryState != null
 
-    override val cpks: List<SecureHash>
-        get() = checkpoint.pipelineState.cpks.map { SecureHash(it.algorithm, it.serverHash.array()) }
+    override val cpks: Set<SecureHash>
+        get() = pipelineStateManager.cpk
 
     override val retryEvent: FlowEvent
         get() = pipelineStateManager.retryEvent
@@ -123,7 +123,7 @@ class FlowCheckpointImpl(
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.flowContext
 
-    override fun initFlowState(flowStartContext: FlowStartContext) {
+    override fun initFlowState(flowStartContext: FlowStartContext, initializedCpks: Set<SecureHash>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
@@ -145,6 +145,7 @@ class FlowCheckpointImpl(
 
         flowStateManager = FlowStateManager(flowState)
         nullableFlowStack = FlowStackImpl(flowState.flowStackItems)
+        pipelineStateManager.populateCpks(initializedCpks)
     }
 
     override fun getSessionState(sessionId: String): SessionState? {

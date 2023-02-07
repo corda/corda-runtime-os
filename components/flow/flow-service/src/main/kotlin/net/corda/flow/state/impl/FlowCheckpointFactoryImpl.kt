@@ -1,5 +1,6 @@
 package net.corda.flow.state.impl
 
+import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.PipelineState
 import net.corda.flow.state.FlowCheckpoint
@@ -21,6 +22,7 @@ class FlowCheckpointFactoryImpl : FlowCheckpointFactory {
             retryState = null
             maxFlowSleepDuration = config.getInt(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION)
             pendingPlatformError = null
+            cpks = emptyList<SecureHash>()
         }.build()
         return Checkpoint.newBuilder().apply {
             flowId = newFlowId
