@@ -4,9 +4,11 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.stream.Stream
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -16,11 +18,13 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.mutableKeyValuePairList
+import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
@@ -106,18 +110,55 @@ class FlowSessionManagerImplTest {
         counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
     )
 
+    private val flowKey = mock<FlowKey>()
+    private val errorSessionState1 = mock<SessionState> { whenever(it.status).thenReturn(SessionStateType.ERROR) }
+    private val errorSessionState2 = mock<SessionState> { whenever(it.status).thenReturn(SessionStateType.ERROR) }
+    private val errorEvent1 = mock<SessionEvent> { whenever(it.sessionId).thenReturn("s1") }
+    private val errorEvent2 = mock<SessionEvent> { whenever(it.sessionId).thenReturn("s2") }
+    private val errorPairing1 = errorSessionState1 to listOf(errorEvent1)
+    private val errorPairing2 = errorSessionState2 to listOf(errorEvent2)
+    private val sessionsWithErrors = listOf(
+        errorSessionState1,
+        errorSessionState2,
+        mock { it.status = SessionStateType.CLOSED },
+        mock { it.status = SessionStateType.CLOSING },
+        mock { it.status = SessionStateType.CONFIRMED },
+        mock { it.status = SessionStateType.CREATED },
+        mock { it.status = SessionStateType.WAIT_FOR_FINAL_ACK },
+    )
+    private val record1 = Record(topic = "topic", key = "s1", value = FlowMapperEvent("payload"))
+    private val record2 = Record(topic = "topic", key = "s2", value = FlowMapperEvent("payload"))
+
     private val sessionManager = mock<SessionManager>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val flowStack = mock<FlowStack>()
+    private val flowRecordFactory = mock<FlowRecordFactory>()
 
-    private val flowSessionManager = FlowSessionManagerImpl(sessionManager, mock())
+    private val flowSessionManager = FlowSessionManagerImpl(sessionManager, flowRecordFactory)
 
     @BeforeEach
     fun setup() {
         whenever(checkpoint.flowId).thenReturn(FLOW_ID)
+        whenever(checkpoint.flowKey).thenReturn(flowKey)
+        whenever(flowKey.identity).thenReturn(HOLDING_IDENTITY)
         whenever(checkpoint.holdingIdentity).thenReturn(HOLDING_IDENTITY.toCorda())
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(sessionState)
         whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(anotherSessionState)
+    }
+
+    @Test
+    fun `get session error event records`() {
+        whenever(checkpoint.sessions).thenReturn(sessionsWithErrors)
+
+        whenever(sessionManager.getMessagesToSend(eq(errorSessionState1), any(), any(), any())).thenReturn(errorPairing1)
+        whenever(sessionManager.getMessagesToSend(eq(errorSessionState2), any(), any(), any())).thenReturn(errorPairing2)
+
+        whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s1"), eq(errorEvent1))).thenReturn(record1)
+        whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s2"), eq(errorEvent2))).thenReturn(record2)
+
+        val result = flowSessionManager.getSessionErrorEventRecords(checkpoint, mock(), Instant.now())
+
+        assertThat(result).isEqualTo(listOf(record1, record2))
     }
 
     @Test
@@ -768,7 +809,7 @@ class FlowSessionManagerImplTest {
 
         val sessionStates = flowSessionManager.sendErrorMessages(
             checkpoint,
-            listOf(SESSION_ID , ANOTHER_SESSION_ID),
+            listOf(SESSION_ID, ANOTHER_SESSION_ID),
             IllegalArgumentException("errorMessage"),
             instant
         )
@@ -824,7 +865,7 @@ class FlowSessionManagerImplTest {
 
         val sessionStates = flowSessionManager.sendErrorMessages(
             checkpoint,
-            listOf(SESSION_ID , ANOTHER_SESSION_ID),
+            listOf(SESSION_ID, ANOTHER_SESSION_ID),
             IllegalArgumentException(),
             instant
         )
