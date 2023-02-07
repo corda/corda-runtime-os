@@ -60,6 +60,8 @@ class PermissionManagementCacheService @Activate constructor(
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CONSUMER_GROUP = "PERMISSION_MANAGEMENT_SERVICE"
+        const val REGISTRATION = "REGISTRATION"
+        const val CONFIG = "CONFIG"
     }
 
     /**
@@ -73,9 +75,7 @@ class PermissionManagementCacheService @Activate constructor(
     private var groupSubscription: CompactedSubscription<String, Group>? = null
     private var roleSubscription: CompactedSubscription<String, Role>? = null
     private var permissionSubscription: CompactedSubscription<String, Permission>? = null
-    private var configHandle: AutoCloseable? = null
 
-    private var configRegistration: RegistrationHandle? = null
     private var topicsRegistration: RegistrationHandle? = null
 
     private var userSnapshotReceived: Boolean = false
@@ -99,25 +99,26 @@ class PermissionManagementCacheService @Activate constructor(
         when (event) {
             is StartEvent -> {
                 log.info("Received start event, waiting for UP event from ConfigurationReadService.")
-                configRegistration?.close()
-                configRegistration =
+                coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
                         )
                     )
+                }
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("Registration status change received: ${event.status.name}.")
                 if (event.status == LifecycleStatus.UP) {
-                    if (configHandle == null) {
+                    coordinator.createManagedResource(CONFIG)
+                    {
                         log.info("Registering for configuration updates.")
-                        configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator, setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+                        configurationReadService.registerComponentForUpdates(
+                            coordinator, setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        )
                     }
-                } else {
-                    downTransition()
                 }
+                coordinator.updateStatus(event.status)
             }
             is ConfigChangedEvent -> {
                 createAndStartSubscriptionsAndCache(event.config.getConfig(MESSAGING_CONFIG))
@@ -145,8 +146,6 @@ class PermissionManagementCacheService @Activate constructor(
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies and setting status to DOWN.")
-                configRegistration?.close()
-                configRegistration = null
                 downTransition()
                 permissionManagementCacheRef.get()?.stop()
                 permissionManagementCacheRef.set(null)
@@ -157,10 +156,6 @@ class PermissionManagementCacheService @Activate constructor(
     private fun downTransition() {
         coordinator.updateStatus(LifecycleStatus.DOWN)
 
-        configHandle?.close()
-        configHandle = null
-        topicsRegistration?.close()
-        topicsRegistration = null
         userSubscription?.close()
         userSubscription = null
         groupSubscription?.close()
