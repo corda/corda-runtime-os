@@ -24,6 +24,7 @@ import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
+import net.corda.libs.virtualnode.datamodel.entities.OperationType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeEntitiesIntegrationTest {
@@ -131,6 +132,7 @@ class VirtualNodeEntitiesIntegrationTest {
             "req-$rand",
             "some-data",
             VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE,
             Instant.now()
         )
         val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash, virtualNodeOperationEntity)

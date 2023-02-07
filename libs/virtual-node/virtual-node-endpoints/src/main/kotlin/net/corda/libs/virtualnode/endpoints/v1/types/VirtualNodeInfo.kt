@@ -20,7 +20,11 @@ import net.corda.virtualnode.OperationalStatus
  * @param uniquenessDdlConnectionId Uniqueness DB DDL connection ID.
  * @param uniquenessDmlConnectionId Uniqueness DB DML connection ID.
  * @param hsmConnectionId HSM connection ID.
- * @param state The state of the virtual node.
+ * @param flowP2pOperationalStatus operational status of the virtual node.
+ * @param flowStartOperationalStatus operational status of the virtual node.
+ * @param flowOperationalStatus operational status of the virtual node.
+ * @param vaultDbOperationalStatus operational status of the virtual node.
+ * @param operationInProgress ID of any ongoing operation on this virtual node.
  */
 data class VirtualNodeInfo(
     val holdingIdentity: HoldingIdentity,
@@ -36,4 +40,5 @@ data class VirtualNodeInfo(
     val flowStartOperationalStatus: OperationalStatus,
     val flowOperationalStatus: OperationalStatus,
     val vaultDbOperationalStatus: OperationalStatus,
+    val operationInProgress: String? = null
 )
