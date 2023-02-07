@@ -9,6 +9,7 @@ import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.impl.EphemeralKeyPairEncryptorImpl
@@ -352,7 +353,7 @@ class CryptoOperationsTests {
         val key2 = signingFreshKeys.values.first().publicKey
         val ourKeys = signingFreshKeys.values.first().signingService.lookup(
             tenantId,
-            listOf(key1.publicKeyId(), key2.publicKeyId())
+            listOf(key1.fullId(), key2.fullId())
         ).toList()
         assertThat(ourKeys).hasSize(1)
         assertTrue(ourKeys.any { it.publicKey.contentEquals(key2.encoded) })
@@ -368,7 +369,7 @@ class CryptoOperationsTests {
         }
         val ourKeys = signingFreshKeys.values.first().signingService.lookup(
             tenantId,
-            listOf(key1.publicKeyId(), key2.publicKeyId())
+            listOf(key1.fullId(), key2.fullId())
         ).toList()
         assertThat(ourKeys).isEmpty()
     }
@@ -379,7 +380,7 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookup(tenantId, listOf(info.publicKey.publicKeyId()))
+        val returned = info.signingService.lookup(tenantId, listOf(info.publicKey.fullId()))
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, info.alias, null, scheme)
@@ -391,7 +392,7 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingFreshKeys.getValue(scheme)
-        val returned = info.signingService.lookup(tenantId, listOf(info.publicKey.publicKeyId()))
+        val returned = info.signingService.lookup(tenantId, listOf(info.publicKey.fullId()))
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, null, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, null, info.externalId, scheme)

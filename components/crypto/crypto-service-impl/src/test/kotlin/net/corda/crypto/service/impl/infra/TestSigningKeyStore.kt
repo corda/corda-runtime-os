@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl.infra
 
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyFullIdFromBytes
 import net.corda.crypto.core.publicKeyShortIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
@@ -99,7 +100,7 @@ class TestSigningKeyStore(
     }
 
     override fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? = lock.withLock {
-        keys[Pair(tenantId, publicKey.publicKeyId())]
+        keys[Pair(tenantId, publicKey.fullId())]
     }
 
     @Suppress("ComplexMethod")

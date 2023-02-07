@@ -15,9 +15,8 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.core.publicKeyFullIdFromBytes
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.core.publicKeyShortIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningCachedKey
@@ -346,8 +345,8 @@ class PersistenceTests {
     fun `Should persist and retrieve raw SigningKeyEntity`() {
         val keyPair = generateKeyPair(EDDSA_ED25519_CODE_NAME)
         val tenantId = randomTenantId()
-        val keyId = publicKeyFullIdFromBytes(keyPair.public.encoded)
-        val shortKeyId = publicKeyShortIdFromBytes(keyPair.public.encoded)
+        val keyId = keyPair.public.fullId()
+        val shortKeyId = keyPair.public.fullId()
         val entity = SigningKeyEntity(
             tenantId = tenantId,
             keyId = keyId,

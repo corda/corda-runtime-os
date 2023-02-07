@@ -5,12 +5,14 @@ import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SharedSecretAliasSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.fullId
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStore
@@ -31,7 +33,8 @@ import java.security.PublicKey
 class SigningServiceImpl(
     private val store: SigningKeyStore,
     private val cryptoServiceFactory: CryptoServiceFactory,
-    override val schemeMetadata: CipherSchemeMetadata
+    override val schemeMetadata: CipherSchemeMetadata,
+    private val digestService: PlatformDigestService
 ) : SigningService {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -262,7 +265,7 @@ class SigningServiceImpl(
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
             val leafKeysIdsChunks = publicKey.leafKeys.map {
-                it.publicKeyId() to it
+                it.fullId(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
                 val found = store.lookup(tenantId, chunk.map { it.first })

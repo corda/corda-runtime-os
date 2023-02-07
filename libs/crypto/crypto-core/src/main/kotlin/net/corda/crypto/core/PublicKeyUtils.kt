@@ -4,6 +4,8 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.sha256Bytes
 import java.security.PublicKey
 
 /**
@@ -15,7 +17,11 @@ fun publicKeyIdFromBytes(publicKey: ByteArray): String =
 
 // TODO this needs to be removed, only adding it for now for convenience
 fun publicKeyFullIdFromBytes(publicKey: ByteArray): String =
-    PublicKeyHash.calculate(publicKey).value
+    SecureHash(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes()).toString()
+
+// TODO this needs to be removed, only adding it for now for convenience
+fun PublicKey.fullId(): String =
+    publicKeyFullIdFromBytes(this.encoded)
 
 // TODO rename the following to publicKeyIdFromBytes when existing `publicKeyIdFromBytes` gets renamed to publicKeyShortIdFromBytes
 fun publicKeyFullIdFromBytes(publicKey: ByteArray, digestService: PlatformDigestService): String =
