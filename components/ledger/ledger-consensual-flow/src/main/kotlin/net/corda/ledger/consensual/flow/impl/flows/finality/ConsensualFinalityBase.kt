@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
@@ -10,10 +11,10 @@ import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
+import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
-import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import org.slf4j.LoggerFactory
 
@@ -32,9 +33,10 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
 
     @Suspendable
     protected fun verifySignature(
-        transaction: TransactionWithMetadata,
+        transaction: ConsensualSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata,
-        onFailure: ((message: String) -> Unit)? = null
+        sessionToNotify: FlowSession? = null,
+        persistAsInvalidOnFail: Boolean = false
     ) {
         try {
             transactionSignatureService.verifySignature(transaction, signature)
@@ -43,8 +45,10 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
             val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
-            if (onFailure != null)
-                onFailure(message)
+            if (persistAsInvalidOnFail) {
+                persistInvalidTransaction(transaction)
+            }
+            sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             throw e
         }
     }
@@ -54,9 +58,7 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
         transaction: ConsensualSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata
     ): ConsensualSignedTransactionInternal {
-        verifySignature(transaction, signature) {
-            persistInvalidTransaction(transaction)
-        }
+        verifySignature(transaction, signature, persistAsInvalidOnFail = true)
         return transaction.addSignature(signature)
     }
 
@@ -74,17 +76,16 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
     @Suspendable
     protected fun verifyExistingSignatures(
         initialTransaction: ConsensualSignedTransactionInternal,
-        onFailure: ((message: String) -> Unit)? = null
+        sessionToNotify: FlowSession? = null
     ) {
         if (initialTransaction.signatures.isEmpty()){
             val message = "Received initial transaction without signatures."
             log.warn(message)
-            if (onFailure != null)
-                onFailure(message)
+            sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             throw CordaRuntimeException(message)
         }
         initialTransaction.signatures.forEach {
-            verifySignature(initialTransaction, it, onFailure)
+            verifySignature(initialTransaction, it, sessionToNotify)
         }
     }
 }

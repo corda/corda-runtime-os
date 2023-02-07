@@ -78,12 +78,16 @@ class ConsensualFinalityFlow(
 
         var transaction = initialTransaction
         val signaturesReceivedFromSessions = signaturesPayloads.map { (session, signaturesPayload) ->
-            val signatures = signaturesPayload.getOrThrow { failure ->
-                val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
-                        "$transactionId with message: ${failure.message}"
-                log.warn(message)
-                persistInvalidTransaction(initialTransaction)
-                CordaRuntimeException(message)
+
+            val signatures = when (signaturesPayload) {
+                is Payload.Success -> signaturesPayload.value
+                is Payload.Failure<*> -> {
+                    val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
+                            "$transactionId with message: ${signaturesPayload.message}"
+                    log.warn(message)
+                    persistInvalidTransaction(initialTransaction)
+                    throw CordaRuntimeException(message)
+                }
             }
 
             log.debug { "Received ${signatures.size} signatures from ${session.counterparty} for transaction $transactionId" }

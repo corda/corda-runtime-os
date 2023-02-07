@@ -31,9 +31,7 @@ class ConsensualReceiveFinalityFlow(
         val initialTransaction = session.receive<ConsensualSignedTransactionInternal>()
         val transactionId = initialTransaction.id
 
-        verifyExistingSignatures(initialTransaction){
-            session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(it))
-        }
+        verifyExistingSignatures(initialTransaction, session)
         verifyTransaction(initialTransaction)
 
         var transaction = if (validateTransaction(initialTransaction)) {

@@ -31,9 +31,7 @@ class UtxoReceiveFinalityFlow(
     override fun call(): UtxoSignedTransaction {
         val initialTransaction = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
-        verifyExistingSignatures(initialTransaction){
-            session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(it))
-        }
+        verifyExistingSignatures(initialTransaction, session)
         verifyTransaction(initialTransaction)
         var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
