@@ -204,12 +204,12 @@ class MemberOpsAsyncProcessorTest {
     }
 
     @Test
-    fun `onNext with not ready error will throw an exception`() {
+    fun `onNext with not ready error will not throw an exception`() {
         val id = UUID(0, 1)
         whenever(registrationProxy.register(any(), any(), any()))
             .doThrow(NotReadyMembershipRegistrationException("oops"))
 
-        assertThrows<NotReadyMembershipRegistrationException> {
+        assertDoesNotThrow {
             processor.onNext(
                 listOf(
                     Record(

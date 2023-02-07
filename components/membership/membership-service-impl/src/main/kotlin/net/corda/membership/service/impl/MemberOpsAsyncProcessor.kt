@@ -73,7 +73,14 @@ internal class MemberOpsAsyncProcessor(
             )
             logger.warn("Registration ${request.requestId} failed.", e)
         } catch (e: Exception) {
-            throw e
+            @Suppress("ForbiddenComment")
+            // TODO: We need a mechanism to retry those kind of failed requests.
+            membershipPersistenceClient.setRegistrationRequestStatus(
+                holdingIdentity,
+                registrationId.toString(),
+                RegistrationStatus.DECLINED,
+            )
+            logger.warn("Registration ${request.requestId} failed.", e)
         }
     }
 }
