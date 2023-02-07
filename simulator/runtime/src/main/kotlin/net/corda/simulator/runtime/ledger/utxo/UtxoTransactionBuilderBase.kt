@@ -2,9 +2,9 @@ package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.runtime.notary.SimTimeWindow
+import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.TimeWindow
@@ -28,10 +28,10 @@ data class UtxoTransactionBuilderBase(
     val outputStates: List<ContractState> = emptyList(),
     private val signingService: SigningService,
     private val configuration: SimulatorConfiguration,
-    private val serializer: SerializationService,
     private val persistenceService: PersistenceService,
 ): UtxoTransactionBuilder {
 
+    private val serializer = BaseSerializationService()
     private var alreadySigned = false
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {

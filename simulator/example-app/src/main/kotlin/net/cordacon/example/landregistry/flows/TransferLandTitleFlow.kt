@@ -105,7 +105,6 @@ class TransferLandTitleResponderFlow: ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-
         utxoLedgerService.receiveFinality(session) {}
     }
 }

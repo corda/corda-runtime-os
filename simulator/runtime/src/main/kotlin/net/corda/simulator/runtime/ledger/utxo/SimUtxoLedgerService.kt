@@ -35,11 +35,11 @@ class SimUtxoLedgerService(
     private val memberLookup = fiber.createMemberLookup(member)
     private val serializationService = BaseSerializationService()
     private val transactionFinalizer = UtxoTransactionFinalizer(
-        memberLookup, signingService, notarySigningService, persistenceService)
+        memberLookup, signingService, notarySigningService, persistenceService, configuration)
 
     override fun getTransactionBuilder(): UtxoTransactionBuilder {
         return utxoTransactionBuilderFactory.createUtxoTransactionBuilder(
-            signingService, serializationService, persistenceService, configuration)
+            signingService, persistenceService, configuration)
     }
 
     override fun finalize(

@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
-import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.notary.SimTimeWindow
@@ -20,6 +20,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.hamcrest.MatcherAssert
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Test
@@ -40,7 +41,47 @@ class SimUtxoLedgerServiceTest {
     private val notary = Party(notaryX500, generateKey())
 
     @Test
+    fun `should be able to build a UtxoTransactionBuilder using the given factory`() {
+        // Given a factory for building UTBs that and something to capture what we build it with
+        val builder = mock<UtxoTransactionBuilder>()
+        val fiber = mock<SimFiber>()
+        val signingService = mock<SigningService>()
+        val persistenceService = mock<PersistenceService>()
+        whenever(fiber.createSigningService(any())).thenReturn(signingService)
+        whenever(fiber.getOrCreatePersistenceService(any())).thenReturn(persistenceService)
+        whenever(fiber.createMemberLookup(any())).thenReturn(mock())
+        whenever(fiber.createNotarySigningService()).thenReturn(mock())
+
+        lateinit var capture : Triple<SigningService, PersistenceService, SimulatorConfiguration>
+        val builderFactory = UtxoTransactionBuilderFactory { ss, per, c->
+            capture = Triple(ss, per, c)
+            builder
+        }
+
+        // And a utxo ledger service that will build transactions using it
+        val ledgerService = SimUtxoLedgerService(
+            alice,
+            fiber,
+            config,
+            builderFactory
+        )
+
+        // When we get a builder
+        val createdBuilder = ledgerService.getTransactionBuilder()
+
+        // Then it should be created by the factory
+        MatcherAssert.assertThat(createdBuilder, Matchers.`is`(builder))
+
+        // Using the same services we passed in
+        MatcherAssert.assertThat(
+            capture,
+            Matchers.`is`(Triple(signingService, persistenceService, config))
+        )
+    }
+
+    @Test
     fun `should be able to retrieve stored transaction`(){
+        // Given a persistence service in which we stored a transaction entity
         val fiber = mock<SimFiber>()
         val persistenceService = mock<PersistenceService>()
         val serializationService = BaseSerializationService()
@@ -73,40 +114,15 @@ class SimUtxoLedgerServiceTest {
         whenever(fiber.createSigningService(alice)).thenReturn(signingService)
         whenever(fiber.getOrCreatePersistenceService(alice)).thenReturn(persistenceService)
 
+        // When we retrieve it or the ledger transaction from the ledger service
         val utxoLedgerService = SimUtxoLedgerService(alice, fiber, config)
         val retrievedSignedTx = utxoLedgerService.findSignedTransaction(transaction.id)
             ?: fail("No transaction retrieved")
         val retrievedLedgerTx = utxoLedgerService.findLedgerTransaction(transaction.id)
 
+        // Then it should be converted successfully back into a transaction again
         MatcherAssert.assertThat(retrievedLedgerTx?.id, Matchers.`is`(transaction.toLedgerTransaction().id))
-        MatcherAssert.assertThat(retrievedSignedTx.id, Matchers.`is`(transaction.id))
-    }
-
-    fun `should be able to retrieve unconsumed states`(){
-        val fiber = mock<SimFiber>()
-        val utxoLedgerService = SimUtxoLedgerService(alice, fiber, config)
-        val persistenceService = mock<PersistenceService>()
-        val utxoOutputQuery = mock<ParameterizedQuery<UtxoTransactionOutputEntity>>()
-        val utxoTxQuery = mock<ParameterizedQuery<UtxoTransactionEntity>>()
-        val utxoTxOutputEntity = UtxoTransactionOutputEntity(
-            "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
-            TestUtxoState::class.java.canonicalName,
-            0,
-            false
-        )
-
-        val utxoOutputQueryResult = listOf(utxoTxOutputEntity)
-        //val utxoTxQueryResult = listOf(utxoTxEntity)
-
-        whenever(persistenceService.query(eq("UtxoTransactionOutputEntity.findUnconsumedStatesByType"),
-            eq(UtxoTransactionOutputEntity::class.java))).thenReturn(utxoOutputQuery)
-        whenever(utxoOutputQuery.execute()).thenReturn(utxoOutputQueryResult)
-        whenever(persistenceService.query(eq("UtxoTransactionEntity.findByTransactionId"),
-            eq(UtxoTransactionEntity::class.java))).thenReturn(utxoTxQuery)
-        //whenever(utxoTxQuery.execute()).thenReturn(utxoTxQueryResult)
-
-        utxoLedgerService.findUnconsumedStatesByType(TestUtxoState::class.java)
-
+        MatcherAssert.assertThat(retrievedSignedTx, Matchers.`is`(transaction))
     }
 
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(

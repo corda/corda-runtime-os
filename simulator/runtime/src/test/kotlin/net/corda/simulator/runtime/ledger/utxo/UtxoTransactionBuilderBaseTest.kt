@@ -1,7 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
-import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
@@ -45,10 +44,8 @@ class UtxoTransactionBuilderBaseTest {
 
         // When we build a transaction via the tx builder and sign it with a key
         val persistenceService = mock<PersistenceService>()
-        val serializationService = BaseSerializationService()
         val builder = UtxoTransactionBuilderBase(
             signingService = signingService,
-            serializer = serializationService,
             persistenceService = persistenceService,
             configuration = clockConfig
         )
