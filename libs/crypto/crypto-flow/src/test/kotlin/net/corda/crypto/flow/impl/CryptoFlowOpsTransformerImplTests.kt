@@ -64,7 +64,8 @@ class CryptoFlowOpsTransformerImplTests {
             requestingComponent = knownComponentName,
             responseTopic = knownResponseTopic,
             keyEncodingService = keyEncodingService,
-            requestValidityWindowSeconds = ttl
+            requestValidityWindowSeconds = ttl,
+            digestService = mock()
         )
 
     @BeforeEach
