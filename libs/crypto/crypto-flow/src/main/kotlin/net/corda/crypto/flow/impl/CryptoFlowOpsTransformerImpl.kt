@@ -2,10 +2,6 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.core.fullId
-import net.corda.crypto.core.publicKeyFullIdFromBytes
-import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -46,7 +42,7 @@ import java.util.UUID
  * @property requestValidityWindowSeconds - TTL for the message processing in seconds,
  * the default value is equal to 5 minutes.
  */
-@Suppress("TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions")
 class CryptoFlowOpsTransformerImpl(
     private val serializer: AlgorithmParameterSpecEncodingService,
     private val requestingComponent: String,

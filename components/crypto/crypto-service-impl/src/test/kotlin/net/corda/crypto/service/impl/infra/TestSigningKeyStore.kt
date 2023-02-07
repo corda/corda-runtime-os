@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl.infra
 
 import net.corda.crypto.core.publicKeyFullIdFromBytes
-import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyShortIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyStore

@@ -49,6 +49,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 @Component(service = [SigningKeyStore::class])
 class SigningKeyStoreImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
