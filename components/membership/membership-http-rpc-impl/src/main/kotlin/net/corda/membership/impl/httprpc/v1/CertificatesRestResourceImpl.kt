@@ -118,7 +118,7 @@ class CertificatesRestResourceImpl @Activate constructor(
                 x500Name,
             )
             CryptoConsts.Categories.TLS -> {
-                validateMemberSessionCertificateSubject(x500Name).x500Principal
+                validateNodeSessionCertificateSubject(x500Name).x500Principal
             }
             else -> {
                 validateX500Name(x500Name)
@@ -342,7 +342,7 @@ class CertificatesRestResourceImpl @Activate constructor(
             )
         }
     }
-    private fun validateMemberSessionCertificateSubject(x500Name: String): MemberX500Name {
+    private fun validateNodeSessionCertificateSubject(x500Name: String): MemberX500Name {
         return try {
             MemberX500Name.parse(x500Name)
         } catch (e: IllegalArgumentException) {
@@ -357,23 +357,23 @@ class CertificatesRestResourceImpl @Activate constructor(
         tenantId: String,
         x500Name: String,
     ): X500Principal {
-        val name = validateMemberSessionCertificateSubject(x500Name)
+        val name = validateNodeSessionCertificateSubject(x500Name)
         if (tenantId == P2P) {
             val exists = virtualNodeInfoReadService.getAll().any {
                 it.holdingIdentity.x500Name == name
             }
             if (!exists) {
                 throw InvalidInputDataException(
-                    "Can not generate cluster session certificate with subject $name. No member with that name.",
+                    "Can not generate cluster session certificate with subject $name. No virtual node with that name.",
                     mapOf("x500Name" to x500Name)
                 )
             }
         } else {
-            val memberId = ShortHash.parseOrThrow(tenantId)
-            val member = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(memberId)
-            if (member.holdingIdentity.x500Name != name) {
+            val nodeId = ShortHash.parseOrThrow(tenantId)
+            val node = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(nodeId)
+            if (node.holdingIdentity.x500Name != name) {
                 throw InvalidInputDataException(
-                    "Can not generate session certificate for ${member.holdingIdentity.x500Name} with subject $name.",
+                    "Can not generate session certificate for ${node.holdingIdentity.x500Name} with subject $name.",
                     mapOf("x500Name" to x500Name)
                 )
             }
