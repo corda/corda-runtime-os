@@ -90,21 +90,22 @@ interface VirtualNodeRestResource : RestResource {
     ): VirtualNodeInfo
 
     /**
-     * Returns the VirtualNodeOperationStatus for a given [HoldingIdentity].
+     * Returns the VirtualNodeOperationStatus for a given [requestId].
      *
      * @throws 'ResourceNotFoundException' If the virtual node was not found.
-     * @throws `HttpApiException` If the request returns an exceptional response.
+     * @throws `HttpApiException` If the request returns an exceptional response. TODO: (exceptions)
      */
     @HttpGET(
-        path = "status/{holdingIdentityShortHash}",
-        title = "Gets the VirtualNodeOperationStatus for a HoldingIdentityShortHash",
-        description = "This method returns the VirtualNodeOperationStatus for a given Holding Identity ShortHash.",
+        path = "status/{requestId}",
+        title = "Gets the VirtualNodeOperationStatus for an operation request id.",
+        description = "This method returns the VirtualNodeOperationStatus for a given operation request id.",
         responseDescription = "VirtualNodeOperationStatus for the specified virtual node."
     )
     fun getVirtualNodeStatus(
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
-        holdingIdentityShortHash: String
+        requestId: String
     ): VirtualNodeOperationStatus
+
 
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.

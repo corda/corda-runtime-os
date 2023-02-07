@@ -237,11 +237,9 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         return ResponseEntity.accepted(AsyncResponse(requestId))
     }
 
-    override fun getVirtualNodeStatus(holdingIdentityShortHash: String): VirtualNodeOperationStatus {
+    override fun getVirtualNodeStatus(requestId: String): VirtualNodeOperationStatus {
         val instant = clock.instant()
         // Lookup actor to keep track of which RPC user triggered an update
-        val actor = CURRENT_REST_CONTEXT.get().principal
-        logger.debug { "Received request for status of VirtualNode $holdingIdentityShortHash by $actor at $instant" }
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
@@ -249,11 +247,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
-            VirtualNodeOperationStatusRequest(holdingIdentityShortHash)
+            VirtualNodeOperationStatusRequest(requestId)
         )
         // Actually send request and await response message on bus
         val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
-        logger.debug { "Received response Operation Status for $holdingIdentityShortHash by $actor" }
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeOperationStatus -> {

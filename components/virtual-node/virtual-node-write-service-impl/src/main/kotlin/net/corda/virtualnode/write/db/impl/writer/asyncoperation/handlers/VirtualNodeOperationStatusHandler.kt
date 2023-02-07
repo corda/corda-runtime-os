@@ -1,12 +1,12 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.virtualnode.AsynchronousOperationState
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
-import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
-import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
-import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
+import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
@@ -16,7 +16,6 @@ import net.corda.schema.Schemas
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
@@ -33,41 +32,47 @@ internal class VirtualNodeOperationStatusHandler(
         try {
             val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
 
-            val virtualNode = em.use { entityManager ->
-                virtualNodeRepository.find(
-                    entityManager,
-                    operationStatusRequest.operationId
+            val requestId = operationStatusRequest.requestId
+
+            val operationStatusResponse = virtualNodeRepository.findVirtualNodeOperation(em, requestId)
+
+            val virtualNodeOperationStatus = VirtualNodeOperationStatus(
+                operationStatusResponse.requestId,
+                "shortHash",
+                "actor",
+                Object(),
+                instant,
+                instant,
+                instant,
+                AsynchronousOperationState.IN_PROGRESS,
+                listOf()
                 )
-            }
 
-            val avroPayload = updatedVirtualNode.toAvro()
+//            val avroPayload = operationStatusResponse.toAvro()
+//
+//            val virtualNodeRecord = Record(
+//                Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
+//                avroPayload.holdingIdentity,
+//                avroPayload
+//            )
 
-            val virtualNodeRecord = Record(
-                Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
-                avroPayload.holdingIdentity,
-                avroPayload
-            )
-
-            try {
-                // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-                val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
-
-                // TODO - CORE-3730 - Define timeout policy.
-                future.get()
-            } catch (e: Exception) {
-                throw VirtualNodeWriteServiceException(
-                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e
-                )
-            }
+//            try {
+//                // TODO - CORE-3319 - Strategy for DB and Kafka retries.
+//                val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
+//
+//                // TODO - CORE-3730 - Define timeout policy.
+//                future.get()
+//            } catch (e: Exception) {
+//                throw VirtualNodeWriteServiceException(
+//                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e
+//                )
+//            }
 
             val response = VirtualNodeManagementResponse(
                 instant,
-                VirtualNodeStateChangeResponse(
-                    stateChangeRequest.holdingIdentityShortHash,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
+                VirtualNodeOperationStatusResponse(
+                    requestId,
+                    listOf(virtualNodeOperationStatus)
                 )
             )
             respFuture.complete(response)
