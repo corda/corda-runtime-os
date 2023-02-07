@@ -120,12 +120,12 @@ internal class TestCryptoOpsClient(
         throw UnsupportedOperationException()
     }
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
+    override fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingShortIds: Boolean
+    ): Collection<PublicKey> {
         throw UnsupportedOperationException()
-    }
-
-    override fun filterMyKeysByFullIds(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
-        TODO("Not yet implemented")
     }
 
     override fun generateKeyPair(

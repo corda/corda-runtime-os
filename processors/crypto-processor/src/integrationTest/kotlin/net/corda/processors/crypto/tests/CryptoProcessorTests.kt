@@ -848,7 +848,7 @@ class CryptoProcessorTests {
     }
 
     @Test
-    fun `filterMyKeys and filterMyKeysByFullIds both return same keys for the same query`() {
+    fun `filterMyKeys using short ids and full ids both return same keys for the same query`() {
         val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1")
         val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2")
 
@@ -862,8 +862,8 @@ class CryptoProcessorTests {
 
         assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
         assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
-        assertEquals(vnodeKeys, opsClient.filterMyKeysByFullIds(vnodeId, allKeys))
-        assertEquals(vnode2Keys, opsClient.filterMyKeysByFullIds(vnodeId2, allKeys))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingShortIds = false))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingShortIds = false))
     }
 
     private fun generateLedgerKey(tenantId: String, keyAlias: String): PublicKey =

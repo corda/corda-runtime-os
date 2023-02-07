@@ -53,15 +53,15 @@ class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
+    override fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingShortIds: Boolean
+    ): Collection<PublicKey> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
-    }
-
-    override fun filterMyKeysByFullIds(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
-        TODO("Not yet implemented")
     }
 
     override fun generateKeyPair(

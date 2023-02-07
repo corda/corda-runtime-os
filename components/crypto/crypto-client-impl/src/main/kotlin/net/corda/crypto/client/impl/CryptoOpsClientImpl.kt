@@ -6,7 +6,6 @@ import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.fullId
-import net.corda.crypto.core.publicKeyFullIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
@@ -76,10 +75,10 @@ class CryptoOpsClientImpl(
     fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        byShortId: Boolean
+        usingShortIds: Boolean
     ): Collection<PublicKey> {
         val publicKeyIds =
-            if (byShortId) {
+            if (usingShortIds) {
                 candidateKeys.map {
                     publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
                 }

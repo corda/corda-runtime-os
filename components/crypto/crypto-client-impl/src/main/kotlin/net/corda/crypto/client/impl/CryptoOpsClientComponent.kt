@@ -70,11 +70,12 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         impl.ops.getSupportedSchemes(tenantId, category)
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
-        impl.ops.filterMyKeys(tenantId, candidateKeys, true)
-
-    override fun filterMyKeysByFullIds(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
-        impl.ops.filterMyKeys(tenantId, candidateKeys, false)
+    override fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingShortIds: Boolean
+    ): Collection<PublicKey> =
+        impl.ops.filterMyKeys(tenantId, candidateKeys, usingShortIds)
 
     override fun generateKeyPair(
         tenantId: String,
