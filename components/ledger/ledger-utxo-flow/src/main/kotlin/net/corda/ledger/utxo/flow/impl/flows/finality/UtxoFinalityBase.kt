@@ -130,4 +130,20 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         log.debug { "Recorded transaction as invalid: ${transaction.id}" }
     }
 
+    @Suspendable
+    protected fun verifyExistingSignatures(
+        initialTransaction: UtxoSignedTransactionInternal,
+        onFailure: ((message: String) -> Unit)? = null
+    ) {
+        if (initialTransaction.signatures.isEmpty()){
+            val message = "Received initial transaction without signatures."
+            log.warn(message)
+            if (onFailure != null)
+                onFailure(message)
+            throw CordaRuntimeException(message)
+        }
+        initialTransaction.signatures.forEach {
+            verifySignature(initialTransaction, it, onFailure)
+        }
+    }
 }

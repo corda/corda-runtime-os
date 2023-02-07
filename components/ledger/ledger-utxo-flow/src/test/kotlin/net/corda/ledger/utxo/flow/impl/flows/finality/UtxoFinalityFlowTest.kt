@@ -30,6 +30,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.Contract
@@ -89,6 +90,7 @@ class UtxoFinalityFlowTest {
     private val notaryService = mock<Party>()
     private val notaryServiceKey = mock<CompositeKey>()
 
+    private val signature0 = digitalSignatureAndMetadata(mock(), byteArrayOf(1, 2, 0))
     private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1, byteArrayOf(1, 2, 3))
     private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2, byteArrayOf(1, 2, 4))
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
@@ -138,6 +140,7 @@ class UtxoFinalityFlowTest {
         whenever(initialTx.metadata).thenReturn(metadata)
         whenever(initialTx.notary).thenReturn(utxoNotaryExample)
         whenever(initialTx.addSignature(signatureAlice1)).thenReturn(updatedTxSomeSigs)
+        whenever(initialTx.signatures).thenReturn(listOf(signature0))
 
         whenever(updatedTxSomeSigs.id).thenReturn(TX_ID)
         whenever(updatedTxSomeSigs.addSignature(signatureAlice2)).thenReturn(
@@ -171,6 +174,44 @@ class UtxoFinalityFlowTest {
         whenever(stateAndRef.state).thenReturn(transactionState)
         whenever(transactionState.contractType).thenReturn(TestContact::class.java)
         whenever(transactionState.contractState).thenReturn(testState)
+    }
+
+    @Test
+    fun `called with a transaction initially without signatures throws and does not persist anything`() {
+        whenever(initialTx.signatures).thenReturn(listOf())
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Received initial transaction without signatures.")
+
+        verify(initialTx, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any(), any())
+    }
+
+    @Test
+    fun `called with a transaction initially with invalid signature throws and does not persist anything`() {
+        whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
+            CryptoSignatureException("Verifying signature failed!!")
+        )
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(CryptoSignatureException::class.java)
+            .hasMessageContaining("Verifying signature failed!!")
+
+        verify(initialTx, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any(), any())
+    }
+
+    @Test
+    fun `called with an invalid transaction initially throws and does not persist anything`() {
+        whenever(transactionVerificationService.verify(any())).thenThrow(
+            TransactionVerificationException(
+                TX_ID, "Verification error", null)
+        )
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(TransactionVerificationException::class.java)
+            .hasMessageContaining("Verification error")
+
+        verify(initialTx, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any(), any())
     }
 
     @Test
@@ -669,7 +710,7 @@ class UtxoFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("session error")
 
-        verify(transactionSignatureService, never()).verifySignature(any(), any())
+        verify(transactionSignatureService, never()).verifySignature(eq(updatedTxSomeSigs), any())
 
         verify(initialTx, never()).addSignature(any())
         verify(updatedTxSomeSigs, never()).addSignature(any())

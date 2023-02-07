@@ -42,6 +42,7 @@ class UtxoFinalityFlow(
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         log.trace("Starting finality flow for transaction: $transactionId")
+        verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
         persistUnverifiedTransaction()
         sendTransactionAndBackchainToCounterparties()

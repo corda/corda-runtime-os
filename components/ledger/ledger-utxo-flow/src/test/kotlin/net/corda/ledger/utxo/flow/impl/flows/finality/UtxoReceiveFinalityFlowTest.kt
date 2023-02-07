@@ -61,6 +61,7 @@ class UtxoReceiveFinalityFlowTest {
 
     private val memberInfo = mock<MemberInfo>()
 
+    private val publicKey0 = mock<PublicKey>()
     private val publicKey1 = mock<PublicKey>()
     private val publicKey2 = mock<PublicKey>()
     private val publicKey3 = mock<PublicKey>()
@@ -68,6 +69,7 @@ class UtxoReceiveFinalityFlowTest {
 
     private val notaryService = mock<Party>()
 
+    private val signature0 = digitalSignatureAndMetadata(publicKey0, byteArrayOf(1, 2, 0))
     private val signature1 = digitalSignatureAndMetadata(publicKey1, byteArrayOf(1, 2, 3))
     private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 4))
     private val signature3 = digitalSignatureAndMetadata(publicKey3, byteArrayOf(1, 2, 5))
@@ -95,6 +97,7 @@ class UtxoReceiveFinalityFlowTest {
         whenever(signedTransaction.metadata).thenReturn(metadata)
         whenever(signedTransaction.notary).thenReturn(notaryService)
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
+        whenever(signedTransaction.signatures).thenReturn(listOf(signature0))
 
         whenever(signedTransactionWithOwnKeys.id).thenReturn(ID)
         whenever(signedTransactionWithOwnKeys.toLedgerTransaction()).thenReturn(ledgerTransaction)
@@ -129,6 +132,43 @@ class UtxoReceiveFinalityFlowTest {
         verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(notarisedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
+    }
+
+    @Test
+    fun `receiving a transaction initially without signatures throws and does not persist anything`() {
+        whenever(signedTransaction.signatures).thenReturn(listOf())
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Received initial transaction without signatures.")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any(), any())
+        verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
+    }
+
+    @Test
+    fun `receiving a transaction initially with invalid signature throws and does not persist anything`() {
+        whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
+            CryptoSignatureException("Verifying signature failed!!")
+        )
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CryptoSignatureException::class.java)
+            .hasMessageContaining("Verifying signature failed!!")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any(), any())
+        verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
+    }
+
+    @Test
+    fun `receiving an invalid transaction initially throws and does not persist anything`() {
+        whenever(transactionVerificationService.verify(any())).thenThrow(TransactionVerificationException(ID, "Verification error", null))
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(TransactionVerificationException::class.java)
+            .hasMessageContaining("Verification error")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any(), any())
     }
 
     @Test

@@ -31,7 +31,9 @@ class UtxoReceiveFinalityFlow(
     override fun call(): UtxoSignedTransaction {
         val initialTransaction = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
-        verifyExistingSignatures(initialTransaction)
+        verifyExistingSignatures(initialTransaction){
+            session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(it))
+        }
         verifyTransaction(initialTransaction)
         var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
@@ -63,15 +65,6 @@ class UtxoReceiveFinalityFlow(
         log.debug { "Beginning receive finality for transaction: ${initialTransaction.id}" }
         flowEngine.subFlow(TransactionBackchainResolutionFlow(initialTransaction, session))
         return initialTransaction
-    }
-
-    @Suspendable
-    private fun verifyExistingSignatures(initialTransaction: UtxoSignedTransactionInternal) {
-        initialTransaction.signatures.forEach {
-            verifySignature(initialTransaction, it) { message ->
-                session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
-            }
-        }
     }
 
     @Suspendable
