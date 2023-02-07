@@ -43,7 +43,6 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
-import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler.Companion.toAvro
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -110,7 +109,7 @@ class MembershipPersistenceRPCProcessorTest {
     private val registrationRequest = RegistrationRequestEntity(
         ourRegistrationId,
         ourHoldingIdentity.shortHash.value,
-        RegistrationStatus.NEW.name,
+        RegistrationStatus.PENDING_MEMBER_VERIFICATION.name,
         clock.instant(),
         clock.instant(),
         context
@@ -250,7 +249,7 @@ class MembershipPersistenceRPCProcessorTest {
         val rq = MembershipPersistenceRequest(
             rqContext,
             PersistRegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
@@ -347,7 +346,7 @@ class MembershipPersistenceRPCProcessorTest {
         val rq = MembershipPersistenceRequest(
             rqContext,
             PersistRegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
