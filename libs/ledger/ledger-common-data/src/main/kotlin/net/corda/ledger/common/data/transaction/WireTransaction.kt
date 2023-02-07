@@ -8,12 +8,10 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import java.util.Base64
+import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
 
@@ -22,9 +20,9 @@ class WireTransaction(
     private val digestService: DigestService,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>,
-    val metadata: TransactionMetadata
-) {
-    val id: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    override val metadata: TransactionMetadata
+): TransactionWithMetadata {
+    override val id: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
         rootMerkleTree.root
     }
 
@@ -32,59 +30,24 @@ class WireTransaction(
         componentGroupLists[componentGroupId]
 
     val wrappedLedgerTransactionClassName: String
-        get() {
-            return metadata.getLedgerModel()
-        }
-
-    private fun getDigestSetting(settingKey: String): Any {
-        return metadata.getDigestSettings()[settingKey]!!
-    }
-
-    private val rootMerkleTreeDigestProviderName
-        get() =
-            getDigestSetting(ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY) as String
-
-    private val rootMerkleTreeDigestAlgorithmName
-        get() = DigestAlgorithmName(
-            getDigestSetting(
-                ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
-            ) as String
-        )
-
-    private val rootMerkleTreeDigestOptionsLeafPrefix
-        get() = Base64.getDecoder()
-            .decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY) as String)
-
-    private val rootMerkleTreeDigestOptionsNodePrefix
-        get() = Base64.getDecoder()
-            .decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY) as String)
+        get() = metadata.getLedgerModel()
 
     private val componentMerkleTreeEntropyAlgorithmName
         get() = DigestAlgorithmName(
             getDigestSetting(
                 COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY
-            ) as String
+            )
         )
 
     private val componentMerkleTreeDigestProviderName
         get() = getDigestSetting(
             COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
-        ) as String
+        )
 
     private val componentMerkleTreeDigestAlgorithmName
         get() = DigestAlgorithmName(
             getDigestSetting(
                 COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
-            ) as String
-        )
-
-    private fun getRootMerkleTreeDigestProvider(): MerkleTreeHashDigestProvider =
-        merkleTreeProvider.createHashDigestProvider(
-            rootMerkleTreeDigestProviderName,
-            rootMerkleTreeDigestAlgorithmName,
-            mapOf(
-                HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to rootMerkleTreeDigestOptionsLeafPrefix,
-                HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to rootMerkleTreeDigestOptionsNodePrefix
             )
         )
 
@@ -124,7 +87,7 @@ class WireTransaction(
             componentMerkleTrees[index]!!.root.bytes
         }
 
-        merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
+        merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider(merkleTreeProvider))
     }
 
     override fun equals(other: Any?): Boolean {
