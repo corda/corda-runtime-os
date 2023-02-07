@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
@@ -169,7 +169,7 @@ class UtxoReceiveFinalityFlowTest {
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
-        whenever(transactionSignatureService.verifyNotarySignature(any(), eq(signatureNotary))).thenThrow(
+        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary))).thenThrow(
             CryptoSignatureException("Verifying notary signature failed!!")
         )
 

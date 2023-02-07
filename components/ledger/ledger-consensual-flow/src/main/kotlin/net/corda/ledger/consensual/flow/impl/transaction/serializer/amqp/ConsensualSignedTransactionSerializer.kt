@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE

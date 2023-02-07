@@ -8,7 +8,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 
-fun utxoTransactionMetadataExample(cpkPackageSeed: String? = null) = TransactionMetadataImpl(linkedMapOf(
+fun utxoTransactionMetadataExample(cpkPackageSeed: String? = null) = TransactionMetadataImpl(mapOf(
     TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
     TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
     TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,

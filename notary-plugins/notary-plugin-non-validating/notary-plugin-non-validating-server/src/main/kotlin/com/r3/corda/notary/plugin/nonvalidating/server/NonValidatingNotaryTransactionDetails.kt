@@ -2,6 +2,8 @@ package com.r3.corda.notary.plugin.nonvalidating.server
 
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 
@@ -10,11 +12,12 @@ import net.corda.v5.ledger.utxo.TimeWindow
  * on the actual transaction object (e.g. FilteredTransaction).
  */
 data class NonValidatingNotaryTransactionDetails(
-    val id: SecureHash,
+    override val id: SecureHash,
+    override val metadata: TransactionMetadata,
     val numOutputs: Int,
     val timeWindow: TimeWindow,
     val inputs: List<StateRef>,
     val references: List<StateRef>,
     // TODO CORE-8976 This is not used for now but will be needed when the notary check is added
-    val notary: Party
-)
+    val notary: Party,
+) : TransactionWithMetadata

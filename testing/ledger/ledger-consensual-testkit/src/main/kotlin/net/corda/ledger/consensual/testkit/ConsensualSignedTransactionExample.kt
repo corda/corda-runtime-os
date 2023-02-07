@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.testkit
 import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample

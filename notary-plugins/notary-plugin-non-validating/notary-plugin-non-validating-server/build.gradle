@@ -41,4 +41,5 @@ dependencies {
 
     testImplementation project(":libs:uniqueness:common")
     testImplementation project(":testing:crypto-testkit")
+    testImplementation project(':testing:ledger:ledger-common-testkit')
 }
