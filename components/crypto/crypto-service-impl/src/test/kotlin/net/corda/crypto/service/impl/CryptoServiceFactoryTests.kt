@@ -1,12 +1,11 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.crypto.softhsm.SoftCryptoServiceConfig
+import net.corda.crypto.softhsm.CryptoServiceProvider
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.BeforeEach
@@ -34,23 +33,20 @@ class CryptoServiceFactoryTests {
         factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
         factory.hsmService.assignSoftHSM(tenantId2, CryptoConsts.Categories.TLS)
 
-        val cryptoServiceFactoryCoordinator = (factory.cryptoServiceFactory as CryptoServiceFactoryImpl).lifecycleCoordinator
+        val cryptoServiceFactoryCoordinator = factory.cryptoServiceFactory.lifecycleCoordinator
         cryptoServiceFactoryCoordinator.close()
         eventually {
             assertEquals(LifecycleStatus.DOWN, cryptoServiceFactoryCoordinator.status)
         }
 
+        // now make a new crypto service factory, since we cannot reuse the previous one since we
+        // closed its coordinator and that's game over.
         component = CryptoServiceFactoryImpl(
             factory.coordinatorFactory,
             factory.configurationReadService,
             factory.hsmStore,
-            object : CryptoServiceProvider<SoftCryptoServiceConfig> {
-                override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
-                override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
-                override fun getInstance(
-                    config: SoftCryptoServiceConfig,
-                    secrets: ConfigurationSecrets
-                ): CryptoService = factory.cryptoService
+            object : CryptoServiceProvider {
+                override fun getInstance(config: SmartConfig): CryptoService = factory.cryptoService
             }
         )
     }

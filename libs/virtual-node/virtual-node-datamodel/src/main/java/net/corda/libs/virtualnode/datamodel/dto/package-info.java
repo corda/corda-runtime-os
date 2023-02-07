@@ -1,4 +1,4 @@
 @Export
-package net.corda.p2p.gateway.messaging;
+package net.corda.libs.virtualnode.datamodel.dto;
 
 import org.osgi.annotation.bundle.Export;

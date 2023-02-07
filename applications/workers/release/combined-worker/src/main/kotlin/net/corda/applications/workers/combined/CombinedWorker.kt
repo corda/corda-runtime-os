@@ -70,7 +70,7 @@ class CombinedWorker @Activate constructor(
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
-        val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
+    val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
 ) : Application {
 
     private companion object {
@@ -97,6 +97,7 @@ class CombinedWorker @Activate constructor(
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
+        
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
@@ -106,15 +107,25 @@ class CombinedWorker @Activate constructor(
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
-        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.JDBC_URL))
-            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
+        val dbUrl = if (config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.JDBC_URL))
+            config.getConfig(BOOT_DB_PARAMS)
+                .getString(DatabaseConfig.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
         val dbName = dbUrl.split("/").last().split("?").first()
-        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
+        val dbAdmin = if (config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
             config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
-        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
+        val dbAdminPassword = if (config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
             config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_PASS) else "password"
         val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
         val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
+
+        // Part of DB setup is to generate defaults for the crypto code. That currently includes a
+        // default master wrapping key passphrase and salt, which we want to keep secret, and so
+        // cannot simply be written to the database in plaintext. So, we need to construct SmartConfig secrets
+        // to include in the defaults, so we need to pass in a SmartConfigFactory since that's what we use to
+        // make secrets.
+        //
+        // In the future, perhaps we can simply rely on the schema for crypto defaults, and not suppy a
+        // default passphrase and salt but instead require them to be specified.
 
         PostgresDbSetup(
             dbUrl,
@@ -124,7 +135,8 @@ class CombinedWorker @Activate constructor(
             dbAdminPassword,
             dbName,
             secretsSalt,
-            secretsPassphrase
+            secretsPassphrase,
+            config.factory
         ).run()
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)

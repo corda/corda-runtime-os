@@ -4,11 +4,9 @@ import com.typesafe.config.ConfigFactory
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
-import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -84,9 +82,7 @@ fun makeBootstrapConfig(dbParams: SmartConfig): SmartConfig = smartConfigFactory
         )
 )
 
-fun makeCryptoConfig(): SmartConfig = smartConfigFactory.createDefaultCryptoConfig(
-    KeyCredentials("master-key-pass", "master-key-salt")
-)
+fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
 
 fun randomDataByteArray(): ByteArray {
     val random = Random(Instant.now().toEpochMilli())

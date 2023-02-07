@@ -2,14 +2,12 @@ package net.corda.crypto.persistence.impl.tests.infra
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.crypto.config.impl.createTestCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
-import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -57,9 +55,7 @@ object CryptoConfigurationSetup {
 
 
     fun setup(publisher: Publisher) {
-        val cryptoConfig = createTestCryptoConfig(
-            KeyCredentials("passphrase", "salt")
-        ) .root().render()
+        val cryptoConfig = createDefaultCryptoConfig("passphrase", "salt").root().render()
         val virtualNodeInfo = VirtualNodeInfo(
             holdingIdentity = CryptoDBSetup.vNodeHoldingIdentity,
             cpiIdentifier = CpiIdentifier(
