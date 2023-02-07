@@ -8,6 +8,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -18,6 +19,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
@@ -80,6 +82,7 @@ class ConsensualReceiveFinalityFlowTest {
         whenever(signedTransaction.addSignature(signature3)).thenReturn(signedTransaction)
         whenever(signedTransaction.signatures).thenReturn(listOf(signature1, signature2))
 
+        whenever(ledgerTransaction.id).thenReturn(ID)
         whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
         whenever(ledgerTransaction.requiredSignatories).thenReturn(setOf(publicKeyExample))
     }
@@ -96,6 +99,45 @@ class ConsensualReceiveFinalityFlowTest {
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService).persist(signedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
+    }
+
+    @Test
+    fun `receiving a transaction initially without signatures throws and does not persist anything`() {
+        whenever(signedTransaction.signatures).thenReturn(listOf())
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Received initial transaction without signatures.")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any())
+        verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
+    }
+
+    @Test
+    fun `receiving a transaction initially with invalid signature throws and does not persist anything`() {
+        whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
+            CryptoSignatureException("Verifying signature failed!!")
+        )
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CryptoSignatureException::class.java)
+            .hasMessageContaining("Verifying signature failed!!")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any())
+        verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
+    }
+
+    @Test
+    fun `receiving an invalid transaction initially throws and does not persist anything`() {
+        whenever(ledgerTransaction.states).thenReturn(listOf(ConsensualStateClassExample("throw", listOf(
+            publicKeyExample))))
+
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(TransactionVerificationException::class.java)
+            .hasMessageContaining("State verification failed")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService, never()).persist(any(), any())
     }
 
     @Test

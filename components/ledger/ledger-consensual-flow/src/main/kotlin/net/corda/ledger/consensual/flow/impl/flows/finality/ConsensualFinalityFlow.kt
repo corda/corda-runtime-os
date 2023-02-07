@@ -38,6 +38,7 @@ class ConsensualFinalityFlow(
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
+        verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
         persistUnverifiedTransaction()
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()

@@ -11,6 +11,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
@@ -68,5 +69,22 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
     protected fun persistInvalidTransaction(transaction: ConsensualSignedTransactionInternal) {
         persistenceService.persist(transaction, TransactionStatus.INVALID)
         log.debug { "Recorded transaction as invalid: ${transaction.id}" }
+    }
+
+    @Suspendable
+    protected fun verifyExistingSignatures(
+        initialTransaction: ConsensualSignedTransactionInternal,
+        onFailure: ((message: String) -> Unit)? = null
+    ) {
+        if (initialTransaction.signatures.isEmpty()){
+            val message = "Received initial transaction without signatures."
+            log.warn(message)
+            if (onFailure != null)
+                onFailure(message)
+            throw CordaRuntimeException(message)
+        }
+        initialTransaction.signatures.forEach {
+            verifySignature(initialTransaction, it, onFailure)
+        }
     }
 }
