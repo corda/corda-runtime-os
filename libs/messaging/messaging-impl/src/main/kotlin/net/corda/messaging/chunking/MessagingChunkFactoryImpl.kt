@@ -1,14 +1,12 @@
 package net.corda.messaging.chunking
 
-import java.util.function.Consumer
 import net.corda.chunking.ChunkBuilderService
 import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
-import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.chunking.ConsumerChunkService
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.messaging.api.chunking.ChunkDeserializerService
+import net.corda.messaging.api.chunking.ChunkSerializerService
+import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
 import net.corda.messaging.api.chunking.MessagingChunkFactory
-import net.corda.messaging.api.chunking.ProducerChunkService
-import net.corda.schema.configuration.MessagingConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -17,18 +15,29 @@ import org.osgi.service.component.annotations.Reference
 class MessagingChunkFactoryImpl @Activate constructor(
     @Reference(service = ChunkBuilderService::class)
     private val chunkBuilderService: ChunkBuilderService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : MessagingChunkFactory {
 
-    override fun <K : Any, V : Any> createConsumerChunkService(
+    override fun <K : Any, V : Any> createConsumerChunkDeserializerService(
         keyDeserializer: CordaAvroDeserializer<K>,
         valueDeserializer: CordaAvroDeserializer<V>,
-        onError: Consumer<ByteArray>,
-        ): ConsumerChunkService<K, V> {
-        return ConsumerChunkServiceImpl(keyDeserializer, valueDeserializer, onError)
+        onError: (ByteArray) -> Unit,
+    ): ConsumerChunkDeserializerService<K, V> {
+        return ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, onError)
     }
 
-    override fun createProducerChunkService(config: SmartConfig, cordaAvroSerializer: CordaAvroSerializer<Any>): ProducerChunkService {
-        val maxAllowedMessageSize = config.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
-        return ProducerChunkServiceImpl(maxAllowedMessageSize, cordaAvroSerializer, chunkBuilderService)
+    override fun <V : Any> createChunkDeserializerService(
+        expectedType: Class<V>,
+        onError: (ByteArray) -> Unit,
+    ): ChunkDeserializerService<V> {
+        val deserializer = cordaAvroSerializationFactory.createAvroDeserializer(onError, expectedType)
+        return ChunkDeserializerServiceImpl(deserializer, deserializer, onError)
+    }
+
+    override fun createChunkSerializerService(maxAllowedMessageSize: Long): ChunkSerializerService {
+        return ChunkSerializerServiceImpl(maxAllowedMessageSize,
+            cordaAvroSerializationFactory.createAvroSerializer({}),
+            chunkBuilderService)
     }
 }

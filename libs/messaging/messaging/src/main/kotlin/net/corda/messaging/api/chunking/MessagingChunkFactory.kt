@@ -1,9 +1,6 @@
 package net.corda.messaging.api.chunking
 
-import java.util.function.Consumer
 import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializer
-import net.corda.libs.configuration.SmartConfig
 
 /**
  * Factory class for instantiating services used by consumer and producers to produce and reassemble chunks.
@@ -15,19 +12,29 @@ interface MessagingChunkFactory {
      * @param keyDeserializer used to deserialize the objects original key if it has one
      * @param valueDeserializer used to deserialize the objects original value
      * @param onError error handling to execute if it fails to reassemble the chunks. takes the fully reassembled byte array
-     * @return ConsumerChunkService
+     * @return ConsumerChunkDeserializerService
      */
-    fun <K: Any, V: Any> createConsumerChunkService(
+    fun <K: Any, V: Any> createConsumerChunkDeserializerService(
         keyDeserializer: CordaAvroDeserializer<K>,
         valueDeserializer: CordaAvroDeserializer<V>,
-        onError: Consumer<ByteArray>
-    ): ConsumerChunkService<K, V>
+        onError: (ByteArray) -> Unit,
+    ): ConsumerChunkDeserializerService<K, V>
+
+    /**
+     * Create a service which can reassemble chunks into their original values .
+     * @param expectedType The expected type of the class the chunks will be deserialized into
+     * @param onError error handling to execute if it fails to reassemble the chunks. takes the fully reassembled byte array
+     * @return ChunkDeserializerService
+     */
+    fun <V: Any> createChunkDeserializerService(
+        expectedType: Class<V>,
+        onError: (ByteArray) -> Unit = {_ ->}
+    ): ChunkDeserializerService<V>
 
     /**
      * Service to convert objects or CordaProducerRecords into chunks if they are too large to be sent
-     * @param config contains which the max allowed message size
-     * @param cordaAvroSerializer serializer for converting avro objects to byte arrays
+     * @param maxAllowedMessageSize the max allowed message size for records on the message bus
      * @return ProducerChunkService
      */
-    fun createProducerChunkService(config: SmartConfig, cordaAvroSerializer: CordaAvroSerializer<Any>): ProducerChunkService
+    fun createChunkSerializerService(maxAllowedMessageSize: Long): ChunkSerializerService
 }

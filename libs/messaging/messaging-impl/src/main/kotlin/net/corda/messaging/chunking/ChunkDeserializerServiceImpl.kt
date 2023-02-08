@@ -7,8 +7,8 @@ import net.corda.chunking.Constants
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
-import net.corda.messaging.api.chunking.ConsumerChunkService
-import net.corda.v5.base.util.debug
+import net.corda.messaging.api.chunking.ChunkDeserializerService
+import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 
@@ -17,11 +17,11 @@ import org.slf4j.LoggerFactory
  * Executes the [onError] handler if anything goes wrong with validation of checksums.
  * Deserialization errors are handled already within the [keyDeserializer] and [valueDeserializer]
  */
-class ConsumerChunkServiceImpl<K : Any, V : Any>(
+class ChunkDeserializerServiceImpl<K : Any, V : Any>(
     private val keyDeserializer: CordaAvroDeserializer<K>,
     private val valueDeserializer: CordaAvroDeserializer<V>,
     private val onError: Consumer<ByteArray>
-) : ConsumerChunkService<K, V> {
+) : ConsumerChunkDeserializerService<K, V>, ChunkDeserializerService<V> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -41,7 +41,7 @@ class ConsumerChunkServiceImpl<K : Any, V : Any>(
             validateBytes(dataSingleArray, checksum.array())
             valueDeserializer.deserialize(dataSingleArray)
         } catch (ex: IllegalArgumentException) {
-            logger.debug { "Failed to deserialize chunks due to: ${ex.message} " }
+            logger.warn("Failed to deserialize chunks due to: ${ex.message} ")
             onError.accept(dataSingleArray)
             null
         }
