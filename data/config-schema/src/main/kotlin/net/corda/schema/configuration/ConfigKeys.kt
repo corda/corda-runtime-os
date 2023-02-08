@@ -32,10 +32,22 @@ object ConfigKeys {
     const val REST_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS = "websocket.idleTimeoutMs"
 
     // Secrets Service
+    // 
+    // SECRETS_TYPE control which secrets service implementation will be selected.
+    //
+    // Only a subset of the other keys will be needed for specific secrets service implementation.
+    //
+    // For instance:
+    //   - EncryptionSecretsService in corda-runtime-os needs SECRETS_PASSPHRASE and SECRETS_SALT
+    //   - The Hashicorp Vault secrets add on needs SECRETS_SERVER_ADDRESS, SECRETS_SERVER_ADDRESS and
+    //     SECRETS_CREATED_SECRET_PATH
+    //
     const val SECRETS_TYPE = "type"
     const val SECRETS_PASSPHRASE = "passphrase"
     const val SECRETS_SALT = "salt"
-
+    const val SECRETS_SERVER_ADDRESS = "serverAddress"
+    const val SECRETS_SERVER_CREDENTIALS = "serverCredentials"
+    const val SECRETS_CREATED_SECRET_PATH = "createdSecretPath"
     const val WORKSPACE_DIR = "dir.workspace"
     const val TEMP_DIR = "dir.tmp"
 
