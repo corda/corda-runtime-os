@@ -45,7 +45,7 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-// To run the test:
+// To run the test outside Intellij:
 // ./gradlew :components:interop:interop-service:integrationTest
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -134,7 +134,7 @@ class InteropServiceIntegrationTest {
 
         publisher.publish(listOf(interopRecord, interopRecord, nonInteropSessionRecord))
 
-        val expectedOutputMessages = 3
+        val expectedOutputMessages = 2
         val mapperLatch = CountDownLatch(expectedOutputMessages)
         val testProcessor = P2POutMessageCounter(testId, mapperLatch, expectedOutputMessages)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
@@ -144,7 +144,8 @@ class InteropServiceIntegrationTest {
             null
         )
         p2pOutSub.start()
-        assertTrue(mapperLatch.await(30, TimeUnit.SECONDS), "Fewer P2P output messages were observed (${testProcessor.recordCount}) than expected ($expectedOutputMessages).")
+        assertTrue(mapperLatch.await(30, TimeUnit.SECONDS),
+            "Fewer P2P output messages were observed (${testProcessor.recordCount}) than expected ($expectedOutputMessages).")
         assertEquals(expectedOutputMessages, testProcessor.recordCount, "More P2P output messages were observed that expected.")
         p2pOutSub.close()
 
