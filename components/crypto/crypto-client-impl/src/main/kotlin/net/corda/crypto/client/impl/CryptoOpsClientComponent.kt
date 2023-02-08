@@ -151,6 +151,7 @@ class CryptoOpsClientComponent @Activate constructor(
             ids = ids
         )
 
+    // This path is not being currently used - consider removing it
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
 

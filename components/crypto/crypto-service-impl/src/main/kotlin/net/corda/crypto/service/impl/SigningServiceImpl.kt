@@ -258,6 +258,7 @@ class SigningServiceImpl(
         return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
     }
 
+    // TODO This should be made to look up ONLY using full Id to avoid suffering a clash
     @Suppress("NestedBlockDepth")
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {

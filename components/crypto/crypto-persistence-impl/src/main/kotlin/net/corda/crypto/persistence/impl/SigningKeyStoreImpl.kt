@@ -138,6 +138,7 @@ class SigningKeyStoreImpl @Activate constructor(
             }
         }
 
+        // TODO Test edge scenario where short Ids clash at save
         fun save(tenantId: String, context: SigningKeySaveContext) {
             val keyId: String
             val fullKeyId: String
@@ -236,6 +237,7 @@ class SigningKeyStoreImpl @Activate constructor(
             }
         }
 
+        // TODO Test edge scenario where short Ids clash at lookup
         fun lookupByKeyIds(tenantId: String, keyIds: List<String>): Collection<SigningCachedKey> {
             require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
                 "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
