@@ -60,7 +60,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
 
     override fun findVirtualNodeOperation(entityManager: EntityManager, requestId: String) : OperationStatusLite {
         entityManager.transaction{
-            val operationStatus = entityManager.createQuery("from ${VirtualNodeOperationStatus::class.java.simpleName} where requestId = :requestId")
+            val operationStatus = entityManager.createQuery("from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId")
                 .setParameter("requestId", requestId)
                 .resultList
 
