@@ -141,6 +141,10 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
             emptyList()
         )
 
+    override fun queryRegistrationRequests(
+        mgmHoldingIdentity: HoldingIdentity, requestingMemberX500Name: String?, viewHistoric: Boolean
+    ): MembershipQueryResult<Collection<RegistrationRequestStatus>> = MembershipQueryResult.Success(emptyList())
+
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
         holdingsIdentities: Collection<HoldingIdentity>,

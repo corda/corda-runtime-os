@@ -1,11 +1,13 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.configuration.read.ConfigurationGetService
+import net.corda.data.membership.common.ApprovalAction
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
+import net.corda.data.membership.common.ManualApprovalDecision
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -20,6 +22,8 @@ import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
+import net.corda.membership.httprpc.v1.types.request.ManualApprovalAction
+import net.corda.membership.httprpc.v1.types.request.ManualApprovalDecisionRequest
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
@@ -59,6 +63,7 @@ class MGMRestResourceTest {
         private const val INVALID_RULE_REGEX = "*"
         private const val RULE_LABEL = "rule-label"
         private const val RULE_ID = "rule-id"
+        private const val REQUEST_ID = "request-id"
 
         fun String.shortHash() = ShortHash.of(this)
     }
@@ -88,6 +93,9 @@ class MGMRestResourceTest {
         on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val initialTime = Instant.parse("2007-12-03T00:00:00.00Z")
+    private val manualApprovalDecisionRequest = ManualApprovalDecisionRequest(ManualApprovalAction.APPROVE, "test")
+    private val manualApprovalDecision = ManualApprovalDecision(ApprovalAction.APPROVE, "test")
+
     private val mgmRpcOps = MGMRestResourceImpl(
         lifecycleCoordinatorFactory,
         mgmOpsClient,
@@ -342,6 +350,110 @@ class MGMRestResourceTest {
 
             assertThrows<BadRequestException> {
                 mgmRpcOps.getGroupApprovalRules(INVALID_SHORT_HASH)
+            }
+
+            stopService()
+        }
+    }
+
+    @Nested
+    inner class ViewRegistrationRequestsTests {
+        @Test
+        fun `viewRegistrationRequests delegates correctly to mgm ops client`() {
+            startService()
+
+            mgmRpcOps.viewRegistrationRequests(HOLDING_IDENTITY_ID)
+
+            verify(mgmOpsClient).viewRegistrationRequests(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(null), eq(false))
+            stopService()
+        }
+
+        @Test
+        fun `viewRegistrationRequests throws resource not found for invalid member`() {
+            startService()
+            whenever(mgmOpsClient.viewRegistrationRequests(any(), eq(null), eq(false))).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRpcOps.viewRegistrationRequests(HOLDING_IDENTITY_ID)
+            }
+
+            stopService()
+        }
+
+        @Test
+        fun `viewRegistrationRequests throws invalid input for non MGM member`() {
+            startService()
+            whenever(mgmOpsClient.viewRegistrationRequests(any(), eq(null), eq(false))).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRpcOps.viewRegistrationRequests(HOLDING_IDENTITY_ID)
+            }
+
+            stopService()
+        }
+
+        @Test
+        fun `viewRegistrationRequests throws bad request if short hash is invalid`() {
+            startService()
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.viewRegistrationRequests(INVALID_SHORT_HASH)
+            }
+
+            stopService()
+        }
+    }
+
+    @Nested
+    inner class ReviewRegistrationRequestTests {
+        @Test
+        fun `reviewRegistrationRequest delegates correctly to mgm ops client`() {
+            startService()
+
+            mgmRpcOps.reviewRegistrationRequest(
+                eq(HOLDING_IDENTITY_ID), eq(REQUEST_ID), eq(manualApprovalDecisionRequest)
+            )
+
+            verify(mgmOpsClient).reviewRegistrationRequest(
+                eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(REQUEST_ID), eq(manualApprovalDecision)
+            )
+            stopService()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest throws resource not found for invalid member`() {
+            startService()
+            whenever(mgmOpsClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID, manualApprovalDecision
+            )).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRpcOps.reviewRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualApprovalDecisionRequest)
+            }
+
+            stopService()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest throws invalid input for non MGM member`() {
+            startService()
+            whenever(mgmOpsClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID, manualApprovalDecision
+            )).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRpcOps.reviewRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualApprovalDecisionRequest)
+            }
+
+            stopService()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest throws bad request if short hash is invalid`() {
+            startService()
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.reviewRegistrationRequest(INVALID_SHORT_HASH, REQUEST_ID, manualApprovalDecisionRequest)
             }
 
             stopService()

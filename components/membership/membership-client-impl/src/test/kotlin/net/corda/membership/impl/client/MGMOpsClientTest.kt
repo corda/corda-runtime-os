@@ -41,15 +41,22 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.common.ApprovalAction
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
+import net.corda.data.membership.common.ManualApprovalDecision
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
@@ -80,19 +87,18 @@ import kotlin.test.assertTrue
 
 class MGMOpsClientTest {
     private companion object {
-        private val holdingIdentity = createTestHoldingIdentity(
-            "CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB",
-            "DEFAULT_MEMBER_GROUP_ID"
-        )
         const val HOLDING_IDENTITY_STRING = "1234567890AB"
-        val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         const val KNOWN_KEY = "12345"
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
         private const val RULE_ID = "rule-id"
+        const val REQUEST_ID = "request-id"
         private val RULE_TYPE = ApprovalRuleType.STANDARD
 
+        val memberName = MemberX500Name.parse("CN=Member,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
+        val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), "DEFAULT_MEMBER_GROUP_ID")
+        val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
@@ -218,6 +224,7 @@ class MGMOpsClientTest {
     private val rpcRequest = argumentCaptor<MembershipRpcRequest>()
 
     private val rpcSender = mock<RPCSender<MembershipRpcRequest, MembershipRpcResponse>>()
+    private val publisher = mock<Publisher>()
 
     private val publisherFactory = mock<PublisherFactory> {
         on {
@@ -226,6 +233,7 @@ class MGMOpsClientTest {
                 any()
             )
         } doReturn rpcSender
+        on { createPublisher(any(), any()) } doReturn publisher
     }
 
     private val configurationReadService: ConfigurationReadService = mock {
@@ -684,6 +692,159 @@ class MGMOpsClientTest {
             assertThrows<MemberNotAnMgmException> {
                 mgmOpsClient.getApprovalRules(
                     shortHash, ApprovalRuleType.STANDARD
+                )
+            }
+            mgmOpsClient.stop()
+        }
+    }
+
+    @Nested
+    inner class ViewRegistrationRequestsTests {
+        @Test
+        fun `viewRegistrationRequests should send the correct request`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            whenever(
+                membershipQueryClient.queryRegistrationRequests(
+                    holdingIdentity,
+                    memberName.toString(),
+                    true
+                )
+            ).doReturn(
+                MembershipQueryResult.Success(emptyList())
+            )
+
+            mgmOpsClient.viewRegistrationRequests(
+                shortHash,
+                memberName.toString(),
+                true
+            )
+
+            verify(membershipQueryClient).queryRegistrationRequests(
+                holdingIdentity,
+                memberName.toString(),
+                true
+            )
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `viewRegistrationRequests should fail if the member cannot be found`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.viewRegistrationRequests(
+                    ShortHash.of("000000000000"), memberName.toString(), true
+                )
+            }
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `viewRegistrationRequests should fail if the member cannot be read`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.viewRegistrationRequests(
+                    shortHash, memberName.toString(), true
+                )
+            }
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `viewRegistrationRequests should fail if the member is not the MGM`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmOpsClient.viewRegistrationRequests(
+                    shortHash, memberName.toString(), true
+                )
+            }
+            mgmOpsClient.stop()
+        }
+    }
+
+    @Nested
+    inner class ReviewRegistrationRequestTests {
+        @Test
+        fun `reviewRegistrationRequest should publish the correct command`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+
+            mgmOpsClient.reviewRegistrationRequest(
+                shortHash,
+                REQUEST_ID,
+                ManualApprovalDecision(ApprovalAction.APPROVE, "test-reason")
+            )
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
+                        "$REQUEST_ID-$shortHash",
+                        RegistrationCommand(ApproveRegistration())
+                    )
+                )
+            )
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail if the member cannot be found`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.reviewRegistrationRequest(
+                    ShortHash.of("000000000000"),
+                    REQUEST_ID,
+                    ManualApprovalDecision(ApprovalAction.APPROVE, "test-reason")
+                )
+            }
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail if the member cannot be read`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmOpsClient.reviewRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID,
+                    ManualApprovalDecision(ApprovalAction.APPROVE, "test-reason")
+                )
+            }
+            mgmOpsClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail if the member is not the MGM`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmOpsClient.reviewRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID,
+                    ManualApprovalDecision(ApprovalAction.APPROVE, "test-reason")
                 )
             }
             mgmOpsClient.stop()

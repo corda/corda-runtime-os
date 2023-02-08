@@ -7,6 +7,7 @@ import net.corda.data.membership.common.ApprovalAction
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
+import net.corda.data.membership.common.ManualApprovalDecision
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException

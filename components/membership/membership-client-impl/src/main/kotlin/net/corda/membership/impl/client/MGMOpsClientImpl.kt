@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 @Component(service = [MGMOpsClient::class])
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class MGMOpsClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,

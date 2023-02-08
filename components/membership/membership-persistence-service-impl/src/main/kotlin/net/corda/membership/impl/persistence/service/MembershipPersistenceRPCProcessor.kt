@@ -27,6 +27,7 @@ import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryRegistrationRequestsMGM
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
@@ -54,6 +55,7 @@ import net.corda.membership.impl.persistence.service.handler.QueryPreAuthTokenHa
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestsHandler
 import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler
+import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestsMGMHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToApprovedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToDeclinedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateRegistrationRequestStatusHandler
@@ -119,6 +121,7 @@ internal class MembershipPersistenceRPCProcessor(
         AddPreAuthToken::class.java to { AddPreAuthTokenHandler(persistenceHandlerServices) },
         RevokePreAuthToken::class.java to { RevokePreAuthTokenHandler(persistenceHandlerServices) },
         QueryRegistrationRequests::class.java to { QueryRegistrationRequestsHandler(persistenceHandlerServices) },
+        QueryRegistrationRequestsMGM::class.java to { QueryRegistrationRequestsMGMHandler(persistenceHandlerServices) },
         PersistApprovalRule::class.java to { PersistApprovalRuleHandler(persistenceHandlerServices) },
         DeleteApprovalRule::class.java to { DeleteApprovalRuleHandler(persistenceHandlerServices) },
         QueryApprovalRules::class.java to { QueryApprovalRulesHandler(persistenceHandlerServices) },

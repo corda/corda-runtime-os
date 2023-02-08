@@ -27,10 +27,15 @@ internal class QueryRegistrationRequestsMGMHandler(
             val root = queryBuilder.from(RegistrationRequestEntity::class.java)
             val predicates = mutableListOf<Predicate>()
             requestingMember?.let {
-                predicates.add(em.criteriaBuilder.equal(root.get<String>("holdingIdentityShortHash"), it.value))
+                predicates.add(
+                    em.criteriaBuilder.equal(
+                        root.get<String>(RegistrationRequestEntity::holdingIdentityShortHash.name),
+                        it.value
+                    )
+                )
             }
             statuses.let {
-                val inStatus = em.criteriaBuilder.`in`(root.get<String>("status"))
+                val inStatus = em.criteriaBuilder.`in`(root.get<String>(RegistrationRequestEntity::status.name))
                 it.forEach { status ->
                     inStatus.value(status.name)
                 }

@@ -22,6 +22,7 @@ import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
+import net.corda.data.membership.db.request.query.QueryRegistrationRequestsMGM
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
@@ -31,6 +32,7 @@ import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
+import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
@@ -142,12 +144,30 @@ class MembershipPersistenceRPCProcessorTest {
         on { select(root) } doReturn mock
         on { where(predicate) } doReturn mock
     }
+    private val statusPath = mock<Path<String>>()
+    private val shortHashPath = mock<Path<String>>()
+    private val registrationRequestRoot = mock<Root<RegistrationRequestEntity>> {
+        on { get<String>("status") } doReturn statusPath
+        on { get<String>("holdingIdentityShortHash") } doReturn shortHashPath
+    }
+    private val registrationRequestsQuery = mock<CriteriaQuery<RegistrationRequestEntity>> {
+        on { from(RegistrationRequestEntity::class.java) } doReturn registrationRequestRoot
+        on { select(registrationRequestRoot) } doReturn mock
+        on { where() } doReturn mock
+        on { where(any()) } doReturn mock
+        on { groupBy(shortHashPath) } doReturn mock
+    }
+    private val registrationRequestQuery = mock<TypedQuery<RegistrationRequestEntity>> {
+        on { resultList } doReturn emptyList()
+    }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(ApprovalRulesEntity::class.java) } doReturn query
         on { createQuery(PreAuthTokenEntity::class.java) } doReturn preAuthTokenQuery
+        on { createQuery(RegistrationRequestEntity::class.java) } doReturn registrationRequestsQuery
         on { equal(ruleTypePath, ApprovalRuleType.STANDARD.name) } doReturn predicate
         on { equal(ruleRegexPath, DUMMY_RULE) } doReturn predicate
         on { and(predicate, predicate) } doReturn predicate
+        on { `in`(registrationRequestRoot.get<String>("status")) } doReturn mock()
     }
     private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
         on { resultList } doReturn emptyList()
@@ -167,6 +187,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { createQuery(query) } doReturn approvalRulesQuery
         on { createQuery(preAuthTokenQuery) } doReturn typedPreAuthTokenQuery
         on { merge(preAuthTokenEntity) } doReturn preAuthTokenEntity
+        on { createQuery(registrationRequestsQuery) } doReturn registrationRequestQuery
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager
@@ -485,6 +506,29 @@ class MembershipPersistenceRPCProcessorTest {
         with(responseFuture.get()) {
             assertThat(payload).isNotNull
             assertThat(payload).isInstanceOf(ApprovalRulesQueryResponse::class.java)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `query registration requests as MGM returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            QueryRegistrationRequestsMGM()
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(RegistrationRequestsQueryResponse::class.java)
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

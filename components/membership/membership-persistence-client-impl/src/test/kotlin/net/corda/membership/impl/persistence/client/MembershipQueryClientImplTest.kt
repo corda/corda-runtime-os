@@ -1239,4 +1239,124 @@ class MembershipQueryClientImplTest {
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
     }
+
+    @Nested
+    inner class QueryRegistrationRequestsTests {
+        private val memberX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB").toString()
+
+        @Test
+        fun `queryRegistrationRequests returns the correct list of requests`() {
+            val mockRequest = mock<RegistrationStatusDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+                on { registrationId } doReturn "registration-id"
+                on { registrationSent } doReturn Instant.EPOCH
+                on { registrationLastModified} doReturn Instant.EPOCH
+                on { registrationProtocolVersion } doReturn 1
+                on { memberProvidedContext } doReturn KeyValuePairList(emptyList())
+            }
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        RegistrationRequestsQueryResponse(listOf(mockRequest))
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity, memberX500Name, false)
+
+            assertThat(result.getOrThrow()).isEqualTo(
+                listOf(
+                    RegistrationRequestStatus(
+                        mockRequest.registrationStatus,
+                        mockRequest.registrationId,
+                        mockRequest.memberProvidedContext,
+                        mockRequest.registrationSent,
+                        mockRequest.registrationLastModified,
+                        mockRequest.registrationProtocolVersion,
+                    )
+                )
+            )
+        }
+
+        @Test
+        fun `queryRegistrationRequests returns error in case of failure`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        PersistenceFailedResponse("oops")
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity, memberX500Name, true)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+
+        @Test
+        fun `queryRegistrationRequests returns failure for unexpected result`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        GroupPolicyQueryResponse()
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity, memberX500Name, true)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+
+        @Test
+        fun `queryRegistrationRequests returns an error when the result not right`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp, requestId, clock.instant(), holdingIdentity
+                    )
+                }
+                val response = mock<MembershipPersistenceResponse> {
+                    on { context } doReturn myContext
+                    on { payload } doReturn null
+                }
+                CompletableFuture.completedFuture(response)
+            }
+
+            val result = membershipQueryClient.queryRegistrationRequests(ourHoldingIdentity, memberX500Name, true)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+    }
 }

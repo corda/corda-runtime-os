@@ -15,7 +15,6 @@ import net.corda.membership.httprpc.v1.types.request.ManualApprovalDecisionReque
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RpcRegistrationRequestStatus
 
 /**
@@ -31,6 +30,7 @@ import net.corda.membership.httprpc.v1.types.response.RpcRegistrationRequestStat
             " required for new members to join the group.",
     path = "mgm"
 )
+@Suppress("TooManyFunctions")
 interface MGMRestResource : RestResource {
     /**
      * The [generateGroupPolicy] method enables you to retrieve the group policy from the MGM represented by
@@ -368,7 +368,9 @@ interface MGMRestResource : RestResource {
      *
      * Example usage:
      * ```
-     * mgmOps.reviewRegistrationRequest("58B6030FABDD", "3B9A266F96E2", ManualApprovalDecision(ManualApprovalAction.APPROVE, "Reason for action"))
+     * mgmOps.reviewRegistrationRequest(
+     * "58B6030FABDD", "3B9A266F96E2", ManualApprovalDecision(ManualApprovalAction.APPROVE, "Reason for action")
+     * )
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
