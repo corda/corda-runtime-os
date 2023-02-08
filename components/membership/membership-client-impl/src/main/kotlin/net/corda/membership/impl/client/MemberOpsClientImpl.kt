@@ -23,6 +23,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
@@ -34,6 +35,7 @@ import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -267,10 +269,14 @@ class MemberOpsClientImpl @Activate constructor(
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
                 ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
-            return membershipQueryClient.queryRegistrationRequestsStatus(
-                holdingIdentity.holdingIdentity
-            ).getOrThrow().map {
-                it.toDto()
+            return try {
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    holdingIdentity.holdingIdentity
+                ).getOrThrow().map {
+                    it.toDto()
+                }
+            } catch (e: MembershipQueryResult.QueryException) {
+                throw ServiceNotReadyException(e)
             }
         }
 
@@ -280,14 +286,18 @@ class MemberOpsClientImpl @Activate constructor(
         ): RegistrationRequestStatusDto {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
                 ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
-            val status =
-                membershipQueryClient.queryRegistrationRequestStatus(
-                    holdingIdentity.holdingIdentity,
-                    registrationRequestId,
-                ).getOrThrow() ?: throw RegistrationProgressNotFoundException(
-                    "There is no request with '$registrationRequestId' id in '$holdingIdentityShortHash'."
-                )
-            return status.toDto()
+            return try {
+                val status =
+                    membershipQueryClient.queryRegistrationRequestStatus(
+                        holdingIdentity.holdingIdentity,
+                        registrationRequestId,
+                    ).getOrThrow() ?: throw RegistrationProgressNotFoundException(
+                        "There is no request with '$registrationRequestId' id in '$holdingIdentityShortHash'."
+                    )
+                status.toDto()
+            } catch (e: MembershipQueryResult.QueryException) {
+                throw ServiceNotReadyException(e)
+            }
         }
 
         @Suppress("SpreadOperator")

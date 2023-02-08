@@ -24,6 +24,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.RegistrationProgressNotFoundException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
@@ -57,6 +58,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -362,6 +364,19 @@ class MemberOpsClientTest {
         }
     }
 
+    @Test
+    fun `checkRegistrationProgress throw exception if the request fails`() {
+        whenever(membershipQueryClient.queryRegistrationRequestsStatus(any()))
+            .doReturn(MembershipQueryResult.Failure("oops"))
+
+        memberOpsClient.start()
+        setUpConfig()
+
+        assertThrows<ServiceNotReadyException> {
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+        }
+    }
+
     @ParameterizedTest
     @EnumSource(RegistrationStatus::class)
     fun `checkSpecificRegistrationProgress return correct data when response is not null`(status: RegistrationStatus) {
@@ -421,6 +436,18 @@ class MemberOpsClientTest {
         setUpConfig()
 
         assertThrows<RegistrationProgressNotFoundException> {
+            memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
+        }
+    }
+
+    @Test
+    fun `checkSpecificRegistrationProgress throw exception if request fails`() {
+        whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(MembershipQueryResult.Failure("oops"))
+
+        memberOpsClient.start()
+        setUpConfig()
+
+        assertThrows<ServiceNotReadyException> {
             memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
         }
     }
