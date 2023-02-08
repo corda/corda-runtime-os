@@ -19,7 +19,7 @@ object CryptoTenants {
     /**
      * Tenant id of the HTTP RPC API
      */
-    const val RPC_API: String = "rpc-api"
+    const val RPC_API: String = "rest-api"
 
     /**
      * Lists all cluster level tenants which can own asymmetric key pairs

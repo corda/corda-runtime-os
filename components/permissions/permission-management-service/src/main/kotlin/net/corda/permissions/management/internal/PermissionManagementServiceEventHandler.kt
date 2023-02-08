@@ -44,8 +44,8 @@ internal class PermissionManagementServiceEventHandler(
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val GROUP_NAME = "rpc.permission.management"
-        const val CLIENT_NAME = "rpc.permission.manager"
+        const val GROUP_NAME = "rest.permission.management"
+        const val CLIENT_NAME = "rest.permission.manager"
     }
 
     @VisibleForTesting

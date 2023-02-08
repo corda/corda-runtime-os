@@ -5,7 +5,7 @@ package net.corda.libs.cpiupload
  * duplicate CPI .
  *
  * This exception is passed via a kafka envelope message and then
- * "checked" in the rpc ops layer when received.
+ * "checked" in the rest ops layer when received.
  *
  * @param resourceName Must be the 'resource name' rather than the message so we
  * can pass it back to [net.corda.httprpc.exception.ResourceAlreadyExistsException]

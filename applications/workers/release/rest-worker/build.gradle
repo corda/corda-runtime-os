@@ -67,7 +67,7 @@ dependencies {
     e2eTestImplementation project(':libs:virtual-node:cpi-upload-endpoints')
     e2eTestImplementation project(':libs:virtual-node:virtual-node-endpoints')
     e2eTestImplementation project(':libs:lifecycle:lifecycle')
-    e2eTestImplementation project(':components:membership:membership-http-rpc')
+    e2eTestImplementation project(':components:membership:membership-http-rest')
     e2eTestImplementation project(':testing:packaging-test-utilities')
     e2eTestImplementation project(':tools:plugins:package')
     e2eTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"

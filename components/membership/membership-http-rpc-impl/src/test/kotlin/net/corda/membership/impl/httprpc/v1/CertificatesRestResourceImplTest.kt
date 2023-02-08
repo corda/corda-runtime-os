@@ -531,7 +531,7 @@ class CertificatesRestResourceImplTest {
             }
 
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate))
+                certificatesOps.importCertificateChain("rest-api-tls", null, "alias", listOf(certificate))
             }
         }
 
@@ -579,7 +579,7 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `no certificates throws an exception`() {
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", emptyList())
+                certificatesOps.importCertificateChain("rest-api-tls", null, "alias", emptyList())
             }
         }
 
@@ -591,7 +591,7 @@ class CertificatesRestResourceImplTest {
             }
 
             val details = assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", null, "", listOf(certificate))
+                certificatesOps.importCertificateChain("rest-api-tls", null, "", listOf(certificate))
             }.details
             assertThat(details).containsKey("alias")
         }
@@ -606,7 +606,7 @@ class CertificatesRestResourceImplTest {
                 on { content } doReturn ("$certificateText\n$certificateText").byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate1, certificate2))
+            certificatesOps.importCertificateChain("rest-api-tls", null, "alias", listOf(certificate1, certificate2))
 
             verify(certificatesClient).importCertificates(
                 CertificateUsage.RPC_API_TLS,

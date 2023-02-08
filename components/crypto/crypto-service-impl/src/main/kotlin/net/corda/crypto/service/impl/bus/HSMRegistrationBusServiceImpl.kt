@@ -47,8 +47,8 @@ class HSMRegistrationBusServiceImpl @Activate constructor(
     )
 ), HSMRegistrationBusService {
     private companion object {
-        const val GROUP_NAME = "crypto.hsm.rpc.registration"
-        const val CLIENT_NAME = "crypto.hsm.rpc.registration"
+        const val GROUP_NAME = "crypto.hsm.rest.registration"
+        const val CLIENT_NAME = "crypto.hsm.rest.registration"
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {

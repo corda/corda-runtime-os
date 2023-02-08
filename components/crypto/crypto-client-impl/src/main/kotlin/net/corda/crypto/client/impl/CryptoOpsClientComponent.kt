@@ -57,8 +57,8 @@ class CryptoOpsClientComponent @Activate constructor(
     configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
 ), CryptoOpsClient, CryptoOpsProxyClient {
     companion object {
-        const val CLIENT_ID = "crypto.ops.rpc.client"
-        const val GROUP_NAME = "crypto.ops.rpc.client"
+        const val CLIENT_ID = "crypto.ops.rest.client"
+        const val GROUP_NAME = "crypto.ops.rest.client"
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =

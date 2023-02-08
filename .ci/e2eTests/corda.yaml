@@ -99,9 +99,9 @@ workers:
     kafka:
       sasl:
         username:
-          value: "rpc"
+          value: "rest"
         password:
           valueFrom:
             secretKeyRef:
               name: "kafka-credentials"
-              key: "rpc"
+              key: "rest"

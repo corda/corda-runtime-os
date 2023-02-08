@@ -54,7 +54,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private var threadLooper =
-        ThreadLooper(log, config, lifecycleCoordinatorFactory, "rpc response subscription thread", ::runConsumeLoop)
+        ThreadLooper(log, config, lifecycleCoordinatorFactory, "rest response subscription thread", ::runConsumeLoop)
 
     override val subscriptionName: LifecycleCoordinatorName
         get() = threadLooper.lifecycleCoordinatorName
@@ -92,7 +92,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         while (!threadLooper.loopStopped) {
             attempts++
             try {
-                log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
+                log.debug { "Creating rest response consumer.  Attempt: $attempts" }
                 val producerConfig = ProducerConfig(config.clientId, config.instanceId, false, ProducerRoles.RPC_SENDER)
                 producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)

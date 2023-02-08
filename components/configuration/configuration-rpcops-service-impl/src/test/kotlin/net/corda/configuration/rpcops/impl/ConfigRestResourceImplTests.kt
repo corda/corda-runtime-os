@@ -264,7 +264,7 @@ class ConfigRestResourceImplTests {
     }
 
     /** Returns a [ConfigRestResource] where the RPC sender returns [future] in response to any RPC requests.
-     * @param future to return for any rpc requests
+     * @param future to return for any rest requests
      * @param failValidation Set to true to cause the validator to fail validation for a request
      * @return RPCSender and ConfigRPCOpsInternal
      * */

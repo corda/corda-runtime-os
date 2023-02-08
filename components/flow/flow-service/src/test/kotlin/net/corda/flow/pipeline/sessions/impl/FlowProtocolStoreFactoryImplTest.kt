@@ -24,7 +24,7 @@ class FlowProtocolStoreFactoryImplTest {
     companion object {
         private const val INITIATING_FLOW = "initiating-flow"
         private const val INITIATED_FLOW = "initiated-flow"
-        private const val RPC_FLOW = "rpc-flow"
+        private const val RPC_FLOW = "rest-flow"
         private const val BAD_RESPONDER = "bad-responder"
         private const val INVALID_RESPONDER = "invalid-responder"
 

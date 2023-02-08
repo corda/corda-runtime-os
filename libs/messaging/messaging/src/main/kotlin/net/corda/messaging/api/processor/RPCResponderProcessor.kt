@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture
 
 
 /**
- * This interface defines a processor of events from a rpc subscription on a feed with with requests of type [REQUEST] and
+ * This interface defines a processor of events from a rest subscription on a feed with with requests of type [REQUEST] and
  * responses of type [RESPONSE]
  *
  * If you want to receive events from a from [RPCSubscription] you should implement this interface.

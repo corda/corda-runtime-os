@@ -20,7 +20,7 @@ import org.osgi.service.component.annotations.Component
 class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
     companion object {
         const val CPI_UPLOAD_GROUP = "cpi.uploader"
-        const val CPI_UPLOAD_CLIENT_NAME = "$CPI_UPLOAD_GROUP.rpc"
+        const val CPI_UPLOAD_CLIENT_NAME = "$CPI_UPLOAD_GROUP.rest"
     }
 
     private val ackProcessor = UploadStatusProcessor()

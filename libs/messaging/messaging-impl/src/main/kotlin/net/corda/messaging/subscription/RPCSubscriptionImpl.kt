@@ -45,7 +45,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val log = LoggerFactory.getLogger(config.loggerName)
 
     private var threadLooper =
-        ThreadLooper(log, config, lifecycleCoordinatorFactory, "rpc subscription thread", ::runConsumeLoop)
+        ThreadLooper(log, config, lifecycleCoordinatorFactory, "rest subscription thread", ::runConsumeLoop)
 
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
@@ -73,7 +73,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         while (!threadLooper.loopStopped) {
             attempts++
             try {
-                log.debug { "Creating rpc consumer.  Attempt: $attempts" }
+                log.debug { "Creating rest consumer.  Attempt: $attempts" }
                 createProducerConsumerAndStartPolling()
                 attempts = 0
             } catch (ex: Exception) {

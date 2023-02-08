@@ -57,8 +57,8 @@ class MemberOpsServiceImpl @Activate constructor(
 ) : MemberOpsService {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val RPC_GROUP_NAME = "membership.ops.rpc"
-        const val RPC_CLIENT_NAME = "membership.ops.rpc"
+        const val RPC_GROUP_NAME = "membership.ops.rest"
+        const val RPC_CLIENT_NAME = "membership.ops.rest"
         const val ASYNC_GROUP_NAME = "membership.ops.async"
 
         const val SUBSCRIPTION_RESOURCE = "MemberOpsService.SUBSCRIPTION_RESOURCE"

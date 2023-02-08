@@ -111,7 +111,7 @@ spec:
               name: working-volume
           env:
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
-        - name: create-initial-rpc-admin
+        - name: create-initial-rest-admin
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
@@ -125,7 +125,7 @@ spec:
           env:
             {{ include "corda.initialAdminUserSecretEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
-        - name: apply-initial-rpc-admin
+        - name: apply-initial-rest-admin
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}

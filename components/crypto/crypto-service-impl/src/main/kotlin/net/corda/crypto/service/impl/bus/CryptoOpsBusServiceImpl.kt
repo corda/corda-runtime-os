@@ -47,8 +47,8 @@ class CryptoOpsBusServiceImpl @Activate constructor(
     )
 ), CryptoOpsBusService {
     private companion object {
-        const val GROUP_NAME = "crypto.ops.rpc"
-        const val CLIENT_NAME = "crypto.ops.rpc"
+        const val GROUP_NAME = "crypto.ops.rest"
+        const val CLIENT_NAME = "crypto.ops.rest"
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {

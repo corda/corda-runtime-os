@@ -1051,7 +1051,7 @@ class FlowTests {
         // Update cluster configuration (ConfigProcessor should kick off on all workers at this point)
         updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to newConfigurationValue).toJsonString(), MESSAGING_CONFIG)
 
-        // Wait for the rpc-worker to reload the configuration and come back up
+        // Wait for the rest-worker to reload the configuration and come back up
         waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString())
 
         try {

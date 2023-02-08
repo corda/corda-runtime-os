@@ -166,7 +166,7 @@ class MemberOpsClientTest {
     )
 
     private fun setUpRpcSender() {
-        // kicks off the MessagingConfigurationReceived event to be able to mock the rpc sender
+        // kicks off the MessagingConfigurationReceived event to be able to mock the rest sender
         changeConfig()
     }
 

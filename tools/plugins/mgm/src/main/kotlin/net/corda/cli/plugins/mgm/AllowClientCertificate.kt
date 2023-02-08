@@ -39,10 +39,10 @@ class AllowClientCertificate : Runnable {
     var subjects: Collection<String> = emptyList()
 
     @Option(
-        names = ["--rpc-worker-deployment-name"],
-        description = ["The RPC worker deployment name (default to corda-rpc-worker)"]
+        names = ["--rest-worker-deployment-name"],
+        description = ["The RPC worker deployment name (default to corda-rest-worker)"]
     )
-    var rpcWorkerDeploymentName: String = "corda-rpc-worker"
+    var rpcWorkerDeploymentName: String = "corda-rest-worker"
 
     private inner class Command : HttpRpcCommand() {
         init {

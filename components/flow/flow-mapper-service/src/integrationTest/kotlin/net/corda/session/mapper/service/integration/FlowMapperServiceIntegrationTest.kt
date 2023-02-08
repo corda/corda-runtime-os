@@ -196,11 +196,11 @@ class FlowMapperServiceIntegrationTest {
         )
         publisher.publish(listOf(cleanup))
 
-        //assert duplicate start rpc didn't get processed (and also give Execute cleanup time to run)
+        //assert duplicate start rest didn't get processed (and also give Execute cleanup time to run)
         assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
         assertThat(flowEventLatch.count).isEqualTo(1)
 
-        //send same key start rpc again
+        //send same key start rest again
         publisher.publish(listOf(startRPCEvent))
 
         //validate went through and not a duplicate

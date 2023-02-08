@@ -30,7 +30,7 @@ class CordaPublisherFactory @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
 
-    // Used to ensure that each rpc sender has a unique client.id
+    // Used to ensure that each rest sender has a unique client.id
     private val clientIdCounter = AtomicInteger()
 
     companion object {

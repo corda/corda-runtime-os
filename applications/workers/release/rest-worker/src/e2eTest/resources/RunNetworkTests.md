@@ -20,11 +20,11 @@ e2eClusterCP2pPort = 8080
 
 Or if you wish to set these as system properties you can set them as 
 ```bash
-export E2E_CLUSTER_A_RPC_HOST=corda-rpc-worker.ccrean-cluster-a
+export E2E_CLUSTER_A_RPC_HOST=corda-rest-worker.ccrean-cluster-a
 export E2E_CLUSTER_A_RPC_PORT=443
-export E2E_CLUSTER_B_RPC_HOST=corda-rpc-worker.ccrean-cluster-b
+export E2E_CLUSTER_B_RPC_HOST=corda-rest-worker.ccrean-cluster-b
 export E2E_CLUSTER_B_RPC_PORT=443
-export E2E_CLUSTER_C_RPC_HOST=corda-rpc-worker.ccrean-cluster-mgm
+export E2E_CLUSTER_C_RPC_HOST=corda-rest-worker.ccrean-cluster-mgm
 export E2E_CLUSTER_C_RPC_PORT=443
 
 export E2E_CLUSTER_A_P2P_HOST=corda-p2p-gateway-worker.ccrean-cluster-a

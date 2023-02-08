@@ -24,7 +24,7 @@ def s3_upload_group_id = project.hasProperty(S3_BUCKET_GROUP_ID_PROPERTY) ? "${p
 
 def otherPluginsTasks = subprojects.collect {
         it.tasks.matching {
-            task -> task.name == 'cliPluginTask' // Module `plugins-http-rpc` will not have this task
+            task -> task.name == 'cliPluginTask' // Module `plugins-http-rest` will not have this task
         }
     }
 

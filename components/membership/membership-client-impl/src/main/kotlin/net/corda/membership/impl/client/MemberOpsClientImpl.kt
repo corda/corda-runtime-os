@@ -86,9 +86,9 @@ class MemberOpsClientImpl @Activate constructor(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val ERROR_MSG = "Service is in an incorrect state for calling."
 
-        const val RPC_CLIENT_ID = "membership.ops.rpc"
+        const val RPC_CLIENT_ID = "membership.ops.rest"
         const val ASYNC_CLIENT_ID = "membership.ops.async"
-        const val GROUP_NAME = "membership.ops.rpc"
+        const val GROUP_NAME = "membership.ops.rest"
 
         private val clock = UTCClock()
 
