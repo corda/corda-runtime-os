@@ -848,7 +848,7 @@ class CryptoProcessorTests {
     }
 
     @Test
-    fun `filterMyKeys using short ids and full ids both return same keys for the same query`() {
+    fun `filterMyKeys works for both short key ids and full key ids`() {
         val randomId = UUID.randomUUID()
         val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
         val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
