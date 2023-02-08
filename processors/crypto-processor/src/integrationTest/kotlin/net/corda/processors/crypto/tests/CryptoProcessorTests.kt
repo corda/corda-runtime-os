@@ -7,7 +7,8 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.fullId
+import net.corda.crypto.core.publicKeyFullIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
@@ -68,7 +69,6 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
-import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -429,7 +429,7 @@ class CryptoProcessorTests {
     ) {
         val found = opsClient.lookup(
             tenantId = tenantId,
-            ids = listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))
+            ids = listOf(publicKeyFullIdFromBytes(UUID.randomUUID().toString().toByteArray()))
         )
         assertEquals(0, found.size)
     }
@@ -597,10 +597,10 @@ class CryptoProcessorTests {
     ) {
         val found = opsClient.lookup(
             tenantId = tenantId,
-            ids = listOf(publicKey.publicKeyId())
+            ids = listOf(publicKey.fullId())
         )
         assertEquals(1, found.size)
-        assertEquals(publicKey.publicKeyId(), found[0].id)
+        assertEquals(publicKey.fullId(), found[0].id)
         assertEquals(tenantId, found[0].tenantId)
         if (alias.isNullOrBlank()) {
             assertNull(found[0].alias)
@@ -635,7 +635,7 @@ class CryptoProcessorTests {
             )
         )
         assertEquals(1, found.size)
-        assertEquals(publicKey.publicKeyId(), found[0].id)
+        assertEquals(publicKey.fullId(), found[0].id)
         assertEquals(tenantId, found[0].tenantId)
         assertEquals(alias, found[0].alias)
         assertEquals(category, found[0].category)
@@ -758,7 +758,7 @@ class CryptoProcessorTests {
             logger.info(
                 "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
                 tenantId,
-                publicKey.publicKeyId(),
+                publicKey.fullId(),
                 spec
             )
             publisher.publish(
@@ -804,7 +804,7 @@ class CryptoProcessorTests {
             logger.info(
                 "Publishing: createSign({}, {}, {})",
                 tenantId,
-                publicKey.publicKeyId(),
+                publicKey.fullId(),
                 spec
             )
             publisher.publish(
@@ -832,12 +832,12 @@ class CryptoProcessorTests {
 
     @Test
     fun `filterMyKeys filters and returns keys owned by the specified vnode`() {
-        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1")
-        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2")
+        val vnodeKey1 = generateLedgerKey(vnodeId, keyAliasWithRandomUUID("vnode-key-1)"))
+        val vnodeKey2 = generateLedgerKey(vnodeId, keyAliasWithRandomUUID("vnode-key-2"))
 
-        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1")
-        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2")
-        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3")
+        val vnode2Key1 = generateLedgerKey(vnodeId2, keyAliasWithRandomUUID("vnode2-key-1"))
+        val vnode2Key2 = generateLedgerKey(vnodeId2, keyAliasWithRandomUUID("vnode2-key-2"))
+        val vnode2Key3 = generateLedgerKey(vnodeId2, keyAliasWithRandomUUID("vnode2-key-3"))
 
         val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
@@ -849,12 +849,12 @@ class CryptoProcessorTests {
 
     @Test
     fun `filterMyKeys using short ids and full ids both return same keys for the same query`() {
-        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1")
-        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2")
+        val vnodeKey1 = generateLedgerKey(vnodeId, keyAliasWithRandomUUID("vnode-key-1"))
+        val vnodeKey2 = generateLedgerKey(vnodeId, keyAliasWithRandomUUID("vnode-key-2"))
 
-        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1")
-        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2")
-        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3")
+        val vnode2Key1 = generateLedgerKey(vnodeId2, keyAliasWithRandomUUID("vnode2-key-1"))
+        val vnode2Key2 = generateLedgerKey(vnodeId2, keyAliasWithRandomUUID("vnode2-key-2"))
+        val vnode2Key3 = generateLedgerKey(vnodeId2, keyAliasWithRandomUUID("vnode2-key-3"))
 
         val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
@@ -873,4 +873,7 @@ class CryptoProcessorTests {
             alias = keyAlias,
             scheme = ECDSA_SECP256R1_CODE_NAME
         )
+
+    private fun keyAliasWithRandomUUID(keyAlias: String): String =
+        "$keyAlias-${UUID.randomUUID()}"
 }
