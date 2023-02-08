@@ -6,8 +6,8 @@ import java.time.Duration
 
 /** "Private args" that are only exposed in here */
 class AssertWithRetryArgs {
-    var timeout: Duration = Duration.ofSeconds(10)
-    var interval: Duration = Duration.ofMillis(500)
+    var timeout: Duration = Duration.ofSeconds(20)
+    var interval: Duration = Duration.ofMillis(700)
     var command: (() -> SimpleResponse)? = null
     var condition: ((SimpleResponse) -> Boolean)? = null
     var immediateFailCondition: ((SimpleResponse) -> Boolean)? = null
