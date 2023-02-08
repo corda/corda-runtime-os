@@ -9,20 +9,21 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messaging.api.chunking.ProducerChunkService
+import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
 /**
- * Chunks up an object, bytes or record into chunks.
+ * Breaks up an object, bytes or record into chunks.
  */
-class ProducerChunkServiceImpl(
+class ChunkSerializerServiceImpl(
     maxAllowedMessageSize: Long,
     private val cordaAvroSerializer: CordaAvroSerializer<Any>,
     private val chunkBuilderService: ChunkBuilderService,
-) : ProducerChunkService {
+) : ChunkSerializerService {
 
     companion object {
+        const val INITIAL_PART_NUMBER = 1
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -57,36 +58,24 @@ class ProducerChunkServiceImpl(
     }
 
     override fun generateChunksFromBytes(bytes: ByteArray): List<Chunk> {
-        if (bytes.size < chunkSize) {
+        val byteSize = bytes.size
+        if (byteSize < chunkSize) {
             logger.debug { "Failed to deserialize bytes or object is too small for chunking" }
             return emptyList()
         }
-        val chunksAsBytes = divideDataIntoChunks(bytes, chunkSize)
         val hash = Checksum.digestForBytes(bytes)
-        var partNumber = 0
-        var offset: Long = -1
+        var partNumber = INITIAL_PART_NUMBER
         val requestId = UUID.randomUUID().toString()
-        return chunksAsBytes.map {
-            offset = if (offset == -1L) 0L else offset + bytes.size
-            chunkBuilderService.buildChunk(requestId, partNumber++, ByteBuffer.wrap(it), offset)
-        }.toMutableList().apply {
-            add(chunkBuilderService.buildFinalChunk(requestId, partNumber++, hash, offset))
-        }
-    }
 
-    /**
-     * Split [bytes] into multiple ByteArrays with a max size of [chunkSize]
-     */
-    private fun divideDataIntoChunks(bytes: ByteArray, chunkSize: Int): ArrayList<ByteArray> {
-        val result: ArrayList<ByteArray> = ArrayList()
-        if (chunkSize <= 0) {
-            result.add(bytes)
-        } else {
-            for (chunk in bytes.indices step chunkSize) {
-                result.add(bytes.copyOfRange(chunk, kotlin.math.min(chunk + chunkSize, bytes.size)))
-            }
+        val chunks = mutableListOf<Chunk>()
+        for (offset in bytes.indices step chunkSize) {
+            val length = kotlin.math.min(chunkSize, bytes.size - offset)
+            val byteBuffer = ByteBuffer.wrap(bytes, offset, length)
+            chunks.add(chunkBuilderService.buildChunk(requestId, partNumber++, byteBuffer, offset.toLong()))
         }
-        return result
+        chunks.add(chunkBuilderService.buildFinalChunk(requestId, partNumber, hash, byteSize.toLong()-1))
+
+        return chunks
     }
 
     /**
@@ -99,7 +88,7 @@ class ProducerChunkServiceImpl(
         return try {
             cordaAvroSerializer.serialize(obj)
         } catch (ex: Throwable) {
-            // if serialization is going to fail, let it be handled within the consumer logic
+            // if serialization is going to fail, let it be handled within the kafka client logic
             return null
         }
     }

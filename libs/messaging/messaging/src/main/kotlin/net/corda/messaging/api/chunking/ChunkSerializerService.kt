@@ -6,7 +6,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 /**
  * Service to handle generating chunks for data that may require chunking
  */
-interface ProducerChunkService {
+interface ChunkSerializerService {
 
     /**
      * Take a byte array and divide it into [Chunk]s
@@ -25,7 +25,7 @@ interface ProducerChunkService {
     fun generateChunks(avroObject: Any) : List<Chunk>
 
     /**
-     * Take a messaging [Record] and divide it into chunks.
+     * Take a messaging [CordaProducerRecord] and divide it into chunks.
      * [Chunk] records will be keyed by an associated [ChunkKey].
      * @param producerRecord Message library [Record] to be chunked.
      * @return Returns the record broken up into chunks. Returns an empty list if the object was too small to be chunked or failed to be

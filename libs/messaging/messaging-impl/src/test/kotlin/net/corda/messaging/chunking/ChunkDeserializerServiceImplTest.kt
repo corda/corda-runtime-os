@@ -7,7 +7,6 @@ import net.corda.chunking.toAvro
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
-import net.corda.messaging.api.chunking.ConsumerChunkService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -15,10 +14,10 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-class ConsumerChunkServiceImplTest {
+class ChunkDeserializerServiceImplTest {
     private lateinit var valueDeserializer: CordaAvroDeserializer<String>
     private lateinit var keyDeserializer: CordaAvroDeserializer<String>
-    private lateinit var consumerChunkService: ConsumerChunkService<String, String>
+    private lateinit var chunkDeserializerService: ChunkDeserializerServiceImpl<String, String>
 
     private val chunkBuilder = ChunkBuilderServiceImpl()
     private val id = "id"
@@ -44,7 +43,7 @@ class ConsumerChunkServiceImplTest {
     fun setup() {
         valueDeserializer = mock()
         keyDeserializer = mock()
-        consumerChunkService = ConsumerChunkServiceImpl(keyDeserializer, valueDeserializer, { })
+        chunkDeserializerService = ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, { })
         whenever(keyDeserializer.deserialize(realKeyBytes)).thenReturn(realKey)
         whenever(valueDeserializer.deserialize(fullBytes)).thenReturn(completeValue)
 
@@ -62,20 +61,20 @@ class ConsumerChunkServiceImplTest {
     @Test
     fun `assemble chunks with keys fails due to key deserialization error`() {
         whenever(keyDeserializer.deserialize(any())).thenReturn(null)
-        val result = consumerChunkService.assembleChunks(chunkMap)
+        val result = chunkDeserializerService.assembleChunks(chunkMap)
         assertThat(result).isEqualTo(null)
     }
 
     @Test
     fun `assemble chunks with keys fails due to value deserialization error`() {
         whenever(valueDeserializer.deserialize(any())).thenReturn(null)
-        val result = consumerChunkService.assembleChunks(chunkMap)
+        val result = chunkDeserializerService.assembleChunks(chunkMap)
         assertThat(result).isEqualTo(null)
     }
 
     @Test
     fun `assemble chunks with keys success`() {
-        val result = consumerChunkService.assembleChunks(chunkMap)
+        val result = chunkDeserializerService.assembleChunks(chunkMap)
         assertThat(result?.first).isEqualTo(realKey)
         assertThat(result?.second).isEqualTo(completeValue)
     }
@@ -83,14 +82,14 @@ class ConsumerChunkServiceImplTest {
     @Test
     fun `assemble chunks with keys fails due to missing sever hash`() {
         testFinalChunk.checksum = null
-        val result = consumerChunkService.assembleChunks(chunkMap)
+        val result = chunkDeserializerService.assembleChunks(chunkMap)
         assertThat(result).isEqualTo(null)
     }
 
     @Test
     fun `assemble chunks with keys fails due to incorrect sever hash`() {
         testFinalChunk.checksum = Checksum.digestForBytes("somewrongbytes".toByteArray()).toAvro()
-        val result = consumerChunkService.assembleChunks(chunkMap)
+        val result = chunkDeserializerService.assembleChunks(chunkMap)
         assertThat(result).isEqualTo(null)
     }
 
@@ -98,20 +97,20 @@ class ConsumerChunkServiceImplTest {
     @Test
     fun `assemble chunks fails due to value deserialization error`() {
         whenever(valueDeserializer.deserialize(any())).thenReturn(null)
-        val result = consumerChunkService.assembleChunks(chunks)
+        val result = chunkDeserializerService.assembleChunks(chunks)
         assertThat(result).isEqualTo(null)
     }
 
     @Test
     fun `assemble chunks success`() {
-        val result = consumerChunkService.assembleChunks(chunks)
+        val result = chunkDeserializerService.assembleChunks(chunks)
         assertThat(result).isEqualTo(completeValue)
     }
 
     @Test
     fun `assemble chunks fails due to missing sever hash`() {
         testFinalChunk.checksum = null
-        val result = consumerChunkService.assembleChunks(chunks)
+        val result = chunkDeserializerService.assembleChunks(chunks)
         assertThat(result).isEqualTo(null)
     }
 }

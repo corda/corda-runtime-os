@@ -35,7 +35,7 @@ enum class BusType {
 class WorkerHelpers {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-            private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
+        private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
 
         /**
          * Parses the [args] into the [params].
