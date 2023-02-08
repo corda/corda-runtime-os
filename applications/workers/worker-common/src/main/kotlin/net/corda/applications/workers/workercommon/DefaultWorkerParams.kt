@@ -30,7 +30,7 @@ class DefaultWorkerParams {
     // This needs revision as arguably it belongs to the `messagingParams`
     @Option(
         names = ["-M", "--max-message-size"],
-        description = ["The maximum message size allowed to be sent to the message bus."]
+        description = ["The maximum message size in bytes allowed to be sent to the message bus."]
     )
     var maxAllowedMessageSize = 972800
 

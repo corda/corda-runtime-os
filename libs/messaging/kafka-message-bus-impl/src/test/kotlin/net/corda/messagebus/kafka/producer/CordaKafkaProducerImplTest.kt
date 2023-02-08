@@ -6,7 +6,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
-import net.corda.messaging.api.chunking.ProducerChunkService
+import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
@@ -21,8 +21,8 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.InvalidProducerEpochException
 import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.errors.TimeoutException
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -46,7 +46,7 @@ class CordaKafkaProducerImplTest {
     private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
     private val producer: Producer<Any, Any> = mock()
     private val consumer: Consumer<Any, Any> = mock()
-    private val producerChunkService: ProducerChunkService = mock()
+    private val chunkSerializerService: ChunkSerializerService = mock()
     private val mockedCallback: CordaProducer.Callback = mock()
     private val cordaConsumer = CordaKafkaConsumerImpl(consumerConfig, consumer, null)
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
@@ -56,7 +56,7 @@ class CordaKafkaProducerImplTest {
     @BeforeEach
     fun setup() {
         doReturn(ConsumerGroupMetadata("")).whenever(consumer).groupMetadata()
-        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, producerChunkService)
+        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, chunkSerializerService)
     }
 
     @Test
@@ -354,9 +354,9 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun `Trying to send chunks with an async producer throws a fatal exception and executes callback`() {
-        cordaKafkaProducer = CordaKafkaProducerImpl(asyncConfig, producer, producerChunkService)
+        cordaKafkaProducer = CordaKafkaProducerImpl(asyncConfig, producer, chunkSerializerService)
 
-        whenever(producerChunkService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
+        whenever(chunkSerializerService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
         assertThrows<CordaMessageAPIFatalException> {
             cordaKafkaProducer.send(record, mockedCallback)
         }
@@ -365,8 +365,8 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun `Trying to send chunks to partition with an async producer throws a fatal exception and executes callback`() {
-        cordaKafkaProducer = CordaKafkaProducerImpl(asyncConfig, producer, producerChunkService)
-        whenever(producerChunkService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
+        cordaKafkaProducer = CordaKafkaProducerImpl(asyncConfig, producer, chunkSerializerService)
+        whenever(chunkSerializerService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
         assertThrows<CordaMessageAPIFatalException> {
             cordaKafkaProducer.send(record, 1, mockedCallback)
         }
@@ -375,22 +375,22 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun `Send large records chunks to partition with a transactional producer sends chunks`() {
-        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, producerChunkService)
-        whenever(producerChunkService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
+        cordaKafkaProducer = CordaKafkaProducerImpl(transactionalConfig, producer, chunkSerializerService)
+        whenever(chunkSerializerService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
         cordaKafkaProducer.sendRecords(listOf(record))
         verify(producer, times(2)).send(any())
     }
 
     @Test
     fun `Send large obj to partition with a transactional producer sends chunks`() {
-        whenever(producerChunkService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
+        whenever(chunkSerializerService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
         cordaKafkaProducer.sendRecordsToPartitions(listOf(Pair(1, record)))
         verify(producer, times(2)).send(any())
     }
 
     @Test
     fun `Send large obj with a transactional producer and no callback sends chunks`() {
-        whenever(producerChunkService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
+        whenever(chunkSerializerService.generateChunkedRecords(any())).thenReturn(listOf(record, record))
         cordaKafkaProducer.send(record, null)
         verify(producer, times(2)).send(any())
     }

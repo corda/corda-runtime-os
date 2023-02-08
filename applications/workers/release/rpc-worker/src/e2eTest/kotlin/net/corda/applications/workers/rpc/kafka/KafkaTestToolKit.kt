@@ -39,13 +39,14 @@ class KafkaTestToolKit(
         AvroSchemaRegistryImpl()
     }
 
-    private val messageChunkFactory by lazy {
-        MessagingChunkFactoryImpl(ChunkBuilderServiceImpl())
-    }
-
     private val serializationFactory by lazy {
         CordaAvroSerializationFactoryImpl(registry)
     }
+
+    private val messageChunkFactory by lazy {
+        MessagingChunkFactoryImpl(ChunkBuilderServiceImpl(), serializationFactory)
+    }
+
     private val consumerBuilder by lazy {
         CordaKafkaConsumerBuilderImpl(registry)
     }

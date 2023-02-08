@@ -41,7 +41,7 @@ class KafkaConfigMergerImpl : BusConfigMerger {
     }
 
     private fun getBaseKafkaMessagingConfig(bootConfig: SmartConfig): SmartConfig {
-        val hasMaxMsgSize = bootConfig.hasPath(MAX_ALLOWED_MSG_SIZE)
+        val hasMaxMsgSize = bootConfig.hasPath(BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE)
         val baseKafkaConfig = SmartConfigImpl.empty()
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
         return if (hasMaxMsgSize) {
