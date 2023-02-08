@@ -50,17 +50,12 @@ class CpiCpkEntity(
         other as CpiCpkEntity
 
         if (id != other.id) return false
-        if (cpkFileName != other.cpkFileName) return false
-        if (metadata != other.metadata) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + cpkFileName.hashCode()
-        result = 31 * result + metadata.hashCode()
-        return result
+        return id.hashCode()
     }
 }
 
