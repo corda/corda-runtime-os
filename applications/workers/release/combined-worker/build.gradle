@@ -76,6 +76,7 @@ dependencies {
     implementation project(':processors:member-processor')
     implementation project(':processors:rest-processor')
     implementation project(':processors:uniqueness-processor')
+    implementation project(':processors:verification-processor')
     implementation project(':processors:link-manager-processor')
     implementation project(':processors:gateway-processor')
     implementation "info.picocli:picocli:$picocliVersion"

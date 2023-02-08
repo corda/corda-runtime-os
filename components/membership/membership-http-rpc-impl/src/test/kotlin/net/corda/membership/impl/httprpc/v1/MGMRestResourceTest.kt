@@ -2,7 +2,8 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.membership.common.ApprovalRuleDetails
-import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
+import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.httprpc.exception.BadRequestException
@@ -26,13 +27,16 @@ import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -52,8 +56,11 @@ class MGMRestResourceTest {
         private const val HOLDING_IDENTITY_ID = "111213141500"
         private const val INVALID_SHORT_HASH = "ABS09234745D"
         private const val RULE_REGEX = "rule-regex"
+        private const val INVALID_RULE_REGEX = "*"
         private const val RULE_LABEL = "rule-label"
         private const val RULE_ID = "rule-id"
+
+        fun String.shortHash() = ShortHash.of(this)
     }
 
     private var coordinatorIsRunning = false
@@ -120,7 +127,7 @@ class MGMRestResourceTest {
         fun `generateGroupPolicy calls the client svc`() {
             startService()
             mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
-            verify(mgmOpsClient).generateGroupPolicy(eq((ShortHash.of(HOLDING_IDENTITY_ID))))
+            verify(mgmOpsClient).generateGroupPolicy(eq(HOLDING_IDENTITY_ID.shortHash()))
             stopService()
         }
 
@@ -164,8 +171,8 @@ class MGMRestResourceTest {
             mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
 
             verify(mgmOpsClient).addApprovalRule(
-                eq((ShortHash.of(HOLDING_IDENTITY_ID))),
-                eq(ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL))
+                eq(HOLDING_IDENTITY_ID.shortHash()),
+                eq(ApprovalRuleParams(RULE_REGEX, STANDARD, RULE_LABEL))
             )
             stopService()
         }
@@ -223,7 +230,10 @@ class MGMRestResourceTest {
             startService()
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams("*", RULE_LABEL))
+                mgmRpcOps.addGroupApprovalRule(
+                    HOLDING_IDENTITY_ID,
+                    ApprovalRuleRequestParams(INVALID_RULE_REGEX, RULE_LABEL)
+                )
             }
 
             stopService()
@@ -238,14 +248,14 @@ class MGMRestResourceTest {
 
             mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
 
-            verify(mgmOpsClient).deleteApprovalRule(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(RULE_ID))
+            verify(mgmOpsClient).deleteApprovalRule(eq(HOLDING_IDENTITY_ID.shortHash()), eq(RULE_ID), eq(STANDARD))
             stopService()
         }
 
         @Test
         fun `deleteGroupApprovalRule throws resource not found for invalid member`() {
             startService()
-            whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<CouldNotFindMemberException>())
+            whenever(mgmOpsClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
@@ -257,7 +267,7 @@ class MGMRestResourceTest {
         @Test
         fun `deleteGroupApprovalRule throws resource not found for non-existent rule`() {
             startService()
-            whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
+            whenever(mgmOpsClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<MembershipPersistenceException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
@@ -269,7 +279,7 @@ class MGMRestResourceTest {
         @Test
         fun `deleteGroupApprovalRule throws invalid input for non MGM member`() {
             startService()
-            whenever(mgmOpsClient.deleteApprovalRule(any(), any())).doThrow(mock<MemberNotAnMgmException>())
+            whenever(mgmOpsClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRpcOps.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
@@ -298,7 +308,7 @@ class MGMRestResourceTest {
 
             mgmRpcOps.getGroupApprovalRules(HOLDING_IDENTITY_ID)
 
-            verify(mgmOpsClient).getApprovalRules(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(ApprovalRuleType.STANDARD))
+            verify(mgmOpsClient).getApprovalRules(eq(HOLDING_IDENTITY_ID.shortHash()), eq(STANDARD))
             stopService()
         }
 
@@ -374,7 +384,7 @@ class MGMRestResourceTest {
                     any(),
                     any(),
                 )
-            ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(MemberNotAnMgmException(HOLDING_IDENTITY_ID.shortHash()))
 
             assertThrows<InvalidInputDataException> {
                 mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, subject)
@@ -388,7 +398,7 @@ class MGMRestResourceTest {
             mgmRpcOps.mutualTlsAllowClientCertificate(HOLDING_IDENTITY_ID, subject)
 
             verify(mgmOpsClient).mutualTlsAllowClientCertificate(
-                ShortHash.of(HOLDING_IDENTITY_ID),
+                HOLDING_IDENTITY_ID.shortHash(),
                 MemberX500Name.Companion.parse(subject),
             )
         }
@@ -430,7 +440,7 @@ class MGMRestResourceTest {
                     any(),
                     any(),
                 )
-            ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(MemberNotAnMgmException(HOLDING_IDENTITY_ID.shortHash()))
 
             assertThrows<InvalidInputDataException> {
                 mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, subject)
@@ -444,7 +454,7 @@ class MGMRestResourceTest {
             mgmRpcOps.mutualTlsDisallowClientCertificate(HOLDING_IDENTITY_ID, subject)
 
             verify(mgmOpsClient).mutualTlsDisallowClientCertificate(
-                ShortHash.of(HOLDING_IDENTITY_ID),
+                HOLDING_IDENTITY_ID.shortHash(),
                 MemberX500Name.Companion.parse(subject),
             )
         }
@@ -477,7 +487,7 @@ class MGMRestResourceTest {
                 mgmOpsClient.mutualTlsListClientCertificate(
                     any(),
                 )
-            ).doThrow(MemberNotAnMgmException(ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(MemberNotAnMgmException(HOLDING_IDENTITY_ID.shortHash()))
 
             assertThrows<InvalidInputDataException> {
                 mgmRpcOps.mutualTlsListClientCertificate(HOLDING_IDENTITY_ID)
@@ -490,7 +500,7 @@ class MGMRestResourceTest {
             val parsedSubject = MemberX500Name.parse(subject)
             whenever(
                 mgmOpsClient.mutualTlsListClientCertificate(
-                    ShortHash.of(HOLDING_IDENTITY_ID)
+                    HOLDING_IDENTITY_ID.shortHash()
                 )
             ).doReturn(listOf(parsedSubject))
 
@@ -498,6 +508,280 @@ class MGMRestResourceTest {
 
             assertThat(list)
                 .containsExactly(parsedSubject.toString())
+        }
+    }
+
+    @Nested
+    inner class AddPreAuthGroupApprovalRuleTests {
+        /**
+         * Function for calling function under test to avoid calling the wrong function since there are similar tests
+         * for non pre-auth token tests.
+         */
+        private fun callFunctionUnderTest(
+            holdingIdentity: String,
+            requestParams: ApprovalRuleRequestParams
+        ) = mgmRpcOps.addPreAuthGroupApprovalRule(
+            holdingIdentity,
+            requestParams
+        )
+
+        private fun onCallingClientService() = whenever(
+            mgmOpsClient.addApprovalRule(any(), argThat { ruleType == PREAUTH })
+        )
+
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `it delegates call to mgm ops client`() {
+            onCallingClientService().doReturn(ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL))
+
+            callFunctionUnderTest(
+                HOLDING_IDENTITY_ID,
+                ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL)
+            )
+
+            verify(mgmOpsClient).addApprovalRule(
+                eq(HOLDING_IDENTITY_ID.shortHash()),
+                eq(ApprovalRuleParams(RULE_REGEX, PREAUTH, RULE_LABEL))
+            )
+        }
+
+        @Test
+        fun `it maps result to expected http type`() {
+            onCallingClientService().doReturn(ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL))
+
+            callFunctionUnderTest(
+                HOLDING_IDENTITY_ID,
+                ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL)
+            ).apply {
+                assertThat(ruleId).isEqualTo(RULE_ID)
+                assertThat(ruleRegex).isEqualTo(RULE_REGEX)
+                assertThat(ruleLabel).isNotNull.isEqualTo(RULE_LABEL)
+            }
+        }
+
+        @Test
+        fun `it maps result to expected http type without a label`() {
+            onCallingClientService().doReturn(ApprovalRuleDetails(RULE_ID, RULE_REGEX, null))
+
+            callFunctionUnderTest(
+                HOLDING_IDENTITY_ID,
+                ApprovalRuleRequestParams(RULE_REGEX)
+            ).apply {
+                assertThat(ruleId).isEqualTo(RULE_ID)
+                assertThat(ruleRegex).isEqualTo(RULE_REGEX)
+                assertThat(ruleLabel).isNull()
+            }
+        }
+
+        @Test
+        fun `it throws resource not found for invalid member`() {
+            onCallingClientService().doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                callFunctionUnderTest(
+                    HOLDING_IDENTITY_ID,
+                    ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL)
+                )
+            }
+        }
+
+        @Test
+        fun `it throws invalid input for non MGM member`() {
+            onCallingClientService().doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                callFunctionUnderTest(
+                    HOLDING_IDENTITY_ID,
+                    ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL)
+                )
+            }
+        }
+
+        @Test
+        fun `it throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                callFunctionUnderTest(
+                    INVALID_SHORT_HASH,
+                    ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL)
+                )
+            }
+        }
+
+        @Test
+        fun `it throws bad request for duplicate rule`() {
+            onCallingClientService().doThrow(mock<MembershipPersistenceException>())
+
+            assertThrows<BadRequestException> {
+                callFunctionUnderTest(
+                    HOLDING_IDENTITY_ID,
+                    ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL)
+                )
+            }
+        }
+
+        @Test
+        fun `it throws bad request for invalid regex syntax`() {
+            assertThrows<BadRequestException> {
+                callFunctionUnderTest(
+                    HOLDING_IDENTITY_ID,
+                    ApprovalRuleRequestParams(INVALID_RULE_REGEX, RULE_LABEL)
+                )
+            }
+        }
+    }
+
+    @Nested
+    inner class GetPreAuthGroupApprovalRulesTests {
+        private fun onCallingClientService() = whenever(
+            mgmOpsClient.getApprovalRules(any(), eq(PREAUTH))
+        )
+
+        private fun callFunctionUnderTest(
+            holdingIdentity: String = HOLDING_IDENTITY_ID
+        ) = mgmRpcOps.getPreAuthGroupApprovalRules(holdingIdentity)
+
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `it delegates correctly to mgm ops client`() {
+            callFunctionUnderTest()
+
+            verify(mgmOpsClient).getApprovalRules(
+                eq(HOLDING_IDENTITY_ID.shortHash()),
+                eq(PREAUTH)
+            )
+        }
+
+        @Test
+        fun `it returns the client response mapped to http type`() {
+            onCallingClientService().thenReturn(
+                listOf(ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL))
+            )
+            callFunctionUnderTest().apply {
+                assertThat(this).hasSize(1)
+                val info = this.first()
+                assertThat(info.ruleId).isEqualTo(RULE_ID)
+                assertThat(info.ruleRegex).isEqualTo(RULE_REGEX)
+                assertThat(info.ruleLabel).isNotNull.isEqualTo(RULE_LABEL)
+            }
+        }
+
+        @Test
+        fun `it returns the client response mapped to http type with nullable label`() {
+            onCallingClientService().thenReturn(
+                listOf(ApprovalRuleDetails(RULE_ID, RULE_REGEX, null))
+            )
+            callFunctionUnderTest().apply {
+                assertThat(this).hasSize(1)
+                val info = this.first()
+                assertThat(info.ruleId).isEqualTo(RULE_ID)
+                assertThat(info.ruleRegex).isEqualTo(RULE_REGEX)
+                assertThat(info.ruleLabel).isNull()
+            }
+        }
+
+        @Test
+        fun `it throws resource not found for invalid member`() {
+            onCallingClientService().doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                callFunctionUnderTest()
+            }
+        }
+
+        @Test
+        fun `it throws invalid input for non MGM member`() {
+            onCallingClientService().doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                callFunctionUnderTest()
+            }
+        }
+
+        @Test
+        fun `it throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                callFunctionUnderTest(INVALID_SHORT_HASH)
+            }
+        }
+    }
+
+    @Nested
+    inner class DeletePreAuthGroupApprovalRuleTests {
+        /**
+         * Function for calling function under test to avoid calling the wrong function since there are similar tests
+         * for non pre-auth token tests.
+         */
+        private fun callFunctionUnderTest(
+            holdingIdentity: String,
+            ruleId: String
+        ) = mgmRpcOps.deletePreAuthGroupApprovalRule(
+            holdingIdentity,
+            ruleId
+        )
+
+        private fun whenCallingClientService() = whenever(
+            mgmOpsClient.deleteApprovalRule(any(), any(), eq(PREAUTH))
+        )
+
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `deleteGroupApprovalRule delegates correctly to mgm ops client`() {
+            callFunctionUnderTest(HOLDING_IDENTITY_ID, RULE_ID)
+
+            verify(mgmOpsClient).deleteApprovalRule(
+                eq(HOLDING_IDENTITY_ID.shortHash()),
+                eq(RULE_ID),
+                eq(PREAUTH)
+            )
+        }
+
+        @Test
+        fun `deleteGroupApprovalRule throws resource not found for invalid member`() {
+            whenCallingClientService().doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                callFunctionUnderTest(HOLDING_IDENTITY_ID, RULE_ID)
+            }
+        }
+
+        @Test
+        fun `deleteGroupApprovalRule throws resource not found for non-existent rule`() {
+            whenCallingClientService().doThrow(mock<MembershipPersistenceException>())
+
+            assertThrows<ResourceNotFoundException> {
+                callFunctionUnderTest(HOLDING_IDENTITY_ID, RULE_ID)
+            }
+        }
+
+        @Test
+        fun `deleteGroupApprovalRule throws invalid input for non MGM member`() {
+            whenCallingClientService().doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                callFunctionUnderTest(HOLDING_IDENTITY_ID, RULE_ID)
+            }
+        }
+
+        @Test
+        fun `deleteGroupApprovalRule throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                callFunctionUnderTest(INVALID_SHORT_HASH, RULE_ID)
+            }
         }
     }
 
@@ -563,6 +847,7 @@ class MGMRestResourceTest {
             )
         }
     }
+
     @Nested
     inner class GetPreAuthTokenTest {
         @Test
@@ -630,6 +915,7 @@ class MGMRestResourceTest {
             )
         }
     }
+
     @Nested
     inner class RevokePreAuthTokenTest {
 

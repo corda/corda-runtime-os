@@ -169,6 +169,22 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun flowResumedWithData(value: Map<String, ByteArray>) {
+        asserts.add { testRun ->
+            assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
+            val resumedWith = (testRun.flowContinuation as FlowContinuation.Run).value
+
+            if (resumedWith is Map<*, *>) {
+                assertEquals(value.keys, resumedWith.keys)
+                value.values.zip(resumedWith.values).forEach { pair ->
+                    assertArrayEquals(pair.component1(), pair.component2() as ByteArray,
+                        "Expected flow to resume with $value but was $resumedWith"
+                    )
+                }
+            }
+        }
+    }
+
     override fun flowResumedWith(value: Any?) {
         asserts.add { testRun ->
             assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)

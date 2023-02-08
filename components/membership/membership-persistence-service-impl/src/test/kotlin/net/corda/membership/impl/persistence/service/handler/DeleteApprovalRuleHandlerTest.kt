@@ -7,6 +7,7 @@ import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.ApprovalRulesEntity
+import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -80,6 +81,7 @@ class DeleteApprovalRuleHandlerTest {
     }
     private val request = mock<DeleteApprovalRule> {
         on { ruleId } doReturn DUMMY_ID
+        on { ruleType } doReturn ApprovalRuleType.STANDARD
     }
     private lateinit var handler: DeleteApprovalRuleHandler
 
@@ -103,6 +105,25 @@ class DeleteApprovalRuleHandlerTest {
             assertThat(ruleRegex).isEqualTo(DUMMY_RULE)
             assertThat(ruleType).isEqualTo(ApprovalRuleType.STANDARD.toString())
             assertThat(ruleLabel).isEqualTo(DUMMY_LABEL)
+        }
+    }
+
+    @Test
+    fun `invoke uses rule type and ID from request in query for existing records`() {
+        val primaryKey = argumentCaptor<ApprovalRulesEntityPrimaryKey>()
+        whenever(entityManager.find(eq(ApprovalRulesEntity::class.java), primaryKey.capture())) doReturn mockEntity
+
+        val id = "544a9854-2be3-4907-ae37-23909154bc81"
+        val type = ApprovalRuleType.PREAUTH
+        val request = DeleteApprovalRule(id, type)
+
+        handler.invoke(context, request)
+
+        with(primaryKey.firstValue) {
+            assertThat(ruleId)
+                .isNotNull
+                .isEqualTo(id)
+            assertThat(ruleType).isEqualTo(type.name)
         }
     }
 
