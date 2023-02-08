@@ -32,9 +32,9 @@ class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAdd
     override val uniqueName: String
         get() = "$uniqueNamePrefix-${counter.incrementAndGet()}-${System.currentTimeMillis()}"
 
-    override fun <I : RestResource> httpClientFor(rpcOpsClass: Class<I>, userName: String, password: String): RestClient<I> {
+    override fun <I : RestResource> httpClientFor(restResourceClass: Class<I>, userName: String, password: String): RestClient<I> {
         return RestClient(
-            baseAddress, rpcOpsClass, RestClientConfig()
+            baseAddress, restResourceClass, RestClientConfig()
                 .enableSSL(true)
                 .minimumServerProtocolVersion(1)
                 .username(userName)

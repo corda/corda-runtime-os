@@ -19,7 +19,7 @@ interface TestToolkit {
      * Creates the [RestClient] for a given [RestResource] class.
      */
     fun <I : RestResource> httpClientFor(
-        rpcOpsClass: Class<I>,
+        restResourceClass: Class<I>,
         userName: String = adminUser,
         password: String = adminPassword
     ): RestClient<I>

@@ -35,7 +35,7 @@ internal class EndpointAvailabilityCondition : ExecutionCondition {
             return if (checkEndpoint()) {
                 ConditionEvaluationResult.enabled("Connection is up")
             } else {
-                "HTTP RPC Connection is down or not forwarded, skipping the test".let {
+                "REST Connection is down or not forwarded, skipping the test".let {
                     log.warn(it)
                     ConditionEvaluationResult.disabled(it)
                 }
@@ -54,7 +54,7 @@ internal class EndpointAvailabilityCondition : ExecutionCondition {
     }
 
     /**
-     * Checks to see if HTTP RPC endpoint is reachable
+     * Checks to see if REST endpoint is reachable
      *
      * @return true if reachable, false if not
      */
