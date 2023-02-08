@@ -151,7 +151,7 @@
         </createTable>
         <createTable tableName="vnode_group_approval_rules">
             <column name="rule_id" type="NVARCHAR(255)">
-                <constraints nullable="false" primaryKey="true"/>
+                <constraints nullable="false"/>
             </column>
             <column name="rule_regex" type="NVARCHAR(255)">
                 <constraints nullable="false"/>
@@ -166,5 +166,8 @@
         <createIndex indexName="vnode_group_approval_rules_type" tableName="vnode_group_approval_rules" clustered="false">
             <column name="rule_type"/>
         </createIndex>
+        <addPrimaryKey columnNames="rule_id, rule_type"
+                       constraintName="vnode_group_approval_rules_pkey"
+                       tableName="vnode_group_approval_rules"/>
     </changeSet>
 </databaseChangeLog>

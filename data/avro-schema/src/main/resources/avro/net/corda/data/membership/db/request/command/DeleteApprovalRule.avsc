@@ -8,6 +8,11 @@
       "name": "ruleId",
       "doc": "The ID of the rule to be deleted.",
       "type": "string"
+    },
+    {
+      "name": "ruleType",
+      "doc": "The category of the rule to be deleted.",
+      "type": "net.corda.data.membership.common.ApprovalRuleType"
     }
   ]
 }
