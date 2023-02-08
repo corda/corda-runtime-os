@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import com.r3.corda.notary.plugin.common.NotaryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -16,7 +17,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
@@ -182,7 +182,7 @@ class UtxoFinalityFlow(
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
-            val (message, failureReason) = if (NotaryError::class.java.isAssignableFrom(e.javaClass)) {
+            val (message, failureReason) = if (NotaryException::class.java.isAssignableFrom(e.javaClass)) {
                 persistInvalidTransaction(transaction)
                 "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.UNRECOVERABLE
             } else {
