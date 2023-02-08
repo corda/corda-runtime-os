@@ -165,7 +165,7 @@ class MembershipPackageFactoryTest {
 
         assertSoftly {
             it.assertThat(hashCheck.algorithm).isEqualTo(allAlg)
-            it.assertThat(hashCheck.serverHash).isEqualTo(ByteBuffer.wrap("all".toByteArray()))
+            it.assertThat(hashCheck.bytes).isEqualTo(ByteBuffer.wrap("all".toByteArray()))
         }
     }
 

@@ -22,10 +22,14 @@ import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
+import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
+import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
+import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.types.MemberX500Name
@@ -91,12 +95,8 @@ class OutboundMessageHandlerTest {
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
     private val truststore = mock<KeyStore>()
-    private val trustStores = mockConstruction(TrustStoresMap::class.java) { mock, _ ->
-        whenever(mock.getTrustStore(any(), eq(GROUP_ID))).doReturn(truststore)
-        val mockDominoTile = mock<ComplexDominoTile> {
-            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-        }
-        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    private val trustStoresMap = mock<TrustStoresMap> {
+        on { getTrustStore(any(), eq(GROUP_ID)) } doReturn truststore
     }
 
     private val sentMessages = mutableListOf<ByteArray>()
@@ -122,12 +122,19 @@ class OutboundMessageHandlerTest {
     private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
-    private val connectionConfigReader = mockConstruction(ConnectionConfigReader::class.java) { mock, _ ->
+    private val gatewayConfigReader = mockConstruction(GatewayConfigReader::class.java) { mock, _ ->
         whenever(mock.connectionConfig) doAnswer { connectionConfig }
         val mockDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
         whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
+    private val commonComponentsDominoTile = mock<ComplexDominoTile> {
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
+    private val commonComponents = mock<CommonComponents> {
+        on { dominoTile } doReturn commonComponentsDominoTile
+        on { trustStoresMap } doReturn trustStoresMap
     }
 
     private val serialisedMessage = "gateway-message".toByteArray()
@@ -138,16 +145,16 @@ class OutboundMessageHandlerTest {
         SmartConfigImpl.empty(),
         mock {
             on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap(serialisedMessage)
-        }
-    ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
+        },
+        commonComponents,
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
 
     @AfterEach
     fun cleanUp() {
-        trustStores.close()
         connectionManager.close()
         dominoTile.close()
         subscriptionTile.close()
-        connectionConfigReader.close()
+        gatewayConfigReader.close()
     }
 
     @Test
@@ -160,7 +167,8 @@ class OutboundMessageHandlerTest {
             SmartConfigImpl.empty(),
             mock {
                 on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap("gateway-message".toByteArray())
-            }
+            },
+            commonComponents,
         ) { mockExecutorService }
         onClose!!.invoke()
         verify(mockExecutorService).shutdown()
@@ -258,9 +266,101 @@ class OutboundMessageHandlerTest {
                     URI.create("https://r3.com/"),
                     "r3.com",
                     null,
-                    truststore
+                    truststore,
+                    null,
                 )
             )
+    }
+
+    @Test
+    fun `onNext will use the correct key store for mutual TLS`() {
+        val sslConfig = mock<SslConfiguration> {
+            on { tlsType } doReturn TlsType.MUTUAL
+        }
+        val keyStore = mock<KeyStoreWithPassword>()
+        val dynamicKeyStore = mock<DynamicKeyStore> {
+            on {
+                getClientKeyStore(
+                    HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+                )
+            } doReturn keyStore
+        }
+        whenever(commonComponents.dynamicKeyStore).doReturn(dynamicKeyStore)
+        whenever(gatewayConfigReader.constructed().first().sslConfiguration).doReturn(sslConfig)
+        val payload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D"),
+                "subsystem",
+                "messageId",
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
+        val message = LinkOutMessage(
+            headers,
+            payload,
+        )
+        val destinationInfo = argumentCaptor<DestinationInfo>()
+        whenever(connectionManager.constructed().first().acquire(destinationInfo.capture())).doReturn(client)
+
+        handler.onNext(Record("", "", message))
+
+        assertThat(destinationInfo.firstValue)
+            .isEqualTo(
+                DestinationInfo(
+                    URI.create("https://r3.com/"),
+                    "r3.com",
+                    null,
+                    truststore,
+                    keyStore,
+                )
+            )
+    }
+
+
+    @Test
+    fun `onNext will do nothing for mutual TLS if the source key store can not be found`() {
+        val sslConfig = mock<SslConfiguration> {
+            on { tlsType } doReturn TlsType.MUTUAL
+        }
+        val dynamicKeyStore = mock<DynamicKeyStore> {
+            on {
+                getClientKeyStore(
+                    HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+                )
+            } doReturn null
+        }
+        whenever(commonComponents.dynamicKeyStore).doReturn(dynamicKeyStore)
+        whenever(gatewayConfigReader.constructed().first().sslConfiguration).doReturn(sslConfig)
+        val payload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D"),
+                "subsystem",
+                "messageId",
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
+        val message = LinkOutMessage(
+            headers,
+            payload,
+        )
+
+        handler.onNext(Record("", "", message))
+
+        verify(connectionManager.constructed().first(), never()).acquire(any())
     }
 
     @Test
@@ -295,7 +395,8 @@ class OutboundMessageHandlerTest {
                     URI.create("https://r3.com/"),
                     "e7aa0d5c6b562cc528e490d58b7040fe.p2p.corda.net",
                     X500Name("O=PartyB, L=London, C=GB"),
-                    truststore
+                    truststore,
+                    null,
                 )
             )
     }
@@ -400,7 +501,7 @@ class OutboundMessageHandlerTest {
 
         handler.onNext(Record("", "", message))
 
-        verify(trustStores.constructed().first())
+        verify(trustStoresMap)
             .getTrustStore(MemberX500Name.parse(VALID_X500_NAME), GROUP_ID)
     }
 

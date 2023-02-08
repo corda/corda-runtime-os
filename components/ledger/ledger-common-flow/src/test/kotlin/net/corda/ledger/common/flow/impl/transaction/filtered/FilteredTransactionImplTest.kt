@@ -39,7 +39,7 @@ class FilteredTransactionImplTest {
         val digestAlgorithmName = DigestAlgorithmName.SHA2_256D.name
         const val metadataJson = "{}"
         val metadata = TransactionMetadataImpl(
-            linkedMapOf(
+            mapOf(
                 TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
             )
         )

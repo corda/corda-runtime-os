@@ -1,6 +1,6 @@
 package net.corda.membership.impl.persistence.service.dummy
 
-import net.corda.data.p2p.mtls.AllowedCertificateSubject
+import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -28,16 +28,16 @@ class TestAllowedCertificatesReaderWriterService @Activate constructor(
     }
 
     override fun getAllVersionedRecords():
-            Stream<VersionedRecord<AllowedCertificateSubject, AllowedCertificateSubject>>? {
+            Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>? {
         throw UnsupportedOperationException()
     }
 
 
-    override fun put(recordKey: AllowedCertificateSubject, recordValue: AllowedCertificateSubject) {
+    override fun put(recordKey: MgmAllowedCertificateSubject, recordValue: MgmAllowedCertificateSubject) {
         throw UnsupportedOperationException()
     }
 
-    override fun remove(recordKey: AllowedCertificateSubject) {
+    override fun remove(recordKey: MgmAllowedCertificateSubject) {
         throw UnsupportedOperationException()
     }
 

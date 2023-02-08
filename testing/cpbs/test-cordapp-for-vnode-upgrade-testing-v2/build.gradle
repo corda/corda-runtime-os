@@ -9,7 +9,7 @@ tasks.named("jar") {
 cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
-    workflow {
+    contract {
         name "Version upgrade testing v2"
         versionId 1
         vendor "R3"

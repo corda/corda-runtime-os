@@ -2,6 +2,8 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -45,6 +47,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.time.Instant
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -93,6 +96,21 @@ class MGMOpsClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash,
         ): Collection<MemberX500Name>
 
+        fun generatePreAuthToken(
+            holdingIdentityShortHash: ShortHash,
+            ownerX500Name: MemberX500Name,
+            ttl: Instant?,
+            remarks: String?
+        ): PreAuthToken
+
+        fun getPreAuthTokens(
+            holdingIdentityShortHash: ShortHash,
+            ownerX500Name: MemberX500Name?,
+            preAuthTokenId: UUID?,
+            viewInactive: Boolean
+        ): Collection<PreAuthToken>
+
+        fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String? = null): PreAuthToken
         fun addApprovalRule(
             holdingIdentityShortHash: ShortHash,
             ruleParams: ApprovalRuleParams
@@ -101,7 +119,7 @@ class MGMOpsClientImpl @Activate constructor(
         fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType):
                 Collection<ApprovalRuleDetails>
 
-        fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String)
+        fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType)
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -150,6 +168,23 @@ class MGMOpsClientImpl @Activate constructor(
         holdingIdentityShortHash,
     )
 
+    override fun generatePreAuthToken(
+        holdingIdentityShortHash: ShortHash,
+        ownerX500Name: MemberX500Name,
+        ttl: Instant?,
+        remarks: String?
+    ) = impl.generatePreAuthToken(holdingIdentityShortHash, ownerX500Name, ttl, remarks)
+
+    override fun getPreAuthTokens(
+        holdingIdentityShortHash: ShortHash,
+        ownerX500Name: MemberX500Name?,
+        preAuthTokenId: UUID?,
+        viewInactive: Boolean
+    ) = impl.getPreAuthTokens(holdingIdentityShortHash, ownerX500Name, preAuthTokenId, viewInactive)
+
+    override fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String?) =
+        impl.revokePreAuthToken(holdingIdentityShortHash, preAuthTokenId, remarks)
+
     override fun addApprovalRule(
         holdingIdentityShortHash: ShortHash, ruleParams: ApprovalRuleParams
     ) = impl.addApprovalRule(holdingIdentityShortHash, ruleParams)
@@ -157,8 +192,8 @@ class MGMOpsClientImpl @Activate constructor(
     override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
         impl.getApprovalRules(holdingIdentityShortHash, ruleType)
 
-    override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
-        impl.deleteApprovalRule(holdingIdentityShortHash, ruleId)
+    override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
+        impl.deleteApprovalRule(holdingIdentityShortHash, ruleId, ruleType)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -234,7 +269,7 @@ class MGMOpsClientImpl @Activate constructor(
         override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
             throw IllegalStateException(ERROR_MSG)
 
-        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
+        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -250,6 +285,23 @@ class MGMOpsClientImpl @Activate constructor(
         override fun mutualTlsListClientCertificate(
             holdingIdentityShortHash: ShortHash,
         ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun generatePreAuthToken(
+            holdingIdentityShortHash: ShortHash,
+            ownerX500Name: MemberX500Name,
+            ttl: Instant?,
+            remarks: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun getPreAuthTokens(
+            holdingIdentityShortHash: ShortHash,
+            ownerX500Name: MemberX500Name?,
+            preAuthTokenId: UUID?,
+            viewInactive: Boolean
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String?) =
+            throw IllegalStateException(ERROR_MSG)
 
         override fun close() = Unit
     }
@@ -309,13 +361,45 @@ class MGMOpsClientImpl @Activate constructor(
 
         override fun mutualTlsListClientCertificate(holdingIdentityShortHash: ShortHash): Collection<MemberX500Name> {
             val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
-
             return membershipQueryClient.mutualTlsListAllowedCertificates(
                 mgmHoldingIdentity,
             ).getOrThrow()
                 .map {
                     MemberX500Name.parse(it)
                 }
+        }
+
+        override fun generatePreAuthToken(
+            holdingIdentityShortHash: ShortHash,
+            ownerX500Name: MemberX500Name,
+            ttl: Instant?,
+            remarks: String?
+        ): PreAuthToken {
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
+            val tokenId = UUID.randomUUID()
+            membershipPersistenceClient.generatePreAuthToken(mgmHoldingIdentity, tokenId, ownerX500Name, ttl, remarks)
+                .getOrThrow()
+            return PreAuthToken(tokenId.toString(), ownerX500Name.toString(), ttl, PreAuthTokenStatus.AVAILABLE, remarks, null)
+        }
+
+        override fun getPreAuthTokens(
+            holdingIdentityShortHash: ShortHash,
+            ownerX500Name: MemberX500Name?,
+            preAuthTokenId: UUID?,
+            viewInactive: Boolean
+        ): Collection<PreAuthToken> {
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
+            return membershipQueryClient.queryPreAuthTokens(
+                mgmHoldingIdentity,
+                ownerX500Name,
+                preAuthTokenId,
+                viewInactive
+            ).getOrThrow()
+        }
+
+        override fun revokePreAuthToken(holdingIdentityShortHash: ShortHash, preAuthTokenId: UUID, remarks: String?): PreAuthToken {
+            val mgmHoldingIdentity = mgmHoldingIdentity(holdingIdentityShortHash)
+            return membershipPersistenceClient.revokePreAuthToken(mgmHoldingIdentity, preAuthTokenId, remarks).getOrThrow()
         }
 
         override fun addApprovalRule(
@@ -334,10 +418,11 @@ class MGMOpsClientImpl @Activate constructor(
                 ruleType
             ).getOrThrow()
 
-        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
+        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
             membershipPersistenceClient.deleteApprovalRule(
                 mgmHoldingIdentity(holdingIdentityShortHash),
-                ruleId
+                ruleId,
+                ruleType
             ).getOrThrow()
 
         override fun close() = rpcSender.close()

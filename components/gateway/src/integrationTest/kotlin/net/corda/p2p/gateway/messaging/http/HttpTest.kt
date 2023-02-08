@@ -81,7 +81,7 @@ class HttpTest : TestBase() {
             listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore),
+                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
@@ -125,7 +125,7 @@ class HttpTest : TestBase() {
             repeat(threadNo) {
                 val t = thread {
                     val httpClient = HttpClient(
-                        DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore),
+                        DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore, null),
                         chipSslConfig,
                         threadPool,
                         threadPool,
@@ -185,7 +185,7 @@ class HttpTest : TestBase() {
             listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore),
+                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
                 bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
@@ -222,7 +222,7 @@ class HttpTest : TestBase() {
             listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore),
+                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
                 aliceSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
@@ -258,7 +258,7 @@ class HttpTest : TestBase() {
             listener.server = server
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, partyASNI, partyAx500Name, c4TruststoreKeyStore),
+                DestinationInfo(serverAddress, partyASNI, partyAx500Name, c4TruststoreKeyStore, null),
                 c4sslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
@@ -279,7 +279,7 @@ class HttpTest : TestBase() {
             val expectedX500Name = "O=Test,L=London,C=GB"
             val sni = SniCalculator.calculateCorda4Sni("O=Test,L=London,C=GB")
             HttpClient(
-                DestinationInfo(serverAddress, sni, X500Name(expectedX500Name), c4TruststoreKeyStore),
+                DestinationInfo(serverAddress, sni, X500Name(expectedX500Name), c4TruststoreKeyStore, null),
                 c4sslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
@@ -311,7 +311,7 @@ class HttpTest : TestBase() {
         MitmServer(serverAddress.host, serverAddress.port, chipKeyStore).use { server ->
             server.start()
             HttpClient(
-                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore),
+                DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null),
                 daleSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
@@ -356,7 +356,7 @@ class HttpTest : TestBase() {
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore),
+                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
@@ -401,7 +401,7 @@ class HttpTest : TestBase() {
         ).use { server ->
             server.startAndWaitForStarted()
             HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore),
+                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),

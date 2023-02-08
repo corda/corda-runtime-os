@@ -2,14 +2,14 @@ package net.corda.persistence.common.internal
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
 import net.corda.persistence.common.EntitySandboxService
-import net.corda.persistence.common.exceptions.NotReadyException
-import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
@@ -73,7 +73,7 @@ class EntitySandboxServiceImpl @Activate constructor(
 
         val cpkIds = cpks.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
         if (!sandboxService.hasCpks(cpkIds))
-            throw NotReadyException("CPKs not available (yet): $cpkIds")
+            throw CpkNotAvailableException("CPKs not available (yet): $cpkIds")
 
         return sandboxService.getOrCreate(getVirtualNodeContext(virtualNode, cpks)) { _, ctx ->
             initializeSandbox(cpks, virtualNode, ctx)

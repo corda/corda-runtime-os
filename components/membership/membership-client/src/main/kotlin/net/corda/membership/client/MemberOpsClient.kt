@@ -15,6 +15,7 @@ interface MemberOpsClient : Lifecycle {
      * Starts the registration process for a member.
      *
      * @param memberRegistrationRequest Data necessary to include in order to initiate registration.
+     * @throws CouldNotFindMemberException if the member in `holdingIdentityShortHash` can not be found.
      * @return [RegistrationRequestProgressDto] to indicate the status of the request at time of submission.
      */
     fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto

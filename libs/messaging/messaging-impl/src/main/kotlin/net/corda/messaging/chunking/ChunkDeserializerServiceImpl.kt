@@ -52,7 +52,7 @@ class ChunkDeserializerServiceImpl<K : Any, V : Any>(
      * @throws IllegalArgumentException when no checksum is found
      */
     private fun getCheckSumFromFinalChunk(chunks: List<Chunk>) =
-        (chunks.sortedBy { it.partNumber}.last().checksum?.serverHash
+        (chunks.sortedBy { it.partNumber}.last().checksum?.bytes
             ?: throw IllegalArgumentException(Constants.SECURE_HASH_MISSING_ERROR))
 
     /**

@@ -3,7 +3,6 @@ package net.corda.crypto.service.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.MasterKeyPolicy
@@ -16,6 +15,7 @@ import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.HSMService
+import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -34,8 +34,8 @@ class HSMServiceImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMStore::class)
     private val store: HSMStore,
-    @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient
+    @Reference(service = SigningServiceFactory::class)
+    private val signingServiceFactory: SigningServiceFactory
 ) : AbstractConfigurableComponent<HSMServiceImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<HSMService>(),
@@ -44,13 +44,12 @@ class HSMServiceImpl @Activate constructor(
         setOf(
             LifecycleCoordinatorName.forComponent<HSMStore>(),
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-            LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
         )
     ),
     configKeys = setOf(CRYPTO_CONFIG)
 ), HSMService {
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        Impl(logger, event, store, cryptoOpsClient)
+        Impl(logger, event, store, signingServiceFactory)
 
     override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo =
         impl.assignHSM(tenantId, category, context)
@@ -65,7 +64,7 @@ class HSMServiceImpl @Activate constructor(
         private val logger: Logger,
         event: ConfigChangedEvent,
         private val store: HSMStore,
-        private val cryptoOpsClient: CryptoOpsClient
+        private val signingServiceFactory: SigningServiceFactory
     ) : DownstreamAlwaysUpAbstractImpl() {
         companion object {
             private fun Map<String, String>.isPreferredPrivateKeyPolicy(policy: String): Boolean =
@@ -145,16 +144,17 @@ class HSMServiceImpl @Activate constructor(
                 require(!association.masterKeyAlias.isNullOrBlank()) {
                     "The master key alias is not specified."
                 }
-                executor.executeWithRetry {
-                    cryptoOpsClient.createWrappingKey(
+
+                val signingService = signingServiceFactory.getInstance()
+                signingService
+                    .createWrappingKey(
                         hsmId = association.hsmId,
                         failIfExists = false,
                         masterKeyAlias = association.masterKeyAlias!!,
                         context = mapOf(
                             CRYPTO_TENANT_ID to association.tenantId
                         )
-                    )
-                }
+                )
             }
         }
 

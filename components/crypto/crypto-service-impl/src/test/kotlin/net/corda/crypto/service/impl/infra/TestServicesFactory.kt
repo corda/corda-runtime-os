@@ -6,10 +6,8 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.ConfigurationSecrets
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
@@ -18,17 +16,16 @@ import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
-import net.corda.crypto.config.impl.createTestCryptoConfig
-import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
+import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
+import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
-import net.corda.crypto.softhsm.SoftCryptoServiceConfig
+import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.impl.DefaultSoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.TransientSoftKeyMap
@@ -52,11 +49,11 @@ class TestServicesFactory {
 
     val recordedCryptoContexts = ConcurrentHashMap<String, Map<String, String>>()
 
-    val emptyConfig: SmartConfig =
-        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
+    val configFactory = SmartConfigFactory.createWithoutSecurityServices()
+    val emptyConfig: SmartConfig = configFactory.create(ConfigFactory.empty())
 
-    val cryptoConfig: SmartConfig = createTestCryptoConfig(
-        KeyCredentials("salt", "passphrase")
+    val cryptoConfig: SmartConfig = configFactory.create(
+        createDefaultCryptoConfig("salt", "passphrase")
     ).withFallback(
         ConfigFactory.parseString(
             """
@@ -172,12 +169,20 @@ class TestServicesFactory {
         }
     }
 
-    val hsmService: HSMServiceImpl by lazy {
-        HSMServiceImpl(
+    val signingService: SigningService by lazy {
+        SigningServiceImpl(
+            signingKeyStore,
+            cryptoServiceFactory,
+            schemeMetadata
+        )
+    }
+
+    val signingServiceFactory: SigningServiceFactory by lazy {
+        SigningServiceFactoryImpl(
             coordinatorFactory,
-            configurationReadService,
-            hsmStore,
-            opsProxyClient
+            schemeMetadata,
+            signingKeyStore,
+            cryptoServiceFactory
         ).also {
             it.start()
             eventually {
@@ -186,8 +191,13 @@ class TestServicesFactory {
         }
     }
 
-    val opsProxyClient: TestCryptoOpsProxyClient by lazy {
-        TestCryptoOpsProxyClient(this).also {
+    val hsmService: HSMServiceImpl by lazy {
+        HSMServiceImpl(
+            coordinatorFactory,
+            configurationReadService,
+            hsmStore,
+            signingServiceFactory
+        ).also {
             it.start()
             eventually {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
@@ -211,18 +221,15 @@ class TestServicesFactory {
         )
     }
 
-    val cryptoServiceFactory: CryptoServiceFactory by lazy {
+    // this MUST return cryptoService at the end of the day, rather than make its own,
+    // or else we'll end up multiple instances of the crypto service with different second level wrapping keys
+    val cryptoServiceFactory: CryptoServiceFactoryImpl by lazy {
         CryptoServiceFactoryImpl(
             coordinatorFactory,
             configurationReadService,
-            hsmService,
-            object : CryptoServiceProvider<SoftCryptoServiceConfig> {
-                override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
-                override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
-                override fun getInstance(
-                    config: SoftCryptoServiceConfig,
-                    secrets: ConfigurationSecrets
-                ): CryptoService = cryptoService
+            hsmStore,
+            object : CryptoServiceProvider {
+                override fun getInstance(config: SmartConfig): CryptoService = cryptoService
             }
         ).also {
             it.start()
@@ -231,14 +238,6 @@ class TestServicesFactory {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
             }
         }
-    }
-
-    val signingService: SigningService by lazy {
-        SigningServiceImpl(
-            signingKeyStore,
-            cryptoServiceFactory,
-            schemeMetadata
-        )
     }
 
     private class CryptoServiceWrapper(

@@ -2,11 +2,14 @@ package net.corda.membership.client
 
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
+import java.time.Instant
+import java.util.UUID
 import kotlin.jvm.Throws
 
 /**
@@ -39,6 +42,49 @@ interface MGMOpsClient : Lifecycle {
         holdingIdentityShortHash: ShortHash,
     ): Collection<MemberX500Name>
 
+    /**
+     * Generate a preAuthToken.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param ownerX500Name The X500 name of the member to preauthorize.
+     * @param ttl A (time-to-live) unix timestamp (in milliseconds) after which this token will become invalid. Defaults to infinity.
+     * @param remarks Some optional remarks.
+     */
+    fun generatePreAuthToken(
+        holdingIdentityShortHash: ShortHash,
+        ownerX500Name: MemberX500Name,
+        ttl: Instant?,
+        remarks: String?,
+    ): PreAuthToken
+
+    /**
+     * Query for preAuthTokens.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param ownerX500Name The X500 name of the member to query for.
+     * @param preAuthTokenId The token ID to query for.
+     * @param viewInactive Return in tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
+     * [PreAuthTokenStatus.AUTO_INVALIDATED] as well as [PreAuthTokenStatus.AVAILABLE].
+     */
+    fun getPreAuthTokens(
+        holdingIdentityShortHash: ShortHash,
+        ownerX500Name: MemberX500Name?,
+        preAuthTokenId: UUID?,
+        viewInactive: Boolean
+    ): Collection<PreAuthToken>
+
+    /**
+     * Revoke a preAuthToken.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM.
+     * @param preAuthTokenId The token ID to revoke.
+     * @param remarks Some optional remarks about why the token was revoked.
+     */
+    fun revokePreAuthToken(
+        holdingIdentityShortHash: ShortHash,
+        preAuthTokenId: UUID,
+        remarks: String?
+    ): PreAuthToken
 
     /**
      * Adds an approval rule to be applied to future registration requests.
@@ -78,11 +124,12 @@ interface MGMOpsClient : Lifecycle {
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param ruleId ID of the group approval rule to be deleted.
+     * @param ruleType The approval rule type for this rule. See [ApprovalRuleType] for the available types.
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [MembershipPersistenceException] If the specified rule does not exist.
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, MembershipPersistenceException::class)
-    fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String)
+    fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType)
 }

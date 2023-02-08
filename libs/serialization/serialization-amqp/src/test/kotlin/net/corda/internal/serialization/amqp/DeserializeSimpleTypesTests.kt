@@ -56,7 +56,6 @@ class DeserializeSimpleTypesTests {
         assertEquals('আ', deserializedC.c)
     }
 
-    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     @Test
 	fun testCharacter() {
         @CordaSerializable
@@ -100,7 +99,6 @@ class DeserializeSimpleTypesTests {
         assertEquals(ia.ia[2], deserializedIA.ia[2])
     }
 
-    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     @Test
 	fun testArrayOfInteger() {
         @CordaSerializable
