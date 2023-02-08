@@ -5,7 +5,6 @@ import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.DurableProcessor
@@ -65,20 +64,14 @@ internal class MemberOpsAsyncProcessor(
         }
         try {
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
-        } catch (e: InvalidMembershipRegistrationException) {
+        } catch (e: Exception) {
+            @Suppress("ForbiddenComment")
+            // TODO: We need a mechanism to retry exceptions that are not InvalidMembershipRegistrationException.
+            //  See CORE-10124
             membershipPersistenceClient.setRegistrationRequestStatus(
                 holdingIdentity,
                 registrationId.toString(),
                 RegistrationStatus.INVALID,
-            )
-            logger.warn("Registration ${request.requestId} failed.", e)
-        } catch (e: Exception) {
-            @Suppress("ForbiddenComment")
-            // TODO: We need a mechanism to retry those kind of failed requests.
-            membershipPersistenceClient.setRegistrationRequestStatus(
-                holdingIdentity,
-                registrationId.toString(),
-                RegistrationStatus.DECLINED,
             )
             logger.warn("Registration ${request.requestId} failed.", e)
         }
