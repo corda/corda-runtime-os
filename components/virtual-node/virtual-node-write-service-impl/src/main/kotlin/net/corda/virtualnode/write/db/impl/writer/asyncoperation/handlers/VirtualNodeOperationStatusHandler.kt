@@ -16,6 +16,7 @@ import net.corda.schema.Schemas
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
@@ -23,6 +24,10 @@ internal class VirtualNodeOperationStatusHandler(
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
 ) {
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     fun handle(
         instant: Instant,
         operationStatusRequest: VirtualNodeOperationStatusRequest,
@@ -34,7 +39,12 @@ internal class VirtualNodeOperationStatusHandler(
 
             val requestId = operationStatusRequest.requestId
 
+            logger.warn("VirtualNodeOperationStatusHandler.handle()")
+            logger.warn("requestId: $requestId")
+
             val operationStatusResponse = virtualNodeRepository.findVirtualNodeOperation(em, requestId)
+
+            logger.warn("operationStatusResponse operationStatusLite = ${operationStatusResponse.toString()}")
 
             val virtualNodeOperationStatus = VirtualNodeOperationStatus(
                 operationStatusResponse.requestId,
@@ -48,25 +58,7 @@ internal class VirtualNodeOperationStatusHandler(
                 listOf()
                 )
 
-//            val avroPayload = operationStatusResponse.toAvro()
-//
-//            val virtualNodeRecord = Record(
-//                Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
-//                avroPayload.holdingIdentity,
-//                avroPayload
-//            )
-
-//            try {
-//                // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-//                val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
-//
-//                // TODO - CORE-3730 - Define timeout policy.
-//                future.get()
-//            } catch (e: Exception) {
-//                throw VirtualNodeWriteServiceException(
-//                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e
-//                )
-//            }
+            logger.warn("created VirtualNodeOperationStatus")
 
             val response = VirtualNodeManagementResponse(
                 instant,
@@ -75,8 +67,11 @@ internal class VirtualNodeOperationStatusHandler(
                     listOf(virtualNodeOperationStatus)
                 )
             )
+            logger.warn("created VirtualNodeMnaagementResponse: ${response.responseType}")
+            logger.warn("created VirtualNodeMnaagementResponse: $response")
             respFuture.complete(response)
         } catch (e: Exception) {
+            logger.warn("handler exception ${e.message}")
             respFuture.complete(
                 VirtualNodeManagementResponse(
                     instant,

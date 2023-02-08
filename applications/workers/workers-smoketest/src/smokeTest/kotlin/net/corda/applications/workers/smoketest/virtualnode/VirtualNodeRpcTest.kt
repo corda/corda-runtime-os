@@ -426,7 +426,6 @@ class VirtualNodeRpcTest {
             condition {
                 try {
                     if (it.code == 200) {
-                        println(it.toJson()["virtualNodes"])
                         val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
                             virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
                         }
@@ -713,7 +712,8 @@ class VirtualNodeRpcTest {
 
             println("requestId: $requestId")
 
-            getVirtualNodeStatus(requestId!!)
+            val getStatusResponse = getVirtualNodeStatus(requestId!!)
+            println("getStatusResponse: $getStatusResponse")
 
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
 
@@ -736,13 +736,13 @@ class VirtualNodeRpcTest {
     }
 
     private fun ClusterBuilder.getVirtualNodeStatus(requestId: String): String? {
-        val vNodeJson = assertWithRetry {
+        val operationStatus = assertWithRetry {
             command { getVNodeOperationStatus(requestId) }
             condition { it.code == 202 }
             failMessage(ERROR_REQUEST_ID)
         }.toJson()
-        println(vNodeJson.toString())
-        return vNodeJson["requestId"].textValue()
+        println(operationStatus.toString())
+        return operationStatus["requestId"].textValue()
     }
 
     private fun ClusterBuilder.eventuallyAssertVirtualNodeHasCpi(
@@ -751,6 +751,10 @@ class VirtualNodeRpcTest {
         timeout(Duration.of(30, ChronoUnit.SECONDS))
         command { getVNode(virtualNodeShortHash) }
         condition { response ->
+
+//            println("holdingId: ${response.toJson()["holdingIdentity"]["x500Name"].textValue()} contains? $bobX500")
+//            println("cpi name: ${response.toJson()["cpiIdentifier"]["cpiName"].textValue()} contains? $cpiName")
+//            println("cpiversion: ${response.toJson()["cpiIdentifier"]["cpiVersion"].textValue()} contains? $cpiVersion")
             response.code == 200 &&
                     response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(bobX500) &&
                     response.toJson()["cpiIdentifier"]["cpiName"].textValue().equals(cpiName) &&
