@@ -7,7 +7,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.data.crypto.SecureHash
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messaging.api.chunking.ProducerChunkService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,7 +18,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class ProducerChunkServiceImplTest {
+class ChunkSerializerServiceImplTest {
 
     private companion object {
         const val chunkSize = 1024 * 20L
@@ -29,7 +28,7 @@ class ProducerChunkServiceImplTest {
 
     private lateinit var serializer: CordaAvroSerializer<Any>
     private lateinit var chunkBuilderService: ChunkBuilderService
-    private lateinit var producerChunkService: ProducerChunkService
+    private lateinit var chunkSerializerService: ChunkSerializerServiceImpl
     private lateinit var producerRecord: CordaProducerRecord<*, *>
     private val value: String = "somevalue"
     private val key: String = "somekey"
@@ -39,7 +38,7 @@ class ProducerChunkServiceImplTest {
         serializer = mock()
         chunkBuilderService = mock()
         producerRecord = mock()
-        producerChunkService = ProducerChunkServiceImpl(chunkSize, serializer, chunkBuilderService)
+        chunkSerializerService = ChunkSerializerServiceImpl(chunkSize, serializer, chunkBuilderService)
 
         var partNumber = 0
         doAnswer {
@@ -75,13 +74,13 @@ class ProducerChunkServiceImplTest {
     @Test
     fun `generateChunks from object fails serialization and returns empty list`() {
         whenever(serializer.serialize(value)).thenReturn(null)
-        val result = producerChunkService.generateChunks(value)
+        val result = chunkSerializerService.generateChunks(value)
         assertThat(result).isEmpty()
     }
 
     @Test
     fun `generateChunks from object success and returns 3 chunks`() {
-        val result = producerChunkService.generateChunks(value)
+        val result = chunkSerializerService.generateChunks(value)
         assertThat(result).isNotEmpty
         assertThat(result).size().isEqualTo(3)
 
@@ -92,20 +91,20 @@ class ProducerChunkServiceImplTest {
     @Test
     fun `generateChunks from corda producer record fails serialization and returns empty list`() {
         whenever(serializer.serialize(value)).thenReturn(null)
-        val result = producerChunkService.generateChunkedRecords(producerRecord)
+        val result = chunkSerializerService.generateChunkedRecords(producerRecord)
         assertThat(result).isEmpty()
     }
 
     @Test
     fun `generateChunks from corda producer record with null value`() {
         whenever(producerRecord.value).thenReturn(null)
-        val result = producerChunkService.generateChunkedRecords(producerRecord)
+        val result = chunkSerializerService.generateChunkedRecords(producerRecord)
         assertThat(result).isEmpty()
     }
 
     @Test
     fun `generateChunks from corda producer record success and returns 3 chunks`() {
-        val result = producerChunkService.generateChunkedRecords(producerRecord)
+        val result = chunkSerializerService.generateChunkedRecords(producerRecord)
         assertThat(result).isNotEmpty
         assertThat(result.size).isEqualTo(3)
 
@@ -115,13 +114,13 @@ class ProducerChunkServiceImplTest {
 
     @Test
     fun `generateChunks from bytes too small so returns no chunks`() {
-        val result = producerChunkService.generateChunksFromBytes(someSmallBytes)
+        val result = chunkSerializerService.generateChunksFromBytes(someSmallBytes)
         assertThat(result).isEmpty()
     }
 
     @Test
     fun `generateChunks from bytes success and returns 3 chunks`() {
-        val result = producerChunkService.generateChunksFromBytes(someLargeBytes)
+        val result = chunkSerializerService.generateChunksFromBytes(someLargeBytes)
         assertThat(result).isNotEmpty
         assertThat(result.size).isEqualTo(3)
 
