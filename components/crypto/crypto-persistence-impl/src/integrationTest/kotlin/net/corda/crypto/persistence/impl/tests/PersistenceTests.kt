@@ -868,6 +868,19 @@ class PersistenceTests {
         }
     }
 
+    @Test
+    fun `Lookup works for both short and full key ids`() {
+        val tenantId = CryptoDBSetup.vNodeHoldingIdentity.shortHash.value
+        val hsmId = UUID.randomUUID().toString()
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        signingKeyStore.save(tenantId, p1)
+        val keyId = p1.key.publicKey.publicKeyId()
+        val fullKeyId = p1.key.publicKey.fullId()
+        val keyLookedUpByKeyId = signingKeyStore.lookup(tenantId, listOf(keyId))
+        val keyLookedUpByFullKeyId = signingKeyStore.lookup(tenantId, listOf(fullKeyId))
+        assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
+    }
+
     /**
      * To ensure test validity the test uses only vnode tenant as its tenant id is unique.
      */
