@@ -81,7 +81,6 @@ class LocallyHostedIdentitiesServiceImplTest {
     private val identityEntry = HostedIdentityEntry(
         identity.toAvro(),
         "tlsTenantId",
-        "sessionKeyTenantId",
         listOf("tlsCertificate"),
         "sessionPublicKey",
         listOf("sessionCertificate"),

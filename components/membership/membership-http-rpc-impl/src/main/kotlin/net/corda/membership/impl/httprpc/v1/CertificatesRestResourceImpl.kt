@@ -57,6 +57,7 @@ import java.io.ByteArrayOutputStream
 import java.io.StringWriter
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
 @Component(service = [PluggableRestResource::class])
@@ -194,22 +195,61 @@ class CertificatesRestResourceImpl @Activate constructor(
         val rawCertificates = certificates.map {
             it.content.reader().readText()
         }
-        try {
-            rawCertificates.forEach { rawCertificate ->
-                if (CertificateFactory
+        val x509Certificates = try {
+            rawCertificates.flatMap { rawCertificate ->
+                CertificateFactory
                     .getInstance("X.509")
-                    .generateCertificates(rawCertificate.byteInputStream()).isEmpty()
-                ) {
-                    throw InvalidInputDataException(
-                        "No certificates in PEM"
-                    )
-                }
+                    .generateCertificates(rawCertificate.byteInputStream())
             }
         } catch (e: Exception) {
             logger.warn("Invalid certificate", e)
             throw InvalidInputDataException(
                 details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
             )
+        }.filterIsInstance<X509Certificate>()
+
+        if (x509Certificates.isEmpty()) {
+            throw InvalidInputDataException(
+                "No certificates in PEM"
+            )
+        }
+        if (usageType == CertificateUsage.P2P_SESSION) {
+            if (holdingIdentityShortHash == null) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityId" to
+                            "P2P Session certificate can only be loaded to holding identity."
+                    )
+                )
+            }
+            val node =
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
+                    ?: throw InvalidInputDataException(
+                        details = mapOf(
+                            "holdingIdentityId" to
+                                "Can not find virtual node $holdingIdentityShortHash."
+                        )
+                    )
+
+            val firstCertificate = x509Certificates.first()
+            val subject = try {
+                MemberX500Name.build(firstCertificate.subjectX500Principal)
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "certificate" to
+                            "The X500 name of the certificate is not a valid Corda X500 name: ${e.message}."
+                    )
+                )
+            }
+            if (subject != node.holdingIdentity.x500Name) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "certificate" to
+                            "The session certificate subject must be the same as the member name."
+                    )
+                )
+            }
         }
 
         tryWithExceptionHandling(logger, "import certificate") {

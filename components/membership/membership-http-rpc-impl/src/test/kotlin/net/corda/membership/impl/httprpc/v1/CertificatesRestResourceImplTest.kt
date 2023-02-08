@@ -43,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
@@ -57,7 +58,10 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.SecureRandom
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.security.spec.ECGenParameterSpec
+import javax.security.auth.x500.X500Principal
 
 class CertificatesRestResourceImplTest {
     private val cryptoOpsClient = mock<CryptoOpsClient>()
@@ -580,6 +584,119 @@ class CertificatesRestResourceImplTest {
         fun `no certificates throws an exception`() {
             assertThrows<InvalidInputDataException> {
                 certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", emptyList())
+            }
+        }
+
+        @Test
+        fun `no actual certificates throws an exception`() {
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn
+                    "".toByteArray().inputStream()
+            }
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate))
+            }
+        }
+
+        @Test
+        fun `session init will fail if the certificate is a cluster certificate`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("p2p-session", null, "alias", listOf(certificate))
+            }
+        }
+
+        @Test
+        fun `session init will fail if the virtual node can not be found`() {
+            val shortHash = ShortHash.of("123412341234")
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)).thenReturn(null)
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("p2p-session", shortHash.value, "alias", listOf(certificate))
+            }
+        }
+
+        @Test
+        fun `session init will fail if the virtual node subject is not the member name`() {
+            val shortHash = ShortHash.of("123412341234")
+            val nodeInfo = mock<VirtualNodeInfo> {
+                on { holdingIdentity } doReturn HoldingIdentity(
+                    MemberX500Name.parse("O=Alice, L=LDN, C=GB"),
+                    "group",
+                )
+            }
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)).thenReturn(nodeInfo)
+            val x509Certificate = mock<X509Certificate> {
+                on { subjectX500Principal } doReturn X500Principal("O=Bob, L=LDN, C=GB")
+            }
+            val certificateFactory = mock<CertificateFactory> {
+                on { generateCertificates(any()) } doReturn listOf(x509Certificate)
+            }
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+            mockStatic(CertificateFactory::class.java).use {
+                it.`when`<CertificateFactory> {
+                    CertificateFactory.getInstance("X.509")
+                }.doReturn(certificateFactory)
+
+                assertThrows<InvalidInputDataException> {
+                    certificatesOps.importCertificateChain("p2p-session", shortHash.value, "alias", listOf(certificate))
+                }
+            }
+        }
+
+        @Test
+        fun `session init will not fail if the virtual node subject is the member name`() {
+            val name = MemberX500Name.parse("O=Alice, L=LDN, C=GB")
+            val shortHash = ShortHash.of("123412341234")
+            val nodeInfo = mock<VirtualNodeInfo> {
+                on { holdingIdentity } doReturn HoldingIdentity(
+                    name,
+                    "group",
+                )
+            }
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)).thenReturn(nodeInfo)
+            val x509Certificate = mock<X509Certificate> {
+                on { subjectX500Principal } doReturn name.x500Principal
+            }
+            val certificateFactory = mock<CertificateFactory> {
+                on { generateCertificates(any()) } doReturn listOf(x509Certificate)
+            }
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+            mockStatic(CertificateFactory::class.java).use {
+                it.`when`<CertificateFactory> {
+                    CertificateFactory.getInstance("X.509")
+                }.doReturn(certificateFactory)
+
+                certificatesOps.importCertificateChain("p2p-session", shortHash.value, "alias", listOf(certificate))
+            }
+        }
+
+        @Test
+        fun `session init will fail if the certificate name is not a vaild member name`() {
+            val shortHash = ShortHash.of("123412341234")
+            val nodeInfo = mock<VirtualNodeInfo>()
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)).thenReturn(nodeInfo)
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("p2p-session", shortHash.value, "alias", listOf(certificate))
             }
         }
 

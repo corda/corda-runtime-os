@@ -267,7 +267,6 @@ fun E2eCluster.generateGroupPolicy(
 fun E2eCluster.setUpNetworkIdentity(
     holdingId: String,
     sessionKeyId: String,
-    useClusterLevelSessionKeyAndCert: Boolean? = null,
     sessionCertificateChainAlias: String? = null
 ) {
     clusterHttpClientFor(NetworkRestResource::class.java).use { client ->
@@ -276,7 +275,6 @@ fun E2eCluster.setUpNetworkIdentity(
             HostedIdentitySetupRequest(
                 p2pTlsCertificateChainAlias = TLS_CERT_ALIAS,
                 useClusterLevelTlsCertificateAndKey = true,
-                useClusterLevelSessionCertificateAndKey = useClusterLevelSessionKeyAndCert,
                 sessionKeyId = sessionKeyId,
                 sessionCertificateChainAlias = sessionCertificateChainAlias
             )
@@ -367,7 +365,7 @@ fun E2eCluster.onboardMembers(
         val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
 
         if (useSessionCertificate) {
-            setUpNetworkIdentity(member.holdingId, memberSessionKeyId, useClusterLevelSessionKeyAndCert = false, SESSION_CERT_ALIAS)
+            setUpNetworkIdentity(member.holdingId, memberSessionKeyId, SESSION_CERT_ALIAS)
         } else {
             setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
         }
@@ -442,7 +440,7 @@ fun E2eCluster.onboardMgm(
     }
 
     if (useSessionCertificate) {
-        setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId, useClusterLevelSessionKeyAndCert = false, SESSION_CERT_ALIAS)
+        setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId, SESSION_CERT_ALIAS)
     } else {
         setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
     }
