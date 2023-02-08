@@ -50,4 +50,13 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      */
     @Suspendable
     fun verifySignatures()
+
+    /**
+     * Verify if notary has signed the transaction.
+     * The signature itself does not get verified!
+     *
+     * @throws TransactionVerificationException if notary signatures is missing.
+     */
+    @Suspendable
+    fun verifyNotarySignatureAttached()
 }
