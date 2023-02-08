@@ -1,6 +1,7 @@
 package net.corda.example.vnode
 
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.CpiLoader
@@ -16,7 +17,7 @@ import java.util.concurrent.CompletableFuture
 
 interface VNodeService {
     fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo
-    fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext
+    fun getOrCreateSandbox(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier): SandboxGroupContext
     fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo)
     fun flushSandboxCache(): CompletableFuture<*>
     @Throws(InterruptedException::class)
@@ -56,8 +57,12 @@ class VNodeServiceImpl @Activate constructor(
         cpiLoader.removeCpiMetadata(cpiMetadata.cpiId)
     }
 
-    override fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext {
-        return flowSandboxService.get(holdingIdentity)
+    override fun getOrCreateSandbox(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier): SandboxGroupContext {
+        val cpiMetadata = cpiLoader.getCpiMetadata(cpiIdentifier).get()
+            ?: throw IllegalStateException("No such CPI $cpiIdentifier")
+        val cpks = cpiMetadata.cpksMetadata.map { it.fileChecksum }.toSet()
+
+        return flowSandboxService.get(holdingIdentity, cpks)
     }
 
     override fun flushSandboxCache(): CompletableFuture<*> {

@@ -1,7 +1,6 @@
 @file:JvmName("FlowSandboxServiceUtils")
 package net.corda.flow.pipeline.sandbox.impl
 
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
@@ -24,7 +23,6 @@ import net.corda.sandboxgroupcontext.service.registerNotaryPluginProviders
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SCOPE_PROTOTYPE
 import org.osgi.framework.Constants.SERVICE_SCOPE
@@ -37,10 +35,6 @@ import org.osgi.service.component.annotations.Reference
 @RequireSandboxJSON
 @Component(service = [ FlowSandboxService::class ])
 class FlowSandboxServiceImpl @Activate constructor(
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = SandboxDependencyInjectorFactory::class)

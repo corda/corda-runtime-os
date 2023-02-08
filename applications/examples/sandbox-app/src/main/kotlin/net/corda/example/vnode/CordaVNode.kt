@@ -167,7 +167,7 @@ class CordaVNode @Activate constructor(
             dumpHeap("loaded")
 
             // Checkpoint: We have created a sandbox for this CPI.
-            val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity)
+            val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity, vnodeInfo.cpiIdentifier)
             logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map(CpkMetadata::cpkId))
             dumpHeap("created")
 

@@ -5,11 +5,12 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowEventHandler::class])
-class StartFlowEventHandler(
+class StartFlowEventHandler @Activate constructor(
     @Reference(service = CheckpointInitializer::class)
     private val checkpointInitializer: CheckpointInitializer
 ) : FlowEventHandler<StartFlow> {

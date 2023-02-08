@@ -123,7 +123,7 @@ class FlowCheckpointImpl(
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.flowContext
 
-    override fun initFlowState(flowStartContext: FlowStartContext, initializedCpks: Set<SecureHash>) {
+    override fun initFlowState(flowStartContext: FlowStartContext, cpks: Set<SecureHash>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
@@ -145,7 +145,7 @@ class FlowCheckpointImpl(
 
         flowStateManager = FlowStateManager(flowState)
         nullableFlowStack = FlowStackImpl(flowState.flowStackItems)
-        pipelineStateManager.populateCpks(initializedCpks)
+        pipelineStateManager.populateCpks(cpks)
     }
 
     override fun getSessionState(sessionId: String): SessionState? {

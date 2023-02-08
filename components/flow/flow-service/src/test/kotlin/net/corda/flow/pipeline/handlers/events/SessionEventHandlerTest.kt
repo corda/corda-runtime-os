@@ -13,6 +13,7 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
+import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
@@ -25,6 +26,7 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.SessionManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -69,8 +71,9 @@ class SessionEventHandlerTest {
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val flowSandboxService = mock<FlowSandboxService>()
     private val sessionManager = mock<SessionManager>()
+    private val checkpointInitializer = mock<CheckpointInitializer>()
 
-    private val sessionEventHandler = SessionEventHandler(flowSandboxService, sessionManager)
+    private val sessionEventHandler = SessionEventHandler(flowSandboxService, sessionManager, checkpointInitializer)
 
     @Suppress("Unused")
     @BeforeEach
