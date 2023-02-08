@@ -5,10 +5,10 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
-import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogAuditEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.entities.findCurrentCpkChangeLogsForCpi
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.UUID
 import javax.persistence.EntityManager
-import net.corda.libs.cpi.datamodel.findChangelogEntitiesForGivenCpkFileChecksums
+import net.corda.libs.cpi.datamodel.entities.findChangelogEntitiesForGivenCpkFileChecksums
 import net.corda.test.util.dsl.entities.cpx.cpi
 import net.corda.test.util.dsl.entities.cpx.cpk
 import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog

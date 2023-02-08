@@ -1,6 +1,6 @@
 package net.corda.chunking.db.impl.cpi.liquibase
 
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import org.slf4j.LoggerFactory

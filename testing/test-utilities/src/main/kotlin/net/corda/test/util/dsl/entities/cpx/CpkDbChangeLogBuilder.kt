@@ -1,8 +1,8 @@
 package net.corda.test.util.dsl.entities.cpx
 
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
 
 fun cpkDbChangeLog(init: CpkDbChangeLogBuilder.() -> Unit): CpkDbChangeLogEntity {
     val builder = CpkDbChangeLogBuilder()
