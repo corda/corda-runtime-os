@@ -1,7 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use

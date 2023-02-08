@@ -1,8 +1,8 @@
 package net.corda.chunking.db.impl.cpi.liquibase
 
 import net.corda.db.admin.LiquibaseXmlConstants.DB_CHANGE_LOG_ROOT_ELEMENT
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
 import net.corda.libs.packaging.Cpk
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader

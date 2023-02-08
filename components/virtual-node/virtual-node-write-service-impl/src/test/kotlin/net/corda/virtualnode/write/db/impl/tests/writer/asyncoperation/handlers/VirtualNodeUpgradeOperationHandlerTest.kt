@@ -34,8 +34,8 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.PersistenceException
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeStateException

@@ -1,7 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.admin.DbChange
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.InputStream

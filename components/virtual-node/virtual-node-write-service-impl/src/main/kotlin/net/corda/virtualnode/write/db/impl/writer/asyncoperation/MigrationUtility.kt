@@ -1,7 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation
 
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.virtualnode.ShortHash
 
 /**

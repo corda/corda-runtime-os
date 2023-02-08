@@ -1,10 +1,10 @@
 package net.corda.libs.cpi.datamodel.tests
 
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.CpiCpkKey
+import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.v5.crypto.SecureHash
 
 object TestObject {
