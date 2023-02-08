@@ -4,8 +4,6 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
-import javax.sql.DataSource
-import javax.xml.crypto.Data
 
 /**
  * DbAdmin for Virtual Nodes database.

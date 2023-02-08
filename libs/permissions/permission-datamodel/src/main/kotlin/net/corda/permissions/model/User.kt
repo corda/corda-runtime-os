@@ -1,6 +1,5 @@
 package net.corda.permissions.model
 
-import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.CascadeType
 import javax.persistence.Column

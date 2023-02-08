@@ -5,7 +5,6 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
-import net.corda.db.schema.DbSchema
 
 /**
  * Append only audit log of changelogs of a CPK.

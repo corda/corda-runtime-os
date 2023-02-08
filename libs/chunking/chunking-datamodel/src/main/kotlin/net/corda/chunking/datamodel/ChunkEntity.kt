@@ -1,6 +1,5 @@
 package net.corda.chunking.datamodel
 
-import net.corda.db.schema.DbSchema
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
