@@ -47,7 +47,7 @@ import kotlin.concurrent.withLock
  * @param listener an (optional) listener that can be used to be informed when connection is established/closed.
  */
 @Suppress("LongParameterList")
-class HttpClient(
+internal class HttpClient(
     private val destinationInfo: DestinationInfo,
     private val sslConfiguration: SslConfiguration,
     private val writeGroup: EventLoopGroup,
@@ -252,7 +252,8 @@ class HttpClient(
                     destinationInfo.sni,
                     destinationInfo.uri,
                     destinationInfo.legalName,
-                    trustManagerFactory
+                    trustManagerFactory,
+                    destinationInfo.clientCertificatesKeyStore,
                 )
             )
             pipeline.addLast(HttpClientCodec())
@@ -265,14 +266,16 @@ class HttpClient(
  * @param uri the destination URI
  * @param sni the destination server name
  * @param legalName the destination legal name expected to be on the TLS certificate. If the value is *null*, the [HttpClient]
+ *     will use standard target identity check
  * @param trustStore Key store containing the certificates trusted for this specific destination.
- * will use standard target identity check
+ * @param clientCertificatesKeyStore The client certificates key store to be used for mutual TLS mode (null for one way TLS).
  */
-data class DestinationInfo(
+internal data class DestinationInfo(
     val uri: URI,
     val sni: String,
     val legalName: X500Name?,
     val trustStore: KeyStore,
+    val clientCertificatesKeyStore: KeyStoreWithPassword?
 )
 
 typealias HttpRequestPayload = ByteArray

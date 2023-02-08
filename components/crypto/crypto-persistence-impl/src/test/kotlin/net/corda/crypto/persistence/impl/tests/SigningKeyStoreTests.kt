@@ -1,11 +1,11 @@
 package net.corda.crypto.persistence.impl.tests
 
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
-import net.corda.crypto.config.impl.createTestCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
 import net.corda.crypto.persistence.impl.tests.infra.TestCryptoConnectionsFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
@@ -35,7 +35,7 @@ class SigningKeyStoreTests {
         configurationReadService = TestConfigurationReadService(
             coordinatorFactory,
             configUpdates = listOf(
-                CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt"))
+                CRYPTO_CONFIG to SmartConfigFactory.createWithoutSecurityServices().create(createDefaultCryptoConfig("pass", "salt"))
             )
         ).also {
             it.start()

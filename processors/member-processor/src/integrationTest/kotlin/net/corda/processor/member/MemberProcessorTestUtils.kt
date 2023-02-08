@@ -6,7 +6,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
@@ -95,9 +94,7 @@ class MemberProcessorTestUtils {
             listOf(EncryptionSecretsServiceFactory())
         )
 
-        fun makeCryptoConfig(): SmartConfig = smartConfigFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-key-pass", "master-key-salt")
-        )
+        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(
@@ -278,8 +275,10 @@ class MemberProcessorTestUtils {
 
         fun Publisher.publishMembershipConf(membershipConfig: SmartConfig) =
             publishConf(ConfigKeys.MEMBERSHIP_CONFIG, membershipConfig.root().render())
+
         fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
+
         fun Publisher.publishGatewayConfig() =
             publishConf(
                 ConfigKeys.P2P_GATEWAY_CONFIG,

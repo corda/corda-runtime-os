@@ -1,31 +1,22 @@
 package net.corda.crypto.service.impl
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.CryptoServiceProvider
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
-import net.corda.crypto.component.impl.FatalActivationException
 import net.corda.crypto.component.impl.LifecycleNameProvider
 import net.corda.crypto.component.impl.lifecycleNameAsSet
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.bootstrapHsmId
 import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
+import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -38,17 +29,11 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
- * A crypto worker instance will ever support only one HSM implementation due the HSM client libraries limitations, such
- * as able to connect only to single device of the same make ([cryptoServiceProvider] is expecting single reference).
+ * A high level factory which worker instance which supports only the Soft HSM implementation.
  *
- * As the Soft HSM will most likely will always be present it's service ranking is set to the smallest possible value
- * so any other HSM implementation can be picked up if present on the OSGi classpath.
- *
- * Even in case of the HTTP and Soft HSMs being able to work together the presence of HTTP client and need to
- * communicate with the outside of the Cord cluster will require different worker setup.
- *
- * The limitation of referencing only single provider will help to solve the problem of the domino logic where otherwise
- * one of providers can be down (but not actually used) and another is up.
+ * This code uses the HSM service to select a HSM implementation for a specific
+ * tenantId and category, and then CryptoServiceProvider to make the crypto service,
+ * and CryptoServiceDecorator to add retries logic
  */
 @Component(service = [CryptoServiceFactory::class])
 class CryptoServiceFactoryImpl @Activate constructor(
@@ -59,7 +44,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     @Reference(service = HSMStore::class)
     private val hsmStore: HSMStore,
     @Reference(service = CryptoServiceProvider::class)
-    private val cryptoServiceProvider: CryptoServiceProvider<*>
+    private val cryptoServiceProvider: CryptoServiceProvider
 ) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
@@ -74,24 +59,13 @@ class CryptoServiceFactoryImpl @Activate constructor(
 ), CryptoServiceFactory {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        private val jsonMapper = JsonMapper
-            .builder()
-            .enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
-            .build()
-        private val objectMapper: ObjectMapper = jsonMapper
-            .registerModule(JavaTimeModule())
-            .registerModule(KotlinModule.Builder().build())
-            .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
         bootConfig = bootConfig ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
         event = event,
         hsmStore = hsmStore,
-        cryptoServiceProvider = cryptoServiceProvider as CryptoServiceProvider<Any>
+        cryptoServiceProvider = cryptoServiceProvider
     )
 
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
@@ -110,7 +84,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         bootConfig: SmartConfig,
         event: ConfigChangedEvent,
         private val hsmStore: HSMStore,
-        private val cryptoServiceProvider: CryptoServiceProvider<Any>
+        private val cryptoServiceProvider: CryptoServiceProvider
     ) : DownstreamAlwaysUpAbstractImpl() {
 
         private val hsmId: String
@@ -122,23 +96,12 @@ class CryptoServiceFactoryImpl @Activate constructor(
             cryptoConfig = event.config.toCryptoConfig()
             hsmId = bootConfig.bootstrapHsmId()
             hsmConfig = cryptoConfig.hsm(hsmId)
-            if(hsmConfig.hsm.name != cryptoServiceProvider.name) {
-                throw FatalActivationException(
-                    "Expected to handle ${hsmConfig.hsm.name} but provided with ${cryptoServiceProvider.name}."
-                )
-            }
         }
 
         private val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-            val retry = hsmConfig.retry
+             val retry = hsmConfig.retry
             val hsm = hsmConfig.hsm
-            val cryptoService = cryptoServiceProvider.getInstance(
-                objectMapper.readValue(
-                    hsm.cfg.root().render(ConfigRenderOptions.concise()),
-                    cryptoServiceProvider.configType
-                ),
-                cryptoConfig.toConfigurationSecrets()
-            )
+            val cryptoService = cryptoServiceProvider.getInstance(hsm.cfg)
             CryptoServiceDecorator.create(
                 cryptoService,
                 retry.maxAttempts,
