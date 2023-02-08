@@ -49,7 +49,7 @@ class TestInitialConfigPluginCrypto {
 
     @Suppress("MaxLineLength")
     private val expectedPrefix =
-        "insert into CONFIG.config (config, is_deleted, schema_version_major, schema_version_minor, section, update_actor, update_ts, version) values ('"
+        "insert into config (config, is_deleted, schema_version_major, schema_version_minor, section, update_actor, update_ts, version) values ('"
 
     @Test
     fun `Should be able to create default initial crypto configuration with defined wrapping key`() {

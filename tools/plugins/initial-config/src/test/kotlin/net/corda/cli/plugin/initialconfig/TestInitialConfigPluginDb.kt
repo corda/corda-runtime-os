@@ -44,7 +44,7 @@ class TestInitialConfigPluginDb {
         }
         println(outText)
         assertThat(outText).startsWith(
-            "insert into CONFIG.db_connection" +
+            "insert into db_connection" +
                 " (config, description, connection_id, connection_name, privilege, update_actor, update_ts, version)" +
                 " values ('{\"database\":{\"jdbc\":{\"url\":\"jdbd:postgres://testurl\"}," +
                 "\"pass\":{\"configSecret\":{\"encryptedSecret\":"

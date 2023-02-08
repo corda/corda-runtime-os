@@ -55,7 +55,7 @@ abstract class DbAdmin {
         user: String,
         password: String,
         privilege: DbPrivilege,
-        grantee: String?
+        grantee: String? = null
     ) {
         // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
         //  for other DBs. So we may need to wrap this in a factory.
