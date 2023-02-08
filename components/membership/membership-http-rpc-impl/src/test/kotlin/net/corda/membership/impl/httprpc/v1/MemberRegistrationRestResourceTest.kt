@@ -181,18 +181,6 @@ class MemberRegistrationRestResourceTest {
     }
 
     @Test
-    fun `checkSpecificRegistrationProgress returns null when no data is returned`() {
-        whenever(memberOpsClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id")).doReturn(null)
-        memberRegistrationRpcOps.start()
-        memberRegistrationRpcOps.activate("")
-
-        val status = memberRegistrationRpcOps.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
-
-        assertThat(status)
-            .isNull()
-    }
-
-    @Test
     fun `checkSpecificRegistrationProgress throws bad request if short hash is invalid`() {
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.activate("")

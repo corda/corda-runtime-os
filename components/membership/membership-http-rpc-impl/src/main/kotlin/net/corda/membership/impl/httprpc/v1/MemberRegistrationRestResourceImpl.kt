@@ -38,7 +38,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
         fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String
-        ): RegistrationRequestStatus?
+        ): RegistrationRequestStatus
     }
 
     override val protocolVersion = 1
@@ -138,7 +138,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 memberOpsClient.checkRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash)
                 ).map { it.fromDto() }
-            } catch (e: RegistrationProgressNotFoundException) {
+            } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException(e.message!!)
             }
         }
@@ -146,13 +146,15 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
         override fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String,
-        ): RegistrationRequestStatus? {
+        ): RegistrationRequestStatus {
             return try {
                 memberOpsClient.checkSpecificRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     registrationRequestId
-                )?.fromDto()
+                ).fromDto()
             } catch (e: RegistrationProgressNotFoundException) {
+                throw ResourceNotFoundException(e.message!!)
+            } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException(e.message!!)
             }
         }
