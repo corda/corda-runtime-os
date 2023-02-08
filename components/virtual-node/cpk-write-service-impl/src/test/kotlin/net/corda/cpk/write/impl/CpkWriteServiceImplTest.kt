@@ -1,7 +1,5 @@
 package net.corda.cpk.write.impl
 
-import java.nio.ByteBuffer
-import java.security.MessageDigest
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -32,12 +30,15 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.security.MessageDigest
 
 class CpkWriteServiceImplTest {
     private lateinit var cpkWriteServiceImpl: CpkWriteServiceImpl
@@ -59,7 +60,9 @@ class CpkWriteServiceImplTest {
 
     @BeforeEach
     fun setUp() {
-        coordinatorFactory = mock()
+        coordinator = mock()
+        coordinatorFactory = mock<LifecycleCoordinatorFactory>()
+            .apply { `when`(createCoordinator(any(), any())).thenReturn(coordinator) }
         configReadService = mock()
         subscriptionFactory = mock()
         publisherFactory = mock()
@@ -67,7 +70,6 @@ class CpkWriteServiceImplTest {
         cpkWriteServiceImpl =
             CpkWriteServiceImpl(coordinatorFactory, configReadService, subscriptionFactory, publisherFactory, dbConnectionManager)
 
-        coordinator = mock()
     }
 
     @Test

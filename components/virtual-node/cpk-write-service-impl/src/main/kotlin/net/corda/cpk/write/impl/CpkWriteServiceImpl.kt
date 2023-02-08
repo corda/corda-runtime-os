@@ -105,7 +105,7 @@ class CpkWriteServiceImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
             is ReconcileCpkEvent -> onReconcileCpkEvent(coordinator)
-            is StopEvent -> onStopEvent(coordinator)
+            is StopEvent -> onStopEvent()
         }
     }
 
@@ -133,6 +133,7 @@ class CpkWriteServiceImpl @Activate constructor(
         coordinator: LifecycleCoordinator
     ) {
         if (event.status == LifecycleStatus.UP) {
+            configSubscription?.close()
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(
@@ -141,11 +142,10 @@ class CpkWriteServiceImpl @Activate constructor(
                     RECONCILIATION_CONFIG,
                 )
             )
+            coordinator.updateStatus(LifecycleStatus.UP)
+            scheduleNextReconciliationTask(coordinator)
         } else {
-            logger.warn(
-                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
-                        " Component ${this::class.java.simpleName} is not started"
-            )
+            coordinator.updateStatus(LifecycleStatus.DOWN)
             closeResources()
         }
     }
@@ -173,8 +173,8 @@ class CpkWriteServiceImpl @Activate constructor(
         createCpkChecksumsCache(messagingConfig)
         createCpkStorage()
 
-        scheduleNextReconciliationTask(coordinator)
         coordinator.updateStatus(LifecycleStatus.UP)
+        scheduleNextReconciliationTask(coordinator)
     }
 
     private fun onReconcileCpkEvent(coordinator: LifecycleCoordinator) {
@@ -187,18 +187,21 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     private fun scheduleNextReconciliationTask(coordinator: LifecycleCoordinator) {
-        logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
-        coordinator.setTimer(
-            timerKey,
-            timerEventIntervalMs!!
-        ) { ReconcileCpkEvent(it) }
+        timerEventIntervalMs?.let { timerEventIntervalMs ->
+            logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
+            coordinator.setTimer(
+                timerKey,
+                timerEventIntervalMs
+            ) { ReconcileCpkEvent(it) }
+        }
     }
 
     /**
      * Close the registration.
      */
-    private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        coordinator.cancelTimer(timerKey)
+    private fun onStopEvent() {
+        configReadServiceRegistration?.close()
+        configReadServiceRegistration = null
         closeResources()
     }
 
@@ -255,8 +258,7 @@ class CpkWriteServiceImpl @Activate constructor(
     }
 
     private fun closeResources() {
-        configReadServiceRegistration?.close()
-        configReadServiceRegistration = null
+        coordinator.cancelTimer(timerKey)
         configSubscription?.close()
         configSubscription = null
         cpkChecksumsCache?.close()
