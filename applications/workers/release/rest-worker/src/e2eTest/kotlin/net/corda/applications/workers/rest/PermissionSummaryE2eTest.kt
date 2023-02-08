@@ -3,7 +3,7 @@ package net.corda.applications.workers.rest
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rest.http.TestToolkitProperty
-import net.corda.applications.workers.rest.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
@@ -16,7 +16,7 @@ import java.time.Duration
 /**
  * These tests make assertions about permission summaries utilizing the `getPermissionSummary` API.
  */
-@SkipWhenRpcEndpointUnavailable
+@SkipWhenRestEndpointUnavailable
 class PermissionSummaryE2eTest {
 
     companion object {

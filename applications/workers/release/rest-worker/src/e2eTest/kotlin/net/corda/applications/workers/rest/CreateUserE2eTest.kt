@@ -1,7 +1,7 @@
 package net.corda.applications.workers.rest
 
 import net.corda.applications.workers.rest.http.TestToolkitProperty
-import net.corda.applications.workers.rest.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
@@ -14,7 +14,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 
-@SkipWhenRpcEndpointUnavailable
+@SkipWhenRestEndpointUnavailable
 class CreateUserE2eTest {
 
     private val testToolkit by TestToolkitProperty()

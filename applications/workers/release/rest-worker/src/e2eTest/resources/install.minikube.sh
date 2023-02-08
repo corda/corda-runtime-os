@@ -42,7 +42,7 @@ helm upgrade --install corda -n corda \
 
 
 
-kubectl port-forward --namespace corda deployment/corda-rpc-worker 8888 > /tmp/cluster/forward.8888.txt &
+kubectl port-forward --namespace corda deployment/corda-rest-worker 8888 > /tmp/cluster/forward.8888.txt &
 kubectl port-forward --namespace corda services/prereqs-kafka-headless 9092 > /tmp/cluster/forward.9092.txt &
 
 kubectl get secret -n corda prereqs-kafka-0-tls -o go-template='{{ index .data "ca.crt" }}' | base64 --decode > /tmp/cluster/ca.crt

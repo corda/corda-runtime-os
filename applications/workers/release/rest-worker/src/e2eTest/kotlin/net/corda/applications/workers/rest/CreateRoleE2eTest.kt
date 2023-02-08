@@ -1,7 +1,7 @@
 package net.corda.applications.workers.rest
 
 import net.corda.applications.workers.rest.http.TestToolkitProperty
-import net.corda.applications.workers.rest.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.RequestErrorException
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.assertDoesNotThrow
 
-@SkipWhenRpcEndpointUnavailable
+@SkipWhenRestEndpointUnavailable
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CreateRoleE2eTest {
 

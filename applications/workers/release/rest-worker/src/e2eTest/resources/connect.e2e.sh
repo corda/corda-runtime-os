@@ -21,7 +21,7 @@ printf "KafkaClient {\n org.apache.kafka.common.security.scram.ScramLoginModule 
 
 telepresence connect
 
-kubectl port-forward --namespace $NAMESPACE deployment/corda-rpc-worker 8888 > /tmp/cluster/forward.8888.txt &
+kubectl port-forward --namespace $NAMESPACE deployment/corda-rest-worker 8888 > /tmp/cluster/forward.8888.txt &
 
 echo "To run the tests set environment variables to:"
 echo "  CORDA_KAFKA_SSL_TRUSTSTORE_LOCATION=/tmp/cluster/ca.crt"

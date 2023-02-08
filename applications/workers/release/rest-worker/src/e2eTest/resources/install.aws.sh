@@ -37,7 +37,7 @@ kubectl get secret -n $NAMESPACE prereqs-kafka-0-tls -o go-template='{{ index .d
 
 telepresence connect
 
-kubectl port-forward --namespace $NAMESPACE deployment/corda-rpc-worker 8888 > /tmp/cluster/forward.8888.txt &
+kubectl port-forward --namespace $NAMESPACE deployment/corda-rest-worker 8888 > /tmp/cluster/forward.8888.txt &
 
 echo "To run the tests set environment variables to:"
 echo "  CORDA_KAFKA_SSL_TRUSTSTORE_LOCATION=/tmp/cluster/ca.crt"

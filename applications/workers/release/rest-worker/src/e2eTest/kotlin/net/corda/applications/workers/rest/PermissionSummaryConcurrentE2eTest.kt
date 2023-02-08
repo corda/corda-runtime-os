@@ -4,7 +4,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import java.util.concurrent.Executors
 import net.corda.applications.workers.rest.http.TestToolkitProperty
-import net.corda.applications.workers.rest.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
 /**
  * These tests make assertions about permission summaries utilizing the `getPermissionSummary` API.
  */
-@SkipWhenRpcEndpointUnavailable
+@SkipWhenRestEndpointUnavailable
 class PermissionSummaryConcurrentE2eTest {
 
     companion object {

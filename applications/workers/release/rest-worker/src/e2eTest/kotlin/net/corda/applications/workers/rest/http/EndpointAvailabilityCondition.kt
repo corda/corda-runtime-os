@@ -23,7 +23,7 @@ internal class EndpointAvailabilityCondition : ExecutionCondition {
     override fun evaluateExecutionCondition(context: ExtensionContext): ConditionEvaluationResult {
 
         val existingAnnotation =
-            AnnotationUtils.findAnnotation(context.element, SkipWhenRpcEndpointUnavailable::class.java)
+            AnnotationUtils.findAnnotation(context.element, SkipWhenRestEndpointUnavailable::class.java)
 
         if (existingAnnotation.isPresent) {
 
