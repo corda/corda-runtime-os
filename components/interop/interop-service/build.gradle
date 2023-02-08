@@ -17,7 +17,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-avro-schema:5.0.0.633-alpha-1675773904714"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'

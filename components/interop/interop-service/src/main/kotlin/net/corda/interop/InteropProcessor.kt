@@ -3,32 +3,31 @@ package net.corda.interop
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
+import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.interop.service.InteropMessageTransformer
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 //Based on FlowP2PFilter
 @Suppress("Unused")
-class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFactory) :
+class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFactory) :
     DurableProcessor<String, AppMessage> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SUBSYSTEM = "interop"
     }
-    private val cordaAvroDeserializer: CordaAvroDeserializer<SessionEvent> = cordaAvroSerializationFactory.createAvroDeserializer({},
-        SessionEvent::class.java)
 
-    private val cordaAvroSerializer: CordaAvroSerializer<SessionEvent> = cordaAvroSerializationFactory.createAvroSerializer({})
+    private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
+        cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
+    private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
 
     override fun onNext(
         events: List<Record<String, AppMessage>>
@@ -37,7 +36,7 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
         events.forEach { appMessage ->
             val authMessage = appMessage.value?.message
             if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == SUBSYSTEM) {
-                getOutputRecord(authMessage.payload, appMessage.key)?.let { outputRecord ->
+                getOutputRecord(authMessage.header, authMessage.payload, appMessage.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
                 }
             }
@@ -47,19 +46,19 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
 
     // Returns an OUTBOUND message to P2P layer, in the future it will pass a message to FlowProcessor
     private fun getOutputRecord(
+        header: AuthenticatedMessageHeader,
         payload: ByteBuffer,
         key: String
-    ) : Record<String, AppMessage>? {
-        val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
-        logger.info ( "Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, Event: $sessionEvent")
-
-        return if (sessionEvent != null) {
-            sessionEvent.messageDirection = MessageDirection.OUTBOUND //
-            val sessionId = key
-            sessionEvent.sessionId = sessionId
-            //Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
-            // this would be a way to push message downstream, once we have connection with FlowProcessor
-            Record(Schemas.P2P.P2P_OUT_TOPIC, sessionId, generateAppMessage(sessionEvent, cordaAvroSerializer))
+    ): Record<String, AppMessage>? {
+        val interopMessage  = cordaAvroDeserializer.deserialize(payload.array())
+        //following logging is added just check serialisation/de-serialisation result and can be removed later
+        logger.info ( "Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, facade request: $interopMessage" )
+        return if (interopMessage != null) {
+            val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
+            logger.info("Converted interop message to facade request : $facadeRequest")
+            val message : InteropMessage = InteropMessageTransformer.getInteropMessage(interopMessage.messageId, facadeRequest)
+            logger.info("Converted facade request to interop message : $message")
+            Record(Schemas.P2P.P2P_OUT_TOPIC, key, generateAppMessage(header, message, cordaAvroSerializer))
         } else {
             null
         }
@@ -68,20 +67,25 @@ class InteropProcessor (cordaAvroSerializationFactory: CordaAvroSerializationFac
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
 
-    private fun generateAppMessage(
-        sessionEvent: SessionEvent,
-        sessionEventSerializer: CordaAvroSerializer<SessionEvent>
+    fun generateAppMessage(
+        header: AuthenticatedMessageHeader,
+        interopMessage: InteropMessage,
+        interopMessageSerializer: CordaAvroSerializer<InteropMessage>
     ): AppMessage {
-        val sourceIdentity = sessionEvent.initiatedIdentity
-        val destinationIdentity = sessionEvent.initiatingIdentity
-        val header = AuthenticatedMessageHeader(
-            destinationIdentity,
-            sourceIdentity,
-            Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli()),
-            sessionEvent.sessionId + "-" + UUID.randomUUID(),
+        val responseHeader = AuthenticatedMessageHeader(
+            header.source,
+            header.destination,
+            header.ttl,
+            header.messageId + "-" + UUID.randomUUID(),
             "",
             SUBSYSTEM
         )
-        return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+        return AppMessage(
+            AuthenticatedMessage(
+                responseHeader,
+                ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
+            )
+        )
     }
+
 }
