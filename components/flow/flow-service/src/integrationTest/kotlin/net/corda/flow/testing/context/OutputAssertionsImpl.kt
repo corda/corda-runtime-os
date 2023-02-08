@@ -1,7 +1,5 @@
 package net.corda.flow.testing.context
 
-import net.bytebuddy.dynamic.scaffold.MethodGraph.Linked
-import net.corda.crypto.cipher.suite.schemes.all
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
@@ -176,7 +174,7 @@ class OutputAssertionsImpl(
             assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
             val resumedWith = (testRun.flowContinuation as FlowContinuation.Run).value
 
-            if (resumedWith is LinkedHashMap<*, *>) {
+            if (resumedWith is Map<*, *>) {
                 assertEquals(value.keys, resumedWith.keys)
                 value.values.zip(resumedWith.values).forEach { pair ->
                     assertArrayEquals(pair.component1(), pair.component2() as ByteArray,
