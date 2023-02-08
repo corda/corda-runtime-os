@@ -149,6 +149,23 @@ interface FlowSessionManager {
     ): List<SessionState>
 
     /**
+     * Do all the specified sessions have a [SessionStateType] included within [statuses]?
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The session ids to check the status of.
+     * @param statuses The acceptable statuses the sessions can have.
+     *
+     * @return `true`, if all sessions have status included within [statuses], `false` otherwise.
+     *
+     * @throws [FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
+     */
+    fun doAllSessionsHaveStatusIn(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        statuses: List<SessionStateType>
+    ): Boolean
+
+    /**
      * Are all the specified sessions have a [SessionStateType] of [status]?
      *
      * @param checkpoint The flow's [FlowCheckpoint].
@@ -159,7 +176,8 @@ interface FlowSessionManager {
      *
      * @throws [FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
+    fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType) =
+        doAllSessionsHaveStatusIn(checkpoint, sessionIds, listOf(status))
 
     /**
      * Get the states whose next ordered message is a SessionClose.
