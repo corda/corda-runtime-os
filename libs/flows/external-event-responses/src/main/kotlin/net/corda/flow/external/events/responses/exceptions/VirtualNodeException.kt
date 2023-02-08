@@ -1,4 +1,4 @@
-package net.corda.ledger.verification.exceptions
+package net.corda.flow.external.events.responses.exceptions
 
 /**
  * Used to indicate a problem with retrieving virtual nodes from the system.
