@@ -87,7 +87,7 @@ class DynamicCertificateSubjectStoreTest {
     }
 
     @Test
-    fun `onNext will add the normalizes subject`() {
+    fun `onNext will add the normalized subject`() {
         processor.firstValue.onNext(
             Record(
                 TOPIC,
@@ -104,7 +104,7 @@ class DynamicCertificateSubjectStoreTest {
     }
 
     @Test
-    fun `onNext will remove the normalizes subject`() {
+    fun `onNext will remove the normalized subject`() {
         processor.firstValue.onNext(
             Record(
                 TOPIC,

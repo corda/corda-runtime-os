@@ -62,7 +62,7 @@ internal class DynamicX509ExtendedTrustManager(
     }
 
     @Suppress("ThrowsCount")
-    private fun validateClientCertificateChange(chain: Array<out X509Certificate>?) {
+    private fun validateClientCertificateChain(chain: Array<out X509Certificate>?) {
         if (chain == null) {
             throw CertificateException("Can not accept null client certificate chain.")
         }
@@ -100,7 +100,7 @@ internal class DynamicX509ExtendedTrustManager(
         chain: Array<out X509Certificate>?,
         verify: (X509ExtendedTrustManager) -> Unit
     ) {
-        validateClientCertificateChange(chain)
+        validateClientCertificateChain(chain)
         validateTrustedCertificates(verify)
     }
 

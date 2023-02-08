@@ -51,8 +51,8 @@ internal class DynamicCertificateSubjectStore(
     }
 
     private fun removeSource(subject: String, source: String) {
-        val normelizedSubject = MemberX500Name.parse(subject)
-        certificateSubjects.computeIfPresent(normelizedSubject) { _, sources ->
+        val normalizedSubject = MemberX500Name.parse(subject)
+        certificateSubjects.computeIfPresent(normalizedSubject) { _, sources ->
             sources.remove(source)
             sources.ifEmpty {
                 null
