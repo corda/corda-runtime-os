@@ -25,7 +25,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         const val SUBSYSTEM = "interop"
     }
 
-    private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> = cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
+    private val cordaAvroDeserializer: CordaAvroDeserializer<InteropMessage> =
+        cordaAvroSerializationFactory.createAvroDeserializer({}, InteropMessage::class.java)
     private val cordaAvroSerializer: CordaAvroSerializer<InteropMessage> = cordaAvroSerializationFactory.createAvroSerializer {}
 
     override fun onNext(
