@@ -1,5 +1,6 @@
 package net.corda.sandbox
 
+import java.util.UUID
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
@@ -7,9 +8,12 @@ import org.osgi.framework.Bundle
 /**
  * A group of sandboxes with visibility of one another.
  *
- * @property cpks The CPKs this sandbox group is constructed from.
+ * @property id A unique identifier for this [SandboxGroup].
+ * @property metadata [CpkMetadata] for each CPK's "main" bundle.
  */
 interface SandboxGroup: SingletonSerializeAsToken {
+    val id: UUID
+
     val metadata: Map<Bundle, CpkMetadata>
 
     /**

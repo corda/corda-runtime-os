@@ -176,10 +176,10 @@ class DescribedTypeReadStrategy(name: String,
 class DescribedTypeWriteStrategy(private val name: String,
                                  private val propertyInformation: LocalPropertyInformation,
                                  private val reader: GetterReader,
-                                 private val serializerProvider: () -> AMQPSerializer<Any>) : PropertyWriteStrategy {
+                                 serializerProvider: () -> AMQPSerializer<Any>) : PropertyWriteStrategy {
 
     // Lazy to avoid getting into infinite loops when there are cycles.
-    private val serializer by lazy { serializerProvider() }
+    private val serializer by lazy(LazyThreadSafetyMode.PUBLICATION, serializerProvider)
 
     private val nameForDebug get() = "$name(${propertyInformation.type.typeIdentifier.prettyPrint(false)})"
 

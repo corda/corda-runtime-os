@@ -24,6 +24,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.function.Function
 import java.util.function.Supplier
+import kotlin.LazyThreadSafetyMode.PUBLICATION
 import kotlin.reflect.KCallable
 import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty1
@@ -36,13 +37,13 @@ class KotlinMembers<T : Any>(
     private val jvmSuperKotlinClasses: Supplier<List<KotlinClassImpl<*>>>,
     private val allSuperKotlinClasses: Supplier<List<KotlinClassImpl<*>>>
 ) {
-    private val declaredMemberMethods: Map<MemberSignature, Method> by lazy(clazz::declaredMemberMethods)
-    private val declaredMemberFields: Map<JvmFieldSignature, Field> by lazy(clazz::declaredMemberFields)
+    private val declaredMemberMethods: Map<MemberSignature, Method> by lazy(PUBLICATION, clazz::declaredMemberMethods)
+    private val declaredMemberFields: Map<JvmFieldSignature, Field> by lazy(PUBLICATION, clazz::declaredMemberFields)
 
     private val declaredMemberPopulator: Populator
         get() = Populator(declaredMemberMethods::get, declaredMemberFields::get)
 
-    val properties: Collection<KProperty1<T, *>> by lazy {
+    val properties: Collection<KProperty1<T, *>> by lazy(PUBLICATION) {
         @Suppress("unchecked_cast")
         clazz.computeMembers(
             ::declaredProperties,
@@ -53,7 +54,7 @@ class KotlinMembers<T : Any>(
         } as Collection<KProperty1<T, *>>
     }
 
-    val functions: Collection<KFunction<*>> by lazy {
+    val functions: Collection<KFunction<*>> by lazy(PUBLICATION) {
         clazz.computeMembers(
             ::declaredFunctions,
             KotlinClassImpl<*>::declaredMemberFunctions,
@@ -63,7 +64,7 @@ class KotlinMembers<T : Any>(
         }
     }
 
-    val extensionProperties: Collection<KProperty2<T, *, *>> by lazy {
+    val extensionProperties: Collection<KProperty2<T, *, *>> by lazy(PUBLICATION) {
         @Suppress("unchecked_cast")
         clazz.computeMembers(
             ::declaredExtensionProperties,
@@ -74,7 +75,7 @@ class KotlinMembers<T : Any>(
         } as Collection<KProperty2<T, *, *>>
     }
 
-    val extensionFunctions: Collection<KFunction<*>> by lazy {
+    val extensionFunctions: Collection<KFunction<*>> by lazy(PUBLICATION) {
         clazz.computeMembers(
             ::declaredExtensionFunctions,
             KotlinClassImpl<*>::declaredMemberExtensionFunctions,
@@ -119,28 +120,28 @@ class KotlinMembers<T : Any>(
         return associateByTo(allMembers, keyMapper::apply).values
     }
 
-    val declaredProperties: List<KProperty1<T, *>> by lazy {
+    val declaredProperties: List<KProperty1<T, *>> by lazy(PUBLICATION) {
         kmProperties
             .filterNot(::isExtension)
             .map<KmProperty, KotlinProperty1<T, Any?>> { prop -> clazz.createKotlinProperty1(prop) }
             .map(declaredMemberPopulator::forProperty)
     }
 
-    val declaredFunctions: List<KFunction<*>> by lazy {
+    val declaredFunctions: List<KFunction<*>> by lazy(PUBLICATION) {
         kmFunctions
             .filterNot(::isExtension)
             .map<KmFunction, KotlinFunction<Any?>> { func -> KotlinFunction(func, clazz) }
             .map(declaredMemberPopulator::forFunction)
     }
 
-    val declaredExtensionProperties: List<KProperty2<T, *, *>> by lazy {
+    val declaredExtensionProperties: List<KProperty2<T, *, *>> by lazy(PUBLICATION) {
         kmProperties
             .filter(::isExtension)
             .map<KmProperty, KotlinProperty2<T, Any?, Any?>> { prop -> clazz.createKotlinProperty2(prop) }
             .map(declaredMemberPopulator::forProperty)
     }
 
-    val declaredExtensionFunctions: List<KFunction<*>> by lazy {
+    val declaredExtensionFunctions: List<KFunction<*>> by lazy(PUBLICATION) {
         kmFunctions
             .filter(::isExtension)
             .map<KmFunction, KotlinFunction<Any?>> { func -> KotlinFunction(func, clazz) }

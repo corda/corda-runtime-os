@@ -1,6 +1,7 @@
 package net.corda.flow.testing.fakes
 
 import java.time.Duration
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
@@ -47,7 +48,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        return FakeSandboxGroupContext(virtualNodeContext, FakeSandboxGroup(mapOf()), initiatingToInitiatedFlowsMap)
+        return FakeSandboxGroupContext(virtualNodeContext, FakeSandboxGroup(UUID.randomUUID(), mapOf()), initiatingToInitiatedFlowsMap)
     }
 
     override fun registerMetadataServices(
@@ -160,7 +161,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeSandboxGroup(override val metadata: Map<Bundle, CpkMetadata>) : SandboxGroup {
+    class FakeSandboxGroup(override val id: UUID, override val metadata: Map<Bundle, CpkMetadata>) : SandboxGroup {
         override fun loadClassFromMainBundles(className: String): Class<*> {
             TODO("Not yet implemented")
         }

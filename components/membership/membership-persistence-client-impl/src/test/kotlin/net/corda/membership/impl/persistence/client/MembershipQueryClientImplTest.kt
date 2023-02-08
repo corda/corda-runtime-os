@@ -14,6 +14,7 @@ import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryMemberInfo
+import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
@@ -23,8 +24,11 @@ import net.corda.data.membership.db.response.query.MemberSignature
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -51,6 +55,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import org.assertj.core.api.Assertions.`as`
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -66,6 +71,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class MembershipQueryClientImplTest {
@@ -1058,6 +1064,177 @@ class MembershipQueryClientImplTest {
             }
 
             val result = membershipQueryClient.getApprovalRules(ourHoldingIdentity, ApprovalRuleType.STANDARD)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+    }
+
+    @Nested
+    inner class QueryPreAuthTokenTests {
+
+        @Test
+        fun `queryPreAuthToken sends the correct request if viewInactive`() {
+            postConfigChangedEvent()
+            val tokenId = UUID.randomUUID()
+            val capture = argumentCaptor<MembershipPersistenceRequest>()
+            whenever(rpcSender.sendRequest(capture.capture())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        PreAuthTokenQueryResponse(mock())
+                    )
+                )
+            }
+
+            membershipQueryClient.queryPreAuthTokens(
+                ourHoldingIdentity,
+                ourX500Name,
+                tokenId,
+                true
+            )
+            assertThat(capture.firstValue.request).isInstanceOf(QueryPreAuthToken::class.java)
+            val request = capture.firstValue.request as QueryPreAuthToken
+            assertThat(request.tokenId).isEqualTo(tokenId.toString())
+            assertThat(request.ownerX500Name).isEqualTo(ourX500Name.toString())
+            assertThat(request.statuses).containsExactlyInAnyOrderElementsOf(PreAuthTokenStatus.values().toList())
+        }
+
+        @Test
+        fun `queryPreAuthToken sends the correct request if not viewInactive`() {
+            postConfigChangedEvent()
+            val tokenId = UUID.randomUUID()
+            val capture = argumentCaptor<MembershipPersistenceRequest>()
+            whenever(rpcSender.sendRequest(capture.capture())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        PreAuthTokenQueryResponse(mock())
+                    )
+                )
+            }
+
+            membershipQueryClient.queryPreAuthTokens(
+                ourHoldingIdentity,
+                ourX500Name,
+                tokenId,
+                false
+            )
+            assertThat(capture.firstValue.request).isInstanceOf(QueryPreAuthToken::class.java)
+            val request = capture.firstValue.request as QueryPreAuthToken
+            assertThat(request.tokenId).isEqualTo(tokenId.toString())
+            assertThat(request.ownerX500Name).isEqualTo(ourX500Name.toString())
+            assertThat(request.statuses).containsOnly(PreAuthTokenStatus.AVAILABLE)
+        }
+
+        @Test
+        fun `queryPreAuthToken returns the correct list of tokens`() {
+            val tokens = listOf(PreAuthToken())
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        PreAuthTokenQueryResponse(tokens)
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryPreAuthTokens(ourHoldingIdentity, null, null, true)
+
+            assertThat(result.getOrThrow()).isEqualTo(tokens)
+        }
+
+        @Test
+        fun `queryPreAuthTokens returns error in case of failure`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        PersistenceFailedResponse("oops")
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryPreAuthTokens(ourHoldingIdentity, null, null, true)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+
+        @Test
+        fun `queryPreAuthTokens returns failure for unexpected result`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        GroupPolicyQueryResponse()
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryPreAuthTokens(ourHoldingIdentity, null, null, true)
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+
+        @Test
+        fun `getApprovalRules returns an error when the result not right`() {
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val myContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp, requestId, clock.instant(), holdingIdentity
+                    )
+                }
+                val response = mock<MembershipPersistenceResponse> {
+                    on { context } doReturn myContext
+                    on { payload } doReturn null
+                }
+                CompletableFuture.completedFuture(response)
+            }
+
+            val result = membershipQueryClient.queryPreAuthTokens(ourHoldingIdentity, null, null, true)
 
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }

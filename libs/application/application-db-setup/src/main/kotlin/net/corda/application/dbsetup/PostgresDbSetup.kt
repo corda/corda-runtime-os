@@ -2,14 +2,13 @@ package net.corda.application.dbsetup
 
 
 import com.typesafe.config.ConfigRenderOptions
-import net.corda.crypto.config.impl.createCryptoSmartConfigFactory
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.DbSchema
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
@@ -37,6 +36,7 @@ class PostgresDbSetup(
     private val dbName: String,
     private val secretsSalt: String,
     private val secretsPassphrase: String,
+    private val smartConfigFactory: SmartConfigFactory
 ): DbSetup {
     
     companion object {
@@ -193,16 +193,9 @@ class PostgresDbSetup(
 
     private fun createCryptoConfig() {
         val random = SecureRandom()
-        val config = createCryptoSmartConfigFactory(
-            KeyCredentials(
-                salt = secretsSalt,
-                passphrase = secretsPassphrase
-            )
-        ).createDefaultCryptoConfig(
-            KeyCredentials(
-                passphrase = random.randomString(),
-                salt = random.randomString()
-            )
+        val config = createDefaultCryptoConfig(
+            smartConfigFactory.makeSecret(random.randomString()).root(),
+            smartConfigFactory.makeSecret(random.randomString()).root(),
         ).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(

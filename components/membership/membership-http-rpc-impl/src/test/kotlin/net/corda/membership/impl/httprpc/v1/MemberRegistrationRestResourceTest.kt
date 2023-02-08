@@ -1,14 +1,17 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.exception.BadRequestException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
+import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -22,6 +25,8 @@ import org.mockito.kotlin.verify
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import kotlin.test.assertFailsWith
@@ -49,7 +54,7 @@ class MemberRegistrationRestResourceTest {
     private val registrationProgress = RegistrationRequestProgressDto(
         "RequestId",
         clock.instant(),
-        "SUBMITTED",
+        SubmittedRegistrationStatus.SUBMITTED,
         "",
         MemberInfoSubmittedDto(emptyMap())
     )
@@ -60,7 +65,7 @@ class MemberRegistrationRestResourceTest {
 
     private val memberRegistrationRpcOps = MemberRegistrationRestResourceImpl(
         lifecycleCoordinatorFactory,
-        memberOpsClient
+        memberOpsClient,
     )
 
     private val registrationRequest = MemberRegistrationRequest(
@@ -84,6 +89,17 @@ class MemberRegistrationRestResourceTest {
         verify(memberOpsClient).startRegistration(eq(registrationRequest.toDto(HOLDING_IDENTITY_ID)))
         memberRegistrationRpcOps.deactivate("")
         memberRegistrationRpcOps.stop()
+    }
+
+    @Test
+    fun `starting registration with invalid member will fail`() {
+        memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
+        whenever(memberOpsClient.startRegistration(any())).doThrow(CouldNotFindMemberException(holdingIdShortHash))
+
+        assertThrows<ResourceNotFoundException> {
+            memberRegistrationRpcOps.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
+        }
     }
 
     @Test
@@ -175,7 +191,6 @@ class MemberRegistrationRestResourceTest {
         assertThat(status)
             .isNull()
     }
-
 
     @Test
     fun `checkSpecificRegistrationProgress throws bad request if short hash is invalid`() {

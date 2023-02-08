@@ -247,7 +247,13 @@ internal class SandboxServiceImpl @Activate constructor(
             startBundles(bundles)
         }
 
-        val sandboxGroup = SandboxGroupImpl(newSandboxes, publicSandboxes, ClassTagFactoryImpl(), bundleUtils)
+        val sandboxGroup = SandboxGroupImpl(
+            id = UUID.randomUUID(),
+            cpkSandboxes = newSandboxes,
+            publicSandboxes,
+            ClassTagFactoryImpl(),
+            bundleUtils
+        )
 
         bundles.forEach { bundle ->
             bundleIdToSandboxGroup[bundle.bundleId] = sandboxGroup

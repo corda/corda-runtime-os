@@ -1,0 +1,52 @@
+# Override file suitable for local deployment of the Corda Helm chart against version 0.2.0 of the corda-dev-prereqs Helm chart.
+#
+# See `debug.yaml` for debug settings.
+#
+# NOTE: The below assumes you deploy Kafka and the PostgreSQL database in the same namespace, so that domain names containing just the service name are resolved (i.e. prereqs-postgresql instead of prereqs-postgresql.<namespace>)
+#       If that is not the case, you might need to add the namespace as a suffix.
+
+imagePullPolicy: "IfNotPresent"
+image:
+  registry: "corda-os-docker-dev.software.r3.com"
+  tag: "latest-local"
+
+logging:
+  format: "text"
+  level: "info"
+
+bootstrap:
+  initialAdminUser:
+    password:
+      value: "admin"
+  kafka:
+    replicas: 1
+
+db:
+  cluster:
+    host: "prereqs-postgres"
+    username:
+      value: "corda"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-postgres"
+          key: "corda-password"
+kafka:
+  bootstrapServers: "prereqs-kafka:9092"
+  sasl:
+    enabled: true
+    mechanism: "PLAIN"
+    username:
+      value: "admin"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-kafka"
+          key: "admin-password"
+  tls:
+    enabled: true
+    truststore:
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-kafka"
+          key: "ca.crt"

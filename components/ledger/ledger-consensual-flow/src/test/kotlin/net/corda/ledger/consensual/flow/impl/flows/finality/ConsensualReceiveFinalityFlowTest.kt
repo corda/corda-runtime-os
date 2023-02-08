@@ -6,7 +6,7 @@ import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionI
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata

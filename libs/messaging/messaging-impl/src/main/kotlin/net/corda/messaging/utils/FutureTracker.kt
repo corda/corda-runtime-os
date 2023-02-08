@@ -55,5 +55,4 @@ class FutureTracker<RESPONSE> {
             futuresInPartitionMap.remove(partition.partition)
         }
     }
-
 }

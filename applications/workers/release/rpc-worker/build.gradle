@@ -35,7 +35,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:platform-info')
     implementation project(':libs:configuration:configuration-validation')
-    implementation project(':processors:rpc-processor')
+    implementation project(':processors:rest-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -53,7 +53,7 @@ dependencies {
     e2eTestImplementation project(':libs:configuration:configuration-endpoints')
     e2eTestImplementation project(':libs:crypto:certificate-generation')
     e2eTestImplementation project(':libs:crypto:cipher-suite')
-    e2eTestImplementation project(':libs:http-rpc:rest-client')
+    e2eTestImplementation project(':libs:rest:rest-client')
     e2eTestImplementation project(':libs:permissions:permission-endpoint')
     e2eTestImplementation project(':libs:permissions:permission-common')
     e2eTestImplementation project(':testing:test-utilities')
