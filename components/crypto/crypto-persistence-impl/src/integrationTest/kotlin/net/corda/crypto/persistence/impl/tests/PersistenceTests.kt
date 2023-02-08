@@ -869,7 +869,7 @@ class PersistenceTests {
     }
 
     @Test
-    fun `Lookup works for both short and full key ids`() {
+    fun `Key lookup works for both short and full key ids`() {
         val tenantId = CryptoDBSetup.vNodeHoldingIdentity.shortHash.value
         val hsmId = UUID.randomUUID().toString()
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
