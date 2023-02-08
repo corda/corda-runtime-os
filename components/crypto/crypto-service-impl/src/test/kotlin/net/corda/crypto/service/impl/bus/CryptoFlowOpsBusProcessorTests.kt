@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.fullId
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
@@ -29,9 +30,12 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -73,6 +77,7 @@ class CryptoFlowOpsBusProcessorTests {
     private lateinit var cryptoOpsClient: CryptoOpsProxyClient
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
     private lateinit var processor: CryptoFlowOpsBusProcessor
+    private lateinit var digestService: DigestService
 
     private val flowOpsResponseArgumentCaptor = argumentCaptor<FlowOpsResponse>()
 
@@ -82,6 +87,7 @@ class CryptoFlowOpsBusProcessorTests {
             requestingComponent = componentName,
             responseTopic = responseTopic,
             keyEncodingService = keyEncodingService,
+            digestService = digestService,
             requestValidityWindowSeconds = ttl
         )
 
@@ -154,6 +160,18 @@ class CryptoFlowOpsBusProcessorTests {
         cryptoOpsClient = mock()
         externalEventResponseFactory = mock()
         processor = CryptoFlowOpsBusProcessor(cryptoOpsClient, externalEventResponseFactory, configEvent)
+        digestService = mock<DigestService>().also {
+            fun capture() {
+                val bytesCaptor = argumentCaptor<ByteArray>()
+                whenever(it.hash(bytesCaptor.capture(), any())).thenAnswer {
+                    val bytes = bytesCaptor.firstValue
+                    SecureHash(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes()).also {
+                        capture()
+                    }
+                }
+            }
+            capture()
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -252,9 +270,9 @@ class CryptoFlowOpsBusProcessorTests {
         )
         assertEquals(tenantId, passedTenantId)
         assertEquals(3, passedList.size)
-        assertEquals(myPublicKeys[0].publicKeyId(), passedList[0])
-        assertEquals(myPublicKeys[1].publicKeyId(), passedList[1])
-        assertEquals(notMyKey.publicKeyId(), passedList[2])
+        assertEquals(myPublicKeys[0].fullId(), passedList[0])
+        assertEquals(myPublicKeys[1].fullId(), passedList[1])
+        assertEquals(notMyKey.fullId(), passedList[2])
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
@@ -446,9 +464,9 @@ class CryptoFlowOpsBusProcessorTests {
         )
         assertEquals(tenantId, passedTenantId)
         assertEquals(3, passedList.size)
-        assertEquals(myPublicKeys[0].publicKeyId(), passedList[0])
-        assertEquals(myPublicKeys[1].publicKeyId(), passedList[1])
-        assertEquals(notMyKey.publicKeyId(), passedList[2])
+        assertEquals(myPublicKeys[0].fullId(), passedList[0])
+        assertEquals(myPublicKeys[1].fullId(), passedList[1])
+        assertEquals(notMyKey.fullId(), passedList[2])
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
@@ -592,9 +610,9 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(1, passedLists.size)
         val passedList = passedLists[0]
         assertEquals(3, passedList.size)
-        assertEquals(myPublicKeys[0].publicKeyId(), passedList[0])
-        assertEquals(myPublicKeys[1].publicKeyId(), passedList[1])
-        assertEquals(notMyKey.publicKeyId(), passedList[2])
+        assertEquals(myPublicKeys[0].fullId(), passedList[0])
+        assertEquals(myPublicKeys[1].fullId(), passedList[1])
+        assertEquals(notMyKey.fullId(), passedList[2])
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
@@ -738,14 +756,14 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(2, passedLists.size)
         val passedList0 = passedLists[0]
         assertEquals(3, passedList0.size)
-        assertEquals(myPublicKeys[0].publicKeyId(), passedList0[0])
-        assertEquals(myPublicKeys[1].publicKeyId(), passedList0[1])
-        assertEquals(notMyKey.publicKeyId(), passedList0[2])
+        assertEquals(myPublicKeys[0].fullId(), passedList0[0])
+        assertEquals(myPublicKeys[1].fullId(), passedList0[1])
+        assertEquals(notMyKey.fullId(), passedList0[2])
         val passedList1 = passedLists[0]
         assertEquals(3, passedList1.size)
-        assertEquals(myPublicKeys[0].publicKeyId(), passedList1[0])
-        assertEquals(myPublicKeys[1].publicKeyId(), passedList1[1])
-        assertEquals(notMyKey.publicKeyId(), passedList1[2])
+        assertEquals(myPublicKeys[0].fullId(), passedList1[0])
+        assertEquals(myPublicKeys[1].fullId(), passedList1[1])
+        assertEquals(notMyKey.fullId(), passedList1[2])
         val transformed = transformer.transform(flowOpsResponseArgumentCaptor.firstValue)
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>

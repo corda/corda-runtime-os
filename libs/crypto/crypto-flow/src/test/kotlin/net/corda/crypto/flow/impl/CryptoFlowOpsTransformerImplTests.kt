@@ -1,7 +1,7 @@
 package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
@@ -22,8 +22,12 @@ import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -32,9 +36,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
@@ -57,6 +63,7 @@ class CryptoFlowOpsTransformerImplTests {
     private lateinit var knownOperationContext: Map<String, String>
     private lateinit var knownExternalId: String
     private lateinit var keyEncodingService: KeyEncodingService
+    private lateinit var digestService: DigestService
 
     private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformerImpl =
         CryptoFlowOpsTransformerImpl(
@@ -64,6 +71,7 @@ class CryptoFlowOpsTransformerImplTests {
             requestingComponent = knownComponentName,
             responseTopic = knownResponseTopic,
             keyEncodingService = keyEncodingService,
+            digestService = digestService,
             requestValidityWindowSeconds = ttl
         )
 
@@ -88,6 +96,18 @@ class CryptoFlowOpsTransformerImplTests {
                     }
                 }
             }
+        }
+        digestService = mock<DigestService>().also {
+            fun capture() {
+                val bytesCaptor = argumentCaptor<ByteArray>()
+                whenever(it.hash(bytesCaptor.capture(), any())).thenAnswer {
+                    val bytes = bytesCaptor.firstValue
+                    SecureHash(DigestAlgorithmName.SHA2_256.name, bytes.sha256Bytes()).also {
+                        capture()
+                    }
+                }
+            }
+            capture()
         }
     }
 
@@ -190,17 +210,17 @@ class CryptoFlowOpsTransformerImplTests {
         assertEquals(3, query.keyIds.size)
         assertTrue(
             query.keyIds.any {
-                it!!.contentEquals(publicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(myPublicKeys[0])))
+                it!!.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(myPublicKeys[0])))
             }
         )
         assertTrue(
             query.keyIds.any {
-                it!!.contentEquals(publicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(myPublicKeys[1])))
+                it!!.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(myPublicKeys[1])))
             }
         )
         assertTrue(
             query.keyIds.any {
-                it!!.contentEquals(publicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(notMyKey)))
+                it!!.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(notMyKey)))
             }
         )
         assertRequestContext<ByIdsFlowQuery>(result)

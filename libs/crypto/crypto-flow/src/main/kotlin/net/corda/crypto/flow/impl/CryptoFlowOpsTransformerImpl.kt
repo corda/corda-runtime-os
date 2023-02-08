@@ -2,7 +2,6 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -21,6 +20,8 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
@@ -41,16 +42,18 @@ import java.util.UUID
  * @property requestValidityWindowSeconds - TTL for the message processing in seconds,
  * the default value is equal to 5 minutes.
  */
-@Suppress("TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions")
 class CryptoFlowOpsTransformerImpl(
     private val serializer: AlgorithmParameterSpecEncodingService,
     private val requestingComponent: String,
     private val responseTopic: String,
     private val keyEncodingService: KeyEncodingService,
-    private val requestValidityWindowSeconds: Long = 300
+    private val digestService: DigestService,
+    private val requestValidityWindowSeconds: Long = 300,
 ) : CryptoFlowOpsTransformer {
 
-    // TODO This is currently only being used by `SigningServiceImpl.findMySigningKeys` so make it use only full key Ids.
+    // This method is currently only being used by `SigningServiceImpl.findMySigningKeys` so
+    // it needs to look for keys by full key ids (and not short key ids).
     override fun createFilterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
@@ -61,8 +64,7 @@ class CryptoFlowOpsTransformerImpl(
             tenantId = tenantId,
             request = ByIdsFlowQuery(
                 candidateKeys.map {
-                    val keyBytes = keyEncodingService.encodeAsByteArray(it)
-                    publicKeyIdFromBytes(keyBytes)
+                    it.fullId(keyEncodingService, digestService)
                 }
             ),
             flowExternalEventContext = flowExternalEventContext
@@ -203,3 +205,10 @@ class CryptoFlowOpsTransformerImpl(
         return response as EXPECTED
     }
 }
+
+private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): String =
+    digestService.hash(
+        keyEncodingService.encodeAsByteArray(this),
+        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
+    )
+        .toString()
