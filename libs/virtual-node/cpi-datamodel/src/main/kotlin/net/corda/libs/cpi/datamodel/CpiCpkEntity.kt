@@ -20,7 +20,7 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = "cpi_cpk", schema = DbSchema.CONFIG)
-data class CpiCpkEntity(
+class CpiCpkEntity(
     @EmbeddedId
     val id: CpiCpkKey,
     @Column(name = "cpk_file_name", nullable = false)
@@ -42,6 +42,25 @@ data class CpiCpkEntity(
     @PreUpdate
     fun onUpdate() {
         insertTimestamp = Instant.now()
+    }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as CpiCpkEntity
+
+        if (id != other.id) return false
+        if (cpkFileName != other.cpkFileName) return false
+        if (metadata != other.metadata) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + cpkFileName.hashCode()
+        result = 31 * result + metadata.hashCode()
+        return result
     }
 }
 
