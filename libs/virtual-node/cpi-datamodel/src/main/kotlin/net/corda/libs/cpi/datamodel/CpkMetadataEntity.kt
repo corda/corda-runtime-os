@@ -12,7 +12,7 @@ import net.corda.db.schema.DbSchema
  */
 @Entity
 @Table(name = "cpk_metadata", schema = DbSchema.CONFIG)
-data class CpkMetadataEntity(
+class CpkMetadataEntity(
     @Id
     @Column(name = "file_checksum", nullable = false, unique = true)
     var cpkFileChecksum: String,
