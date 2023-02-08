@@ -40,6 +40,12 @@ class SigningKeyEntity(
     var keyId: String,
 
     /**
+     * The full key id, which is calculated as SHA256 converted to HEX string.
+     */
+    @Column(name = "full_key_id", nullable = false, updatable = false)
+    var fullKeyId: String,
+
+    /**
      * When the key was generated.
      */
     @Column(name = "timestamp", nullable = false, updatable = false)

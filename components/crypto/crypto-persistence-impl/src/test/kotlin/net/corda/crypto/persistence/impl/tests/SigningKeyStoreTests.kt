@@ -54,6 +54,7 @@ class SigningKeyStoreTests {
             configurationReadService,
             mock(),
             mock(),
+            mock(),
             mock()
         )
     }

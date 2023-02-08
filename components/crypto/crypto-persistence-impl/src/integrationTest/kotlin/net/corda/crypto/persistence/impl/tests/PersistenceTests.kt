@@ -15,6 +15,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
@@ -345,9 +346,11 @@ class PersistenceTests {
         val keyPair = generateKeyPair(EDDSA_ED25519_CODE_NAME)
         val tenantId = randomTenantId()
         val keyId = keyPair.public.publicKeyId()
+        val fullKeyId = keyPair.public.fullId()
         val entity = SigningKeyEntity(
             tenantId = tenantId,
             keyId = keyId,
+            fullKeyId = fullKeyId,
             timestamp = Instant.now(),
             category = CryptoConsts.Categories.LEDGER,
             schemeCodeName = EDDSA_ED25519_CODE_NAME,
@@ -374,6 +377,7 @@ class PersistenceTests {
             assertNotNull(retrieved)
             assertEquals(entity.tenantId, retrieved.tenantId)
             assertEquals(entity.keyId, retrieved.keyId)
+            assertEquals(entity.fullKeyId, retrieved.fullKeyId)
             assertEquals(entity.timestamp.epochSecond, retrieved.timestamp.epochSecond)
             assertEquals(entity.category, retrieved.category)
             assertEquals(entity.schemeCodeName, retrieved.schemeCodeName)
