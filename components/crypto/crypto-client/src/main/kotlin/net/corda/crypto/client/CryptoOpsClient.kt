@@ -186,6 +186,7 @@ interface CryptoOpsClient : Lifecycle {
      *
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
+    // TODO Needs to be split into two by `SecureHash` (full id) and `ShortHash` (short id)
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey>
 
     /**
