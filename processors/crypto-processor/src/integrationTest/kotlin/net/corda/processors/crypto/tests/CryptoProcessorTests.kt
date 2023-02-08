@@ -7,6 +7,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
@@ -834,7 +835,6 @@ class CryptoProcessorTests {
         val randomId = UUID.randomUUID()
         val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
         val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
-
         val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1-$randomId")
         val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2-$randomId")
         val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3-$randomId")
@@ -852,7 +852,6 @@ class CryptoProcessorTests {
         val randomId = UUID.randomUUID()
         val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
         val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
-
         val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1-$randomId")
         val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2-$randomId")
         val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3-$randomId")
@@ -867,6 +866,42 @@ class CryptoProcessorTests {
         assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingFullIds = true))
     }
 
+    @Test
+    fun `lookup works for both short key ids and full key ids`() {
+        val randomId = UUID.randomUUID()
+        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
+        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
+        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1-$randomId")
+        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2-$randomId")
+        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3-$randomId")
+
+        val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
+        val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
+        val allKeys = vnodeKeys + vnode2Keys
+
+        val allKeysIds =
+            allKeys.map {
+                it.fullId()
+            }
+        val allKeyFullIds =
+            allKeys.map {
+                it.publicKeyId()
+            }
+
+        val vnodeKeysEncoded = vnodeKeys.map { it.encoded }
+        val vnode2KeysEncoded = vnode2Keys.map { it.encoded }
+
+        val queriedVnodeKeysEncoded = opsClient.lookup(vnodeId, allKeysIds).map { it.publicKey.toBytes() }
+        val queriedVnode2KeysEncoded = opsClient.lookup(vnodeId2, allKeysIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnodeKeysEncoded = opsClient.lookup(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnode2KeysEncoded = opsClient.lookup(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
+
+        assertTrue(listsOfBytesAreEqual(vnodeKeysEncoded, queriedVnodeKeysEncoded))
+        assertTrue(listsOfBytesAreEqual(vnode2KeysEncoded, queriedVnode2KeysEncoded))
+        assertTrue(listsOfBytesAreEqual(queriedVnodeKeysEncoded, queriedByFullIdsVnodeKeysEncoded))
+        assertTrue(listsOfBytesAreEqual(queriedVnode2KeysEncoded, queriedByFullIdsVnode2KeysEncoded))
+    }
+
     private fun generateLedgerKey(tenantId: String, keyAlias: String): PublicKey =
         opsClient.generateKeyPair(
             tenantId = tenantId,
@@ -875,3 +910,22 @@ class CryptoProcessorTests {
             scheme = ECDSA_SECP256R1_CODE_NAME
         )
 }
+
+private fun java.nio.ByteBuffer.toBytes(): ByteArray {
+    val bytes = ByteArray(this.remaining())
+    this.get(bytes)
+    return bytes
+}
+
+private fun listsOfBytesAreEqual(bytesList0: List<ByteArray>, bytesList1: List<ByteArray>): Boolean =
+    bytesList0.size == bytesList0.size &&
+            bytesList0.all { outer ->
+                bytesList1.any { inner ->
+                    outer.contentEquals(inner)
+                }
+            } &&
+            bytesList1.all { outer ->
+                bytesList0.any { inner ->
+                    outer.contentEquals(inner)
+                }
+            }
