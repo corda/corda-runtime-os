@@ -57,7 +57,7 @@ class CordaAvroDeserializerImpl<T : Any>(
         }
     } catch (ex: Throwable) {
         log.warn("$errorMsg. Expected class: $expectedClass, AllowChunks: $allowChunks", ex)
-        // We don't want to throw back into Kafka as that would mean the entire poll (with possibly
+        // We don't want to throw as that would mean the entire poll (with possibly
         // many records) would fail, and keep failing.  So we'll just callback to note the bad deserialize
         // and return a null.  This will mean the record gets treated as 'deleted' in the processors
         onError.accept(data)
