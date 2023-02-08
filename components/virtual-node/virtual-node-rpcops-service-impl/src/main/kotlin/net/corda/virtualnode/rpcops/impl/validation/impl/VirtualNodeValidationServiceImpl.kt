@@ -4,6 +4,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.VirtualNodeInfo
@@ -15,9 +16,20 @@ internal class VirtualNodeValidationServiceImpl(
     private val cpiInfoReadService: CpiInfoReadService
 ): VirtualNodeValidationService {
     override fun validateAndGetVirtualNode(virtualNodeShortId: String): VirtualNodeInfo {
-        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(parseShortHash(virtualNodeShortId))
+        val vnode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(parseShortHash(virtualNodeShortId))
             ?: throw ResourceNotFoundException("Virtual node", virtualNodeShortId)
+
+        if (!isVirtualNodeInMaintenance(vnode)) {
+            throw BadRequestException("Virtual node must be in maintenance to perform an upgrade.")
+        }
+
+        return vnode
     }
+
+    private fun isVirtualNodeInMaintenance(vnode: VirtualNodeInfo) = vnode.flowOperationalStatus == OperationalStatus.INACTIVE
+            && vnode.flowStartOperationalStatus == OperationalStatus.INACTIVE
+            && vnode.flowP2pOperationalStatus == OperationalStatus.INACTIVE
+            && vnode.vaultDbOperationalStatus == OperationalStatus.INACTIVE
 
     override fun validateAndGetCpiByChecksum(cpiFileChecksum: String): CpiMetadata {
         val cpiByChecksum = cpiInfoReadService.getAll().filter {

@@ -1,6 +1,6 @@
 package net.corda.components.rbac
 
-import net.corda.httprpc.security.read.RPCSecurityManager
+import net.corda.httprpc.security.read.RestSecurityManager
 import net.corda.httprpc.security.read.rbac.RBACSecurityManager
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
@@ -74,10 +74,10 @@ class RBACSecurityManagerServiceTest {
 
     @Test
     fun `process registration DOWN event posts stop event to the coordinator`() {
-        val rpcSecurityManager = mock<RPCSecurityManager>()
-        service.innerSecurityManager = rpcSecurityManager
+        val restSecurityManager = mock<RestSecurityManager>()
+        service.innerSecurityManager = restSecurityManager
         service.processEvent(RegistrationStatusChangeEvent(permissionServiceRegistration, LifecycleStatus.DOWN), coordinator)
-        verify(rpcSecurityManager).stop()
+        verify(restSecurityManager).stop()
     }
 
     @Test

@@ -71,11 +71,7 @@ open class CryptoRetryingExecutor(
     }
 
     private fun logCompleteFailure(attempt: Int, opId: String) {
-        if (attempt > 1) {
-            logger.error("Failed to execute (opId={},attempt={})", opId, attempt)
-        } else {
-            logger.error("Failed to execute (attempt={})", attempt)
-        }
+        logger.warn("Failed to execute (opId={},attempt={})", opId, attempt)
     }
 
     protected open fun <R> execute(block: () -> R): R = block()

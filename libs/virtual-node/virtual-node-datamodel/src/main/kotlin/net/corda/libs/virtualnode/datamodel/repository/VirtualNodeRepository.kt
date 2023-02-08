@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
+import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
@@ -7,6 +8,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 
 /**
  * Interface for CRUD operations for a virtual node.
@@ -46,12 +48,48 @@ interface VirtualNodeRepository {
     /**
      * Upgrade the CPI associated with a virtual node.
      */
+    @Suppress("LongParameterList")
     fun upgradeVirtualNodeCpi(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        cpiName: String,
-        cpiVersion: String,
-        cpiSignerSummaryHash: String
+        cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String,
+        requestId: String, requestTimestamp: Instant, serializedRequest: String
     ): VirtualNodeInfo
+
+    /**
+     * Complete an in-progress operation on a virtual node.
+     */
+    fun completeOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String
+    ): VirtualNodeInfo
+
+    /**
+     * Create a virtual node operation holding the details of a rejected request.
+     */
+    @Suppress("LongParameterList")
+    fun rejectedOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        requestId: String,
+        serializedRequest: String,
+        requestTimestamp: Instant,
+        reason: String,
+        operationType: VirtualNodeOperationType
+    )
+
+    /**
+     * Update a virtual node operation with failure details caused by failure to run migrations.
+     */
+    @Suppress("LongParameterList")
+    fun failedMigrationsOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        requestId: String,
+        serializedRequest: String,
+        requestTimestamp: Instant,
+        reason: String,
+        operationType: VirtualNodeOperationType
+    )
 }
 

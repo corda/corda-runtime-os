@@ -14,6 +14,7 @@ interface LiquibaseSchemaMigrator {
      *
      * @param datasource
      * @param dbChange
+     * @param tag a mark on the current database state to support rolling back of changes
      */
     fun updateDb(datasource: Connection, dbChange: DbChange, tag: String? = null)
 
@@ -23,6 +24,7 @@ interface LiquibaseSchemaMigrator {
      * @param datasource
      * @param dbChange
      * @param controlTablesSchema schema for the databasechangelog tables
+     * @param tag a mark on the current database state to support rolling back of changes
      */
     fun updateDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, tag: String? = null)
 

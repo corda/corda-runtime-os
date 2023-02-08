@@ -8,6 +8,7 @@ import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
+import java.util.Base64
 
 /**
  * AES key wrapper (with the key length of 256) which supports wrapping/unwrapping
@@ -27,13 +28,6 @@ class AesKey(
             keyGenerator.init(AES_KEY_SIZE)
             return AesKey(keyGenerator.generateKey())
         }
-
-        /**
-         * Creates an instance of [AesKey] by derives the AES key using passphrase and salt.
-         * The resulting key is deterministic.
-         */
-        fun derive(credentials: KeyCredentials): AesKey =
-            derive(credentials.passphrase, credentials.salt)
 
         /**
          * Creates an instance of [AesKey] by derives the AES key using passphrase and salt.
@@ -89,4 +83,10 @@ class AesKey(
         other as AesKey
         return key == other.key
     }
+
+    // Generate a stable and readable version of a key. To be used with care; for instance
+    // logging this reveals the entire key. However, it can be important in debugging to get the bits of the key
+    // directly for comaprison purposes.
+
+    override fun toString() = String(Base64.getEncoder().encode(key.encoded))
 }

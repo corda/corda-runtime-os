@@ -12,7 +12,7 @@ fun transactionMetadataExample(
     numberOfComponentGroups: Int
 ): TransactionMetadata {
     return TransactionMetadataImpl(
-        linkedMapOf(
+        mapOf(
             TransactionMetadataImpl.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
             TransactionMetadataImpl.LEDGER_VERSION_KEY to 1,
             TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,

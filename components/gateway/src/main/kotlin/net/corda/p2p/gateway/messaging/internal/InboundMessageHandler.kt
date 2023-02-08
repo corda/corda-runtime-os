@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
@@ -43,7 +42,7 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    cryptoOpsClient: CryptoOpsClient,
+    commonComponents: CommonComponents,
     private val avroSchemaRegistry: AvroSchemaRegistry
 ) : HttpServerListener, LifecycleWithDominoTile {
 
@@ -74,9 +73,7 @@ internal class InboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         this,
-        subscriptionFactory,
-        messagingConfiguration,
-        cryptoOpsClient
+        commonComponents,
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

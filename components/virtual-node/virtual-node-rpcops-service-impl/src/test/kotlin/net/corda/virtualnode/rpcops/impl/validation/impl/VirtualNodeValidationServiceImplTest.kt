@@ -14,6 +14,9 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.lang.IllegalArgumentException
+import net.corda.httprpc.exception.BadRequestException
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
 
 class VirtualNodeValidationServiceImplTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
@@ -25,6 +28,12 @@ class VirtualNodeValidationServiceImplTest {
     private val cpiFileChecksumFull = "SHA-256:2234567800"
     private val vnodeShortHash = ShortHash.of(vnodeId)
     private val cpiSecureHash = SecureHash.parse(cpiFileChecksumFull)
+    private val mockVnode = mock<VirtualNodeInfo> {
+        whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+    }
 
     @Test
     fun `validateVirtualNodeExists throws resource not found if vnode not found`() {
@@ -36,8 +45,23 @@ class VirtualNodeValidationServiceImplTest {
     }
 
     @Test
+    fun `validateVirtualNodeExists throws bad request if virtual node is not in maintenance`() {
+        val activeVnode = mock<VirtualNodeInfo> {
+            whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
+            whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
+            whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
+            whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.ACTIVE)
+        }
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(vnodeShortHash)).thenReturn(activeVnode)
+
+        assertThrows<BadRequestException> {
+            validationService.validateAndGetVirtualNode(vnodeId)
+        }
+    }
+
+    @Test
     fun `validateVirtualNodeExists does not throw when it finds vnode`() {
-        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(vnodeShortHash)).thenReturn(mock())
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(vnodeShortHash)).thenReturn(mockVnode)
 
         assertDoesNotThrow {
             validationService.validateAndGetVirtualNode(vnodeId)

@@ -54,5 +54,10 @@ interface SmartConfigFactory {
     fun create(config: Config): SmartConfig
 
     fun makeSecret(plainText: String): SmartConfig
+
+    /*
+     * Create an empty smart configuration object
+     */
+    fun empty(): SmartConfig
 }
 

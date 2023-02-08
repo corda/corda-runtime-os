@@ -64,7 +64,7 @@ internal class ConfigProcessor(
             logger.debug {
                 "$newConfigKey configuration: " +
                         newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
-            }
+            } // this can dump out all the configuration including the defaults
             coordinator.postEvent(NewConfigReceived(mapOf(newConfigKey to config.getConfig(newConfigKey))))
         } else {
             logger.debug { "Received config change event on key ${newRecord.key} with no configuration" }
@@ -98,6 +98,7 @@ internal class ConfigProcessor(
             config[DB_CONFIG] = dbConfig
         }
 
+        // at this point config is fully populated and verified
         return config
     }
 

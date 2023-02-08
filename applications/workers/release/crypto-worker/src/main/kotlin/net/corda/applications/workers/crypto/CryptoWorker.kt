@@ -98,6 +98,7 @@ class CryptoWorkerParams {
     @CommandLine.Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
+    // TODO - delete me as part of removing multiple HSM support, CORE-10050
     @CommandLine.Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
 }

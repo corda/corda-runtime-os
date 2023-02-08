@@ -28,6 +28,7 @@ import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
@@ -41,6 +42,8 @@ class KeysRestResourceImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : KeysRestResource, PluggableRestResource<KeysRestResource>, Lifecycle {
     private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
         fun CryptoSigningKey.toMetaData() = KeyMetaData(
             keyId = this.id,
             alias = this.alias,
@@ -54,10 +57,12 @@ class KeysRestResourceImpl @Activate constructor(
     override fun listSchemes(
         tenantId: String,
         hsmCategory: String,
-    ): Collection<String> = cryptoOpsClient.getSupportedSchemes(
-        tenantId = tenantId,
-        category = hsmCategory.uppercase()
-    )
+    ): Collection<String> = tryWithExceptionHandling(logger, "list supported schemes for tenant $tenantId") {
+        cryptoOpsClient.getSupportedSchemes(
+            tenantId = tenantId,
+            category = hsmCategory.uppercase()
+        )
+    }
 
     @Suppress("ComplexMethod")
     override fun listKeys(
@@ -74,15 +79,21 @@ class KeysRestResourceImpl @Activate constructor(
         ids: List<String>?,
     ): Map<String, KeyMetaData> {
         if (ids?.isNotEmpty() == true) {
-            return cryptoOpsClient.lookup(
-                tenantId = tenantId,
-                ids = ids
-            ).associate { it.id to it.toMetaData() }
+            return tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
+                cryptoOpsClient.lookup(
+                    tenantId = tenantId,
+                    ids = ids
+                )
+            }.associate { it.id to it.toMetaData() }
         }
         val realOrderBy = try {
             CryptoKeyOrderBy.valueOf(orderBy.uppercase())
         } catch (e: IllegalArgumentException) {
-            throw ResourceNotFoundException("Invalid order by: $orderBy, must be one of: ${CryptoKeyOrderBy.values().joinToString()}")
+            throw ResourceNotFoundException(
+                "Invalid order by: $orderBy, must be one of: ${
+                    CryptoKeyOrderBy.values().joinToString()
+                }"
+            )
         }
         val filterMap = emptyMap<String, String>().let {
             if (category != null) {
@@ -131,13 +142,16 @@ class KeysRestResourceImpl @Activate constructor(
                 it
             }
         }
-        return cryptoOpsClient.lookup(
-            tenantId,
-            skip,
-            take,
-            realOrderBy,
-            filterMap,
-        ).associate { it.id to it.toMetaData() }
+
+        return tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
+            cryptoOpsClient.lookup(
+                tenantId,
+                skip,
+                take,
+                realOrderBy,
+                filterMap,
+            )
+        }.associate { it.id to it.toMetaData() }
     }
 
     override fun generateKeyPair(
@@ -153,12 +167,21 @@ class KeysRestResourceImpl @Activate constructor(
         }
         return try {
             KeyPairIdentifier(
-                cryptoOpsClient.generateKeyPair(
-                    tenantId = tenantId,
-                    category = hsmCategory.uppercase(),
-                    alias = alias,
-                    scheme = scheme,
-                ).publicKeyId()
+                tryWithExceptionHandling(
+                    logger,
+                    "generate key pair for tenant $tenantId",
+                    ignoredExceptions = listOf(
+                        KeyAlreadyExistsException::class.java,
+                        InvalidParamsException::class.java
+                    )
+                ) {
+                    cryptoOpsClient.generateKeyPair(
+                        tenantId = tenantId,
+                        category = hsmCategory.uppercase(),
+                        alias = alias,
+                        scheme = scheme,
+                    )
+                }.publicKeyId()
             )
         } catch (e: KeyAlreadyExistsException) {
             throw ResourceAlreadyExistsException(e.message!!)
@@ -171,10 +194,12 @@ class KeysRestResourceImpl @Activate constructor(
         tenantId: String,
         keyId: String,
     ): String {
-        val key = cryptoOpsClient.lookup(
-            tenantId = tenantId,
-            ids = listOf(keyId)
-        ).firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
+        val key = tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
+            cryptoOpsClient.lookup(
+                tenantId = tenantId,
+                ids = listOf(keyId)
+            )
+        }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
 
         val publicKey = keyEncodingService.decodePublicKey(key.publicKey.array())
         return keyEncodingService.encodeAsString(publicKey)
@@ -187,6 +212,7 @@ class KeysRestResourceImpl @Activate constructor(
     private val coordinatorName = LifecycleCoordinatorName.forComponent<KeysRestResource>(
         protocolVersion.toString()
     )
+
     private fun updateStatus(status: LifecycleStatus, reason: String) {
         coordinator.updateStatus(status, reason)
     }

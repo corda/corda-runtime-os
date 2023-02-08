@@ -87,7 +87,7 @@ internal class FingerprintWriter(debugEnabled: Boolean = false) {
         hasher = hasher.putUnencodedChars(chars)
     }
 
-    val fingerprint: String by lazy {
+    val fingerprint: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val fingerprint = hasher.hash().asBytes().toBase64()
         if (debugBuffer != null) logger.info("$fingerprint from $debugBuffer")
         fingerprint
