@@ -28,7 +28,8 @@ gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache publishOS
 gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache publishOSGiImage"
 
 echo "Building with cache"
-gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache clean publishOSGiImage"
+gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache clean"
+gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache publishOSGiImage"
 gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_INCREMENTAL}" "--build-cache publishOSGiImage"
 
 echo "(Incremental) Detekt without cache"
