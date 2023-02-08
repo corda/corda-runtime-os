@@ -9,7 +9,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.utils.toKafka
-import net.corda.messaging.api.chunking.ConsumerChunkService
+import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -58,7 +58,7 @@ class CordaKafkaConsumerImplTest {
     private lateinit var partition: TopicPartition
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
     private val onSerializationError: (ByteArray) -> Unit = mock()
-    private val consumerChunkService: ConsumerChunkService<String, String> = mock()
+    private val chunkDeserializerService: ConsumerChunkDeserializerService<String, String> = mock()
     private val consumerRecord = CordaConsumerRecord("prefixtopic", 1, 1, "key", "value", 0)
     private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
 
@@ -74,7 +74,7 @@ class CordaKafkaConsumerImplTest {
             CordaOffsetResetStrategy.EARLIEST.toKafka()
         )
 
-        whenever(consumerChunkService.assembleChunks(any<Map<ChunkKey, Chunk>>())).thenReturn(Pair("key", "value"))
+        whenever(chunkDeserializerService.assembleChunks(any<Map<ChunkKey, Chunk>>())).thenReturn(Pair("key", "value"))
         consumer = mockConsumer
         partition = mockTopicPartition
         cordaKafkaConsumer = createConsumer(consumer)
@@ -87,7 +87,7 @@ class CordaKafkaConsumerImplTest {
             consumerConfig,
             consumerParam,
             listenerParam,
-            consumerChunkService,
+            chunkDeserializerService,
             String::class.java,
             onSerializationError
         )
@@ -437,7 +437,7 @@ class CordaKafkaConsumerImplTest {
         val result = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         assertThat(result.size).isEqualTo(5)
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
-        verify(consumerChunkService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
+        verify(chunkDeserializerService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
         verifyNoInteractions(onSerializationError)
     }
 
@@ -450,7 +450,7 @@ class CordaKafkaConsumerImplTest {
             eventTopic, 1)
 
         consumer = mock()
-        whenever(consumerChunkService.assembleChunks(any<Map<ChunkKey, Chunk>>())).thenReturn(null)
+        whenever(chunkDeserializerService.assembleChunks(any<Map<ChunkKey, Chunk>>())).thenReturn(null)
 
         doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))
         cordaKafkaConsumer = createConsumer(consumer)
@@ -458,7 +458,7 @@ class CordaKafkaConsumerImplTest {
         val result = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         assertThat(result.size).isEqualTo(4)
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
-        verify(consumerChunkService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
+        verify(chunkDeserializerService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
         verifyNoInteractions(onSerializationError)
     }
 
@@ -477,7 +477,7 @@ class CordaKafkaConsumerImplTest {
         val result = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         assertThat(result.size).isEqualTo(4)
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
-        verifyNoInteractions(consumerChunkService)
+        verifyNoInteractions(chunkDeserializerService)
         verify(onSerializationError, times(1)).invoke(any())
     }
 
@@ -510,7 +510,7 @@ class CordaKafkaConsumerImplTest {
         assertThat(firstResult.size).isEqualTo(2)
         assertThat(secondResult.size).isEqualTo(3)
         verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
-        verify(consumerChunkService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
+        verify(chunkDeserializerService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
         verifyNoInteractions(onSerializationError)
     }
 
@@ -554,7 +554,7 @@ class CordaKafkaConsumerImplTest {
         assertThat(firstResult.size).isEqualTo(4)
         assertThat(secondResult.size).isEqualTo(6)
         verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
-        verify(consumerChunkService, times(2)).assembleChunks(any<Map<ChunkKey, Chunk>>())
+        verify(chunkDeserializerService, times(2)).assembleChunks(any<Map<ChunkKey, Chunk>>())
         verifyNoInteractions(onSerializationError)
     }
 

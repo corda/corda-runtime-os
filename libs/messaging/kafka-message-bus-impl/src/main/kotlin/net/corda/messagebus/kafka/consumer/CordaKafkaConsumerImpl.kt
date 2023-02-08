@@ -14,7 +14,7 @@ import net.corda.messagebus.kafka.utils.toCordaTopicPartition
 import net.corda.messagebus.kafka.utils.toCordaTopicPartitions
 import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messagebus.kafka.utils.toTopicPartitions
-import net.corda.messaging.api.chunking.ConsumerChunkService
+import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.v5.base.util.trace
@@ -47,7 +47,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val config: ResolvedConsumerConfig,
     private val consumer: Consumer<Any, Any>,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
-    private val consumerChunkService: ConsumerChunkService<K, V>,
+    private val chunkDeserializerService: ConsumerChunkDeserializerService<K, V>,
     private val vClazz: Class<V>,
     private val onSerializationError: (ByteArray) -> Unit,
 ) : CordaConsumer<K, V> {
@@ -140,9 +140,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     /**
      * Take a [chunk] from a [consumerRecord] and add it to the [bufferedChunksByPartition].
-     * If the chunk contains a checksum, then the consumerChunkService can be used to reassemble the chunks.
+     * If the chunk contains a checksum, then the consumerChunkDeserializerService can be used to reassemble the chunks.
      * Clear the [bufferedChunksByPartition] as no more chunks are expected for this case.
-     * If the [consumerChunkService] returns null then the deserialization error will be handled by the [consumerChunkService]
+     * If the [chunkDeserializerService] returns null then the deserialization error will be handled by the [chunkDeserializerService]
      * @param chunkKey The record key deserialized as a [ChunkKey]
      * @param chunk The record value deserialized as a [Chunk]
      * @param consumerRecord the consumer record for the chunk. Can be used to set properties on the reassembled object.
@@ -159,8 +159,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         // If it doesn't then this will be caught by [verifyNoPartialChunks]
         return if (chunk.checksum != null) {
             bufferedChunksByPartition.remove(partition)
-            //if deserialization fails onError handling executed within consumerChunkService
-            consumerChunkService.assembleChunks(chunksRead)?.let {
+            //if deserialization fails onError handling executed within consumerChunkDeserializerService
+            chunkDeserializerService.assembleChunks(chunksRead)?.let {
                 CordaConsumerRecord(
                     consumerRecord.topic().removePrefix(config.topicPrefix),
                     partition,

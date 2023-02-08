@@ -25,7 +25,8 @@ import org.slf4j.LoggerFactory
 /**
  * Generate a Corda Kafka Consumer.
  * Consumer uses deserializers that make use of the [avroSchemaRegistry]
- * Consumer may read records as chunks and will make use of a [ConsumerChunkService] built using the [messagingChunkFactory]
+ * Consumer may read records as chunks and will make use of a [ConsumerChunkDeserializerService] built using the
+ * [messagingChunkFactory]
  */
 @Component(service = [CordaConsumerBuilder::class])
 class CordaKafkaConsumerBuilderImpl @Activate constructor(
@@ -54,10 +55,10 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
             action = {
                 val keyDeserializer = CordaAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz)
                 val valueDeserializer = CordaAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, vClazz)
-                val consumerChunkService =
-                    messagingChunkFactory.createConsumerChunkService(keyDeserializer, valueDeserializer, onSerializationError)
+                val consumerChunkDeserializerService =
+                    messagingChunkFactory.createConsumerChunkDeserializerService(keyDeserializer, valueDeserializer, onSerializationError)
                 val consumer = createKafkaConsumer(kafkaProperties, keyDeserializer, valueDeserializer)
-                CordaKafkaConsumerImpl(resolvedConfig, consumer, listener, consumerChunkService, vClazz, onSerializationError)
+                CordaKafkaConsumerImpl(resolvedConfig, consumer, listener, consumerChunkDeserializerService, vClazz, onSerializationError)
             },
             errorMessage = {
                 "MessageBusConsumerBuilder failed to create consumer for group ${consumerConfig.group}, " +
