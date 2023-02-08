@@ -918,7 +918,7 @@ private fun java.nio.ByteBuffer.toBytes(): ByteArray {
 }
 
 private fun listsOfBytesAreEqual(bytesList0: List<ByteArray>, bytesList1: List<ByteArray>): Boolean =
-    bytesList0.size == bytesList0.size &&
+    bytesList0.size == bytesList1.size &&
             bytesList0.all { outer ->
                 bytesList1.any { inner ->
                     outer.contentEquals(inner)
