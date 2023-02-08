@@ -111,6 +111,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleId: String,
+        ruleType: ApprovalRuleType
     ) = MembershipPersistenceResult.success()
 
     private val coordinator =
