@@ -65,7 +65,7 @@ data class CpkFileEntity(
         other as CpkFileEntity
 
         if (fileChecksum != other.fileChecksum) return false
-        if (!data.contentEquals(other.data)) return false
+        if (!data.contentEquals(other.data)) return false // TODO: Why does the equal takes into consideration the data field since it is not an id? Other examples only take into consideration the id, and there is one class that contains a comment reporting issues when using other fields that are not part of the primary key
 
         return true
     }
