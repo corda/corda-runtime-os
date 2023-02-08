@@ -17,6 +17,7 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.core.publicKeyShortIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningCachedKey
@@ -273,7 +274,7 @@ class PersistenceTests {
             actual: SigningCachedKey?
         ) {
             assertNotNull(actual)
-            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
+            assertEquals(expected.key.publicKey.fullId(), actual!!.id)
             assertEquals(tenantId, actual.tenantId)
             assertEquals(expected.category, actual.category)
             assertEquals(expected.alias, actual.alias)
@@ -297,7 +298,7 @@ class PersistenceTests {
             actual: SigningCachedKey?
         ) {
             assertNotNull(actual)
-            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
+            assertEquals(expected.key.publicKey.fullId(), actual!!.id)
             assertEquals(tenantId, actual.tenantId)
             assertEquals(expected.category, actual.category)
             assertEquals(expected.alias, actual.alias)
@@ -346,7 +347,7 @@ class PersistenceTests {
         val keyPair = generateKeyPair(EDDSA_ED25519_CODE_NAME)
         val tenantId = randomTenantId()
         val keyId = keyPair.public.fullId()
-        val shortKeyId = keyPair.public.fullId()
+        val shortKeyId = publicKeyShortIdFromBytes(keyPair.public.encoded)
         val entity = SigningKeyEntity(
             tenantId = tenantId,
             keyId = keyId,
@@ -729,9 +730,9 @@ class PersistenceTests {
             )
         )
         assertEquals(3, keys.size)
-        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.publicKeyId() })
-        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.publicKeyId() })
-        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.publicKeyId() })
+        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.fullId() })
+        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.fullId() })
+        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.fullId() })
     }
 
     @ParameterizedTest
@@ -762,13 +763,13 @@ class PersistenceTests {
         val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
         val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
         val thisTestKeys = setOf(
-            p1.key.publicKey.publicKeyId(),
-            p2.key.publicKey.publicKeyId(),
-            p3.key.publicKey.publicKeyId(),
-            p4.key.publicKey.publicKeyId(),
-            w1.key.publicKey.publicKeyId(),
-            w2.key.publicKey.publicKeyId(),
-            w3.key.publicKey.publicKeyId()
+            p1.key.publicKey.fullId(),
+            p2.key.publicKey.fullId(),
+            p3.key.publicKey.fullId(),
+            p4.key.publicKey.fullId(),
+            w1.key.publicKey.fullId(),
+            w2.key.publicKey.fullId(),
+            w3.key.publicKey.fullId()
         )
         signingKeyStore.save(tenantId, p1)
         signingKeyStore.save(tenantId, p2)
