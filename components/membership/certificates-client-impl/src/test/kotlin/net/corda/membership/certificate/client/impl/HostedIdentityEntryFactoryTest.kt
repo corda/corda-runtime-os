@@ -97,10 +97,10 @@ class HostedIdentityEntryFactoryTest {
         } doReturn listOf(sessionKey)
 
         on {
-            filterMyKeys(eq(VALID_NODE.toString()), eq(listOf(certificatePublicKey)))
+            filterMyKeys(eq(VALID_NODE.toString()), eq(listOf(certificatePublicKey)), any())
         }.doReturn(listOf(certificatePublicKey))
         on {
-            filterMyKeys(eq(P2P), eq(listOf(certificatePublicKey)))
+            filterMyKeys(eq(P2P), eq(listOf(certificatePublicKey)), any())
         }.doReturn(listOf(certificatePublicKey))
     }
     private val sessionPublicKey = mock<PublicKey>()
@@ -388,7 +388,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord with another session tenant will call the certificates from that tenant`() {
         whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
         val tenantId = mutableListOf<ShortHash?>()
-        whenever(cryptoOpsClient.filterMyKeys(eq(VALID_NODE.toString()), any())).doReturn(listOf(certificatePublicKey))
+        whenever(cryptoOpsClient.filterMyKeys(eq(VALID_NODE.toString()), any(), any())).doReturn(listOf(certificatePublicKey))
 
         val factory = HostedIdentityEntryFactory(
             virtualNodeInfoReadService,
@@ -449,7 +449,7 @@ class HostedIdentityEntryFactoryTest {
 
     @Test
     fun `createIdentityRecord will throw an exception if the certificate public key is unknown`() {
-        whenever(cryptoOpsClient.filterMyKeys(any(), any())).doReturn(emptyList())
+        whenever(cryptoOpsClient.filterMyKeys(any(), any(), any())).doReturn(emptyList())
 
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
