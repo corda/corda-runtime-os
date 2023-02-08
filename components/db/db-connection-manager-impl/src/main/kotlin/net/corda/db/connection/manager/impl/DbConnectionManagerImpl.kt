@@ -117,8 +117,7 @@ class DbConnectionManagerImpl (
          * In a K8s setting we have to be careful that doesn't just trigger pods being terminated and re-created
          * because K8s thinks they're unhealthy while it's actually the downstream system.
          */
-        val dbTest = DbConnectionTest()
-        while (!dbTest.isDatabaseConnectionUp(clusterDataSource)) {
+        while (!isDatabaseConnectionUp(clusterDataSource)) {
             logger.warn("Failed to connect to Cluster DB. Will be retrying in ${checkConnectionRetryTimeout.seconds}s")
             sleeper(checkConnectionRetryTimeout)
         }

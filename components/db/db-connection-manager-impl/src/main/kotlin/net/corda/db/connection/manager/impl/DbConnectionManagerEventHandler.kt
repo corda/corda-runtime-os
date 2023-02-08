@@ -21,7 +21,6 @@ class DbConnectionManagerEventHandler(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private val dbConnectionTest = DbConnectionTest()
         private const val dbCheckTimerKey = "CheckDbEvent"
         private val timeBetweenDbChecks = 1.minutes
     }
@@ -58,7 +57,7 @@ class DbConnectionManagerEventHandler(
 
     @Synchronized
     private fun checkDb(coordinator: LifecycleCoordinator) {
-        if (dbConnectionTest.isDatabaseConnectionUp(dbConnectionManager.getClusterDataSource())) {
+        if (isDatabaseConnectionUp(dbConnectionManager.getClusterDataSource())) {
             coordinator.updateStatus(LifecycleStatus.UP, "DB check passed")
         } else {
             coordinator.updateStatus(LifecycleStatus.ERROR, "DB check failed")
