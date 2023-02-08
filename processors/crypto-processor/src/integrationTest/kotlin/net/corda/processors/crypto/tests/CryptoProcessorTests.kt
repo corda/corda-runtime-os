@@ -831,12 +831,13 @@ class CryptoProcessorTests {
 
     @Test
     fun `filterMyKeys filters and returns keys owned by the specified vnode`() {
-        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1")
-        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2")
+        val randomId = UUID.randomUUID()
+        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
+        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
 
-        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1")
-        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2")
-        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3")
+        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1-$randomId")
+        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2-$randomId")
+        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3-$randomId")
 
         val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
@@ -844,6 +845,26 @@ class CryptoProcessorTests {
 
         assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
         assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+    }
+
+    @Test
+    fun `filterMyKeys using short ids and full ids both return same keys for the same query`() {
+        val randomId = UUID.randomUUID()
+        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
+        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
+
+        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1-$randomId")
+        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2-$randomId")
+        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3-$randomId")
+
+        val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
+        val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
+        val allKeys = vnodeKeys + vnode2Keys
+
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingFullIds = true))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingFullIds = true))
     }
 
     private fun generateLedgerKey(tenantId: String, keyAlias: String): PublicKey =

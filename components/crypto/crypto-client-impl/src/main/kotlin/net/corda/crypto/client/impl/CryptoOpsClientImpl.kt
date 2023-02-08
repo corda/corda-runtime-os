@@ -1,9 +1,11 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
@@ -48,7 +50,8 @@ import java.util.UUID
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
     private val schemeMetadata: CipherSchemeMetadata,
-    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
+    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
+    private val digestService: PlatformDigestService
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -69,20 +72,33 @@ class CryptoOpsClientImpl(
         return response!!.codes
     }
 
-    fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
+    // TODO Users who are using this API need to revisit to determine if they need to migrate to search by full Id
+    fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingFullIds: Boolean
+    ): Collection<PublicKey> {
+        val candidateKeyIds =
+            if (usingFullIds) {
+                candidateKeys.map {
+                    it.fullId(schemeMetadata, digestService)
+                }
+            } else {
+                candidateKeys.map {
+                    publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
+                }
+            }
+
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            candidateKeys.joinToString { it.toStringShort().take(12) + ".." }
+            candidateKeyIds.joinToString { "$it.." }
         )
+
         val request = createRequest(
             tenantId = tenantId,
-            request = ByIdsRpcQuery(
-                candidateKeys.map {
-                    publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
-                }
-            )
+            request = ByIdsRpcQuery(candidateKeyIds)
         )
         val response = request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)
         return response!!.keys.map {
@@ -90,6 +106,7 @@ class CryptoOpsClientImpl(
         }
     }
 
+    // This path is not being currently used - consider removing it
     fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys {
         val publicKeyIds = candidateKeys.map {
             publicKeyIdFromBytes(it.array())
@@ -97,6 +114,7 @@ class CryptoOpsClientImpl(
         return lookUpForKeysByIdsProxy(tenantId, publicKeyIds)
     }
 
+    // This one is normally coming from flows (consider splitting in two)
     fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
@@ -328,6 +346,8 @@ class CryptoOpsClientImpl(
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
+    // TODO Needs to be split into two, SecureHash and ShortHash
+    // TODO Users who are using this API need to revisit to determine if they need to migrate to search by full Id
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
         logger.debug {
             "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${ids.joinToString()}])"

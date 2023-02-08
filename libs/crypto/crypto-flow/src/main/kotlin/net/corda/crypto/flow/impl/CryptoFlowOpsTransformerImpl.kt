@@ -50,6 +50,7 @@ class CryptoFlowOpsTransformerImpl(
     private val requestValidityWindowSeconds: Long = 300
 ) : CryptoFlowOpsTransformer {
 
+    // TODO This is currently only being used by `SigningServiceImpl.findMySigningKeys` so make it use only full key Ids.
     override fun createFilterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
