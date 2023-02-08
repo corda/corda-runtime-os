@@ -13,6 +13,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.publicKeyFullIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.SigningServiceFactory
@@ -193,7 +194,7 @@ class CryptoOpsBusProcessorTests {
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val keys = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
+        val keys = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(publicKeyFullIdFromBytes(info.publicKey))))
         assertEquals(1, keys.keys.size)
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(keys.keys[0].publicKey.array()))
         // lookup
@@ -230,7 +231,7 @@ class CryptoOpsBusProcessorTests {
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val findResult1 = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
+        val findResult1 = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(publicKeyFullIdFromBytes(info.publicKey))))
         assertEquals(1, findResult1.keys.size)
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(findResult1.keys[0].publicKey.array()))
         // lookup
