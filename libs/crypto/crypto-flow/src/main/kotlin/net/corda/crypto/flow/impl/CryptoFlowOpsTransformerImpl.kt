@@ -204,7 +204,7 @@ class CryptoFlowOpsTransformerImpl(
     }
 }
 
-fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): String =
+private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): String =
     digestService.hash(
         keyEncodingService.encodeAsByteArray(this),
         DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
