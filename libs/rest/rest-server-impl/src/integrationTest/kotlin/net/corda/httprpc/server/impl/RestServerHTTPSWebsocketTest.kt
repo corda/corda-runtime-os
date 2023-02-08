@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeAll
 import java.nio.file.Files
 
 class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
+
     private companion object {
 
         val LOG = LoggerFactory.getLogger(this::class.java.enclosingClass)
