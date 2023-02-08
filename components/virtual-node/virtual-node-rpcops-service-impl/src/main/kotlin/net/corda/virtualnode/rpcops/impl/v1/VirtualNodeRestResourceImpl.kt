@@ -239,6 +239,9 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
 
     override fun getVirtualNodeStatus(requestId: String): VirtualNodeOperationStatus {
         val instant = clock.instant()
+
+        logger.warn("getVirtualNodeStatus called with requestId: $requestId")
+
         // Lookup actor to keep track of which RPC user triggered an update
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
@@ -252,8 +255,11 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         // Actually send request and await response message on bus
         val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
 
+        logger.warn("response for VirtualNodeOPerationStatusRequest ${resp.responseType} $resp")
+
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeOperationStatus -> {
+                logger.warn("resolvedResponse -${resolvedResponse.requestId} -${resolvedResponse.actor} -${resolvedResponse.state}")
                 resolvedResponse
             }
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
