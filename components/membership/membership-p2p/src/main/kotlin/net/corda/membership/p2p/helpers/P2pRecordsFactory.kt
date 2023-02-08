@@ -50,6 +50,7 @@ class P2pRecordsFactory(
      *
      * @return The ready-to-send authenticated message record.
      */
+    @Suppress("LongParameterList")
     fun <T : Any> createAuthenticatedMessageRecord(
         source: HoldingIdentity,
         destination: HoldingIdentity,

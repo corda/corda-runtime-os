@@ -15,6 +15,7 @@ import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
@@ -374,7 +375,15 @@ class P2PLayerEndToEndTest {
                 val randomId = UUID.randomUUID().toString()
                 logger.info("Received message: ${message.payload.array().toString(Charsets.UTF_8)} and responding")
                 val responseMessage = AuthenticatedMessage(
-                    AuthenticatedMessageHeader(message.header.source, message.header.destination, null, randomId, randomId, SUBSYSTEM),
+                    AuthenticatedMessageHeader(
+                        message.header.source,
+                        message.header.destination,
+                        null,
+                        randomId,
+                        randomId,
+                        SUBSYSTEM,
+                        MembershipStatusFilter.ACTIVE
+                    ),
                     ByteBuffer.wrap(message.payload.array().toString(Charsets.UTF_8).replace("ping", "pong").toByteArray())
                 )
                 Record(P2P_OUT_TOPIC, randomId, AppMessage(responseMessage))
@@ -750,7 +759,8 @@ class P2PLayerEndToEndTest {
                     ttl,
                     incrementalId,
                     incrementalId,
-                    SUBSYSTEM
+                    SUBSYSTEM,
+                    MembershipStatusFilter.ACTIVE
                 )
                 val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
                 Record(P2P_OUT_TOPIC, incrementalId, AppMessage(message))

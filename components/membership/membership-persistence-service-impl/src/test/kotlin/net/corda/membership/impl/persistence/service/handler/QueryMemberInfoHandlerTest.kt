@@ -12,7 +12,6 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
-import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -130,6 +129,7 @@ class QueryMemberInfoHandlerTest {
     private val memberInfoEntity = MemberInfoEntity(
         ourGroupId,
         otherX500Name.toString(),
+        false,
         "OK",
         clock.instant(),
         memberContextBytes,
@@ -221,14 +221,13 @@ class QueryMemberInfoHandlerTest {
 
     @Test
     fun `invoke with a query identity returns results if results are available`() {
+        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>> {
+            on { resultList } doReturn listOf(memberInfoEntity)
+            on { setParameter(any<String>(), any()) } doReturn it
+        }
         whenever(
-            entityManager.find(
-                eq(MemberInfoEntity::class.java),
-                eq(MemberInfoEntityPrimaryKey(ourGroupId, otherX500Name.toString()))
-            )
-        ).thenReturn(
-            memberInfoEntity
-        )
+            entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))
+        ).thenReturn(memberInfoQuery)
         val requestContext = getMemberRequestContext()
         val results = queryMemberInfoHandler.invoke(
             requestContext,
@@ -240,11 +239,7 @@ class QueryMemberInfoHandlerTest {
             assertThat(memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
             assertThat(mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
         }
-        verify(entityManager).find(
-            eq(MemberInfoEntity::class.java),
-            eq(MemberInfoEntityPrimaryKey(ourGroupId, otherX500Name.toString()))
-        )
-        verify(entityManager, never()).createQuery(any(), eq(MemberInfoEntity::class.java))
+        verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
         verify(cordaAvroSerializationFactory).createAvroDeserializer<KeyValuePairList>(any(), any())
         with(argumentCaptor<ByteArray>()) {
             verify(keyValueDeserializer, times(2)).deserialize(capture())
@@ -265,22 +260,19 @@ class QueryMemberInfoHandlerTest {
 
     @Test
     fun `invoke with a query identity returns no results if no results are available`() {
+        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>> {
+            on { resultList } doReturn emptyList()
+            on { setParameter(any<String>(), any()) } doReturn it
+        }
         whenever(
-            entityManager.find(
-                eq(MemberInfoEntity::class.java),
-                eq(MemberInfoEntityPrimaryKey(ourGroupId, otherX500Name.toString()))
-            )
-        ).thenReturn(null)
+            entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))
+        ).thenReturn(memberInfoQuery)
         val result = queryMemberInfoHandler.invoke(
             getMemberRequestContext(),
             getQueryMemberInfo(listOf(otherHoldingIdentity))
         )
         assertThat(result.members).isEmpty()
-        verify(entityManager).find(
-            eq(MemberInfoEntity::class.java),
-            eq(MemberInfoEntityPrimaryKey(ourGroupId, otherX500Name.toString()))
-        )
-        verify(entityManager, never()).createQuery(any(), eq(MemberInfoEntity::class.java))
+        verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
         verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
         verify(keyValueDeserializer, never()).deserialize(any())
         with(argumentCaptor<ShortHash>()) {

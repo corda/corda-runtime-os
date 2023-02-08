@@ -17,4 +17,4 @@ fun MembershipGroupReaderProvider.lookupByKey(
     key: ByteArray,
     filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE,
 ) = this.getGroupReader(requestingIdentity)
-    .lookupBySessionKey(PublicKeyHash.parse(key), filter.name)
+    .lookupBySessionKey(PublicKeyHash.parse(key), filter)

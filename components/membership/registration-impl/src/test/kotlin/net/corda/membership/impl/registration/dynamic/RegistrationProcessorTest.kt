@@ -72,7 +72,9 @@ class  RegistrationProcessorTest {
             ByteBuffer.wrap("789".toByteArray()),
             KeyValuePairList(emptyList())
         )
-        val registrationRequest = MembershipRegistrationRequest(registrationId, memberContext.toByteBuffer(), signature)
+        val registrationRequest = MembershipRegistrationRequest(
+            registrationId, memberContext.toByteBuffer(), signature, true
+        )
 
         val startRegistrationCommand = RegistrationCommand(
             StartRegistration(

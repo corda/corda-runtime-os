@@ -291,6 +291,7 @@ internal class OutboundMessageProcessor(
         return sessionManager.recordsForSessionEstablished(
             state.session,
             messageAndKey,
+            state.sessionCounterparties.serial
         )
     }
 

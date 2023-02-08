@@ -51,7 +51,7 @@ internal class DeliveryTracker(
         messagingConfiguration,
         processAuthenticatedMessage
     )
-    private val replayScheduler = ReplayScheduler(
+    private val replayScheduler = ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>(
         coordinatorFactory,
         configReadService,
         true,
@@ -126,7 +126,9 @@ internal class DeliveryTracker(
         }
     }
 
-    private class MessageTracker(private val replayScheduler: ReplayScheduler<AuthenticatedMessageAndKey>)  {
+    private class MessageTracker(
+        private val replayScheduler: ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>
+    )  {
 
         companion object {
             private val logger = LoggerFactory.getLogger(this::class.java.name)
@@ -164,17 +166,17 @@ internal class DeliveryTracker(
 
         val listener = object : StateAndEventListener<String, AuthenticatedMessageDeliveryState> {
 
-            private val trackedSessionCounterparties = ConcurrentHashMap<String, SessionManager.Counterparties>()
+            private val trackedCounterparties = ConcurrentHashMap<String, SessionManager.Counterparties>()
 
             override fun onPostCommit(updatedStates: Map<String, AuthenticatedMessageDeliveryState?>) {
                 for ((key, state) in updatedStates) {
                     if (state != null) {
-                        val sessionCounterparties = counterpartiesFromState(state)
-                        trackedSessionCounterparties[key] = sessionCounterparties
-                        replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
+                        val counterparties = counterpartiesFromState(state)
+                        trackedCounterparties[key] = counterparties
+                        replayScheduler.addForReplay(state.timestamp, key, state.message, counterparties)
                     } else {
-                        val sessionCounterparties = trackedSessionCounterparties.remove(key)
-                        sessionCounterparties?.let { replayScheduler.removeFromReplay(key, sessionCounterparties) }
+                        val counterparties = trackedCounterparties.remove(key)
+                        counterparties?.let { replayScheduler.removeFromReplay(key, counterparties) }
                     }
                 }
             }
@@ -182,14 +184,14 @@ internal class DeliveryTracker(
             override fun onPartitionLost(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
                     replayScheduler.removeFromReplay(key, counterpartiesFromState(state))
-                    trackedSessionCounterparties.remove(key)
+                    trackedCounterparties.remove(key)
                 }
             }
 
             override fun onPartitionSynced(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
                     val sessionCounterparties = counterpartiesFromState(state)
-                    trackedSessionCounterparties[key] = sessionCounterparties
+                    trackedCounterparties[key] = sessionCounterparties
                     replayScheduler.addForReplay(state.timestamp, key, state.message, sessionCounterparties)
                 }
             }

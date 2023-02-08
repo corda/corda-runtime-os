@@ -115,7 +115,7 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
-                MembershipStatusFilter.ACTIVE_OR_SUSPENDED,
+                MembershipStatusFilter.ACTIVE,
             )
         }
 
@@ -124,6 +124,7 @@ class MessageConverter {
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
+            serial: Long,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -139,6 +140,7 @@ class MessageConverter {
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
                 message.message.header.statusFilter,
+                serial
             )
         }
 
@@ -150,6 +152,8 @@ class MessageConverter {
             session: Session,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
+            filter: MembershipStatusFilter,
+            serial: Long,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -164,7 +168,8 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
-                MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+                filter,
+                serial
             )
         }
 
@@ -192,6 +197,7 @@ class MessageConverter {
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
             filter: MembershipStatusFilter,
+            serial: Long? = null,
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -219,6 +225,11 @@ class MessageConverter {
             val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination, filter)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+                return null
+            }
+            if(serial != null && destMemberInfo.serial != serial) {
+                logger.warn("Attempted to send message to peer $destination with serial $serial " +
+                        "which is not in the network map. The message was discarded.")
                 return null
             }
             val groupPolicy = groupPolicyProvider.getGroupPolicy(source)

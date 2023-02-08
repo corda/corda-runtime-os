@@ -19,25 +19,31 @@ internal interface SessionManager : LifecycleWithDominoTile {
     fun recordsForSessionEstablished(
         session: Session,
         messageAndKey: AuthenticatedMessageAndKey,
+        serial: Long,
     ): List<Record<String, *>>
 
 
     data class SessionCounterparties(
-        val ourId: HoldingIdentity,
-        val counterpartyId: HoldingIdentity,
+        override val ourId: HoldingIdentity,
+        override val counterpartyId: HoldingIdentity,
         val status: MembershipStatusFilter,
         val serial: Long,
-    )
+    ): BaseCounterparties
 
     data class Counterparties(
-        val ourId: HoldingIdentity,
-        val counterpartyId: HoldingIdentity,
-    )
+        override val ourId: HoldingIdentity,
+        override val counterpartyId: HoldingIdentity,
+    ): BaseCounterparties
+
+    interface BaseCounterparties {
+        val ourId: HoldingIdentity
+        val counterpartyId: HoldingIdentity
+    }
 
     sealed class SessionState {
         data class NewSessionsNeeded(val messages: List<Pair<String, LinkOutMessage>>) : SessionState()
         object SessionAlreadyPending : SessionState()
-        data class SessionEstablished(val session: Session) : SessionState()
+        data class SessionEstablished(val session: Session, val sessionCounterparties: SessionCounterparties) : SessionState()
         object CannotEstablishSession : SessionState()
     }
 

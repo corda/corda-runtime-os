@@ -49,8 +49,13 @@ internal class InMemorySessionReplayer(
         messagingConfiguration
     )
 
-    private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
-        false, ::replayMessage, clock = clock)
+    private val replayScheduler = ReplayScheduler<SessionManager.SessionCounterparties, SessionMessageReplay>(
+        coordinatorFactory,
+        configurationReaderService,
+        false,
+        ::replayMessage,
+        clock = clock
+    )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -75,7 +80,7 @@ internal class InMemorySessionReplayer(
     fun addMessageForReplay(
         uniqueId: String,
         messageReplay: SessionMessageReplay,
-        counterparties: SessionManager.Counterparties
+        counterparties: SessionManager.SessionCounterparties
     ) {
         dominoTile.withLifecycleLock {
             if (!isRunning) {
@@ -85,7 +90,7 @@ internal class InMemorySessionReplayer(
         }
     }
 
-    fun removeMessageFromReplay(uniqueId: String, counterparties: SessionManager.Counterparties) {
+    fun removeMessageFromReplay(uniqueId: String, counterparties: SessionManager.SessionCounterparties) {
         replayScheduler.removeFromReplay(uniqueId, counterparties)
     }
 
@@ -96,10 +101,19 @@ internal class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
+        val sessionCounterparties = outboundSessionPool.getSessionCounterParties(messageReplay.sessionId)
+        if (sessionCounterparties == null) {
+            logger.warn("Attempted to replay a session negotiation message (type " +
+                    "${messageReplay.message::class.java.simpleName}) with peer ${messageReplay.dest}, but could not " +
+                    "get session information for session with ID `${messageReplay.sessionId}`. " +
+                    "The message was not replayed.")
+            return
+        }
         val destinationMemberInfo = membershipGroupReaderProvider.lookup(messageReplay.source, messageReplay.dest)
-        if (destinationMemberInfo == null) {
+        if (destinationMemberInfo == null || destinationMemberInfo.serial != sessionCounterparties.serial) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                " with peer ${messageReplay.dest} which is not in the members map. The message was not replayed.")
+                " with peer ${messageReplay.dest} with serial ${sessionCounterparties.serial} " +
+                    "which is not in the members map. The message was not replayed.")
             return
         }
 
@@ -114,11 +128,6 @@ internal class InMemorySessionReplayer(
         val message = MessageConverter.createLinkOutMessage(messageReplay.message, messageReplay.source, destinationMemberInfo, networkType)
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
-        val sessionCounterparties = outboundSessionPool.getSessionCounterParties(messageReplay.sessionId)
-        if (sessionCounterparties == null) {
-            logger.warn("")
-            return
-        }
         messageReplay.sentSessionMessageCallback(
             sessionCounterparties,
             messageReplay.sessionId

@@ -30,6 +30,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
@@ -78,7 +79,8 @@ class MembershipP2PProcessorTest {
     private val registrationRequest = MembershipRegistrationRequest(
         registrationId,
         memberContext,
-        testSig
+        testSig,
+        true
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()
     private val memberKey: PublicKey = mock()
@@ -389,7 +391,8 @@ class MembershipP2PProcessorTest {
                     clock.instant().plusMillis(300000L),
                     "mid",
                     null,
-                    MEMBERSHIP_P2P_SUBSYSTEM
+                    MEMBERSHIP_P2P_SUBSYSTEM,
+                    MembershipStatusFilter.ACTIVE
                 ),
                 this
             )

@@ -102,9 +102,6 @@ class MemberInfoExtension {
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
 
-        /** Membership request was declined by the Group Manager. **/
-        const val MEMBER_STATUS_DECLINED = "DECLINED"
-
         /**
          * Membership request has been submitted but Group Manager still hasn't responded to it. Nodes with this status can't
          * communicate with the other nodes in the Membership Group.

@@ -1,5 +1,6 @@
 package net.corda.membership.read
 
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.base.types.MemberX500Name

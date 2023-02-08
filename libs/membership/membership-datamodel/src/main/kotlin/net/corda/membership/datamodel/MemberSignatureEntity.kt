@@ -24,6 +24,10 @@ class MemberSignatureEntity(
     @Column(name = "member_name", nullable = false, updatable = false)
     val memberX500Name: String,
 
+    @Id
+    @Column(name = "is_pending", nullable = false, updatable = false)
+    val isPending: Boolean,
+
     @Column(name = "public_key", nullable = false, updatable = false, columnDefinition = "BLOB")
     val publicKey: ByteArray,
 
@@ -37,11 +41,12 @@ class MemberSignatureEntity(
         if (other === this) return true
         if (other == null) return false
         if (other !is MemberSignatureEntity) return false
-        return other.groupId == this.groupId &&
-            MemberX500Name.parse(other.memberX500Name) == MemberX500Name.parse(this.memberX500Name)
+        return other.groupId == this.groupId
+                && MemberX500Name.parse(other.memberX500Name) == MemberX500Name.parse(this.memberX500Name)
+                && other.isPending == this.isPending
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(groupId, memberX500Name)
+        return Objects.hash(groupId, memberX500Name, isPending)
     }
 }

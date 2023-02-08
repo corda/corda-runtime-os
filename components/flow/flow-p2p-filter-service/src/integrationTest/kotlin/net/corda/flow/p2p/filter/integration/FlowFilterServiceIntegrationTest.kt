@@ -24,6 +24,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -97,7 +98,9 @@ class FlowFilterServiceIntegrationTest {
         republishConfig(publisher)
 
         val identity = HoldingIdentity(testId, testId)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
+        val flowHeader = AuthenticatedMessageHeader(
+            identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE
+        )
         val version = listOf(1)
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
@@ -119,7 +122,9 @@ class FlowFilterServiceIntegrationTest {
             )
         )
 
-        val invalidHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "other")
+        val invalidHeader = AuthenticatedMessageHeader(
+            identity, identity, Instant.ofEpochMilli(1), "", "", "other", MembershipStatusFilter.ACTIVE
+        )
         val invalidEvent = FlowEvent(testId, sessionEvent)
         val invalidRecord = Record(
             P2P_IN_TOPIC, testId, AppMessage(

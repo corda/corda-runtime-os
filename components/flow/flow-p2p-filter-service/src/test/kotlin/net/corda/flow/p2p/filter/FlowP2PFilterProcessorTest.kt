@@ -12,6 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
@@ -41,7 +42,9 @@ class FlowP2PFilterProcessorTest {
         val testValue = "test"
         val identity = HoldingIdentity(testValue, testValue)
         val flowHeader =
-            AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "flowSession")
+            AuthenticatedMessageHeader(
+                identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "flowSession", MembershipStatusFilter.ACTIVE
+            )
         val version = listOf(1)
         val flowEvent = SessionEvent(
             MessageDirection.OUTBOUND,
@@ -72,7 +75,9 @@ class FlowP2PFilterProcessorTest {
             AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(flowEventMockData)))
         )
         val otherHeader =
-            AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "other")
+            AuthenticatedMessageHeader(
+                identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "other", MembershipStatusFilter.ACTIVE
+            )
         val otherRecord = Record(
             Schemas.P2P.P2P_IN_TOPIC,
             testValue,

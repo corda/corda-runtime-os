@@ -46,10 +46,10 @@ class DeclineRegistrationHandlerTest {
 
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
-            setMemberAndRegistrationRequestAsDeclined(
+            setRegistrationRequestStatus(
                 mgm.toCorda(),
-                member.toCorda(),
-                REGISTRATION_ID
+                REGISTRATION_ID,
+                RegistrationStatus.DECLINED
             )
         } doReturn MembershipPersistenceResult.success()
     }
@@ -80,10 +80,10 @@ class DeclineRegistrationHandlerTest {
     fun `handler calls persistence client and returns no output states`() {
         val result = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
-        verify(membershipPersistenceClient, times(1)).setMemberAndRegistrationRequestAsDeclined(
+        verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
             mgm.toCorda(),
-            member.toCorda(),
-            REGISTRATION_ID
+            REGISTRATION_ID,
+            RegistrationStatus.DECLINED
         )
 
         assertThat(result.outputStates)

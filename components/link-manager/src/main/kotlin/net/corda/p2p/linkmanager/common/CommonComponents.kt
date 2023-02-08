@@ -53,7 +53,8 @@ internal class CommonComponents(
     internal val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        messagingConfiguration
+        messagingConfiguration,
+        membershipGroupReaderProvider
     )
 
     internal val sessionManager = SessionManagerImpl(

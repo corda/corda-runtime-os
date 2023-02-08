@@ -80,7 +80,7 @@ class P2pRecordsFactoryTest {
             it.assertThat(header?.subsystem).isEqualTo(
                 MEMBERSHIP_P2P_SUBSYSTEM
             )
-            it.assertThat(header?.statusFilter).isEqualTo(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+            it.assertThat(header?.statusFilter).isEqualTo(MembershipStatusFilter.ACTIVE)
         }
     }
 

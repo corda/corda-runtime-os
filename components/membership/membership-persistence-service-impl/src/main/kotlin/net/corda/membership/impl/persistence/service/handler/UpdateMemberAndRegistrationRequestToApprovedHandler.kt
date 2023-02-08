@@ -11,6 +11,7 @@ import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationR
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
+import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
@@ -50,12 +51,9 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             val now = clock.instant()
             val member = em.find(
                 MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name),
+                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true),
                 LockModeType.PESSIMISTIC_WRITE,
             ) ?: throw MembershipPersistenceException("Could not find member: ${request.member}")
-
-            member.status = MEMBER_STATUS_ACTIVE
-            member.modifiedTime = now
             val currentMgmContext = keyValuePairListDeserializer.deserialize(member.mgmContext)
                 ?: throw MembershipPersistenceException("Can not extract the mgm context")
             val mgmContext = KeyValuePairList(
@@ -67,9 +65,22 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     }
                 }
             )
-            member.mgmContext =
-                keyValuePairListSerializer.serialize(mgmContext)
-                    ?: throw MembershipPersistenceException("Can not serialize the mgm context")
+
+            val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
+                ?: throw MembershipPersistenceException("Can not serialize the mgm context")
+
+            val memberInfoEntity = MemberInfoEntity(
+                member.groupId,
+                member.memberX500Name,
+                false,
+                MEMBER_STATUS_ACTIVE,
+                now,
+                member.memberContext,
+                serializedMgmContext,
+                member.serialNumber
+            )
+
+            em.merge(memberInfoEntity)
 
             val registrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
@@ -83,6 +94,22 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             }
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
+
+            val signature = em.find(
+                MemberSignatureEntity::class.java,
+                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true)
+            ) ?: throw MembershipPersistenceException("Could not find signature for member: ${request.member}")
+
+            val signatureEntity = MemberSignatureEntity(
+                member.groupId,
+                member.memberX500Name,
+                false,
+                signature.publicKey,
+                signature.context,
+                signature.content
+            )
+
+            em.merge(signatureEntity)
 
             UpdateMemberAndRegistrationRequestResponse(
                 PersistentMemberInfo(

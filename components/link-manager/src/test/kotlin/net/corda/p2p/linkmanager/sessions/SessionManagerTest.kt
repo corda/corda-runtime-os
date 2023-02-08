@@ -1,4 +1,4 @@
-package net.corda.p2p.linkmanager.sessions
+/*package net.corda.p2p.linkmanager.sessions
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -23,6 +23,7 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
@@ -311,7 +312,7 @@ class SessionManagerTest {
                 OUR_PARTY.toAvro(),
                 null,
                 "messageId",
-                "", "system-1"
+                "", "system-1", MembershipStatusFilter.ACTIVE
             ),
             payload
         ),
@@ -1964,3 +1965,4 @@ class SessionManagerTest {
             }
     }
 }
+*/

@@ -14,6 +14,7 @@ import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
@@ -87,6 +88,9 @@ class InboundMessageProcessorTest {
         mockTimeFacilitiesProvider.clock
     )
 
+    private val status = MembershipStatusFilter.ACTIVE
+    private val serial = 1L
+
     @AfterEach
     fun cleanUp() {
         loggingInterceptor.reset()
@@ -130,7 +134,7 @@ class InboundMessageProcessorTest {
                 AuthenticatedMessageHeader(
                     remoteIdentity.toAvro(),
                     myIdentity.toAvro(),
-                    null, MESSAGE_ID, "trace-id", "system-1"
+                    null, MESSAGE_ID, "trace-id", "system-1", status
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
             )
@@ -150,7 +154,9 @@ class InboundMessageProcessorTest {
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.SessionCounterparties(
                         remoteIdentity,
-                        myIdentity
+                        myIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
@@ -195,7 +201,9 @@ class InboundMessageProcessorTest {
                 SessionManager.SessionDirection.Outbound(
                     SessionManager.SessionCounterparties(
                         remoteIdentity,
-                        myIdentity
+                        myIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
@@ -232,7 +240,9 @@ class InboundMessageProcessorTest {
                 SessionManager.SessionDirection.Outbound(
                     SessionManager.SessionCounterparties(
                         remoteIdentity,
-                        myIdentity
+                        myIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
@@ -262,7 +272,9 @@ class InboundMessageProcessorTest {
                 SessionManager.SessionDirection.Outbound(
                     SessionManager.SessionCounterparties(
                         remoteIdentity,
-                        myIdentity
+                        myIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
@@ -292,7 +304,9 @@ class InboundMessageProcessorTest {
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.SessionCounterparties(
                         remoteIdentity,
-                        myIdentity
+                        myIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
@@ -327,7 +341,7 @@ class InboundMessageProcessorTest {
                 AuthenticatedMessageHeader(
                     remoteIdentity.toAvro(),
                     myIdentity.toAvro(),
-                    null, MESSAGE_ID, "trace-id", "system-1"
+                    null, MESSAGE_ID, "trace-id", "system-1", MembershipStatusFilter.ACTIVE
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
             )
@@ -365,7 +379,7 @@ class InboundMessageProcessorTest {
                 AuthenticatedMessageHeader(
                     remoteIdentity.toAvro(),
                     myIdentity.toAvro(),
-                    null, MESSAGE_ID, "trace-id", "system-1"
+                    null, MESSAGE_ID, "trace-id", "system-1", status
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
             )
@@ -395,7 +409,9 @@ class InboundMessageProcessorTest {
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.SessionCounterparties(
                         remoteIdentity,
-                        myIdentity
+                        myIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
@@ -434,7 +450,7 @@ class InboundMessageProcessorTest {
                 AuthenticatedMessageHeader(
                     remoteIdentity.toAvro(),
                     myIdentity.toAvro(),
-                    null, MESSAGE_ID, "trace-id", "system-1"
+                    null, MESSAGE_ID, "trace-id", "system-1", status
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
             )
@@ -465,6 +481,8 @@ class InboundMessageProcessorTest {
                     SessionManager.SessionCounterparties(
                         myIdentity,
                         remoteIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
@@ -494,7 +512,7 @@ class InboundMessageProcessorTest {
                 AuthenticatedMessageHeader(
                     remoteIdentity.toAvro(),
                     myIdentity.toAvro(),
-                    null, MESSAGE_ID, "trace-id", "system-1"
+                    null, MESSAGE_ID, "trace-id", "system-1", status
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
             )
@@ -525,6 +543,8 @@ class InboundMessageProcessorTest {
                     SessionManager.SessionCounterparties(
                         myIdentity,
                         myIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
@@ -573,7 +593,9 @@ class InboundMessageProcessorTest {
                 SessionManager.SessionDirection.Inbound(
                     SessionManager.SessionCounterparties(
                         remoteIdentity,
-                        myIdentity
+                        myIdentity,
+                        status,
+                        serial
                     ),
                     session
                 )
