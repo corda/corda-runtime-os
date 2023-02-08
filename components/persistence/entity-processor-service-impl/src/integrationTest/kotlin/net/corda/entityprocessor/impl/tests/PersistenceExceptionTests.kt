@@ -15,13 +15,13 @@ import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
+import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
-import net.corda.persistence.common.exceptions.NotReadyException
-import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.persistence.common.getSerializationService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -94,7 +94,7 @@ class PersistenceExceptionTests {
         // Emulate the throw that occurs if we don't have the cpks
         val brokenCpiInfoReadService = object : CpiInfoReadService by cpiInfoReadService {
             override fun get(identifier: CpiIdentifier): CpiMetadata? {
-                throw NotReadyException("Not ready!")
+                throw CpkNotAvailableException("Not ready!")
             }
         }
 
@@ -119,7 +119,7 @@ class PersistenceExceptionTests {
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
-        assertThat(response.error.exception.errorType).isEqualTo(NotReadyException::class.java.name)
+        assertThat(response.error.exception.errorType).isEqualTo(CpkNotAvailableException::class.java.name)
     }
 
     @Test

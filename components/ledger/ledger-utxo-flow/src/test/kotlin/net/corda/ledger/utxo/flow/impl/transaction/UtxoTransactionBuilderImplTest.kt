@@ -96,14 +96,14 @@ internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "1",
-                dummyCpkSignerSummaryHash.toHexString(),
-                "0101010101010101010101010101010101010101010101010101010101010101"
+                dummyCpkSignerSummaryHash.toString(),
+                "SHA-256:0101010101010101010101010101010101010101010101010101010101010101"
             ),
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "3",
-                dummyCpkSignerSummaryHash.toHexString(),
-                "0303030303030303030303030303030303030303030303030303030303030303"
+                dummyCpkSignerSummaryHash.toString(),
+                "SHA-256:0303030303030303030303030303030303030303030303030303030303030303"
             )
         )
         assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())

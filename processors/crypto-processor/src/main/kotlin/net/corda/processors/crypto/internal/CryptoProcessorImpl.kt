@@ -139,6 +139,18 @@ class CryptoProcessorImpl @Activate constructor(
             is StopEvent -> {
                 // Nothing to do
             }
+            is BootConfigEvent -> {
+                val bootstrapConfig = event.config
+
+                logger.info("Bootstrapping {}", configurationReadService::class.simpleName)
+                configurationReadService.bootstrapConfig(bootstrapConfig)
+
+                logger.info("Bootstrapping {}", dbConnectionManager::class.simpleName)
+                dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
+
+                logger.info("Bootstrapping {}", cryptoServiceFactory::class.simpleName)
+                cryptoServiceFactory.bootstrapConfig(bootstrapConfig.getConfig(BOOT_CRYPTO))
+            }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
                     dependenciesUp = true
@@ -152,22 +164,11 @@ class CryptoProcessorImpl @Activate constructor(
                     setStatus(event.status, coordinator)
                 }
             }
-            is BootConfigEvent -> {
-                logger.info("Crypto processor bootstrapping {}", configurationReadService::class.simpleName)
-                configurationReadService.bootstrapConfig(event.config)
-
-                logger.info("Crypto processor bootstrapping {}", dbConnectionManager::class.simpleName)
-                dbConnectionManager.bootstrap(event.config.getConfig(BOOT_DB_PARAMS))
-
-                logger.info("Crypto processor bootstrapping {}", cryptoServiceFactory::class.simpleName)
-                cryptoServiceFactory.bootstrapConfig(event.config.getConfig(BOOT_CRYPTO))
-            }
             is AssociateHSM -> {
                 if(dependenciesUp) {
                     if (hsmAssociated) {
                         setStatus(LifecycleStatus.UP, coordinator)
                     } else {
-                        logger.info("Assigning SOFT HSMs")
                         val failed = temporaryAssociateClusterWithSoftHSM()
                         if (failed.isNotEmpty()) {
                             if(tmpAssignmentFailureCounter.getAndIncrement() <= 5) {

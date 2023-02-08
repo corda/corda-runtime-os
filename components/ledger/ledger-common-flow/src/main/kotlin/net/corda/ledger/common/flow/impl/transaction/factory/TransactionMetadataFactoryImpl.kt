@@ -27,15 +27,14 @@ class TransactionMetadataFactoryImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider
 ) : TransactionMetadataFactory, UsedByFlow, SingletonSerializeAsToken {
     override fun create(ledgerSpecificMetadata: Map<String, Any>): TransactionMetadata {
-        val metadata = linkedMapOf(
+        val metadata = mapOf(
             TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
             TransactionMetadataImpl.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
             TransactionMetadataImpl.CPI_METADATA_KEY to getCpiSummary(),
             TransactionMetadataImpl.CPK_METADATA_KEY to getCpkSummaries(),
             TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION
         )
-        metadata.putAll(ledgerSpecificMetadata)
-        return TransactionMetadataImpl(metadata)
+        return TransactionMetadataImpl(metadata + ledgerSpecificMetadata)
     }
 
     private fun getCpkSummaries() = currentSandboxGroupContext
@@ -48,8 +47,8 @@ class TransactionMetadataFactoryImpl @Activate constructor(
             CordaPackageSummaryImpl(
                 name = cpk.cpkId.name,
                 version = cpk.cpkId.version,
-                signerSummaryHash = cpk.cpkId.signerSummaryHash.toHexString(),
-                fileChecksum = cpk.fileChecksum.toHexString()
+                signerSummaryHash = cpk.cpkId.signerSummaryHash.toString(),
+                fileChecksum = cpk.fileChecksum.toString()
             )
         }
 }

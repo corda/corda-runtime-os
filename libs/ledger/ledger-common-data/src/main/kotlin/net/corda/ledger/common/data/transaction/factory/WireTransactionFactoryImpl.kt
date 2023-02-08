@@ -50,7 +50,8 @@ class WireTransactionFactoryImpl @Activate constructor(
         privacySalt: PrivacySalt
     ): WireTransaction {
         checkComponentGroups(componentGroupLists)
-        val metadata = parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+        val metadata =
+            parseMetadata(componentGroupLists[TransactionMetadataImpl.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
         val completeComponentGroupLists = (0 until metadata.getNumberOfComponentGroups()).map { index ->
             componentGroupLists.getOrElse(index) { arrayListOf() }
@@ -102,7 +103,7 @@ class WireTransactionFactoryImpl @Activate constructor(
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
                     "${WireTransactionDigestSettings.defaultValues}"
         }
-        return jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetadataImpl::class.java)
+        return metadata
     }
 
     private fun getSchema(path: String) =

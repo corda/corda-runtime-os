@@ -5,6 +5,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
@@ -14,6 +15,7 @@ import net.corda.data.membership.db.request.command.PersistGroupParametersInitia
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
+import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
@@ -22,6 +24,7 @@ import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
+import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
@@ -30,6 +33,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.impl.persistence.service.handler.AddNotaryToGroupParametersHandler
+import net.corda.membership.impl.persistence.service.handler.AddPreAuthTokenHandler
 import net.corda.membership.impl.persistence.service.handler.DeleteApprovalRuleHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsAddToAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsListAllowedCertificatesHandler
@@ -46,8 +50,10 @@ import net.corda.membership.impl.persistence.service.handler.QueryApprovalRulesH
 import net.corda.membership.impl.persistence.service.handler.QueryGroupPolicyHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatureHandler
+import net.corda.membership.impl.persistence.service.handler.QueryPreAuthTokenHandler
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestsHandler
+import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToApprovedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToDeclinedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateRegistrationRequestStatusHandler
@@ -109,6 +115,9 @@ internal class MembershipPersistenceRPCProcessor(
         MutualTlsAddToAllowedCertificates::class.java to { MutualTlsAddToAllowedCertificatesHandler(persistenceHandlerServices) },
         MutualTlsRemoveFromAllowedCertificates::class.java to { MutualTlsRemoveFromAllowedCertificatesHandler(persistenceHandlerServices) },
         MutualTlsListAllowedCertificates::class.java to { MutualTlsListAllowedCertificatesHandler(persistenceHandlerServices) },
+        QueryPreAuthToken::class.java to { QueryPreAuthTokenHandler(persistenceHandlerServices) },
+        AddPreAuthToken::class.java to { AddPreAuthTokenHandler(persistenceHandlerServices) },
+        RevokePreAuthToken::class.java to { RevokePreAuthTokenHandler(persistenceHandlerServices) },
         QueryRegistrationRequests::class.java to { QueryRegistrationRequestsHandler(persistenceHandlerServices) },
         PersistApprovalRule::class.java to { PersistApprovalRuleHandler(persistenceHandlerServices) },
         DeleteApprovalRule::class.java to { DeleteApprovalRuleHandler(persistenceHandlerServices) },

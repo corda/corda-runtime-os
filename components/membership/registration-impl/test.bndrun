@@ -8,7 +8,6 @@
     sun.security.x509
 
 -runrequires: \
-    bnd.identity;id='net.corda.membership-persistence-client-impl',\
     bnd.identity;id='net.corda.registration-impl',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='net.corda.cipher-suite-impl',\

@@ -15,7 +15,6 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Enumerated
 import javax.persistence.EnumType
-import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.MapsId
@@ -97,7 +96,7 @@ internal class VirtualNodeEntity(
     @Column(name = "vault_db_operational_status", nullable = false)
     var vaultDbOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
 
-    @OneToOne(cascade = [CascadeType.PERSIST, CascadeType.MERGE], fetch = FetchType.LAZY)
+    @OneToOne(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
     @JoinColumn(name = "operation_in_progress")
     var operationInProgress: VirtualNodeOperationEntity? = null,
 
@@ -140,6 +139,7 @@ internal class VirtualNodeEntity(
             flowStartOperationalStatus,
             flowOperationalStatus,
             vaultDbOperationalStatus,
+            operationInProgress?.requestId,
             entityVersion,
             insertTimestamp!!,
             isDeleted

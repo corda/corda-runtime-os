@@ -62,7 +62,11 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
     }
 
     private fun areAllSessionsConfirmed(checkpoint: FlowCheckpoint, waitingFor: SessionConfirmation): Boolean {
-        return flowSessionManager.doAllSessionsHaveStatus(checkpoint, waitingFor.sessionIds, SessionStateType.CONFIRMED)
+        return flowSessionManager.doAllSessionsHaveStatusIn(
+            checkpoint,
+            waitingFor.sessionIds,
+            listOf(SessionStateType.CONFIRMED, SessionStateType.CLOSING)
+        )
     }
 
     private fun waitingForSessionsToClose(

@@ -10,22 +10,24 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.v5.base.util.debug
 import org.osgi.framework.Bundle
 import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableSortedMap
 import java.util.SortedMap
 import java.util.TreeMap
+import java.util.UUID
 
 /**
  * An implementation of the [SandboxGroup] interface.
  *
- * @param cpkSandboxes The CPK sandboxes in this sandbox group.
+ * @property id Unique identifier for this sandbox group.
+ * @property cpkSandboxes The CPK sandboxes in this sandbox group.
  * @param publicSandboxes An iterable containing all existing public sandboxes.
  * @param classTagFactory Used to generate class tags.
  * @param bundleUtils The utils that all OSGi activity is delegated to for testing purposes.
  */
 internal class SandboxGroupImpl(
+    override val id: UUID,
     override val cpkSandboxes: Collection<CpkSandbox>,
     private val publicSandboxes: Iterable<Sandbox>,
     private val classTagFactory: ClassTagFactory,
@@ -34,6 +36,11 @@ internal class SandboxGroupImpl(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private fun Throwable.withSuppressed(exceptions: Iterable<Throwable>): Throwable {
+            exceptions.forEach(::addSuppressed)
+            return this
+        }
     }
 
     override val metadata: SortedMap<Bundle, CpkMetadata> = unmodifiableSortedMap(cpkSandboxes.associateTo(TreeMap()) { cpk ->
@@ -59,17 +66,17 @@ internal class SandboxGroupImpl(
     }
 
     override fun loadClassFromMainBundles(className: String): Class<*> {
+        val suppressed = mutableListOf<Exception>()
         return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
-                logger.debug {
-                    "Could not load class $className from sandbox ${sandbox.cpkMetadata.mainBundle}: ${e.message}"
-                }
+                suppressed += e
                 null
             }
         }.singleOrNull()
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
+                .withSuppressed(suppressed)
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {

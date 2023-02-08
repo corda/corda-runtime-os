@@ -5,15 +5,11 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.RegistrationRpcAction
-import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -45,9 +41,6 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRegistrationException
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.MembershipRequestRegistrationResult
-import net.corda.membership.registration.RegistrationProxy
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -85,12 +78,6 @@ class MemberOpsServiceProcessorTest {
 
         private val now = Instant.ofEpochSecond(300)
         private val clock = TestClock(now)
-    }
-
-    private var registrationProxy: RegistrationProxy = mock {
-        on { register(any(), eq(mgmHoldingIdentity), any()) } doReturn (MembershipRequestRegistrationResult(
-            MembershipRequestRegistrationOutcome.SUBMITTED
-        ))
     }
 
     private var virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
@@ -152,7 +139,6 @@ class MemberOpsServiceProcessorTest {
     }
 
     private var processor = MemberOpsServiceProcessor(
-        registrationProxy,
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
@@ -166,37 +152,6 @@ class MemberOpsServiceProcessorTest {
         assertThat(actual.responseTimestamp.epochSecond).isLessThanOrEqualTo(now.epochSecond)
     }
 
-    @Test
-    fun `should successfully submit registration request`() {
-        val requestTimestamp = now
-        val requestId = UUID(0, 1).toString()
-        val requestContext = MembershipRpcRequestContext(
-            requestId,
-            requestTimestamp
-        )
-        val request = MembershipRpcRequest(
-            requestContext,
-            RegistrationRpcRequest(
-                mgmHoldingIdentity.shortHash.value,
-                RegistrationRpcAction.REQUEST_JOIN,
-                KeyValuePairList(emptyList())
-            )
-        )
-        val future = CompletableFuture<MembershipRpcResponse>()
-        processor.onNext(request, future)
-        val result = future.get()
-        val expectedResponse = RegistrationRpcResponse(
-            requestId,
-            requestTimestamp,
-            RegistrationRpcStatus.SUBMITTED,
-            null,
-            1,
-            KeyValuePairList(emptyList()),
-            KeyValuePairList(emptyList())
-        )
-        assertEquals(expectedResponse, result.response)
-        assertResponseContext(requestContext, result.responseContext)
-    }
 
     @Test
     fun `should fail in case of unknown request`() {

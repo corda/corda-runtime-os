@@ -50,7 +50,7 @@ data class CpkMetadata(
                 other.libraries,
                 CordappManifest.fromAvro(other.corDappManifest),
                 CpkType.fromAvro(other.type),
-                SecureHash(other.hash.algorithm, other.hash.serverHash.array()),
+                SecureHash(other.hash.algorithm, other.hash.bytes.array()),
                 let {
                     val crtFactory = CertificateFactory.getInstance("X.509")
                     other.corDappCertificates.stream().map {
