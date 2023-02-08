@@ -3,7 +3,6 @@ package net.corda.virtualnode.write.db.impl.writer
 import com.typesafe.config.ConfigFactory
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
@@ -13,8 +12,8 @@ import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
-import net.corda.schema.configuration.DatabaseConfig
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import java.security.SecureRandom
 
 /**
@@ -22,11 +21,10 @@ import java.security.SecureRandom
  */
 class VirtualNodeDbFactory(
     private val dbConnectionManager: DbConnectionManager,
-    private val dbAdmin: DbAdmin,
+    private val virtualNodesDbAdmin: VirtualNodesDbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
     private val smartConfigFactory = dbConnectionManager.clusterConfig.factory
-    private val adminJdbcUrl = dbConnectionManager.clusterConfig.getString(DatabaseConfig.JDBC_URL)
 
     companion object {
         private const val ddlMaxPoolSize = 1
@@ -90,7 +88,7 @@ class VirtualNodeDbFactory(
             !connectionsProvided,
             holdingIdentityShortHash,
             dbConnections,
-            dbAdmin,
+            virtualNodesDbAdmin,
             dbConnectionManager,
             schemaMigrator
         )
@@ -145,7 +143,7 @@ class VirtualNodeDbFactory(
             }
 
             // Add reWriteBatchedInserts JDBC parameter for uniqueness db to enable Hibernate batching
-            var jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityShortHash))
+            var jdbcUrl = virtualNodesDbAdmin.createJdbcUrl(getSchemaName(holdingIdentityShortHash))
             if (dbType == UNIQUENESS && jdbcUrl.startsWith("jdbc:postgresql")){
                 jdbcUrl += "&reWriteBatchedInserts=true"
             }
