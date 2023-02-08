@@ -23,6 +23,7 @@ import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
@@ -149,29 +150,20 @@ internal class ProcessMemberVerificationResponseHandler(
             ?.memberProvidedContext
             ?.toMap()
 
-        val preAuthToken = proposedMemberInfo[PRE_AUTH_TOKEN]?.let {
-            try {
-                UUID.fromString(it)
-            } catch (e: IllegalArgumentException) {
-                logger.warn(
-                    "Pre-auth token is incorrectly formatted and should have been handled when " +
-                            "starting the registration.", e
-                )
-                throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. " +
-                        "A valid UUID is expected.")
+        val approvalRuleType = proposedMemberInfo[PRE_AUTH_TOKEN]?.let {
+            val result = membershipPersistenceClient.consumePreAuthToken(
+                mgm,
+                member.x500Name,
+                parsePreAuthToken(it)
+            )
+            if (result is MembershipPersistenceResult.Failure) {
+                throw InvalidPreAuthTokenException(result.errorMsg)
             }
-        }?.let {
-            val validTokensForMember = membershipQueryClient
-                .queryPreAuthTokens(mgm, member.x500Name, it, false)
-                .getOrThrow()
-            if (validTokensForMember.isEmpty()) {
-                throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. " +
-                        "It may have been consumed already or the ID is incorrect.")
-            }
-        }
+            ApprovalRuleType.PREAUTH
+        } ?: ApprovalRuleType.STANDARD
 
         val rules = membershipQueryClient
-            .getApprovalRules(mgm, ApprovalRuleType.STANDARD)
+            .getApprovalRules(mgm, approvalRuleType)
             .getOrThrow()
             .map { RegistrationRule.Impl(it.ruleRegex.toRegex()) }
 
@@ -182,7 +174,19 @@ internal class ProcessMemberVerificationResponseHandler(
         }
     }
 
-    class InvalidPreAuthTokenException(msg: String): CordaRuntimeException(msg)
+    fun parsePreAuthToken(input: String): UUID {
+        return try {
+            UUID.fromString(input)
+        } catch (e: IllegalArgumentException) {
+            logger.warn(
+                "Pre-auth token is incorrectly formatted and should have been handled when starting the " +
+                        "registration.", e
+            )
+            throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. A valid UUID is expected.")
+        }
+    }
+
+    class InvalidPreAuthTokenException(msg: String) : CordaRuntimeException(msg)
 
     private fun MemberContext.toMap() = entries.associate { it.key to it.value }
 }

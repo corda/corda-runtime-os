@@ -8,6 +8,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
+import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
@@ -315,6 +316,23 @@ class MembershipPersistenceClientImpl(
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
             AddPreAuthToken(preAuthTokenId.toString(), ownerX500Name.toString(), ttl, remarks)
+        ).execute()
+
+        return when (val payload = result.payload) {
+            null -> MembershipPersistenceResult.success()
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+        }
+    }
+
+    override fun consumePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name,
+        preAuthTokenId: UUID
+    ): MembershipPersistenceResult<Unit> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            ConsumePreAuthToken(preAuthTokenId.toString(), ownerX500Name.toString())
         ).execute()
 
         return when (val payload = result.payload) {

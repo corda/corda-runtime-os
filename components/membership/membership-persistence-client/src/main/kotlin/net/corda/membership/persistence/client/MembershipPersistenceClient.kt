@@ -213,6 +213,22 @@ interface MembershipPersistenceClient : Lifecycle {
     ): MembershipPersistenceResult<Unit>
 
     /**
+     * Consumes a pre-auth token provided it exists for the member. If the token was successfully consumed, this method
+     * returns [MembershipPersistenceResult.Success]. Otherwise, it will return [MembershipPersistenceResult.Failure].
+     *
+     * @param mgmHoldingIdentity The holding identity of the mgm.
+     * @param preAuthTokenId A unique token identifier of the pre-auth token.
+     * @param ownerX500Name The X500 name of the owner of the pre-auth token.
+     *
+     * @return membership persistence result to indicate the result of the persistence operation.
+     */
+    fun consumePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name,
+        preAuthTokenId: UUID
+    ): MembershipPersistenceResult<Unit>
+
+    /**
      * Revoke an existing pre auth token in the database.
      *
      * @param mgmHoldingIdentity The holding identity of the mgm.
