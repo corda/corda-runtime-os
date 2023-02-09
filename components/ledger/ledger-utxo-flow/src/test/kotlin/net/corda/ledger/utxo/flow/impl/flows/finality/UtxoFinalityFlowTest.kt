@@ -3,12 +3,13 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
@@ -64,6 +65,7 @@ class UtxoFinalityFlowTest {
     private val memberLookup = mock<MemberLookup>()
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
+    private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
     private val pluggableNotaryClientFlowFactory = mock<PluggableNotaryClientFlowFactory>()
@@ -205,7 +207,7 @@ class UtxoFinalityFlowTest {
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
-        verify(transactionSignatureService).verifyNotarySignature(any(), eq(signatureNotary))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureNotary))
 
         verify(initialTx).addSignature(signatureAlice1)
         verify(updatedTxSomeSigs).addSignature(signatureAlice2)
@@ -321,7 +323,7 @@ class UtxoFinalityFlowTest {
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
-        verify(transactionSignatureService, never()).verifyNotarySignature(any(), eq(invalidNotarySignature))
+        verify(transactionSignatureService, never()).verifySignature(any(), eq(invalidNotarySignature))
 
         verify(initialTx).addSignature(signatureAlice1)
         verify(updatedTxSomeSigs).addSignature(signatureAlice2)
@@ -436,7 +438,7 @@ class UtxoFinalityFlowTest {
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
-        whenever(transactionSignatureService.verifyNotarySignature(any(), eq(signatureNotary))).thenThrow(
+        whenever(transactionSignatureService.verifySignature(any(), eq(signatureNotary))).thenThrow(
             IllegalArgumentException("Notary signature verification failed.")
         )
 
@@ -557,7 +559,7 @@ class UtxoFinalityFlowTest {
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice2))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureBob))
-        verify(transactionSignatureService).verifyNotarySignature(any(), eq(signatureNotary))
+        verify(transactionSignatureService).verifySignature(any(), eq(signatureNotary))
 
         verify(initialTx).addSignature(signatureAlice1)
         verify(updatedTxSomeSigs, never()).addSignature(signatureAlice2)
@@ -723,6 +725,7 @@ class UtxoFinalityFlowTest {
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging
         flow.persistenceService = persistenceService
+        flow.transactionVerificationService = transactionVerificationService
         flow.pluggableNotaryClientFlowFactory = pluggableNotaryClientFlowFactory
         flow.flowEngine = flowEngine
         flow.call()

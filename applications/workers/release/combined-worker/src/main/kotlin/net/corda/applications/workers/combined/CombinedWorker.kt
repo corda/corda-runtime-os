@@ -26,6 +26,7 @@ import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rest.RestProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
+import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.DatabaseConfig
@@ -48,6 +49,8 @@ class CombinedWorker @Activate constructor(
     private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
+    @Reference(service = VerificationProcessor::class)
+    private val verificationProcessor: VerificationProcessor,
     @Reference(service = RestProcessor::class)
     private val restProcessor: RestProcessor,
     @Reference(service = MemberProcessor::class)
@@ -67,7 +70,7 @@ class CombinedWorker @Activate constructor(
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
-        val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
+    val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
 ) : Application {
 
     private companion object {
@@ -102,6 +105,7 @@ class CombinedWorker @Activate constructor(
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
+        
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
@@ -112,12 +116,21 @@ class CombinedWorker @Activate constructor(
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
         val dbName = dbUrl.split("/").last().split("?").first()
-        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
+        val dbAdmin = if (config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
             config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
-        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
+        val dbAdminPassword = if (config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
             config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_PASS) else "password"
         val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
         val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
+
+        // Part of DB setup is to generate defaults for the crypto code. That currently includes a
+        // default master wrapping key passphrase and salt, which we want to keep secret, and so
+        // cannot simply be written to the database in plaintext. So, we need to construct SmartConfig secrets
+        // to include in the defaults, so we need to pass in a SmartConfigFactory since that's what we use to
+        // make secrets.
+        //
+        // In the future, perhaps we can simply rely on the schema for crypto defaults, and not suppy a
+        // default passphrase and salt but instead require them to be specified.
 
         PostgresDbSetup(
             dbUrl,
@@ -127,7 +140,8 @@ class CombinedWorker @Activate constructor(
             dbAdminPassword,
             dbName,
             secretsSalt,
-            secretsPassphrase
+            secretsPassphrase,
+            config.factory
         ).run()
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
@@ -140,6 +154,7 @@ class CombinedWorker @Activate constructor(
         dbProcessor.start(config)
         uniquenessProcessor.start()
         flowProcessor.start(config)
+        verificationProcessor.start(config)
         memberProcessor.start(config)
         restProcessor.start(config)
         linkManagerProcessor.start(config)
@@ -153,6 +168,7 @@ class CombinedWorker @Activate constructor(
         uniquenessProcessor.stop()
         dbProcessor.stop()
         flowProcessor.stop()
+        verificationProcessor.stop()
         memberProcessor.stop()
         restProcessor.stop()
         linkManagerProcessor.stop()

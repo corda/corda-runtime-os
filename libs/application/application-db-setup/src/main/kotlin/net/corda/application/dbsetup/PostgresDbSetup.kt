@@ -6,6 +6,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
+import net.corda.libs.configuration.SmartConfigFactory
 import org.slf4j.LoggerFactory
 
 // TODO This class bootstraps database, duplicating functionality available via CLI
@@ -23,6 +24,7 @@ class PostgresDbSetup(
     private val dbName: String,
     secretsSalt: String,
     secretsPassphrase: String,
+    private val smartConfigFactory: SmartConfigFactory
 ) : DbSetup {
 
     companion object {
@@ -40,7 +42,7 @@ class PostgresDbSetup(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val configEntityFactory = ConfigEntityFactory(secretsSalt, secretsPassphrase)
+    private val configEntityFactory = ConfigEntityFactory(smartConfigFactory)
 
     private val dbAdminUrl by lazy {
         "$dbUrl?user=$dbAdmin&password=$dbAdminPassword"

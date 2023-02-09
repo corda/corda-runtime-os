@@ -27,6 +27,7 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-read-service")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation project(":testing:test-utilities")

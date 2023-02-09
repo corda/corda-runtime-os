@@ -164,12 +164,14 @@ class FlowSessionManagerImpl @Activate constructor(
             .filter { sessionState -> sessionState.status == status }
     }
 
-    override fun doAllSessionsHaveStatus(
+    override fun doAllSessionsHaveStatusIn(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
-        status: SessionStateType
+        statuses: List<SessionStateType>
     ): Boolean {
-        return getSessionsWithStatus(checkpoint, sessionIds, status).size == sessionIds.size
+        return sessionIds
+            .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+            .count { sessionState -> statuses.contains(sessionState.status) } == sessionIds.size
     }
 
     private enum class Operation { SENDING, RECEIVING }

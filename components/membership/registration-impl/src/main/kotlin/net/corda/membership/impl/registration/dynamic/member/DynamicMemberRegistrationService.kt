@@ -69,10 +69,11 @@ import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -140,7 +141,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult
+        )
     }
 
     private companion object {
@@ -216,17 +217,16 @@ class DynamicMemberRegistrationService @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>,
-    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
+    ) = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationService {
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult {
+        ) {
             logger.warn("DynamicMemberRegistrationService is currently inactive.")
-            return MembershipRequestRegistrationResult(
-                MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+            throw NotReadyMembershipRegistrationException(
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
             )
         }
@@ -235,11 +235,12 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerRegistrationService {
+        @Suppress("LongMethod")
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>,
-        ): MembershipRequestRegistrationResult {
+        ) {
             try {
                 membershipSchemaValidatorFactory
                     .createValidator()
@@ -249,17 +250,17 @@ class DynamicMemberRegistrationService @Activate constructor(
                         context
                     )
             } catch (ex: MembershipSchemaValidationException) {
-                return MembershipRequestRegistrationResult(
-                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. The registration context is invalid. " + ex.message
+                throw InvalidMembershipRegistrationException(
+                    "Registration failed. The registration context is invalid. " + ex.message,
+                    ex
                 )
             }
             try {
                 validateContext(context)
             } catch (ex: IllegalArgumentException) {
-                return MembershipRequestRegistrationResult(
-                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. The registration context is invalid: " + ex.message
+                throw InvalidMembershipRegistrationException(
+                    "Registration failed. The registration context is invalid: " + ex.message,
+                    ex,
                 )
             }
             try {
@@ -341,24 +342,34 @@ class DynamicMemberRegistrationService @Activate constructor(
                 membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
-                        status = RegistrationStatus.NEW,
+                        status = RegistrationStatus.SENT_TO_MGM,
                         registrationId = registrationId.toString(),
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
                     )
-                )
+                ).getOrThrow()
 
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            } catch (e: InvalidMembershipRegistrationException) {
+                logger.warn("Registration failed.", e)
+                throw e
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Registration failed.", e)
+                throw InvalidMembershipRegistrationException(
+                    "Registration failed. Reason: ${e.message}",
+                    e,
+                )
+            } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
+                logger.warn("Registration failed.", e)
+                throw NotReadyMembershipRegistrationException("Could not persist request: ${e.message}", e)
             } catch (e: Exception) {
                 logger.warn("Registration failed.", e)
-                return MembershipRequestRegistrationResult(
-                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. Reason: ${e.message}"
+                throw NotReadyMembershipRegistrationException(
+                    "Registration failed. Reason: ${e.message}",
+                    e,
                 )
             }
-
-            return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
 
         override fun close() {

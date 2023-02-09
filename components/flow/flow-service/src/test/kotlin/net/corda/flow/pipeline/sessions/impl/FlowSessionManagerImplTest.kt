@@ -495,69 +495,69 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `doAllSessionsHaveStatus returns true if all sessions have the passed in status`() {
-        sessionState.status = SessionStateType.CLOSED
-        anotherSessionState.status = SessionStateType.CLOSED
+    fun `doAllSessionsHaveStatusIn returns true if all sessions have the passed in statuses`() {
+        sessionState.status = SessionStateType.CONFIRMED
+        anotherSessionState.status = SessionStateType.CLOSING
 
         assertTrue(
-            flowSessionManager.doAllSessionsHaveStatus(
+            flowSessionManager.doAllSessionsHaveStatusIn(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                SessionStateType.CLOSED
+                listOf(SessionStateType.CLOSING, SessionStateType.CONFIRMED)
             )
         )
     }
 
     @Test
-    fun `doAllSessionsHaveStatus returns false if any session does not have the passed in status`() {
+    fun `doAllSessionsHaveStatusIn returns false if any session does not have the passed in statuses`() {
         sessionState.status = SessionStateType.CLOSED
         anotherSessionState.status = SessionStateType.CONFIRMED
 
         assertFalse(
-            flowSessionManager.doAllSessionsHaveStatus(
+            flowSessionManager.doAllSessionsHaveStatusIn(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                SessionStateType.CLOSED
+                listOf(SessionStateType.CLOSED)
             )
         )
     }
 
     @Test
-    fun `doAllSessionsHaveStatus returns false if all sessions do not have the passed in status`() {
+    fun `doAllSessionsHaveStatusIn returns false if none of the sessions have the passed in statuses`() {
         sessionState.status = SessionStateType.CLOSING
         anotherSessionState.status = SessionStateType.CONFIRMED
 
         assertFalse(
-            flowSessionManager.doAllSessionsHaveStatus(
+            flowSessionManager.doAllSessionsHaveStatusIn(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                SessionStateType.CLOSED
+                listOf(SessionStateType.CLOSED)
             )
         )
     }
 
     @Test
-    fun `doAllSessionsHaveStatus throws an exception if a session does not exist`() {
+    fun `doAllSessionsHaveStatusIn throws an exception if a session does not exist`() {
         sessionState.status = SessionStateType.CLOSING
 
         whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
 
         assertThrows<FlowSessionStateException> {
-            flowSessionManager.doAllSessionsHaveStatus(
+            flowSessionManager.doAllSessionsHaveStatusIn(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                SessionStateType.CLOSED
+                listOf(SessionStateType.CLOSED)
             )
         }
     }
 
     @Test
-    fun `doAllSessionsHaveStatus returns true there are no sessions`() {
+    fun `doAllSessionsHaveStatusIn returns true there are no sessions`() {
         assertTrue(
-            flowSessionManager.doAllSessionsHaveStatus(
+            flowSessionManager.doAllSessionsHaveStatusIn(
                 checkpoint,
                 emptyList(),
-                SessionStateType.CLOSED
+                listOf(SessionStateType.CLOSED)
             )
         )
     }

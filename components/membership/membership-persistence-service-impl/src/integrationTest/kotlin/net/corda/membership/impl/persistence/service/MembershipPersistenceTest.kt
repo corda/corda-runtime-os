@@ -36,6 +36,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.datamodel.ApprovalRulesEntity
+import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -321,10 +322,11 @@ class MembershipPersistenceTest {
 
             override fun deleteApprovalRule(
                 viewOwningIdentity: HoldingIdentity,
-                ruleId: String
+                ruleId: String,
+                ruleType: ApprovalRuleType
             ) = safeCall {
                 membershipPersistenceClient.deleteApprovalRule(
-                    viewOwningIdentity, ruleId
+                    viewOwningIdentity, ruleId, ruleType
                 )
             }
 
@@ -468,12 +470,12 @@ class MembershipPersistenceTest {
     @Test
     fun `registration requests can persist over RPC topic`() {
         val registrationId = randomUUID().toString()
-        val status = RegistrationStatus.NEW
+        val status = RegistrationStatus.SENT_TO_MGM
 
         val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -935,7 +937,7 @@ class MembershipPersistenceTest {
         val requestEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
 
         val approveResult = membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
             viewOwningHoldingIdentity,
@@ -988,7 +990,7 @@ class MembershipPersistenceTest {
         val requestEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
 
         membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsDeclined(
             viewOwningHoldingIdentity,
@@ -1036,7 +1038,7 @@ class MembershipPersistenceTest {
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
-                    RegistrationStatus.NEW,
+                    RegistrationStatus.SENT_TO_MGM,
                     registrationId,
                     holdingId,
                     ByteBuffer.wrap(
@@ -1071,7 +1073,7 @@ class MembershipPersistenceTest {
         val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -1099,7 +1101,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
         assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
-        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.NEW.name)
+        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.name)
 
         val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
             viewOwningHoldingIdentity,
@@ -1129,7 +1131,13 @@ class MembershipPersistenceTest {
         ).getOrThrow()
 
         val approvalRuleEntity = vnodeEmf.use {
-            it.find(ApprovalRulesEntity::class.java, ruleDetails.ruleId)
+            it.find(
+                ApprovalRulesEntity::class.java,
+                ApprovalRulesEntityPrimaryKey(
+                    ruleDetails.ruleId,
+                    ApprovalRuleType.STANDARD.name
+                )
+            )
         }
         with(approvalRuleEntity) {
             assertThat(ruleRegex).isEqualTo(RULE_REGEX)
@@ -1143,15 +1151,25 @@ class MembershipPersistenceTest {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
         }
-        val testRule = ApprovalRulesEntity(RULE_ID, RULE_REGEX, ApprovalRuleType.STANDARD.name, RULE_LABEL)
+        val testRule = ApprovalRulesEntity(RULE_ID, ApprovalRuleType.STANDARD.name, RULE_REGEX, RULE_LABEL)
         vnodeEmf.transaction {
             it.persist(testRule)
         }
 
-        membershipPersistenceClientWrapper.deleteApprovalRule(viewOwningHoldingIdentity, RULE_ID).getOrThrow()
+        membershipPersistenceClientWrapper.deleteApprovalRule(
+            viewOwningHoldingIdentity, RULE_ID, ApprovalRuleType.STANDARD
+        ).getOrThrow()
 
         vnodeEmf.use {
-            assertThat(it.find(ApprovalRulesEntity::class.java, RULE_ID)).isNull()
+            assertThat(
+                it.find(
+                    ApprovalRulesEntity::class.java,
+                    ApprovalRulesEntityPrimaryKey(
+                        RULE_ID,
+                        ApprovalRuleType.STANDARD.name
+                    )
+                )
+            ).isNull()
         }
     }
 
@@ -1167,8 +1185,8 @@ class MembershipPersistenceTest {
         val rule1 = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
         val rule2 = ApprovalRuleDetails("rule-id-2", "rule-regex-2", "rule-label-2")
         val entities = listOf(
-            ApprovalRulesEntity(rule1.ruleId, rule1.ruleRegex, ApprovalRuleType.STANDARD.name, rule1.ruleLabel),
-            ApprovalRulesEntity(rule2.ruleId, rule2.ruleRegex, ApprovalRuleType.STANDARD.name, rule2.ruleLabel)
+            ApprovalRulesEntity(rule1.ruleId, ApprovalRuleType.STANDARD.name, rule1.ruleRegex, rule1.ruleLabel),
+            ApprovalRulesEntity(rule2.ruleId, ApprovalRuleType.STANDARD.name, rule2.ruleRegex, rule2.ruleLabel)
         )
         vnodeEmf.transaction { em ->
             entities.forEach { em.persist(it) }
@@ -1222,7 +1240,7 @@ class MembershipPersistenceTest {
         return membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 member,
                 ByteBuffer.wrap(
