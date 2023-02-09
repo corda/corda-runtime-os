@@ -1,8 +1,8 @@
 package net.corda.ledger.verification.sandbox
 
+import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 
 interface VerificationSandboxService {
@@ -12,5 +12,5 @@ interface VerificationSandboxService {
      *
      * @throws [CordaRuntimeException] if not found
      */
-    fun get(holdingIdentity: HoldingIdentity, cpkFileChecksums: Set<SecureHash>): SandboxGroupContext
+    fun get(holdingIdentity: HoldingIdentity, cpks: List<CordaPackageSummary>): SandboxGroupContext
 }
