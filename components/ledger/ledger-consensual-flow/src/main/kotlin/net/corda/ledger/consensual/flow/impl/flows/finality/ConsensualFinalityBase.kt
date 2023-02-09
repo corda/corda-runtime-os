@@ -35,8 +35,7 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
     protected fun verifySignature(
         transaction: ConsensualSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata,
-        sessionToNotify: FlowSession? = null,
-        persistAsInvalidOnFail: Boolean = false
+        sessionToNotify: FlowSession? = null
     ) {
         try {
             transactionSignatureService.verifySignature(transaction, signature)
@@ -45,9 +44,7 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
             val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
-            if (persistAsInvalidOnFail) {
-                persistInvalidTransaction(transaction)
-            }
+            persistInvalidTransaction(transaction)
             sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             throw e
         }
@@ -58,17 +55,23 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
         transaction: ConsensualSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata
     ): ConsensualSignedTransactionInternal {
-        verifySignature(transaction, signature, persistAsInvalidOnFail = true)
+        verifySignature(transaction, signature)
         return transaction.addSignature(signature)
     }
 
+    @Suspendable
     protected fun verifyTransaction(signedTransaction: ConsensualSignedTransactionInternal) {
-        verifyMetadata(signedTransaction.wireTransaction.metadata)
-        ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
+        try {
+            verifyMetadata(signedTransaction.wireTransaction.metadata)
+            ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
+        } catch (e: Exception) {
+            persistInvalidTransaction(signedTransaction)
+            throw e
+        }
     }
 
     @Suspendable
-    protected fun persistInvalidTransaction(transaction: ConsensualSignedTransactionInternal) {
+    protected fun persistInvalidTransaction(transaction: ConsensualSignedTransaction) {
         persistenceService.persist(transaction, TransactionStatus.INVALID)
         log.debug { "Recorded transaction as invalid: ${transaction.id}" }
     }
@@ -81,6 +84,7 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
         if (initialTransaction.signatures.isEmpty()){
             val message = "Received initial transaction without signatures."
             log.warn(message)
+            persistInvalidTransaction(initialTransaction)
             sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             throw CordaRuntimeException(message)
         }

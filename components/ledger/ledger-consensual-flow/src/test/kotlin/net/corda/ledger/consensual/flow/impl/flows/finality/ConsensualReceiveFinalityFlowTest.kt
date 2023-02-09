@@ -102,19 +102,19 @@ class ConsensualReceiveFinalityFlowTest {
     }
 
     @Test
-    fun `receiving a transaction initially without signatures throws and does not persist anything`() {
+    fun `receiving a transaction initially without signatures throws and persists as invalid`() {
         whenever(signedTransaction.signatures).thenReturn(listOf())
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Received initial transaction without signatures.")
 
         verify(signedTransaction, never()).addMissingSignatures()
-        verify(persistenceService, never()).persist(any(), any())
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
     }
 
     @Test
-    fun `receiving a transaction initially with invalid signature throws and does not persist anything`() {
+    fun `receiving a transaction initially with invalid signature throws and persists as invalid`() {
         whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
@@ -123,12 +123,12 @@ class ConsensualReceiveFinalityFlowTest {
             .hasMessageContaining("Verifying signature failed!!")
 
         verify(signedTransaction, never()).addMissingSignatures()
-        verify(persistenceService, never()).persist(any(), any())
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
         verify(session).send(any<Payload.Failure<List<DigitalSignatureAndMetadata>>>())
     }
 
     @Test
-    fun `receiving an invalid transaction initially throws and does not persist anything`() {
+    fun `receiving an invalid transaction initially throws and persists as invalid`() {
         whenever(ledgerTransaction.states).thenReturn(listOf(ConsensualStateClassExample("throw", listOf(
             publicKeyExample))))
 
@@ -137,7 +137,7 @@ class ConsensualReceiveFinalityFlowTest {
             .hasMessageContaining("State verification failed")
 
         verify(signedTransaction, never()).addMissingSignatures()
-        verify(persistenceService, never()).persist(any(), any())
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
     }
 
     @Test
