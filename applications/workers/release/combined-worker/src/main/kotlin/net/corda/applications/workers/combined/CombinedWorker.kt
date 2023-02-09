@@ -120,8 +120,6 @@ class CombinedWorker @Activate constructor(
             config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
         val dbAdminPassword = if (config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
             config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_PASS) else "password"
-        val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
-        val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
 
         // Part of DB setup is to generate defaults for the crypto code. That currently includes a
         // default master wrapping key passphrase and salt, which we want to keep secret, and so
@@ -139,8 +137,6 @@ class CombinedWorker @Activate constructor(
             dbAdmin,
             dbAdminPassword,
             dbName,
-            secretsSalt,
-            secretsPassphrase,
             config.factory
         ).run()
 

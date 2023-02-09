@@ -22,9 +22,7 @@ class PostgresDbSetup(
     private val dbAdmin: String,
     private val dbAdminPassword: String,
     private val dbName: String,
-    secretsSalt: String,
-    secretsPassphrase: String,
-    private val smartConfigFactory: SmartConfigFactory
+    smartConfigFactory: SmartConfigFactory
 ) : DbSetup {
 
     companion object {
