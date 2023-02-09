@@ -1,45 +1,27 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.libs.cpi.datamodel.entities.findAllCpiMetadata
+import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepositoryImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.reconciliation.VersionedRecord
-import net.corda.v5.crypto.SecureHash
-import java.time.Instant
 import java.util.stream.Stream
 
 /**
  * Converts the database entity classes [CpiMetadataEntity] to [CpiMetadata], and also the identifier
  */
 val getAllCpiInfoDBVersionedRecords
-        : (ReconciliationContext) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { context ->
-    context.getOrCreateEntityManager().findAllCpiMetadata().map { cpiMetadataEntity ->
-        val cpiId = CpiIdentifier(
-            cpiMetadataEntity.name,
-            cpiMetadataEntity.version,
-            SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
-        )
+        : (ReconciliationContext) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
+    { context ->
+        cpiMetadataToVersionedRecords(CpiMetadataRepositoryImpl().findAll(context.getOrCreateEntityManager()))
+    }
+
+internal fun cpiMetadataToVersionedRecords(cpiMetadataStream: Stream<CpiMetadata>)
+        : Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
+    cpiMetadataStream.map { cpiMetadata ->
         object : VersionedRecord<CpiIdentifier, CpiMetadata> {
-            override val version = cpiMetadataEntity.entityVersion
-            override val isDeleted = cpiMetadataEntity.isDeleted
-            override val key = cpiId
-            override val value by lazy {
-                CpiMetadata(
-                    cpiId = cpiId,
-                    fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum),
-                    cpksMetadata = cpiMetadataEntity.cpks.map {
-                        CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata)
-                    },
-                    groupPolicy = cpiMetadataEntity.groupPolicy,
-                    version = cpiMetadataEntity.entityVersion,
-                    timestamp = cpiMetadataEntity.insertTimestamp.getOrNow()
-                )
-            }
+            override val version = cpiMetadata.version
+            override val isDeleted = cpiMetadata.isDeleted
+            override val key = cpiMetadata.cpiId
+            override val value = cpiMetadata // Todo: Before the cpiMetadata was being instantiated in a lazy manner. Now it is created immediately. I am assuming this won't be an issue otherwise the query should be filtered to return a smaller amount of records. This comment should be revised before merging the PR
         }
     }
-}
-
-private fun Instant?.getOrNow(): Instant {
-    return this ?: Instant.now()
-}

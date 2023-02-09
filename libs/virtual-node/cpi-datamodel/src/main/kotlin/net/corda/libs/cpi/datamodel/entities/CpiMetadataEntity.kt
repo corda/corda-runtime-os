@@ -1,6 +1,10 @@
 package net.corda.libs.cpi.datamodel.entities
 
 import net.corda.db.schema.DbSchema
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.v5.crypto.SecureHash
 import java.io.Serializable
 import java.time.Instant
 import java.util.stream.Stream
@@ -180,6 +184,24 @@ class CpiMetadataEntity(
             isDeleted,
             entityVersion
         )
+
+    fun toCpiMetadata() =
+        CpiMetadata(
+            cpiId = genCpiIdentifier(),
+            fileChecksum = SecureHash.parse(fileChecksum),
+            cpksMetadata = cpks.map { CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata) },
+            groupPolicy = groupPolicy,
+            version = entityVersion,
+            timestamp = insertTimestamp.getOrNow(),
+            isDeleted = isDeleted
+        )
+
+    private fun genCpiIdentifier() =
+        CpiIdentifier(name, version, SecureHash.parse(signerSummaryHash))
+
+    private fun Instant?.getOrNow(): Instant {
+        return this ?: Instant.now()
+    }
 }
 
 /** The composite primary key for a CpiEntity. */
