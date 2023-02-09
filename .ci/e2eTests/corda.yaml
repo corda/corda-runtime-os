@@ -95,13 +95,13 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "p2pLinkManager"
-  rpc:
+  rest:
     kafka:
       sasl:
         username:
-          value: "rpc"
+          value: "rest"
         password:
           valueFrom:
             secretKeyRef:
               name: "kafka-credentials"
-              key: "rpc"
+              key: "rest"
