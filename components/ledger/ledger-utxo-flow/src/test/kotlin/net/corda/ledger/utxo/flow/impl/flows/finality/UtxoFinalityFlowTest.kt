@@ -178,18 +178,18 @@ class UtxoFinalityFlowTest {
     }
 
     @Test
-    fun `called with a transaction initially without signatures throws and does not persist anything`() {
+    fun `called with a transaction initially without signatures throws and persists as invalid`() {
         whenever(initialTx.signatures).thenReturn(listOf())
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Received initial transaction without signatures.")
 
         verify(initialTx, never()).addMissingSignatures()
-        verify(persistenceService, never()).persist(any(), any(), any())
+        verify(persistenceService).persist(initialTx, TransactionStatus.INVALID)
     }
 
     @Test
-    fun `called with a transaction initially with invalid signature throws and does not persist anything`() {
+    fun `called with a transaction initially with invalid signature throws and persists as invalid`() {
         whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
@@ -198,11 +198,11 @@ class UtxoFinalityFlowTest {
             .hasMessageContaining("Verifying signature failed!!")
 
         verify(initialTx, never()).addMissingSignatures()
-        verify(persistenceService, never()).persist(any(), any(), any())
+        verify(persistenceService).persist(initialTx, TransactionStatus.INVALID)
     }
 
     @Test
-    fun `called with an invalid transaction initially throws and does not persist anything`() {
+    fun `called with an invalid transaction initially throws and persists as invalid`() {
         whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
                 TX_ID, "Verification error", null)
@@ -212,7 +212,7 @@ class UtxoFinalityFlowTest {
             .hasMessageContaining("Verification error")
 
         verify(initialTx, never()).addMissingSignatures()
-        verify(persistenceService, never()).persist(any(), any(), any())
+        verify(persistenceService).persist(initialTx, TransactionStatus.INVALID)
     }
 
     @Test

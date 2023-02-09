@@ -65,8 +65,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     protected fun verifySignature(
         transaction: UtxoSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata,
-        sessionToNotify: FlowSession? = null,
-        persistAsInvalidOnFail: Boolean = false
+        sessionToNotify: FlowSession? = null
     ) {
         try {
             log.debug { "Verifying signature($signature) of transaction: $transaction.id" }
@@ -76,9 +75,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
             val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
-            if (persistAsInvalidOnFail) {
-                persistInvalidTransaction(transaction)
-            }
+            persistInvalidTransaction(transaction)
             sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             throw e
         }
@@ -89,7 +86,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         transaction: UtxoSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata
     ): UtxoSignedTransactionInternal {
-        verifySignature(transaction, signature, persistAsInvalidOnFail = true)
+        verifySignature(transaction, signature)
         return transaction.addSignature(signature)
     }
 
@@ -123,11 +120,16 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
-        transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
+        try {
+            transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
+        } catch(e: Exception){
+            persistInvalidTransaction(signedTransaction)
+            throw e
+        }
     }
 
     @Suspendable
-    protected fun persistInvalidTransaction(transaction: UtxoSignedTransactionInternal) {
+    protected fun persistInvalidTransaction(transaction: UtxoSignedTransaction) {
         persistenceService.persist(transaction, TransactionStatus.INVALID)
         log.debug { "Recorded transaction as invalid: ${transaction.id}" }
     }
@@ -140,6 +142,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         if (initialTransaction.signatures.isEmpty()){
             val message = "Received initial transaction without signatures."
             log.warn(message)
+            persistInvalidTransaction(initialTransaction)
             sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             throw CordaRuntimeException(message)
         }
