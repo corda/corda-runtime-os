@@ -15,6 +15,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
 
 /** Rest operations for virtual node management. */
 @HttpRestResource(
@@ -91,9 +92,6 @@ interface VirtualNodeRestResource : RestResource {
 
     /**
      * Returns the VirtualNodeOperationStatus for a given [requestId].
-     *
-     * @throws 'ResourceNotFoundException' If the virtual node was not found.
-     * @throws `HttpApiException` If the request returns an exceptional response. TODO: (exceptions)
      */
     @HttpGET(
         path = "status/{requestId}",
@@ -101,10 +99,10 @@ interface VirtualNodeRestResource : RestResource {
         description = "This method returns the VirtualNodeOperationStatus for a given operation request id.",
         responseDescription = "VirtualNodeOperationStatus for the specified virtual node."
     )
-    fun getVirtualNodeStatus(
-        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+    fun getVirtualNodeOperationStatus(
+        @RestPathParameter(description = "The requestId for the operation; obtained during node creation/upgrade")
         requestId: String
-    ): VirtualNodeOperationStatus
+    ): VirtualNodeOperationStatuses
 
 
     /**

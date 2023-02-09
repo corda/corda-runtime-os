@@ -7,8 +7,8 @@ import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
-import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
-import net.corda.libs.virtualnode.datamodel.dto.OperationStatusLite
+import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -58,16 +58,17 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             ?.toVirtualNodeInfo()
     }
 
-    override fun findVirtualNodeOperation(entityManager: EntityManager, requestId: String) : OperationStatusLite {
+    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String) : List<VirtualNodeOperationDto> {
         entityManager.transaction{
-            val operationStatus = entityManager.createQuery("from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId")
+            val operationStatuses = entityManager.createQuery("from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId")
                 .setParameter("requestId", requestId)
                 .resultList
 
-            println(operationStatus)
-            println(operationStatus.get(0))
+            val result = operationStatuses.map{
+                VirtualNodeOperationDto((it as VirtualNodeOperationEntity).requestId)
+            }
 
-            return OperationStatusLite("123")
+            return result
         }
     }
 

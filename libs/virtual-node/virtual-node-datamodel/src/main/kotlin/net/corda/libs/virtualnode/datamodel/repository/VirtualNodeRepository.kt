@@ -3,7 +3,7 @@ package net.corda.libs.virtualnode.datamodel.repository
 import net.corda.crypto.core.ShortHash
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.dto.OperationStatusLite
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
@@ -25,7 +25,7 @@ interface VirtualNodeRepository {
      */
     fun find(entityManager: EntityManager, holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
 
-    fun findVirtualNodeOperation(entityManager: EntityManager, requestId: String) : OperationStatusLite
+    fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String) : List<VirtualNodeOperationDto>
 
     /**
      * Persist a holding identity with the given holdingId and CPI.

@@ -3,7 +3,6 @@ package net.corda.libs.virtualnode.datamodel.dto
 /**
  *
  */
-class OperationStatusLite(
+class VirtualNodeOperationDto(
     val requestId: String,
-
 )

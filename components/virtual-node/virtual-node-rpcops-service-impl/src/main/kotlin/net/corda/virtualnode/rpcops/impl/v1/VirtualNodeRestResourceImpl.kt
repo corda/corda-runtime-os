@@ -11,8 +11,8 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
+import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
@@ -29,6 +29,8 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatus
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.lifecycle.DependentComponents
@@ -237,15 +239,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         return ResponseEntity.accepted(AsyncResponse(requestId))
     }
 
-    override fun getVirtualNodeStatus(requestId: String): VirtualNodeOperationStatus {
+    override fun getVirtualNodeOperationStatus(requestId: String): VirtualNodeOperationStatuses {
         val instant = clock.instant()
 
         logger.warn("getVirtualNodeStatus called with requestId: $requestId")
-
-        // Lookup actor to keep track of which RPC user triggered an update
-        if (!isRunning) throw IllegalStateException(
-            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
-        )
 
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
@@ -259,9 +256,24 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         logger.warn("response for VirtualNodeOPerationStatusRequest ${resp.responseType} $resp")
 
         return when (val resolvedResponse = resp.responseType) {
-            is VirtualNodeOperationStatus -> {
-                logger.warn("resolvedResponse -${resolvedResponse.requestId} -${resolvedResponse.actor} -${resolvedResponse.state}")
-                resolvedResponse
+            is VirtualNodeOperationStatusResponse -> {
+                resolvedResponse.run {
+                    val statuses = this.status.map{
+                        VirtualNodeOperationStatus(
+                            it.requestId,
+                            it.virtualNodeShortHash,
+                            it.actor,
+                            it.operationData,
+                            it.requestTimestamp,
+                            it.latestUpdateTimestamp,
+                            it.heartbeatTimestamp,
+                            it.state,
+                            it.errors
+                        )
+                    }
+
+                    VirtualNodeOperationStatuses(this.requestId, statuses)
+                }
             }
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
