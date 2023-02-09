@@ -5,6 +5,7 @@ plugins {
 description 'Add-on OSGi tests'
 
 dependencies {
+    compileOnly 'org.jetbrains:annotations'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:osgi.annotation'
@@ -17,7 +18,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-config-schema"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }

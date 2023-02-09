@@ -31,7 +31,7 @@ dependencies {
 
     api project(':libs:lifecycle:lifecycle')
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-db-schema"

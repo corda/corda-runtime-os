@@ -12,7 +12,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
     api ("io.micrometer:micrometer-core:$micrometerVersion") {

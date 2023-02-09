@@ -21,7 +21,7 @@ dependencies {
     implementation project(':libs:sandbox-types')
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-serialization'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
     implementation("com.networknt:json-schema-validator:$networkntJsonSchemaVersion"){
         // Exclude transitive dependency on vulnerable version of jackson
