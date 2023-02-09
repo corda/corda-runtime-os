@@ -8,7 +8,7 @@ description 'Corda Membership'
 
 dependencies {
     api platform(project(':corda-api'))
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     compileOnly 'org.osgi:osgi.annotation'
 

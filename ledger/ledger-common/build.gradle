@@ -10,7 +10,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     api platform(project(':corda-api'))
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api project(":application")
 
     testImplementation project(':crypto')

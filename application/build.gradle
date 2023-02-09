@@ -7,7 +7,7 @@ plugins {
 description 'Corda Application'
 
 dependencies {
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api 'javax.persistence:javax.persistence-api'
 
     api platform(project(':corda-api'))

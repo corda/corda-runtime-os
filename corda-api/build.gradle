@@ -31,14 +31,14 @@ dependencies {
                 require javaxPersistenceApiVersion
             }
         }
-        api('net.corda.kotlin:kotlin-stdlib-jdk8-osgi') {
+        api('org.jetbrains.kotlin:kotlin-osgi-bundle') {
             version {
                 require kotlinVersion
             }
         }
-        api('net.corda.kotlin:kotlin-stdlib-jdk7-osgi') {
+        api('org.jetbrains:annotations') {
             version {
-                require kotlinVersion
+                require jetbrainsAnnotationsVersion
             }
         }
         api('org.osgi:osgi.annotation') {

@@ -7,7 +7,7 @@ plugins {
 description 'Corda Crypto'
 
 dependencies {
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
     compileOnly 'org.osgi:osgi.annotation'

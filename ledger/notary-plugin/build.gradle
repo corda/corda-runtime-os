@@ -9,7 +9,7 @@ description 'Corda Notary Plugin API and Core'
 dependencies {
     api platform(project(':corda-api'))
 
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api 'javax.persistence:javax.persistence-api'
     api 'org.slf4j:slf4j-api'
 

@@ -17,6 +17,9 @@ import java.util.Properties;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 
+/**
+ * Gradle plugin to ensure that the CPK and CPB Gradle plugins are correctly configured.
+ */
 @SuppressWarnings("unused")
 public final class ConfigurationPlugin implements Plugin<Project> {
     private static final String MINIMUM_PLUGIN_VERSION_PROPERTY = "Minimum-Corda-Plugins-Version";

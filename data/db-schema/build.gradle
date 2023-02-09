@@ -7,7 +7,7 @@ plugins {
 description 'Definition of Database Schema'
 
 dependencies {
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform(project(':corda-api'))
 
     compileOnly 'org.osgi:osgi.annotation'
