@@ -154,7 +154,7 @@ class StaticMemberRegistrationService @Activate constructor(
     override fun stop() {
         coordinator.stop()
     }
-    private val random = Random()
+    private val random = Random(System.currentTimeMillis())
 
     override fun register(
         registrationId: UUID,
