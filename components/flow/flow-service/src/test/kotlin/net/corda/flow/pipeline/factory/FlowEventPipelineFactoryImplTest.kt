@@ -53,6 +53,7 @@ class FlowEventPipelineFactoryImplTest {
         flowRunner,
         flowGlobalPostProcessor,
         flowCheckpointFactory,
+        mock(),
         listOf(flowEventHandler),
         listOf(flowWaitingForHandler),
         listOf(flowRequestHandler)
@@ -66,7 +67,8 @@ class FlowEventPipelineFactoryImplTest {
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
             flowGlobalPostProcessor,
-            flowEventContext
+            flowEventContext,
+            mock()
         )
         val result = factory.create(checkpoint, flowEvent, config, emptyMap())
         assertEquals(expected.context, result.context)

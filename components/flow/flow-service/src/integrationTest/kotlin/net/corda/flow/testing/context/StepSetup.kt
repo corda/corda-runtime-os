@@ -4,12 +4,13 @@ import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.OperationalStatus
 
 interface StepSetup {
 
     val initiatedIdentityMemberName: MemberX500Name
 
-    fun virtualNode(cpiId: String, holdingId: HoldingIdentity)
+    fun virtualNode(cpiId: String, holdingId: HoldingIdentity, flowOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE)
 
     fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash)
 

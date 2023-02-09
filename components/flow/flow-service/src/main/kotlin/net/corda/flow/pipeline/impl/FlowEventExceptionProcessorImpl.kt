@@ -196,6 +196,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                     )
                 )
             }
+            val errorEvents = flowSessionManager.getSessionErrorEventRecords(context.checkpoint, context.config, exceptionHandlingStartTime)
             val cleanupEvents = createCleanupEventsForSessions(
                 getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
                 checkpoint.sessions.filterNot { it.hasScheduledCleanup }
@@ -206,7 +207,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             flowEventContextConverter.convert(
                 context.copy(
-                    outputRecords = cleanupEvents + statusRecord,
+                    outputRecords = errorEvents + cleanupEvents + statusRecord,
                     sendToDlq = false // killed flows do not go to DLQ
                 )
             )

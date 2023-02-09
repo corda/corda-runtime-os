@@ -14,6 +14,7 @@ import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -26,6 +27,7 @@ class FlowEventPipelineFactoryImpl(
     private val flowRunner: FlowRunner,
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
     private val flowCheckpointFactory: FlowCheckpointFactory,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     flowEventHandlers: List<FlowEventHandler<out Any>>,
     flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>>,
     flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
@@ -63,7 +65,17 @@ class FlowEventPipelineFactoryImpl(
         flowGlobalPostProcessor: FlowGlobalPostProcessor,
         @Reference(service = FlowCheckpointFactory::class)
         flowCheckpointFactory: FlowCheckpointFactory,
-        ) : this(flowRunner, flowGlobalPostProcessor,flowCheckpointFactory, mutableListOf(), mutableListOf(), mutableListOf())
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    ) : this(
+        flowRunner,
+        flowGlobalPostProcessor,
+        flowCheckpointFactory,
+        virtualNodeInfoReadService,
+        mutableListOf(),
+        mutableListOf(),
+        mutableListOf()
+    )
 
     override fun create(
         checkpoint: Checkpoint?,
@@ -85,7 +97,8 @@ class FlowEventPipelineFactoryImpl(
             flowRequestHandlerMap,
             flowRunner,
             flowGlobalPostProcessor,
-            context
+            context,
+            virtualNodeInfoReadService
         )
     }
 }
