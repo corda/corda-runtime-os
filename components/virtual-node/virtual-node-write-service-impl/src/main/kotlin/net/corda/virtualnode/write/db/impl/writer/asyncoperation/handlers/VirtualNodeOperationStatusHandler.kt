@@ -1,7 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.virtualnode.AsynchronousOperationState
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatus
@@ -24,48 +23,30 @@ internal class VirtualNodeOperationStatusHandler(
 
     fun handle(
         instant: Instant,
-        operationStatusRequest: VirtualNodeOperationStatusRequest,
+        request: VirtualNodeOperationStatusRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-        // Attempt and update, and on failure, pass the error back to the RPC processor
         try {
             val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
 
-            val requestId = operationStatusRequest.requestId
+            val operationStatuses = virtualNodeRepository.findVirtualNodeOperationByRequestId(em, request.requestId)
 
-            logger.warn("VirtualNodeOperationStatusHandler.handle()")
-            logger.warn("requestId: $requestId")
-
-            val operationStatuses = virtualNodeRepository.findVirtualNodeOperationByRequestId(em, requestId)
-
-            logger.warn("operationStatusResponse VirtualNodeOperationDto = ${operationStatuses.toString()}")
-            for(status in operationStatuses){
-                logger.warn("status: ${status.toString()}")
+            val operationStatusesAvro = operationStatuses.map {
+                VirtualNodeOperationStatus(
+                    it.requestId,
+                    it.requestData,
+                    it.requestTimestamp,
+                    it.latestUpdateTimestamp,
+                    it.heartbeatTimestamp,
+                    it.state,
+                    it.errors
+                )
             }
-
-            val statuses = operationStatuses.map { VirtualNodeOperationStatus(
-                it.requestId,
-                "shortHash",
-                "actor",
-                null,
-                instant,
-                instant,
-                instant,
-                AsynchronousOperationState.IN_PROGRESS,
-                listOf()
-            )}
-
-            logger.warn("created VirtualNodeOperationStatus")
 
             val response = VirtualNodeManagementResponse(
                 instant,
-                VirtualNodeOperationStatusResponse(
-                    requestId,
-                    statuses
-                )
+                VirtualNodeOperationStatusResponse(request.requestId, operationStatusesAvro)
             )
-            logger.warn("created VirtualNodeMnaagementResponse: ${response.responseType}")
-            logger.warn("created VirtualNodeMnaagementResponse: $response")
             respFuture.complete(response)
         } catch (e: Exception) {
             logger.warn("handler exception ${e.message}")

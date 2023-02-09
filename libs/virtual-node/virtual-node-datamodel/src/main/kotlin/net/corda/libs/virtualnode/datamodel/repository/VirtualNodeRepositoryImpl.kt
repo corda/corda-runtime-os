@@ -1,6 +1,5 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
-import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import java.lang.IllegalArgumentException
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -58,17 +57,27 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             ?.toVirtualNodeInfo()
     }
 
-    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String) : List<VirtualNodeOperationDto> {
-        entityManager.transaction{
-            val operationStatuses = entityManager.createQuery("from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId")
+    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto> {
+        entityManager.transaction {
+            val operationStatuses = entityManager.createQuery(
+                "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId",
+                VirtualNodeOperationEntity::class.java
+            )
                 .setParameter("requestId", requestId)
                 .resultList
 
-            val result = operationStatuses.map{
-                VirtualNodeOperationDto((it as VirtualNodeOperationEntity).requestId)
+            return operationStatuses.map {
+                VirtualNodeOperationDto(
+                    it.requestId,
+                    it.data,
+                    it.state.name,
+                    it.operationType.name,
+                    it.requestTimestamp,
+                    it.latestUpdateTimestamp,
+                    it.heartbeatTimestamp,
+                    it.errors
+                )
             }
-
-            return result
         }
     }
 
