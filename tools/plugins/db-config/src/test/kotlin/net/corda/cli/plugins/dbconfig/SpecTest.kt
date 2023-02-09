@@ -15,7 +15,6 @@ import java.nio.file.Path
 import java.sql.Connection
 
 class SpecTest {
-    private val mockPath = mock<Path>()
     private val mockLiquibase: Liquibase = mock()
     private val mockWriter: FileWriter = mock()
     private val mockWriterFactory = mock<(String) -> FileWriter>().apply {
@@ -35,7 +34,6 @@ class SpecTest {
     }
 
     private val specConfig = Spec.SpecConfig(
-        databaseChangeLogFile = mockPath,
         writerFactory = mockWriterFactory,
         liquibaseFactory = mockLiquibaseFactory,
         deleteFile = mockDeleteFile,
@@ -49,6 +47,9 @@ class SpecTest {
         const val JDBC_URL = "url"
         const val USER = "user"
         const val PASSWORD = "password"
+
+        const val DEFAULT_PATH = "./databasechangelog.csv"
+        const val CUSTOM_PATH = "path"
     }
 
     @Test
@@ -87,7 +88,19 @@ class SpecTest {
 
         spec.run()
 
-        verify(mockDeleteFile, times(1)).invoke(mockPath)
+        verify(mockDeleteFile, times(1)).invoke(Path.of(DEFAULT_PATH))
+    }
+
+    @Test
+    fun `Verify we delete the changelog file at a custom location if clear is specified`() {
+        val spec = Spec(specConfig)
+
+        spec.clearChangeLog = true
+        spec.databaseChangeLogFile = Path.of(CUSTOM_PATH)
+
+        spec.run()
+
+        verify(mockDeleteFile, times(1)).invoke(Path.of(CUSTOM_PATH))
     }
 
     @Test

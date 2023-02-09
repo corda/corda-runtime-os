@@ -26,26 +26,32 @@ import java.sql.DriverManager
 )
 class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
     @CommandLine.Option(
+        names = ["--change-log"],
+        description = ["Path and filename of the databasechangelog CSV file which is created by Liquibase in offline" +
+                "mode. Defaults to '$DEFAULT_CHANGELOG_PATH'"]
+    )
+    var databaseChangeLogFile = Path.of(DEFAULT_CHANGELOG_PATH)
+
+    @CommandLine.Option(
         names = ["-c", "--clear-change-log"],
-        description = ["Automatically delete the changelogCSV in the PWD to force generation of the sql files"]
+        description = ["Automatically delete the changelogCSV to force generation of the sql files"]
     )
     var clearChangeLog: Boolean? = false
 
     @CommandLine.Option(
         names = ["-s", "--schemas"],
-        description = ["List of schema files to generate. Default is all schemas. Options are: config, messagebus, rbac, " +
-                "crypto"],
+        description = ["List of sql files to generate. Default is files for all schemas. Options are: $DEFAULT_SCHEMAS"],
         split = ","
     )
     var schemasToGenerate: List<String> = emptyList<String>()
 
     @CommandLine.Option(
-        names = ["-i", "--ignore-schema-sql"],
-        description = ["By default sql files include a command to create a schema in the database for the tables being" +
-                "generated. This option allows the skipping of the generation of that command in order the SQL can be" +
-                "applied to a database of its own."]
+        names = ["-g", "--generate-schema-sql"],
+        description = ["By default sql files generated are schemaless, it is the responsibility of the db admin to apply " +
+                "these files to the correct schema themselves. Specifying this option will add schema creation to each" +
+                "of the sql files. The schemas generated will be the Corda defaults: $DEFAULT_SCHEMAS"]
     )
-    var ignoreSchemaSql: Boolean? = false
+    var generateSchemaSql: Boolean? = false
 
     @CommandLine.Option(
         names = ["-l", "--location"],
@@ -73,10 +79,12 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+
+        private const val DEFAULT_SCHEMAS = "config, messagebus, rbac, crypto"
+        private const val DEFAULT_CHANGELOG_PATH = "./databasechangelog.csv"
     }
 
     data class SpecConfig(
-        val databaseChangeLogFile: Path = Path.of("./databasechangelog.csv"),
         val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
         val liquibaseFactory: (String, Database) -> Liquibase =
             { file: String, database: Database -> Liquibase(file, ClassLoaderResourceAccessor(), database) },
@@ -95,7 +103,7 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
 
     override fun run() {
         if (clearChangeLog == true) {
-            config.deleteFile(config.databaseChangeLogFile)
+            config.deleteFile(databaseChangeLogFile)
         }
 
         listOf(
@@ -141,7 +149,7 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
         // connections don't overwrite any previous databasechangelog.csv, it is still appended to on each invocation.
         val (connection, database) = connectionAndDatabase()
         connection.use {
-            if (ignoreSchemaSql == false) {
+            if (generateSchemaSql == true) {
                 // Our Liquibase files contain no schema information deliberately. Each db.changelog-master.xml
                 // represents an isolated data set which could be put into its own database and therefore be separately
                 // permissioned. If requested this tool will:
@@ -163,7 +171,7 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
 
     private fun connectionAndDatabase() = if (jdbcUrl == null) {
         val database = PostgresDatabase()
-        val connection = OfflineConnection("offline:postgresql", ClassLoaderResourceAccessor())
+        val connection = OfflineConnection("offline:postgresql?changeLogFile=$databaseChangeLogFile", ClassLoaderResourceAccessor())
         database.connection = connection
         connection.attached(database)
         Pair(connection, database)
