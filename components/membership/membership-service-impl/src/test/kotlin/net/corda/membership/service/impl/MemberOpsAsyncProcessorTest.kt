@@ -17,7 +17,6 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -106,10 +105,10 @@ class MemberOpsAsyncProcessorTest {
     }
 
     @Test
-    fun `onNext with invalid id will throw an exception`() {
+    fun `onNext with invalid id will do nothing`() {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).doReturn(null)
         val id = UUID(0, 1)
-        assertThrows<NotReadyMembershipRegistrationException> {
+        assertDoesNotThrow {
             processor.onNext(
                 listOf(
                     Record(

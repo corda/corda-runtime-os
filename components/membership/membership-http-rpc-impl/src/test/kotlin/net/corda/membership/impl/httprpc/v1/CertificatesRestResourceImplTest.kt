@@ -599,7 +599,7 @@ class CertificatesRestResourceImplTest {
         }
 
         @Test
-        fun `session init will fail if the certificate is a cluster certificate`() {
+        fun `session certificate will fail if the certificate is a cluster certificate`() {
             val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
             val certificate = mock<HttpFileUpload> {
                 on { content } doReturn certificateText.byteInputStream()
@@ -611,7 +611,7 @@ class CertificatesRestResourceImplTest {
         }
 
         @Test
-        fun `session init will fail if the virtual node can not be found`() {
+        fun `session certificate will fail if the virtual node can not be found`() {
             val shortHash = ShortHash.of("123412341234")
             whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)).thenReturn(null)
             val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
@@ -625,7 +625,7 @@ class CertificatesRestResourceImplTest {
         }
 
         @Test
-        fun `session init will fail if the virtual node subject is not the member name`() {
+        fun `session certificate will fail if the subject is not the member name`() {
             val shortHash = ShortHash.of("123412341234")
             val nodeInfo = mock<VirtualNodeInfo> {
                 on { holdingIdentity } doReturn HoldingIdentity(
@@ -656,7 +656,7 @@ class CertificatesRestResourceImplTest {
         }
 
         @Test
-        fun `session init will not fail if the virtual node subject is the member name`() {
+        fun `session certificate will not fail if the virtual node subject is the member name`() {
             val name = MemberX500Name.parse("O=Alice, L=LDN, C=GB")
             val shortHash = ShortHash.of("123412341234")
             val nodeInfo = mock<VirtualNodeInfo> {
@@ -686,17 +686,27 @@ class CertificatesRestResourceImplTest {
         }
 
         @Test
-        fun `session init will fail if the certificate name is not a vaild member name`() {
+        fun `session certificate will fail if the certificate name is not a vaild member name`() {
             val shortHash = ShortHash.of("123412341234")
-            val nodeInfo = mock<VirtualNodeInfo>()
-            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)).thenReturn(nodeInfo)
-            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)).thenReturn(mock())
+            val x509Certificate = mock<X509Certificate> {
+                on { subjectX500Principal } doReturn X500Principal("C=Alice")
+            }
+            val certificateFactory = mock<CertificateFactory> {
+                on { generateCertificates(any()) } doReturn listOf(x509Certificate)
+            }
+            val certificateText = ""
             val certificate = mock<HttpFileUpload> {
                 on { content } doReturn certificateText.byteInputStream()
             }
+            mockStatic(CertificateFactory::class.java).use {
+                it.`when`<CertificateFactory> {
+                    CertificateFactory.getInstance("X.509")
+                }.doReturn(certificateFactory)
 
-            assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("p2p-session", shortHash.value, "alias", listOf(certificate))
+                assertThrows<InvalidInputDataException> {
+                    certificatesOps.importCertificateChain("p2p-session", shortHash.value, "alias", listOf(certificate))
+                }
             }
         }
 

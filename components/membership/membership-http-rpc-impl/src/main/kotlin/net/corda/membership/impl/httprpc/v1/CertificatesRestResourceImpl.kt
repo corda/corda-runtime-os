@@ -218,7 +218,7 @@ class CertificatesRestResourceImpl @Activate constructor(
                 throw InvalidInputDataException(
                     details = mapOf(
                         "holdingIdentityId" to
-                            "P2P Session certificate can only be loaded to holding identity."
+                            "P2P Session certificate can only be imported to holding identity."
                     )
                 )
             }

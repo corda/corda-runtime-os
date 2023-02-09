@@ -339,7 +339,7 @@ class KeysRestResourceImplTest {
         }
 
         @Test
-        fun `generateKeyPair will not throw an exception when the category is session init and the tenant is not a virtual node`() {
+        fun `generateKeyPair will not throw an exception when the category is session init and the tenant is a virtual node`() {
             val tenantId = "123123123123"
             val publicKey = mock<PublicKey> {
                 on { encoded } doReturn byteArrayOf(1, 2, 3)
