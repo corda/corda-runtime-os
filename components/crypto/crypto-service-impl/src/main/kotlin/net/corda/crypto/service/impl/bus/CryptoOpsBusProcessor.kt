@@ -118,9 +118,6 @@ class CryptoOpsBusProcessor(
             )
         }
 
-        // This needs to work with both short and full key ids
-        // Seems like it's only `ByIdsRpcQuery` that works with key ids so needs to
-        // work with full Id too from client side too
         fun handleByIdsRpcQuery(request: ByIdsRpcQuery): CryptoSigningKeys {
             val foundKeys =
                 when (val avroKeyIds = request.keyIds) {

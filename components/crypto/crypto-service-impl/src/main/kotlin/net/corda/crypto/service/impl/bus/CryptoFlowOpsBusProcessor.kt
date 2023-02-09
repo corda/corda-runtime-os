@@ -137,7 +137,7 @@ class CryptoFlowOpsBusProcessor(
                 val keyIds = when (val avroKeyIds = request.keyIds) {
                     is ShortHashes -> avroShortHashesToStrings(avroKeyIds)
                     is SecureHashes -> avroSecureHashesToStrings(avroKeyIds)
-                    else -> throw IllegalArgumentException("Unexpected type for ${request::keyIds.javaField}: ${avroKeyIds::class.java.name}")
+                    else -> throw IllegalArgumentException("Unexpected type for key ids: ${avroKeyIds::class.java.name}")
                 }
 
                 cryptoOpsClient.lookUpForKeysByIdsProxy(
