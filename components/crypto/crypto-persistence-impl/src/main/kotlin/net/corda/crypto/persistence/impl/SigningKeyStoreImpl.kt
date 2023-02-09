@@ -243,7 +243,7 @@ class SigningKeyStoreImpl @Activate constructor(
                 return cached.values
             }
             val notFound = shortKeyIds.filter { id -> !cached.containsKey(CacheKey(tenantId, id)) }
-            val fetched = findByIds(tenantId, notFound).map {
+            val fetched = findByShortKeyIds(tenantId, notFound).map {
                 it.toSigningCachedKey()
             }.distinctBy {
                 it.id
@@ -269,14 +269,14 @@ class SigningKeyStoreImpl @Activate constructor(
             return fetched
         }
 
-        private fun findByIds(tenantId: String, ids: Collection<String>): Collection<SigningKeyEntity> =
+        private fun findByShortKeyIds(tenantId: String, shortKeyIds: Collection<String>): Collection<SigningKeyEntity> =
             entityManagerFactory(tenantId).use { em ->
                 em.createQuery(
                     "FROM SigningKeyEntity WHERE tenantId=:tenantId AND keyId IN(:ids)",
                     SigningKeyEntity::class.java
                 ).also { q ->
                     q.setParameter("tenantId", tenantId)
-                    q.setParameter("ids", ids)
+                    q.setParameter("ids", shortKeyIds)
                 }.resultList
             }
 
