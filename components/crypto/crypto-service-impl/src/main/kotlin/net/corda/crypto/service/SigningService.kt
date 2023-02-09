@@ -4,7 +4,9 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.ShortHash
 import java.security.KeyPair
 import java.security.PublicKey
 
@@ -55,16 +57,25 @@ interface SigningService {
     ): Collection<SigningKeyInfo>
 
     /**
-     * Returns list of keys for provided key ids.
+     * Looks for keys by short key ids.
      *
-     * @param tenantId the tenant's id which the keys belong to.
-     * @param ids The list of the key ids to look up for, the maximum number of items is 20.
-     *
-     * @throws IllegalArgumentException if the number of ids exceeds 20.
+     * @param tenantId The tenant's id which the keys belong to.
+     * @param shortKeyIds Short key ids to look keys for.
      */
-    fun lookup(
+    fun lookupByShortIds(
         tenantId: String,
-        ids: List<String>
+        shortKeyIds: List<ShortHash>
+    ): Collection<SigningKeyInfo>
+
+    /**
+     * Looks for keys by full key ids.
+     *
+     * @param tenantId The tenant's id which the keys belong to.
+     * @param fullKeyIds Full key ids to look keys for.
+     */
+    fun lookupByFullIds(
+        tenantId: String,
+        fullKeyIds: List<SecureHash>
     ): Collection<SigningKeyInfo>
 
     /**

@@ -9,6 +9,8 @@ import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
@@ -20,6 +22,8 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -30,6 +34,16 @@ class CryptoFlowOpsBusProcessor(
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private fun avroShortHashesToStrings(shortHashes: ShortHashes): List<String> =
+            shortHashes.hashes.map {
+                ShortHash.of(it).value
+            }
+
+        private fun avroSecureHashesToStrings(secureHashes: SecureHashes): List<String> =
+            secureHashes.hashes.map {
+                SecureHash(it.algorithm, it.bytes.array()).toString()
+            }
     }
 
     override val keyClass: Class<String> = String::class.java
@@ -110,11 +124,6 @@ class CryptoFlowOpsBusProcessor(
                     tenantId = context.tenantId,
                     candidateKeys = request.keys
                 )
-            is ByIdsFlowQuery ->
-                cryptoOpsClient.lookUpForKeysByIdsProxy(
-                    tenantId = context.tenantId,
-                    candidateKeys = request.keyIds
-                )
             is SignFlowCommand ->
                 cryptoOpsClient.signProxy(
                     tenantId = context.tenantId,
@@ -123,6 +132,18 @@ class CryptoFlowOpsBusProcessor(
                     data = request.bytes,
                     context = request.context
                 )
+            is ByIdsFlowQuery -> {
+                val keyIds = when (val avroKeyIds = request.keyIds) {
+                    is ShortHashes -> avroShortHashesToStrings(avroKeyIds)
+                    is SecureHashes -> avroSecureHashesToStrings(avroKeyIds)
+                    else -> throw IllegalArgumentException("Unexpected type for ${avroKeyIds::class.java.name}")
+                }
+
+                cryptoOpsClient.lookUpForKeysByIdsProxy(
+                    tenantId = context.tenantId,
+                    candidateKeys = keyIds
+                )
+            }
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }

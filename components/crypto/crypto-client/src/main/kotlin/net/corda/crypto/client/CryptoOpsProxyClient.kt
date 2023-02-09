@@ -27,6 +27,7 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
     /**
      * Looks up for keys by ids owned by tenant of [tenantId] (has private keys for).
      */
+    // TODO Should be split in two (SecureHash and ShortHash)
     fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys
 
     /**

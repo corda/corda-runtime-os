@@ -22,8 +22,10 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
@@ -64,10 +66,17 @@ class SigningServiceImpl(
         ).map { key -> key.toSigningKeyInfo() }
     }
 
-    override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
-        logger.debug { "lookup(tenantId=$tenantId, ids=[${ids.joinToString()}])" }
-        return store.lookup(tenantId, ids).map { key -> key.toSigningKeyInfo() }
-    }
+    override fun lookupByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): Collection<SigningKeyInfo> =
+        store.lookupByShortIds(tenantId, shortKeyIds)
+            .map { foundKey ->
+                foundKey.toSigningKeyInfo()
+            }
+
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningKeyInfo> =
+        store.lookupByFullIds(tenantId, fullKeyIds)
+            .map { foundKey ->
+                foundKey.toSigningKeyInfo()
+            }
 
     override fun createWrappingKey(
         hsmId: String,
@@ -266,7 +275,10 @@ class SigningServiceImpl(
                 it.publicKeyId() to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
-                val found = store.lookup(tenantId, chunk.map { it.first })
+                val found = store.lookupByShortIds(
+                    tenantId,
+                    chunk.map { ShortHash.of(it.first) }
+                )
                 if (found.isNotEmpty()) {
                     for (key in chunk) {
                         val first = found.firstOrNull { it.id == key.first }

@@ -11,6 +11,8 @@ import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -37,6 +39,7 @@ import net.corda.v5.base.util.EncodingUtils.toBase58
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
@@ -55,6 +58,22 @@ class CryptoOpsClientImpl(
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        // TODO This converter needs to be removed once we expose SecureHash and ShortHash and types to APIs of this class
+        private fun parseStringsToKeyIds(keyIdsStrings: List<String>): Any  {
+            if (keyIdsStrings.isEmpty())
+                return ShortHashes()
+            return if (keyIdsStrings[0].length == 12) {
+                ShortHashes(keyIdsStrings)
+            } else {
+                SecureHashes(
+                    keyIdsStrings.map {
+                        val secureHash = SecureHash.parse(it)
+                        net.corda.data.crypto.SecureHash(secureHash.algorithm, ByteBuffer.wrap(secureHash.bytes))
+                    }
+                )
+            }
+        }
     }
 
     fun getSupportedSchemes(tenantId: String, category: String): List<String> {
@@ -98,6 +117,7 @@ class CryptoOpsClientImpl(
 
         val request = createRequest(
             tenantId = tenantId,
+            // TODO Update key Ids to SecureHashes ShortHashes
             request = ByIdsRpcQuery(candidateKeyIds)
         )
         val response = request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)
@@ -125,6 +145,7 @@ class CryptoOpsClientImpl(
 
         val request = createRequest(
             tenantId = tenantId,
+            // TODO Update key Ids to SecureHashes ShortHashes
             request = ByIdsRpcQuery(
                 candidateKeys
             )
@@ -357,7 +378,8 @@ class CryptoOpsClientImpl(
         }
         val request = createRequest(
             tenantId,
-            ByIdsRpcQuery(ids)
+            // TODO convert ids to SecureHashes or ShortHashes
+            ByIdsRpcQuery(parseStringsToKeyIds(ids))
         )
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }

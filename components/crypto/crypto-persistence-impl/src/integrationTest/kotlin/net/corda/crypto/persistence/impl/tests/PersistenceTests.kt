@@ -50,8 +50,10 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -672,16 +674,20 @@ class PersistenceTests {
         signingKeyStore.save(tenantId2, p1)
         signingKeyStore.save(tenantId1, w1)
         signingKeyStore.save(tenantId2, w1)
-        val keyP11 = signingKeyStore.lookup(tenantId1, listOf(p1.key.publicKey.publicKeyId()))
+        val keyP11 =
+            signingKeyStore.lookupByShortIds(tenantId1, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
         assertEquals(1, keyP11.size)
         assertSigningCachedKey(tenantId1, p1, keyP11.first())
-        val keyP12 = signingKeyStore.lookup(tenantId2, listOf(p1.key.publicKey.publicKeyId()))
+        val keyP12 =
+            signingKeyStore.lookupByShortIds(tenantId2, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
         assertEquals(1, keyP12.size)
         assertSigningCachedKey(tenantId2, p1, keyP12.first())
-        val keyW11 = signingKeyStore.lookup(tenantId1, listOf(w1.key.publicKey.publicKeyId()))
+        val keyW11 =
+            signingKeyStore.lookupByShortIds(tenantId1, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
         assertEquals(1, keyW11.size)
         assertSigningCachedKey(tenantId1, w1, keyW11.first())
-        val keyW12 = signingKeyStore.lookup(tenantId2, listOf(w1.key.publicKey.publicKeyId()))
+        val keyW12 =
+            signingKeyStore.lookupByShortIds(tenantId2, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
         assertEquals(1, keyW12.size)
         assertSigningCachedKey(tenantId2, w1, keyW12.first())
     }
@@ -719,13 +725,13 @@ class PersistenceTests {
         signingKeyStore.save(tenantId, w1)
         signingKeyStore.save(tenantId, w2)
         signingKeyStore.save(tenantId, w3)
-        val keys = signingKeyStore.lookup(
+        val keys = signingKeyStore.lookupByShortIds(
             tenantId,
             listOf(
-                p1.key.publicKey.publicKeyId(),
-                p0.publicKeyId(),
-                p3.key.publicKey.publicKeyId(),
-                w2.key.publicKey.publicKeyId()
+                ShortHash.of(p1.key.publicKey.publicKeyId()),
+                ShortHash.of(p0.publicKeyId()),
+                ShortHash.of(p3.key.publicKey.publicKeyId()),
+                ShortHash.of(w2.key.publicKey.publicKeyId())
             )
         )
         assertEquals(3, keys.size)
@@ -876,8 +882,10 @@ class PersistenceTests {
         signingKeyStore.save(tenantId, p1)
         val keyId = p1.key.publicKey.publicKeyId()
         val fullKeyId = p1.key.publicKey.fullId()
-        val keyLookedUpByKeyId = signingKeyStore.lookup(tenantId, listOf(keyId))
-        val keyLookedUpByFullKeyId = signingKeyStore.lookup(tenantId, listOf(fullKeyId))
+        val keyLookedUpByKeyId =
+            signingKeyStore.lookupByShortIds(tenantId, listOf(ShortHash.of(keyId)))
+        val keyLookedUpByFullKeyId =
+            signingKeyStore.lookupByFullIds(tenantId, listOf(SecureHash.parse(fullKeyId)))
         assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
     }
 

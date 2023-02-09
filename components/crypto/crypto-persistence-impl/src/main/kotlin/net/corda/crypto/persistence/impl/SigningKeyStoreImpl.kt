@@ -41,7 +41,9 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -103,19 +105,11 @@ class SigningKeyStoreImpl @Activate constructor(
     ): Collection<SigningCachedKey> =
         impl.lookup(tenantId, skip, take, orderBy, filter)
 
-    // TODO The below API will be split into lookUpByKeyIds and lookUpByFullKeyIds and propagated back to Kafka receiver side.
-    //  And the below helper will be removed then.
-    override fun lookup(tenantId: String, ids: List<String>): Collection<SigningCachedKey> =
-        if (ids.isNotEmpty()) {
-            // Assuming ids are all either ids of full ids.
-            if (ids[0].length == 12) {
-                impl.lookupByKeyIds(tenantId, ids)
-            } else {
-                impl.lookupByFullKeyIds(tenantId, ids)
-            }
-        } else {
-            listOf()
-        }
+    override fun lookupByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): Collection<SigningCachedKey> =
+        impl.lookupByShortKeyIds(tenantId, shortKeyIds)
+
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> =
+        impl.lookupByFullKeyIds(tenantId, fullKeyIds)
 
     class Impl(
         event: ConfigChangedEvent,
@@ -238,15 +232,17 @@ class SigningKeyStoreImpl @Activate constructor(
         }
 
         // TODO Test edge scenario where short Ids clash at lookup
-        fun lookupByKeyIds(tenantId: String, keyIds: List<String>): Collection<SigningCachedKey> {
-            require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+        fun lookupByShortKeyIds(tenantId: String, _shortKeyIds: List<ShortHash>): Collection<SigningCachedKey> {
+            require(_shortKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
                 "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
             }
-            val cached = cache.getAllPresent(keyIds.map { CacheKey(tenantId, it) })
-            if (cached.size == keyIds.size) {
+
+            val shortKeyIds = _shortKeyIds.map { it.value }
+            val cached = cache.getAllPresent(shortKeyIds.map { CacheKey(tenantId, it) })
+            if (cached.size == shortKeyIds.size) {
                 return cached.values
             }
-            val notFound = keyIds.filter { id -> !cached.containsKey(CacheKey(tenantId, id)) }
+            val notFound = shortKeyIds.filter { id -> !cached.containsKey(CacheKey(tenantId, id)) }
             val fetched = findByIds(tenantId, notFound).map {
                 it.toSigningCachedKey()
             }.distinctBy {
@@ -259,11 +255,12 @@ class SigningKeyStoreImpl @Activate constructor(
         }
 
         // TODO Add caching
-        fun lookupByFullKeyIds(tenantId: String, fullKeyIds: List<String>): Collection<SigningCachedKey> {
-            require(fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+        fun lookupByFullKeyIds(tenantId: String, _fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
+            require(_fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
                 "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
             }
 
+            val fullKeyIds = _fullKeyIds.map { it.toString() }
             val fetched = findByFullKeyIds(tenantId, fullKeyIds).map {
                 it.toSigningCachedKey()
             }.distinctBy {

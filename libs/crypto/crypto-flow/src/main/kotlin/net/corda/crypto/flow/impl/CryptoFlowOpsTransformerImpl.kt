@@ -12,6 +12,7 @@ import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
@@ -23,6 +24,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -64,9 +66,12 @@ class CryptoFlowOpsTransformerImpl(
             requestId = UUID.randomUUID().toString(),
             tenantId = tenantId,
             request = ByIdsFlowQuery(
-                candidateKeys.map {
-                    it.fullId(keyEncodingService, digestService)
-                }
+                SecureHashes(
+                    candidateKeys.map {
+                        val secureHash = it.fullId(keyEncodingService, digestService)
+                        net.corda.data.crypto.SecureHash(secureHash.algorithm, ByteBuffer.wrap(secureHash.bytes))
+                    }
+                )
             ),
             flowExternalEventContext = flowExternalEventContext
         )
@@ -207,9 +212,8 @@ class CryptoFlowOpsTransformerImpl(
     }
 }
 
-private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): String =
+private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): SecureHash =
     digestService.hash(
         keyEncodingService.encodeAsByteArray(this),
         DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
     )
-        .toString()

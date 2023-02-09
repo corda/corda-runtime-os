@@ -21,7 +21,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
@@ -136,15 +138,12 @@ class TestSigningKeyStore(
         }.drop(skip).take(take)
     }
 
-    override fun lookup(tenantId: String, ids: List<String>): Collection<SigningCachedKey> = lock.withLock {
-        val result = mutableListOf<SigningCachedKey>()
-        ids.forEach {
-            val found = keys[Pair(tenantId, it)]
-            if(found != null) {
-                result.add(found)
-            }
-        }
-        return result
+    override fun lookupByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): Collection<SigningCachedKey> {
+        TODO("Not yet implemented")
+    }
+
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
+        TODO("Not yet implemented")
     }
 
     override val isRunning: Boolean

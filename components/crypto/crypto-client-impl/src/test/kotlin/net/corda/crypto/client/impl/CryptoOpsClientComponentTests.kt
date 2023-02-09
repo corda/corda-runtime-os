@@ -23,6 +23,7 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -363,8 +364,8 @@ class CryptoOpsClientComponentTests {
         assertEquals(1, result.value[0].encodingVersion)
         assertEquals(now.epochSecond, result.value[0].created.epochSecond)
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(1, query.keys.size)
-        assertEquals(keyPair.public.publicKeyId(), query.keys[0])
+        assertEquals(1, (query.keyIds as ShortHashes).hashes.size)
+        assertEquals(keyPair.public.publicKeyId(), (query.keyIds as ShortHashes).hashes[0])
         assertRequestContext(result)
     }
 
@@ -418,8 +419,8 @@ class CryptoOpsClientComponentTests {
         }
         assertEquals(0, result.value.size)
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(1, query.keys.size)
-        assertEquals(id, query.keys[0])
+        assertEquals(1, (query.keyIds as ShortHashes).hashes.size)
+        assertEquals(id, (query.keyIds as ShortHashes).hashes[0])
         assertRequestContext(result)
     }
 
@@ -461,10 +462,11 @@ class CryptoOpsClientComponentTests {
         assertTrue(result.value.any { it == myPublicKeys[0] })
         assertTrue(result.value.any { it == myPublicKeys[1] })
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
+        val keyIds = (query.keyIds as ShortHashes).hashes
+        assertEquals(3, keyIds.size)
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
         assertRequestContext(result)
     }
 
@@ -512,10 +514,11 @@ class CryptoOpsClientComponentTests {
         assertTrue(result.value.keys.any { it.publicKey.array().contentEquals(myPublicKeys[0].array()) })
         assertTrue(result.value.keys.any { it.publicKey.array().contentEquals(myPublicKeys[1].array()) })
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(notMyKey.array()) })
+        val keyIds = (query.keyIds as ShortHashes).hashes
+        assertEquals(3, keyIds.size)
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(notMyKey.array()) })
         assertRequestContext(result)
     }
 
@@ -539,10 +542,11 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(0, result.value.count())
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
+        val keyIds = (query.keyIds as ShortHashes).hashes
+        assertEquals(3, keyIds.size)
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
         assertRequestContext(result)
     }
 
@@ -572,10 +576,11 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(0, result.value.keys.size)
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(notMyKey.array()) })
+        val keyIds = (query.keyIds as ShortHashes).hashes
+        assertEquals(3, keyIds.size)
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(notMyKey.array()) })
         assertRequestContext(result)
     }
 

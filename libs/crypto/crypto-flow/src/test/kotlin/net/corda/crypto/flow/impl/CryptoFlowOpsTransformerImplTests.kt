@@ -10,6 +10,7 @@ import net.corda.crypto.flow.infra.ActResult
 import net.corda.crypto.flow.infra.act
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -207,20 +208,21 @@ class CryptoFlowOpsTransformerImplTests {
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(ByIdsFlowQuery::class.java, result.value.request)
         val query = result.value.request as ByIdsFlowQuery
-        assertEquals(3, query.keyIds.size)
+        val keyIds = (query.keyIds as SecureHashes).hashes.map { it.toString() }
+        assertEquals(3, keyIds.size)
         assertTrue(
-            query.keyIds.any {
-                it!!.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(myPublicKeys[0])))
+            keyIds.any {
+                it.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(myPublicKeys[0])))
             }
         )
         assertTrue(
-            query.keyIds.any {
-                it!!.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(myPublicKeys[1])))
+            keyIds.any {
+                it.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(myPublicKeys[1])))
             }
         )
         assertTrue(
-            query.keyIds.any {
-                it!!.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(notMyKey)))
+            keyIds.any {
+                it.contentEquals(fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(notMyKey)))
             }
         )
         assertRequestContext<ByIdsFlowQuery>(result)
@@ -235,7 +237,8 @@ class CryptoFlowOpsTransformerImplTests {
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(ByIdsFlowQuery::class.java, result.value.request)
         val query = result.value.request as ByIdsFlowQuery
-        assertThat(query.keyIds).isEmpty()
+        val keyIds = (query.keyIds as SecureHashes).hashes.map { it.toString() }
+        assertThat(keyIds).isEmpty()
         assertRequestContext<ByIdsFlowQuery>(result)
     }
 
