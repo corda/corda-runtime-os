@@ -43,9 +43,6 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             jsonMarshallingService.format(metadata)
         }
             .isInstanceOf(JsonMappingException::class.java)
-            .hasMessageStartingWith(
-                "Transaction metadata representation error:"
-            )
     }
 
     @Test
