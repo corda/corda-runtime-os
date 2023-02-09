@@ -59,7 +59,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
             )
             if (!cpk.metadata.isContractCpk()) {
                 throw NotAllowedCpkException(
-                    "CPK for Verification Sandbox for $holdingIdentity is not allowed: $it"
+                    "This CPK is not allowed for use in the Verification Sandbox for $holdingIdentity - only contract CPKs are allowed: $it"
                 )
             }
         }
