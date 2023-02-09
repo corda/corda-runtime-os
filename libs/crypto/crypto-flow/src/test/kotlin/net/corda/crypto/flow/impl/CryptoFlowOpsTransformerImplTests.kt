@@ -208,7 +208,10 @@ class CryptoFlowOpsTransformerImplTests {
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(ByIdsFlowQuery::class.java, result.value.request)
         val query = result.value.request as ByIdsFlowQuery
-        val keyIds = (query.keyIds as SecureHashes).hashes.map { it.toString() }
+        val keyIds =
+            (query.keyIds as SecureHashes).hashes.map {
+                SecureHash(it.algorithm, it.bytes.array()).toString()
+            }
         assertEquals(3, keyIds.size)
         assertTrue(
             keyIds.any {
