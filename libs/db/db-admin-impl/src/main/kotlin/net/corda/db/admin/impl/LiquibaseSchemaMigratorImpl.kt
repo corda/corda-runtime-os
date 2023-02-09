@@ -68,7 +68,7 @@ class LiquibaseSchemaMigratorImpl(
         process(datasource, dbChange, sql, controlTablesSchema)
     }
 
-    override fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange, sql: Writer): List<String> {
+    override fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String> {
         val database = databaseFactory(datasource)
 
         val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
@@ -78,11 +78,8 @@ class LiquibaseSchemaMigratorImpl(
             database
         )
 
-        return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map { changeSet ->
-            "${changeSet.filePath} with ID: ${changeSet.id} is un-run"
-        }
-//        val res2 = liquibase.listUnexpectedChangeSets(Contexts(), LabelExpression())
-        }
+        return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map { it.filePath }
+    }
 
     private fun process(
         datasource: Connection,

@@ -45,7 +45,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val em = mock<EntityManager>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
     private val migrationUtility = mock<MigrationUtility>() {
-        whenever(it.isVaultSchemaAndTargetCpiInSync(any(), any())).thenReturn(false)
+        whenever(it.isVaultSchemaAndTargetCpiInSync(any(), any(), any())).thenReturn(false)
     }
     private val vnodeId = "123456789011"
 
@@ -420,7 +420,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     fun `upgrade handler successfully persists, no migrations required`() {
         val requestTimestamp = Instant.now()
         val migrationUtility = mock<MigrationUtility>() {
-            whenever(it.isVaultSchemaAndTargetCpiInSync(any(), any())).thenReturn(false)
+            whenever(it.isVaultSchemaAndTargetCpiInSync(any(), any(), any())).thenReturn(false)
         }
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
@@ -432,7 +432,11 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString), eq(requestId), eq(requestTimestamp), eq(request.toString())
             )
         ).thenReturn(inProgressOpVnodeInfo)
-        whenever(migrationUtility.isVaultSchemaAndTargetCpiInSync(cpkDbChangelogs, vaultDmlConnectionId)).thenReturn(true)
+        whenever(migrationUtility.isVaultSchemaAndTargetCpiInSync(
+            any(),
+            cpkDbChangelogs,
+            vaultDmlConnectionId
+        )).thenReturn(true)
         whenever(virtualNodeRepository.completeOperation(em, request.virtualNodeShortHash)).thenReturn(migrationsCompleteVnodeInfo)
 
         val vnodeInfoRecordsCapture =

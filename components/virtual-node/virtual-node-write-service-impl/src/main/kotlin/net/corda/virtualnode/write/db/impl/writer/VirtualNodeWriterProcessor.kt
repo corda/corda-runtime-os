@@ -116,8 +116,10 @@ internal class VirtualNodeWriterProcessor(
                 return
             }
         }.also {
-            logger.debug {"[Create ${create.x500Name}] validation took $it ms, elapsed " +
-                    "${currentTimeMillis() - startMillis} ms"}
+            logger.debug {
+                "[Create ${create.x500Name}] validation took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"
+            }
         }
 
 
@@ -133,8 +135,10 @@ internal class VirtualNodeWriterProcessor(
                     return
                 }
             }.also {
-                logger.debug {"[Create ${create.x500Name}] get metadata took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] get metadata took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
 
             // Generate group ID for MGM
@@ -163,30 +167,38 @@ internal class VirtualNodeWriterProcessor(
                     }
                 }
             }.also {
-                logger.debug {"[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
 
-            val vNodeDbs:  Map<VirtualNodeDbType, VirtualNodeDb>
+            val vNodeDbs: Map<VirtualNodeDbType, VirtualNodeDb>
             measureTimeMillis {
                 vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.shortHash, create)
             }.also {
-                logger.debug {"[Create ${create.x500Name}] creating vnode DBs took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] creating vnode DBs took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
 
             measureTimeMillis {
                 createSchemasAndUsers(holdingId, vNodeDbs.values)
             }.also {
-                logger.debug {"[Create ${create.x500Name}] creating vnode DB Schemas and users took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] creating vnode DB Schemas and users took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
 
             measureTimeMillis {
                 runDbMigrations(holdingId, vNodeDbs.values)
             }.also {
-                logger.debug {"[Create ${create.x500Name}] DB migrations took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] DB migrations took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
 
             val vaultDb = vNodeDbs[VAULT]
@@ -197,8 +209,10 @@ internal class VirtualNodeWriterProcessor(
                 measureTimeMillis {
                     runCpiMigrations(cpiMetadata, vaultDb, holdingId.shortHash.value)
                 }.also {
-                    logger.debug {"[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
-                            "${currentTimeMillis() - startMillis} ms"}
+                    logger.debug {
+                        "[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
+                                "${currentTimeMillis() - startMillis} ms"
+                    }
                 }
             }
 
@@ -207,29 +221,37 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections =
                     persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, create.updateActor)
             }.also {
-                logger.debug {"[Create ${create.x500Name}] persisting VNode to DB took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] persisting VNode to DB took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
 
             measureTimeMillis {
                 publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
             }.also {
-                logger.debug {"[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
 
             measureTimeMillis {
                 publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
             }.also {
-                logger.debug {"[Create ${create.x500Name}] persisting Mgm Info to Kafka took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] persisting Mgm Info to Kafka took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
 
             measureTimeMillis {
                 sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
             }.also {
-                logger.debug {"[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"}
+                logger.debug {
+                    "[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"
+                }
             }
         } catch (e: Exception) {
             handleException(respFuture, e)
@@ -250,21 +272,21 @@ internal class VirtualNodeWriterProcessor(
                 it.transaction { tx ->
                     // Retrieve virtual node info
                     val virtualNodeInfo = virtualNodeRepository.find(tx, shortHash)
-                    if(null == virtualNodeInfo) {
-                            logger.warn("Could not find the virtual node: $currentVNodeShortHash")
-                            respFuture.complete(
-                                VirtualNodeManagementResponse(
-                                    instant,
-                                    VirtualNodeManagementResponseFailure(
-                                        ExceptionEnvelope(
-                                            VirtualNodeNotFoundException::class.java.name,
-                                            "Could not find the virtual node: $currentVNodeShortHash"
-                                        )
+                    if (null == virtualNodeInfo) {
+                        logger.warn("Could not find the virtual node: $currentVNodeShortHash")
+                        respFuture.complete(
+                            VirtualNodeManagementResponse(
+                                instant,
+                                VirtualNodeManagementResponseFailure(
+                                    ExceptionEnvelope(
+                                        VirtualNodeNotFoundException::class.java.name,
+                                        "Could not find the virtual node: $currentVNodeShortHash"
                                     )
                                 )
                             )
-                            return
-                        }
+                        )
+                        return
+                    }
 
                     val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,
@@ -278,8 +300,10 @@ internal class VirtualNodeWriterProcessor(
                             systemTerminatorTag
                         )
 
-                        logger.info("CPK file checksums of currently applied changelogs on vault schema for virtual node " +
-                                "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString() }]")
+                        logger.info(
+                            "CPK file checksums of currently applied changelogs on vault schema for virtual node " +
+                                    "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString()}]"
+                        )
 
                         val changesetsToRollback = findChangelogEntitiesForGivenCpkFileChecksums(tx, cpkChecksumsOfAppliedChangelogs)
 
@@ -313,7 +337,8 @@ internal class VirtualNodeWriterProcessor(
                         } catch (e: Exception) {
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI ${cpiMetadata.id.name} - changelogs: [" +
-                                        "${changelogsForThisCpk.joinToString { it.id.cpkFileChecksum + ", " + it.id.filePath }}]", e)
+                                        "${changelogsForThisCpk.joinToString { it.id.cpkFileChecksum + ", " + it.id.filePath }}]", e
+                            )
                             respFuture.complete(
                                 VirtualNodeManagementResponse(
                                     instant,
@@ -374,9 +399,13 @@ internal class VirtualNodeWriterProcessor(
                         nodeInfo.cpiIdentifier.version,
                         nodeInfo.cpiIdentifier.signerSummaryHash.toString()
                     )
-                    if(stateChangeRequest.newState == "ACTIVE"){
-                        if(!migrationUtility.isVaultSchemaAndTargetCpiInSync(
-                            changelogsPerCpk, nodeInfo.vaultDmlConnectionId))
+                    if (stateChangeRequest.newState == "ACTIVE") {
+                        if (!migrationUtility.isVaultSchemaAndTargetCpiInSync(
+                                stateChangeRequest.holdingIdentityShortHash,
+                                changelogsPerCpk,
+                                nodeInfo.vaultDmlConnectionId
+                            )
+                        )
                             throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
                     }
                 } else {
@@ -525,7 +554,8 @@ internal class VirtualNodeWriterProcessor(
                         dbConnections.cryptoDdlConnectionId,
                         dbConnections.cryptoDmlConnectionId,
                         dbConnections.uniquenessDdlConnectionId,
-                        dbConnections.uniquenessDmlConnectionId,)
+                        dbConnections.uniquenessDmlConnectionId,
+                    )
                     dbConnections
                 }
         } catch (e: Exception) {
@@ -616,7 +646,7 @@ internal class VirtualNodeWriterProcessor(
         cpiMetadata: CpiMetadataLite,
         dbConnections: VirtualNodeDbConnections
     ):
-        Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo> {
+            Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo> {
 
         val cpiIdentifier = CpiIdentifier(cpiMetadata.id.name, cpiMetadata.id.version, cpiMetadata.id.signerSummaryHash)
         val virtualNodeInfo = with(dbConnections) {
@@ -684,15 +714,15 @@ internal class VirtualNodeWriterProcessor(
 
     @Suppress("UNCHECKED_CAST")
     private fun getAppliedChangelogTags(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): Set<String> = (
-        em.createNativeQuery(
-            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
-                "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
-                "ORDER BY orderexecuted"
-        )
-            .setParameter("systemTerminatorTag", systemTerminatorTag)
-            .resultList
-            .toSet() as Set<String>
-        ).toSet()
+            em.createNativeQuery(
+                "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                        "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
+                        "ORDER BY orderexecuted"
+            )
+                .setParameter("systemTerminatorTag", systemTerminatorTag)
+                .resultList
+                .toSet() as Set<String>
+            ).toSet()
 
     private fun sendSuccessfulResponse(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,

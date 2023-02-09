@@ -1,6 +1,5 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility
 
-import java.io.StringWriter
 import java.util.UUID
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
@@ -36,16 +35,28 @@ internal class MigrationUtilityImpl(
             }
     }
 
-    override fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean {
+    override fun isVaultSchemaAndTargetCpiInSync(
+        virtualNodeShortHash: String,
+        cpkChangelogs: List<CpkDbChangeLogEntity>,
+        vaultDmlConnectionId: UUID
+    ): Boolean {
 
-        val allChangeLogsForCpk = VirtualNodeDbChangeLog(cpkChangelogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
-        dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
-            StringWriter().use { writer ->
-                    liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk, writer)
+        val missingCpks = mutableListOf<String>()
+        cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
+            val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+            dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
+                missingCpks.addAll(
+                    liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk)
+                )
             }
         }
-        return false
-        // todo cs - as part of CORE-https://r3-cev.atlassian.net/browse/CORE-9046
+
+        if(missingCpks.size > 0) {
+            logger.info("Found ${missingCpks.size} changelogs missing from virtual node vault $virtualNodeShortHash: " +
+                    missingCpks.joinToString()
+            )
+        }
+        return missingCpks.size == 0
     }
 
     private fun runCpkMigrations(
