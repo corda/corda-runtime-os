@@ -463,7 +463,7 @@ internal class VirtualNodeWriterProcessor(
 
     private fun createSchemasAndUsers(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
         try {
-            vNodeDbs.filter { it.isClusterDb }.forEach { it.createSchemasAndUsers() }
+            vNodeDbs.filter { it.isPlatformManagedDb }.forEach { it.createSchemasAndUsers() }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Error creating virtual node DB schemas and users for holding identity $holdingIdentity", e
