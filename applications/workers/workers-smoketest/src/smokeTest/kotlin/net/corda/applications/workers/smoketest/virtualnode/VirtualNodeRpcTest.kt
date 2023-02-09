@@ -738,7 +738,7 @@ class VirtualNodeRpcTest {
     private fun ClusterBuilder.getVirtualNodeStatus(requestId: String): String? {
         val operationStatus = assertWithRetry {
             command { getVNodeOperationStatus(requestId) }
-            condition { it.code == 202 }
+            condition { it.code == 200 }
             failMessage(ERROR_REQUEST_ID)
         }.toJson()
         println(operationStatus.toString())

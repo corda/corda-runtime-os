@@ -10,12 +10,6 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
-import net.corda.messaging.api.records.Record
-import net.corda.orm.utils.use
-import net.corda.schema.Schemas
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.toAvro
-import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
@@ -42,21 +36,24 @@ internal class VirtualNodeOperationStatusHandler(
             logger.warn("VirtualNodeOperationStatusHandler.handle()")
             logger.warn("requestId: $requestId")
 
-            val operationStatusResponse = virtualNodeRepository.findVirtualNodeOperation(em, requestId)
+            val operationStatuses = virtualNodeRepository.findVirtualNodeOperationByRequestId(em, requestId)
 
-            logger.warn("operationStatusResponse operationStatusLite = ${operationStatusResponse.toString()}")
+            logger.warn("operationStatusResponse VirtualNodeOperationDto = ${operationStatuses.toString()}")
+            for(status in operationStatuses){
+                logger.warn("status: ${status.toString()}")
+            }
 
-            val virtualNodeOperationStatus = VirtualNodeOperationStatus(
-                operationStatusResponse.requestId,
+            val statuses = operationStatuses.map { VirtualNodeOperationStatus(
+                it.requestId,
                 "shortHash",
                 "actor",
-                Object(),
+                null,
                 instant,
                 instant,
                 instant,
                 AsynchronousOperationState.IN_PROGRESS,
                 listOf()
-                )
+            )}
 
             logger.warn("created VirtualNodeOperationStatus")
 
@@ -64,7 +61,7 @@ internal class VirtualNodeOperationStatusHandler(
                 instant,
                 VirtualNodeOperationStatusResponse(
                     requestId,
-                    listOf(virtualNodeOperationStatus)
+                    statuses
                 )
             )
             logger.warn("created VirtualNodeMnaagementResponse: ${response.responseType}")
