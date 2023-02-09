@@ -81,6 +81,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
+import kotlin.random.Random
+import kotlin.system.exitProcess
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -152,6 +154,7 @@ class StaticMemberRegistrationService @Activate constructor(
     override fun stop() {
         coordinator.stop()
     }
+    private val random = Random()
 
     override fun register(
         registrationId: UUID,
@@ -163,6 +166,12 @@ class StaticMemberRegistrationService @Activate constructor(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
             )
         }
+        println("QQQ got request $registrationId")
+        if (random.nextInt(10) == 3) {
+            println("QQQ Killing my self without $registrationId!")
+            exitProcess(0)
+        }
+        println("QQQ will continue with $registrationId")
         try {
             membershipSchemaValidatorFactory
                 .createValidator()
