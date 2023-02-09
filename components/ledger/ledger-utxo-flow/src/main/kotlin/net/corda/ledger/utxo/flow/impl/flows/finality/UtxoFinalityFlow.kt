@@ -182,7 +182,7 @@ class UtxoFinalityFlow(
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
-            val (message, failureReason) = if (NotaryException::class.java.isAssignableFrom(e.javaClass)) {
+            val (message, failureReason) = if (e is NotaryException) {
                 persistInvalidTransaction(transaction)
                 "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.UNRECOVERABLE
             } else {
