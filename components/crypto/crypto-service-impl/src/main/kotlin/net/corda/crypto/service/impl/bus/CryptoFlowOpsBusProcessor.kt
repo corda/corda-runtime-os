@@ -26,6 +26,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import kotlin.reflect.jvm.javaField
 
 class CryptoFlowOpsBusProcessor(
     private val cryptoOpsClient: CryptoOpsProxyClient,
@@ -136,7 +137,7 @@ class CryptoFlowOpsBusProcessor(
                 val keyIds = when (val avroKeyIds = request.keyIds) {
                     is ShortHashes -> avroShortHashesToStrings(avroKeyIds)
                     is SecureHashes -> avroSecureHashesToStrings(avroKeyIds)
-                    else -> throw IllegalArgumentException("Unexpected type for ${avroKeyIds::class.java.name}")
+                    else -> throw IllegalArgumentException("Unexpected type for ${request::keyIds.javaField}: ${avroKeyIds::class.java.name}")
                 }
 
                 cryptoOpsClient.lookUpForKeysByIdsProxy(
