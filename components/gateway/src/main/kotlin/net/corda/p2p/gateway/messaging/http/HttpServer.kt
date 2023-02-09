@@ -35,7 +35,7 @@ internal class HttpServer(
     private val eventListener: HttpServerListener,
     private val configuration: GatewayConfiguration,
     private val keyStore: KeyStoreWithPassword,
-    private val mutualTlsTrustManager: X509ExtendedTrustManager?,
+    private val serverTrustManager: X509ExtendedTrustManager?,
 ) : Resource,
     HttpServerListener {
 
@@ -104,7 +104,7 @@ internal class HttpServer(
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(keyStore, mutualTlsTrustManager))
+            pipeline.addLast("sslHandler", createServerSslHandler(keyStore, serverTrustManager))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpServerChannelHandler(this@HttpServer, configuration.maxRequestSize, configuration.urlPath, logger))

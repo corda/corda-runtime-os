@@ -63,14 +63,14 @@ fun createClientSslHandler(
     return sslHandler
 }
 
-fun createServerSslHandler(keyStore: KeyStoreWithPassword, mutualTlsTrustManager: X509ExtendedTrustManager?): SslHandler {
+fun createServerSslHandler(keyStore: KeyStoreWithPassword, serverTrustManager: X509ExtendedTrustManager?): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
 
     val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).also {
         it.init(keyStore.keyStore, keyStore.password.toCharArray())
     }
 
-    val trustManagers = mutualTlsTrustManager?.let {
+    val trustManagers = serverTrustManager?.let {
         arrayOf(it)
     }
     /**
