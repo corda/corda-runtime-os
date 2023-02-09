@@ -55,7 +55,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
     private fun checkCpks(holdingIdentity: HoldingIdentity, cpks: List<CordaPackageSummary>) {
         cpks.forEach {
             val cpk = cpkReadService.get(it.fileChecksum.toSecureHash()) ?: throw CpkNotAvailableException(
-                "CPK for Verification Sandbox for $holdingIdentity is not available (yet): $it"
+                "This CPK is not available (yet) for the Verification Sandbox for $holdingIdentity: $it"
             )
             if (!cpk.metadata.isContractCpk()) {
                 throw NotAllowedCpkException(
