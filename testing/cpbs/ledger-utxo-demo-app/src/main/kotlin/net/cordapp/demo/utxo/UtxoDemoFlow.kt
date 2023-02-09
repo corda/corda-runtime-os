@@ -16,8 +16,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -30,8 +30,6 @@ import java.time.Instant
 @InitiatingFlow("utxo-flow-protocol")
 class UtxoDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>, val notary: String)
-
-    class TestCommand : Command
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -66,7 +64,8 @@ class UtxoDemoFlow : ClientStartableFlow {
             }
             val testUtxoState = TestUtxoState(
                 request.input,
-                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
+                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first(),
+                request.members + listOf(myInfo.name.toString())
             )
 
             val notary = notaryLookup.notaryServices.single()

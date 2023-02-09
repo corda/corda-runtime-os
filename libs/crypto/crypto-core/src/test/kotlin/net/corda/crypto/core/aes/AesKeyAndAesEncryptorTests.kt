@@ -104,7 +104,7 @@ class AesKeyAndAesEncryptorTests {
     fun `Should always derive same key for the same passphrase and salt and use successfully multiple times`() {
         val passphrase = UUID.randomUUID().toString()
         val salt = UUID.randomUUID().toString()
-        val key1 = AesKey.derive(KeyCredentials(passphrase, salt))
+        val key1 = AesKey.derive(passphrase, salt)
         val key2 = AesKey.derive(passphrase, salt)
         val random = Random(Instant.now().toEpochMilli())
         (0 until 10).forEach { _ ->

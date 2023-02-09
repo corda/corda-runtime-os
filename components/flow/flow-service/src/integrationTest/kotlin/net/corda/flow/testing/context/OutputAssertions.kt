@@ -45,6 +45,8 @@ interface OutputAssertions {
 
     fun flowResumedWith(value: Any?)
 
+    fun flowResumedWithData(value: Map<String, ByteArray>)
+
     fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>)
 
     fun wakeUpEvent()

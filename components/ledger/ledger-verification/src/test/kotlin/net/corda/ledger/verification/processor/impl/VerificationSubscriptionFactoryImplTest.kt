@@ -1,6 +1,6 @@
 package net.corda.ledger.verification.processor.impl
 
-import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
+import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
@@ -20,7 +20,7 @@ internal class VerificationSubscriptionFactoryImplTest {
         val subscriptionFactory = mock<SubscriptionFactory>()
         val config = mock<SmartConfig>()
 
-        val expectedSubscription = mock<Subscription<String, VerifyContractsRequest>>()
+        val expectedSubscription = mock<Subscription<String, TransactionVerificationRequest>>()
         val expectedSubscriptionConfig = SubscriptionConfig(
             "verification.ledger.processor",
             VERIFICATION_LEDGER_PROCESSOR_TOPIC
@@ -29,7 +29,7 @@ internal class VerificationSubscriptionFactoryImplTest {
         whenever(
             subscriptionFactory.createDurableSubscription(
                 eq(expectedSubscriptionConfig),
-                any<DurableProcessor<String, VerifyContractsRequest>>(),
+                any<DurableProcessor<String, TransactionVerificationRequest>>(),
                 eq(config),
                 eq(null)
             )

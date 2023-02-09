@@ -2,6 +2,7 @@ import aQute.bnd.gradle.Bundle
 
 plugins {
     id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
@@ -20,43 +21,40 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation project(':components:configuration:configuration-read-service')
-    implementation project(':components:db:db-connection-manager')
-    implementation project(':components:virtual-node:cpi-info-read-service')
-    implementation project(':components:virtual-node:sandbox-group-context-service')
-    implementation project(':components:virtual-node:virtual-node-info-read-service')
-
-    implementation project(':libs:crypto:cipher-suite')
-    implementation project(':libs:flows:external-event-responses')
-    implementation project(':libs:ledger:ledger-common-data')
-    implementation project(':libs:ledger:ledger-consensual-data')
-    implementation project(':libs:ledger:ledger-utxo-data')
-    implementation project(':libs:messaging:messaging')
-    implementation project(':libs:utilities')
-    implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(":libs:serialization:json-validator")
-
-    runtimeOnly project(':libs:crypto:merkle-impl')
-
     implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-ledger-common'
-    implementation 'net.corda:corda-ledger-consensual'
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
-    testImplementation project(':libs:ledger:ledger-utxo-data')
-    testImplementation project(':testing:db-testkit')
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+
+    implementation project(':libs:crypto:cipher-suite')
+    implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
+    implementation project(':libs:messaging:messaging')
+    implementation project(":libs:serialization:json-validator")
+    implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+
+    runtimeOnly project(':components:virtual-node:sandbox-amqp')
+    runtimeOnly project(':components:virtual-node:sandbox-json')
+    runtimeOnly project(":libs:crypto:crypto-serialization-impl")
+    runtimeOnly project(':libs:crypto:merkle-impl')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
 
-    testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    // Integration test resources using cpis configuration
+    cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
 
     // IMPORTANT: do NOT include cpbs (or cpks) as dependencies of the integration test.
     // This would cause OSGi to load the bundle twice (once as part of the test) and again
@@ -69,8 +67,8 @@ dependencies {
     integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
     integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
 
-    integrationTestImplementation project(':libs:db:db-admin-impl')
-    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':components:virtual-node:cpi-info-read-service')
+    integrationTestImplementation project(':components:virtual-node:virtual-node-info-read-service')
     integrationTestImplementation project(':libs:ledger:ledger-common-data')
     integrationTestImplementation project(':libs:serialization:serialization-amqp')
     integrationTestImplementation project(':libs:serialization:serialization-internal')
@@ -82,13 +80,21 @@ dependencies {
     // needed to import serialization libs
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
-    integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
-    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}
+
+//  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

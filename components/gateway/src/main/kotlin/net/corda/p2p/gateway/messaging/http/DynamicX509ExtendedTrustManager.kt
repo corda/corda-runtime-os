@@ -2,6 +2,8 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.gateway.certificates.RevocationChecker
 import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
+import net.corda.v5.base.types.MemberX500Name
 import java.net.Socket
 import java.security.KeyStore
 import java.security.cert.CertificateException
@@ -14,41 +16,30 @@ import javax.net.ssl.X509ExtendedTrustManager
 internal class DynamicX509ExtendedTrustManager(
     private val trustStoresMap: TrustStoresMap,
     private val revocationConfig: RevocationConfig,
+    private val dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
     private val trustManagerFactory: TrustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-): X509ExtendedTrustManager() {
+) : X509ExtendedTrustManager() {
     private companion object {
         val wrongUsageMessage = this::class.java.simpleName + " can only be used by the gateway server."
         const val invalidClientMessage = "None of the possible trust roots were valid for the client certificate. Error(s): "
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
-        val exceptionMessages = mutableSetOf<String>()
-        getAllX509TrustManagers().forEach {
-            if (doesNotThrowCertificateException(exceptionMessages) { it.checkClientTrusted(chain, authType, socket) }) {
-                return
-            }
+        checkClientCertificate(chain) {
+            it.checkClientTrusted(chain, authType, socket)
         }
-        throw CertificateException(invalidClientMessage + exceptionMessages.joinToString())
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
-        val exceptionMessages = mutableSetOf<String>()
-        getAllX509TrustManagers().forEach {
-            if (doesNotThrowCertificateException(exceptionMessages) { it.checkClientTrusted(chain, authType, engine) }) {
-                return
-            }
+        checkClientCertificate(chain) {
+            it.checkClientTrusted(chain, authType, engine)
         }
-        throw CertificateException(invalidClientMessage + exceptionMessages.joinToString())
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        val exceptionMessages = mutableSetOf<String>()
-        getAllX509TrustManagers().forEach {
-            if (doesNotThrowCertificateException(exceptionMessages) { it.checkClientTrusted(chain, authType) }) {
-                return
-            }
+        checkClientCertificate(chain) {
+            it.checkClientTrusted(chain, authType)
         }
-        throw CertificateException(invalidClientMessage + exceptionMessages.joinToString())
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
@@ -65,17 +56,52 @@ internal class DynamicX509ExtendedTrustManager(
 
     override fun getAcceptedIssuers(): Array<X509Certificate> {
         // We assume here that all the trust stores were issued by the same CA.
-         return getAllX509TrustManagers().map { it.acceptedIssuers.toList() }.flatten().toTypedArray()
+        return getAllX509TrustManagers().flatMap {
+            it.acceptedIssuers.toList()
+        }.toTypedArray()
     }
 
-    private fun doesNotThrowCertificateException(exceptionMessages: MutableSet<String>, function : (() -> Unit)): Boolean {
-        return try {
-            function()
-            true
-        } catch (except: CertificateException) {
-            except.message?.let { message -> exceptionMessages.add(message) }
-            false
+    @Suppress("ThrowsCount")
+    private fun validateClientCertificateChain(chain: Array<out X509Certificate>?) {
+        if (chain == null) {
+            throw CertificateException("Can not accept null client certificate chain.")
         }
+        if (chain.isEmpty()) {
+            throw CertificateException("Can not accept empty client certificate chain.")
+        }
+        val certificateSubject = try {
+            MemberX500Name.build(chain.first().subjectX500Principal)
+        } catch (e: IllegalArgumentException) {
+            throw CertificateException(
+                "Client certificate subject ${chain.first().subjectX500Principal} is not a valid subject: $e",
+                e
+            )
+        }
+        if (!dynamicCertificateSubjectStore.subjectAllowed(certificateSubject)) {
+            throw CertificateException("Client certificate with subject $certificateSubject is not allowed.")
+        }
+    }
+
+    private fun validateTrustedCertificates(verify: (X509ExtendedTrustManager) -> Unit) {
+        val exceptionMessages = getAllX509TrustManagers().map {
+            try {
+                verify(it)
+                return
+            } catch (except: CertificateException) {
+                except
+            }
+        }.mapNotNull {
+            it.message
+        }
+        throw CertificateException(invalidClientMessage + exceptionMessages.joinToString())
+    }
+
+    private fun checkClientCertificate(
+        chain: Array<out X509Certificate>?,
+        verify: (X509ExtendedTrustManager) -> Unit
+    ) {
+        validateClientCertificateChain(chain)
+        validateTrustedCertificates(verify)
     }
 
     private fun KeyStore.x509ExtendedTrustManager(): List<X509ExtendedTrustManager> {

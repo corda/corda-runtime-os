@@ -2,6 +2,8 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
@@ -20,11 +22,15 @@ import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureSpec.Companion.ECDSA_SHA256
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.DEROctetString
 import org.bouncycastle.asn1.x500.X500Name
@@ -61,6 +67,7 @@ class CertificatesRestResourceImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val certificatesClient = mock<CertificatesClient>()
 
     private val certificatesOps = CertificatesRestResourceImpl(
@@ -68,6 +75,7 @@ class CertificatesRestResourceImplTest {
         keyEncodingService,
         lifecycleCoordinatorFactory,
         certificatesClient,
+        virtualNodeInfoReadService,
     )
 
     @Nested
@@ -277,6 +285,205 @@ class CertificatesRestResourceImplTest {
                 pem.fromPem()
                     .subject
             ).isEqualTo(X500Name(x500Name))
+        }
+
+        @Test
+        fun `it will throw an exception for invalid X500 name`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    holdingIdentityShortHash,
+                    keyId,
+                    "nop",
+                    null,
+                    emptyMap(),
+                )
+            }
+        }
+
+        @Test
+        fun `it will throw an exception for invalid member name for TLS certificate`() {
+            whenever(key.category).doReturn(CryptoConsts.Categories.TLS)
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    holdingIdentityShortHash,
+                    keyId,
+                    x500Name,
+                    null,
+                    emptyMap(),
+                )
+            }
+        }
+
+        @Test
+        fun `it will generate a CSR for a valid member name for TLS certificate`() {
+            whenever(key.category).doReturn(CryptoConsts.Categories.TLS)
+
+            val csr = certificatesOps.generateCsr(
+                holdingIdentityShortHash,
+                keyId,
+                "O=Alice, L=LDN, C=GB",
+                null,
+                emptyMap(),
+            )
+
+            assertThat(csr).isNotNull
+        }
+
+        @Test
+        fun `it will throw an exception for invalid name for session certificate`() {
+            whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    holdingIdentityShortHash,
+                    keyId,
+                    x500Name,
+                    null,
+                    emptyMap(),
+                )
+            }
+        }
+
+        @Test
+        fun `it will throw an exception for session certificate cluster key where the member can not be found`() {
+            whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
+            whenever(virtualNodeInfoReadService.getAll()).doReturn(emptyList())
+            whenever(cryptoOpsClient.lookup(P2P, listOf(keyId))).doReturn(listOf(key))
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    P2P,
+                    keyId,
+                    "O=Alice, L=LDN, C=GB",
+                    null,
+                    emptyMap(),
+                )
+            }
+        }
+
+        @Test
+        fun `it will generate CSR for session certificate cluster key where the member can be found`() {
+            whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
+            val nodeHoldingIdentity = mock<HoldingIdentity> {
+                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
+            }
+            val nodeInfo = mock<VirtualNodeInfo> {
+                on { holdingIdentity } doReturn nodeHoldingIdentity
+            }
+            whenever(virtualNodeInfoReadService.getAll()).doReturn(listOf(nodeInfo))
+            whenever(
+                cryptoOpsClient.sign(
+                    eq(P2P),
+                    eq(publicKey),
+                    any<SignatureSpec>(),
+                    any(),
+                    eq(emptyMap())
+                )
+            ).doReturn(
+                DigitalSignature.WithKey(
+                    publicKey,
+                    byteArrayOf(1),
+                    emptyMap()
+                )
+            )
+            whenever(cryptoOpsClient.lookup(P2P, listOf(keyId))).doReturn(listOf(key))
+
+            val csr = certificatesOps.generateCsr(
+                P2P,
+                keyId,
+                nodeHoldingIdentity.x500Name.toString(),
+                null,
+                emptyMap(),
+            )
+
+            assertThat(csr).isNotNull
+        }
+
+        @Test
+        fun `it will generate CSR for session certificate member key where the member name is correct`() {
+            whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
+            val tenantId = "123123123123"
+            val nodeHoldingIdentity = mock<HoldingIdentity> {
+                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
+            }
+            val nodeInfo = mock<VirtualNodeInfo> {
+                on { holdingIdentity } doReturn nodeHoldingIdentity
+            }
+            whenever(
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
+                    ShortHash.of(tenantId)
+                )
+            ).doReturn(nodeInfo)
+            whenever(
+                cryptoOpsClient.sign(
+                    eq(tenantId),
+                    eq(publicKey),
+                    any<SignatureSpec>(),
+                    any(),
+                    eq(emptyMap())
+                )
+            ).doReturn(
+                DigitalSignature.WithKey(
+                    publicKey,
+                    byteArrayOf(1),
+                    emptyMap()
+                )
+            )
+            whenever(cryptoOpsClient.lookup(tenantId, listOf(keyId))).doReturn(listOf(key))
+
+            val csr = certificatesOps.generateCsr(
+                tenantId,
+                keyId,
+                nodeHoldingIdentity.x500Name.toString(),
+                null,
+                emptyMap(),
+            )
+
+            assertThat(csr).isNotNull
+        }
+
+        @Test
+        fun `it will throw an exception for session certificate member key where the member name is not correct`() {
+            whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
+            val tenantId = "123123123123"
+            val nodeHoldingIdentity = mock<HoldingIdentity> {
+                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
+            }
+            val nodeInfo = mock<VirtualNodeInfo> {
+                on { holdingIdentity } doReturn nodeHoldingIdentity
+            }
+            whenever(
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
+                    ShortHash.of(tenantId)
+                )
+            ).doReturn(nodeInfo)
+            whenever(
+                cryptoOpsClient.sign(
+                    eq(tenantId),
+                    eq(publicKey),
+                    any<SignatureSpec>(),
+                    any(),
+                    eq(emptyMap())
+                )
+            ).doReturn(
+                DigitalSignature.WithKey(
+                    publicKey,
+                    byteArrayOf(1),
+                    emptyMap()
+                )
+            )
+            whenever(cryptoOpsClient.lookup(tenantId, listOf(keyId))).doReturn(listOf(key))
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.generateCsr(
+                    tenantId,
+                    keyId,
+                    "O=Bob, L=LDN, C=GB",
+                    null,
+                    emptyMap(),
+                )
+            }
         }
 
         @Test
