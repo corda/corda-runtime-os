@@ -26,6 +26,7 @@ interface FlowSessionManager {
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param flowConfig The config containing the flow session config values such as the resend time window
+     * @param instant The [Instant] used within the created error events.
      */
     fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant): List<Record<*, FlowMapperEvent>>
 
