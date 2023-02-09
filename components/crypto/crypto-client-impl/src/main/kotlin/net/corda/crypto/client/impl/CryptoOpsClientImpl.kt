@@ -98,21 +98,30 @@ class CryptoOpsClientImpl(
         candidateKeys: Collection<PublicKey>,
         usingFullIds: Boolean
     ): Collection<PublicKey> {
+        val keyIdsForLogging = mutableListOf<String>()
         val candidateKeyIds =
             if (usingFullIds) {
                 SecureHashes(
                     candidateKeys.map {
-                        val secureHash = it.fullId(schemeMetadata, digestService)
+                        val secureHash =
+                            it.fullId(schemeMetadata, digestService).also { secureHash -> keyIdsForLogging.add(secureHash.toString()) }
                         net.corda.data.crypto.SecureHash(secureHash.algorithm, ByteBuffer.wrap(secureHash.bytes))
                     }
                 )
             } else {
                 ShortHashes(
                     candidateKeys.map {
-                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
+                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it)).also { shortHash -> keyIdsForLogging.add(shortHash)}
                     }
                 )
             }
+
+        logger.info(
+            "Sending '{}'(tenant={},candidateKeys={})",
+            ByIdsRpcQuery::class.java.simpleName,
+            tenantId,
+            keyIdsForLogging.joinToString { it }
+        )
 
         val request = createRequest(
             tenantId = tenantId,
@@ -138,7 +147,7 @@ class CryptoOpsClientImpl(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            candidateKeys.joinToString { "$it.." }
+            candidateKeys.joinToString { it }
         )
 
         val request = createRequest(
@@ -242,7 +251,7 @@ class CryptoOpsClientImpl(
         context: Map<String, String>
     ): DigitalSignature.WithKey {
         logger.info(
-            "Sending '{}'(tenant={},publicKey={}..,signatureSpec={})",
+            "Sending '{}'(tenant={}, publicKey={}, signatureSpec={})",
             SignRpcCommand::class.java.simpleName,
             tenantId,
             publicKey.toStringShort().take(12),
