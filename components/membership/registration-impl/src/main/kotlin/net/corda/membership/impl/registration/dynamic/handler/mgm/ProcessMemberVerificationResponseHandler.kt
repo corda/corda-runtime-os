@@ -78,10 +78,14 @@ internal class ProcessMemberVerificationResponseHandler(
                 throw CordaRuntimeException(message)
             }
             if (memberTypeChecker.isMgm(member)) {
-                throw CordaRuntimeException("Member ${member.x500Name} is an MGM and can not register.")
+                throw CordaRuntimeException(
+                    "Member ${member.x500Name} is an MGM and can not register."
+                )
             }
             if (!memberTypeChecker.isMgm(mgm)) {
-                throw CordaRuntimeException("Member ${mgm.x500Name} is not an MGM and can not process member's registration.")
+                throw CordaRuntimeException(
+                    "Member ${mgm.x500Name} is not an MGM and can not process member's registration."
+                )
             }
 
             val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId)
@@ -174,7 +178,7 @@ internal class ProcessMemberVerificationResponseHandler(
         }
     }
 
-    fun parsePreAuthToken(input: String): UUID {
+    private fun parsePreAuthToken(input: String): UUID {
         return try {
             UUID.fromString(input)
         } catch (e: IllegalArgumentException) {
