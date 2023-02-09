@@ -67,5 +67,10 @@ interface LiquibaseSchemaMigrator {
      * @param sql output
      */
     fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer)
+
+    /**
+     *
+     */
+    fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange, sql: Writer): List<String>
 }
 

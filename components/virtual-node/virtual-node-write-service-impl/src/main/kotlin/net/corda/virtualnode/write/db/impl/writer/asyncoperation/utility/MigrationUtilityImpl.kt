@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility
 
+import java.io.StringWriter
 import java.util.UUID
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
@@ -36,8 +37,15 @@ internal class MigrationUtilityImpl(
     }
 
     override fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean {
-        // todo cs - as part of CORE-https://r3-cev.atlassian.net/browse/CORE-9046
+
+        val allChangeLogsForCpk = VirtualNodeDbChangeLog(cpkChangelogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+        dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
+            StringWriter().use { writer ->
+                    liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk, writer)
+            }
+        }
         return false
+        // todo cs - as part of CORE-https://r3-cev.atlassian.net/browse/CORE-9046
     }
 
     private fun runCpkMigrations(

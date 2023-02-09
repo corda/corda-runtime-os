@@ -119,7 +119,8 @@ internal class VirtualNodeWriterFactory(
             vnodeDbFactory,
             groupPolicyParser,
             UTCClock(),
-            getCurrentChangeLogsForCpi
+            getCurrentChangeLogsForCpi,
+            migrationUtility = MigrationUtilityImpl(dbConnectionManager, LiquibaseSchemaMigratorImpl())
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import java.io.Writer
 import java.sql.Connection
 import java.util.UUID
+import liquibase.LabelExpression
 
 @Component(service = [LiquibaseSchemaMigrator::class])
 class LiquibaseSchemaMigratorImpl(
@@ -66,6 +67,22 @@ class LiquibaseSchemaMigratorImpl(
     override fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer) {
         process(datasource, dbChange, sql, controlTablesSchema)
     }
+
+    override fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange, sql: Writer): List<String> {
+        val database = databaseFactory(datasource)
+
+        val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
+        val liquibase = liquibaseFactory(
+            masterChangeLogFileName,
+            StreamResourceAccessor(masterChangeLogFileName, dbChange),
+            database
+        )
+
+        return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map { changeSet ->
+            "${changeSet.filePath} with ID: ${changeSet.id} is un-run"
+        }
+//        val res2 = liquibase.listUnexpectedChangeSets(Contexts(), LabelExpression())
+        }
 
     private fun process(
         datasource: Connection,
