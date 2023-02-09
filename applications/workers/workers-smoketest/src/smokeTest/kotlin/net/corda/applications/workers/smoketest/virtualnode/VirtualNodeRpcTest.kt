@@ -408,7 +408,7 @@ class VirtualNodeRpcTest {
             eventuallyUpdateVirtualNodeState(vnodeId, newState, "INACTIVE")
 
             val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
-            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 503)
+            val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className, 404)
             getFlowStatus(aliceHoldingId, requestId, 404)
 
 
