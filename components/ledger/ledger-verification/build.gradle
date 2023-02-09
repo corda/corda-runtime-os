@@ -29,6 +29,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:virtual-node:cpk-read-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
 
     implementation project(':libs:crypto:cipher-suite')
