@@ -139,7 +139,14 @@ class TestSigningKeyStore(
     }
 
     override fun lookupByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): Collection<SigningCachedKey> {
-        TODO("Not yet implemented")
+        val result = mutableListOf<SigningCachedKey>()
+        shortKeyIds.forEach {
+            val found = keys[Pair(tenantId, it.value)]
+            if(found != null) {
+                result.add(found)
+            }
+        }
+        return result
     }
 
     override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
