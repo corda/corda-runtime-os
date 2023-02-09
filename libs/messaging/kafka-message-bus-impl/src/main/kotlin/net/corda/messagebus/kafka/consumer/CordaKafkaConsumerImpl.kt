@@ -93,12 +93,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
         return consumerRecords.mapNotNull {
             parseRecord(it)
-        }
+        }.sortedBy { it.timestamp }
     }
 
     /**
      * Take a record polled and process it.
-     * If it is a chunk, then check to see if the chunks can be reassemnbled and returned.
+     * If it is a chunk, then check to see if the chunks can be reassembled and returned.
      * If the expected type of the Consumer is of type [Chunk] then do not try to reassemble chunks.
      * If the record is a normal records, verify the consumer is not waiting on more chunks and return the record.
      * @param consumerRecord record to parse
