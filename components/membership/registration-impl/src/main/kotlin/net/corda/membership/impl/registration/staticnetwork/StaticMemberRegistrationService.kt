@@ -81,7 +81,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
-import kotlin.random.Random
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
 
 @Suppress("LongParameterList")
@@ -154,7 +154,7 @@ class StaticMemberRegistrationService @Activate constructor(
     override fun stop() {
         coordinator.stop()
     }
-    private val random = Random(System.currentTimeMillis())
+    private val toKill = AtomicInteger(4)
 
     override fun register(
         registrationId: UUID,
@@ -167,11 +167,11 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
         println("QQQ got request $registrationId")
-        if (random.nextInt(10) == 3) {
+        if (toKill.decrementAndGet() == 0) {
             println("QQQ Killing my self without $registrationId!")
             exitProcess(0)
         }
-        println("QQQ will continue with $registrationId")
+        println("QQQ will continue with $registrationId - ${toKill.get()} left")
         try {
             membershipSchemaValidatorFactory
                 .createValidator()
