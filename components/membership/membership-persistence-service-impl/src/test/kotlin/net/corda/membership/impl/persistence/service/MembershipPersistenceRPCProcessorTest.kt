@@ -12,6 +12,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddPreAuthToken
+import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistMemberInfo
@@ -153,10 +154,15 @@ class MembershipPersistenceRPCProcessorTest {
         on { resultList } doReturn emptyList()
     }
     private val revokedAuthToken = PreAuthToken(
-        "", "", Instant.ofEpochMilli(100), PreAuthTokenStatus.REVOKED, null, null
+        UUID(0, 1).toString(), ourX500Name, Instant.ofEpochMilli(100), PreAuthTokenStatus.REVOKED, null, null
     )
     private val preAuthTokenEntity = PreAuthTokenEntity(
-        "", "", Instant.ofEpochMilli(100), PreAuthTokenStatus.AVAILABLE.toString(), null, null
+        UUID(0, 1).toString(),
+        ourX500Name,
+        Instant.now().plusSeconds(480),
+        PreAuthTokenStatus.AVAILABLE.toString(),
+        null,
+        null
     )
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
@@ -557,6 +563,28 @@ class MembershipPersistenceRPCProcessorTest {
             assertThat(payload).isInstanceOf(RevokePreAuthTokenResponse::class.java)
             assertThat((payload as RevokePreAuthTokenResponse).preAuthToken)
                 .isEqualTo(revokedAuthToken)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `consume pre auth token rules returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            ConsumePreAuthToken(preAuthTokenId, ourX500Name)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNull()
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

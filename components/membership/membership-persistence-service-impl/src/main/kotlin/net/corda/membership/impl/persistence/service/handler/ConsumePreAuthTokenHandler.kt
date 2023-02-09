@@ -19,13 +19,13 @@ internal class ConsumePreAuthTokenHandler(persistenceHandlerServices: Persistenc
                 request.tokenId
             ) ?: throw MembershipPersistenceException("Pre-auth token '${request.tokenId}' does not exist.")
 
-            if (MemberX500Name.parse(token.ownerX500Name) != MemberX500Name.Companion.parse(request.ownerX500Name)) {
+            if (MemberX500Name.parse(token.ownerX500Name) != MemberX500Name.parse(request.ownerX500Name)) {
                 throw MembershipPersistenceException("Pre-auth token '${request.tokenId}' does not exist for " +
                         "${request.ownerX500Name}.")
             }
 
             token.ttl?.run {
-                if (this > requestReceived) {
+                if (this <= requestReceived) {
                     throw MembershipPersistenceException("Pre-auth token '${request.tokenId}' expired at $this")
                 }
             }

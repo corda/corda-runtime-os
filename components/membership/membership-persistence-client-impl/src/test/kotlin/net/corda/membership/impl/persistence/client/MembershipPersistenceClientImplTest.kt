@@ -1164,6 +1164,7 @@ class MembershipPersistenceClientImplTest {
                 }
             )
         }
+
         @Test
         fun `consumePreAuthToken returns success if persistence operation was successful`() {
             mockPersistenceResponse()
@@ -1203,5 +1204,4 @@ class MembershipPersistenceClientImplTest {
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
     }
-
 }
