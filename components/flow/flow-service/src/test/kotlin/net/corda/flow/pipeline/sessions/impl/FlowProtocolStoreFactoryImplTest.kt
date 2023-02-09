@@ -2,15 +2,14 @@ package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.libs.packaging.core.CordappManifest
-import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.osgi.framework.Bundle
 
 class FlowProtocolStoreFactoryImplTest {
 
@@ -27,20 +27,18 @@ class FlowProtocolStoreFactoryImplTest {
         private const val RPC_FLOW = "rpc-flow"
         private const val BAD_RESPONDER = "bad-responder"
         private const val INVALID_RESPONDER = "invalid-responder"
-
         private const val PROTOCOL = "protocol"
     }
 
     @Test
     fun `created protocol store has correct behaviour when retrieving initiating and responder protocols`() {
-        val cpiMetadata = makeMockCPIMetadata(
+        val sandboxGroup = makeMockSandboxGroup(
             listOf(
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW), listOf(), listOf()),
                 CpkFlowClassNameLists(listOf(RPC_FLOW, INITIATED_FLOW), listOf(RPC_FLOW), listOf(INITIATED_FLOW))
             )
         )
-        val sandboxGroup = makeMockSandboxGroup()
-        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
         assertEquals(INITIATED_FLOW, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
         assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(RPC_FLOW, mock()))
@@ -48,15 +46,14 @@ class FlowProtocolStoreFactoryImplTest {
 
     @Test
     fun `adding two responders with the same protocol results in an error`() {
-        val cpiMetadata = makeMockCPIMetadata(
+        val sandboxGroup = makeMockSandboxGroup(
             listOf(
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW, BAD_RESPONDER), listOf(), listOf(BAD_RESPONDER)),
                 CpkFlowClassNameLists(listOf(RPC_FLOW, INITIATED_FLOW), listOf(RPC_FLOW), listOf(INITIATED_FLOW))
             )
         )
-        val sandboxGroup = makeMockSandboxGroup()
         val thrownException = assertThrows<FlowFatalException> {
-            FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+            FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         }
         assertEquals(
             "Cannot declare multiple responders for the same protocol in the same CPI",
@@ -66,27 +63,19 @@ class FlowProtocolStoreFactoryImplTest {
 
     @Test
     fun `error is returned when flow annotated with @InitiatedBy does not implement ResponderFlow`() {
-        val cpiMetadata = makeMockCPIMetadata(
+        val sandboxGroup = makeMockSandboxGroup(
             listOf(
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW, INVALID_RESPONDER), listOf(), listOf(INVALID_RESPONDER)),
                 CpkFlowClassNameLists(listOf(RPC_FLOW, INITIATED_FLOW), listOf(RPC_FLOW), listOf(INITIATED_FLOW))
             )
         )
-        val sandboxGroup = makeMockSandboxGroup()
         val thrownException = assertThrows<FlowFatalException> {
-            FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+            FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         }
         assertEquals(
             "Flow ${InvalidResponderFlow::class.java.canonicalName} must implement ${ResponderFlow::class.java.simpleName}",
             thrownException.message
         )
-    }
-
-    private fun makeMockCPIMetadata(flows: List<CpkFlowClassNameLists>): CpiMetadata {
-        val cpiMetadata = mock<CpiMetadata>()
-        val cpks = flows.map { makeMockCPKMetadata(it) }
-        whenever(cpiMetadata.cpksMetadata).thenReturn(cpks)
-        return cpiMetadata
     }
 
     private fun makeMockCPKMetadata(flows: CpkFlowClassNameLists): CpkMetadata {
@@ -99,8 +88,11 @@ class FlowProtocolStoreFactoryImplTest {
         return cpkMetadata
     }
 
-    private fun makeMockSandboxGroup(): SandboxGroup {
+    private fun makeMockSandboxGroup(flows: List<CpkFlowClassNameLists>): SandboxGroup {
+        val cpks = flows.map { makeMockCPKMetadata(it) }
+        val metadata = cpks.map { Pair(mock<Bundle>(), it) }.toMap()
         val sandboxGroup = mock<SandboxGroup>()
+        whenever(sandboxGroup.metadata).thenReturn(metadata)
         whenever(
             sandboxGroup.loadClassFromMainBundles(
                 INITIATING_FLOW,

@@ -16,6 +16,7 @@ import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.impl.FlowProtocol
@@ -26,7 +27,6 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.SessionManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -123,8 +123,10 @@ class SessionEventHandlerTest {
             true
         }
 
-        verify(checkpoint).initFlowState(
-            argThat { fsc -> expectedStartFlowContext(fsc) }
+        verify(checkpointInitializer).initialize(
+            argThat { receivedCheckpoint -> receivedCheckpoint == checkpoint },
+            argThat(expectedStartFlowContext),
+            argThat { waitingFor -> waitingFor.value == WaitingForSessionInit(SESSION_ID) }
         )
     }
 
@@ -139,7 +141,7 @@ class SessionEventHandlerTest {
             sessionEventHandler.preProcess(inputContext)
         }
 
-        verify(checkpoint, never()).initFlowState(any())
+        verify(checkpointInitializer, never()).initialize(any(), any(), any())
     }
 
     @Test

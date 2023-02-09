@@ -27,10 +27,13 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -247,9 +250,14 @@ class FlowCheckpointImplTest {
             contextPlatformProperties = platformPropertiesLevel0.avro
         }
 
+        val cpk = mock<SecureHash>()
+        val cpks = setOf(cpk)
+        whenever(cpk.bytes).thenReturn(byteArrayOf())
+
+
         val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false))
 
-        flowCheckpoint.initFlowState(flowStartContext)
+        flowCheckpoint.initFlowState(flowStartContext, cpks)
 
         assertThat(flowCheckpoint.flowId).isEqualTo(newFlowId)
         assertThat(flowCheckpoint.flowKey).isEqualTo(flowKey)
@@ -512,8 +520,11 @@ class FlowCheckpointImplTest {
             identity = BOB_X500_HOLDING_IDENTITY
             contextPlatformProperties = platformPropertiesLevel0.avro
         }
+        val cpk = mock<SecureHash>()
+        val cpks = setOf(cpk)
+        whenever(cpk.bytes).thenReturn(byteArrayOf())
 
-        flowCheckpoint.initFlowState(context)
+        flowCheckpoint.initFlowState(context, cpks)
         flowCheckpoint.putSessionState(SessionState().apply { sessionId = "sid1" })
         flowCheckpoint.suspendedOn = "s2"
         flowCheckpoint.waitingFor = WaitingFor(Wakeup())

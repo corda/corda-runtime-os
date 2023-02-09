@@ -18,7 +18,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.slf4j.MDC
@@ -59,8 +58,8 @@ class FlowFiberExecutionContextFactoryImplTest {
 
         whenever(context.checkpoint.flowStartContext).thenReturn(flowStartContext)
         whenever(context.checkpoint.holdingIdentity).thenReturn(BOB_X500_HOLDING_IDENTITY.toCorda())
-        whenever(flowSandboxService.get(BOB_X500_HOLDING_IDENTITY.toCorda(), any())).thenReturn(sandboxGroupContext)
-        whenever(context.checkpoint.cpks).thenReturn(emptyList())
+        whenever(flowSandboxService.get(BOB_X500_HOLDING_IDENTITY.toCorda(), emptySet())).thenReturn(sandboxGroupContext)
+        whenever(context.checkpoint.cpks).thenReturn(emptySet())
         whenever(membershipGroupReaderProvider.getGroupReader(
             BOB_X500_HOLDING_IDENTITY.toCorda()
         )).thenReturn(membershipGroupReader)
