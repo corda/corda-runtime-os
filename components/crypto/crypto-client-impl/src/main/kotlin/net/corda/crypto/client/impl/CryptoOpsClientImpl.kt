@@ -61,7 +61,7 @@ class CryptoOpsClientImpl(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         // TODO This converter needs to be removed once we expose SecureHash and ShortHash and types to APIs of this class
-        private fun parseStringsToKeyIds(keyIdsStrings: List<String>): Any  {
+        private fun parseStringsToKeyIds(keyIdsStrings: List<String>): Any {
             if (keyIdsStrings.isEmpty())
                 return ShortHashes()
             return if (keyIdsStrings[0].length == 12) {
