@@ -1,6 +1,8 @@
 package net.corda.ledger.verification.sandbox.impl
 
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
+import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
@@ -44,18 +46,33 @@ class VerificationSandboxServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun get(holdingIdentity: HoldingIdentity, cpkFileChecksums: Set<SecureHash>): SandboxGroupContext {
-        // TODO We should verify the CPK's are contract only as part of platform verify of the request (CORE-9379)
+    override fun get(holdingIdentity: HoldingIdentity, cpks: List<CordaPackageSummary>): SandboxGroupContext {
 
+        val cpkFileChecksums = cpks.mapTo(mutableSetOf()) { SecureHash.parse(it.fileChecksum) }
         if (!sandboxService.hasCpks(cpkFileChecksums)) {
-            // We're throwing internal exceptions so that we can relay some information back to the flow worker
-            // on how to proceed with any request to us that fails.
-            throw CpkNotAvailableException("CPKs not available (yet): $cpkFileChecksums")
+            throw CpkNotAvailableException(
+                "CPKs for Verification Sandbox for $holdingIdentity are not available (yet): $cpks"
+            )
         }
 
-        return sandboxService.getOrCreate(getVirtualNodeContext(holdingIdentity, cpkFileChecksums)) { _, ctx ->
+        val sandbox = sandboxService.getOrCreate(getVirtualNodeContext(holdingIdentity, cpkFileChecksums)) { _, ctx ->
             initializeSandbox(holdingIdentity, ctx)
         }
+
+        // Only contract CPKs are allowed
+        val nonContractCpks = sandbox.sandboxGroup
+            .metadata
+            .values
+            .filterNot { it.isContractCpk() }
+
+        if (nonContractCpks.isNotEmpty()) {
+            val cpkIds = nonContractCpks.map { it.cpkId }
+            throw NotAllowedCpkException(
+                "CPKs for Verification Sandbox for $holdingIdentity are not allowed: $cpkIds"
+            )
+        }
+
+        return sandbox
     }
 
     private fun initializeSandbox(
@@ -69,9 +86,6 @@ class VerificationSandboxServiceImpl @Activate constructor(
 
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
-
-        // TODO What services do we end up with? We want only verification side of crypto, serialization (AMQP and maybe
-        //  JSON, but not kryo). Need to review what is reachable from this sandbox. (CORE-9379)
 
         logger.info("Initialising Verification Sandbox for $holdingIdentity")
 
