@@ -102,7 +102,7 @@ class VerificationRequestProcessorTest {
             flowExternalEventContext = ExternalEventContext(requestId, "f1", KeyValuePairList())
             holdingIdentity = ALICE_X500_HOLDING_ID
             cpkMetadata = listOf(
-                CordaPackageSummary("cpk1", "1.0", SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
+                CordaPackageSummary(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
             )
         }
 }
