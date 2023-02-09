@@ -23,7 +23,6 @@ import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
@@ -103,7 +102,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 ),
                 minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL)
             )
-            val finaliseRegistrationRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
+            val approveRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
                     "$registrationId-${mgm.toCorda().shortHash}",
@@ -113,7 +112,7 @@ internal class ProcessMemberVerificationResponseHandler(
 
             listOfNotNull(
                 persistStatusMessage,
-                finaliseRegistrationRecord,
+                approveRecord,
             )
         } catch (e: Exception) {
             logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
@@ -155,21 +154,33 @@ internal class ProcessMemberVerificationResponseHandler(
             ?.toMap()
 
         val approvalRuleType = proposedMemberInfo[PRE_AUTH_TOKEN]?.let {
-            val result = membershipPersistenceClient.consumePreAuthToken(
+            val tokenExists = membershipQueryClient.queryPreAuthTokens(
                 mgm,
                 member.x500Name,
-                parsePreAuthToken(it)
-            )
-            if (result is MembershipPersistenceResult.Failure) {
-                throw InvalidPreAuthTokenException(result.errorMsg)
+                UUID.fromString(it),
+                false
+            ).getOrThrow().isNotEmpty()
+
+            if (tokenExists) {
+                ApprovalRuleType.PREAUTH
+            } else {
+                throw InvalidPreAuthTokenException("Pre-auth token ID is invalid.")
             }
-            ApprovalRuleType.PREAUTH
         } ?: ApprovalRuleType.STANDARD
 
         val rules = membershipQueryClient
             .getApprovalRules(mgm, approvalRuleType)
             .getOrThrow()
             .map { RegistrationRule.Impl(it.ruleRegex.toRegex()) }
+
+        proposedMemberInfo[PRE_AUTH_TOKEN]?.let {
+            // Consume token after retrieving rules.
+            membershipPersistenceClient.consumePreAuthToken(
+                mgm,
+                member.x500Name,
+                parsePreAuthToken(it)
+            ).getOrThrow()
+        }
 
         return if (RegistrationRulesEngine.Impl(rules).requiresManualApproval(proposedMemberInfo, activeMemberInfo)) {
             RegistrationStatus.PENDING_MANUAL_APPROVAL

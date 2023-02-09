@@ -11,6 +11,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
@@ -61,6 +62,8 @@ class ProcessMemberVerificationResponseHandlerTest {
         const val ADDITIONAL_TEST_KEY = "corda.additional.test.key"
         const val ADDITIONAL_TEST_VALUE = "corda.additional.test.value"
     }
+
+    val mockToken: PreAuthToken = mock()
 
     private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
@@ -242,6 +245,20 @@ class ProcessMemberVerificationResponseHandlerTest {
 
         private val preAuthToken = UUID(0, 1)
 
+        private fun mockQueryToken(
+            result: MembershipQueryResult<List<PreAuthToken>>
+        ) {
+            whenever(
+                membershipQueryClient.queryPreAuthTokens(
+                    mgm.toCorda(),
+                    member.toCorda().x500Name,
+                    preAuthToken,
+                    false
+                )
+            )
+                .doReturn(result)
+        }
+
         private fun mockConsumeToken(
             result: MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
         ) {
@@ -264,9 +281,11 @@ class ProcessMemberVerificationResponseHandlerTest {
             whenever(memberContext.items).doReturn(context.filterNotNull())
         }
 
+        @Suppress("MaxLineLength")
         @Test
         fun `handler sets initial registration request with valid pre-auth token to status manual approval if there are pre-auth token rules`() {
             mockConsumeToken()
+            mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext()
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveAllRule)
 
@@ -280,6 +299,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         }
 
+        @Suppress("MaxLineLength")
         @Test
         fun `handler sets re-registration request with valid pre-auth token to status manual approval if there are pre-auth token rules checking for removed key`() {
             // Configure active member for re-registration scenario
@@ -288,6 +308,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             )
 
             mockConsumeToken()
+            mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext()
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveTestKeyRule)
 
@@ -301,12 +322,14 @@ class ProcessMemberVerificationResponseHandlerTest {
             verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         }
 
+        @Suppress("MaxLineLength")
         @Test
         fun `handler sets re-registration request with valid pre-auth token to status manual approval if there are pre-auth token rules checking for added key`() {
             // Configure active member for re-registration scenario
             mockActiveMember(memberContextKeyValues)
 
             mockConsumeToken()
+            mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext(
                 additionalContextItem = KeyValuePair(ADDITIONAL_TEST_KEY, ADDITIONAL_TEST_VALUE)
             )
@@ -322,6 +345,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         }
 
+        @Suppress("MaxLineLength")
         @Test
         fun `handler sets re-registration request with valid pre-auth token to status manual approval if there are pre-auth token rules checking for changed key`() {
             // Configure active member for re-registration scenario
@@ -330,6 +354,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             )
 
             mockConsumeToken()
+            mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext(
                 additionalContextItem = KeyValuePair(ADDITIONAL_TEST_KEY, "$ADDITIONAL_TEST_VALUE.changed")
             )
@@ -346,8 +371,9 @@ class ProcessMemberVerificationResponseHandlerTest {
         }
 
         @Test
-        fun `handler starts auto approval if there are preauth approval rules but none match`() {
+        fun `handler starts auto approval if there are pre auth approval rules but none match`() {
             mockConsumeToken()
+            mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext()
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveNoneRule)
 
@@ -362,10 +388,34 @@ class ProcessMemberVerificationResponseHandlerTest {
         }
 
         @Test
-        fun `handler declines registration if invalid preauth token is provided`() {
-            mockConsumeToken()
+        fun `handler declines registration if invalid pre auth token is provided`() {
             mockPreAuthTokenInRegistrationContext("bad-token")
-            mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveAllRule)
+
+            val result = invokeTestFunction()
+
+            assertUpdatedState(result)
+
+            verifyNeverSetRegistrationStatus()
+            assertDeclinedRegistrationOutput(result)
+        }
+
+        @Test
+        fun `handler declines registration if no token exists`() {
+            mockQueryToken(MembershipQueryResult.Success(emptyList()))
+            mockPreAuthTokenInRegistrationContext()
+
+            val result = invokeTestFunction()
+
+            assertUpdatedState(result)
+
+            verifyNeverSetRegistrationStatus()
+            assertDeclinedRegistrationOutput(result)
+        }
+
+        @Test
+        fun `handler declines registration if failure to check for existing tokens`() {
+            mockQueryToken(MembershipQueryResult.Failure("failed"))
+            mockPreAuthTokenInRegistrationContext()
 
             val result = invokeTestFunction()
 
@@ -378,6 +428,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         @Test
         fun `handler declines registration if impossible to consume token`() {
             mockConsumeToken(MembershipPersistenceResult.Failure("error"))
+            mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext()
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveAllRule)
 

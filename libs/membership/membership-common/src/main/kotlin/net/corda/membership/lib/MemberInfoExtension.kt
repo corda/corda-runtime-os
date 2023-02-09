@@ -84,7 +84,7 @@ class MemberInfoExtension {
         /** Key name for MGM property. */
         const val IS_MGM = "corda.mgm"
 
-        /** Key name for MGM property. */
+        /** Key name for pre-auth token property. */
         const val PRE_AUTH_TOKEN = "corda.auth.token"
 
         /** Key name for the ID of the registration in which the current member info was approved. */
