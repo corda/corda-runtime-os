@@ -1,11 +1,11 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
@@ -37,6 +37,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.EncodingUtils.toBase58
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
@@ -99,25 +100,22 @@ class CryptoOpsClientImpl(
     ): Collection<PublicKey> {
         val candidateKeyIds =
             if (usingFullIds) {
-                candidateKeys.map {
-                    it.fullId(schemeMetadata, digestService)
-                }
+                SecureHashes(
+                    candidateKeys.map {
+                        val secureHash = it.fullId(schemeMetadata, digestService)
+                        net.corda.data.crypto.SecureHash(secureHash.algorithm, ByteBuffer.wrap(secureHash.bytes))
+                    }
+                )
             } else {
-                candidateKeys.map {
-                    publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
-                }
+                ShortHashes(
+                    candidateKeys.map {
+                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
+                    }
+                )
             }
-
-        logger.info(
-            "Sending '{}'(tenant={},candidateKeys={})",
-            ByIdsRpcQuery::class.java.simpleName,
-            tenantId,
-            candidateKeyIds.joinToString { "$it.." }
-        )
 
         val request = createRequest(
             tenantId = tenantId,
-            // TODO Update key Ids to SecureHashes ShortHashes
             request = ByIdsRpcQuery(candidateKeyIds)
         )
         val response = request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)
@@ -145,10 +143,7 @@ class CryptoOpsClientImpl(
 
         val request = createRequest(
             tenantId = tenantId,
-            // TODO Update key Ids to SecureHashes ShortHashes
-            request = ByIdsRpcQuery(
-                candidateKeys
-            )
+            request = ByIdsRpcQuery(parseStringsToKeyIds(candidateKeys))
         )
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
@@ -378,7 +373,6 @@ class CryptoOpsClientImpl(
         }
         val request = createRequest(
             tenantId,
-            // TODO convert ids to SecureHashes or ShortHashes
             ByIdsRpcQuery(parseStringsToKeyIds(ids))
         )
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
@@ -430,3 +424,9 @@ class CryptoOpsClientImpl(
         throw e
     }
 }
+
+private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: PlatformDigestService): SecureHash =
+    digestService.hash(
+        keyEncodingService.encodeAsByteArray(this),
+        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
+    )
