@@ -76,6 +76,7 @@ import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Order
 import javax.persistence.criteria.Path
 import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
@@ -150,12 +151,13 @@ class MembershipPersistenceRPCProcessorTest {
         on { get<String>("status") } doReturn statusPath
         on { get<String>("holdingIdentityShortHash") } doReturn shortHashPath
     }
+    private val order = mock<Order>()
     private val registrationRequestsQuery = mock<CriteriaQuery<RegistrationRequestEntity>> {
         on { from(RegistrationRequestEntity::class.java) } doReturn registrationRequestRoot
         on { select(registrationRequestRoot) } doReturn mock
         on { where() } doReturn mock
         on { where(any()) } doReturn mock
-        on { groupBy(shortHashPath) } doReturn mock
+        on { orderBy(order) } doReturn mock
     }
     private val registrationRequestQuery = mock<TypedQuery<RegistrationRequestEntity>> {
         on { resultList } doReturn emptyList()
@@ -168,6 +170,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { equal(ruleRegexPath, DUMMY_RULE) } doReturn predicate
         on { and(predicate, predicate) } doReturn predicate
         on { `in`(registrationRequestRoot.get<String>("status")) } doReturn mock()
+        on { asc(shortHashPath) } doReturn order
     }
     private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
         on { resultList } doReturn emptyList()

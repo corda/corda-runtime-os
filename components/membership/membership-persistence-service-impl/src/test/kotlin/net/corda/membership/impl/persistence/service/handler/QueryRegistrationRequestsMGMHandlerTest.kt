@@ -29,6 +29,7 @@ import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Order
 import javax.persistence.criteria.Path
 import javax.persistence.criteria.Root
 
@@ -57,16 +58,18 @@ class QueryRegistrationRequestsMGMHandlerTest {
         on { get<String>("holdingIdentityShortHash") } doReturn holdingIdentityShortHashPath
         on { get<String>("status") } doReturn statusPath
     }
+    private val order = mock<Order>()
     private val query = mock<CriteriaQuery<RegistrationRequestEntity>> {
         on { from(RegistrationRequestEntity::class.java) } doReturn root
         on { select(root) } doReturn mock
         on { where() } doReturn mock
         on { where(any()) } doReturn mock
-        on { groupBy(holdingIdentityShortHashPath) } doReturn mock
+        on { orderBy(order) } doReturn mock
     }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(RegistrationRequestEntity::class.java) } doReturn query
         on { `in`(root.get<String>("status")) } doReturn mock()
+        on { asc(holdingIdentityShortHashPath) } doReturn order
     }
     private val mockRegistrationRequestEntity = mock<RegistrationRequestEntity> {
         on { registrationId } doReturn REGISTRATION_ID

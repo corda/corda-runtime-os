@@ -1849,7 +1849,7 @@
                   "type" : "array",
                   "nullable" : false,
                   "items" : {
-                    "$ref" : "#/components/schemas/RegistrationRequestStatus"
+                    "$ref" : "#/components/schemas/RpcRegistrationRequestStatus"
                   }
                 }
               }
@@ -1946,7 +1946,7 @@
                 "schema" : {
                   "nullable" : true,
                   "allOf" : [ {
-                    "$ref" : "#/components/schemas/RegistrationRequestStatus"
+                    "$ref" : "#/components/schemas/RpcRegistrationRequestStatus"
                   } ]
                 }
               }
@@ -2577,6 +2577,122 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PreAuthToken"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/request/{requestid}" : {
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "post_mgm__holdingidentityshorthash__request__requestid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "requestid",
+          "in" : "path",
+          "description" : "ID of the registration request",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the registration request",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ManualApprovalDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/requests" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "get_mgm__holdingidentityshorthash__requests",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "requestingmemberx500name",
+          "in" : "query",
+          "description" : "X.500 name of the requesting member",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "X.500 name of the requesting member",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "viewhistoric",
+          "in" : "query",
+          "description" : "Include completed (historic) requests if set to 'true'",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "description" : "Include completed (historic) requests if set to 'true'",
+            "nullable" : false,
+            "example" : true
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/RpcRegistrationRequestStatus"
+                  }
                 }
               }
             }
@@ -4211,6 +4327,23 @@
           }
         }
       },
+      "ManualApprovalDecisionRequest" : {
+        "required" : [ "action" ],
+        "type" : "object",
+        "properties" : {
+          "action" : {
+            "nullable" : false,
+            "example" : "DECLINE",
+            "enum" : [ "APPROVE", "DECLINE" ]
+          },
+          "reason" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "description" : "Includes the action to be taken (approve/decline) and the reason for the specified action"
+      },
       "MemberInfoSubmitted" : {
         "required" : [ "data" ],
         "type" : "object",
@@ -4449,37 +4582,6 @@
           }
         }
       },
-      "RegistrationRequestStatus" : {
-        "required" : [ "memberInfoSubmitted", "registrationId", "registrationStatus" ],
-        "type" : "object",
-        "properties" : {
-          "memberInfoSubmitted" : {
-            "$ref" : "#/components/schemas/MemberInfoSubmitted"
-          },
-          "registrationId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "registrationSent" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "registrationStatus" : {
-            "nullable" : false,
-            "example" : "SENT_TO_MGM",
-            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
-          },
-          "registrationUpdated" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-24T10:15:30Z"
-          }
-        }
-      },
       "RoleAssociationResponseType" : {
         "required" : [ "createTimestamp", "roleId" ],
         "type" : "object",
@@ -4573,6 +4675,37 @@
             "items" : {
               "$ref" : "#/components/schemas/RpcMemberInfo"
             }
+          }
+        }
+      },
+      "RpcRegistrationRequestStatus" : {
+        "required" : [ "memberInfoSubmitted", "registrationId", "registrationStatus" ],
+        "type" : "object",
+        "properties" : {
+          "memberInfoSubmitted" : {
+            "$ref" : "#/components/schemas/MemberInfoSubmitted"
+          },
+          "registrationId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "registrationSent" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "registrationStatus" : {
+            "nullable" : false,
+            "example" : "SENT_TO_MGM",
+            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
+          },
+          "registrationUpdated" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
           }
         }
       },

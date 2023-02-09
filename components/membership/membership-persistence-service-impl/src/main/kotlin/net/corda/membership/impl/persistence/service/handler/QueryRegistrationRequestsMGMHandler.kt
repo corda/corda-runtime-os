@@ -45,7 +45,9 @@ internal class QueryRegistrationRequestsMGMHandler(
             val query = queryBuilder
                 .select(root)
                 .where(*predicates.toTypedArray())
-                .groupBy(root.get<String>(RegistrationRequestEntity::holdingIdentityShortHash.name))
+                .orderBy(
+                    em.criteriaBuilder.asc(root.get<String>(RegistrationRequestEntity::holdingIdentityShortHash.name))
+                )
 
             RegistrationRequestsQueryResponse(
                 em.createQuery(query)

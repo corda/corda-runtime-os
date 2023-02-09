@@ -1201,6 +1201,46 @@ class MembershipPersistenceTest {
         assertThat(result).containsAll(listOf(rule1, rule2))
     }
 
+    @Test
+    fun `queryRegistrationRequests retrieves the expected registration requests`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId1 = randomUUID().toString()
+        val requestPersistentResult = persistRequest(registeringHoldingIdentity, registrationId1, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        // Persist a completed request
+        val registrationId2 = randomUUID().toString()
+        val requestPersistentResult2 = persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
+        assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val result1 = membershipQueryClient.queryRegistrationRequests(
+            viewOwningHoldingIdentity,
+            null,
+            true
+        ).getOrThrow()
+        assertThat(result1.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2))
+
+        val result2 = membershipQueryClient.queryRegistrationRequests(
+            viewOwningHoldingIdentity,
+            viewOwningHoldingIdentity.x500Name.toString(),
+            true
+        ).getOrThrow()
+        assertThat(result2.map { it.registrationId }).containsAll(listOf(registrationId2))
+
+        val result3 = membershipQueryClient.queryRegistrationRequests(
+            viewOwningHoldingIdentity,
+            null,
+            false
+        ).getOrThrow()
+        assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
+    }
+
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
         cordaAvroDeserializer.deserialize(this)
             ?.items
@@ -1236,11 +1276,15 @@ class MembershipPersistenceTest {
         )
     }
 
-    private fun persistRequest(member: HoldingIdentity, registrationId: String): MembershipPersistenceResult<Unit> {
+    private fun persistRequest(
+        member: HoldingIdentity,
+        registrationId: String,
+        status: RegistrationStatus = RegistrationStatus.SENT_TO_MGM,
+    ): MembershipPersistenceResult<Unit> {
         return membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.SENT_TO_MGM,
+                status,
                 registrationId,
                 member,
                 ByteBuffer.wrap(
