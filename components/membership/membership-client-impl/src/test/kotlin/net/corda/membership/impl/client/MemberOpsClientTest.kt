@@ -2,19 +2,21 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.impl.toWire
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.async.request.MembershipAsyncRequest
+import net.corda.data.membership.async.request.RegistrationAction
+import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
-import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus.SUBMITTED
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus.NOT_SUBMITTED
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.SmartConfig
@@ -28,20 +30,30 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
-import net.corda.membership.lib.toMap
+import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -49,6 +61,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -57,6 +70,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
@@ -91,6 +105,7 @@ class MemberOpsClientTest {
     }
 
     private val rpcSender = mock<RPCSender<MembershipRpcRequest, MembershipRpcResponse>>()
+    private val asyncPublisher = mock<Publisher>()
 
     private val publisherFactory = mock<PublisherFactory> {
         on {
@@ -99,16 +114,36 @@ class MemberOpsClientTest {
                 any()
             )
         } doReturn rpcSender
+
+        on { createPublisher(any(), any()) } doReturn asyncPublisher
     }
 
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
-
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+    }
+    private val holdingIdentity = mock<HoldingIdentity>()
+    private val virtualNodeInfo = mock<VirtualNodeInfo> {
+        on { holdingIdentity } doReturn holdingIdentity
+    }
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
+        on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_ID)) } doReturn virtualNodeInfo
+    }
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+    }
     private val memberOpsClient = MemberOpsClientImpl(
         lifecycleCoordinatorFactory,
         publisherFactory,
-        configurationReadService
+        configurationReadService,
+        membershipPersistenceClient,
+        virtualNodeInfoReadService,
+        cordaAvroSerializationFactory,
     )
 
     private val messagingConfig: SmartConfig = mock()
@@ -141,51 +176,12 @@ class MemberOpsClientTest {
         mapOf("property" to "test"),
     )
 
-
     @Test
     fun `starting and stopping the service succeeds`() {
         memberOpsClient.start()
         assertTrue(memberOpsClient.isRunning)
         memberOpsClient.stop()
         assertFalse(memberOpsClient.isRunning)
-    }
-
-    @Test
-    fun `rpc sender sends the expected request - starting registration process`() {
-        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
-        val response = RegistrationRpcResponse(
-            "Registration-ID",
-            clock.instant(),
-            SUBMITTED,
-            "",
-            1,
-            KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-            KeyValuePairList(emptyList())
-        )
-        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
-            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
-            CompletableFuture.completedFuture(
-                MembershipRpcResponse(
-                    MembershipRpcResponseContext(
-                        requestContext.requestId,
-                        requestContext.requestTimestamp,
-                        clock.instant()
-                    ),
-                    response,
-                )
-            )
-        }
-        memberOpsClient.start()
-        setUpRpcSender()
-        memberOpsClient.startRegistration(request)
-        memberOpsClient.stop()
-
-        val requestSent = rpcRequest.firstValue.request as RegistrationRpcRequest
-
-        assertThat(requestSent.holdingIdentityId)
-            .isEqualTo(request.holdingIdentityShortHash.toString())
-        assertThat(requestSent.registrationAction.name).isEqualTo(request.action.name)
-        assertThat(requestSent.context.toMap()).isEqualTo(request.context)
     }
 
     @Test
@@ -293,14 +289,8 @@ class MemberOpsClientTest {
                         rpcRequest.requestContext.requestTimestamp,
                         clock.instant()
                     ),
-                    RegistrationRpcResponse(
-                        "RegistrationID",
-                        clock.instant(),
-                        SUBMITTED,
-                        "",
-                        1,
-                        KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                        KeyValuePairList(emptyList())
+                    RegistrationsStatusResponse(
+                        emptyList(),
                     )
                 )
             )
@@ -325,14 +315,8 @@ class MemberOpsClientTest {
                         clock.instant().plusMillis(10000000),
                         clock.instant()
                     ),
-                    RegistrationRpcResponse(
-                        "RegistrationID",
-                        clock.instant(),
-                        SUBMITTED,
-                        "",
-                        1,
-                        KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                        KeyValuePairList(emptyList())
+                    RegistrationsStatusResponse(
+                        emptyList(),
                     )
                 )
             )
@@ -488,7 +472,7 @@ class MemberOpsClientTest {
                 RegistrationStatusDetails(
                     clock.instant().plusSeconds(10),
                     clock.instant().plusSeconds(20),
-                    RegistrationStatus.NEW,
+                    RegistrationStatus.SENT_TO_MGM,
                     "registration id 2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
@@ -539,7 +523,7 @@ class MemberOpsClientTest {
                     registrationId = "registration id 2",
                     registrationSent = clock.instant().plusSeconds(10),
                     registrationUpdated = clock.instant().plusSeconds(20),
-                    registrationStatus = RegistrationStatusDto.NEW,
+                    registrationStatus = RegistrationStatusDto.SENT_TO_MGM,
                     memberInfoSubmitted = MemberInfoSubmittedDto(
                         mapOf(
                             "registrationProtocolVersion" to "1",
@@ -633,7 +617,6 @@ class MemberOpsClientTest {
         }
     }
 
-
     @Test
     fun `checkSpecificRegistrationProgress sends the correct data`() {
         val requestCapture = argumentCaptor<MembershipRpcRequest>()
@@ -666,17 +649,109 @@ class MemberOpsClientTest {
 
     @Test
     fun `startRegistration should add exception message to reason field if exception happened`() {
-        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
-        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
-            throw IllegalArgumentException("Exception happened.")
-        }
+        val future = CompletableFuture.failedFuture<Unit>(
+            CordaRuntimeException(
+                "Ooops."
+            )
+        )
+        whenever(asyncPublisher.publish(any())).doReturn(listOf(future))
         memberOpsClient.start()
         setUpRpcSender()
+
         val result = memberOpsClient.startRegistration(request)
+
         assertSoftly {
             it.assertThat(result.reason)
-                .isEqualTo("Failed to send request and receive response for membership RPC operation. Exception happened.")
-            it.assertThat(result.registrationStatus).isEqualTo(NOT_SUBMITTED.toString())
+                .isEqualTo(
+                    "Ooops."
+                )
+            it.assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.NOT_SUBMITTED)
         }
+    }
+
+    @Test
+    fun `startRegistration publish the correct data`() {
+        val records = argumentCaptor<List<Record<*, *>>>()
+        whenever(asyncPublisher.publish(records.capture())).doReturn(emptyList())
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        memberOpsClient.startRegistration(request)
+
+        assertThat(records.firstValue).hasSize(1)
+            .anySatisfy { record ->
+                assertThat(record.topic).isEqualTo(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
+                val value = record.value as? MembershipAsyncRequest
+                val request = value?.request as? RegistrationAsyncRequest
+                assertThat(request?.requestId).isEqualTo(record.key)
+                assertThat(request?.holdingIdentityId).isEqualTo(HOLDING_IDENTITY_ID)
+                assertThat(request?.registrationAction).isEqualTo(RegistrationAction.REQUEST_JOIN)
+                assertThat(request?.context).isEqualTo(mapOf("property" to "test").toWire())
+            }
+    }
+
+    @Test
+    fun `startRegistration return submitted`() {
+        whenever(asyncPublisher.publish(any())).doReturn(emptyList())
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        val result = memberOpsClient.startRegistration(request)
+
+        assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
+    }
+
+    @Test
+    fun `startRegistration throws CouldNotFindMemberException for unknown member`() {
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).doReturn(null)
+        whenever(asyncPublisher.publish(any())).doReturn(emptyList())
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        assertThrows<CouldNotFindMemberException> {
+            memberOpsClient.startRegistration(request)
+        }
+    }
+
+    @Test
+    fun `startRegistration persist the correct data`() {
+        whenever(asyncPublisher.publish(any())).doReturn(emptyList())
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        memberOpsClient.startRegistration(request)
+
+        verify(membershipPersistenceClient).persistRegistrationRequest(
+            eq(holdingIdentity),
+            argThat {
+                status == RegistrationStatus.NEW &&
+                    requester == holdingIdentity &&
+                    memberContext == ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+            },
+        )
+    }
+
+    @Test
+    fun `startRegistration will fail if persistence failed`() {
+        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
+            .doReturn(MembershipPersistenceResult.Failure("Ooops"))
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        val result = memberOpsClient.startRegistration(request)
+
+        assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `startRegistration will not try to register if persistence failed`() {
+        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
+            .doReturn(MembershipPersistenceResult.Failure("Ooops"))
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        memberOpsClient.startRegistration(request)
+
+        verify(asyncPublisher, never()).publish(any())
     }
 }

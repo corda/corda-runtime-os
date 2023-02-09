@@ -119,7 +119,7 @@ class MGMOpsClientImpl @Activate constructor(
         fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType):
                 Collection<ApprovalRuleDetails>
 
-        fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String)
+        fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType)
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -192,8 +192,8 @@ class MGMOpsClientImpl @Activate constructor(
     override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
         impl.getApprovalRules(holdingIdentityShortHash, ruleType)
 
-    override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
-        impl.deleteApprovalRule(holdingIdentityShortHash, ruleId)
+    override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
+        impl.deleteApprovalRule(holdingIdentityShortHash, ruleId, ruleType)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -269,7 +269,7 @@ class MGMOpsClientImpl @Activate constructor(
         override fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType) =
             throw IllegalStateException(ERROR_MSG)
 
-        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
+        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -418,10 +418,11 @@ class MGMOpsClientImpl @Activate constructor(
                 ruleType
             ).getOrThrow()
 
-        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String) =
+        override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
             membershipPersistenceClient.deleteApprovalRule(
                 mgmHoldingIdentity(holdingIdentityShortHash),
-                ruleId
+                ruleId,
+                ruleType
             ).getOrThrow()
 
         override fun close() = rpcSender.close()

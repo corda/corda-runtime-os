@@ -10,6 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.ConcurrentHashMap
 
 internal class DynamicCertificateSubjectStore(
@@ -42,14 +43,16 @@ internal class DynamicCertificateSubjectStore(
         return certificateSubjects.containsKey(subject)
     }
 
-    private fun addSource(subject: CertificateSubject, source: String) {
-        certificateSubjects.compute(subject) { _, sources ->
+    private fun addSource(subject: String, source: String) {
+        val normalizedSubject = MemberX500Name.parse(subject)
+        certificateSubjects.compute(normalizedSubject) { _, sources ->
             sources?.apply { add(source) } ?: mutableSetOf(source)
         }
     }
 
-    private fun removeSource(subject: CertificateSubject, source: String) {
-        certificateSubjects.computeIfPresent(subject) { _, sources ->
+    private fun removeSource(subject: String, source: String) {
+        val normalizedSubject = MemberX500Name.parse(subject)
+        certificateSubjects.computeIfPresent(normalizedSubject) { _, sources ->
             sources.remove(source)
             sources.ifEmpty {
                 null
@@ -84,4 +87,4 @@ internal class DynamicCertificateSubjectStore(
     }
 }
 
-typealias CertificateSubject = String
+typealias CertificateSubject = MemberX500Name

@@ -122,6 +122,7 @@ class VirtualNodeWriterProcessorTests {
             OperationalStatus.ACTIVE.name,
             OperationalStatus.ACTIVE.name,
             OperationalStatus.ACTIVE.name,
+            null,
             -1,
             clock.instant()
         )

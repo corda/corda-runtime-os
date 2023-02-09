@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
@@ -379,11 +380,13 @@ class MembershipPersistenceClientImpl(
     }
 
     override fun deleteApprovalRule(
-        viewOwningIdentity: HoldingIdentity, ruleId: String
+        viewOwningIdentity: HoldingIdentity,
+        ruleId: String,
+        ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            DeleteApprovalRule(ruleId)
+            DeleteApprovalRule(ruleId, ruleType)
         ).execute()
         return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
             null -> MembershipPersistenceResult.success()

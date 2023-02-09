@@ -154,7 +154,8 @@ class VirtualNodeDbFactory(
             val config = createDbConfig(
                 smartConfigFactory, user, password.concatToString(),
                 jdbcUrl = jdbcUrl,
-                maxPoolSize = maxPoolSize
+                maxPoolSize = maxPoolSize,
+                key = "corda-vault-$holdingIdentityShortHash-database-password"
             )
             return DbConnection(
                 getConnectionName(holdingIdentityShortHash),
