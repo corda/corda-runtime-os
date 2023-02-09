@@ -153,13 +153,19 @@ class MembershipPersistenceRPCProcessorTest {
     private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
         on { resultList } doReturn emptyList()
     }
+    private val tokenTtl = Instant.now().plusSeconds(480)
     private val revokedAuthToken = PreAuthToken(
-        UUID(0, 1).toString(), ourX500Name, Instant.ofEpochMilli(100), PreAuthTokenStatus.REVOKED, null, null
+        UUID(0, 1).toString(),
+        ourX500Name,
+        tokenTtl,
+        PreAuthTokenStatus.REVOKED,
+        null,
+        null
     )
     private val preAuthTokenEntity = PreAuthTokenEntity(
         UUID(0, 1).toString(),
         ourX500Name,
-        Instant.now().plusSeconds(480),
+        tokenTtl,
         PreAuthTokenStatus.AVAILABLE.toString(),
         null,
         null
