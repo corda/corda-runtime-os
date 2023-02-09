@@ -1,6 +1,5 @@
 package net.corda.libs.virtualnode.endpoints.v1
 
-import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
