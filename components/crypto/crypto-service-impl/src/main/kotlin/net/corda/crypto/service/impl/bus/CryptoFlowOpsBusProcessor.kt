@@ -26,7 +26,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import kotlin.reflect.jvm.javaField
 
 class CryptoFlowOpsBusProcessor(
     private val cryptoOpsClient: CryptoOpsProxyClient,
