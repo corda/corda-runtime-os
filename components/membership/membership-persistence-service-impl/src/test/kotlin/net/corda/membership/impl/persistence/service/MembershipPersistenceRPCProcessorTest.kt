@@ -39,11 +39,11 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.ApprovalRulesEntity
+import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
-import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler.Companion.toAvro
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -110,7 +110,7 @@ class MembershipPersistenceRPCProcessorTest {
     private val registrationRequest = RegistrationRequestEntity(
         ourRegistrationId,
         ourHoldingIdentity.shortHash.value,
-        RegistrationStatus.NEW.name,
+        RegistrationStatus.PENDING_MEMBER_VERIFICATION.name,
         clock.instant(),
         clock.instant(),
         context
@@ -250,7 +250,7 @@ class MembershipPersistenceRPCProcessorTest {
         val rq = MembershipPersistenceRequest(
             rqContext,
             PersistRegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
@@ -347,7 +347,7 @@ class MembershipPersistenceRPCProcessorTest {
         val rq = MembershipPersistenceRequest(
             rqContext,
             PersistRegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
@@ -445,10 +445,15 @@ class MembershipPersistenceRPCProcessorTest {
 
     @Test
     fun `delete approval rule returns success`() {
-        whenever(entityManager.find(ApprovalRulesEntity::class.java, DUMMY_ID)).thenReturn(mock())
+        whenever(
+            entityManager.find(
+                ApprovalRulesEntity::class.java,
+                ApprovalRulesEntityPrimaryKey(DUMMY_ID, ApprovalRuleType.PREAUTH.name)
+            )
+        ).thenReturn(mock())
         val rq = MembershipPersistenceRequest(
             rqContext,
-            DeleteApprovalRule(DUMMY_ID)
+            DeleteApprovalRule(DUMMY_ID, ApprovalRuleType.PREAUTH)
         )
 
         processor.onNext(rq, responseFuture)

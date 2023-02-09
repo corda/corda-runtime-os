@@ -40,6 +40,8 @@ data class VirtualNodeInfo(
     val flowOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
     /** Current state of the virtual node instance */
     val vaultDbOperationalStatus: OperationalStatus = DEFAULT_INITIAL_STATE,
+    /** The requestId of an operation that is in progress on this virtual node. Null if no operation is in progress */
+    val operationInProgress: String? = null,
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */
@@ -71,6 +73,7 @@ fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
             flowStartOperationalStatus.toString(),
             flowOperationalStatus.toString(),
             vaultDbOperationalStatus.toString(),
+            operationInProgress,
             version,
             timestamp
         )
@@ -92,6 +95,7 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         OperationalStatus.valueOf(flowStartOperationalStatus),
         OperationalStatus.valueOf(flowOperationalStatus),
         OperationalStatus.valueOf(vaultDbOperationalStatus),
+        operationInProgress,
         version,
         timestamp,
         false

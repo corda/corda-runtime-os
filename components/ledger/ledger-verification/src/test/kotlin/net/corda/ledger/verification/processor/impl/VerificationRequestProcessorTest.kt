@@ -4,11 +4,11 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.identity.HoldingIdentity
-import net.corda.ledger.utxo.contract.verification.CordaPackageSummary
-import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
-import net.corda.ledger.verification.processor.ResponseFactory
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.utxo.verification.CordaPackageSummary
+import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
-import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.crypto.SecureHash
@@ -30,7 +30,7 @@ class VerificationRequestProcessorTest {
 
     private val verificationSandboxService = mock<VerificationSandboxService>()
     private val verificationRequestHandler = mock<VerificationRequestHandler>()
-    private val responseFactory = mock<ResponseFactory>()
+    private val responseFactory = mock<ExternalEventResponseFactory>()
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
     private val cpkChecksums = setOf(SecureHash.parse(CPK_CHECKSUM))
     private val sandbox = mock<SandboxGroupContext>()
@@ -52,8 +52,8 @@ class VerificationRequestProcessorTest {
     }
 
     @Test
-    fun `value should be of type VerifyContractsRequest`() {
-        assertThat(verificationRequestProcessor.valueClass).isEqualTo(VerifyContractsRequest::class.java)
+    fun `value should be of type TransactionVerificationRequest`() {
+        assertThat(verificationRequestProcessor.valueClass).isEqualTo(TransactionVerificationRequest::class.java)
     }
 
     @Test
@@ -87,7 +87,7 @@ class VerificationRequestProcessorTest {
         val failureResponseRecord = Record("", "3", FlowEvent())
         val request2Response = IllegalStateException()
         whenever(verificationRequestHandler.handleRequest(sandbox, request2)).thenThrow(request2Response)
-        whenever(responseFactory.errorResponse(request2.flowExternalEventContext, request2Response))
+        whenever(responseFactory.transientError(request2.flowExternalEventContext, request2Response))
             .thenReturn(failureResponseRecord)
 
         val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
@@ -95,8 +95,8 @@ class VerificationRequestProcessorTest {
         assertThat(results).containsOnly(responseRecord1, failureResponseRecord)
     }
 
-    private fun createRequest(requestId: String): VerifyContractsRequest {
-        return VerifyContractsRequest().apply {
+    private fun createRequest(requestId: String) =
+        TransactionVerificationRequest().apply {
             timestamp = Instant.MIN
             flowExternalEventContext = ExternalEventContext(requestId, "f1", KeyValuePairList())
             holdingIdentity = ALICE_X500_HOLDING_ID
@@ -104,5 +104,4 @@ class VerificationRequestProcessorTest {
                 CordaPackageSummary("cpk1", "1.0", SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
             )
         }
-    }
 }

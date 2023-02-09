@@ -23,6 +23,9 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
+    // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
+    // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so
+    // the Postgres drivers are packaged within the tool itself.
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

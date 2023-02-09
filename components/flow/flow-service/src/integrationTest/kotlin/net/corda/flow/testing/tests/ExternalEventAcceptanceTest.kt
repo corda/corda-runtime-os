@@ -25,7 +25,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.osgi.framework.AdminPermission.CONTEXT
 import org.osgi.service.component.annotations.Component
 import org.osgi.test.junit5.service.ServiceExtension
 

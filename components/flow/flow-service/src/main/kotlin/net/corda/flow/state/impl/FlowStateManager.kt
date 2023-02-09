@@ -20,7 +20,7 @@ class FlowStateManager(private val initialState: FlowState) {
 
     private var state = FlowState.newBuilder(initialState).build()
 
-    private var sessionMap = validateAndCreateSessionMap(initialState.sessions)
+    private var sessionMap = validateAndCreateSessionMap(state.sessions)
 
     var stack = FlowStackImpl(state.flowStackItems)
 
@@ -72,7 +72,7 @@ class FlowStateManager(private val initialState: FlowState) {
     fun rollback() {
         state = FlowState.newBuilder(initialState).build()
         sessionMap = validateAndCreateSessionMap(state.sessions)
-        stack = FlowStackImpl(initialState.flowStackItems)
+        stack = FlowStackImpl(state.flowStackItems)
         flowContext = FlowStackBasedContext(stack)
     }
 

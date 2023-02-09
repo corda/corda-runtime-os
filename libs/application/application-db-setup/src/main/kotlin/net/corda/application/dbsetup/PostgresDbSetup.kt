@@ -1,26 +1,13 @@
 package net.corda.application.dbsetup
 
-
-import com.typesafe.config.ConfigRenderOptions
-import net.corda.crypto.config.impl.createCryptoSmartConfigFactory
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.OSGiDataSourceFactory
+import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
-import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.libs.configuration.datamodel.DbConnectionConfig
-import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
-import net.corda.libs.configuration.secret.SecretsCreateService
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.libs.configuration.SmartConfigFactory
 import org.slf4j.LoggerFactory
-import java.security.SecureRandom
-import java.time.Instant
-import java.util.Base64
-import java.util.UUID
-
 
 // TODO This class bootstraps database, duplicating functionality available via CLI
 // As it duplicates some classes from tools/plugins/initial-config/src/main/kotlin/net/corda/cli/plugin/, it requires
@@ -35,10 +22,9 @@ class PostgresDbSetup(
     private val dbAdmin: String,
     private val dbAdminPassword: String,
     private val dbName: String,
-    private val secretsSalt: String,
-    private val secretsPassphrase: String,
-): DbSetup {
-    
+    smartConfigFactory: SmartConfigFactory
+) : DbSetup {
+
     companion object {
         private const val DB_DRIVER = "org.postgresql.Driver"
 
@@ -46,13 +32,15 @@ class PostgresDbSetup(
         // search path, which is required for the public schema too. For the public schema use "PUBLIC".
         private val changelogFiles: Map<String, String> = mapOf(
             "net/corda/db/schema/config/db.changelog-master.xml" to "CONFIG",
-            "net/corda/db/schema/messagebus/db.changelog-master.xml" to "PUBLIC",
+            "net/corda/db/schema/messagebus/db.changelog-master.xml" to "MESSAGEBUS",
             "net/corda/db/schema/rbac/db.changelog-master.xml" to "RBAC",
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO"
         )
 
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    private val configEntityFactory = ConfigEntityFactory(smartConfigFactory)
 
     private val dbAdminUrl by lazy {
         "$dbUrl?user=$dbAdmin&password=$dbAdminPassword"
@@ -67,13 +55,46 @@ class PostgresDbSetup(
             log.info("Initialising DB.")
             initDb()
             runDbMigration()
-            initConfiguration("corda-rbac", "rbac_user_$dbName", "rbac_password", dbUrl)
-            initConfiguration("corda-crypto", "crypto_user_$dbName", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
+            populateConfigDb()
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
-            createCryptoConfig()
         } else {
             log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
+        }
+    }
+
+    private fun populateConfigDb() {
+        configConnection().use { connection ->
+            connection.createStatement().execute(
+                configEntityFactory.createConfiguration(
+                    CordaDb.RBAC.persistenceUnitName,
+                    "rbac_user_$dbName",
+                    "rbac_password",
+                    "$dbUrl?currentSchema=RBAC",
+                    DbPrivilege.DML
+                ).toInsertStatement()
+            )
+            connection.createStatement().execute(
+                configEntityFactory.createConfiguration(
+                    CordaDb.Crypto.persistenceUnitName,
+                    "crypto_user_$dbName",
+                    "crypto_password",
+                    "$dbUrl?currentSchema=CRYPTO",
+                    DbPrivilege.DML
+                ).toInsertStatement()
+            )
+            connection.createStatement().execute(
+                configEntityFactory.createConfiguration(
+                    CordaDb.VirtualNodes.persistenceUnitName,
+                    dbAdmin,
+                    dbAdminPassword,
+                    dbUrl,
+                    DbPrivilege.DDL
+                ).toInsertStatement()
+            )
+            connection.createStatement().execute(
+                configEntityFactory.createCryptoConfig().toInsertStatement()
+            )
         }
     }
 
@@ -82,6 +103,17 @@ class PostgresDbSetup(
 
     private fun adminConnection() =
         OSGiDataSourceFactory.create(DB_DRIVER, dbAdminUrl, dbAdmin, dbAdminPassword).connection
+
+    private fun configConnection() =
+        OSGiDataSourceFactory.create(
+            DB_DRIVER,
+            dbAdminUrl + "&currentSchema=CONFIG",
+            dbAdmin,
+            dbAdminPassword
+        ).connection
+
+    private fun rbacConnection() =
+        OSGiDataSourceFactory.create(DB_DRIVER, dbAdminUrl + "&currentSchema=RBAC", dbAdmin, dbAdminPassword).connection
 
     private fun dbInitialised(): Boolean {
         superUserConnection()
@@ -110,7 +142,8 @@ class PostgresDbSetup(
                         ALTER ROLE "$dbAdmin" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
                         ALTER DATABASE "$dbName" OWNER TO "$dbAdmin";
                         ALTER SCHEMA public OWNER TO "$dbAdmin";
-                    """.trimIndent())
+                    """.trimIndent()
+                )
             }
     }
 
@@ -143,29 +176,9 @@ class PostgresDbSetup(
             }
     }
 
-    private fun initConfiguration(connectionName: String, username: String, password :String, jdbcUrl:String) {
-        log.info("Initialise configuration for $connectionName ($jdbcUrl).")
-        val secretsService = EncryptionSecretsServiceImpl(secretsPassphrase, secretsSalt)
-
-        val dbConnectionConfig = DbConnectionConfig(
-            id = UUID.randomUUID(),
-            name = connectionName,
-            privilege = DbPrivilege.DML,
-            updateTimestamp = Instant.now(),
-            updateActor = "Setup Script",
-            description = "Initial configuration - autogenerated by setup script",
-            config = createDbConfig(jdbcUrl, username, password, secretsService)
-        ).also { it.version = 0 }
-
-        adminConnection()
-            .use { connection ->
-                connection.createStatement().execute(dbConnectionConfig.toInsertStatement())
-            }
-    }
-
     private fun createUserConfig(user: String, password: String) {
         log.info("Create user config for $user")
-        adminConnection()
+        rbacConnection()
             .use { connection ->
                 connection.createStatement().execute(buildRbacConfigSql(user, password, "Setup Script"))
             }
@@ -187,59 +200,5 @@ class PostgresDbSetup(
             .use { connection ->
                 connection.createStatement().execute(sql)
             }
-    }
-
-    private fun createCryptoConfig() {
-        val random = SecureRandom()
-        val config = createCryptoSmartConfigFactory(
-            KeyCredentials(
-                salt = secretsSalt,
-                passphrase = secretsPassphrase
-            )
-        ).createDefaultCryptoConfig(
-            KeyCredentials(
-                passphrase = random.randomString(),
-                salt = random.randomString()
-            )
-        ).root().render(ConfigRenderOptions.concise())
-
-        val entity = ConfigEntity(
-            section = CRYPTO_CONFIG,
-            config = config,
-            schemaVersionMajor = 1,
-            schemaVersionMinor = 0,
-            updateTimestamp = Instant.now(),
-            updateActor = "init",
-            isDeleted = false
-        ).apply {
-            version = 0
-        }
-
-        adminConnection()
-            .use { connection ->
-                connection.createStatement().execute(entity.toInsertStatement())
-            }
-    }
-
-    private fun createDbConfig(
-        jdbcUrl: String,
-        username: String,
-        password: String,
-        secretsService: SecretsCreateService
-    ): String {
-        return "{\"database\":{" +
-                "\"jdbc\":" +
-                "{\"url\":\"$jdbcUrl\"}," +
-                "\"pass\":${createSecureConfig(secretsService, password)}," +
-                "\"user\":\"$username\"}}"
-    }
-
-    private fun createSecureConfig(secretsService: SecretsCreateService, value: String): String {
-        return secretsService.createValue(value).root().render(ConfigRenderOptions.concise())
-    }
-
-    private fun SecureRandom.randomString(length: Int = 32): String = ByteArray(length).let {
-        this.nextBytes(it)
-        Base64.getEncoder().encodeToString(it)
     }
 }

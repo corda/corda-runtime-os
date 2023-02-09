@@ -23,15 +23,25 @@ const val HANDSHAKE_TIMEOUT = 10000L
 const val TLS_VERSION = "TLSv1.3"
 val CIPHER_SUITES = arrayOf("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384")
 
-
-fun createClientSslHandler(targetServerName: String,
-                           target: URI,
-                           targetX500Name: X500Name?,
-                           trustManagerFactory: TrustManagerFactory): SslHandler {
+fun createClientSslHandler(
+    targetServerName: String,
+    target: URI,
+    targetX500Name: X500Name?,
+    trustManagerFactory: TrustManagerFactory,
+    clientCertificatesKeyStore: KeyStoreWithPassword?
+): SslHandler {
+    val keyManagers = clientCertificatesKeyStore?.let { keyStore ->
+        KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).also {
+            it.init(
+                keyStore.keyStore,
+                keyStore.password.toCharArray(),
+            )
+        }.keyManagers
+    }
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
         .map { IdentityCheckingTrustManager(it, targetX500Name) }.toTypedArray()
-    sslContext.init(null, trustManagers, SecureRandom()) //May need to use secure random from crypto-api module
+    sslContext.init(keyManagers, trustManagers, SecureRandom()) //May need to use secure random from crypto-api module
 
     val sslEngine = sslContext.createSSLEngine(target.host, target.port).also {
         it.useClientMode = true

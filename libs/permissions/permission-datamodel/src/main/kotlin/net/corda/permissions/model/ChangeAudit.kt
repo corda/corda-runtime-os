@@ -1,6 +1,5 @@
 package net.corda.permissions.model
 
-import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -10,7 +9,7 @@ import javax.persistence.Id
 import javax.persistence.Table
 
 @Entity
-@Table(name = "rbac_change_audit", schema = DbSchema.RBAC)
+@Table(name = "rbac_change_audit")
 class ChangeAudit(
     @Id
     @Column(name = "id", nullable = false)

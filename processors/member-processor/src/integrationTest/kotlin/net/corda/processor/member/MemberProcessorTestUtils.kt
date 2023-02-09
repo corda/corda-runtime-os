@@ -6,7 +6,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
@@ -18,7 +17,6 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -96,9 +94,7 @@ class MemberProcessorTestUtils {
             listOf(EncryptionSecretsServiceFactory())
         )
 
-        fun makeCryptoConfig(): SmartConfig = smartConfigFactory.createDefaultCryptoConfig(
-            KeyCredentials("master-key-pass", "master-key-salt")
-        )
+        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(
@@ -203,10 +199,10 @@ class MemberProcessorTestUtils {
          * Registration is not a call expected to happen repeatedly in quick succession so allowing more time in
          * between calls for a more realistic set up.
          */
-        fun getRegistrationResult(
+        fun register(
             registrationProxy: RegistrationProxy,
             holdingIdentity: HoldingIdentity
-        ): MembershipRequestRegistrationResult {
+        ) {
             val context = mapOf(KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME)
             return eventually(
                 waitBetween = Duration.ofMillis(1000)
@@ -279,8 +275,10 @@ class MemberProcessorTestUtils {
 
         fun Publisher.publishMembershipConf(membershipConfig: SmartConfig) =
             publishConf(ConfigKeys.MEMBERSHIP_CONFIG, membershipConfig.root().render())
+
         fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
+
         fun Publisher.publishGatewayConfig() =
             publishConf(
                 ConfigKeys.P2P_GATEWAY_CONFIG,

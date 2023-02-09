@@ -20,15 +20,6 @@ class WrappingKey(
          *
          * [schemeMetadata] is used to correctly decode a [PrivateKey] when unwrapping it
          */
-        fun derive(schemeMetadata: CipherSchemeMetadata, credentials: KeyCredentials): WrappingKey =
-            derive(schemeMetadata, credentials.passphrase, credentials.salt)
-
-        /**
-         * Derives a new instance of [WrappingKey] using passphrase and salt delegating that to [AesKey].[derive].
-         * The resulting key is deterministic.
-         *
-         * [schemeMetadata] is used to correctly decode a [PrivateKey] when unwrapping it
-         */
         fun derive(schemeMetadata: CipherSchemeMetadata, passphrase: String, salt: String): WrappingKey =
             WrappingKey(
                 schemeMetadata = schemeMetadata,
