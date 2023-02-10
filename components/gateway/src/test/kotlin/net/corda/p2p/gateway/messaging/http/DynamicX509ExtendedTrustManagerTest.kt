@@ -2,6 +2,8 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import net.corda.p2p.gateway.messaging.TlsType
+import net.corda.p2p.gateway.messaging.http.DynamicX509ExtendedTrustManager.Companion.createTrustManagerIfNeeded
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -185,5 +187,34 @@ class DynamicX509ExtendedTrustManagerTest {
         assertThrows<CertificateException> {
             dynamicX509ExtendedTrustManager.checkClientTrusted(arrayOf(certificate), "")
         }
+    }
+
+    @Test
+    fun `createTrustManagerIfNeeded will return null for one way tls`() {
+        val store = createTrustManagerIfNeeded(
+            mock {
+                on { tlsType } doReturn TlsType.ONE_WAY
+            },
+            mock(),
+            mock(),
+        )
+
+        assertThat(store).isNull()
+    }
+
+    @Test
+    fun `createTrustManagerIfNeeded will create a store for mutual TLS`() {
+        val store = createTrustManagerIfNeeded(
+            mock {
+                on { tlsType } doReturn TlsType.MUTUAL
+                on { revocationCheck } doReturn RevocationConfig(RevocationConfigMode.OFF)
+            },
+            mock(),
+            mock(),
+        )
+
+        assertThat(store)
+            .isNotNull
+            .isInstanceOf(DynamicX509ExtendedTrustManager::class.java)
     }
 }

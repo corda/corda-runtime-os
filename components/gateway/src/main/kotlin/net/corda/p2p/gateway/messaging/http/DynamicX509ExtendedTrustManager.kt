@@ -2,6 +2,8 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.gateway.certificates.RevocationChecker
 import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.v5.base.types.MemberX500Name
 import java.net.Socket
@@ -19,9 +21,25 @@ internal class DynamicX509ExtendedTrustManager(
     private val dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
     private val trustManagerFactory: TrustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
 ) : X509ExtendedTrustManager() {
-    private companion object {
-        val wrongUsageMessage = this::class.java.simpleName + " can only be used by the gateway server."
-        const val invalidClientMessage = "None of the possible trust roots were valid for the client certificate. Error(s): "
+    companion object {
+        private val wrongUsageMessage = this::class.java.simpleName + " can only be used by the gateway server."
+        private const val invalidClientMessage = "None of the possible trust roots were valid for the client certificate. Error(s): "
+
+        fun createTrustManagerIfNeeded(
+            sslConfiguration: SslConfiguration,
+            trustStoresMap: TrustStoresMap,
+            dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
+        ): X509ExtendedTrustManager? {
+            return if (sslConfiguration.tlsType == TlsType.MUTUAL) {
+                DynamicX509ExtendedTrustManager(
+                    trustStoresMap,
+                    sslConfiguration.revocationCheck,
+                    dynamicCertificateSubjectStore,
+                )
+            } else {
+                null
+            }
+        }
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
