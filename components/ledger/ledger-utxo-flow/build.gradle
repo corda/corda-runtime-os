@@ -36,6 +36,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':components:virtual-node:sandbox-notary')
+    implementation project(':notary-plugins:notary-plugin-common')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

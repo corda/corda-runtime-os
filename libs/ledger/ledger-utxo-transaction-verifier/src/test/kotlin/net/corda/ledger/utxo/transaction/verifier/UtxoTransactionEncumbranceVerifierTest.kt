@@ -9,8 +9,11 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
-import org.assertj.core.api.Assertions
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
 class UtxoTransactionEncumbranceVerifierTest {
@@ -19,11 +22,14 @@ class UtxoTransactionEncumbranceVerifierTest {
         override val participants: List<PublicKey>
             get() = TODO("Not yet implemented")
     }
-
-    val notary = Party(MemberX500Name.parse("O=notary, L=London, C=GB"), publicKeyExample)
-
-    val transactionId1 = SecureHash.parse("SHA256:1234567890")
-    val transactionId2 = SecureHash.parse("SHA256:ABCDEF0123")
+    
+    private companion object {
+        val notary = Party(MemberX500Name.parse("O=notary, L=London, C=GB"), publicKeyExample)
+        val transactionId1 = SecureHash.parse("SHA256:1234567890")
+        val transactionId2 = SecureHash.parse("SHA256:ABCDEF0123")
+    }
+    
+    private val transaction = mock<UtxoLedgerTransaction>()
 
     @Test
     fun `unencumbered states are fine`() {
@@ -33,9 +39,11 @@ class UtxoTransactionEncumbranceVerifierTest {
             StateAndRefImpl(TransactionStateImpl(TestContractState(), notary, null),
                 StateRef(transactionId2, 1))
         )
+        
+        whenever(transaction.inputStateAndRefs).thenReturn(inputs)
 
-        val result = verifyEncumberedInput(inputs)
-        Assertions.assertThat(result).hasSize(0)
+        val result = verifyEncumbrance(transaction)
+        assertThat(result).hasSize(0)
     }
 
     @Test
@@ -54,8 +62,10 @@ class UtxoTransactionEncumbranceVerifierTest {
             )
         )
 
-        val result = verifyEncumberedInput(inputs)
-        Assertions.assertThat(result).hasSize(0)
+        whenever(transaction.inputStateAndRefs).thenReturn(inputs)
+
+        val result = verifyEncumbrance(transaction)
+        assertThat(result).hasSize(0)
     }
 
     @Test
@@ -72,9 +82,11 @@ class UtxoTransactionEncumbranceVerifierTest {
             state2
         )
 
-        val result = verifyEncumberedInput(inputs)
-        Assertions.assertThat(result).hasSize(1)
-        Assertions.assertThat(result.first().exceptionMessage)
+        whenever(transaction.inputStateAndRefs).thenReturn(inputs)
+
+        val result = verifyEncumbrance(transaction)
+        assertThat(result).hasSize(1)
+        assertThat(result.first().exceptionMessage)
             .isEqualTo("Encumbrance check failed: State SHA256:ABCDEF0123, 1 is used 2 times as input!")
     }
 
@@ -99,8 +111,10 @@ class UtxoTransactionEncumbranceVerifierTest {
             )
         )
 
-        val result = verifyEncumberedInput(inputs)
-        Assertions.assertThat(result).hasSize(0)
+        whenever(transaction.inputStateAndRefs).thenReturn(inputs)
+
+        val result = verifyEncumbrance(transaction)
+        assertThat(result).hasSize(0)
     }
 
     @Test
@@ -120,9 +134,11 @@ class UtxoTransactionEncumbranceVerifierTest {
             )
         )
 
-        val result = verifyEncumberedInput(inputs)
-        Assertions.assertThat(result).hasSize(1)
-        Assertions.assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
+        whenever(transaction.inputStateAndRefs).thenReturn(inputs)
+
+        val result = verifyEncumbrance(transaction)
+        assertThat(result).hasSize(1)
+        assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId1, " +
                     "0 is part " +
                     "of encumbrance group test1, but only " +
@@ -144,16 +160,18 @@ class UtxoTransactionEncumbranceVerifierTest {
             ),
         )
 
-        val result = verifyEncumberedInput(inputs)
-        Assertions.assertThat(result).hasSize(2)
-        Assertions.assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
+        whenever(transaction.inputStateAndRefs).thenReturn(inputs)
+
+        val result = verifyEncumbrance(transaction)
+        assertThat(result).hasSize(2)
+        assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId1, " +
                     "0 is part " +
                     "of encumbrance group test1, but only " +
                     "1 states out of " +
                     "2 encumbered states are present as inputs."
         )
-        Assertions.assertThat(result.last()).extracting { it.exceptionMessage }.isEqualTo(
+        assertThat(result.last()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId2, " +
                     "1 is part " +
                     "of encumbrance group test1, but only " +
@@ -181,17 +199,19 @@ class UtxoTransactionEncumbranceVerifierTest {
             )
         )
 
-        val result = verifyEncumberedInput(inputs)
-        Assertions.assertThat(result).hasSize(3)
+        whenever(transaction.inputStateAndRefs).thenReturn(inputs)
 
-        Assertions.assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
+        val result = verifyEncumbrance(transaction)
+        assertThat(result).hasSize(3)
+
+        assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId2, " +
                     "1 is part " +
                     "of encumbrance group test1, but only " +
                     "3 states out of " +
                     "2 encumbered states are present as inputs."
         )
-        Assertions.assertThat(result.last()).extracting { it.exceptionMessage }.isEqualTo(
+        assertThat(result.last()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId2, " +
                     "4 is part " +
                     "of encumbrance group test1, but only " +

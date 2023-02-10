@@ -8,10 +8,7 @@ description 'Corda Checkpoint Serialization API'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-
-    api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
