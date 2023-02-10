@@ -16,7 +16,9 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.lib.toMap
@@ -150,6 +152,7 @@ internal class ProcessMemberVerificationResponseHandler(
         val activeMemberInfo = membershipGroupReaderProvider
             .getGroupReader(mgm)
             .lookup(member.x500Name)
+            ?.takeIf { it.status != MEMBER_STATUS_PENDING }
             ?.memberProvidedContext
             ?.toMap()
 

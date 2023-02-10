@@ -911,7 +911,7 @@ class MembershipPersistenceClientImplTest {
             val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
-            mockPersistenceResponse(false)
+            mockPersistenceResponse(PersistenceFailedResponse("error-msg"))
 
             val result = membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
                 ourHoldingIdentity,

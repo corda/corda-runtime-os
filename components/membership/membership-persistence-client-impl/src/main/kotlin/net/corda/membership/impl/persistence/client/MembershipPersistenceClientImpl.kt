@@ -249,7 +249,7 @@ class MembershipPersistenceClientImpl(
         ).execute()
 
         return when (val payload = result.payload) {
-            is UpdateMemberAndRegistrationRequestResponse -> MembershipPersistenceResult.success()
+            null -> MembershipPersistenceResult.success()
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
         }
