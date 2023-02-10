@@ -112,7 +112,8 @@ allprojects {
         description = "Compiles all the Kotlin and Java classes, including all of the test classes."
         group = "verification"
 
-        task.dependsOn tasks.withType(AbstractCompile)
+        task.dependsOn tasks.withType(AbstractCompile),
+            tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile)
     }
 
     repositories {
