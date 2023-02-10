@@ -1,18 +1,20 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
+import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.kafka.producer.KafkaProducerPartitioner
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
 import net.corda.v5.base.util.debug
+import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
-import java.util.Properties
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
@@ -66,6 +68,10 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
         val properties = roleConfig.toKafkaProperties()
+
+        //enforce the partitioner to be our custom partitioner. Kafka Config requires it to be of type CLASS
+        properties[PARTITIONER_CLASS_CONFIG] = KafkaProducerPartitioner::class.java
+
         logger.debug {"Kafka properties for role $rolePath: $properties" }
         return properties
     }
