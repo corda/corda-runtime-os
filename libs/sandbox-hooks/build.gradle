@@ -11,7 +11,7 @@ dependencies {
     compileOnly "org.osgi:osgi.core"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
