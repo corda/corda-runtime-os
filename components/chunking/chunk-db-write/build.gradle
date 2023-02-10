@@ -13,7 +13,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-base'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     api project(':components:virtual-node:cpi-info-write-service')
 }

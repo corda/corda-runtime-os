@@ -20,7 +20,8 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
-    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    cordaProvided 'org.jetbrains:annotations'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided project(':testing:sandboxes:test-api')
     cordaProvided 'net.corda:corda-application'
 }
