@@ -128,7 +128,7 @@ internal class MembershipPersistenceRPCProcessor(
         request: MembershipPersistenceRequest,
         respFuture: CompletableFuture<MembershipPersistenceResponse>
     ) {
-        logger.info("Received new membership persistence request: ${request.request::class.java}")
+        logger.info("Received membership persistence request: ${request.request::class.java}")
         val result = try {
             val result = getHandler(request.request::class.java).invoke(request.context, request.request)
             if (result is Unit) {
