@@ -6,7 +6,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
@@ -32,6 +31,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,7 +45,7 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-// To run the test:
+// To run the test outside Intellij:
 // ./gradlew :components:interop:interop-service:integrationTest
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -95,7 +95,6 @@ class InteropServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
-        val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
         // Test config updates don't break Interop Service
         republishConfig(publisher)
@@ -104,7 +103,7 @@ class InteropServiceIntegrationTest {
         val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "interop")
         val version = listOf(1)
         val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
+            MessageDirection.INBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
                 testId,
                 version,
                 testId,
@@ -124,16 +123,6 @@ class InteropServiceIntegrationTest {
             )
         )
 
-        val invalidHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "other")
-        val invalidEvent = FlowEvent(testId, sessionEvent)
-        val invalidRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(
-                AuthenticatedMessage(
-                    invalidHeader, ByteBuffer.wrap(flowEventSerializer.serialize(invalidEvent))
-                )
-            )
-        )
-
         val nonInteropFlowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
         val nonInteropSessionRecord = Record(
             P2P_IN_TOPIC, testId, AppMessage(
@@ -143,18 +132,21 @@ class InteropServiceIntegrationTest {
             )
         )
 
-        publisher.publish(listOf(interopRecord, interopRecord, nonInteropSessionRecord, invalidRecord))
+        publisher.publish(listOf(interopRecord, interopRecord, nonInteropSessionRecord))
 
-        //validate mapper receives 2 inits
-        val mapperLatch = CountDownLatch(2)
+        val expectedOutputMessages = 2
+        val mapperLatch = CountDownLatch(expectedOutputMessages)
+        val testProcessor = P2POutMessageCounter(testId, mapperLatch, expectedOutputMessages)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            P2POutMessageCounter(testId, mapperLatch, 2),
+            testProcessor,
             bootConfig,
             null
         )
         p2pOutSub.start()
-        assertTrue(mapperLatch.await(30, TimeUnit.SECONDS))
+        assertTrue(mapperLatch.await(30, TimeUnit.SECONDS),
+            "Fewer P2P output messages were observed (${testProcessor.recordCount}) than expected ($expectedOutputMessages).")
+        assertEquals(expectedOutputMessages, testProcessor.recordCount, "More P2P output messages were observed that expected.")
         p2pOutSub.close()
 
         interopService.stop()
@@ -216,7 +208,7 @@ class P2POutMessageCounter(
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
 
-    private var recordCount = 0
+    var recordCount = 0
 
     override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
         for (event in events) {
