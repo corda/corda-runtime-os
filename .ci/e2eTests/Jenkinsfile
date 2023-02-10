@@ -1,8 +1,9 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@CORE-8895') _
 
 endToEndPipeline(
     assembleAndCompile: false,
     dailyBuildCron: '',
+    deployVault: false,
     multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
