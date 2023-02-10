@@ -242,7 +242,6 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `init checkpoint`() {
-        val newFlowId = "F1"
         val flowKey = FlowKey("R1", BOB_X500_HOLDING_IDENTITY)
         val flowStartContext = FlowStartContext().apply {
             statusKey = flowKey
@@ -254,12 +253,9 @@ class FlowCheckpointImplTest {
         val cpks = setOf(cpk)
         whenever(cpk.bytes).thenReturn(byteArrayOf())
 
-
         val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false))
-
         flowCheckpoint.initFlowState(flowStartContext, cpks)
-
-        assertThat(flowCheckpoint.flowId).isEqualTo(newFlowId)
+        assertThat(flowCheckpoint.cpks).isNotEmpty
         assertThat(flowCheckpoint.flowKey).isEqualTo(flowKey)
         assertThat(flowCheckpoint.flowStartContext).isEqualTo(flowStartContext)
         assertThat(flowCheckpoint.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY.toCorda())
