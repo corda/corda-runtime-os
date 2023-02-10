@@ -6,7 +6,10 @@ import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
@@ -25,6 +28,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.UUID
 
 class MemberOpsAsyncProcessorTest {
@@ -38,11 +42,20 @@ class MemberOpsAsyncProcessorTest {
         on { getByHoldingIdentityShortHash(shortHash) } doReturn info
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on {
+            queryRegistrationRequestStatus(
+                any(),
+                any(),
+            )
+        } doReturn MembershipQueryResult.Success(null)
+    }
 
     private val processor = MemberOpsAsyncProcessor(
         registrationProxy,
         virtualNodeInfoReadService,
         membershipPersistenceClient,
+        membershipQueryClient,
     )
 
     @Test
@@ -103,6 +116,125 @@ class MemberOpsAsyncProcessorTest {
         )
 
         verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
+    }
+
+    @Test
+    fun `onNext with new request will call the proxy`() {
+        whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            MembershipQueryResult.Success(
+                RegistrationRequestStatus(
+                    RegistrationStatus.NEW,
+                    "",
+                    mock(),
+                    Instant.MIN,
+                    Instant.MIN,
+                    0
+                )
+            )
+        )
+        val id = UUID(0, 1)
+        processor.onNext(
+            listOf(
+                Record(
+                    "topic",
+                    "key",
+                    MembershipAsyncRequest(
+                        RegistrationAsyncRequest(
+                            shortHash.value,
+                            id.toString(),
+                            RegistrationAction.REQUEST_JOIN,
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(
+                                        "key",
+                                        "value"
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                )
+            )
+        )
+
+        verify(registrationProxy).register(id, identity, mapOf("key" to "value"))
+    }
+
+    @Test
+    fun `onNext with non-new request will be ignored`() {
+        whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            MembershipQueryResult.Success(
+                RegistrationRequestStatus(
+                    RegistrationStatus.SENT_TO_MGM,
+                    "",
+                    mock(),
+                    Instant.MIN,
+                    Instant.MIN,
+                    0
+                )
+            )
+        )
+        val id = UUID(0, 1)
+        processor.onNext(
+            listOf(
+                Record(
+                    "topic",
+                    "key",
+                    MembershipAsyncRequest(
+                        RegistrationAsyncRequest(
+                            shortHash.value,
+                            id.toString(),
+                            RegistrationAction.REQUEST_JOIN,
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(
+                                        "key",
+                                        "value"
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                )
+            )
+        )
+
+        verifyNoInteractions(registrationProxy)
+    }
+
+    @Test
+    fun `onNext when the request is not available will be ignored`() {
+        whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+            MembershipQueryResult.Failure(
+                "oops"
+            )
+        )
+        val id = UUID(0, 1)
+        processor.onNext(
+            listOf(
+                Record(
+                    "topic",
+                    "key",
+                    MembershipAsyncRequest(
+                        RegistrationAsyncRequest(
+                            shortHash.value,
+                            id.toString(),
+                            RegistrationAction.REQUEST_JOIN,
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(
+                                        "key",
+                                        "value"
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                )
+            )
+        )
+
+        verifyNoInteractions(registrationProxy)
     }
 
     @Test

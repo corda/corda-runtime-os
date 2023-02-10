@@ -71,6 +71,7 @@ import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
@@ -160,7 +161,7 @@ class MembershipPersistenceRPCProcessorTest {
     )
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
-        on { find(RegistrationRequestEntity::class.java, ourRegistrationId) } doReturn registrationRequest
+        on { find(RegistrationRequestEntity::class.java, ourRegistrationId, LockModeType.PESSIMISTIC_WRITE) } doReturn registrationRequest
         on { find(PreAuthTokenEntity::class.java, preAuthTokenId) } doReturn preAuthTokenEntity
         on { createQuery(any(), eq(GroupPolicyEntity::class.java)) } doReturn groupPolicyQuery
         on { criteriaBuilder } doReturn criteriaBuilder

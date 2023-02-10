@@ -5,6 +5,7 @@ import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.DurableProcessor
@@ -20,6 +21,7 @@ internal class MemberOpsAsyncProcessor(
     private val registrationProxy: RegistrationProxy,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipQueryClient: MembershipQueryClient,
 ) : DurableProcessor<String, MembershipAsyncRequest> {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -63,6 +65,15 @@ internal class MemberOpsAsyncProcessor(
             return
         }
         try {
+            val requestStatus = membershipQueryClient.queryRegistrationRequestStatus(
+                holdingIdentity,
+                request.requestId
+            ).getOrThrow()
+            if ((requestStatus != null) && (requestStatus.status != RegistrationStatus.NEW)) {
+                // This request had already passed this state. no need to continue.
+                return
+            }
+
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
         } catch (e: Exception) {
             @Suppress("ForbiddenComment")

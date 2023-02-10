@@ -239,23 +239,6 @@ class MemberOpsClientImpl @Activate constructor(
                     ?.holdingIdentity
                     ?: throw CouldNotFindMemberException(memberRegistrationRequest.holdingIdentityShortHash)
             try {
-                val context = keyValuePairListSerializer.serialize(
-                    memberRegistrationRequest.context.toWire()
-                )
-                membershipPersistenceClient.persistRegistrationRequest(
-                    holdingIdentity,
-                    RegistrationRequest(
-                        RegistrationStatus.NEW,
-                        requestId,
-                        holdingIdentity,
-                        ByteBuffer.wrap(context),
-                        CryptoSignatureWithKey(
-                            ByteBuffer.wrap(byteArrayOf()),
-                            ByteBuffer.wrap(byteArrayOf()),
-                            KeyValuePairList(emptyList())
-                        ),
-                    )
-                ).getOrThrow()
                 asyncPublisher.publish(
                     listOf(
                         Record(
@@ -274,13 +257,6 @@ class MemberOpsClientImpl @Activate constructor(
                 ).forEach {
                     it.join()
                 }
-                return RegistrationRequestProgressDto(
-                    requestId,
-                    clock.instant(),
-                    SubmittedRegistrationStatus.SUBMITTED,
-                    "Submitting registration request was successful.",
-                    MemberInfoSubmittedDto(memberRegistrationRequest.context)
-                )
             } catch (e: Exception) {
                 logger.warn(
                     "Could not submit registration request for holding identity ID" +
@@ -292,7 +268,51 @@ class MemberOpsClientImpl @Activate constructor(
                     requestId,
                     null,
                     SubmittedRegistrationStatus.NOT_SUBMITTED,
+                    false,
                     cause.message ?: "No cause was provided for failure.",
+                    MemberInfoSubmittedDto(emptyMap())
+                )
+            }
+            val sent = clock.instant()
+            try {
+                val context = keyValuePairListSerializer.serialize(
+                    memberRegistrationRequest.context.toWire()
+                )
+                membershipPersistenceClient.persistRegistrationRequest(
+                    holdingIdentity,
+                    RegistrationRequest(
+                        RegistrationStatus.NEW,
+                        requestId,
+                        holdingIdentity,
+                        ByteBuffer.wrap(context),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap(byteArrayOf()),
+                            ByteBuffer.wrap(byteArrayOf()),
+                            KeyValuePairList(emptyList())
+                        ),
+                    )
+                ).getOrThrow()
+                return RegistrationRequestProgressDto(
+                    requestId,
+                    sent,
+                    SubmittedRegistrationStatus.SUBMITTED,
+                    true,
+                    "Submitting registration request was successful.",
+                    MemberInfoSubmittedDto(memberRegistrationRequest.context)
+                )
+            } catch (e: Exception) {
+                logger.warn(
+                    "Could not persist registration request for holding identity ID" +
+                        " [${memberRegistrationRequest.holdingIdentityShortHash}].",
+                    e
+                )
+                return RegistrationRequestProgressDto(
+                    requestId,
+                    sent,
+                    SubmittedRegistrationStatus.SUBMITTED,
+                    false,
+                    "Submitting registration request was successful. " +
+                        "The request will be available in the API eventually.",
                     MemberInfoSubmittedDto(emptyMap())
                 )
             }

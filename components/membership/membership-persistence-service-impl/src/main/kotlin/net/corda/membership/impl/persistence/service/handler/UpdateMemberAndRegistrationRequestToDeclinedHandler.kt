@@ -12,9 +12,12 @@ import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRe
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
+import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
+import javax.persistence.LockModeType
 
 internal class UpdateMemberAndRegistrationRequestToDeclinedHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -46,7 +49,8 @@ internal class UpdateMemberAndRegistrationRequestToDeclinedHandler(
             val now = clock.instant()
             val member = em.find(
                 MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name)
+                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name),
+                LockModeType.PESSIMISTIC_WRITE,
             ) ?: throw MembershipPersistenceException("Could not find member: ${request.member}")
 
             member.status = MemberInfoExtension.MEMBER_STATUS_DECLINED
@@ -69,7 +73,13 @@ internal class UpdateMemberAndRegistrationRequestToDeclinedHandler(
             val registrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
                 request.registrationId,
+                LockModeType.PESSIMISTIC_WRITE,
             ) ?: throw MembershipPersistenceException("Could not find registration request: ${request.registrationId}")
+            if(!registrationRequest.status.toStatus().canMoveToStatus(RegistrationStatus.DECLINED)) {
+                throw MembershipPersistenceException(
+                    "Registration request ${request.registrationId} has status ${registrationRequest.status} and can not be declined"
+                )
+            }
             registrationRequest.status = RegistrationStatus.DECLINED.name
             registrationRequest.lastModified = now
 
