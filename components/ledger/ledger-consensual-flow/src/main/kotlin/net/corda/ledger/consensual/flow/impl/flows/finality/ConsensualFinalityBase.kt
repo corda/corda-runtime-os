@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
-import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualTransactionMetadataVerifier
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.verifyMetadata
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -53,7 +53,7 @@ abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
     }
 
     protected fun verifyTransaction(signedTransaction: ConsensualSignedTransactionInternal) {
-        ConsensualTransactionMetadataVerifier(signedTransaction.wireTransaction.metadata).verify()
+        verifyMetadata(signedTransaction.wireTransaction.metadata)
         ConsensualLedgerTransactionVerifier(signedTransaction.toLedgerTransaction()).verify()
     }
 }

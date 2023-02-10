@@ -63,5 +63,8 @@ class VirtualNodeSenderImpl(
         }
     }
 
-    override fun close() = sender.close()
+    override fun close() {
+        sender.close()
+        asyncOperationPublisher.close()
+    }
 }
