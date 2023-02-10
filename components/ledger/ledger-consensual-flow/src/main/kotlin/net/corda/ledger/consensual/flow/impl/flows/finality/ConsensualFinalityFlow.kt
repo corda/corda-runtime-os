@@ -40,7 +40,10 @@ class ConsensualFinalityFlow(
     override fun call(): ConsensualSignedTransaction {
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
+
+        // Initial verifications passed, the transaction can be saved in the database.
         persistUnverifiedTransaction()
+
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)

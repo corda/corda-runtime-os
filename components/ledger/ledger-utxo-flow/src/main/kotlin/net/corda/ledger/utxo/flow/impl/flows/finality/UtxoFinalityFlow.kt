@@ -43,7 +43,10 @@ class UtxoFinalityFlow(
         log.trace("Starting finality flow for transaction: $transactionId")
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
+
+        // Initial verifications passed, the transaction can be saved in the database.
         persistUnverifiedTransaction()
+
         sendTransactionAndBackchainToCounterparties()
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
