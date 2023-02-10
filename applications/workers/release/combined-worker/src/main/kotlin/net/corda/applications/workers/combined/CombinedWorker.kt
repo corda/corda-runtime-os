@@ -92,7 +92,7 @@ class CombinedWorker @Activate constructor(
         val params = getParams(args, CombinedWorkerParams())
         // Extract the schemaless db url from the params, the combined worker needs this to set up all the schemas which
         // it does in the same db.
-        val dbUrl = checkNotNull(params.databaseParams[DatabaseConfig.JDBC_URL])
+        val dbUrl = params.databaseParams[DatabaseConfig.JDBC_URL] ?: "jdbc:postgresql://localhost:5432/cordacluster"
         // Add the config schema to the JDBC URL in the params so that any processors which need the JDBC URL are using
         // the config schema.
         params.addSchemaToJdbcUrl("CONFIG")

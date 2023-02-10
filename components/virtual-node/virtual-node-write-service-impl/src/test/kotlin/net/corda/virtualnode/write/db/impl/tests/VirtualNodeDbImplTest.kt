@@ -3,7 +3,6 @@ package net.corda.virtualnode.write.db.impl.tests
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
