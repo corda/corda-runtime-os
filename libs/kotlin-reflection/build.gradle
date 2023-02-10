@@ -24,13 +24,14 @@ configurations {
 }
 
 dependencies {
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
     compileOnly "org.ow2.asm:asm:$asmVersion"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    testCompileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
     testRuntimeOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"

@@ -84,6 +84,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     fun beforeEach() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
@@ -616,7 +617,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
+                flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
                 sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
                 sessionAckEvents()
             }

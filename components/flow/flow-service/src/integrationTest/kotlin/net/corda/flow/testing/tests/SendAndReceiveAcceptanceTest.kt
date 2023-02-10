@@ -88,7 +88,7 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
+                flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_3, SESSION_ID_2 to DATA_MESSAGE_4)
                 sessionAckEvents()
             }
