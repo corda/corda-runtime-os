@@ -234,25 +234,29 @@ internal class StartRegistrationHandler(
     private fun validatePreAuthTokenUsage(mgmHoldingId: HoldingIdentity, pendingMemberInfo: MemberInfo) {
         try {
             pendingMemberInfo.preAuthToken?.let {
-                membershipQueryClient.queryPreAuthTokens(
+                val result = membershipQueryClient.queryPreAuthTokens(
                     mgmHoldingIdentity = mgmHoldingId,
                     ownerX500Name = pendingMemberInfo.name,
                     preAuthTokenId = it,
                     viewInactive = false
-                ).getOrThrow().apply {
-                    validateRegistrationRequest(isNotEmpty()) {
-                        logger.warn(
-                            "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' attempted to " +
-                                    "register with invalid pre-auth token '$it'."
-                        )
-                        "Registration attempted to use a pre-auth token which is " +
-                                "not currently active for this member."
-                    }
-                    logger.info(
-                        "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' has provided " +
-                                "valid pre-auth token '$it' during registration."
+                ).getOrThrow()
+                validateRegistrationRequest(result.isNotEmpty()) {
+                    logger.warn(
+                        "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' attempted to " +
+                                "register with invalid pre-auth token '$it'."
                     )
+                    "Registration attempted to use a pre-auth token which is " +
+                            "not currently active for this member."
                 }
+                result.first().ttl?.let {
+                    validateRegistrationRequest(it >= clock.instant()) {
+                        "Registration attempted to use a pre-auth token which has expired."
+                    }
+                }
+                logger.info(
+                    "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' has provided " +
+                            "valid pre-auth token '$it' during registration."
+                )
             }
         } catch (e: IllegalArgumentException) {
             with("Registration failed due to invalid format for the provided pre-auth token.") {

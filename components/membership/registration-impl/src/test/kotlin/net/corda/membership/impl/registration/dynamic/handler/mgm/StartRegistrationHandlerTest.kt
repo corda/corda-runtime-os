@@ -485,6 +485,54 @@ class StartRegistrationHandlerTest {
 
             result.assertRegistrationStarted()
         }
+
+        @Test
+        fun `Matching pre-auth token with null TTL results in started registration`() {
+            val token = UUID(0, 1)
+            val persistedToken: PreAuthToken = mock {
+                on { ttl } doReturn null
+            }
+            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+            whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
+                MembershipQueryResult.Success(listOf(persistedToken))
+            )
+
+            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+            result.assertRegistrationStarted()
+        }
+
+        @Test
+        fun `Matching pre-auth token with not expired TTL results in started registration`() {
+            val token = UUID(0, 1)
+            val persistedToken: PreAuthToken = mock {
+                on { ttl } doReturn clock.instant().plusSeconds(600)
+            }
+            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+            whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
+                MembershipQueryResult.Success(listOf(persistedToken))
+            )
+
+            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+            result.assertRegistrationStarted()
+        }
+
+        @Test
+        fun `Matching pre-auth token with expired TTL results in declined registration`() {
+            val token = UUID(0, 1)
+            val persistedToken: PreAuthToken = mock {
+                on { ttl } doReturn clock.instant().minusSeconds(600)
+            }
+            whenever(memberMemberContext.parseOrNull(PRE_AUTH_TOKEN, UUID::class.java)).doReturn(token)
+            whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
+                MembershipQueryResult.Success(listOf(persistedToken))
+            )
+
+            val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+            result.assertDeclinedRegistration()
+        }
     }
 
     private fun RegistrationHandlerResult.assertRegistrationStarted() =
