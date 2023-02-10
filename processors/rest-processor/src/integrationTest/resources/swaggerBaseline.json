@@ -72,11 +72,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -113,11 +113,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -173,11 +173,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -252,11 +252,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -304,11 +304,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -375,11 +375,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rest-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in REST API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
