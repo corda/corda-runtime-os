@@ -12,6 +12,7 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
@@ -139,12 +140,12 @@ class SigningKeyStoreImpl @Activate constructor(
             val entity = when (context) {
                 is SigningPublicKeySaveContext -> {
                     val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
-                    keyId = publicKeyIdFromBytes(publicKeyBytes)
                     fullKeyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
+                    keyId = publicKeyIdFromBytes(publicKeyBytes)
                     SigningKeyEntity(
                         tenantId = tenantId,
-                        keyId = keyId,
                         fullKeyId = fullKeyId,
+                        keyId = keyId,
                         timestamp = Instant.now(),
                         category = context.category,
                         schemeCodeName = context.keyScheme.codeName,
@@ -161,12 +162,12 @@ class SigningKeyStoreImpl @Activate constructor(
                 }
                 is SigningWrappedKeySaveContext -> {
                     val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
-                    keyId = publicKeyIdFromBytes(publicKeyBytes)
                     fullKeyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
+                    keyId = publicKeyIdFromBytes(publicKeyBytes)
                     SigningKeyEntity(
                         tenantId = tenantId,
-                        keyId = keyId,
                         fullKeyId = fullKeyId,
+                        keyId = keyId,
                         timestamp = Instant.now(),
                         category = context.category,
                         schemeCodeName = context.keyScheme.codeName,
@@ -197,17 +198,20 @@ class SigningKeyStoreImpl @Activate constructor(
             return result.firstOrNull()?.toSigningCachedKey()
         }
 
-        fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? =
-            cache.get(CacheKey(tenantId, publicKey.publicKeyId())) { cacheKey ->
-                entityManagerFactory(tenantId).use { em ->
-                    em.find(
-                        SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
-                            tenantId = tenantId,
-                            keyId = cacheKey.publicKeyId
-                        )
-                    )?.toSigningCachedKey()
-                }
+        // TODO Add caching
+        fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
+            val fullKeyId = publicKey.fullId(keyEncodingService, digestService)
+//            return cache.get(CacheKey(tenantId, publicKey.publicKeyId())) { cacheKey ->
+            return entityManagerFactory(tenantId).use { em ->
+                em.find(
+                    SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
+                        tenantId = tenantId,
+                        fullKeyId = fullKeyId
+                    )
+                )?.toSigningCachedKey()
             }
+//            }
+        }
 
         fun lookup(
             tenantId: String,

@@ -347,12 +347,12 @@ class PersistenceTests {
     fun `Should persist and retrieve raw SigningKeyEntity`() {
         val keyPair = generateKeyPair(EDDSA_ED25519_CODE_NAME)
         val tenantId = randomTenantId()
-        val keyId = keyPair.public.publicKeyId()
         val fullKeyId = keyPair.public.fullId()
+        val keyId = keyPair.public.publicKeyId()
         val entity = SigningKeyEntity(
             tenantId = tenantId,
-            keyId = keyId,
             fullKeyId = fullKeyId,
+            keyId = keyId,
             timestamp = Instant.now(),
             category = CryptoConsts.Categories.LEDGER,
             schemeCodeName = EDDSA_ED25519_CODE_NAME,
@@ -373,7 +373,7 @@ class PersistenceTests {
             val retrieved = em.find(
                 SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
                     tenantId = tenantId,
-                    keyId = keyId
+                    fullKeyId = fullKeyId
                 )
             )
             assertNotNull(retrieved)
