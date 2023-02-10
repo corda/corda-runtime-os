@@ -48,7 +48,6 @@ class CordaDBAvroDeserializerImpl<T : Any>(
             schemaRegistry.deserialize(dataBuffer, clazz, null)
         } else {
             val msg = "$errorMsg. Found class: ${clazz.name}, expected class: $expectedClass, AllowChunks: $allowChunks"
-            log.warn(msg)
             throw CordaRuntimeException(msg)
         }
 
