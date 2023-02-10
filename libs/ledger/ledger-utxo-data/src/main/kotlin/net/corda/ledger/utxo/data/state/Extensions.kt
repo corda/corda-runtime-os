@@ -18,9 +18,11 @@ import net.corda.v5.ledger.utxo.TransactionState
  * @throws IllegalArgumentException if the current [ContractState] cannot be cast to the specified type.
  */
 fun <T : ContractState> ContractState.cast(type: Class<T>): T {
-    return if (!javaClass.isAssignableFrom(type)) {
+    return if (type.isAssignableFrom(javaClass)) {
+        type.cast(this)
+    } else {
         throw IllegalArgumentException("ContractState of type ${javaClass.canonicalName} cannot be cast to type ${type.canonicalName}.")
-    } else type.cast(this)
+    }
 }
 
 /**
@@ -55,7 +57,7 @@ fun <T : ContractState> StateAndRef<*>.cast(type: Class<T>): StateAndRef<T> {
  * @return Returns a collection of [StateAndRef] that match the specified [ContractState] type.
  */
 fun <T : ContractState> Iterable<StateAndRef<*>>.filterIsContractStateInstance(type: Class<T>): List<StateAndRef<T>> {
-    return filter { it.state.contractState.javaClass.isAssignableFrom(type) }.map { it.cast(type) }
+    return filter { type.isAssignableFrom(it.state.contractState.javaClass) }.map { it.cast(type) }
 }
 
 /**

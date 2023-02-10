@@ -106,7 +106,7 @@ class ConsensualLedgerTests {
     }
 
     @Test
-    fun `Consensual Ledger - creating a transaction that fails custom verification causes finality to fail`() {
+    fun `Consensual Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val consensualFlowRequestId = startRpcFlow(
             aliceHoldingId,
             mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500)),

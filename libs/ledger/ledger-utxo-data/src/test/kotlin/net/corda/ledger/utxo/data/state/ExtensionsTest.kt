@@ -28,6 +28,12 @@ class ExtensionsTest {
     }
 
     @Test
+    fun canCastToContractState() {
+        val state = TestContract.TestState(emptyList())
+        Assertions.assertEquals(state, state.cast(ContractState::class.java))
+    }
+
+    @Test
     fun canGetContractClassWhenEnclosed() {
         val state = TestContract.TestState(emptyList())
 

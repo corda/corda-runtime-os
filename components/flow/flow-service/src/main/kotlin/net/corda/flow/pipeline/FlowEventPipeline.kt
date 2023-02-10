@@ -21,6 +21,15 @@ interface FlowEventPipeline {
     fun eventPreProcessing(): FlowEventPipeline
 
     /**
+     * Performs validation of the flow operational status on the virtual node. If the virtual node has flow operation de-activated, further
+     * activity for flows in this virtual node will be killed.
+     *
+     * @throws 'FlowMarkedForKillException' if the virtual node does not have active flow operation
+     * @return The pipeline instance.
+     */
+    fun virtualNodeFlowOperationalChecks(): FlowEventPipeline
+
+    /**
      * Runs the pipeline's flow (starts or resumes) if required and waits for it to suspend.
      * @param timeoutMilliseconds the maximum amount of time to wait for the pipeline's Flow to execute until it
      * completes, fails or suspends.

@@ -26,7 +26,7 @@ class MI5Factory : SecretsServiceFactory {
     }
 
     class MI5(private val spy: String): SecretsService {
-        override fun createValue(plainText: String): Config {
+        override fun createValue(plainText: String, @Suppress("UNUSED_PARAMETER") key: String): Config {
             return ConfigFactory.parseMap(mapOf(
                 "configSecret.code" to spy,
                 "configSecret.name" to plainText
@@ -63,8 +63,9 @@ class SmartConfigFactoryAndSecretsServiceFactoryResolverTest {
             EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to "pass"
         )
         val configFactory = SmartConfigFactory.createWith(
-            ConfigFactory.parseMap(secretsConfig), secretsServiceFactoryResolver.findAll())
-        val secretConfig = configFactory.makeSecret("hello")
+            ConfigFactory.parseMap(secretsConfig), secretsServiceFactoryResolver.findAll()
+        )
+        val secretConfig = configFactory.makeSecret("hello", "test")
 
         // NOTE: a bit a "hacky" way of validating, but if we return a config object here that contains the correct
         //   json structure, then we can be fairly confident the correct factory was used
@@ -80,8 +81,9 @@ class SmartConfigFactoryAndSecretsServiceFactoryResolverTest {
     fun `when config supplies type MI5, use dummy secrets service`() {
         val secretsConfig = mapOf(SmartConfigFactory.SECRET_SERVICE_TYPE to "MI5", "spy" to "007")
         val configFactory = SmartConfigFactory.createWith(
-            ConfigFactory.parseMap(secretsConfig), secretsServiceFactoryResolver.findAll())
-        val secretConfig = configFactory.makeSecret("bond")
+            ConfigFactory.parseMap(secretsConfig), secretsServiceFactoryResolver.findAll()
+        )
+        val secretConfig = configFactory.makeSecret("bond", "james")
 
         val typeSafeConfig = ConfigFactory.parseString(secretConfig.root().render())
         assertThat(typeSafeConfig.getString("configSecret.code")).isEqualTo("007")

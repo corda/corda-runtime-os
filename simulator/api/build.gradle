@@ -10,7 +10,7 @@ ext {
 
 dependencies {
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-application:$cordaApiVersion"
 
     runtimeOnly project(':simulator:runtime')
