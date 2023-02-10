@@ -15,7 +15,7 @@ if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('
                         groupId group.toString()
                         from components.findByName('kotlin') ?: components.java
                     }
-                    pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
+                    pluginManager.withPlugin('net.corda.plugins.cordapp-cpk2') {
                         artifact tasks.named('cpk', Jar)
                     }
                     if (project.hasProperty("sourceJar")) {

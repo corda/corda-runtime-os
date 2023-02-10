@@ -7,7 +7,7 @@ plugins {
 group = "net.corda.cli.host"
 
 dependencies {
-    api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    api "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     compileOnly "org.pf4j:pf4j:${pf4jVersion}"
     api "info.picocli:picocli:$picoCliVersion"
 }
