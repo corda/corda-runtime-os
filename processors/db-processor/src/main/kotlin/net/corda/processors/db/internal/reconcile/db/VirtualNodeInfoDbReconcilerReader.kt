@@ -12,10 +12,11 @@ import java.util.stream.Stream
 val getAllVirtualNodesDBVersionedRecords
         : (ReconciliationContext) -> Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
     { context ->
-        virtualNodeEntitiesToVersionedRecords(VirtualNodeRepositoryImpl().findAll(context.getOrCreateEntityManager()))
+        virtualNodeToVersionedRecords(VirtualNodeRepositoryImpl().findAll(context.getOrCreateEntityManager()))
     }
 
-fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeInfo>)
+// Apart from unit tests, the following function must not be called directly
+internal fun virtualNodeToVersionedRecords(virtualNodes: Stream<VirtualNodeInfo>)
         : Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> =
     virtualNodes.map { entity ->
         object : VersionedRecord<HoldingIdentity, VirtualNodeInfo> {

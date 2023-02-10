@@ -62,7 +62,7 @@ class VirtualNodeDbReconcilerReaderTest {
     fun `can convert db vnode to corda vnode`() {
         val entities = listOf(mockVirtualNodeEntity())
 
-        val versionedRecords = virtualNodeEntitiesToVersionedRecords(entities.stream())
+        val versionedRecords = virtualNodeToVersionedRecords(entities.stream())
         val record = versionedRecords.toList().single()
 
         val expectedKey = createTestHoldingIdentity(x500name, groupId)
