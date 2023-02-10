@@ -31,7 +31,7 @@ interface HsmRestResource : RestResource {
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest-api' for a cluster-level tenant of the REST API.
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
      * 'TLS', or 'JWT_KEY'.
      *
@@ -52,7 +52,7 @@ interface HsmRestResource : RestResource {
     )
     fun assignedHsm(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest-api' for a cluster-level tenant of the REST API")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
                 " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
@@ -71,7 +71,7 @@ interface HsmRestResource : RestResource {
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest-api' for a cluster-level tenant of the REST API.
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
      * 'TLS', or 'JWT_KEY'.
      *
@@ -92,7 +92,7 @@ interface HsmRestResource : RestResource {
     )
     fun assignSoftHsm(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest-api' for a cluster-level tenant of the REST API")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
                 " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
@@ -106,11 +106,11 @@ interface HsmRestResource : RestResource {
      * ```
      * hsmOps.assignHsm(tenantId = "58B6030FABDD", category = "LEDGER")
      *
-     * hsmOps.assignHsm(tenantId = "rest-api", category = "LEDGER")
+     * hsmOps.assignHsm(tenantId = "rpc-api", category = "LEDGER")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest-api' for a cluster-level tenant of the REST API.
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
      * 'TLS', or 'JWT_KEY'.
      *
@@ -132,7 +132,7 @@ interface HsmRestResource : RestResource {
     )
     fun assignHsm(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest-api' for a cluster-level tenant of the REST API")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
                 " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")

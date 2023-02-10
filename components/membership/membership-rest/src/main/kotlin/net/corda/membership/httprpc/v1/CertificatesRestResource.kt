@@ -40,7 +40,7 @@ interface CertificatesRestResource : RestResource {
      * @param usage The certificate usage. Can be:
      *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
-     *     * 'rpc-api-tls' for a TLS certificate to be used in REST API communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
      * @param alias The unique alias under which the certificate chain will be stored.
      * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
@@ -53,7 +53,7 @@ interface CertificatesRestResource : RestResource {
         @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
-                "'rpc-api-tls' for a TLS certificate to be used in REST API communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
@@ -90,7 +90,7 @@ interface CertificatesRestResource : RestResource {
      * @param usage The certificate usage. Can be:
      *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
-     *     * 'rpc-api-tls' for a TLS certificate to be used in REST API communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
      * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
      * @param alias The unique alias under which the certificate chain will be stored.
@@ -104,7 +104,7 @@ interface CertificatesRestResource : RestResource {
         @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
-                "'rpc-api-tls' for a TLS certificate to be used in REST API communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
@@ -131,7 +131,7 @@ interface CertificatesRestResource : RestResource {
      * @param usage The certificate usage. Can be:
      *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
-     *     * 'rpc-api-tls' for a TLS certificate to be used in REST API communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
      * @return A list of the cluster level certificates aliases in the usage.
      */
@@ -144,7 +144,7 @@ interface CertificatesRestResource : RestResource {
         @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
-                "'rpc-api-tls' for a TLS certificate to be used in REST API communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
@@ -159,7 +159,7 @@ interface CertificatesRestResource : RestResource {
      * @param usage The certificate usage. Can be:
      *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
-     *     * 'rpc-api-tls' for a TLS certificate to be used in REST API communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
      * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
      * @return A list of the virtual node certificates aliases in the usage.
@@ -173,7 +173,7 @@ interface CertificatesRestResource : RestResource {
         @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
-                "'rpc-api-tls' for a TLS certificate to be used in REST API communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
@@ -189,7 +189,7 @@ interface CertificatesRestResource : RestResource {
      * @param usage The certificate usage. Can be:
      *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
-     *     * 'rpc-api-tls' for a TLS certificate to be used in REST API communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
      * @param alias The unique certificate chain alias
      * @return The certificate in PEM format.
@@ -203,7 +203,7 @@ interface CertificatesRestResource : RestResource {
         @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
-                "'rpc-api-tls' for a TLS certificate to be used in REST API communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
@@ -223,7 +223,7 @@ interface CertificatesRestResource : RestResource {
      * @param usage The certificate usage. Can be:
      *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
-     *     * 'rpc-api-tls' for a TLS certificate to be used in REST API communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication.
      *     * 'code-signer' for a certificate of the code signing service
      * @param alias The unique certificate chain alias
      * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
@@ -238,7 +238,7 @@ interface CertificatesRestResource : RestResource {
         @RestPathParameter(
             description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
                 "'p2p-session' for a session certificate to be used in P2P communication, " +
-                "'rpc-api-tls' for a TLS certificate to be used in REST API communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, " +
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
@@ -267,7 +267,7 @@ interface CertificatesRestResource : RestResource {
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest-api' for a cluster-level tenant of the REST API.
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param keyId Identifier of the public key that will be included in the certificate.
      * @param x500Name The X.500 name that will be the subject associated with the request.
      * @param subjectAlternativeNames Optional. Used to specify additional subject names.
@@ -284,7 +284,7 @@ interface CertificatesRestResource : RestResource {
     fun generateCsr(
         @RestPathParameter(
             description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest-api' for a cluster-level tenant of the REST API"
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API"
         )
         tenantId: String,
         @RestPathParameter(description = "Identifier of the public key that will be included in the certificate")

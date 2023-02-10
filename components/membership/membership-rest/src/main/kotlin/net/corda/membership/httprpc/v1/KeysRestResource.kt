@@ -32,11 +32,11 @@ interface KeysRestResource : RestResource {
      * ```
      * keysOps.listSchemes(tenantId = "58B6030FABDD", hsmCategory = "SESSION_INIT")
      *
-     * keysOps.listSchemes(tenantId = "rest-api", hsmCategory = "SESSION_INIT")
+     * keysOps.listSchemes(tenantId = "rpc-api", hsmCategory = "SESSION_INIT")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest-api' for a cluster-level tenant of the REST API.
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param hsmCategory Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
      *
      * @return The list of scheme codes which are supported by the associated HSM integration.
@@ -48,7 +48,7 @@ interface KeysRestResource : RestResource {
     )
     fun listSchemes(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest-api' for a cluster-level tenant of the REST API")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @RestPathParameter(description = "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY'," +
                 " 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
@@ -78,7 +78,7 @@ interface KeysRestResource : RestResource {
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest-api' for a cluster-level tenant of the REST API.
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param skip Optional. The response paging information, number of records to skip.
      * @param take Optional. The response paging information, that is, the number of records to return. The actual
      * number returned may be less than requested.
@@ -108,7 +108,7 @@ interface KeysRestResource : RestResource {
     @Suppress("LongParameterList")
     fun listKeys(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest-api' for a cluster-level tenant of the REST API")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @RestQueryParameter(
             description = "The response paging information, number of records to skip",
@@ -187,7 +187,7 @@ interface KeysRestResource : RestResource {
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest-api' for a cluster-level tenant of the REST API.
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param alias The alias under which the new key pair will be stored.
      * @param hsmCategory Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY',
      * 'SESSION_INIT', 'TLS', 'JWT_KEY'.
@@ -203,7 +203,7 @@ interface KeysRestResource : RestResource {
     )
     fun generateKeyPair(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest-api' for a cluster-level tenant of the REST API")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @RestPathParameter(
             description = "The alias under which the new key pair will be stored"
@@ -229,11 +229,11 @@ interface KeysRestResource : RestResource {
      * ```
      * keysOps.generateKeyPem(tenantId = "58B6030FABDD", keyId = "3B9A266F96E2")
      *
-     * keysOps.generateKeyPem(tenantId = "rest-api", keyId = "3B9A266F96E2")
+     * keysOps.generateKeyPem(tenantId = "rpc-api", keyId = "3B9A266F96E2")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest-api' for a cluster-level tenant of the REST API.
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param keyId Identifier of the public key to be retrieved.
      *
      * @return The public key in PEM format.
@@ -245,7 +245,7 @@ interface KeysRestResource : RestResource {
     )
     fun generateKeyPem(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest-api' for a cluster-level tenant of the REST API")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @RestPathParameter(description = "Identifier of the public key to be retrieved")
         keyId: String,

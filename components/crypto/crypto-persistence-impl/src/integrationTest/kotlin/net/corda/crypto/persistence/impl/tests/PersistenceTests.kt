@@ -661,7 +661,7 @@ class PersistenceTests {
     fun `Should save same public keys for different tenants and lookup by id for each tenant`() {
         val hsmId = UUID.randomUUID().toString()
         val tenantId1 = CryptoTenants.P2P
-        val tenantId2 = CryptoTenants.REST_API
+        val tenantId2 = CryptoTenants.RPC_API
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
         signingKeyStore.save(tenantId1, p1)
