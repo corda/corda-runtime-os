@@ -3,7 +3,7 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.RPC_API
+import net.corda.crypto.core.CryptoTenants.REST_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -110,7 +110,7 @@ class HsmRestResourceImpl @Activate constructor(
     }
 
     private fun verifyTenantId(tenantId: String) {
-        if((tenantId == P2P) || (tenantId == RPC_API)) {
+        if((tenantId == P2P) || (tenantId == REST_API)) {
             return
         }
         virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
