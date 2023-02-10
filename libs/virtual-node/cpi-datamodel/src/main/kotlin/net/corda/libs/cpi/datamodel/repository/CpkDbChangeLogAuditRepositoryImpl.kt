@@ -18,7 +18,7 @@ class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
             UUID.randomUUID().toString(),
             fileChecksum,
             filePath,
-            content,
+            content
         )
     }
 }
