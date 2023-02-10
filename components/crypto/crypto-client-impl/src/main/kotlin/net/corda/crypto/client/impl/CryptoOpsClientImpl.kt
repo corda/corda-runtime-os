@@ -63,7 +63,7 @@ class CryptoOpsClientImpl(
         // TODO This converter needs to be removed once we expose SecureHash and ShortHash and types to APIs of this class
         private fun parseStringsToKeyIds(keyIdsStrings: List<String>): Any {
             if (keyIdsStrings.isEmpty())
-                return ShortHashes()
+                return ShortHashes(listOf())
             return if (keyIdsStrings[0].length == 12) {
                 ShortHashes(keyIdsStrings)
             } else {
