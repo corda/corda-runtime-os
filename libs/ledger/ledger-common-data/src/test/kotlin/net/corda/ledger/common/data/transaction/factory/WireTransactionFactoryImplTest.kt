@@ -85,4 +85,20 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessage("JSON validation failed due to: \$.ledgerVersion: is missing but it is required")
     }
+
+    @Test
+    fun `Creating a WireTransaction without CPK metadata throws`() {
+        val metadata = transactionMetadataExample(numberOfComponentGroups = 1, cpkMetadata = emptyList())
+        val metadataJson = jsonMarshallingService.format(metadata)
+        assertThatThrownBy {
+            wireTransactionFactory.create(
+                listOf(
+                    listOf(metadataJson.toByteArray()),
+                ), privacySalt
+            )
+        }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageStartingWith("JSON validation failed due to: \$.cpkMetadata: there must be a minimum of 1 items in the array")
+    }
+
 }
