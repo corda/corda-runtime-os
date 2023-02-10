@@ -9,6 +9,7 @@ import net.corda.v5.crypto.sha256Bytes
 import java.security.PublicKey
 
 // TODO we should end up with only having helpers all of them using `DigestService`/ `PlatformDigestService`
+//  as recorded in https://r3-cev.atlassian.net/browse/CORE-10267.
 /**
  * Returns the id as the first 12 characters of an SHA-256 hash of the public key.
  */
@@ -19,7 +20,7 @@ fun publicKeyIdFromBytes(publicKey: ByteArray): String =
 
 fun fullPublicKeyIdFromBytes(publicKey: ByteArray, digestService: PlatformDigestService): String =
     // TODO default digest algorithm needs to selected through default digest service
-    //  fow now this just uses same algorithm as `publicKeyIdFromBytes`
+    //  for now this just uses same algorithm as `publicKeyIdFromBytes`
     digestService.hash(publicKey, DigestAlgorithmName.SHA2_256).toString()
 
 fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: PlatformDigestService): String =
