@@ -162,7 +162,8 @@
       "items":{
         "title": "Items",
         "$ref": "#/definitions/package_metadata"
-      }
+      },
+      "minItems": 1
     },
     "numberOfComponentGroups": {
       "title": "Number of component groups",
