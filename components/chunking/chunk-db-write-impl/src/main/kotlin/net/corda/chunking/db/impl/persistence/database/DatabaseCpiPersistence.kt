@@ -169,8 +169,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         changelogsExtractedFromCpi.forEach { changelog ->
             log.info("Persisting changelog and audit for CPK: ${changelog.fileChecksum}, ${changelog.filePath})")
             cpkDbChangeLogRepository.update(em, changelog)  // updating ensures any existing changelogs have isDeleted set to false
-            cpkDbChangeLogAuditRepository.
-            put(em, changelog)
+            cpkDbChangeLogAuditRepository.put(em, changelog)
         }
     }
 
