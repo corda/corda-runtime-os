@@ -19,8 +19,8 @@ plugins {
 def applyDependencySubstitution = { Configuration conf ->
     conf.resolutionStrategy.dependencySubstitution {
         //Replace Kotlin stdlib
-        substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion")
-        substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion")
+        substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+        substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
         substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
         substitute module('org.jetbrains.kotlin:kotlin-stdlib') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
         substitute module('org.jetbrains.kotlin:kotlin-reflect') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")

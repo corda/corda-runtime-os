@@ -17,7 +17,7 @@ dependencies {
     implementation project(":libs:virtual-node:sandbox-group-context")
     api project(":libs:serialization:json-serializers")
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation 'org.slf4j:slf4j-api'
 

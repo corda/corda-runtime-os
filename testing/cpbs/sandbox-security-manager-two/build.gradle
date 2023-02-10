@@ -20,7 +20,8 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
-    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    cordaProvided 'org.jetbrains:annotations'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'org.slf4j:slf4j-api'
 }

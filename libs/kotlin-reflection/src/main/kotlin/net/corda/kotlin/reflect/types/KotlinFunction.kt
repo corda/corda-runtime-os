@@ -10,6 +10,7 @@ import kotlinx.metadata.jvm.lambdaClassOriginName
 import kotlinx.metadata.jvm.signature
 import java.lang.reflect.Method
 import java.util.Objects
+import kotlin.contracts.ExperimentalContracts
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
@@ -74,6 +75,7 @@ class KotlinFunction<V> private constructor(
                 kmf.versionRequirements += kmFunction.versionRequirements
                 kmf.typeParameters += kmFunction.typeParameters
                 kmf.returnType = kmFunction.returnType
+                @OptIn(ExperimentalContracts::class)
                 kmf.contract = kmFunction.contract
 
                 // Copy values from JvmFunctionExtension.

@@ -2,6 +2,7 @@ package net.corda.ledger.verification.processor.impl
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
@@ -10,7 +11,6 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.withMDC
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
@@ -43,8 +43,7 @@ class VerificationRequestProcessor(
                 withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
-                        val cpkIds = request.cpkMetadata.mapTo(mutableSetOf()) { SecureHash.parse(it.fileChecksum) }
-                        val sandbox = verificationSandboxService.get(holdingIdentity, cpkIds)
+                        val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
                         requestHandler.handleRequest(sandbox, request)
                     } catch (e: Exception) {
                         errorResponse(request.flowExternalEventContext, e)
@@ -54,7 +53,7 @@ class VerificationRequestProcessor(
     }
 
     private fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception) = when (exception) {
-        is NotSerializableException -> {
+        is NotAllowedCpkException, is NotSerializableException -> {
             log.error(errorMessage(externalEventContext, ExternalEventResponseErrorType.PLATFORM), exception)
             responseFactory.platformError(externalEventContext, exception)
         } else -> {
