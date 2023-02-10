@@ -12,6 +12,7 @@ import kotlin.jvm.Throws
 
 interface MGMGroupPolicy : GroupPolicy
 interface MemberGroupPolicy : GroupPolicy
+interface InteropGroupPolicy : GroupPolicy
 
 /**
  * Object representation of the group policy file which is packaged within a CPI and provides

@@ -17,6 +17,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -24,6 +25,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -59,6 +61,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = GroupPolicyParser::class)
     private val groupPolicyParser: GroupPolicyParser,
+    @Reference(service = InteropGroupPolicyParser::class)
+    private val interopGroupPolicyParser: InteropGroupPolicyParser,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = SubscriptionFactory::class)
@@ -262,6 +266,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     private fun parseGroupPolicy(
         holdingIdentity: HoldingIdentity,
+        isInterop: Boolean = false,
         virtualNodeInfo: VirtualNodeInfo? = null,
     ): GroupPolicy? {
         val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
@@ -270,6 +275,10 @@ class GroupPolicyProviderImpl @Activate constructor(
         }
         val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
         if (metadata == null) {
+            val groupPolicy = interopGroupPolicyParser.get(holdingIdentity)
+            if (groupPolicy != null){
+                return groupPolicy
+            }
             logger.warn(
                 "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
                         "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
@@ -283,11 +292,20 @@ class GroupPolicyProviderImpl @Activate constructor(
             null
         }
         return try {
-            groupPolicyParser.parse(
-                holdingIdentity,
-                metadata.groupPolicy,
-                ::persistedPropertyQuery
-            )
+            if (isInterop) {
+                interopGroupPolicyParser.parse(
+                    holdingIdentity,
+                    metadata.groupPolicy,
+                    ::persistedPropertyQuery
+                )
+            } else {
+                groupPolicyParser.parse(
+                    holdingIdentity,
+                    metadata.groupPolicy,
+                    ::persistedPropertyQuery
+                )
+            }
+
         } catch (e: BadGroupPolicyException) {
             logger.warn("Failed to parse group policy. Returning null.", e)
             null
@@ -328,7 +346,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                     (mgmContext[STATUS] == MEMBER_STATUS_ACTIVE)
                 ) {
                     val holdingIdentity = member.viewOwningMember.toCorda()
-                    val gp = parseGroupPolicy(holdingIdentity)
+                    val gp = parseGroupPolicy(holdingIdentity, checkForInteropRole(memberContext))
                     if (gp is MGMGroupPolicy) {
                         groupPolicies[holdingIdentity] = gp
                         callBack(holdingIdentity, gp)
@@ -339,6 +357,10 @@ class GroupPolicyProviderImpl @Activate constructor(
             } catch (e: Exception) {
                 logger.warn("Could not process events, caused by: $e")
             }
+        }
+
+        private fun checkForInteropRole(memberContext: Map<String, String>): Boolean {
+            return memberContext.entries.any { it.key.startsWith(MemberInfoExtension.ROLES_PREFIX) && it.value == MemberInfoExtension.INTEROP_ROLE }
         }
 
         override val keyClass = String::class.java

@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration
 
+import net.corda.membership.lib.MemberInfoExtension.Companion.INTEROP_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.INTEROP_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
@@ -22,7 +24,9 @@ internal sealed class MemberRole {
                     NOTARY_ROLE -> {
                         readNotary(context)
                     }
-
+                    INTEROP_ROLE -> {
+                        readInterop(context)
+                    }
                     else -> {
                         throw IllegalArgumentException("Invalid role: $roleName")
                     }
@@ -53,6 +57,13 @@ internal sealed class MemberRole {
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 plugin = plugin,
+            )
+        }
+
+        private fun readInterop(context: Map<String, String>): Interop {
+            val serviceName = context[INTEROP_SERVICE_NAME] ?: throw IllegalArgumentException("Interop must have a service name")
+            return Interop(
+                serviceName = MemberX500Name.parse(serviceName)
             )
         }
     }
@@ -87,6 +98,20 @@ internal sealed class MemberRole {
                     NOTARY_SERVICE_PLUGIN to plugin,
                 )
             }
+        }
+    }
+
+    data class Interop(
+        val serviceName: MemberX500Name
+    ) : MemberRole() {
+        override fun toMemberInfo(
+            notariesKeysFactory: () -> List<KeyDetails>,
+            index: Int,
+        ): Collection<Pair<String, String>> {
+            return listOf(
+                "$ROLES_PREFIX.$index" to INTEROP_ROLE,
+                INTEROP_SERVICE_NAME to serviceName.toString(),
+            )
         }
     }
 }

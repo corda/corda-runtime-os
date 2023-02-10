@@ -133,6 +133,16 @@ class MemberInfoExtension {
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
 
+        /**
+         * Interop role name
+         */
+        const val INTEROP_ROLE = "interop"
+
+        /**
+         * Interop role properties
+         */
+        const val INTEROP_SERVICE_NAME = "corda.notary.service.name"
+
         /** Key name for TLS certificate subject. */
         const val TLS_CERTIFICATE_SUBJECT = "corda.tls.certificate.subject"
 
