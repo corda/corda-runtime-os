@@ -12,7 +12,7 @@ dependencies {
 
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

@@ -8,7 +8,9 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.http.DynamicX509ExtendedTrustManager.Companion.createTrustManagerIfNeeded
 import net.corda.p2p.gateway.messaging.internal.CommonComponents
+import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
@@ -24,6 +26,7 @@ internal class ReconfigurableHttpServer(
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
     private val commonComponents: CommonComponents,
+    private val dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
 ) : LifecycleWithDominoTile {
 
     @Volatile
@@ -70,10 +73,16 @@ internal class ReconfigurableHttpServer(
                         val oldServer = httpServer
                         httpServer = null
                         oldServer?.close()
+                        val mutualTlsTrustManager = createTrustManagerIfNeeded(
+                            newConfiguration.sslConfig,
+                            commonComponents.trustStoresMap,
+                            dynamicCertificateSubjectStore,
+                        )
                         val newServer = HttpServer(
                             listener,
                             newConfiguration,
-                            commonComponents.dynamicKeyStore.serverKeyStore
+                            commonComponents.dynamicKeyStore.serverKeyStore,
+                            mutualTlsTrustManager,
                         )
                         newServer.start()
                         resources.keep(newServer)
@@ -84,10 +93,16 @@ internal class ReconfigurableHttpServer(
                         "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
                             "${newConfiguration.hostAddress}:${newConfiguration.hostPort}"
                     )
+                    val mutualTlsTrustManager = createTrustManagerIfNeeded(
+                        newConfiguration.sslConfig,
+                        commonComponents.trustStoresMap,
+                        dynamicCertificateSubjectStore,
+                    )
                     val newServer = HttpServer(
                         listener,
                         newConfiguration,
-                        commonComponents.dynamicKeyStore.serverKeyStore
+                        commonComponents.dynamicKeyStore.serverKeyStore,
+                        mutualTlsTrustManager,
                     )
                     newServer.start()
                     resources.keep(newServer)

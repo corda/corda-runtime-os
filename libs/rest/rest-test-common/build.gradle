@@ -9,7 +9,7 @@ description 'Corda REST Test Common'
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-serialization"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

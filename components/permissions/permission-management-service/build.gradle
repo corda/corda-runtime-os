@@ -29,7 +29,7 @@ dependencies {
 
     implementation project(":libs:lifecycle:lifecycle")
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

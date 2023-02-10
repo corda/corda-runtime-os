@@ -1,5 +1,6 @@
 package net.corda.ledger.verification.sandbox.impl
 
+import net.corda.cpk.read.CpkReadService
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.ledger.utxo.verification.CordaPackageSummary
@@ -28,51 +29,40 @@ import org.slf4j.LoggerFactory
 /**
  * This is a sandbox service that is internal to this component.
  *
- * It gets/creates a sandbox with a per-sandbox:
- *
- *   * serializer
- *   * entity manager factory
+ * It gets/creates a Verification sandbox with a per-sandbox serializers.
  *
  */
-@Suppress("LongParameterList")
 @RequireSandboxAMQP
 @RequireSandboxJSON
 @Component(service = [ VerificationSandboxService::class ])
 class VerificationSandboxServiceImpl @Activate constructor(
     @Reference
     private val sandboxService: SandboxGroupContextComponent,
+    @Reference
+    private val cpkReadService: CpkReadService
 ) : VerificationSandboxService {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun get(holdingIdentity: HoldingIdentity, cpks: List<CordaPackageSummary>): SandboxGroupContext {
-
-        val cpkFileChecksums = cpks.mapTo(mutableSetOf()) { SecureHash.parse(it.fileChecksum) }
-        if (!sandboxService.hasCpks(cpkFileChecksums)) {
-            throw CpkNotAvailableException(
-                "CPKs for Verification Sandbox for $holdingIdentity are not available (yet): $cpks"
-            )
-        }
-
-        val sandbox = sandboxService.getOrCreate(getVirtualNodeContext(holdingIdentity, cpkFileChecksums)) { _, ctx ->
+        checkCpks(holdingIdentity, cpks)
+        return sandboxService.getOrCreate(getVirtualNodeContext(holdingIdentity, cpks)) { _, ctx ->
             initializeSandbox(holdingIdentity, ctx)
         }
+    }
 
-        // Only contract CPKs are allowed
-        val nonContractCpks = sandbox.sandboxGroup
-            .metadata
-            .values
-            .filterNot { it.isContractCpk() }
-
-        if (nonContractCpks.isNotEmpty()) {
-            val cpkIds = nonContractCpks.map { it.cpkId }
-            throw NotAllowedCpkException(
-                "CPKs for Verification Sandbox for $holdingIdentity are not allowed: $cpkIds"
+    private fun checkCpks(holdingIdentity: HoldingIdentity, cpks: List<CordaPackageSummary>) {
+        cpks.forEach {
+            val cpk = cpkReadService.get(it.fileChecksum.toSecureHash()) ?: throw CpkNotAvailableException(
+                "This CPK is not available (yet) for the Verification Sandbox for $holdingIdentity: $it"
             )
+            if (!cpk.metadata.isContractCpk()) {
+                throw NotAllowedCpkException(
+                    "This CPK is not allowed for use in the Verification Sandbox for $holdingIdentity - only contract CPKs are allowed: $it"
+                )
+            }
         }
-
-        return sandbox
     }
 
     private fun initializeSandbox(
@@ -99,13 +89,20 @@ class VerificationSandboxServiceImpl @Activate constructor(
     }
 
     /** NOTE THE SANDBOX GROUP TYPE HERE */
-    private fun getVirtualNodeContext(holdingIdentity: HoldingIdentity, cpkFileChecksums: Set<SecureHash>) =
-        VirtualNodeContext(
+    private fun getVirtualNodeContext(
+        holdingIdentity: HoldingIdentity,
+        cpks: List<CordaPackageSummary>
+    ): VirtualNodeContext {
+        val cpkFileChecksums = cpks.mapTo(mutableSetOf()) { it.fileChecksum.toSecureHash() }
+        return VirtualNodeContext(
             holdingIdentity,
             cpkFileChecksums,
             SandboxGroupType.VERIFICATION,
             null
         )
+    }
+
+    private fun String.toSecureHash() = SecureHash.parse(this)
 }
 
 fun SandboxGroupContext.getSerializationService(): SerializationService =
