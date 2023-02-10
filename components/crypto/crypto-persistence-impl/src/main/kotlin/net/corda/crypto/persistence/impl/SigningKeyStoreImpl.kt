@@ -43,7 +43,6 @@ import net.corda.orm.utils.use
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
