@@ -203,7 +203,8 @@ class SigningKeyStoreImpl @Activate constructor(
 //            return cache.get(CacheKey(tenantId, publicKey.publicKeyId())) { cacheKey ->
             return entityManagerFactory(tenantId).use { em ->
                 em.find(
-                    SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
+                    SigningKeyEntity::class.java,
+                    SigningKeyEntityPrimaryKey(
                         tenantId = tenantId,
                         fullKeyId = fullKeyId
                     )
