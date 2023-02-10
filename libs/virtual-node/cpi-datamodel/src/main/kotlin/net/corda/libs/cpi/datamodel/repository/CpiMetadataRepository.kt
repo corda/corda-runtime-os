@@ -11,6 +11,6 @@ interface CpiMetadataRepository {
     /**
      * Find all cpi metadata.
      */
-    fun findAll(entityManager: EntityManager): Stream<CpiMetadata>
+    fun findAll(em: EntityManager): Stream<CpiMetadata>
 }
 

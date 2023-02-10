@@ -2,6 +2,7 @@ package net.corda.chunking.db.impl.tests
 
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
@@ -25,8 +26,8 @@ fun CpiPersistence.updateMetadataAndCpksWithDefaults(
     cpiFileChecksum: SecureHash = newRandomSecureHash(),
     requestId: RequestId = UUID.randomUUID().toString(),
     groupId: String = "group-a",
-    cpkDbChangeLogEntities: List<CpkDbChangeLogEntity> = emptyList(),
-): CpiMetadataEntity = updateMetadataAndCpks(cpi, cpiFileName, cpiFileChecksum, requestId, groupId, cpkDbChangeLogEntities)
+    cpkDbChangeLog: List<CpkDbChangeLog> = emptyList(),
+): CpiMetadataEntity = updateMetadataAndCpks(cpi, cpiFileName, cpiFileChecksum, requestId, groupId, cpkDbChangeLog)
 
 fun CpiPersistence.persistMetadataAndCpksWithDefaults(
     cpi: Cpi,
@@ -34,5 +35,5 @@ fun CpiPersistence.persistMetadataAndCpksWithDefaults(
     cpiFileChecksum: SecureHash = newRandomSecureHash(),
     requestId: RequestId = UUID.randomUUID().toString(),
     groupId: String = "group-a",
-    cpkDbChangeLogEntities: List<CpkDbChangeLogEntity> = emptyList(),
-): CpiMetadataEntity = persistMetadataAndCpks(cpi, cpiFileName, cpiFileChecksum, requestId, groupId, cpkDbChangeLogEntities)
+    cpkDbChangeLog: List<CpkDbChangeLog> = emptyList(),
+): CpiMetadataEntity = persistMetadataAndCpks(cpi, cpiFileName, cpiFileChecksum, requestId, groupId, cpkDbChangeLog)

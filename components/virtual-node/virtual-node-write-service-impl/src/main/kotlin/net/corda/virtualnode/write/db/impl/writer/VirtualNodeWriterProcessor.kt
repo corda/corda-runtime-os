@@ -23,9 +23,8 @@ import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.entities.findChangelogEntitiesForGivenCpkFileChecksums
-import net.corda.libs.cpi.datamodel.entities.findCurrentCpkChangeLogsForCpi
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
@@ -86,8 +85,7 @@ internal class VirtualNodeWriterProcessor(
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
-    private val getCurrentChangelogsForCpi: (EntityManager, String, String, String) -> List<CpkDbChangeLogEntity> =
-        ::findCurrentCpkChangeLogsForCpi,
+    private val changeLogsRepository: CpkDbChangeLogRepository,
     private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
@@ -96,6 +94,7 @@ internal class VirtualNodeWriterProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         val systemTerminatorTag = "${VAULT.name}-system-final"
+        val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
     }
 
     @Suppress("ReturnCount", "ComplexMethod")
@@ -245,9 +244,9 @@ internal class VirtualNodeWriterProcessor(
                 val shortHash = ShortHash.Companion.of(currentVNodeShortHash)
                 // Open a TX to find the connection information we need for the virtual nodes vault as it may live on
                 //  another database.
-                it.transaction { tx ->
+                it.transaction { em ->
                     // Retrieve virtual node info
-                    val virtualNodeInfo = virtualNodeRepository.find(tx, shortHash)
+                    val virtualNodeInfo = virtualNodeRepository.find(em, shortHash)
                     if(null == virtualNodeInfo) {
                             logger.warn("Could not find the virtual node: $currentVNodeShortHash")
                             respFuture.complete(
@@ -271,7 +270,7 @@ internal class VirtualNodeWriterProcessor(
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
-                            tx,
+                            em,
                             dataSource,
                             systemTerminatorTag
                         )
@@ -279,12 +278,12 @@ internal class VirtualNodeWriterProcessor(
                         logger.info("CPK file checksums of currently applied changelogs on vault schema for virtual node " +
                                 "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString() }]")
 
-                        val changesetsToRollback = findChangelogEntitiesForGivenCpkFileChecksums(tx, cpkChecksumsOfAppliedChangelogs)
+                        val changesetsToRollback = cpkDbChangeLogRepository.findByFileChecksum(em, cpkChecksumsOfAppliedChangelogs).groupBy { it.fileChecksum }
 
                         changesetsToRollback.forEach { (cpkFileChecksum, changelogs) ->
                             logger.info(
                                 "Virtual node '$currentVNodeShortHash' attempting to roll back the following changelogs for CPK " +
-                                        "'$cpkFileChecksum' [${changelogs.joinToString { it.id.filePath }}]"
+                                        "'$cpkFileChecksum' [${changelogs.joinToString { it.filePath }}]"
                             )
                             rollbackVirtualNodeDb(
                                 dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
@@ -295,13 +294,7 @@ internal class VirtualNodeWriterProcessor(
                         }
                     }
 
-                    val changelogsToRun = getCurrentChangelogsForCpi(
-                        em,
-                        cpiMetadata.id.name,
-                        cpiMetadata.id.version,
-                        cpiMetadata.id.signerSummaryHash.toString()
-                    )
-                        .groupBy { it.id.cpkFileChecksum }
+                    val changelogsToRun = changeLogsRepository.findByCpiId(em, cpiMetadata.id).groupBy { it.fileChecksum }
 
                     changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
                         try {
@@ -311,7 +304,7 @@ internal class VirtualNodeWriterProcessor(
                         } catch (e: Exception) {
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI ${cpiMetadata.id.name} - changelogs: [" +
-                                        "${changelogsForThisCpk.joinToString { it.id.cpkFileChecksum + ", " + it.id.filePath }}]", e)
+                                        "${changelogsForThisCpk.joinToString { it.fileChecksum + ", " + it.filePath }}]", e)
                             respFuture.complete(
                                 VirtualNodeManagementResponse(
                                     instant,
@@ -340,11 +333,10 @@ internal class VirtualNodeWriterProcessor(
 
     private fun rollbackVirtualNodeDb(
         dataSource: CloseableDataSource,
-        changelogs: List<CpkDbChangeLogEntity>,
+        changelogs: List<CpkDbChangeLog>,
         tagToRollbackTo: String
     ) {
-        val changelogDtos = changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) }
-        val dbChange = VirtualNodeDbChangeLog(changelogDtos)
+        val dbChange = VirtualNodeDbChangeLog(changelogs)
         val connection = dataSource.connection
         LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
     }
@@ -550,17 +542,11 @@ internal class VirtualNodeWriterProcessor(
     private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb, virtualNodeShortHash: String) {
         dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
             // every changelog here is from a CPK currently associated with the given CPI.
-            val changelogsPerCpk: Map<String, List<CpkDbChangeLogEntity>> = getCurrentChangelogsForCpi(
-                em,
-                cpiMetadata.id.name,
-                cpiMetadata.id.version,
-                cpiMetadata.id.signerSummaryHash.toString()
-            )
-                .groupBy { it.id.cpkFileChecksum }
+            val changelogsPerCpk = changeLogsRepository.findByCpiId(em, cpiMetadata.id).groupBy { it.fileChecksum }
 
             changelogsPerCpk.forEach { (cpkFileChecksum, changeLogs) ->
                 logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
-                val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+                val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
                 try {
                     vaultDb.runCpiMigrations(allChangeLogsForCpk, cpkFileChecksum)
                 } catch (e: Exception) {
@@ -575,14 +561,14 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
-    private fun runCpkResyncMigrations(dataSource: CloseableDataSource, cpkFileChecksum: String, changelogs: List<CpkDbChangeLogEntity>) {
+    private fun runCpkResyncMigrations(dataSource: CloseableDataSource, cpkFileChecksum: String, changelogs: List<CpkDbChangeLog>) {
         if (changelogs.isEmpty()) return
 
         logger.info("Preparing to run ${changelogs.size} resync migrations for CPK '$cpkFileChecksum'.")
 
         LiquibaseSchemaMigratorImpl().updateDb(
             dataSource.connection,
-            VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) }),
+            VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.filePath, it.content, it.fileChecksum) }),
             tag = cpkFileChecksum
         )
         logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")

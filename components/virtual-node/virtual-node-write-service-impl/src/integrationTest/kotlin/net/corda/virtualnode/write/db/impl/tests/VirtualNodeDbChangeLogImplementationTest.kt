@@ -50,8 +50,8 @@ class VirtualNodeDbChangeLogImplementationTest  {
             }
         val lbm = LiquibaseSchemaMigratorImpl()
         val primaryContent = primaryTemplate.replace("_INCLUDETARGET_", includeElement)
-        val primary = CpkDbChangeLog("migration/db.changelog-master.xml", primaryContent)
-        val secondary = CpkDbChangeLog("migration/dogs-migration-v1.0.xml", secondaryContent)
+        val primary = CpkDbChangeLog("migration/db.changelog-master.xml", primaryContent, "")
+        val secondary = CpkDbChangeLog("migration/dogs-migration-v1.0.xml", secondaryContent, "")
         val cl = VirtualNodeDbChangeLog(listOf(primary, secondary))
         assertThat(cl.masterChangeLogFiles.size).isEqualTo(1)
         if (failureText != null) {

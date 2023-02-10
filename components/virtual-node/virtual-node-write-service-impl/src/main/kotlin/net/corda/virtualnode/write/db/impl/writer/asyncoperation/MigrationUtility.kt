@@ -1,7 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation
 
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.virtualnode.ShortHash
 
 /**
@@ -24,7 +24,7 @@ internal interface MigrationUtility {
      */
     fun runVaultMigrations(
         virtualNodeShortHash: ShortHash,
-        migrationChangeLogs: List<CpkDbChangeLogEntity>,
+        migrationChangeLogs: List<CpkDbChangeLog>,
         vaultDdlConnectionId: UUID
     )
 
@@ -34,5 +34,5 @@ internal interface MigrationUtility {
      * @param cpkChangelogs the changelogs with which to compare
      * @param vaultDmlConnectionId the DML connection ID of the vault to be compared
      */
-    fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean
+    fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLog>, vaultDmlConnectionId: UUID): Boolean
 }

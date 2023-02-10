@@ -10,6 +10,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogAuditEntity
@@ -17,7 +18,8 @@ import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
-import net.corda.libs.cpi.datamodel.entities.findCurrentCpkChangeLogsForCpi
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -461,7 +463,7 @@ internal class DatabaseCpiPersistenceTest {
     @Test
     fun `persist changelog writes data and can be read back`() {
         val cpi = mockCpi(mockCpk())
-        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLogEntities = makeChangeLogs(arrayOf(cpi.cpks.first())))
+        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLog = genChangeLogs(arrayOf(cpi.cpks.first())))
 
         val changeLogsRetrieved = query<CpkDbChangeLogEntity, String>(
             "cpk_file_checksum",
@@ -475,7 +477,7 @@ internal class DatabaseCpiPersistenceTest {
     @Test
     fun `persist multiple changelogs writes data and can be read back`() {
         val cpi = mockCpi(mockCpk(), mockCpk(), mockCpk(), mockCpk(), mockCpk())
-        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLogEntities = makeChangeLogs(cpi.cpks.toTypedArray()))
+        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLog = genChangeLogs(cpi.cpks.toTypedArray()))
 
         val changeLogsRetrieved = query<CpkDbChangeLogEntity, String>("content", mockChangeLogContent)
 
@@ -490,7 +492,7 @@ internal class DatabaseCpiPersistenceTest {
 
         val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpiWithChangelogs,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
                     fileChecksum(cpk1.fileChecksum)
                     filePath(cpk1.path.toString())
@@ -533,7 +535,7 @@ internal class DatabaseCpiPersistenceTest {
         val filePath = "path_1_$rand1.xml"
         val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpi,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
                     fileChecksum(cpk1.metadata.fileChecksum.toString())
                     filePath(filePath)
@@ -551,7 +553,7 @@ internal class DatabaseCpiPersistenceTest {
 
         val updateCpiEntity = cpiPersistence.updateMetadataAndCpksWithDefaults(
             updatedCpi,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
                     fileChecksum(cpk1.metadata.fileChecksum.toString())
                     filePath(filePath)
@@ -580,7 +582,7 @@ internal class DatabaseCpiPersistenceTest {
         val cpk1FileChecksum = cpk.metadata.fileChecksum.toString()
         val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpi,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
                     fileChecksum(cpk1FileChecksum)
                 }
@@ -598,7 +600,7 @@ internal class DatabaseCpiPersistenceTest {
 
         val updateCpiEntity = cpiPersistence.updateMetadataAndCpksWithDefaults(
             updatedCpi,
-            cpkDbChangeLogEntities = listOf(
+            cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
                     fileChecksum(cpk2FileChecksum)
                     // (randomized file paths)
@@ -617,7 +619,7 @@ internal class DatabaseCpiPersistenceTest {
     }
 
     private fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
-        findCurrentCpkChangeLogsForCpi(it, cpiEntity.name, cpiEntity.version, cpiEntity.signerSummaryHash)
+        CpkDbChangeLogRepositoryImpl().findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, SecureHash.parse(cpiEntity.signerSummaryHash)))
     }
 
     private fun findAuditLogs(cpkFileChecksums: List<String>) = entityManagerFactory.createEntityManager().transaction {
@@ -656,14 +658,15 @@ internal class DatabaseCpiPersistenceTest {
         return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
     }
 
-    private fun makeChangeLogs(
+    private fun genChangeLogs(
         cpks: Array<Cpk>,
         changeLogs: List<String> = listOf(mockChangeLogContent)
-    ): List<CpkDbChangeLogEntity> = cpks.flatMap { cpk ->
+    ): List<CpkDbChangeLog> = cpks.flatMap { cpk ->
         changeLogs.map { changeLog ->
-            CpkDbChangeLogEntity(
-                CpkDbChangeLogKey(cpk.metadata.fileChecksum.toString(), "resources/$changeLog"),
-                changeLog
+            CpkDbChangeLog(
+                "resources/$changeLog",
+                changeLog,
+                cpk.metadata.fileChecksum.toString()
             )
         }
     }

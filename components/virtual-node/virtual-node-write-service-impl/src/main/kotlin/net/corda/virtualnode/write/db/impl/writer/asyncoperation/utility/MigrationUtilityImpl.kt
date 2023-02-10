@@ -23,11 +23,11 @@ internal class MigrationUtilityImpl(
 
     override fun runVaultMigrations(
         virtualNodeShortHash: ShortHash,
-        migrationChangeLogs: List<CpkDbChangeLogEntity>,
+        migrationChangeLogs: List<CpkDbChangeLog>,
         vaultDdlConnectionId: UUID
     ) {
         migrationChangeLogs
-            .groupBy { it.id.cpkFileChecksum }
+            .groupBy { it.fileChecksum }
             .forEach { (cpkFileChecksum, changelogs) ->
                 dbConnectionManager.createDatasource(vaultDdlConnectionId).use {
                     runCpkMigrations(it, virtualNodeShortHash, cpkFileChecksum, changelogs)
@@ -35,16 +35,16 @@ internal class MigrationUtilityImpl(
             }
     }
 
-    override fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean {
+    override fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLog>, vaultDmlConnectionId: UUID): Boolean {
         // todo cs - as part of CORE-https://r3-cev.atlassian.net/browse/CORE-9046
         return false
     }
 
     private fun runCpkMigrations(
-        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLogEntity>
+        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLog>
     ) {
         logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
-        val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+        val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
         try {
             liquibaseSchemaMigrator.updateDb(dataSource.connection, allChangeLogsForCpk, tag = cpkFileChecksum)
         } catch (e: Exception) {

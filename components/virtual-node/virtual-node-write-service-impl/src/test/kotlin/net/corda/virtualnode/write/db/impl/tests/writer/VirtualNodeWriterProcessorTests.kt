@@ -17,6 +17,8 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
@@ -241,6 +243,10 @@ class VirtualNodeWriterProcessorTests {
     private fun virtualNodeRepositoryMock(): VirtualNodeRepository = mock<VirtualNodeRepository>()
     private fun holdingIdentityRepositoryMock(): HoldingIdentityRepository = mock<HoldingIdentityRepository>()
 
+    private fun cpkDbChangeLogRepositoryMock(changeLog: List<CpkDbChangeLog> = emptyList()): CpkDbChangeLogRepository = mock{
+        on { findByCpiId(any(), any()) } doReturn changeLog
+    }
+
     @Test
     fun `publishes correct virtual node info to Kafka`() {
         val expectedRecord = Record(VIRTUAL_NODE_INFO_TOPIC, vnodeInfo.holdingIdentity, vnodeInfo)
@@ -253,7 +259,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock()
         )
@@ -277,7 +283,7 @@ class VirtualNodeWriterProcessorTests {
                 vNodeFactory,
                 groupPolicyParser,
                 clock,
-                getCurrentChangelogsForCpi = { _, _, _, _ -> listOf(changelog) },
+                changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf(changelog)),
                 holdingIdentityRepository = holdingIdentityRepositoryMock(),
                 virtualNodeRepository = virtualNodeRepositoryMock()
             )
@@ -308,7 +314,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock()
         )
@@ -357,7 +363,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock()
         )
@@ -409,7 +415,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock()
         )
@@ -460,7 +466,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock()
         )
@@ -484,7 +490,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock()
         )
@@ -512,7 +518,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock()
         )
@@ -691,7 +697,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = virtualNodeRepositoryMock()
         )
@@ -727,7 +733,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = vnodeRepo
         )
@@ -761,7 +767,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
-            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
+            changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepository,
             virtualNodeRepository = vnodeRepo
         )

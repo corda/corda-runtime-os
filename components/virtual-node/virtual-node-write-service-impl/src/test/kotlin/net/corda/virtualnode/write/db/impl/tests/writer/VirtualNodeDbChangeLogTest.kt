@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class VirtualNodeDbChangeLogTest {
-    private val masterFile1 = CpkDbChangeLog(VirtualNodeDbChangeLog.MASTER_CHANGE_LOG, "migration1")
-    private val otherFile1 = CpkDbChangeLog("another-one.xml", "migration2")
-    private val masterFile2 = CpkDbChangeLog(VirtualNodeDbChangeLog.MASTER_CHANGE_LOG, "migration3")
+    private val masterFile1 = CpkDbChangeLog(VirtualNodeDbChangeLog.MASTER_CHANGE_LOG, "migration1", "")
+    private val otherFile1 = CpkDbChangeLog("another-one.xml", "migration2", "")
+    private val masterFile2 = CpkDbChangeLog(VirtualNodeDbChangeLog.MASTER_CHANGE_LOG, "migration3", "")
 
     @Test
     fun `find all master changelog files`() {

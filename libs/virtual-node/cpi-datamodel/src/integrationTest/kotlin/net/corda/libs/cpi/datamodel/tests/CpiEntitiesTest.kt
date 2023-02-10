@@ -10,9 +10,9 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
-import net.corda.libs.cpi.datamodel.entities.findAllCpiMetadata
 import net.corda.libs.cpi.datamodel.entities.findCpkChecksumsNotIn
 import net.corda.libs.cpi.datamodel.entities.findCpkDataEntity
+import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepositoryImpl
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -28,6 +28,7 @@ import kotlin.streams.toList
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {
     private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpi_db")
+    private val cpiMetadataRepository = CpiMetadataRepositoryImpl()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -363,18 +364,18 @@ class CpiEntitiesIntegrationTest {
         println("**** [START] findAllCpiMetadata query as list ****")
         val cpisEagerlyLoaded = emFactory.use { em ->
             em.transaction {
-                em.findAllCpiMetadata().toList() // toList here materialises the stream.
+                cpiMetadataRepository.findAll(em).toList() // toList here materialises the stream.
             }
             // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
         }
 
         cpisEagerlyLoaded.filter {
-            it.name in cpiNames
+            it.cpiId.name in cpiNames
         }.forEach {
-            assertThat(it.cpks.size).isEqualTo(2)
-            it.cpks.forEach { cpkMetadataEntity ->
+            assertThat(it.cpksMetadata.size).isEqualTo(2)
+            it.cpksMetadata.forEach { cpkMetadata ->
                 println("****       invoke metadata property ****")
-                assertThat(cpkMetadataEntity.metadata).isNotNull
+                assertThat(cpkMetadata).isNotNull
             }
         }
         println("**** [END] findAllCpiMetadata query as list ****")
@@ -383,15 +384,15 @@ class CpiEntitiesIntegrationTest {
         println("**** [START] findAllCpiMetadata query as stream ****")
         emFactory.use { em ->
             em.transaction {
-                val cpisLazyLoaded = em.findAllCpiMetadata()
+                val cpisLazyLoaded = cpiMetadataRepository.findAll(em)
 
                 cpisLazyLoaded.filter {
-                    it.name in cpiNames
+                    it.cpiId.name in cpiNames
                 }.forEach {
-                    assertThat(it.cpks.size).isEqualTo(2)
-                    it.cpks.forEach { cpkMetadataEntity ->
+                    assertThat(it.cpksMetadata.size).isEqualTo(2)
+                    it.cpksMetadata.forEach { cpkMetadata ->
                         println("****       invoke metadata property ****")
-                        assertThat(cpkMetadataEntity.metadata).isNotNull
+                        assertThat(cpkMetadata).isNotNull
                     }
                 }
             }

@@ -184,24 +184,6 @@ class CpiMetadataEntity(
             isDeleted,
             entityVersion
         )
-
-    fun toCpiMetadata() =
-        CpiMetadata(
-            cpiId = genCpiIdentifier(),
-            fileChecksum = SecureHash.parse(fileChecksum),
-            cpksMetadata = cpks.map { CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata) },
-            groupPolicy = groupPolicy,
-            version = entityVersion,
-            timestamp = insertTimestamp.getOrNow(),
-            isDeleted = isDeleted
-        )
-
-    private fun genCpiIdentifier() =
-        CpiIdentifier(name, version, SecureHash.parse(signerSummaryHash))
-
-    private fun Instant?.getOrNow(): Instant {
-        return this ?: Instant.now()
-    }
 }
 
 /** The composite primary key for a CpiEntity. */
@@ -211,14 +193,3 @@ data class CpiMetadataEntityKey(
     private val version: String,
     private val signerSummaryHash: String,
 ) : Serializable
-
-fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
-    // Joining the other tables to ensure all data is fetched eagerly
-    return createQuery(
-        "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
-                "INNER JOIN FETCH cpi_.cpks cpk_ " +
-                "INNER JOIN FETCH cpk_.metadata cpk_meta_ " +
-                "ORDER BY cpi_.name, cpi_.version, cpi_.signerSummaryHash",
-        CpiMetadataEntity::class.java
-    ).resultStream
-}

@@ -7,8 +7,7 @@ import javax.persistence.PersistenceException
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
@@ -35,21 +34,25 @@ class MigrationUtilityImplTest {
     private val liquibaseSchemaMigrator = mock<LiquibaseSchemaMigrator>()
     private val migrationUtility = MigrationUtilityImpl(dbConnectionManager, liquibaseSchemaMigrator)
     private val vaultDdlConnectionId = UUID.randomUUID()
-    private val cpk1DogsChangelog = mock<CpkDbChangeLogEntity> {
-        whenever(it.id).thenReturn(CpkDbChangeLogKey("cpk1", "dogs.xml"))
+    private val cpk1DogsChangelog = mock<CpkDbChangeLog> {
+        whenever(it.filePath).thenReturn("dogs.xml")
         whenever(it.content).thenReturn("content-dogs")
+        whenever(it.fileChecksum).thenReturn("cpk1")
     }
-    private val cpk1CatsChangelog = mock<CpkDbChangeLogEntity> {
-        whenever(it.id).thenReturn(CpkDbChangeLogKey("cpk1", "cats.xml"))
+    private val cpk1CatsChangelog = mock<CpkDbChangeLog> {
+        whenever(it.filePath).thenReturn("cats.xml")
         whenever(it.content).thenReturn("content-cats")
+        whenever(it.fileChecksum).thenReturn("cpk1")
     }
-    private val cpk2RabbitsChangelog = mock<CpkDbChangeLogEntity> {
-        whenever(it.id).thenReturn(CpkDbChangeLogKey("cpk2", "rabbits.xml"))
+    private val cpk2RabbitsChangelog = mock<CpkDbChangeLog> {
+        whenever(it.filePath).thenReturn("rabbits.xml")
         whenever(it.content).thenReturn("content-rabbits")
+        whenever(it.fileChecksum).thenReturn("cpk2")
     }
-    private val cpk2SnakesChangelog = mock<CpkDbChangeLogEntity> {
-        whenever(it.id).thenReturn(CpkDbChangeLogKey("cpk2", "snakes.xml"))
+    private val cpk2SnakesChangelog = mock<CpkDbChangeLog> {
+        whenever(it.filePath).thenReturn("snakes.xml")
         whenever(it.content).thenReturn("content-snakes")
+        whenever(it.fileChecksum).thenReturn("cpk2")
     }
 
     @Test

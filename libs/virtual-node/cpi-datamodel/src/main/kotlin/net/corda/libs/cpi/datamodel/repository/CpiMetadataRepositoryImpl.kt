@@ -1,20 +1,44 @@
 package net.corda.libs.cpi.datamodel.repository
 
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.v5.crypto.SecureHash
+import java.time.Instant
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 
 class CpiMetadataRepositoryImpl: CpiMetadataRepository {
-    override fun findAll(entityManager: EntityManager): Stream<CpiMetadata> {
-        val criteriaBuilder = entityManager.criteriaBuilder!!
-        val query = entityManager.criteriaBuilder!!.createQuery(CpiMetadataEntity::class.java)!!
-        val root = query.from(CpiMetadataEntity::class.java)
-        query.select(root)
+    override fun findAll(em: EntityManager): Stream<CpiMetadata> {
+        // Joining the other tables to ensure all data is fetched eagerly
+        return em.createQuery(
+            "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
+                    "INNER JOIN FETCH cpi_.cpks cpk_ " +
+                    "INNER JOIN FETCH cpk_.metadata cpk_meta_ " +
+                    "ORDER BY cpi_.name, cpi_.version, cpi_.signerSummaryHash",
+            CpiMetadataEntity::class.java
+        ).resultStream.map { it.toDto() }
+    }
 
-        // Todo: Double check the comment below before merging the code
-        // Based on the comment "Joining the other tables to ensure all data is fetched eagerly"
-        // Do we still wat to fetch eagerly? If yes, how do you do it?
-        return entityManager.createQuery(query).resultStream.map { it.toCpiMetadata() }
+    /**
+    * Converts an entity to a data transport object.
+    */
+    private fun CpiMetadataEntity.toDto() =
+        CpiMetadata(
+            cpiId = genCpiIdentifier(),
+            fileChecksum = SecureHash.parse(fileChecksum),
+            cpksMetadata = cpks.map { CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata) },
+            groupPolicy = groupPolicy,
+            version = entityVersion,
+            timestamp = insertTimestamp.getOrNow(),
+            isDeleted = isDeleted
+        )
+
+    private fun CpiMetadataEntity.genCpiIdentifier() =
+        CpiIdentifier(name, version, SecureHash.parse(signerSummaryHash))
+
+    private fun Instant?.getOrNow(): Instant {
+        return this ?: Instant.now()
     }
 }
