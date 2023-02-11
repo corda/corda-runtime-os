@@ -123,10 +123,10 @@ class CryptoFlowOpsBusProcessor(
             is ByIdsFlowQuery -> {
                 when (val avroKeyIds = request.keyIds) {
                     is ShortHashes -> {
-                        cryptoOpsClient.lookUpForKeysByIdsProxy(context.tenantId, avroKeyIds)
+                        cryptoOpsClient.lookupKeysByIdsProxy(context.tenantId, avroKeyIds)
                     }
                     is SecureHashes ->
-                        cryptoOpsClient.lookUpForKeysByFullIdsProxy(context.tenantId, avroKeyIds)
+                        cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, avroKeyIds)
                     else -> throw IllegalArgumentException("Unexpected type for key ids: ${avroKeyIds::class.java.name}")
                 }
             }
