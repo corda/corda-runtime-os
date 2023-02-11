@@ -164,12 +164,10 @@ class CryptoOpsClientImpl(
 
     @Suppress("MaxLineLength")
     fun lookUpForKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys {
-        logger.info("Sending '{}'(tenant={})", ByIdsRpcQuery::class.java.simpleName, tenantId)
-        if (logger.isDebugEnabled) {
-            logger.debug(
-                "Sending '{}'(tenant={},candidateKeys={})", ByIdsRpcQuery::class.java.simpleName, tenantId, fullKeyIds.toDto().joinToString()
-            )
-        }
+        logger.info(
+            "Sending '{}'(tenant={},candidateKeys={})", ByIdsRpcQuery::class.java.simpleName, tenantId, fullKeyIds.toDto().joinToString()
+        )
+
         val request = createRequest(tenantId, request = ByIdsRpcQuery(fullKeyIds))
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
