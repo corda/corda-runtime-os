@@ -13,6 +13,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ParameterizedSignatureSpec
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.openssl.PEMKeyPair
 import org.bouncycastle.openssl.PEMParser
@@ -164,6 +165,10 @@ internal class TestCryptoOpsClient(
     }
 
     override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
+        throw UnsupportedOperationException()
+    }
+
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
         throw UnsupportedOperationException()
     }
 

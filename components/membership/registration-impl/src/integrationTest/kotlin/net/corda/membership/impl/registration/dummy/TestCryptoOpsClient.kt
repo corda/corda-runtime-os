@@ -11,6 +11,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
@@ -169,6 +170,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
             result.add(keys[it] ?: throw IllegalArgumentException("No key found under ID: $it."))
         }
         return result
+    }
+
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
+        throw UnsupportedOperationException()
     }
 
     override fun createWrappingKey(

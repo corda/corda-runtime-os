@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -153,6 +154,10 @@ internal class TestCryptoOpsClientImpl @Activate constructor(
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
+    }
+
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
+        throw UnsupportedOperationException()
     }
 
     override fun createWrappingKey(
