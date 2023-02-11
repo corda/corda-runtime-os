@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl.infra
 
+import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyStore
@@ -46,6 +47,7 @@ class TestSigningKeyStore(
                 val encodedKey = context.key.publicKey.encoded
                 SigningCachedKey(
                     id = publicKeyIdFromBytes(encodedKey),
+                    fullId = fullPublicKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -65,6 +67,7 @@ class TestSigningKeyStore(
                 val encodedKey = context.key.publicKey.encoded
                 SigningCachedKey(
                     id = publicKeyIdFromBytes(encodedKey),
+                    fullId = fullPublicKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -150,7 +153,10 @@ class TestSigningKeyStore(
     }
 
     override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
-        TODO("Not yet implemented")
+        val shortKeyIds = fullKeyIds.map {
+            ShortHash.of(it)
+        }
+        return lookupByShortIds(tenantId, shortKeyIds)
     }
 
     override val isRunning: Boolean

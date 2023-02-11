@@ -132,7 +132,6 @@ class SigningKeyStoreImpl @Activate constructor(
             }
         }
 
-        // TODO Test edge scenario where short Ids clash at save
         fun save(tenantId: String, context: SigningKeySaveContext) {
             val keyId: String
             val fullKeyId: String
@@ -311,6 +310,7 @@ class SigningKeyStoreImpl @Activate constructor(
         private fun SigningKeyEntity.toSigningCachedKey(): SigningCachedKey =
             SigningCachedKey(
                 id = keyId,
+                fullId = fullKeyId,
                 tenantId = tenantId,
                 category = category,
                 alias = alias,
