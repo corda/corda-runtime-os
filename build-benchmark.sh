@@ -1,5 +1,6 @@
 # The purpose of this script it so run a number of build benchmark tests. The results of these tests will be sent
 # to Gradle Enterprise so that we can analyse them.
+#
 MAX_WORKERS=4
 TAG_BENCHMARK="build-benchmark"    # Gradle build scan label prefix - should remain stable
 TAG_EXP="${TAG_BENCHMARK}-0001"    # Gradle build scan label suffix - can be incremented in case we want another set of benchmarks, for example to compare a before/after change
