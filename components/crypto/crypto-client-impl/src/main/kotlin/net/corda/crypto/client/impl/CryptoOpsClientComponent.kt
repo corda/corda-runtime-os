@@ -29,6 +29,7 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
@@ -159,6 +160,9 @@ class CryptoOpsClientComponent @Activate constructor(
             tenantId = tenantId,
             ids = ids
         )
+
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> =
+        impl.ops.lookupKeysByFullIds(tenantId, fullKeyIds)
 
     // This path is not being currently used - consider removing it
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =

@@ -7,7 +7,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.core.fullId
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
@@ -65,11 +64,14 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.crypto.sha256Bytes
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -877,24 +879,19 @@ class CryptoProcessorTests {
 
         val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
-        val allKeys = vnodeKeys + vnode2Keys
-
-        val allKeysIds =
-            allKeys.map {
-                it.fullId()
-            }
-        val allKeyFullIds =
-            allKeys.map {
-                it.publicKeyId()
-            }
-
         val vnodeKeysEncoded = vnodeKeys.map { it.encoded }
         val vnode2KeysEncoded = vnode2Keys.map { it.encoded }
 
-        val queriedVnodeKeysEncoded = opsClient.lookup(vnodeId, allKeysIds).map { it.publicKey.toBytes() }
-        val queriedVnode2KeysEncoded = opsClient.lookup(vnodeId2, allKeysIds).map { it.publicKey.toBytes() }
-        val queriedByFullIdsVnodeKeysEncoded = opsClient.lookup(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
-        val queriedByFullIdsVnode2KeysEncoded = opsClient.lookup(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
+        val allKeys = vnodeKeys + vnode2Keys
+        val allKeyIds = allKeys.map { it.publicKeyId() }
+        val allKeyFullIds = allKeys.map { it.fullId() }
+
+        val queriedVnodeKeysEncoded = opsClient.lookup(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedVnode2KeysEncoded = opsClient.lookup(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnodeKeysEncoded =
+            opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnode2KeysEncoded =
+            opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
 
         assertTrue(listsOfBytesAreEqual(vnodeKeysEncoded, queriedVnodeKeysEncoded))
         assertTrue(listsOfBytesAreEqual(vnode2KeysEncoded, queriedVnode2KeysEncoded))
@@ -929,3 +926,6 @@ private fun listsOfBytesAreEqual(bytesList0: List<ByteArray>, bytesList1: List<B
                     outer.contentEquals(inner)
                 }
             }
+
+fun PublicKey.fullId(): SecureHash =
+    SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes())

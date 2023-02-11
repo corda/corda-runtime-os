@@ -8,6 +8,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.PublicKey
@@ -188,6 +189,11 @@ interface CryptoOpsClient : Lifecycle {
      */
     // TODO Needs to be split into two by `SecureHash` (full id) and `ShortHash` (short id)
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey>
+
+    /**
+     * Looks for keys owned by tenant of id [tenantId] from the list of [fullKeyIds].
+     */
+    fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey>
 
     /**
      * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of

@@ -64,22 +64,18 @@ class CryptoOpsClientImpl(
         private fun parseStringsToKeyIds(keyIdsStrings: List<String>): Any {
             if (keyIdsStrings.isEmpty())
                 return ShortHashes(listOf())
-            return if (keyIdsStrings[0].length == 12) {
-                ShortHashes(keyIdsStrings)
-            } else {
-                SecureHashes(
-                    keyIdsStrings.map {
-                        val secureHash = SecureHash.parse(it)
-                        net.corda.data.crypto.SecureHash(secureHash.algorithm, ByteBuffer.wrap(secureHash.bytes))
-                    }
-                )
-            }
+            if (keyIdsStrings[0].length != 12)
+                throw IllegalArgumentException("Only expecting short key ids")
+            return ShortHashes(keyIdsStrings)
         }
 
         private fun SecureHashes.toDto(): List<SecureHash> =
             this.hashes.map {
                 SecureHash(it.algorithm, it.bytes.array())
             }
+
+        private fun SecureHash.toAvro(): net.corda.data.crypto.SecureHash =
+            net.corda.data.crypto.SecureHash(this.algorithm, ByteBuffer.wrap(bytes))
     }
 
     fun getSupportedSchemes(tenantId: String, category: String): List<String> {
@@ -389,16 +385,26 @@ class CryptoOpsClientImpl(
     // TODO Needs to be split into two, SecureHash and ShortHash
     // TODO Users who are using this API need to revisit to determine if they need to migrate to search by full Id
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
-        logger.debug {
-            "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${ids.joinToString()}])"
-        }
-        require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
-            "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
-        }
+        logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${ids.joinToString()}])" }
+        require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
+
+        val request = createRequest(tenantId, ByIdsRpcQuery(parseStringsToKeyIds(ids)))
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
+    }
+
+    fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
+        logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${fullKeyIds.joinToString { it.toString() }}])" }
+        require(fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
+
         val request = createRequest(
             tenantId,
-            ByIdsRpcQuery(parseStringsToKeyIds(ids))
-        )
+            ByIdsRpcQuery(
+                SecureHashes(
+                    fullKeyIds.map {
+                        it.toAvro()
+                    }
+                )
+            ))
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
