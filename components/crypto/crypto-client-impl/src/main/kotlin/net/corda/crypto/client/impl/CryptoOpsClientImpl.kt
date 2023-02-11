@@ -75,6 +75,11 @@ class CryptoOpsClientImpl(
                 )
             }
         }
+
+        private fun SecureHashes.toDto(): List<SecureHash> =
+            this.hashes.map {
+                SecureHash(it.algorithm, it.bytes.array())
+            }
     }
 
     fun getSupportedSchemes(tenantId: String, category: String): List<String> {
@@ -138,22 +143,34 @@ class CryptoOpsClientImpl(
         val publicKeyIds = candidateKeys.map {
             publicKeyIdFromBytes(it.array())
         }
-        return lookUpForKeysByIdsProxy(tenantId, publicKeyIds)
+        return lookUpForKeysByIdsProxy(tenantId, ShortHashes(publicKeyIds))
     }
 
     // This one is normally coming from flows (consider splitting in two)
-    fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys {
+    fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            candidateKeys.joinToString { it }
+            candidateKeys.hashes.joinToString { it }
         )
 
         val request = createRequest(
             tenantId = tenantId,
-            request = ByIdsRpcQuery(parseStringsToKeyIds(candidateKeys))
+            request = ByIdsRpcQuery(candidateKeys)
         )
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
+    }
+
+    @Suppress("MaxLineLength")
+    fun lookUpForKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys {
+        logger.info("Sending '{}'(tenant={})", ByIdsRpcQuery::class.java.simpleName, tenantId)
+        if (logger.isDebugEnabled) {
+            logger.debug(
+                "Sending '{}'(tenant={},candidateKeys={})", ByIdsRpcQuery::class.java.simpleName, tenantId, fullKeyIds.toDto().joinToString()
+            )
+        }
+        val request = createRequest(tenantId, request = ByIdsRpcQuery(fullKeyIds))
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
 

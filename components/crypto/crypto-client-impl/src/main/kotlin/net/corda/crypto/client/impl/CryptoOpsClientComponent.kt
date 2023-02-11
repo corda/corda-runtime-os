@@ -9,6 +9,8 @@ import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -162,8 +164,11 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
 
-    override fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys =
+    override fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys =
         impl.ops.lookUpForKeysByIdsProxy(tenantId, candidateKeys)
+
+    override fun lookUpForKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys =
+        impl.ops.lookUpForKeysByFullIdsProxy(tenantId, fullKeyIds)
 
     override fun signProxy(
         tenantId: String,

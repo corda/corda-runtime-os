@@ -15,6 +15,7 @@ import net.corda.crypto.service.impl.infra.act
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -203,7 +204,9 @@ class CryptoFlowOpsBusProcessorTests {
 
         doAnswer {
             passedTenantId = it.getArgument(0)
-            passedList = it.getArgument<Iterable<String>>(1).toList()
+            passedList = it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
+                SecureHash(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
+            }
             CryptoSigningKeys(
                 listOf(
                     CryptoSigningKey(
@@ -234,7 +237,7 @@ class CryptoFlowOpsBusProcessorTests {
                     )
                 )
             )
-        }.whenever(cryptoOpsClient).lookUpForKeysByIdsProxy(any(), any())
+        }.whenever(cryptoOpsClient).lookUpForKeysByFullIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(
@@ -392,7 +395,9 @@ class CryptoFlowOpsBusProcessorTests {
 
         doAnswer {
             passedTenantId = it.getArgument(0)
-            passedList = it.getArgument<Iterable<String>>(1).toList()
+            passedList = it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
+                SecureHash(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
+            }
             CryptoSigningKeys(
                 listOf(
                     CryptoSigningKey(
@@ -423,7 +428,7 @@ class CryptoFlowOpsBusProcessorTests {
                     )
                 )
             )
-        }.whenever(cryptoOpsClient).lookUpForKeysByIdsProxy(any(), any())
+        }.whenever(cryptoOpsClient).lookUpForKeysByFullIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(
@@ -518,7 +523,9 @@ class CryptoFlowOpsBusProcessorTests {
 
         doAnswer {
             passedTenantIds.add(it.getArgument(0))
-            passedLists.add(it.getArgument<Iterable<String>>(1).toList())
+            passedLists.add(it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
+                SecureHash(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
+            })
             CryptoSigningKeys(
                 listOf(
                     CryptoSigningKey(
@@ -549,7 +556,7 @@ class CryptoFlowOpsBusProcessorTests {
                     )
                 )
             )
-        }.whenever(cryptoOpsClient).lookUpForKeysByIdsProxy(any(), any())
+        }.whenever(cryptoOpsClient).lookUpForKeysByFullIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(
@@ -665,7 +672,9 @@ class CryptoFlowOpsBusProcessorTests {
         doAnswer {
             val tenantId = it.getArgument<String>(0)
             passedTenantIds.add(tenantId)
-            passedLists.add(it.getArgument<Iterable<String>>(1).toList())
+            passedLists.add(it.getArgument<SecureHashes>(1).hashes.map { avroSecureHash ->
+                SecureHash(avroSecureHash.algorithm, avroSecureHash.bytes.array()).toString()
+            })
             if (tenantId == failingTenantId) {
                 throw NotImplementedError()
             }
@@ -699,7 +708,7 @@ class CryptoFlowOpsBusProcessorTests {
                     )
                 )
             )
-        }.whenever(cryptoOpsClient).lookUpForKeysByIdsProxy(any(), any())
+        }.whenever(cryptoOpsClient).lookUpForKeysByFullIdsProxy(any(), any())
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(

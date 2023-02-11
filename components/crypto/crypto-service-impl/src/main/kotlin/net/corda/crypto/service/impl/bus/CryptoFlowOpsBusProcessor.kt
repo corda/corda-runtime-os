@@ -22,8 +22,6 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -34,16 +32,6 @@ class CryptoFlowOpsBusProcessor(
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        private fun avroShortHashesToStrings(shortHashes: ShortHashes): List<String> =
-            shortHashes.hashes.map {
-                ShortHash.of(it).value
-            }
-
-        private fun avroSecureHashesToStrings(secureHashes: SecureHashes): List<String> =
-            secureHashes.hashes.map {
-                SecureHash(it.algorithm, it.bytes.array()).toString()
-            }
     }
 
     override val keyClass: Class<String> = String::class.java
@@ -133,16 +121,14 @@ class CryptoFlowOpsBusProcessor(
                     context = request.context
                 )
             is ByIdsFlowQuery -> {
-                val keyIds = when (val avroKeyIds = request.keyIds) {
-                    is ShortHashes -> avroShortHashesToStrings(avroKeyIds)
-                    is SecureHashes -> avroSecureHashesToStrings(avroKeyIds)
+                when (val avroKeyIds = request.keyIds) {
+                    is ShortHashes -> {
+                        cryptoOpsClient.lookUpForKeysByIdsProxy(context.tenantId, avroKeyIds)
+                    }
+                    is SecureHashes ->
+                        cryptoOpsClient.lookUpForKeysByFullIdsProxy(context.tenantId, avroKeyIds)
                     else -> throw IllegalArgumentException("Unexpected type for key ids: ${avroKeyIds::class.java.name}")
                 }
-
-                cryptoOpsClient.lookUpForKeysByIdsProxy(
-                    tenantId = context.tenantId,
-                    candidateKeys = keyIds
-                )
             }
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
