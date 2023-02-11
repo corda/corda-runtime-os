@@ -888,10 +888,8 @@ class CryptoProcessorTests {
 
         val queriedVnodeKeysEncoded = opsClient.lookup(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
         val queriedVnode2KeysEncoded = opsClient.lookup(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
-        val queriedByFullIdsVnodeKeysEncoded =
-            opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
-        val queriedByFullIdsVnode2KeysEncoded =
-            opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnodeKeysEncoded = opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnode2KeysEncoded = opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
 
         assertTrue(listsOfBytesAreEqual(vnodeKeysEncoded, queriedVnodeKeysEncoded))
         assertTrue(listsOfBytesAreEqual(vnode2KeysEncoded, queriedVnode2KeysEncoded))
