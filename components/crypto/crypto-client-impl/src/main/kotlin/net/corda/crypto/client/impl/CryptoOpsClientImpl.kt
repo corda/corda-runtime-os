@@ -45,6 +45,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
+import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -59,15 +60,6 @@ class CryptoOpsClientImpl(
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        // TODO This converter needs to be removed once we expose SecureHash and ShortHash and types to APIs of this class
-        private fun parseStringsToKeyIds(keyIdsStrings: List<String>): Any {
-            if (keyIdsStrings.isEmpty())
-                return ShortHashes(listOf())
-            if (keyIdsStrings[0].length != 12)
-                throw IllegalArgumentException("Only expecting short key ids")
-            return ShortHashes(keyIdsStrings)
-        }
 
         private fun SecureHashes.toDto(): List<SecureHash> =
             this.hashes.map {
@@ -382,13 +374,15 @@ class CryptoOpsClientImpl(
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
-    // TODO Needs to be split into two, SecureHash and ShortHash
     // TODO Users who are using this API need to revisit to determine if they need to migrate to search by full Id
-    fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
+    fun lookupKeysByShortIds(tenantId: String, ids: List<ShortHash>): List<CryptoSigningKey> {
         logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${ids.joinToString()}])" }
         require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
 
-        val request = createRequest(tenantId, ByIdsRpcQuery(parseStringsToKeyIds(ids)))
+        val request = createRequest(
+            tenantId,
+            ByIdsRpcQuery(ShortHashes(ids.map { it.value }))
+        )
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 

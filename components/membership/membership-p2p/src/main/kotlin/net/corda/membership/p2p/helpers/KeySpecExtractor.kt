@@ -12,6 +12,7 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import java.security.PublicKey
 
 class KeySpecExtractor(
@@ -64,9 +65,11 @@ class KeySpecExtractor(
     }
 
     fun getSpec(publicKey: PublicKey): SignatureSpec {
-        val keyInfo = cryptoOpsClient.lookup(
+        val keyInfo = cryptoOpsClient.lookupKeysByShortIds(
             tenantId,
-            listOf(publicKey.publicKeyId()),
+            listOf(
+                ShortHash.of(publicKey.publicKeyId())
+            ),
         ).firstOrNull() ?: throw CordaRuntimeException("Public key is not owned by $tenantId")
         return keyInfo.spec ?: throw CordaRuntimeException("Can not find spec for ${keyInfo.schemeCodeName}")
     }

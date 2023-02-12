@@ -32,6 +32,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -155,11 +156,8 @@ class CryptoOpsClientComponent @Activate constructor(
             filter = filter
         )
 
-    override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> =
-        impl.ops.lookup(
-            tenantId = tenantId,
-            ids = ids
-        )
+    override fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey> =
+        impl.ops.lookupKeysByShortIds(tenantId, shortKeyIds)
 
     override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> =
         impl.ops.lookupKeysByFullIds(tenantId, fullKeyIds)

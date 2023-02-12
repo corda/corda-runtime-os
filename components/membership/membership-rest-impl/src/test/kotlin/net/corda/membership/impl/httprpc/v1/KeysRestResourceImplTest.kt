@@ -28,6 +28,7 @@ import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.rest.v1.KeysRestResourceImpl
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -50,6 +51,9 @@ class KeysRestResourceImplTest {
         const val CATEGORY = "CATEGORY"
         const val TENANT_ID = "tenantId"
         const val EXCEPTION_MSG = "exception happened"
+
+        fun createKeyId(hexDigit: String): String =
+            "123456789AB$hexDigit"
     }
 
     private val cryptoOpsClient = mock<CryptoOpsClient>()
@@ -67,7 +71,7 @@ class KeysRestResourceImplTest {
         @Test
         fun `listKeys return the correct key IDs`() {
             val keys = (1..4).map {
-                val idToReturn = "id.$it"
+                val idToReturn = createKeyId("$it")
                 val aliasToReturn = "alias-$it"
                 val categoryToReturn = "CATEGORY:$it"
                 val scheme = "scheme($it)"
@@ -100,7 +104,7 @@ class KeysRestResourceImplTest {
 
             val expectedKeys = (1..4).map {
                 KeyMetaData(
-                    keyId = "id.$it",
+                    keyId = createKeyId("$it"),
                     alias = "alias-$it",
                     hsmCategory = "CATEGORY:$it",
                     scheme = "scheme($it)",
@@ -115,7 +119,7 @@ class KeysRestResourceImplTest {
         @Test
         fun `listKeys with IDs calls the correct function`() {
             val keys = (1..3).map {
-                val idToReturn = "id.$it"
+                val idToReturn = createKeyId("$it")
                 val aliasToReturn = "alias-$it"
                 val categoryToReturn = "CATEGORY:$it"
                 val scheme = "scheme($it)"
@@ -130,7 +134,7 @@ class KeysRestResourceImplTest {
                     on { masterKeyAlias } doReturn mka
                 }
             }
-            whenever(cryptoOpsClient.lookup(any(), any())).doReturn(keys)
+            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any())).doReturn(keys)
 
             val list = keysOps.listKeys(
                 tenantId = TENANT_ID,
@@ -143,12 +147,12 @@ class KeysRestResourceImplTest {
                 createdAfter = null,
                 createdBefore = null,
                 schemeCodeName = null,
-                ids = listOf("a", "b"),
+                ids = listOf(createKeyId("A"), createKeyId("B")),
             )
 
             val expectedKeys = (1..3).map {
                 KeyMetaData(
-                    keyId = "id.$it",
+                    keyId = createKeyId("$it"),
                     alias = "alias-$it",
                     hsmCategory = "CATEGORY:$it",
                     scheme = "scheme($it)",
@@ -246,7 +250,7 @@ class KeysRestResourceImplTest {
 
         @Test
         fun `listKeys will throw ServiceUnavailableException when repartition event happens while trying to lookup keys for tenant`() {
-            whenever(cryptoOpsClient.lookup(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
+            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 keysOps.listKeys(
@@ -260,7 +264,7 @@ class KeysRestResourceImplTest {
                     createdAfter = null,
                     createdBefore = null,
                     schemeCodeName = null,
-                    ids = listOf("key1"),
+                    ids = listOf(createKeyId("A")),
                 )
             }
 
@@ -369,14 +373,14 @@ class KeysRestResourceImplTest {
 
         @Test
         fun `generateKeyPem returns the keys PEMs`() {
-            val keyId = "keyId"
+            val keyId = createKeyId("A")
             val holdingIdentityShortHash = "holdingIdentityShortHash"
             val publicKeyBytes = "123".toByteArray()
             val key = mock<CryptoSigningKey> {
                 on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
             }
             val decodedPublicKey = mock<PublicKey>()
-            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByShortIds(holdingIdentityShortHash, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
             whenever(keyEncodingService.decodePublicKey(publicKeyBytes)).doReturn(decodedPublicKey)
             whenever(keyEncodingService.encodeAsString(decodedPublicKey)).doReturn("PEM")
 
@@ -387,9 +391,9 @@ class KeysRestResourceImplTest {
 
         @Test
         fun `generateKeyPem throws Exception when the key is unknwon`() {
-            val keyId = "keyId"
+            val keyId = createKeyId("A")
             val holdingIdentityShortHash = "holdingIdentityShortHash"
-            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(emptyList())
+            whenever(cryptoOpsClient.lookupKeysByShortIds(holdingIdentityShortHash, listOf(ShortHash.of(keyId)))).doReturn(emptyList())
 
             assertThrows<ResourceNotFoundException> {
                 keysOps.generateKeyPem(holdingIdentityShortHash, keyId)
@@ -398,11 +402,11 @@ class KeysRestResourceImplTest {
 
         @Test
         fun `generateKeyPem throws ServiceUnavailableException when repartition event happens while trying to lookup keys for tenant`() {
-            whenever(cryptoOpsClient.lookup(any(), any()))
+            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any()))
                 .doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
-                keysOps.generateKeyPem(TENANT_ID, "keyId")
+                keysOps.generateKeyPem(TENANT_ID, createKeyId("A"))
             }
 
             assertThat(details.message).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")

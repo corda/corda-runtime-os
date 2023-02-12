@@ -57,6 +57,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -345,9 +346,10 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.lookup(
-                knownTenantId, listOf(
-                    keyPair.public.publicKeyId()
+            component.lookupKeysByShortIds(
+                knownTenantId,
+                listOf(
+                    ShortHash.of(keyPair.public.publicKeyId())
                 )
             )
         }
@@ -397,10 +399,10 @@ class CryptoOpsClientComponentTests {
             )
         }
         val ids = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map {
-            keyPair.public.publicKeyId()
+            ShortHash.of(keyPair.public.publicKeyId())
         }
         assertThrows(IllegalArgumentException::class.java) {
-            component.lookup(knownTenantId, ids)
+            component.lookupKeysByShortIds(knownTenantId, ids)
         }
     }
 
@@ -415,7 +417,7 @@ class CryptoOpsClientComponentTests {
         }
         val id = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
         val result = sender.act {
-            component.lookup(knownTenantId, listOf(id))
+            component.lookupKeysByShortIds(knownTenantId, listOf(ShortHash.of(id)))
         }
         assertEquals(0, result.value.size)
         val query = assertOperationType<ByIdsRpcQuery>()
@@ -922,7 +924,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByShortIds(knownTenantId, emptyList())
         }
     }
 
@@ -945,7 +947,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByShortIds(knownTenantId, emptyList())
         }
     }
 
@@ -968,7 +970,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByShortIds(knownTenantId, emptyList())
         }
     }
 
@@ -988,7 +990,7 @@ class CryptoOpsClientComponentTests {
         )
         setupCompletedResponse { throw error }
         val exception = assertThrows(expected) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByShortIds(knownTenantId, emptyList())
         }
         assertEquals(error.message, exception.message)
     }
@@ -1005,7 +1007,7 @@ class CryptoOpsClientComponentTests {
         )
         setupCompletedResponse { throw error }
         val exception = assertThrows(CryptoException::class.java) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByShortIds(knownTenantId, emptyList())
         }
         assertSame(error, exception.cause)
     }

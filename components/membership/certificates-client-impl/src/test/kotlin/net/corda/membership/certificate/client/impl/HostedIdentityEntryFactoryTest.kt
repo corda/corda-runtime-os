@@ -45,6 +45,7 @@ class HostedIdentityEntryFactoryTest {
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val PUBLIC_CLUSTER_KEY_PEM = "publicClusterKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
+        const val SESSION_KEY_ID = "AB0123456789"
     }
 
     private val nodeInfo = mock<VirtualNodeInfo> {
@@ -69,7 +70,7 @@ class HostedIdentityEntryFactoryTest {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
     }
     private val filter = argumentCaptor<Map<String, String>>()
-    private val ids = argumentCaptor<List<String>>()
+    private val ids = argumentCaptor<List<ShortHash>>()
     private val cryptoOpsClient = mock<CryptoOpsClient> {
         on {
             lookup(
@@ -90,7 +91,7 @@ class HostedIdentityEntryFactoryTest {
             )
         } doReturn listOf(clusterSessionKey)
         on {
-            lookup(
+            lookupKeysByShortIds(
                 eq(VALID_NODE.toString()),
                 ids.capture()
             )
@@ -212,7 +213,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
@@ -225,7 +226,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
@@ -256,7 +257,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
@@ -282,7 +283,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
@@ -295,13 +296,13 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
         assertThat(ids.firstValue)
             .hasSize(1)
-            .contains("id1")
+            .contains(ShortHash.of(SESSION_KEY_ID))
     }
 
     @Test
@@ -403,7 +404,7 @@ class HostedIdentityEntryFactoryTest {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
         )

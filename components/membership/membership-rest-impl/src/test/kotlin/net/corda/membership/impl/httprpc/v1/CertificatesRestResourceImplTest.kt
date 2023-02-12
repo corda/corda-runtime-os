@@ -124,7 +124,7 @@ class CertificatesRestResourceImplTest {
     @Nested
     inner class GenerateCsrTests {
         private val holdingIdentityShortHash = "id"
-        private val keyId = "keyId"
+        private val keyId = "AB0123456789"
         private val x500Name = "CN=Alice"
         private val publicKeyBytes = "123".toByteArray()
         private val key = mock<CryptoSigningKey> {
@@ -145,7 +145,12 @@ class CertificatesRestResourceImplTest {
 
         @BeforeEach
         fun setUp() {
-            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(listOf(key))
+            whenever(
+                cryptoOpsClient.lookupKeysByShortIds(
+                    holdingIdentityShortHash,
+                    listOf(ShortHash.of(keyId))
+                )
+            ).doReturn(listOf(key))
             whenever(
                 cryptoOpsClient.sign(
                     eq(holdingIdentityShortHash),
@@ -166,7 +171,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws exception if key is not available`() {
-            whenever(cryptoOpsClient.lookup(any(), any())).doReturn(emptyList())
+            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any())).doReturn(emptyList())
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
@@ -181,7 +186,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws ServiceUnavailableException when repartition event happens while trying to retrieve key`() {
-            whenever(cryptoOpsClient.lookup(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
+            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 certificatesOps.generateCsr(
@@ -193,7 +198,7 @@ class CertificatesRestResourceImplTest {
                 )
             }
 
-            assertThat(details.message).isEqualTo("Could not find key with ID keyId for id: Repartition Event!")
+            assertThat(details.message).isEqualTo("Could not find key with ID $keyId for id: Repartition Event!")
         }
 
         @Test
@@ -354,7 +359,7 @@ class CertificatesRestResourceImplTest {
         fun `it will throw an exception for session certificate cluster key where the member can not be found`() {
             whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
             whenever(virtualNodeInfoReadService.getAll()).doReturn(emptyList())
-            whenever(cryptoOpsClient.lookup(P2P, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByShortIds(P2P, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
 
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(
@@ -392,7 +397,7 @@ class CertificatesRestResourceImplTest {
                     emptyMap()
                 )
             )
-            whenever(cryptoOpsClient.lookup(P2P, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByShortIds(P2P, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
 
             val csr = certificatesOps.generateCsr(
                 P2P,
@@ -435,7 +440,7 @@ class CertificatesRestResourceImplTest {
                     emptyMap()
                 )
             )
-            whenever(cryptoOpsClient.lookup(tenantId, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByShortIds(tenantId, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
 
             val csr = certificatesOps.generateCsr(
                 tenantId,
@@ -478,7 +483,7 @@ class CertificatesRestResourceImplTest {
                     emptyMap()
                 )
             )
-            whenever(cryptoOpsClient.lookup(tenantId, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByShortIds(tenantId, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
 
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(

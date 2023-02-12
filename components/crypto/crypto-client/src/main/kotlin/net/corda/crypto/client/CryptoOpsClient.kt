@@ -10,6 +10,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.ShortHash
 import java.security.KeyPair
 import java.security.PublicKey
 import kotlin.jvm.Throws
@@ -180,18 +181,17 @@ interface CryptoOpsClient : Lifecycle {
     ): List<CryptoSigningKey>
 
     /**
-     * Returns list of keys for provided key ids.
-     *
-     * @param tenantId the tenant's id which the keys belong to.
-     * @param ids The list of the key ids to look up for, the maximum number of items is 20.
+     * Looks for keys owned by tenant of id [tenantId] from the list of [shortKeyIds].
      *
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
     // TODO Needs to be split into two by `SecureHash` (full id) and `ShortHash` (short id)
-    fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey>
+    fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey>
 
     /**
      * Looks for keys owned by tenant of id [tenantId] from the list of [fullKeyIds].
+     *
+     * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
     fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey>
 

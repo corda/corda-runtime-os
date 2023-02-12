@@ -191,7 +191,7 @@ class StaticMemberRegistrationServiceTest {
         on {
             generateKeyPair(any(), any(), eq("${charlieId.value}-LEDGER"), any(), any<Map<String, String>>())
         } doReturn charlieKey
-        on { lookup(any(), any()) } doReturn listOf(cryptoSigningKey)
+        on { lookupKeysByShortIds(any(), any()) } doReturn listOf(cryptoSigningKey)
     }
 
     private val configurationReadService: ConfigurationReadService = mock()

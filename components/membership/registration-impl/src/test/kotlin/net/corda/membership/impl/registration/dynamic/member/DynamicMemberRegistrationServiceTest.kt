@@ -86,6 +86,7 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -119,11 +120,11 @@ import javax.security.auth.x500.X500Principal
 class DynamicMemberRegistrationServiceTest {
     private companion object {
         const val SESSION_KEY = "1234"
-        const val SESSION_KEY_ID = "1"
+        const val SESSION_KEY_ID = "ABC123456789"
         const val LEDGER_KEY = "5678"
-        const val LEDGER_KEY_ID = "2"
+        const val LEDGER_KEY_ID = "BBC123456789"
         const val NOTARY_KEY = "2020"
-        const val NOTARY_KEY_ID = "4"
+        const val NOTARY_KEY_ID = "CBC123456789"
         const val PUBLISHER_CLIENT_ID = "dynamic-member-registration-service"
         const val GROUP_NAME = "dummy_group"
 
@@ -156,7 +157,7 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val sessionCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY.toByteArray())
-        on { id } doReturn "1"
+        on { id } doReturn SESSION_KEY_ID
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
         on { category } doReturn SESSION_INIT
     }
@@ -165,7 +166,7 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val ledgerCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(LEDGER_KEY.toByteArray())
-        on { id } doReturn "2"
+        on { id } doReturn LEDGER_KEY_ID
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
         on { category } doReturn LEDGER
     }
@@ -204,9 +205,9 @@ class DynamicMemberRegistrationServiceTest {
             )
         )
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookup(memberId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
-        on { lookup(memberId.value, listOf(LEDGER_KEY_ID)) } doReturn listOf(ledgerCryptoSigningKey)
-        on { lookup(memberId.value, listOf(NOTARY_KEY_ID)) } doReturn listOf(notaryCryptoSigningKey)
+        on { lookupKeysByShortIds(memberId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookupKeysByShortIds(memberId.value, listOf(ShortHash.of(LEDGER_KEY_ID))) } doReturn listOf(ledgerCryptoSigningKey)
+        on { lookupKeysByShortIds(memberId.value, listOf(ShortHash.of(NOTARY_KEY_ID))) } doReturn listOf(notaryCryptoSigningKey)
         on {
             sign(
                 any(),
@@ -724,7 +725,7 @@ class DynamicMemberRegistrationServiceTest {
             assertThat(memberContext.firstValue.toMap())
                 .containsEntry("corda.roles.0", "notary")
                 .containsKey("corda.notary.service.name")
-                .containsEntry("corda.notary.keys.0.id", "4")
+                .containsEntry("corda.notary.keys.0.id", NOTARY_KEY_ID)
                 .containsEntry("corda.notary.keys.0.pem", "1234")
                 .containsKey("corda.notary.keys.0.hash")
                 .containsEntry("corda.notary.keys.0.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)

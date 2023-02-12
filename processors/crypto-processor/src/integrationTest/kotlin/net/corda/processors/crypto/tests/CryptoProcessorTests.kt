@@ -72,6 +72,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -429,9 +430,9 @@ class CryptoProcessorTests {
     fun `Should not find unknown public key by its id`(
         tenantId: String
     ) {
-        val found = opsClient.lookup(
+        val found = opsClient.lookupKeysByShortIds(
             tenantId = tenantId,
-            ids = listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))
+            shortKeyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
         assertEquals(0, found.size)
     }
@@ -597,9 +598,9 @@ class CryptoProcessorTests {
         category: String,
         externalId: String?
     ) {
-        val found = opsClient.lookup(
+        val found = opsClient.lookupKeysByShortIds(
             tenantId = tenantId,
-            ids = listOf(publicKey.publicKeyId())
+            shortKeyIds = listOf(ShortHash.of(publicKey.publicKeyId()))
         )
         assertEquals(1, found.size)
         assertEquals(publicKey.publicKeyId(), found[0].id)
@@ -883,11 +884,11 @@ class CryptoProcessorTests {
         val vnode2KeysEncoded = vnode2Keys.map { it.encoded }
 
         val allKeys = vnodeKeys + vnode2Keys
-        val allKeyIds = allKeys.map { it.publicKeyId() }
+        val allKeyIds = allKeys.map { it.publicKeyId() }.map { ShortHash.of(it) }
         val allKeyFullIds = allKeys.map { it.fullId() }
 
-        val queriedVnodeKeysEncoded = opsClient.lookup(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
-        val queriedVnode2KeysEncoded = opsClient.lookup(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedVnodeKeysEncoded = opsClient.lookupKeysByShortIds(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedVnode2KeysEncoded = opsClient.lookupKeysByShortIds(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
         val queriedByFullIdsVnodeKeysEncoded = opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
         val queriedByFullIdsVnode2KeysEncoded = opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
 

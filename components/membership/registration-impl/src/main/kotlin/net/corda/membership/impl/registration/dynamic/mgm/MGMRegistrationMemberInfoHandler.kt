@@ -35,6 +35,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -78,9 +79,9 @@ internal class MGMRegistrationMemberInfoHandler(
 
     @Suppress("ThrowsCount")
     private fun getKeyFromId(keyId: String, tenantId: String, expectedCategory: String): PublicKey {
-        return cryptoOpsClient.lookup(
+        return cryptoOpsClient.lookupKeysByShortIds(
             tenantId,
-            listOf(keyId)
+            listOf(ShortHash.of(keyId))
         ).firstOrNull()?.let {
             if (it.category != expectedCategory) {
                 throw MGMRegistrationContextValidationException(
