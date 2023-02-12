@@ -96,15 +96,16 @@ class CryptoOpsClientImpl(
             if (usingFullIds) {
                 SecureHashes(
                     candidateKeys.map {
-                        val secureHash =
-                            it.fullId(schemeMetadata, digestService).also { secureHash -> keyIdsForLogging.add(secureHash.toString()) }
-                        net.corda.data.crypto.SecureHash(secureHash.algorithm, ByteBuffer.wrap(secureHash.bytes))
+                        val secureHash = it.fullId(schemeMetadata, digestService)
+                            .also { secureHash -> keyIdsForLogging.add(secureHash.toString()) }
+                        secureHash.toAvro()
                     }
                 )
             } else {
                 ShortHashes(
                     candidateKeys.map {
-                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it)).also { shortHash -> keyIdsForLogging.add(shortHash)}
+                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
+                            .also { shortHash -> keyIdsForLogging.add(shortHash) }
                     }
                 )
             }
@@ -134,7 +135,7 @@ class CryptoOpsClientImpl(
         return lookupKeysByShortIdsProxy(tenantId, ShortHashes(publicKeyIds))
     }
 
-    // This one is normally coming from flows (consider splitting in two)
+    // This one is normally coming from flows
     fun lookupKeysByShortIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
