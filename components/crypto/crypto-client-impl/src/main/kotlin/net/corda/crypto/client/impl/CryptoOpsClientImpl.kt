@@ -131,11 +131,11 @@ class CryptoOpsClientImpl(
         val publicKeyIds = candidateKeys.map {
             publicKeyIdFromBytes(it.array())
         }
-        return lookUpForKeysByIdsProxy(tenantId, ShortHashes(publicKeyIds))
+        return lookupKeysByShortIdsProxy(tenantId, ShortHashes(publicKeyIds))
     }
 
     // This one is normally coming from flows (consider splitting in two)
-    fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys {
+    fun lookupKeysByShortIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
@@ -151,7 +151,7 @@ class CryptoOpsClientImpl(
     }
 
     @Suppress("MaxLineLength")
-    fun lookUpForKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys {
+    fun lookupKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})", ByIdsRpcQuery::class.java.simpleName, tenantId, fullKeyIds.toDto().joinToString()
         )

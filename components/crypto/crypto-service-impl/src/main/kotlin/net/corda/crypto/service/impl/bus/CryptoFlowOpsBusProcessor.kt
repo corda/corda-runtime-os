@@ -123,7 +123,7 @@ class CryptoFlowOpsBusProcessor(
             is ByIdsFlowQuery -> {
                 when (val avroKeyIds = request.keyIds) {
                     is ShortHashes -> {
-                        cryptoOpsClient.lookupKeysByIdsProxy(context.tenantId, avroKeyIds)
+                        cryptoOpsClient.lookupKeysByShortIdsProxy(context.tenantId, avroKeyIds)
                     }
                     is SecureHashes ->
                         cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, avroKeyIds)
