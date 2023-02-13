@@ -33,10 +33,7 @@ import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
-import javax.persistence.PersistenceException
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException

@@ -6,14 +6,10 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
-import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
-import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -251,10 +247,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
     data class UpgradeTransactionCompleted(
         val upgradedVirtualNodeInfo: VirtualNodeInfo,
-        val cpkChangelogs: List<CpkDbChangeLog>,
-        val vaultDdlConnectionId: UUID?,
-        val vaultDmlConnectionId: UUID
-        val cpkChangelogs: List<CpkDbChangeLogEntity>
+        val cpkChangelogs: List<CpkDbChangeLog>
     )
 
     private fun VirtualNodeUpgradeRequest.validateMandatoryFields() {
