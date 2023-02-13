@@ -1,9 +1,14 @@
 package net.corda.ledger.consensual.flow.impl.transaction.verifier
 
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
-@Suppress("UNUSED", "UNUSED_PARAMETER")
-fun verifyMetadata(metadata: TransactionMetadata) {
-    // TODO(CORE-5982 more verifications)
-    // TODO(CORE-5982 ? metadata verifications: nulls, order of CPKs, at least one CPK?)) Maybe from json schema?
+fun verifyMetadata(transactionMetadata: TransactionMetadata) {
+    check(transactionMetadata.getLedgerModel() == ConsensualLedgerTransactionImpl::class.java.canonicalName) {
+        "The ledger model in the metadata of the transaction does not match with the expectation of the ledger. " +
+                "'${transactionMetadata.getLedgerModel()}' != '${ConsensualLedgerTransactionImpl::class.java.canonicalName}'"
+    }
+    check(transactionMetadata.getTransactionSubtype() == null) {
+        "The transaction subtype in the metadata of the transaction should be empty for Consensual Transactions."
+    }
 }
