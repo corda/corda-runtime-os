@@ -12,7 +12,7 @@ dependencies {
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-config-schema'
     implementation project(":libs:messaging:db-message-bus-datamodel")

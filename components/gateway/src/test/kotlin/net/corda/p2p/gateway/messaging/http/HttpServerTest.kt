@@ -85,7 +85,7 @@ class HttpServerTest {
         groupFactory.close()
     }
 
-    private val server = HttpServer(listener, configuration, KeyStoreWithPassword(mock(), ""))
+    private val server = HttpServer(listener, configuration, KeyStoreWithPassword(mock(), ""), null)
 
     @Test
     fun `write will throw an exception if the channel is not opened`() {

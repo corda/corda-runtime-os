@@ -1,10 +1,10 @@
 package net.corda.membership.httprpc.v1.types.response
 
-data class RpcMemberInfoList(
-    val members: List<RpcMemberInfo>
+data class RestMemberInfoList(
+    val members: List<RestMemberInfo>
 )
 
-data class RpcMemberInfo(
+data class RestMemberInfo(
     val memberContext: Map<String, String?>,
     val mgmContext: Map<String, String?>
 )

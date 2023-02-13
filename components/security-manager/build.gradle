@@ -17,7 +17,7 @@ configurations {
 }
 
 dependencies {
-    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"

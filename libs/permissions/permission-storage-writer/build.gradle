@@ -15,7 +15,7 @@ dependencies {
 
     implementation project(":libs:messaging:messaging")
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "javax.persistence:javax.persistence-api"
 
     implementation project(":libs:lifecycle:lifecycle")

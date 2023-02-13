@@ -11,7 +11,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api "net.corda:corda-avro-schema"
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     api project(":libs:lifecycle:lifecycle")
     api project(":libs:permissions:permission-cache-common")

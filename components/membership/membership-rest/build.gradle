@@ -3,13 +3,13 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Membership HTTP RPC definition'
+description 'Membership REST definition'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation project(":libs:rest:rest")
 }

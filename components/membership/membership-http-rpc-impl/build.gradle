@@ -16,7 +16,7 @@ dependencies {
     implementation project(":components:membership:certificates-client")
     implementation project(":components:membership:membership-client")
     implementation project(":components:membership:membership-group-read")
-    implementation project(":components:membership:membership-http-rpc")
+    implementation project(":components:membership:membership-rest")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:virtual-node:virtual-node-info-read-service-rpc-extensions")
     implementation project(':components:configuration:configuration-read-service')
@@ -31,7 +31,7 @@ dependencies {
 
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-membership"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "commons-validator:commons-validator:$commonsVersion"
 
