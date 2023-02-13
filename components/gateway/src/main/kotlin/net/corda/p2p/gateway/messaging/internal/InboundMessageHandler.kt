@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
@@ -25,6 +24,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
+import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -43,7 +43,7 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    cryptoOpsClient: CryptoOpsClient,
+    commonComponents: CommonComponents,
     private val avroSchemaRegistry: AvroSchemaRegistry
 ) : HttpServerListener, LifecycleWithDominoTile {
 
@@ -70,13 +70,18 @@ internal class InboundMessageHandler(
         messagingConfiguration
     )
 
+    private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        messagingConfiguration
+    )
+
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         this,
-        subscriptionFactory,
-        messagingConfiguration,
-        cryptoOpsClient
+        commonComponents,
+        dynamicCertificateSubjectStore,
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -85,11 +90,13 @@ internal class InboundMessageHandler(
             sessionPartitionMapper.dominoTile.coordinatorName,
             p2pInPublisher.dominoTile.coordinatorName,
             server.dominoTile.coordinatorName,
+            dynamicCertificateSubjectStore.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             sessionPartitionMapper.dominoTile.toNamedLifecycle(),
             p2pInPublisher.dominoTile.toNamedLifecycle(),
             server.dominoTile.toNamedLifecycle(),
+            dynamicCertificateSubjectStore.dominoTile.toNamedLifecycle(),
         )
     )
 

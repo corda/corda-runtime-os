@@ -33,21 +33,21 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
+        val exception = assertThrows(IllegalStateException::class.java) {
             consensualTransactionBuilder.toSignedTransaction()
         }
-        assertEquals("At least one consensual state is required", exception.message)
+        assertEquals("At least one consensual state is required.", exception.message)
     }
 
     @Test
     fun `cannot build Transaction with Consensual States without participants`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
+        val exception = assertThrows(IllegalStateException::class.java) {
             consensualTransactionBuilder
                 .withStates(consensualStateExample)
                 .withStates(ConsensualStateClassExample("test", emptyList()))
                 .toSignedTransaction()
         }
-        assertEquals("All consensual states must have participants", exception.message)
+        assertEquals("All consensual states must have participants.", exception.message)
     }
 
     @Test

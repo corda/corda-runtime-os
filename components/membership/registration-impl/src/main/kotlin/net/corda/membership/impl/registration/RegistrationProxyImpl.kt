@@ -13,7 +13,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -45,8 +45,8 @@ class RegistrationProxyImpl @Activate constructor(
         fun register(
             registrationId: UUID,
             member: HoldingIdentity,
-            context: Map<String, String>)
-        : MembershipRequestRegistrationResult
+            context: Map<String, String>
+        )
     }
 
     companion object {
@@ -132,15 +132,15 @@ class RegistrationProxyImpl @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
+    ) = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationProxy {
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult =
-            throw IllegalStateException("RegistrationProxy currently inactive.")
+        ) =
+            throw NotReadyMembershipRegistrationException("RegistrationProxy currently inactive.")
     }
 
     private inner class ActiveImpl: InnerRegistrationProxy {
@@ -148,7 +148,7 @@ class RegistrationProxyImpl @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult {
+        ) {
             val protocol = try {
                 groupPolicyProvider.getGroupPolicy(member)?.registrationProtocol
             } catch (e: BadGroupPolicyException) {
@@ -161,7 +161,7 @@ class RegistrationProxyImpl @Activate constructor(
                 null
             } ?: throw RegistrationProtocolSelectionException("Could not find group policy file for holding identity: [$member]")
 
-            return getRegistrationService(protocol).register(registrationId, member, context)
+            getRegistrationService(protocol).register(registrationId, member, context)
         }
 
         private fun getRegistrationService(protocol: String): MemberRegistrationService {

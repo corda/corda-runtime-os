@@ -1,6 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.flow.flows.Payload
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
@@ -10,13 +12,32 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
+import java.security.InvalidParameterException
+
+/**
+ * Initiator will notify the receiver side with UNRECOVERABLE if the notarization error cannot be recovered and the
+ * transaction can be updated to INVALID.
+ */
+enum class FinalityNotarizationFailureType(val value: String) {
+    UNRECOVERABLE("U"),
+    OTHER("O");
+
+    companion object {
+        fun String.toFinalityNotarizationFailureType() = when {
+            this.equals(UNRECOVERABLE.value, ignoreCase = true) -> UNRECOVERABLE
+            this.equals(OTHER.value, ignoreCase = true) -> OTHER
+            else -> throw InvalidParameterException("FinalityNotarizationFailureType '$this' is not supported")
+        }
+    }
+
+}
 
 @CordaSystemFlow
 abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
@@ -42,20 +63,20 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @Suspendable
     protected fun verifySignature(
-        transactionId: SecureHash,
+        transaction: UtxoSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata,
-        onFailure: ((message: String) -> Unit)? = null
+        sessionToNotify: FlowSession? = null
     ) {
         try {
-            log.debug { "Verifying signature($signature) of transaction: $transactionId" }
-            transactionSignatureService.verifySignature(transactionId, signature)
-            log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transactionId" }
+            log.debug { "Verifying signature($signature) of transaction: $transaction.id" }
+            transactionSignatureService.verifySignature(transaction, signature)
+            log.debug { "Successfully verified signature($signature) by ${signature.by.encoded} (encoded) for transaction $transaction.id" }
         } catch (e: Exception) {
             val message = "Failed to verify transaction's signature($signature) by ${signature.by.encoded} (encoded) for " +
-                    "transaction ${transactionId}. Message: ${e.message}"
+                    "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
-            if (onFailure != null)
-                onFailure(message)
+            persistInvalidTransaction(transaction)
+            sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
             throw e
         }
     }
@@ -65,7 +86,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         transaction: UtxoSignedTransactionInternal,
         signature: DigitalSignatureAndMetadata
     ): UtxoSignedTransactionInternal {
-        verifySignature(transaction.id, signature)
+        verifySignature(transaction, signature)
         return transaction.addSignature(signature)
     }
 
@@ -83,7 +104,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
                     "Notary signature's key: ${signature.by}"
                 )
             }
-            transactionSignatureService.verifyNotarySignature(transaction.id, signature)
+            transactionSignatureService.verifySignature(transaction, signature)
             log.debug {
                 "Successfully verified signature($signature) by notary ${transaction.notary} for transaction ${transaction.id}"
             }
@@ -91,6 +112,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
             val message ="Failed to verify transaction's signature($signature) by notary ${transaction.notary} for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
+            persistInvalidTransaction(transaction)
             throw e
         }
         return transaction.addSignature(signature)
@@ -98,7 +120,34 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @Suspendable
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
-        transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
+        try {
+            transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
+        } catch(e: Exception){
+            persistInvalidTransaction(signedTransaction)
+            throw e
+        }
     }
 
+    @Suspendable
+    protected fun persistInvalidTransaction(transaction: UtxoSignedTransaction) {
+        persistenceService.persist(transaction, TransactionStatus.INVALID)
+        log.debug { "Recorded transaction as invalid: ${transaction.id}" }
+    }
+
+    @Suspendable
+    protected fun verifyExistingSignatures(
+        initialTransaction: UtxoSignedTransactionInternal,
+        sessionToNotify: FlowSession? = null
+    ) {
+        if (initialTransaction.signatures.isEmpty()){
+            val message = "Received initial transaction without signatures."
+            log.warn(message)
+            persistInvalidTransaction(initialTransaction)
+            sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
+            throw CordaRuntimeException(message)
+        }
+        initialTransaction.signatures.forEach {
+            verifySignature(initialTransaction, it, sessionToNotify)
+        }
+    }
 }

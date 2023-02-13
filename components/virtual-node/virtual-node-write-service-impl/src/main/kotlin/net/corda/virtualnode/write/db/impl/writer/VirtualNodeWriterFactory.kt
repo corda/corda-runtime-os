@@ -64,7 +64,8 @@ internal class VirtualNodeWriterFactory(
         virtualNodeInfoPublisher: Publisher,
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
-        val oldVirtualNodeEntityRepository = VirtualNodeEntityRepository(this.dbConnectionManager.getClusterEntityManagerFactory())
+        val oldVirtualNodeEntityRepository =
+            VirtualNodeEntityRepository(this.dbConnectionManager.getClusterEntityManagerFactory())
         val migrationUtility = MigrationUtilityImpl(dbConnectionManager, LiquibaseSchemaMigratorImpl())
 
         val virtualNodeUpgradeHandler = VirtualNodeUpgradeOperationHandler(
@@ -92,8 +93,8 @@ internal class VirtualNodeWriterFactory(
 
     /**
      * Creates a [RPCSubscription]<VirtualNodeCreationRequest, VirtualNodeCreationResponse> using the provided
-     * [messagingConfig]. The subscription is to the [VIRTUAL_NODE_CREATION_REQUEST_TOPIC] topic, and handles requests using a
-     * [VirtualNodeWriterProcessor].
+     * [messagingConfig]. The subscription is to the [VIRTUAL_NODE_CREATION_REQUEST_TOPIC] topic, and handles requests
+     * using a [VirtualNodeWriterProcessor].
      */
     private fun createRPCSubscription(
         messagingConfig: SmartConfig,
@@ -109,12 +110,16 @@ internal class VirtualNodeWriterFactory(
         )
         val virtualNodeEntityRepository =
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
-        val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
+        val vNodeDbFactory = VirtualNodeDbFactoryImpl(
+            dbConnectionManager,
+            dbAdmin,
+            schemaMigrator
+        )
         val processor = VirtualNodeWriterProcessor(
             vnodePublisher,
             dbConnectionManager,
             virtualNodeEntityRepository,
-            vnodeDbFactory,
+            vNodeDbFactory,
             groupPolicyParser,
             UTCClock(),
             cpkDbChangeLogRepository

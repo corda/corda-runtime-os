@@ -64,7 +64,8 @@ class UtxoDemoFlow : ClientStartableFlow {
             }
             val testUtxoState = TestUtxoState(
                 request.input,
-                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
+                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first(),
+                request.members + listOf(myInfo.name.toString())
             )
 
             val notary = notaryLookup.notaryServices.single()

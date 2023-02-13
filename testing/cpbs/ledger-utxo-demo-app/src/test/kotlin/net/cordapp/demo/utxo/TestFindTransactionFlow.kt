@@ -49,7 +49,7 @@ class TestFindTransactionFlow {
         val keyGenerator = KeyPairGenerator.getInstance("EC")
 
         val participantKey = keyGenerator.generateKeyPair().public
-        val testState = TestUtxoState("text", listOf(participantKey) )
+        val testState = TestUtxoState("text", listOf(participantKey), listOf("") )
 
         val ledgerTx = mock<UtxoLedgerTransaction>().apply {
             whenever(id).thenReturn(txIdGood)
