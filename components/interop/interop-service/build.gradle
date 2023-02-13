@@ -21,6 +21,20 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:crypto:cipher-suite')
+    implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:membership:membership-impl")
+    implementation project(":libs:membership:schema-validation")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:platform-info")
+    implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:utilities")
+    implementation project(":libs:utilities")
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':libs:chunking:chunking-core')
+    implementation project(":libs:membership:membership-common")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
@@ -39,6 +53,21 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    integrationTestImplementation project(':testing:db-message-bus-testkit')
+    integrationTestRuntimeOnly project(":libs:utilities")
+    integrationTestRuntimeOnly project(":libs:virtual-node:virtual-node-info")
+    integrationTestRuntimeOnly project(":libs:layered-property-map")
+    testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":testing:test-utilities")
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":testing:test-utilities")
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

@@ -21,6 +21,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.interop.InteropService
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -62,6 +63,9 @@ class InteropServiceIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
+
+//    @InjectService(timeout = 4000)
+//    lateinit var memberInfoFactory: MemberInfoFactory
 
     @InjectService(timeout = 4000)
     lateinit var configService: ConfigurationReadService

@@ -14,6 +14,10 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -34,7 +38,11 @@ class InteropService @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = MemberInfoFactory::class)
+    private val memberInfoFactory: MemberInfoFactory
 ) : Lifecycle {
 
     companion object {
@@ -47,6 +55,7 @@ class InteropService @Activate constructor(
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+    private var _publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -81,6 +90,7 @@ class InteropService @Activate constructor(
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
         coordinator.createManagedResource(SUBSCRIPTION) {
+
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
                 InteropProcessor(cordaAvroSerializationFactory),
@@ -91,6 +101,13 @@ class InteropService @Activate constructor(
             }
         }
 
+        _publisher?.close()
+        _publisher = publisherFactory.createPublisher(
+            PublisherConfig("static-member-registration-service"),
+            event.config.getConfig(MESSAGING_CONFIG)
+        )
+        _publisher?.start()
+//        _publisher!!.publish(InteropMemberRegistrationService(memberInfoFactory).createDummyMemberInfo())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
