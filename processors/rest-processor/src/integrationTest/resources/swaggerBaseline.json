@@ -72,11 +72,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -113,11 +113,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -173,11 +173,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -252,11 +252,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -304,11 +304,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -375,11 +375,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in HTTP RPC API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1779,7 +1779,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/RpcMemberInfoList"
+                  "$ref" : "#/components/schemas/RestMemberInfoList"
                 }
               }
             }
@@ -4480,6 +4480,44 @@
           }
         }
       },
+      "RestMemberInfo" : {
+        "required" : [ "memberContext", "mgmContext" ],
+        "type" : "object",
+        "properties" : {
+          "memberContext" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          },
+          "mgmContext" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          }
+        }
+      },
+      "RestMemberInfoList" : {
+        "required" : [ "members" ],
+        "type" : "object",
+        "properties" : {
+          "members" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/RestMemberInfo"
+            }
+          }
+        }
+      },
       "RoleAssociationResponseType" : {
         "required" : [ "createTimestamp", "roleId" ],
         "type" : "object",
@@ -4535,44 +4573,6 @@
             "format" : "int32",
             "nullable" : false,
             "example" : 0
-          }
-        }
-      },
-      "RpcMemberInfo" : {
-        "required" : [ "memberContext", "mgmContext" ],
-        "type" : "object",
-        "properties" : {
-          "memberContext" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string",
-              "example" : "string"
-            },
-            "nullable" : false,
-            "example" : "No example available for this type"
-          },
-          "mgmContext" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string",
-              "example" : "string"
-            },
-            "nullable" : false,
-            "example" : "No example available for this type"
-          }
-        }
-      },
-      "RpcMemberInfoList" : {
-        "required" : [ "members" ],
-        "type" : "object",
-        "properties" : {
-          "members" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/RpcMemberInfo"
-            }
           }
         }
       },
