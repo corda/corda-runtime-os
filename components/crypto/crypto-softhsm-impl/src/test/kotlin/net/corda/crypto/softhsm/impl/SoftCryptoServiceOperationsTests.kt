@@ -9,15 +9,15 @@ import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
-import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
+import net.corda.crypto.persistence.CryptoConnectionsFactory
+import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
@@ -25,80 +25,94 @@ import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
-import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.SM2_CODE_NAME
-import net.corda.v5.crypto.SPHINCS256_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.crypto.softhsm.SoftCacheConfig
+import net.corda.crypto.softhsm.WRAPPING_KEY_ENCODING_VERSION
 import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.jce.ECNamedCurveTable
-import org.bouncycastle.jce.interfaces.ECKey
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.security.KeyPair
-import java.security.PublicKey
+import java.time.Instant
 import java.util.UUID
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityTransaction
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-import kotlin.test.assertTrue
 
-//
-///**
-// * Tests are combined to improve performance as it takes a lot of time to generate keys and considering the number
-// * of permutations when especially running tests for customized signature specs (over 70) it makes sense
-// * trying to generate keys once and run all related tests
-// */
-//class SoftCryptoServiceOperationsTests {
+
+/**
+ * Tests are combined to improve performance as it takes a lot of time to generate keys and considering the number
+ * of permutations when especially running tests for customized signature specs (over 70) it makes sense
+ * trying to generate keys once and run all related tests
+ */
+class SoftCryptoServiceOperationsTests {
+    private val schemeMetadata = CipherSchemeMetadataImpl()
+    private val platformDigestService = PlatformDigestServiceImpl(schemeMetadata)
+    private val keyMap = mock<SoftKeyMap>()
+    private val wrappingKeyMap = mock<SoftWrappingKeyMap>()
+
+    // private val wrapping = DefaultSoftPrivateKeyWrapping(wrappingKeyMap)
+    private val cryptoService = SoftCryptoService(
+        keyMap,
+        wrappingKeyMap,
+        schemeMetadata,
+        platformDigestService
+    )
 //    companion object {
 //        private val zeroBytes = ByteArray(100)
 //        private val UNSUPPORTED_KEY_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
 //        private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
-//        private lateinit var schemeMetadata: CipherSchemeMetadata
 //        private lateinit var platformDigestService: PlatformDigestService
-//        private lateinit var tenantId: String
+//        private val tenantId = UUID.randomUUID().toString()
 //        private lateinit var category: String
 //        private lateinit var wrappingKeyAlias: String
 //        private lateinit var cryptoService: CryptoService
 //        private lateinit var softAliasedKeys: Map<KeyScheme, GeneratedWrappedKey>
 //        private lateinit var softFreshKeys: Map<KeyScheme, GeneratedWrappedKey>
 //        private lateinit var unknownKeyPairs: Map<KeyScheme, KeyPair>
-//        private lateinit var masterKey: WrappingKey
 //        private lateinit var wrappingKeyStore: TestWrappingKeyStore
 //        private lateinit var keyMap: SoftKeyMap
 //        private lateinit var wrappingKeyMap: SoftWrappingKeyMap
 //        private lateinit var wrapping: SoftPrivateKeyWrapping
+//        private val schemeMetadata = CipherSchemeMetadataImpl()
+//        private val masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
+//        private val expected1 = WrappingKey.generateWrappingKey(schemeMetadata)
+//        private val now = Instant.now()
+//        private val alias1 = "master-alias-1"
+//        private val wrappingKeyEntity1 = WrappingKeyEntity(
+//            tenantId,
+//            now,
+//            WRAPPING_KEY_ENCODING_VERSION,
+//            expected1.algorithm + "!",
+//            masterKey.wrap(expected1)
+//        )
 //
 //        @JvmStatic
 //        @BeforeAll
 //        fun setup() {
 //            coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-//            schemeMetadata = CipherSchemeMetadataImpl()
-//            masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
 //            platformDigestService = PlatformDigestServiceImpl(schemeMetadata)
-//            tenantId = UUID.randomUUID().toString()
 //            category = CryptoConsts.Categories.LEDGER
+//            val entityTransaction: EntityTransaction = mock()
+//            val entityManager = mock<EntityManager> {
+//                on { transaction } doReturn entityTransaction
+//                on { find(WrappingKeyEntity::class.java, alias1) } doReturn wrappingKeyEntity1
+//
+//            }
+//            val entityManagerFactory = mock<EntityManagerFactory> {
+//                on { createEntityManager() } doReturn entityManager
+//            }
+//            val connectionsFactory = mock<CryptoConnectionsFactory> {
+//                on { getEntityManagerFactory(any()) } doReturn entityManagerFactory
+//            }
 //            wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
 //                it.start()
 //                eventually { assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status) }
 //            }
 //            wrappingKeyAlias = UUID.randomUUID().toString()
-//            wrappingKeyMap = CachingSoftWrappingKeyMap(
-//                SoftCacheConfig(0, 0),
-//                masterKey,
-//                connectionsFactory
-//                
-//            )
 //            wrapping = DefaultSoftPrivateKeyWrapping(wrappingKeyMap)
 //            keyMap = TransientSoftKeyMap(wrapping)
 //            cryptoService = SoftCryptoService(
@@ -112,7 +126,7 @@ import kotlin.test.assertTrue
 //                cryptoService.generateKeyPair(
 //                    KeyGenerationSpec(
 //                        keyScheme = it,
-//                        alias = UUID.randomUUID().toString(),
+//                        alias = alias1,
 //                        masterKeyAlias = wrappingKeyAlias
 //                    ),
 //                    mapOf(
@@ -156,12 +170,13 @@ import kotlin.test.assertTrue
 //            return list
 //        }
 //    }
-//
-//    @Test
-//    fun `SoftCryptoService should require wrapping key`() {
-//        assertThat(cryptoService.extensions).contains(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
-//    }
-//
+
+    @Test
+    fun `SoftCryptoService should require wrapping key`() {
+        assertThat(cryptoService.extensions).contains(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
+    }
+
+
 //    @Test
 //    fun `SoftCryptoService should not support key deletion`() {
 //        assertThat(cryptoService.extensions).doesNotContain(CryptoServiceExtensions.DELETE_KEYS)
@@ -592,5 +607,5 @@ import kotlin.test.assertTrue
 //    }
 //
 //     */
-//}
-//
+}
+
