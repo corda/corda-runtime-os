@@ -210,7 +210,7 @@ class TestServicesFactory {
         val wrappingKeyMap = CachingSoftWrappingKeyMap(
             SoftCacheConfig(0, 0),
             wrappingKeyStore,
-            WrappingKey.generateWrappingKey(schemeMetadata)
+            WrappingKey.generateWrappingKey(schemeMetadata),
         )
         CryptoServiceWrapper(
             SoftCryptoService(
