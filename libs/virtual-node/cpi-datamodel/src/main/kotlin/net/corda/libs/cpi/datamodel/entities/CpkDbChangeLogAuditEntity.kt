@@ -13,7 +13,7 @@ import net.corda.db.schema.DbSchema
 @Suppress("LongParameterList")
 @Entity
 @Table(name = "cpk_db_change_log_audit", schema = DbSchema.CONFIG)
-class CpkDbChangeLogAuditEntity(
+internal class CpkDbChangeLogAuditEntity(
     @Id
     val id: String,
     @Column(name = "cpk_file_checksum", nullable = false, updatable = false)

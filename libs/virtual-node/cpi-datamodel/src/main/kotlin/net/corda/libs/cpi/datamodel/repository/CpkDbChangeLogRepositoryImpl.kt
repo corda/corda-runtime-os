@@ -8,6 +8,10 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import javax.persistence.EntityManager
 
 class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
+    override fun put(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog) {
+        em.persist(cpkDbChangeLog.toEntity())
+    }
+
     override fun update(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog) {
         em.merge(cpkDbChangeLog.toEntity())
     }

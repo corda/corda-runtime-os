@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel.tests
+package net.corda.libs.cpi.datamodel.entities.tests
 
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity

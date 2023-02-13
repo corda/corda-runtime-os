@@ -9,6 +9,7 @@ import javax.persistence.EntityManager
  * Interface for CRUD operations for cpk database change log
  */
 interface CpkDbChangeLogRepository {
+    fun put(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog)
     fun update(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog)
 
     fun findByFileChecksum(em: EntityManager, cpkFileChecksums: Set<String>): List<CpkDbChangeLog>

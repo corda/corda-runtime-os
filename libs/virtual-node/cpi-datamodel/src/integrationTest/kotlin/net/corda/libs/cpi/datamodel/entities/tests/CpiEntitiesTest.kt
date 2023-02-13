@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel.tests
+package net.corda.libs.cpi.datamodel.entities.tests
 
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl

@@ -4,6 +4,7 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
@@ -169,7 +170,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         changelogsExtractedFromCpi.forEach { changelog ->
             log.info("Persisting changelog and audit for CPK: ${changelog.fileChecksum}, ${changelog.filePath})")
             cpkDbChangeLogRepository.update(em, changelog)  // updating ensures any existing changelogs have isDeleted set to false
-            cpkDbChangeLogAuditRepository.put(em, changelog)
+            cpkDbChangeLogAuditRepository.put(em, CpkDbChangeLogAudit(changeLog = changelog))
         }
     }
 

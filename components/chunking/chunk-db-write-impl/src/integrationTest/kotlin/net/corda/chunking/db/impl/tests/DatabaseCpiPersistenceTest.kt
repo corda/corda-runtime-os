@@ -13,11 +13,11 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -32,6 +32,7 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -51,7 +52,6 @@ import java.time.Instant
 import java.util.Random
 import java.util.UUID
 import javax.persistence.PersistenceException
-import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseCpiPersistenceTest {
@@ -622,9 +622,7 @@ internal class DatabaseCpiPersistenceTest {
     }
 
     private fun findAuditLogs(cpkFileChecksums: List<String>) = entityManagerFactory.createEntityManager().transaction {
-        it.createQuery("FROM ${CpkDbChangeLogAuditEntity::class.java.simpleName} where cpkFileChecksum IN :checksums")
-            .setParameter("checksums", cpkFileChecksums)
-            .resultList
+        CpkDbChangeLogAuditRepositoryImpl().findByFileChecksums(it, cpkFileChecksums)
     }
 
     private fun assertCpkIsNotAssociatedWithCpi(cpi: Cpi, cpk: Cpk) {

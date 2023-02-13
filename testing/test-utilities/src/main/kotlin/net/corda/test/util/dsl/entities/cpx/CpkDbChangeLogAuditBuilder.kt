@@ -1,9 +1,10 @@
 package net.corda.test.util.dsl.entities.cpx
 
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogAuditEntity
 
-fun cpkDbChangeLogAudit(init: CpkDbChangeLogAuditBuilder.() -> Unit): CpkDbChangeLogAuditEntity {
+fun cpkDbChangeLogAudit(init: CpkDbChangeLogAuditBuilder.() -> Unit): CpkDbChangeLogAudit {
     val builder = CpkDbChangeLogAuditBuilder()
     init(builder)
     return builder.build()
@@ -39,18 +40,14 @@ class CpkDbChangeLogAuditBuilder(
         return this
     }
 
-    fun isDeleted(value: Boolean): CpkDbChangeLogAuditBuilder {
-        isDeleted = value
-        return this
-    }
-
-    fun build(): CpkDbChangeLogAuditEntity {
-        return CpkDbChangeLogAuditEntity(
+    fun build(): CpkDbChangeLogAudit {
+        return CpkDbChangeLogAudit(
             id ?: "id_$randomUUID",
-            fileChecksumSupplier.invoke() ?: "file_checksum_$randomUUID",
-            filePath ?: "file_path_$randomUUID",
-            content ?: "data_$randomUUID",
-            isDeleted ?: false
+            CpkDbChangeLog(
+                filePath ?: "file_path_$randomUUID",
+                content ?: "data_$randomUUID",
+                fileChecksumSupplier.invoke() ?: "file_checksum_$randomUUID"
+            )
         )
     }
 }
