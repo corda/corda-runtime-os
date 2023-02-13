@@ -21,11 +21,13 @@ dependencies {
     implementation project(":components:crypto:crypto-hes")
     implementation project(":components:crypto:crypto-hes-core-impl")
     implementation project(":components:crypto:crypto-persistence")
+    implementation project(":components:crypto:crypto-persistence-model")
     implementation project(":libs:cache:cache-caffeine")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:db:db-orm")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")
