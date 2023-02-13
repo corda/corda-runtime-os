@@ -27,7 +27,10 @@ class ConsensualSignedTransactionImpl(
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
         }
-        // TODO(CORE-7237 Check WireTx's metadata's ledger type and allow only the matching ones.)
+        require(wireTransaction.metadata.getLedgerModel() == ConsensualLedgerTransactionImpl::class.java.canonicalName) {
+            "The ledger model in the metadata of the transaction does not match with the expectation of the ledger. " +
+                    "'${wireTransaction.metadata.getLedgerModel()}' != '${ConsensualLedgerTransactionImpl::class.java.canonicalName}'"
+        }
     }
 
     override val id: SecureHash
