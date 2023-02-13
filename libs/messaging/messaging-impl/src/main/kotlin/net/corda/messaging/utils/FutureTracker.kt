@@ -3,8 +3,8 @@ package net.corda.messaging.utils
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messaging.api.exception.CordaRestAPIPartitionException
-import net.corda.messaging.api.exception.CordaRestAPISenderException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 
 /**
  * Data structure to keep track of active partitions and futures for a given sender and partition listener pair
@@ -19,7 +19,7 @@ class FutureTracker<RESPONSE> {
     fun addFuture(correlationId: String, future: CompletableFuture<RESPONSE>, partition: Int) {
         if (futuresInPartitionMap[partition] == null) {
             future.completeExceptionally(
-                CordaRestAPISenderException(
+                CordaRPCAPISenderException(
                     "Repartition event!! Partition was removed before we could send the request. Please retry"
                 )
             )
@@ -47,7 +47,7 @@ class FutureTracker<RESPONSE> {
             val futures = futuresInPartitionMap[partition.partition]
             for (key in futures!!.keys) {
                 futures[key]?.completeExceptionally(
-                    CordaRestAPIPartitionException(
+                    CordaRPCAPIPartitionException(
                         "Repartition event!! Results for this future can no longer be returned"
                     )
                 )

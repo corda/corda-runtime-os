@@ -2,7 +2,7 @@ package net.corda.crypto.component.impl
 
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
-import net.corda.messaging.api.exception.CordaRestAPIResponderException
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoRetryException
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
@@ -29,7 +29,7 @@ class ExceptionsUtilsTests {
     fun `toClientException should return known wrapped exception`(
         error: Class<out Throwable>
     ) {
-        val responderException = CordaRestAPIResponderException(
+        val responderException = CordaRPCAPIResponderException(
             errorType = error.name,
             message = "Error: ${error.name}"
         )
@@ -43,7 +43,7 @@ class ExceptionsUtilsTests {
 
     @Test
     fun `toClientException should return CryptoException for unknown wrapped exception`() {
-        val responderException = CordaRestAPIResponderException(
+        val responderException = CordaRPCAPIResponderException(
             errorType = RuntimeException::class.java.name,
             message = "Unknown"
         )

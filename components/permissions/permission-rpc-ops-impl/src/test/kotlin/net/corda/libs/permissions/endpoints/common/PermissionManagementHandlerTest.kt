@@ -6,9 +6,9 @@ import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
-import net.corda.messaging.api.exception.CordaRestAPIPartitionException
-import net.corda.messaging.api.exception.CordaRestAPIResponderException
-import net.corda.messaging.api.exception.CordaRestAPISenderException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -37,12 +37,12 @@ internal class PermissionManagementHandlerTest {
 
         val e = assertThrows<InternalServerException>("Internal server error.") {
             withPermissionManager(permissionManager, logger){
-                throw CordaRestAPIResponderException("errorType", "Responder exception")
+                throw CordaRPCAPIResponderException("errorType", "Responder exception")
             }
         }
         assertEquals("Internal server error.", e.message)
         assertEquals(2, e.details.size)
-        assertEquals(CordaRestAPIResponderException::class.java.name, e.details["cause"])
+        assertEquals(CordaRPCAPIResponderException::class.java.name, e.details["cause"])
         assertEquals("Responder exception", e.details["reason"])
     }
 
@@ -51,7 +51,7 @@ internal class PermissionManagementHandlerTest {
 
         val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
-                throw CordaRestAPIResponderException(
+                throw CordaRPCAPIResponderException(
                     "errorType",
                     "Responder exception",
                     IllegalArgumentException("illegal arg")
@@ -69,7 +69,7 @@ internal class PermissionManagementHandlerTest {
 
         val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
-                throw CordaRestAPISenderException("Sender exception", IllegalArgumentException("illegal arg"))
+                throw CordaRPCAPISenderException("Sender exception", IllegalArgumentException("illegal arg"))
             }
         }
         assertEquals("Internal server error.", e.message)
@@ -83,12 +83,12 @@ internal class PermissionManagementHandlerTest {
 
         val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
-                throw CordaRestAPISenderException("Sender exception")
+                throw CordaRPCAPISenderException("Sender exception")
             }
         }
         assertEquals("Internal server error.", e.message)
         assertEquals(2, e.details.size)
-        assertEquals(CordaRestAPISenderException::class.java.name, e.details["cause"])
+        assertEquals(CordaRPCAPISenderException::class.java.name, e.details["cause"])
         assertEquals("Sender exception", e.details["reason"])
     }
 
@@ -111,7 +111,7 @@ internal class PermissionManagementHandlerTest {
 
         val e = assertThrows<ServiceUnavailableException> {
             withPermissionManager(permissionManager, logger){
-                throw CordaRestAPIPartitionException("Repartition event.")
+                throw CordaRPCAPIPartitionException("Repartition event.")
             }
         }
 

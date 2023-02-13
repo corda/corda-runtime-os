@@ -2,7 +2,7 @@ package net.corda.messaging.emulation.publisher
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.messaging.api.exception.CordaRestAPISenderException
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.rpc.RPCTopicService
 import org.assertj.core.api.Assertions
@@ -34,7 +34,7 @@ class RPCSenderImplTest {
             clientIdCounter.getAndIncrement().toString()
         )
 
-        assertThrows<CordaRestAPISenderException> { rpcSender.sendRequest(request) }
+        assertThrows<CordaRPCAPISenderException> { rpcSender.sendRequest(request) }
     }
 
     @Test

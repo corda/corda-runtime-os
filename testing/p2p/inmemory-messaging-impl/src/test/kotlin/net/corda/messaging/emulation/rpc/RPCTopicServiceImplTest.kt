@@ -1,7 +1,7 @@
 package net.corda.messaging.emulation.rpc
 
 
-import net.corda.messaging.api.exception.CordaRestAPIResponderException
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -41,7 +41,7 @@ class RPCTopicServiceImplTest {
 
     private val faultListener = object : RPCResponderProcessor<Int, String> {
         override fun onNext(request: Int, respFuture: CompletableFuture<String>) {
-            throw CordaRestAPIResponderException("errorType", "fail")
+            throw CordaRPCAPIResponderException("errorType", "fail")
         }
     }
 

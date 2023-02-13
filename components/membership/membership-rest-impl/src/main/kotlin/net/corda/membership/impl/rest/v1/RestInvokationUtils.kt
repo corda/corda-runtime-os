@@ -2,14 +2,14 @@ package net.corda.membership.impl.rest.v1
 
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ServiceUnavailableException
-import net.corda.messaging.api.exception.CordaRestAPIPartitionException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import org.slf4j.Logger
 
 /**
  * Tries to execute the given [block] and returns the result if no error occurs.
  * If an exception is thrown from [block]:
  *  - Throws the original exception when the type has not been explicitly ignored through [ignoredExceptions].
- *  - Throws [ServiceUnavailableException] if original exception is of type [CordaRestAPIPartitionException] (rebalance
+ *  - Throws [ServiceUnavailableException] if original exception is of type [CordaRPCAPIPartitionException] (rebalance
  *      prevented the future from completing).
  *  - Throw [InternalServerException] if none of the above rules match.
  *
@@ -33,7 +33,7 @@ internal fun <T> tryWithExceptionHandling(
                 throw ex
             }
 
-            ex is CordaRestAPIPartitionException -> {
+            ex is CordaRPCAPIPartitionException -> {
                 logger.warn("Could not $operation", ex)
                 throw ServiceUnavailableException("Could not $operation: Repartition Event!")
             }

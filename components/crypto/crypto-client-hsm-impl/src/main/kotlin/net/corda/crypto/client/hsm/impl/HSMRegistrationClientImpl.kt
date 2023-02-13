@@ -11,7 +11,7 @@ import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
-import net.corda.messaging.api.exception.CordaRestAPIResponderException
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.debug
@@ -122,7 +122,7 @@ class HSMRegistrationClientImpl(
             }
             response.response as RESPONSE
         }
-    } catch (e: CordaRestAPIResponderException) {
+    } catch (e: CordaRPCAPIResponderException) {
         throw e.toClientException()
     } catch (e: Throwable) {
         logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)

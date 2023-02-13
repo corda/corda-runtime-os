@@ -21,7 +21,7 @@ import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.rest.v1.CertificatesRestResourceImpl
-import net.corda.messaging.api.exception.CordaRestAPIPartitionException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
@@ -181,7 +181,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws ServiceUnavailableException when repartition event happens while trying to retrieve key`() {
-            whenever(cryptoOpsClient.lookup(any(), any())).doThrow(CordaRestAPIPartitionException("repartition event"))
+            whenever(cryptoOpsClient.lookup(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 certificatesOps.generateCsr(
@@ -751,7 +751,7 @@ class CertificatesRestResourceImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
             whenever(certificatesClient.importCertificates(CertificateUsage.P2P_TLS, null, "alias", certificateText))
-                .doThrow(CordaRestAPIPartitionException("repartition event"))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 certificatesOps.importCertificateChain("p2p-tls", null, "alias", listOf(certificate))
@@ -824,7 +824,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws an exception if repartition event occurs while waiting for response`() {
-            whenever(certificatesClient.getCertificateAliases(any(), any())).doThrow(CordaRestAPIPartitionException("repartition"))
+            whenever(certificatesClient.getCertificateAliases(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 certificatesOps.getCertificateAliases(
@@ -920,7 +920,7 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `it throws an exception if repartition event occurs while waiting for response`() {
             whenever(certificatesClient.retrieveCertificates(null, CertificateUsage.P2P_SESSION, "alias"))
-                .doThrow(CordaRestAPIPartitionException("repartition"))
+                .doThrow(CordaRPCAPIPartitionException("repartition"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 certificatesOps.getCertificateChain(

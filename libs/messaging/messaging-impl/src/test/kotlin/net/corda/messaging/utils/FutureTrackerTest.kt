@@ -1,7 +1,7 @@
 package net.corda.messaging.utils
 
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messaging.api.exception.CordaRestAPISenderException
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.test.util.eventually
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.millis
@@ -55,7 +55,7 @@ class FutureTrackerTest {
     fun `test adding a future to a non existent partition`() {
         tracker.addFuture("test", future, 0)
         Assertions.assertNull(tracker.getFuture("test", 0))
-        assertThrows<CordaRestAPISenderException> { future.getOrThrow() }
+        assertThrows<CordaRPCAPISenderException> { future.getOrThrow() }
     }
 
     @Test

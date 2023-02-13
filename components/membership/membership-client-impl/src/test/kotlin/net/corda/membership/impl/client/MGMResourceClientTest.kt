@@ -31,7 +31,7 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.exception.CordaRestAPISenderException
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -327,7 +327,7 @@ class MGMResourceClientTest {
         mgmOpsClient.start()
         changeConfig()
         val message = "Sender exception."
-        whenever(rpcSender.sendRequest(any())).doThrow(CordaRestAPISenderException(message))
+        whenever(rpcSender.sendRequest(any())).doThrow(CordaRPCAPISenderException(message))
         val ex = assertFailsWith<CordaRuntimeException> {
             mgmOpsClient.generateGroupPolicy(shortHash)
         }

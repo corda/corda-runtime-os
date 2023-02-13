@@ -16,7 +16,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.exception.CordaRestAPISenderException
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.LifeCycleCoordinatorMockHelper
@@ -85,7 +85,7 @@ class CordaRPCSenderImplTest {
         )
 
         val future = cordaSenderImpl.sendRequest("test")
-        assertThrows<CordaRestAPISenderException> { future.getOrThrow() }
+        assertThrows<CordaRPCAPISenderException> { future.getOrThrow() }
     }
 
     @Test

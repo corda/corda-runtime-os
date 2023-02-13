@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
  *
  * The sender contains a subscription for reading back responses. Depending on the response status, the future will be
  * completed normally, exceptionally or be cancelled.
- * Clients should expect the future to throw a CordaRestAPIResponderException if it was completed exceptionally or a
+ * Clients should expect the future to throw a CordaRPCAPIResponderException if it was completed exceptionally or a
  * CancellationException if it was cancelled when calling get()/getOrThrow() on future
  *
  */

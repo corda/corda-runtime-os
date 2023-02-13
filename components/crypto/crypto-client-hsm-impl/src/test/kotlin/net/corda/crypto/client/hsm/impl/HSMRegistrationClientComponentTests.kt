@@ -20,7 +20,7 @@ import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
-import net.corda.messaging.api.exception.CordaRestAPIResponderException
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.toHex
@@ -290,7 +290,7 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val error = CordaRestAPIResponderException(
+        val error = CordaRPCAPIResponderException(
             errorType = expected.name,
             message = "Test failure."
         )
@@ -307,7 +307,7 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val error = CordaRestAPIResponderException(
+        val error = CordaRPCAPIResponderException(
             errorType = RuntimeException::class.java.name,
             message = "Test failure."
         )

@@ -26,7 +26,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.rest.v1.KeysRestResourceImpl
-import net.corda.messaging.api.exception.CordaRestAPIPartitionException
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -246,7 +246,7 @@ class KeysRestResourceImplTest {
 
         @Test
         fun `listKeys will throw ServiceUnavailableException when repartition event happens while trying to lookup keys for tenant`() {
-            whenever(cryptoOpsClient.lookup(any(), any())).doThrow(CordaRestAPIPartitionException("repartition event"))
+            whenever(cryptoOpsClient.lookup(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 keysOps.listKeys(
@@ -271,7 +271,7 @@ class KeysRestResourceImplTest {
         @Suppress("MaxLineLength")
         fun `listKeys will throw ServiceUnavailableException when repartition event happens while trying to lookup filtered keys for tenant`() {
             whenever(cryptoOpsClient.lookup(TENANT_ID, 4, 400, CryptoKeyOrderBy.ALIAS, emptyMap()))
-                .doThrow(CordaRestAPIPartitionException("repartition event"))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 keysOps.listKeys(
@@ -358,7 +358,7 @@ class KeysRestResourceImplTest {
         @Test
         fun `generateKeyPair throws ServiceUnavailableException when repartition event happens while trying to generate the keyPair`() {
             whenever(cryptoOpsClient.generateKeyPair(TENANT_ID, CATEGORY.uppercase(), ALIAS, SCHEME))
-                .doThrow(CordaRestAPIPartitionException("repartition event"))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 keysOps.generateKeyPair(tenantId = TENANT_ID, alias = ALIAS, hsmCategory = CATEGORY, scheme = SCHEME)
@@ -399,7 +399,7 @@ class KeysRestResourceImplTest {
         @Test
         fun `generateKeyPem throws ServiceUnavailableException when repartition event happens while trying to lookup keys for tenant`() {
             whenever(cryptoOpsClient.lookup(any(), any()))
-                .doThrow(CordaRestAPIPartitionException("repartition event"))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 keysOps.generateKeyPem(TENANT_ID, "keyId")
@@ -420,7 +420,7 @@ class KeysRestResourceImplTest {
         @Test
         fun `listSchemes throws ServiceUnavailableException when repartition event happens while trying to retrieve schemes`() {
             whenever(cryptoOpsClient.getSupportedSchemes(any(), any()))
-                .doThrow(CordaRestAPIPartitionException("repartition event"))
+                .doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 keysOps.listSchemes(TENANT_ID, CATEGORY)
