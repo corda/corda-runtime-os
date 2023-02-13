@@ -5,6 +5,7 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
+@Suppress("LongParameterList")
 fun transactionMetadataExample(
     cpiMetadata: CordaPackageSummaryImpl = cpiPackageSummaryExample,
     cpkPackageSeed: String? = null,
