@@ -539,7 +539,7 @@ Default name for cluster DB secret
 Cluster DB credentials environment variables
 */}}
 {{- define "corda.clusterDbEnv" -}}
-- name: PGUSER
+- name: DB_CLUSTER_USERNAME
   valueFrom:
     secretKeyRef:
       {{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
@@ -549,7 +549,7 @@ Cluster DB credentials environment variables
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "username"
       {{- end }}
-- name: PGPASSWORD
+- name: DB_CLUSTER_PASSWORD
   valueFrom:
     secretKeyRef:
       {{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}

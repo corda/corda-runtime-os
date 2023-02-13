@@ -2,11 +2,12 @@ bootstrap:
   db:
     cluster:
       username:
-        value: "bootstrap-user"
+        value: "postgres"
       password:
         valueFrom:
           secretKeyRef:
-            key: "password"
+            name: "prereqs-postgresql"
+            key: "postgres-password"
   kafka:
     sasl:
       username:
@@ -23,12 +24,14 @@ logging:
 
 db:
   cluster:
-    username:
-      value: "user"
+    host: "prereqs-postgresql"
     password:
       valueFrom:
         secretKeyRef:
+          name: "prereqs-postgresql"
           key: "password"
+    username:
+      value: "user"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
