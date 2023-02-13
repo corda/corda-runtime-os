@@ -170,7 +170,11 @@ class CachingSoftWrappingKeyMapTests {
         cut.putWrappingKey(alias1, expected1)
 
         assertTrue(cut.exists(alias1), "Should exist from cache")
+        Mockito.verify(entityManager, never()).find(eq(WrappingKeyEntity::class.java), any())
         assertTrue(cut.exists(alias2), "Should exist from store")
+        Mockito.verify(entityManager, times(1)).find(eq(WrappingKeyEntity::class.java), any())
         assertFalse(cut.exists(alias3), "Should not exist")
+        Mockito.verify(entityManager, times(2)).find(eq(WrappingKeyEntity::class.java), any())
+
     }
 }
