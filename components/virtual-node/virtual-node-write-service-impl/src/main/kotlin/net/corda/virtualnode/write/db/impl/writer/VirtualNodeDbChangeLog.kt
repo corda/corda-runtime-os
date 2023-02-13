@@ -1,7 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.admin.DbChange
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.InputStream
@@ -9,7 +8,7 @@ import java.io.InputStream
 /**
  * DB Change Log for all CPKs for a Virtual Node, as used by Liquibase during VNode creation.
  *
- * @property changeLogs list of all [CpkDbChangeLogEntity] for all CPKs to be DB migrated.
+ * @property changeLogs list of all [CpkDbChangeLog] for all CPKs to be DB migrated.
  * @constructor Create empty Virtual node db change log
  */
 class VirtualNodeDbChangeLog(

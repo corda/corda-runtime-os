@@ -9,7 +9,6 @@ import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
@@ -155,7 +154,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     /**
      * Update the changelogs in the db for cpi upload
      *
-     * @property changelogsExtractedFromCpi: [List]<[CpkDbChangeLogEntity]> a list of changelogs extracted from the force
+     * @property changelogsExtractedFromCpi: [List]<[CpkDbChangeLog]> a list of changelogs extracted from the force
      *  uploaded cpi.
      * @property em: [EntityManager] the entity manager from the call site. We reuse this for several operations as part
      *  of CPI upload

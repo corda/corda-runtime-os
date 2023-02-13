@@ -10,11 +10,10 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.CpkChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
@@ -97,6 +96,9 @@ internal class DatabaseCpiPersistenceTest {
             LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
     }
+
+    private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
+    private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
 
     @Suppress("Unused")
     @AfterAll
@@ -317,14 +319,26 @@ internal class DatabaseCpiPersistenceTest {
 
     private fun assertChangeLogPersistedWithCpi(cpk: Cpk) {
         val cpkFileChecksum = cpk.metadata.fileChecksum.toString()
-        val dbChangeLogAsList = loadCpkDbChangeLog(cpkFileChecksum, cpk.path.toString())
+        val dbChangeLogAsList = loadCpkDbChangeLog(CpkChangeLogIdentifier(cpkFileChecksum, cpk.path.toString()))
         assertThat(dbChangeLogAsList).isNotNull
-        assertThat(dbChangeLogAsList.id.cpkFileChecksum).isEqualTo(cpkFileChecksum)
+        assertThat(dbChangeLogAsList.fileChecksum).isEqualTo(cpkFileChecksum)
     }
 
-    private fun loadCpkDbChangeLog(cpkFileChecksum: String, filePath: String): CpkDbChangeLogEntity {
+    private fun loadCpkDbChangeLog(fileChecksum: SecureHash): List<CpkDbChangeLog> {
         return entityManagerFactory.createEntityManager().transaction { em ->
-            em.find(CpkDbChangeLogEntity::class.java, CpkDbChangeLogKey(cpkFileChecksum, filePath))
+            cpkDbChangeLogRepository.findByFileChecksum(em, setOf(fileChecksum.toString()))
+        }
+    }
+
+    private fun loadCpkDbChangeLog(changeLogIdentifier: CpkChangeLogIdentifier): CpkDbChangeLog {
+        return entityManagerFactory.createEntityManager().transaction { em ->
+            cpkDbChangeLogRepository.findById(em, changeLogIdentifier)
+        }
+    }
+
+    private fun loadCpkDbChangeLog(content: String): List<CpkDbChangeLog> {
+        return entityManagerFactory.createEntityManager().transaction { em ->
+            cpkDbChangeLogRepository.findByContent(em, content)
         }
     }
 
@@ -464,10 +478,7 @@ internal class DatabaseCpiPersistenceTest {
         val cpi = mockCpi(mockCpk())
         cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLog = genChangeLogs(arrayOf(cpi.cpks.first())))
 
-        val changeLogsRetrieved = query<CpkDbChangeLogEntity, String>(
-            "cpk_file_checksum",
-            cpi.cpks.first().metadata.fileChecksum.toString()
-        )
+        val changeLogsRetrieved = loadCpkDbChangeLog(cpi.cpks.first().metadata.fileChecksum)
 
         assertThat(changeLogsRetrieved.size).isGreaterThanOrEqualTo(1)
         assertThat(changeLogsRetrieved.first().content).isEqualTo(mockChangeLogContent)
@@ -478,7 +489,7 @@ internal class DatabaseCpiPersistenceTest {
         val cpi = mockCpi(mockCpk(), mockCpk(), mockCpk(), mockCpk(), mockCpk())
         cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLog = genChangeLogs(cpi.cpks.toTypedArray()))
 
-        val changeLogsRetrieved = query<CpkDbChangeLogEntity, String>("content", mockChangeLogContent)
+        val changeLogsRetrieved = loadCpkDbChangeLog(mockChangeLogContent)
 
         assertThat(changeLogsRetrieved.size).isGreaterThanOrEqualTo(5)
         assertThat(changeLogsRetrieved.first().content).isEqualTo(mockChangeLogContent)
@@ -618,11 +629,11 @@ internal class DatabaseCpiPersistenceTest {
     }
 
     private fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
-        CpkDbChangeLogRepositoryImpl().findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, SecureHash.parse(cpiEntity.signerSummaryHash)))
+        cpkDbChangeLogRepository.findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, SecureHash.parse(cpiEntity.signerSummaryHash)))
     }
 
     private fun findAuditLogs(cpkFileChecksums: List<String>) = entityManagerFactory.createEntityManager().transaction {
-        CpkDbChangeLogAuditRepositoryImpl().findByFileChecksums(it, cpkFileChecksums)
+        cpkDbChangeLogAuditRepository.findByFileChecksums(it, cpkFileChecksums)
     }
 
     private fun assertCpkIsNotAssociatedWithCpi(cpi: Cpi, cpk: Cpk) {

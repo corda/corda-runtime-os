@@ -1,6 +1,7 @@
 package net.corda.libs.cpi.datamodel.repository
 
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
@@ -30,6 +31,14 @@ class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
         }.flatten()
     }
 
+    override fun findByContent(em: EntityManager, content: String): List<CpkDbChangeLog> {
+        return em.createQuery(
+            "FROM ${CpkDbChangeLogEntity::class.simpleName} where content = :value",
+            CpkDbChangeLogEntity::class.java
+        ).setParameter("value", content)
+            .resultList.map { it.toDto() }
+    }
+
     override fun findByCpiId(em: EntityManager, cpiIdentifier: CpiIdentifier): List<CpkDbChangeLog> {
         return em.createQuery(
             "SELECT changelog " +
@@ -47,6 +56,13 @@ class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
             .setParameter("version", cpiIdentifier.version)
             .setParameter("signerSummaryHash", cpiIdentifier.signerSummaryHash.toString())
             .resultList.map { it.toDto() }
+    }
+
+    override fun findById(em: EntityManager, cpkChangeLogIdentifier: CpkChangeLogIdentifier): CpkDbChangeLog {
+        return em.find(
+            CpkDbChangeLogEntity::class.java,
+            CpkDbChangeLogKey(cpkChangeLogIdentifier.cpkFileChecksum, cpkChangeLogIdentifier.filePath)
+        ).toDto()
     }
 
     /**

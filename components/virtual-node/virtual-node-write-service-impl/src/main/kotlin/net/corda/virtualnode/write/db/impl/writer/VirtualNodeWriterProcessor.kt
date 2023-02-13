@@ -73,9 +73,7 @@ import kotlin.system.measureTimeMillis
  * @property groupPolicyParser Parses group policy JSON strings and returns MemberInfo structures
  * @property clock A clock instance used to add timestamps to what the records we publish. This is configurable rather
  *           than always simply the system wall clock time so that we can control everything in tests.
- * @property getCurrentChangelogsForCpi an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
- *           Takes an EntityManager (since that lets us continue a transaction) and a CpiIdentifier as a parameter and
- *           returns a list of CpkDbChangeLogEntity.
+ * @property changeLogsRepository Used to retrieve the changelogs for a CPI.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class VirtualNodeWriterProcessor(

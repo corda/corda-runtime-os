@@ -1,7 +1,7 @@
 package net.corda.libs.cpi.datamodel.repository
 
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkChangeLogIdentifier
 import net.corda.libs.packaging.core.CpiIdentifier
 import javax.persistence.EntityManager
 
@@ -13,5 +13,9 @@ interface CpkDbChangeLogRepository {
     fun update(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog)
 
     fun findByFileChecksum(em: EntityManager, cpkFileChecksums: Set<String>): List<CpkDbChangeLog>
+
+    fun findByContent(em: EntityManager, content: String): List<CpkDbChangeLog>
+
     fun findByCpiId(em: EntityManager, cpiIdentifier: CpiIdentifier): List<CpkDbChangeLog>
+    fun findById(em: EntityManager, cpkChangeLogIdentifier: CpkChangeLogIdentifier): CpkDbChangeLog
 }
