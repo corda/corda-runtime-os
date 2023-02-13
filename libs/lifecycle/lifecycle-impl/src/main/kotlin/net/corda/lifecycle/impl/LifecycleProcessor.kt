@@ -262,11 +262,12 @@ internal class LifecycleProcessor(
         }
     }
 
-    fun addManagedResource(name: String, generator: () -> Resource) {
-        managedResources.compute(name) { _, old ->
+    @Suppress("UNCHECKED_CAST")
+    fun <T: Resource> addManagedResource(name: String, generator: () -> Resource): T {
+        return managedResources.compute(name) { _, old ->
             old?.close()
             generator.invoke()
-        }
+        } as T
     }
 
     fun getManagedResource(name: String): Resource? {

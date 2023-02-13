@@ -50,7 +50,6 @@ class LocallyHostedIdentitiesServiceImplTest {
         on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
             val generator : () -> Resource = it.getArgument(1)
             generator.invoke()
-            Unit
         }
     }
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
