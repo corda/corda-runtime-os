@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "ChunkKey",
+  "namespace": "net.corda.data.chunking",
+  "doc": "Chunk key for use as record key for Chunks of a larger binary artifact",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "some unique identifier that indicates the group this chunk belongs with"
+    },
+    {
+      "name": "realKey",
+      "type": "bytes",
+      "doc": "avro serialized real key for the chunked record value"
+    },
+    {
+      "name": "partNumber",
+      "type": "int",
+      "doc": "number of chunk"
+    }
+  ]
+}
