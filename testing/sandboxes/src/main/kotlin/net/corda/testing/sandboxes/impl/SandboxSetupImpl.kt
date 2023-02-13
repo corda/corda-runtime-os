@@ -52,8 +52,6 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.base",
             "net.corda.crypto",
             "net.corda.crypto-extensions",
-            "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
-            "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
             "net.corda.ledger-consensual",
             "net.corda.ledger-utxo",
             "net.corda.membership",

@@ -12,7 +12,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(":libs:crypto:crypto-utils")
 
     api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"

@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.transaction.verifier.UtxoTransactionVerifier
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 
@@ -9,9 +9,8 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
  * [UtxoTransactionVerifier] contains the ones shared with ledger transaction verifications.
  * The ones in this file are pointless on Ledger Transactions.
  */
-class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransactionBuilderImpl):
-    UtxoTransactionVerifier()
-{
+class UtxoTransactionBuilderVerifier(private val transactionBuilder: UtxoTransactionBuilderInternal) :
+    UtxoTransactionVerifier() {
     override val subjectClass: String = UtxoTransactionBuilder::class.simpleName!!
 
     fun verify() {

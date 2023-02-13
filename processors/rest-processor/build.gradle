@@ -75,7 +75,7 @@ dependencies {
     integrationTestImplementation project(':libs:rest:rest-server')
     integrationTestImplementation project(':libs:rest:rest-tools')
 
-    integrationTestImplementation project(':components:membership:membership-http-rpc')
+    integrationTestImplementation project(':components:membership:membership-rest')
     integrationTestImplementation project(':libs:configuration:configuration-endpoints')
     integrationTestImplementation project(':libs:virtual-node:cpi-upload-endpoints')
     integrationTestImplementation project(':components:flow:flow-rpcops-service')
