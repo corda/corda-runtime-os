@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@CORE-10338/no-not-inject') _
 
 endToEndPipeline(
     assembleAndCompile: false,
