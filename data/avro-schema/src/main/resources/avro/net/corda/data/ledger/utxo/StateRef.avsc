@@ -5,9 +5,9 @@
   "doc": "StateRef",
   "fields": [
     {
-      "name": "transactionHash",
+      "name": "transactionId",
       "type": "net.corda.data.crypto.SecureHash",
-      "doc": "The hash of the transaction in which the referenced state was created."
+      "doc": "The id of the transaction in which the referenced state was created."
     },
     {
       "name": "index",

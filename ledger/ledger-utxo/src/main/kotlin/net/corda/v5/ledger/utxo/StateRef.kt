@@ -7,10 +7,10 @@ import net.corda.v5.crypto.SecureHash
  * Defines a reference to a [ContractState].
  *
  * @property index The index of the state in the transaction's outputs in which the referenced state was created.
- * @property transactionHash The hash of the transaction in which the referenced state was created.
+ * @property transactionId The id of the transaction in which the referenced state was created.
  */
 @CordaSerializable
-data class StateRef(val transactionHash: SecureHash, val index: Int) {
+data class StateRef(val transactionId: SecureHash, val index: Int) {
 
     companion object {
 
@@ -19,7 +19,7 @@ data class StateRef(val transactionHash: SecureHash, val index: Int) {
          *
          * @param value The value to parse into a [StateRef] instance.
          * @return Returns a new [StateRef] instance.
-         * @throws IllegalArgumentException if either the transaction hash, or index components cannot be parsed.
+         * @throws IllegalArgumentException if either the transaction id, or index components cannot be parsed.
          */
         @JvmStatic
         fun parse(value: String): StateRef {
@@ -35,7 +35,7 @@ data class StateRef(val transactionHash: SecureHash, val index: Int) {
                 )
             } catch (ex: IllegalArgumentException) {
                 throw IllegalArgumentException(
-                    "Failed to parse a StateRef from the specified value. The transaction hash is malformed: $value.",
+                    "Failed to parse a StateRef from the specified value. The transaction id is malformed: $value.",
                     ex
                 )
             }
@@ -48,6 +48,6 @@ data class StateRef(val transactionHash: SecureHash, val index: Int) {
      * @return Returns the [String] representation of the current object.
      */
     override fun toString(): String {
-        return "$transactionHash:$index"
+        return "$transactionId:$index"
     }
 }

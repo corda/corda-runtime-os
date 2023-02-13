@@ -9,7 +9,7 @@ public final class StateRefJavaApiTests extends AbstractMockTestHarness {
     @Test
     public void parseShouldReturnTheExpectedValue() {
         StateRef value = StateRef.parse(hash + ":123");
-        Assertions.assertEquals(hash, value.getTransactionHash());
+        Assertions.assertEquals(hash, value.getTransactionId());
         Assertions.assertEquals(123, value.getIndex());
     }
 
@@ -21,7 +21,7 @@ public final class StateRefJavaApiTests extends AbstractMockTestHarness {
         );
 
         Assertions.assertEquals(
-                "Failed to parse a StateRef from the specified value. The transaction hash is malformed: INVALID_TRANSACTION_HASH:123.",
+                "Failed to parse a StateRef from the specified value. The transaction id is malformed: INVALID_TRANSACTION_HASH:123.",
                 exception.getMessage()
         );
     }
@@ -47,7 +47,7 @@ public final class StateRefJavaApiTests extends AbstractMockTestHarness {
 
     @Test
     public void getTransactionShouldReturnTheExpectedValue() {
-        SecureHash value = stateRef.getTransactionHash();
+        SecureHash value = stateRef.getTransactionId();
         Assertions.assertEquals(hash, value);
     }
 }
