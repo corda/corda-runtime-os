@@ -13,9 +13,7 @@
       "name": "request",
       "doc": "Request's payload, depends on the requested operation.",
       "type": [
-        "RegistrationStatusRpcRequest",
-        "MGMGroupPolicyRequest",
-        "RegistrationStatusSpecificRpcRequest"
+        "MGMGroupPolicyRequest"
       ]
     }
   ]

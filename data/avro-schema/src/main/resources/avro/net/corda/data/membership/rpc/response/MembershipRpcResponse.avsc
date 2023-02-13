@@ -13,9 +13,7 @@
       "name": "response",
       "doc": "Response's payload, depends on the requested operation.",
       "type": [
-        "MGMGroupPolicyResponse",
-        "RegistrationStatusResponse",
-        "RegistrationsStatusResponse"
+        "MGMGroupPolicyResponse"
       ]
     }
   ]
