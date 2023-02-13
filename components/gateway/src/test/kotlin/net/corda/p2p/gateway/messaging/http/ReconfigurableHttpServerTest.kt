@@ -11,6 +11,10 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.internal.CommonComponents
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
@@ -46,7 +50,12 @@ class ReconfigurableHttpServerTest {
         hostAddress = "www.r3.com",
         hostPort = 33,
         urlPath = "/",
-        sslConfig = mock(),
+        sslConfig = SslConfiguration(
+            revocationCheck = RevocationConfig(
+                RevocationConfigMode.OFF
+            ),
+            TlsType.ONE_WAY,
+        ),
         maxRequestSize = 1000
     )
     private val badConfigurationException = RuntimeException("Bad Config")
@@ -66,6 +75,7 @@ class ReconfigurableHttpServerTest {
     private val commonComponents = mock<CommonComponents> {
         on { dominoTile } doReturn commonComponentsDominoTile
         on { dynamicKeyStore } doReturn dynamicKeyStore
+        on { trustStoresMap } doReturn mock()
     }
 
     private val server = ReconfigurableHttpServer(
@@ -73,6 +83,7 @@ class ReconfigurableHttpServerTest {
         configurationReaderService,
         listener,
         commonComponents,
+        mock(),
     )
 
     @AfterEach

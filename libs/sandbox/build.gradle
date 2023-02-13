@@ -16,7 +16,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     api platform("net.corda:corda-api:$cordaApiVersion")
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api project(":libs:packaging:packaging")
     api 'net.corda:corda-serialization'
 

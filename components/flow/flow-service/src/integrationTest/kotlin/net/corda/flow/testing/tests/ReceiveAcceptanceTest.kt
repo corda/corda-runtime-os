@@ -271,7 +271,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
+                flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
                 sessionAckEvents(SESSION_ID_2)
             }
         }
@@ -297,7 +297,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
+                flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
                 sessionAckEvents(SESSION_ID_2)
             }
         }
@@ -356,7 +356,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))
+                flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))
                 wakeUpEvent()
             }
         }
@@ -550,7 +550,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
+                flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
                 sessionAckEvents(SESSION_ID_2)
             }
         }
@@ -579,7 +579,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))
+                flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))
                 sessionAckEvents(SESSION_ID_1)
             }
         }
@@ -650,7 +650,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_5))
+                flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_5))
             }
         }
     }

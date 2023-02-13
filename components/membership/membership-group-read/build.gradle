@@ -9,7 +9,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     api platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda:corda-membership'
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     api project(":libs:membership:membership-common")
     api project(':components:reconciliation:reconciliation')

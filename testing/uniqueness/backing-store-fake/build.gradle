@@ -16,7 +16,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-ledger-utxo"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
