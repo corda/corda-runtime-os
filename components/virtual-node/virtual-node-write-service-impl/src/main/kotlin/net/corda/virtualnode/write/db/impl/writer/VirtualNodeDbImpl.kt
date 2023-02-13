@@ -4,7 +4,6 @@ import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
@@ -12,6 +11,7 @@ import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import org.slf4j.LoggerFactory
 
 /**
@@ -26,7 +26,7 @@ internal class VirtualNodeDbImpl(
     override val dbConnections: Map<DbPrivilege, DbConnection?>,
     override val dbType: VirtualNodeDbType,
     private val holdingIdentityShortHash: ShortHash,
-    private val dbAdmin: DbAdmin,
+    private val virtualNodesDbAdmin: VirtualNodesDbAdmin,
     private val dbConnectionManager: DbConnectionManager,
     private val schemaMigrator: LiquibaseSchemaMigrator
 ) : VirtualNodeDb {
@@ -51,18 +51,18 @@ internal class VirtualNodeDbImpl(
                     val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
                     // This covers scenario when previous virtual node on-boarding request failed after user was created
                     // Since connections are persisted at later point, user's password is lost, so user is re-created
-                    if (dbAdmin.userExists(user)) {
+                    if (virtualNodesDbAdmin.userExists(user)) {
                         if (privilege == DDL) {
                             log.info("User for connection ${connection.description} already exists in DB, schema will be deleted")
-                            dbAdmin.deleteSchema(dbSchema)
+                            virtualNodesDbAdmin.deleteSchema(dbSchema)
                         }
                         log.info("User for connection ${connection.description} already exists in DB, it will be re-created")
-                        dbAdmin.deleteUser(user)
+                        virtualNodesDbAdmin.deleteUser(user)
                     }
                     // When DML user is created, it is granted with privileges related to DB objects created by DDL user
                     // (therefore DDL user has to be provided as grantee)
                     val grantee = if (privilege == DML) dbConnections[DDL]!!.getUser() else null
-                    dbAdmin.createDbAndUser(dbSchema, user, password, privilege, grantee)
+                    virtualNodesDbAdmin.createDbAndUser(dbSchema, user, password, privilege, grantee)
                 }
             }
         }
