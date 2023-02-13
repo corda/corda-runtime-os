@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@connelm/CORE-9498/snyk-license-generation') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',
