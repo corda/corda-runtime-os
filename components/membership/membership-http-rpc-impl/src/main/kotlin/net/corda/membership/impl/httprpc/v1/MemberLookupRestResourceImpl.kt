@@ -7,8 +7,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.httprpc.v1.MemberLookupRestResource
-import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
-import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
+import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
+import net.corda.membership.httprpc.v1.types.response.RestMemberInfoList
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.virtualnode.ShortHash
@@ -44,7 +44,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?
-        ): RpcMemberInfoList
+        ): RestMemberInfoList
     }
 
     override val protocolVersion = 1
@@ -133,7 +133,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?
-        ): RpcMemberInfoList {
+        ): RestMemberInfoList {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
             ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
@@ -149,9 +149,9 @@ class MemberLookupRestResourceImpl @Activate constructor(
                 country?.let { memberName.country.equals(it, true) } ?: true
             }
 
-            return RpcMemberInfoList(
+            return RestMemberInfoList(
                 filteredMembers.map {
-                    RpcMemberInfo(
+                    RestMemberInfo(
                         it.memberProvidedContext.entries.associate { it.key to it.value },
                         it.mgmProvidedContext.entries.associate { it.key to it.value }
                     )

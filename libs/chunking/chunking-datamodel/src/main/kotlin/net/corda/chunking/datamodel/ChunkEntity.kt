@@ -1,6 +1,5 @@
 package net.corda.chunking.datamodel
 
-import net.corda.db.schema.DbSchema
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
@@ -12,7 +11,7 @@ import javax.persistence.Table
  */
 @Entity
 @IdClass(ChunkEntityPrimaryKey::class)
-@Table(name = "file_upload", schema = DbSchema.CONFIG)
+@Table(name = "file_upload")
 data class ChunkEntity(
     @Id
     @Column(name = "request_id", nullable = false)

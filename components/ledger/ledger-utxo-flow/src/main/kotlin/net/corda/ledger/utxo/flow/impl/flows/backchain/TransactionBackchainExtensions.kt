@@ -6,5 +6,5 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 val UtxoSignedTransaction.dependencies: Set<SecureHash>
     get() = this
         .let { it.inputStateRefs.asSequence() + it.referenceStateRefs.asSequence() }
-        .map { it.transactionHash }
+        .map { it.transactionId }
         .toSet()

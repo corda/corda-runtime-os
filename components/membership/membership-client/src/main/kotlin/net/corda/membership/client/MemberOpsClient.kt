@@ -52,5 +52,5 @@ interface MemberOpsClient : Lifecycle {
     fun checkSpecificRegistrationProgress(
         holdingIdentityShortHash: ShortHash,
         registrationRequestId: String,
-    ): RegistrationRequestStatusDto?
+    ): RegistrationRequestStatusDto
 }

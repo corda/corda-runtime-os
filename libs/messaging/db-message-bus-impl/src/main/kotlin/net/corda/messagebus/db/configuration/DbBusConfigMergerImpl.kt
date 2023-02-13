@@ -19,7 +19,7 @@ class DbBusConfigMergerImpl : BusConfigMerger {
         val updatedMessagingConfig = messagingConfig?: SmartConfigImpl.empty()
         return updatedMessagingConfig
             .withValue(MessagingConfig.Bus.DB_JDBC_URL,
-                ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BootConfig.BOOT_JDBC_URL)))
+                ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BootConfig.BOOT_JDBC_URL + "_messagebus")))
             .withValue(MessagingConfig.Bus.DB_USER,
                 ConfigValueFactory.fromAnyRef(bootConfig.getStringOrDefault(BootConfig.BOOT_JDBC_USER, "")))
             .withValue(MessagingConfig.Bus.DB_PASS,
