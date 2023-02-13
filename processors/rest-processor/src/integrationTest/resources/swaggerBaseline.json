@@ -4117,18 +4117,13 @@
             "nullable" : true,
             "example" : "string"
           },
-          "useClusterLevelSessionCertificateAndKey" : {
-            "type" : "boolean",
-            "nullable" : true,
-            "example" : true
-          },
           "useClusterLevelTlsCertificateAndKey" : {
             "type" : "boolean",
             "nullable" : true,
             "example" : true
           }
         },
-        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                useClusterLevelTlsCertificateAndKey: Should the cluster-level P2P TLS certificate type and key be \n                used or the virtual node certificate and key.\n                useClusterLevelSessionCertificateAndKey: Should the cluster-level P2P SESSION certificate type \n                and key be used or the virtual node certificate and key.\n                sessionKeyId: the session key identifier"
+        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                useClusterLevelTlsCertificateAndKey: Should the cluster-level P2P TLS certificate type and key be \n                used or the virtual node certificate and key.\n                sessionKeyId: the session key identifier"
       },
       "HsmAssociationInfo" : {
         "required" : [ "category", "deprecatedAt", "hsmId", "id" ],

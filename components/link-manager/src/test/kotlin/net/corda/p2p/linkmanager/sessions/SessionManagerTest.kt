@@ -214,7 +214,6 @@ class SessionManagerTest {
         holdingIdentity = OUR_PARTY,
         tlsCertificates = emptyList(),
         tlsTenantId = "tlsId",
-        sessionKeyTenantId = "id",
         sessionPublicKey = OUR_KEY.public,
         sessionCertificates = null
     )

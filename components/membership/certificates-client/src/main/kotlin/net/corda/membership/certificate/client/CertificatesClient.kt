@@ -16,8 +16,6 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
      * @param p2pTlsCertificateChainAlias The certificates chain alias.
      * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
      *   the virtual node certificate and key.
-     * @param useClusterLevelSessionCertificateAndKey Should we use the P2P cluster level session certificate type and P2P key or
-     *   the virtual node certificate and key.
      * @param sessionKeyId The session key ID (will use the first one if null).
      * @param sessionCertificateChainAlias The certificate chain alias of the Session Key. Should be null if no PKI is used for sessions.
      * @throws CertificatesResourceNotFoundException if a resource was not found.
@@ -27,7 +25,6 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,
         sessionCertificateChainAlias: String?,
     )

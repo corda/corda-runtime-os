@@ -42,7 +42,6 @@ class NetworkRestResourceImpl @Activate constructor(
                 ShortHash.parseOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
                 request.useClusterLevelTlsCertificateAndKey != false,
-                request.useClusterLevelSessionCertificateAndKey == true,
                 request.sessionKeyId,
                 request.sessionCertificateChainAlias
             )
