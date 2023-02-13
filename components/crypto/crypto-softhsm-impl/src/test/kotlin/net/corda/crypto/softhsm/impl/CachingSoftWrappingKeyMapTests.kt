@@ -13,11 +13,14 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityTransaction
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -120,6 +123,7 @@ class CachingSoftWrappingKeyMapTests {
             expected1.algorithm + "!",
             master.wrap(expected1)
         )
+
         val entityManager = mock<EntityManager> {
             on { find(WrappingKeyEntity::class.java, alias1) } doReturn entity1
         }
@@ -139,27 +143,20 @@ class CachingSoftWrappingKeyMapTests {
             cut.getWrappingKey(alias1)
         }
     }
-//
-//    @Test
-//    fun `putWrappingKey should put to cache using public key as cache key`() {
-//        val master = WrappingKey.generateWrappingKey(schemeMetadata)
-//        val expected = WrappingKey.generateWrappingKey(schemeMetadata)
-//        val alias = "master-alias"
-//        val info = WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, expected.algorithm, master.wrap(expected))
-//        val store = mock<WrappingKeyStore> {
-//            on { findWrappingKey(alias) } doReturn info
-//        }
-//        val cut = CachingSoftWrappingKeyMap(
-//            SoftCacheConfig(expireAfterAccessMins = 2, maximumSize = 3),
-//            store,
-//            master
-//        )
-//        cut.putWrappingKey(alias, expected)
-//        val key = cut.getWrappingKey(alias)
-//        assertEquals(expected, key)
-//        Mockito.verify(store, times(1)).saveWrappingKey(any(), any())
-//        Mockito.verify(store, never()).findWrappingKey(any())
-//    }
+
+    @Test
+    fun `putWrappingKey should put to cache using public key as cache key`() {
+        val entityTransaction: EntityTransaction = mock()
+        val entityManager = mock<EntityManager> {
+            on { transaction } doReturn entityTransaction
+        }
+        val cut = makeCachingSoftWrappingKeyMapWithMockedDatabase(entityManager)
+        cut.putWrappingKey(alias1, expected1)
+        val key = cut.getWrappingKey(alias1)
+        assertEquals(expected1, key)
+        Mockito.verify(entityManager, times(1)).persist(any())
+        Mockito.verify(entityManager, never()).find(eq(WrappingKeyEntity::class.java), any())
+    }
 //
 //    @Test
 //    fun `exists should return true whenever key exist in cache or store and false otherwise`() {
