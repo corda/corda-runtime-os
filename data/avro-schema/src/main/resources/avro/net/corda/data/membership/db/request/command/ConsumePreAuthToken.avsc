@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "ConsumePreAuthToken",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Consume a pre auth token.",
+  "fields": [
+    {
+      "name": "tokenId",
+      "doc": "Token identifier of the pre auth token.",
+      "type": "string"
+    },
+    {
+      "name": "ownerX500Name",
+      "doc": "X500 name of the owner of the pre auth token.",
+      "type": "string"
+    }
+  ]
+}

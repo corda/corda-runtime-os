@@ -26,6 +26,7 @@
         "net.corda.data.membership.db.request.command.PersistApprovalRule",
         "net.corda.data.membership.db.request.command.DeleteApprovalRule",
         "net.corda.data.membership.db.request.command.AddPreAuthToken",
+        "net.corda.data.membership.db.request.command.ConsumePreAuthToken",
         "net.corda.data.membership.db.request.command.RevokePreAuthToken",
         "net.corda.data.membership.db.request.query.QueryGroupPolicy",
         "net.corda.data.membership.db.request.query.QueryMemberInfo",
