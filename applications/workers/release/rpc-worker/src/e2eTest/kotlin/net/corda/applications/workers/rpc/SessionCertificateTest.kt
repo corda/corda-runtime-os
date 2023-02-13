@@ -6,7 +6,7 @@ import net.corda.applications.workers.rpc.utils.E2eClusterCConfig
 import net.corda.applications.workers.rpc.utils.E2eClusterFactory
 import net.corda.applications.workers.rpc.utils.E2eClusterMember
 import net.corda.applications.workers.rpc.utils.assertAllMembersAreInMemberList
-import net.corda.applications.workers.rpc.utils.disableGatewayCLRChecks
+import net.corda.applications.workers.rpc.utils.sslConfiguration
 import net.corda.applications.workers.rpc.utils.disableLinkManagerCLRChecks
 import net.corda.applications.workers.rpc.utils.generateGroupPolicy
 import net.corda.applications.workers.rpc.utils.getGroupId
@@ -68,14 +68,14 @@ class SessionCertificateTest {
     private fun onboardMultiClusterGroup(): String {
         val mgm = clusterC.members[0]
 
-        clusterC.disableGatewayCLRChecks()
+        clusterC.sslConfiguration(false)
         clusterC.disableLinkManagerCLRChecks()
         clusterC.onboardMgm(mgm, tempDir, useSessionCertificate = true)
 
         val memberGroupPolicy = clusterC.generateGroupPolicy(mgm.holdingId)
 
         memberClusters.forEach { cordaCluster ->
-            cordaCluster.disableGatewayCLRChecks()
+            cordaCluster.sslConfiguration(false)
             cordaCluster.disableLinkManagerCLRChecks()
             cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir, useSessionCertificate = true)
         }

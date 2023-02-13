@@ -34,6 +34,8 @@ import org.junit.jupiter.api.Assertions.fail
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.util.UUID
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
@@ -44,7 +46,12 @@ const val HSM_CAT_PRE_AUTH = "PRE_AUTH"
 const val HSM_CAT_LEDGER = "LEDGER"
 const val HSM_CAT_TLS = "TLS"
 
-private data class TestJsonObject(override val escapedJson: String = "") : JsonObject
+private class TestJsonObject(data: Map<String, Any?>) : JsonObject {
+    val json = ObjectMapper()
+    override val escapedJson by lazy {
+        json.writeValueAsString(data)
+    }
+}
 
 fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
@@ -281,27 +288,43 @@ fun E2eCluster.setUpNetworkIdentity(
     }
 }
 
-fun E2eCluster.disableGatewayCLRChecks() {
-    val sslConfig = "sslConfig"
-    val revocationCheck = "revocationCheck"
-    val mode = "mode"
-    val modeOff = "OFF"
+fun E2eCluster.allowClientCertificates(certificatePem: String, mgm: E2eClusterMember) {
+    val subject = CertificateFactory.getInstance("X.509")
+        .generateCertificates(certificatePem.byteInputStream())
+        .filterIsInstance<X509Certificate>()
+        .first()
+        .subjectX500Principal
+    clusterHttpClientFor(MGMRestResource::class.java).use { restClient ->
+        restClient.start().proxy.mutualTlsAllowClientCertificate(
+            holdingIdentityShortHash = mgm.holdingId,
+            subject = subject.toString()
+        )
+    }
+}
+
+fun E2eCluster.sslConfiguration(mutualTls: Boolean) {
+    val tlsType = if (mutualTls) {
+        "MUTUAL"
+    } else {
+        "ONE_WAY"
+    }
+    val config = mapOf(
+        "sslConfig" to mapOf(
+            "revocationCheck" to mapOf("mode" to "OFF"),
+            "tlsType" to tlsType
+        )
+    )
     clusterHttpClientFor(ConfigRestResource::class.java).use { client ->
         val proxy = client.start().proxy
         val configResponse = proxy.get(GATEWAY_CONFIG)
-        val config = ObjectMapper().readTree(
-            configResponse.configWithDefaults
-        )
-        if (modeOff != config[sslConfig][revocationCheck][mode].asText()) {
-            proxy.updateConfig(
-                UpdateConfigParameters(
-                    GATEWAY_CONFIG,
-                    configResponse.version,
-                    TestJsonObject("{ \"$sslConfig\": { \"$revocationCheck\": { \"$mode\": \"$modeOff\" }  } }"),
-                    ConfigSchemaVersion(1, 0)
-                )
+        proxy.updateConfig(
+            UpdateConfigParameters(
+                GATEWAY_CONFIG,
+                configResponse.version,
+                TestJsonObject(config),
+                ConfigSchemaVersion(1, 0)
             )
-        }
+        )
     }
 }
 
@@ -320,7 +343,13 @@ fun E2eCluster.disableLinkManagerCLRChecks() {
                 UpdateConfigParameters(
                     LINK_MANAGER_CONFIG,
                     configResponse.version,
-                    TestJsonObject("{ \"$revocationCheck\": { \"$mode\": \"$modeOff\" } }"),
+                    TestJsonObject(
+                        mapOf(
+                            revocationCheck to mapOf(
+                                mode to modeOff
+                            )
+                        )
+                    ),
                     ConfigSchemaVersion(1, 0)
                 )
             )
@@ -337,6 +366,7 @@ fun E2eCluster.onboardMembers(
     memberGroupPolicy: String,
     tempDir: Path,
     useSessionCertificate: Boolean = false,
+    certificateUploaded: (String) -> Unit = {},
 ): List<E2eClusterMember> {
     val holdingIds = mutableListOf<E2eClusterMember>()
     val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray(), tempDir)
@@ -351,6 +381,7 @@ fun E2eCluster.onboardMembers(
             val memberTlsCsr = generateCsr(member, memberTlsKeyId)
             val memberTlsCert = getCa().generateCert(memberTlsCsr)
             uploadTlsCertificate(memberTlsCert)
+            certificateUploaded(memberTlsCert)
         }
 
         val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)
@@ -395,6 +426,7 @@ fun E2eCluster.onboardMgm(
     mgm: E2eClusterMember,
     tempDir: Path,
     useSessionCertificate: Boolean = false,
+    mutualTls: Boolean = false,
 ) {
     val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), tempDir, true)
     createVirtualNode(mgm, cpiChecksum)
@@ -403,6 +435,11 @@ fun E2eCluster.onboardMgm(
 
     val mgmSessionKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_SESSION)
     val mgmECDHKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_PRE_AUTH)
+    val tlsType = if (mutualTls) {
+        "Mutual"
+    } else {
+        "OneWay"
+    }
 
     val mgmRegistrationContext = if (useSessionCertificate) {
         val mgmSessionCsr = generateCsr(mgm, mgmSessionKeyId, mgm.holdingId, addHostToSubjectAlternativeNames = false)
@@ -413,14 +450,16 @@ fun E2eCluster.onboardMgm(
             sessionKeyId = mgmSessionKeyId,
             ecdhKeyId = mgmECDHKeyId,
             p2pUrl = p2pUrl,
-            sessionPkiMode = "Standard"
+            sessionPkiMode = "Standard",
+            tlsType = tlsType,
         )
     } else {
         createMgmRegistrationContext(
             caTrustRoot = getCa().caCertificate.toPem(),
             sessionKeyId = mgmSessionKeyId,
             ecdhKeyId = mgmECDHKeyId,
-            p2pUrl = p2pUrl
+            p2pUrl = p2pUrl,
+            tlsType = tlsType,
         )
     }
 
