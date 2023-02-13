@@ -7,7 +7,7 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.KEY_MAP_CACHING_NAME
 import net.corda.crypto.softhsm.KEY_MAP_TRANSIENT_NAME
@@ -45,14 +45,14 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
-    @Reference(service = WrappingKeyStore::class)
-    private val store: WrappingKeyStore
+    @Reference(service = CryptoConnectionsFactory::class)
+    private val connectionsFactory: CryptoConnectionsFactory
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = lifecycleCoordinatorName,
     upstream = DependenciesTracker.Default(
         setOf(
-            LifecycleCoordinatorName.forComponent<WrappingKeyStore>()
+            LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>()
         )
     )
 ), SoftCryptoServiceProvider {
@@ -61,7 +61,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, digestService, store)
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, digestService, connectionsFactory)
 
     override fun getInstance(config: SmartConfig): CryptoService = impl.getInstance(config)
 
@@ -70,7 +70,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val digestService: PlatformDigestService,
-        private val store: WrappingKeyStore
+        private val connectionsFactory: CryptoConnectionsFactory
     ) : AbstractImpl {
 
         fun getInstance(config: SmartConfig): CryptoService {
@@ -111,7 +111,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
                 KEY_MAP_TRANSIENT_NAME -> SoftCacheConfig(0, 0)
                 else -> wrappingKeyMapCacheConfig
             }
-            return CachingSoftWrappingKeyMap(finalWrappingKeyMapCacheConfig, store, masterKey)
+            return CachingSoftWrappingKeyMap(finalWrappingKeyMapCacheConfig, masterKey, connectionsFactory)
         }
 
         // TODO - rework to use Config directly

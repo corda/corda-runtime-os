@@ -6,7 +6,6 @@ import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.CryptoServiceExtensions
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
@@ -21,10 +20,7 @@ import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
-import net.corda.test.util.eventually
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -53,11 +49,18 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
+
 /**
+ * Integration tests of SoftCryptoService and the CachedWrappingKeyMap and TransientSoftKeyMap classes,
+ * with real keys and real signing.
+ *
+ * These tests make use of neither OSGi nor a real database nor the corda lifecycle scheme.
+ *
  * Tests are combined to improve performance as it takes a lot of time to generate keys and considering the number
  * of permutations when especially running tests for customized signature specs (over 70) it makes sense
  * trying to generate keys once and run all related tests
  */
+
 class SoftCryptoServiceOperationsTests {
     companion object {
         private val zeroBytes = ByteArray(100)
@@ -67,13 +70,12 @@ class SoftCryptoServiceOperationsTests {
         private lateinit var platformDigestService: PlatformDigestService
         private lateinit var tenantId: String
         private lateinit var category: String
-        private lateinit var wrappingKeyAlias: String
+        private lateinit var masterWrappingKeyAlias: String
         private lateinit var cryptoService: CryptoService
         private lateinit var softAliasedKeys: Map<KeyScheme, GeneratedWrappedKey>
         private lateinit var softFreshKeys: Map<KeyScheme, GeneratedWrappedKey>
         private lateinit var unknownKeyPairs: Map<KeyScheme, KeyPair>
         private lateinit var masterKey: WrappingKey
-        private lateinit var wrappingKeyStore: TestWrappingKeyStore
         private lateinit var keyMap: SoftKeyMap
         private lateinit var wrappingKeyMap: SoftWrappingKeyMap
         private lateinit var wrapping: SoftPrivateKeyWrapping
@@ -81,37 +83,50 @@ class SoftCryptoServiceOperationsTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
+            val alias = "alias1"
             coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
             schemeMetadata = CipherSchemeMetadataImpl()
             masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
             platformDigestService = PlatformDigestServiceImpl(schemeMetadata)
             tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.Categories.LEDGER
-            wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
-                it.start()
-                eventually { assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status) }
-            }
-            wrappingKeyAlias = UUID.randomUUID().toString()
+            masterWrappingKeyAlias = "master"
+
+            // set up a CachingSoftWrappingKeyMap with a mocked out database, where the mock stores
+            // a wrapping key so we can access it from this fixtur elater
+            val inMemoryCryptoConnectionsFactory = InMemoryCryptoConnectionsFactory()
             wrappingKeyMap = CachingSoftWrappingKeyMap(
                 SoftCacheConfig(0, 0),
-                wrappingKeyStore,
-                masterKey
+                masterKey,
+                inMemoryCryptoConnectionsFactory
             )
+
+            // put together a DefaultSoftPrivateKeyWrapping that uses the master wrapping key in our CachedWrappingKeyMap
             wrapping = DefaultSoftPrivateKeyWrapping(wrappingKeyMap)
+
+            // put together the TransientSoftKeyMap which uses the wrapping
             keyMap = TransientSoftKeyMap(wrapping)
+
+            // finally put together the crypto service from what we've now got
             cryptoService = SoftCryptoService(
                 keyMap,
                 wrappingKeyMap,
                 schemeMetadata,
                 platformDigestService
             )
-            cryptoService.createWrappingKey(wrappingKeyAlias, true, emptyMap())
+
+            // push in the master wrapping key  from above            
+            cryptoService.createWrappingKey(masterWrappingKeyAlias, true, emptyMap())
+            // and make sure it gets into the mocked database underneath
+            assertThat(inMemoryCryptoConnectionsFactory.exists(masterWrappingKeyAlias)).isTrue()
+
+            // now populate some private keys for test cases later
             softAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {
                 cryptoService.generateKeyPair(
                     KeyGenerationSpec(
                         keyScheme = it,
-                        alias = UUID.randomUUID().toString(),
-                        masterKeyAlias = wrappingKeyAlias
+                        alias = alias,
+                        masterKeyAlias = masterWrappingKeyAlias
                     ),
                     mapOf(
                         CRYPTO_TENANT_ID to tenantId,
@@ -124,7 +139,7 @@ class SoftCryptoServiceOperationsTests {
                     KeyGenerationSpec(
                         keyScheme = it,
                         alias = null,
-                        masterKeyAlias = wrappingKeyAlias
+                        masterKeyAlias = masterWrappingKeyAlias
                     ),
                     mapOf(
                         CRYPTO_TENANT_ID to tenantId,
@@ -156,16 +171,6 @@ class SoftCryptoServiceOperationsTests {
     }
 
     @Test
-    fun `SoftCryptoService should require wrapping key`() {
-        assertThat(cryptoService.extensions).contains(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
-    }
-
-    @Test
-    fun `SoftCryptoService should not support key deletion`() {
-        assertThat(cryptoService.extensions).doesNotContain(CryptoServiceExtensions.DELETE_KEYS)
-    }
-
-    @Test
     fun `SoftCryptoService should support at least one schemes defined in cipher suite`() {
         assertTrue(cryptoService.supportedSchemes.isNotEmpty())
         assertTrue(cryptoService.supportedSchemes.any {
@@ -186,8 +191,8 @@ class SoftCryptoServiceOperationsTests {
                     SigningWrappedSpec(
                         publicKey = key.publicKey,
                         keyMaterialSpec = KeyMaterialSpec(
-                        keyMaterial = key.keyMaterial,
-                        masterKeyAlias = UUID.randomUUID().toString(),
+                            keyMaterial = key.keyMaterial,
+                            masterKeyAlias = UUID.randomUUID().toString(),
                             encodingVersion = key.encodingVersion
                         ),
                         keyScheme = scheme,
@@ -214,7 +219,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = wrappingKeyAlias,
+                        masterKeyAlias = masterWrappingKeyAlias,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -230,7 +235,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = wrappingKeyAlias,
+                        masterKeyAlias = masterWrappingKeyAlias,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -247,7 +252,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = wrappingKeyAlias,
+                        masterKeyAlias = masterWrappingKeyAlias,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -263,7 +268,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = wrappingKeyAlias,
+                        masterKeyAlias = masterWrappingKeyAlias,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -297,7 +302,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = wrappingKeyAlias,
+                        masterKeyAlias = masterWrappingKeyAlias,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -313,7 +318,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = wrappingKeyAlias,
+                        masterKeyAlias = masterWrappingKeyAlias,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -330,7 +335,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = wrappingKeyAlias,
+                        masterKeyAlias = masterWrappingKeyAlias,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -346,7 +351,7 @@ class SoftCryptoServiceOperationsTests {
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
-                        masterKeyAlias = wrappingKeyAlias,
+                        masterKeyAlias = masterWrappingKeyAlias,
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
@@ -442,7 +447,7 @@ class SoftCryptoServiceOperationsTests {
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_KEY_SCHEME,
                     alias = UUID.randomUUID().toString(),
-                    masterKeyAlias = wrappingKeyAlias
+                    masterKeyAlias = masterWrappingKeyAlias
                 ),
                 mapOf(
                     CRYPTO_TENANT_ID to tenantId,
@@ -455,7 +460,7 @@ class SoftCryptoServiceOperationsTests {
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_KEY_SCHEME,
                     alias = null,
-                    masterKeyAlias = wrappingKeyAlias
+                    masterKeyAlias = masterWrappingKeyAlias
                 ),
                 mapOf(
                     CRYPTO_TENANT_ID to tenantId,

@@ -161,15 +161,6 @@ class TestServicesFactory {
         }
     }
 
-    val wrappingKeyStore: TestWrappingKeyStore by lazy {
-        TestWrappingKeyStore(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
-
     val signingService: SigningService by lazy {
         SigningServiceImpl(
             signingKeyStore,
@@ -206,11 +197,20 @@ class TestServicesFactory {
         }
     }
 
+    val cryptoConnectionsFactory: InMemoryCryptoConnectionsFactory by lazy {
+        InMemoryCryptoConnectionsFactory(coordinatorFactory).also {
+            it.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator?.status ?: LifecycleStatus.DOWN)
+            }
+        }
+    }
+
     val cryptoService: CryptoService by lazy {
         val wrappingKeyMap = CachingSoftWrappingKeyMap(
             SoftCacheConfig(0, 0),
-            wrappingKeyStore,
-            WrappingKey.generateWrappingKey(schemeMetadata)
+            WrappingKey.generateWrappingKey(schemeMetadata),
+            cryptoConnectionsFactory
         )
         CryptoServiceWrapper(
             SoftCryptoService(

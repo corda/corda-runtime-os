@@ -3,15 +3,17 @@ package net.corda.crypto.softhsm.impl
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.softhsm.KEY_MAP_CACHING_NAME
 import net.corda.crypto.softhsm.KEY_MAP_TRANSIENT_NAME
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.softhsm.WRAPPING_DEFAULT_NAME
-import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.BeforeEach
@@ -24,10 +26,38 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
+// TODO _ use version at kotlin/net/corda/crypto/persistence/impl/tests/infra/TestCryptoConnectionsFactory.kt
+class TestCryptoConnectionsFactory(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    val _mock: CryptoConnectionsFactory = mock()
+) : CryptoConnectionsFactory by _mock {
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>()
+    ) { e, c ->
+        if (e is StartEvent) {
+            c.updateStatus(LifecycleStatus.UP)
+        }
+    }
+
+    override val isRunning: Boolean
+        get() = lifecycleCoordinator.isRunning
+
+    override fun start() {
+        lifecycleCoordinator.start()
+    }
+
+    override fun stop() {
+        lifecycleCoordinator.stop()
+    }
+}
+
+/**
+ * Lifecycle and configuration testing for SoftCryptoServiceProviderImpl
+ */
 class SoftCryptoServiceProviderTests {
     private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
     private lateinit var schemeMetadata: CipherSchemeMetadataImpl
-    private lateinit var wrappingKeyStore: TestWrappingKeyStore
+    private lateinit var cryptoConnectionsFactory: InMemoryCryptoConnectionsFactory
     private lateinit var component: SoftCryptoServiceProviderImpl
     private lateinit var defaultConfig: SmartConfig
 
@@ -36,17 +66,17 @@ class SoftCryptoServiceProviderTests {
         defaultConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         schemeMetadata = CipherSchemeMetadataImpl()
-        wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
+        cryptoConnectionsFactory = InMemoryCryptoConnectionsFactory(coordinatorFactory).also {
             it.start()
             eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator?.status)
             }
         }
         component = SoftCryptoServiceProviderImpl(
             coordinatorFactory,
             schemeMetadata,
             mock(),
-            wrappingKeyStore
+            cryptoConnectionsFactory
         )
     }
 
@@ -92,6 +122,7 @@ class SoftCryptoServiceProviderTests {
 
     private fun createCustomConfig(keyMapName: String) =
         SmartConfigFactory.createWithoutSecurityServices().create(
+            // TODO - JSON escaping on keyMapName (low priority due to this being a private test method)
             ConfigFactory.parseString(
                 """
             {
@@ -180,14 +211,14 @@ class SoftCryptoServiceProviderTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertNotNull(component.getInstance(defaultConfig))
-        wrappingKeyStore.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        cryptoConnectionsFactory.lifecycleCoordinator?.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertThrows<IllegalStateException> {
             component.getInstance(defaultConfig)
         }
-        wrappingKeyStore.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        cryptoConnectionsFactory.lifecycleCoordinator?.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
