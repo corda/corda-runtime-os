@@ -6,6 +6,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
+import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
@@ -34,6 +35,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.impl.persistence.service.handler.AddNotaryToGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.AddPreAuthTokenHandler
+import net.corda.membership.impl.persistence.service.handler.ConsumePreAuthTokenHandler
 import net.corda.membership.impl.persistence.service.handler.DeleteApprovalRuleHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsAddToAllowedCertificatesHandler
 import net.corda.membership.impl.persistence.service.handler.MutualTlsListAllowedCertificatesHandler
@@ -117,6 +119,7 @@ internal class MembershipPersistenceRPCProcessor(
         MutualTlsListAllowedCertificates::class.java to { MutualTlsListAllowedCertificatesHandler(persistenceHandlerServices) },
         QueryPreAuthToken::class.java to { QueryPreAuthTokenHandler(persistenceHandlerServices) },
         AddPreAuthToken::class.java to { AddPreAuthTokenHandler(persistenceHandlerServices) },
+        ConsumePreAuthToken::class.java to { ConsumePreAuthTokenHandler(persistenceHandlerServices) },
         RevokePreAuthToken::class.java to { RevokePreAuthTokenHandler(persistenceHandlerServices) },
         QueryRegistrationRequests::class.java to { QueryRegistrationRequestsHandler(persistenceHandlerServices) },
         PersistApprovalRule::class.java to { PersistApprovalRuleHandler(persistenceHandlerServices) },
