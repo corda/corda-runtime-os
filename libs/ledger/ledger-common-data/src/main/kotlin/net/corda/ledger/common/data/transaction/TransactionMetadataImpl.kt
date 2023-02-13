@@ -91,7 +91,7 @@ class TransactionMetadataImpl (private val properties: Map<String, Any>) : Trans
             version.toInt()
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
-                "Transaction metadata representation error: JSON platform version should be an integer but could not be parsed: $version")
+                "Transaction metadata representation error: Platform version should be an integer but could not be parsed: $version")
         }
     }
 

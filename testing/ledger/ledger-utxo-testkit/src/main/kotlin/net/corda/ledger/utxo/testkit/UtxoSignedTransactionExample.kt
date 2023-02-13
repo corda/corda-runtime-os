@@ -9,6 +9,7 @@ import net.corda.ledger.common.testkit.defaultComponentGroups
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -24,7 +25,13 @@ fun UtxoSignedTransactionFactory.createExample(
     componentGroups: List<List<ByteArray>> = defaultComponentGroups +
             List(UtxoComponentGroup.values().size - defaultComponentGroups.size) { emptyList() }
 ):UtxoSignedTransaction {
-    val wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator, componentGroups)
+    val wireTransaction = wireTransactionFactory.createExample(
+        jsonMarshallingService,
+        jsonValidator,
+        componentGroups,
+        ledgerModel = UtxoLedgerTransactionImpl::class.java.canonicalName,
+        transactionSubType = "GENERAL"
+    )
     return create(wireTransaction, listOf(getSignatureWithMetadataExample()))
 }
 
