@@ -260,12 +260,12 @@ internal class StartRegistrationHandler(
             }
         } catch (e: IllegalArgumentException) {
             with("Registration failed due to invalid format for the provided pre-auth token.") {
-                logger.debug(this, e)
+                logger.info(this, e)
                 throw InvalidRegistrationRequestException(this)
             }
         } catch (e: MembershipQueryResult.QueryException) {
             with("Registration failed due to failure to query configured pre-auth tokens.") {
-                logger.debug(this, e)
+                logger.info(this, e)
                 throw InvalidRegistrationRequestException(this)
             }
         }

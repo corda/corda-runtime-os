@@ -32,6 +32,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 
 class ConsumePreAuthTokenHandlerTest {
 
@@ -89,8 +90,13 @@ class ConsumePreAuthTokenHandlerTest {
     )
 
     private fun mockPersistedTokenEntity(entity: PreAuthTokenEntity) {
-        whenever(em.find(PreAuthTokenEntity::class.java, tokenIdentifier.toString()))
-            .doReturn(entity)
+        whenever(
+            em.find(
+                PreAuthTokenEntity::class.java,
+                tokenIdentifier.toString(),
+                LockModeType.PESSIMISTIC_WRITE
+            )
+        ).doReturn(entity)
     }
 
     private fun createTokenEntity(
@@ -135,7 +141,11 @@ class ConsumePreAuthTokenHandlerTest {
 
     @AfterEach
     fun verify() {
-        verify(em).find(PreAuthTokenEntity::class.java, tokenIdentifier.toString())
+        verify(em).find(
+            PreAuthTokenEntity::class.java,
+            tokenIdentifier.toString(),
+            LockModeType.PESSIMISTIC_WRITE
+        )
     }
 
     @Test

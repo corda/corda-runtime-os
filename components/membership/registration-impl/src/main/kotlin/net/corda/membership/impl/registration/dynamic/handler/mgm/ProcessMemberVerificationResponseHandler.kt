@@ -156,7 +156,9 @@ internal class ProcessMemberVerificationResponseHandler(
             ?.memberProvidedContext
             ?.toMap()
 
-        val approvalRuleType = proposedMemberInfo[PRE_AUTH_TOKEN]?.let {
+        val preAuthToken = proposedMemberInfo[PRE_AUTH_TOKEN]
+
+        val approvalRuleType = preAuthToken?.let {
             val tokenExists = membershipQueryClient.queryPreAuthTokens(
                 mgm,
                 member.x500Name,
@@ -176,7 +178,7 @@ internal class ProcessMemberVerificationResponseHandler(
             .getOrThrow()
             .map { RegistrationRule.Impl(it.ruleRegex.toRegex()) }
 
-        proposedMemberInfo[PRE_AUTH_TOKEN]?.let {
+        preAuthToken?.let {
             // Consume token after retrieving rules.
             membershipPersistenceClient.consumePreAuthToken(
                 mgm,
