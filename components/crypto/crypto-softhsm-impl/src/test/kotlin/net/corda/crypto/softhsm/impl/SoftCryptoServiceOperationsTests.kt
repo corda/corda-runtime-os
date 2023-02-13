@@ -171,16 +171,7 @@ class SoftCryptoServiceOperationsTests {
 //        }
 //    }
 
-    @Test
-    fun `SoftCryptoService should require wrapping key`() {
-        assertThat(cryptoService.extensions).contains(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
-    }
 
-
-    @Test
-    fun `SoftCryptoService should not support key deletion`() {
-        assertThat(cryptoService.extensions).doesNotContain(CryptoServiceExtensions.DELETE_KEYS)
-    }
 //
 //    @Test
 //    fun `SoftCryptoService should support at least one schemes defined in cipher suite`() {

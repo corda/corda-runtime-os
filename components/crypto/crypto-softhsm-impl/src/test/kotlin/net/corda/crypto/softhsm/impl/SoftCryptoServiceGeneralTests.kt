@@ -4,6 +4,7 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CryptoServiceExtensions
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
@@ -20,6 +21,7 @@ import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.OID_COMPOSITE_KEY
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
+import org.assertj.core.api.Assertions
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -281,5 +283,28 @@ class SoftCryptoServiceGeneralTests {
                 )
             )
         }
+    }
+
+    @Test
+    fun `SoftCryptoService should require wrapping key`() {
+        val cryptoService = SoftCryptoService(
+            mock(),
+            mock(),
+            schemeMetadata,
+            mock()
+        )
+        Assertions.assertThat(cryptoService.extensions).contains(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
+    }
+
+
+    @Test
+    fun `SoftCryptoService should not support key deletion`() {
+        val cryptoService = SoftCryptoService(
+            mock(),
+            mock(),
+            schemeMetadata,
+            mock()
+        )
+        Assertions.assertThat(cryptoService.extensions).doesNotContain(CryptoServiceExtensions.DELETE_KEYS)
     }
 }
