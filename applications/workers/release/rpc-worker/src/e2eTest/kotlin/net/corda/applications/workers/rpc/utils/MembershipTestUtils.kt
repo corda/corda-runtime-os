@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.httprpc.v1.MemberLookupRestResource
-import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
+import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
@@ -112,9 +112,9 @@ fun createMemberRegistrationContext(
     "corda.endpoints.0.protocolVersion" to "1"
 )
 
-val RpcMemberInfo.status get() = mgmContext["corda.status"] ?: fail("Could not find member status")
-val RpcMemberInfo.groupId get() = memberContext["corda.groupId"] ?: fail("Could not find member group ID")
-val RpcMemberInfo.name get() = memberContext["corda.name"] ?: fail("Could not find member name")
+val RestMemberInfo.status get() = mgmContext["corda.status"] ?: fail("Could not find member status")
+val RestMemberInfo.groupId get() = memberContext["corda.groupId"] ?: fail("Could not find member group ID")
+val RestMemberInfo.name get() = memberContext["corda.name"] ?: fail("Could not find member name")
 
 fun E2eCluster.assertOnlyMgmIsInMemberList(
     holdingId: String,
@@ -165,7 +165,7 @@ fun E2eCluster.assertMemberInMemberList(
 
 fun E2eCluster.lookupMembers(
     holdingId: String
-): List<RpcMemberInfo> {
+): List<RestMemberInfo> {
     return clusterHttpClientFor(MemberLookupRestResource::class.java)
         .use { client ->
             client.start().proxy.lookup(holdingId).members
