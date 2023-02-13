@@ -4,8 +4,6 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.CryptoConnectionsFactory
-import net.corda.crypto.persistence.WrappingKeyInfo
-import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.SoftCacheConfig
 import net.corda.crypto.softhsm.WRAPPING_KEY_ENCODING_VERSION
@@ -16,16 +14,12 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
-import kotlin.test.assertTrue
 
 /**
  * There is no way of unit testing the eviction in timely manner or without having special setup for the cache during
@@ -42,25 +36,14 @@ class CachingSoftWrappingKeyMapTests {
         }
     }
 
-    @Test
-    fun `getWrappingKey should cache requested key using alias as cache key`() {
-        val master = WrappingKey.generateWrappingKey(schemeMetadata)
-        val expected1 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val expected2 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val now = Instant.now()
-        val alias1 = "master-alias-1"
-        val alias2 = "master-alias-2"
-        val info1 =
-            WrappingKeyEntity(alias1, now, WRAPPING_KEY_ENCODING_VERSION, expected1.algorithm, master.wrap(expected1))
-        val info2 =
-            WrappingKeyEntity(alias2, now, WRAPPING_KEY_ENCODING_VERSION, expected2.algorithm, master.wrap(expected2))
-        val entityTransaction = mock<EntityTransaction> {
-        }
-        val entityManager = mock<EntityManager> {
-            on { transaction } doReturn entityTransaction  // REMOVE?
-            on { find(WrappingKeyEntity::class.java, alias1) } doReturn info1
-            on { find(WrappingKeyEntity::class.java, alias2) } doReturn info2
-        }
+    private val master = WrappingKey.generateWrappingKey(schemeMetadata)
+    private val expected1 = WrappingKey.generateWrappingKey(schemeMetadata)
+
+    private val alias1 = "master-alias-1"
+    private val now = Instant.now()
+
+
+    private fun makeCachingSoftWrappingKeyMapWithMockedDatabase(entityManager: EntityManager): CachingSoftWrappingKeyMap {
         val emf = mock<EntityManagerFactory> {
             on { createEntityManager() } doReturn entityManager
         }
@@ -72,6 +55,34 @@ class CachingSoftWrappingKeyMapTests {
             master,
             connectionsFactory
         )
+        return cut
+    }
+
+    @Test
+    fun `getWrappingKey should cache requested key using alias as cache key`() {
+        val expected2 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val alias2 = "master-alias-2"
+        val info1 =
+            WrappingKeyEntity(
+                alias1,
+                now,
+                WRAPPING_KEY_ENCODING_VERSION,
+                expected1.algorithm,
+                master.wrap(expected1)
+            ) // TODO renaame
+        val info2 =
+            WrappingKeyEntity(
+                alias2,
+                now,
+                WRAPPING_KEY_ENCODING_VERSION,
+                expected2.algorithm,
+                master.wrap(expected2)
+            ) // TODO renaame
+        val entityManager = mock<EntityManager> {
+            on { find(WrappingKeyEntity::class.java, alias1) } doReturn info1
+            on { find(WrappingKeyEntity::class.java, alias2) } doReturn info2
+        }
+        val cut = makeCachingSoftWrappingKeyMapWithMockedDatabase(entityManager)
         val key11 = cut.getWrappingKey(alias1)
         assertEquals(expected1, key11)
         val key21 = cut.getWrappingKey(alias2)
@@ -89,72 +100,45 @@ class CachingSoftWrappingKeyMapTests {
 
     @Test
     fun `getWrappingKey should throw IllegalArgumentException when encoding version is not recognised`() {
-        val master = WrappingKey.generateWrappingKey(schemeMetadata)
-        val expected = WrappingKey.generateWrappingKey(schemeMetadata)
-        val alias = "master-alias-1"
         val badVersion = WRAPPING_KEY_ENCODING_VERSION + 1
-        val info = WrappingKeyEntity(alias, Instant.now(), badVersion, expected.algorithm, master.wrap(expected))
-        val entityTransaction = mock<EntityTransaction> {
-        }
+        val entity1 = WrappingKeyEntity(alias1, now, badVersion, expected1.algorithm, master.wrap(expected1))
         val entityManager = mock<EntityManager> {
-            on { transaction } doReturn entityTransaction // REMOVE?
-            on { find(WrappingKeyEntity::class.java, alias) } doReturn info
+            on { find(WrappingKeyEntity::class.java, alias1) } doReturn entity1
         }
-        val emf = mock<EntityManagerFactory> {
-            on { createEntityManager() } doReturn entityManager
-        }
-        val connectionsFactory = mock<CryptoConnectionsFactory> {
-            on { getEntityManagerFactory(any()) } doReturn emf
-        }
-        val cut = CachingSoftWrappingKeyMap(
-            SoftCacheConfig(expireAfterAccessMins = 2, maximumSize = 3),
-            master,
-            connectionsFactory
-        )
+        val cut = makeCachingSoftWrappingKeyMapWithMockedDatabase(entityManager)
         assertThrows<IllegalArgumentException> {
-            cut.getWrappingKey(alias)
+            cut.getWrappingKey(alias1)
         }
     }
 
-//    @Test
-//    fun `getWrappingKey should throw IllegalArgumentException when key algorithm does not match master key`() {
-//        val master = WrappingKey.generateWrappingKey(schemeMetadata)
-//        val expected = WrappingKey.generateWrappingKey(schemeMetadata)
-//        val alias = "master-alias-1"
-//        val info = WrappingKeyInfo(
-//            WRAPPING_KEY_ENCODING_VERSION,
-//            expected.algorithm + "!",
-//            master.wrap(expected)
-//        )
-//        val store = mock<WrappingKeyStore> {
-//            on { findWrappingKey(alias) } doReturn info
-//        }
-//        val cut = CachingSoftWrappingKeyMap(
-//            SoftCacheConfig(expireAfterAccessMins = 2, maximumSize = 3),
-//            store,
-//            master
-//        )
-//        assertThrows<IllegalArgumentException> {
-//            cut.getWrappingKey(alias)
-//        }
-//    }
-//
-//    @Test
-//    fun `getWrappingKey should throw IllegalStateException when wrapping key is not found`() {
-//        val master = WrappingKey.generateWrappingKey(schemeMetadata)
-//        val alias = "master-alias-1"
-//        val store = mock<WrappingKeyStore> {
-//            on { findWrappingKey(alias) } doReturn null
-//        }
-//        val cut = CachingSoftWrappingKeyMap(
-//            SoftCacheConfig(expireAfterAccessMins = 2, maximumSize = 3),
-//            store,
-//            master
-//        )
-//        assertThrows<IllegalStateException> {
-//            cut.getWrappingKey(alias)
-//        }
-//    }
+    @Test
+    fun `getWrappingKey should throw IllegalArgumentException when key algorithm does not match master key`() {
+        val entity1 = WrappingKeyEntity(
+            alias1,
+            now,
+            WRAPPING_KEY_ENCODING_VERSION,
+            expected1.algorithm + "!",
+            master.wrap(expected1)
+        )
+        val entityManager = mock<EntityManager> {
+            on { find(WrappingKeyEntity::class.java, alias1) } doReturn entity1
+        }
+        val cut = makeCachingSoftWrappingKeyMapWithMockedDatabase(entityManager)
+        assertThrows<IllegalArgumentException> {
+            cut.getWrappingKey(alias1)
+        }
+    }
+
+    @Test
+    fun `getWrappingKey should throw IllegalStateException when wrapping key is not found`() {
+        val entityManager = mock<EntityManager> {
+            on { find(WrappingKeyEntity::class.java, alias1) } doReturn null
+        }
+        val cut = makeCachingSoftWrappingKeyMapWithMockedDatabase(entityManager)
+        assertThrows<IllegalStateException> {
+            cut.getWrappingKey(alias1)
+        }
+    }
 //
 //    @Test
 //    fun `putWrappingKey should put to cache using public key as cache key`() {
