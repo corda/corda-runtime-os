@@ -22,27 +22,23 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 /**
  * There is no way of unit testing the eviction in timely manner or without having special setup for the cache during
  * testing as by default the eviction is scheduled on an executor, so it's not exactly deterministic.
  */
 class CachingSoftWrappingKeyMapTests {
-    companion object {
-        private lateinit var schemeMetadata: CipherSchemeMetadata
-
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            schemeMetadata = CipherSchemeMetadataImpl()
-        }
-    }
-
+    private val schemeMetadata = CipherSchemeMetadataImpl()
     private val master = WrappingKey.generateWrappingKey(schemeMetadata)
     private val expected1 = WrappingKey.generateWrappingKey(schemeMetadata)
+    private val expected2 = WrappingKey.generateWrappingKey(schemeMetadata)
 
     private val alias1 = "master-alias-1"
+    private val alias2 = "master-alias-2"
+
     private val now = Instant.now()
 
 
@@ -63,8 +59,6 @@ class CachingSoftWrappingKeyMapTests {
 
     @Test
     fun `getWrappingKey should cache requested key using alias as cache key`() {
-        val expected2 = WrappingKey.generateWrappingKey(schemeMetadata)
-        val alias2 = "master-alias-2"
         val info1 =
             WrappingKeyEntity(
                 alias1,
@@ -157,31 +151,26 @@ class CachingSoftWrappingKeyMapTests {
         Mockito.verify(entityManager, times(1)).persist(any())
         Mockito.verify(entityManager, never()).find(eq(WrappingKeyEntity::class.java), any())
     }
-//
-//    @Test
-//    fun `exists should return true whenever key exist in cache or store and false otherwise`() {
-//        val master = WrappingKey.generateWrappingKey(CipherSchemeMetadataImpl())
-//        val expected1 = WrappingKey.generateWrappingKey(CipherSchemeMetadataImpl())
-//        val expected2 = WrappingKey.generateWrappingKey(CipherSchemeMetadataImpl())
-//        val alias1 = "master-alias-1"
-//        val alias2 = "master-alias-2"
-//        val alias3 = "master-alias-3"
-//        val info1 = WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, expected1.algorithm, master.wrap(expected1))
-//        val info2 = WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, expected2.algorithm, master.wrap(expected2))
-//        val store = mock<WrappingKeyStore> {
-//            on { findWrappingKey(alias1) } doReturn info1
-//            on { findWrappingKey(alias2) } doReturn info2
-//            on { findWrappingKey(alias3) } doReturn null
-//        }
-//        val cut = CachingSoftWrappingKeyMap(
-//            SoftCacheConfig(expireAfterAccessMins = 2, maximumSize = 3),
-//            store,
-//            master
-//        )
-//        cut.putWrappingKey(alias1, expected1)
-//
-//        assertTrue(cut.exists(alias1), "Should exist from cache")
-//        assertTrue(cut.exists(alias2), "Should exist from store")
-//        assertFalse(cut.exists(alias3), "Should not exist")
-//    }
+
+    @Test
+    fun `exists should return true whenever key exist in cache or store and false otherwise`() {
+        val alias3 = "master-alias-3"
+        val entity1 =
+            WrappingKeyEntity(alias2, now, WRAPPING_KEY_ENCODING_VERSION, expected1.algorithm, master.wrap(expected1))
+        val entity2 =
+            WrappingKeyEntity(alias3, now, WRAPPING_KEY_ENCODING_VERSION, expected2.algorithm, master.wrap(expected2))
+        val entityTransaction: EntityTransaction = mock()
+        val entityManager = mock<EntityManager> {
+            on { transaction } doReturn entityTransaction
+            on { find(WrappingKeyEntity::class.java, alias1) } doReturn entity1
+            on { find(WrappingKeyEntity::class.java, alias2) } doReturn entity2
+            on { find(WrappingKeyEntity::class.java, alias3) } doReturn null
+        }
+        val cut = makeCachingSoftWrappingKeyMapWithMockedDatabase(entityManager)
+        cut.putWrappingKey(alias1, expected1)
+
+        assertTrue(cut.exists(alias1), "Should exist from cache")
+        assertTrue(cut.exists(alias2), "Should exist from store")
+        assertFalse(cut.exists(alias3), "Should not exist")
+    }
 }
