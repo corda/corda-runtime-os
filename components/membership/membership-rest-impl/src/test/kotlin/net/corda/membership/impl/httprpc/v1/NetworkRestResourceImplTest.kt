@@ -36,7 +36,7 @@ class NetworkRestResourceImplTest {
     }
     private val certificatesClient = mock<CertificatesClient>()
 
-    private val networkOps = NetworkRestResourceImpl(
+    private val networkRestResource = NetworkRestResourceImpl(
         lifecycleCoordinatorFactory,
         certificatesClient,
     )
@@ -47,19 +47,19 @@ class NetworkRestResourceImplTest {
         fun `isRunning returns the coordinator status`() {
             whenever(coordinator.status).doReturn(LifecycleStatus.UP)
 
-            assertThat(networkOps.isRunning).isTrue
+            assertThat(networkRestResource.isRunning).isTrue
         }
 
         @Test
         fun `start starts the coordinator`() {
-            networkOps.start()
+            networkRestResource.start()
 
             verify(coordinator).start()
         }
 
         @Test
         fun `stop stops the coordinator`() {
-            networkOps.stop()
+            networkRestResource.stop()
 
             verify(coordinator).stop()
         }
@@ -82,7 +82,7 @@ class NetworkRestResourceImplTest {
     inner class PublishToLocallyHostedIdentitiesTests {
         @Test
         fun `it calls the client code`() {
-            networkOps.setupHostedIdentities(
+            networkRestResource.setupHostedIdentities(
                 "1234567890ab",
                 HostedIdentitySetupRequest(
                     "alias",
@@ -112,7 +112,7 @@ class NetworkRestResourceImplTest {
             ).doThrow(CertificatesResourceNotFoundException("Mock failure"))
 
             assertThrows<ResourceNotFoundException> {
-                networkOps.setupHostedIdentities(
+                networkRestResource.setupHostedIdentities(
                     "1234567890ab",
                     HostedIdentitySetupRequest(
                         "alias",
@@ -126,7 +126,7 @@ class NetworkRestResourceImplTest {
         @Test
         fun `it catches bad request exception`() {
             assertThrows<BadRequestException> {
-                networkOps.setupHostedIdentities(
+                networkRestResource.setupHostedIdentities(
                     "id",
                     HostedIdentitySetupRequest(
                         "alias",
@@ -150,7 +150,7 @@ class NetworkRestResourceImplTest {
             ).doAnswer { throw SignatureException("Mock failure") }
 
             assertThrows<BadRequestException> {
-                networkOps.setupHostedIdentities(
+                networkRestResource.setupHostedIdentities(
                     "id",
                     HostedIdentitySetupRequest(
                         "alias",
@@ -174,7 +174,7 @@ class NetworkRestResourceImplTest {
             ).doThrow(RuntimeException("Mock failure"))
 
             assertThrows<InternalServerException> {
-                networkOps.setupHostedIdentities(
+                networkRestResource.setupHostedIdentities(
                     "79ED40726773",
                     HostedIdentitySetupRequest(
                         "alias",
