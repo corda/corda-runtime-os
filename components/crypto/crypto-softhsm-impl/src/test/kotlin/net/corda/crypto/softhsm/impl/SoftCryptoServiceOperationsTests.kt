@@ -177,10 +177,10 @@ class SoftCryptoServiceOperationsTests {
     }
 
 
-//    @Test
-//    fun `SoftCryptoService should not support key deletion`() {
-//        assertThat(cryptoService.extensions).doesNotContain(CryptoServiceExtensions.DELETE_KEYS)
-//    }
+    @Test
+    fun `SoftCryptoService should not support key deletion`() {
+        assertThat(cryptoService.extensions).doesNotContain(CryptoServiceExtensions.DELETE_KEYS)
+    }
 //
 //    @Test
 //    fun `SoftCryptoService should support at least one schemes defined in cipher suite`() {
