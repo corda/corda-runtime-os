@@ -156,9 +156,9 @@ class CachingSoftWrappingKeyMapTests {
     fun `exists should return true whenever key exist in cache or store and false otherwise`() {
         val alias3 = "master-alias-3"
         val entity1 =
-            WrappingKeyEntity(alias2, now, WRAPPING_KEY_ENCODING_VERSION, expected1.algorithm, master.wrap(expected1))
+            WrappingKeyEntity(alias1, now, WRAPPING_KEY_ENCODING_VERSION, expected1.algorithm, master.wrap(expected1))
         val entity2 =
-            WrappingKeyEntity(alias3, now, WRAPPING_KEY_ENCODING_VERSION, expected2.algorithm, master.wrap(expected2))
+            WrappingKeyEntity(alias2, now, WRAPPING_KEY_ENCODING_VERSION, expected2.algorithm, master.wrap(expected2))
         val entityTransaction: EntityTransaction = mock()
         val entityManager = mock<EntityManager> {
             on { transaction } doReturn entityTransaction
