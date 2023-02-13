@@ -15,9 +15,9 @@ import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
-import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
-import net.corda.messaging.api.exception.CordaRPCAPIResponderException
-import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import net.corda.messaging.api.exception.CordaRestAPIPartitionException
+import net.corda.messaging.api.exception.CordaRestAPIResponderException
+import net.corda.messaging.api.exception.CordaRestAPISenderException
 import org.slf4j.Logger
 
 @Suppress("ComplexMethod", "ThrowsCount")
@@ -52,17 +52,17 @@ fun <T : Any?> withPermissionManager(
             )
         }
 
-    } catch (e: CordaRPCAPIPartitionException) {
+    } catch (e: CordaRestAPIPartitionException) {
         logger.warn("Error waiting for permission management response.", e)
         throw ServiceUnavailableException("Error waiting for permission management response: Repartition Event!")
 
-    } catch (e: CordaRPCAPISenderException) {
+    } catch (e: CordaRestAPISenderException) {
         logger.warn("Error during sending of permission management request.", e)
         throw InternalServerException(
             details = buildExceptionCauseDetails(e.cause ?: e)
         )
 
-    } catch (e: CordaRPCAPIResponderException) {
+    } catch (e: CordaRestAPIResponderException) {
         logger.warn("Permission manager received error from responder: ${e.message}", e.cause)
         throw InternalServerException(
             details = buildExceptionCauseDetails(e.cause ?: e)

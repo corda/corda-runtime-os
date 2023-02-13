@@ -39,7 +39,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.messaging.api.exception.CordaRestAPIPartitionException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -256,7 +256,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
         )
         return try {
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
-        } catch (ex: CordaRPCAPIPartitionException) {
+        } catch (ex: CordaRestAPIPartitionException) {
             logger.warn("Partition event when getting response from db worker for update config message", ex)
             //TODO - https://r3-cev.atlassian.net/browse/CORE-7930
             ConfigurationManagementResponse(true, null, request.section, request.config, request.schemaVersion, request.version+1)

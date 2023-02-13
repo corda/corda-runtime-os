@@ -12,9 +12,9 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
-import net.corda.messaging.api.exception.CordaRPCAPIResponderException
-import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import net.corda.messaging.api.exception.CordaRestAPIPartitionException
+import net.corda.messaging.api.exception.CordaRestAPIResponderException
+import net.corda.messaging.api.exception.CordaRestAPISenderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -144,7 +144,7 @@ class RPCSubscriptionIntegrationTest {
                 val future = rpcSender.sendRequest("REQUEST")
                 Assertions.assertThat(future.getOrThrow()).isEqualTo("RECEIVED and PROCESSED")
                 responseReceived = true
-            } catch (ex: CordaRPCAPISenderException) {
+            } catch (ex: CordaRestAPISenderException) {
                 Thread.sleep(2000)
             }
         }
@@ -207,7 +207,7 @@ class RPCSubscriptionIntegrationTest {
                 )
                 Assertions.assertThat(future.getOrThrow()).isEqualTo(response)
                 responseReceived = true
-            } catch (ex: CordaRPCAPISenderException) {
+            } catch (ex: CordaRestAPISenderException) {
                 Thread.sleep(2000)
             }
         }
@@ -248,9 +248,9 @@ class RPCSubscriptionIntegrationTest {
             try {
                 val future = rpcSender.sendRequest("REQUEST")
                 future.getOrThrow()
-            } catch (ex: CordaRPCAPIResponderException) {
+            } catch (ex: CordaRestAPIResponderException) {
                 responseReceived = true
-            } catch (ex: CordaRPCAPISenderException) {
+            } catch (ex: CordaRestAPISenderException) {
                 Thread.sleep(2000)
             }
         }
@@ -290,7 +290,7 @@ class RPCSubscriptionIntegrationTest {
             try {
                 val future = rpcSender.sendRequest("REQUEST")
                 future.getOrThrow()
-            } catch (ex: CordaRPCAPISenderException) {
+            } catch (ex: CordaRestAPISenderException) {
                 Thread.sleep(2000)
             } catch (ex: CancellationException) {
                 responseReceived = true
@@ -351,7 +351,7 @@ class RPCSubscriptionIntegrationTest {
         rpcSender.close()
 
         eventually(10.seconds, 1.seconds) {
-            assertThrows<CordaRPCAPIPartitionException> {
+            assertThrows<CordaRestAPIPartitionException> {
                 sendRequest.getOrThrow()
             }
         }

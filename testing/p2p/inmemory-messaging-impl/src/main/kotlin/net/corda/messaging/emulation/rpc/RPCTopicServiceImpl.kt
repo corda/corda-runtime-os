@@ -1,6 +1,6 @@
 package net.corda.messaging.emulation.rpc
 
-import net.corda.messaging.api.exception.CordaRPCAPIResponderException
+import net.corda.messaging.api.exception.CordaRestAPIResponderException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Component
@@ -73,7 +73,7 @@ class RPCTopicServiceImpl(
                     when {
                         it.isCancelled -> {
                             requestCompletion.completeExceptionally(
-                                CordaRPCAPIResponderException(
+                                CordaRestAPIResponderException(
                                     CancellationException::class.java.name,
                                     "The request was cancelled by the responder."
                                 )
@@ -82,7 +82,7 @@ class RPCTopicServiceImpl(
 
                         it.isCompletedExceptionally -> {
                             requestCompletion.completeExceptionally(
-                                CordaRPCAPIResponderException(
+                                CordaRestAPIResponderException(
                                     error.javaClass.name,
                                     "The responder failed to process the request.",
                                     error
@@ -110,7 +110,7 @@ class RPCTopicServiceImpl(
                 }.onNext(request, responseCompletion)
             } catch (e: Throwable) {
                 responseCompletion.completeExceptionally(
-                    CordaRPCAPIResponderException(
+                    CordaRestAPIResponderException(
                         e.javaClass.name,
                         "The responder failed to process the request.",
                         e

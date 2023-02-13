@@ -21,8 +21,8 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.exception.CordaRPCAPIResponderException
-import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import net.corda.messaging.api.exception.CordaRestAPIResponderException
+import net.corda.messaging.api.exception.CordaRestAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
@@ -177,7 +177,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                                 val responseBytes = rpcResponse.payload
                                 val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
                                 future.completeExceptionally(
-                                    CordaRPCAPIResponderException(
+                                    CordaRestAPIResponderException(
                                         errorType = response.errorType,
                                         message = response.errorMessage
                                     )
@@ -210,7 +210,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             serializer.serialize(req)
         } catch (ex: Exception) {
             future.completeExceptionally(
-                CordaRPCAPISenderException(
+                CordaRestAPISenderException(
                     "Serializing your request resulted in an exception. " +
                         "Verify that the fields of the request are populated correctly",
                     ex
@@ -227,7 +227,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
         if (partitions.isEmpty()) {
             val error = "No partitions for topic ${getRPCResponseTopic(config.topic)}. Couldn't send."
-            future.completeExceptionally(CordaRPCAPISenderException(error))
+            future.completeExceptionally(CordaRestAPISenderException(error))
             log.warn(error)
         } else {
             val partition = partitions[0].partition
@@ -245,7 +245,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             try {
                 producer?.sendRecords(listOf(record))
             } catch (ex: Exception) {
-                future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
+                future.completeExceptionally(CordaRestAPISenderException("Failed to publish", ex))
                 log.warn("Failed to publish. Exception: ${ex.message}", ex)
             }
         }

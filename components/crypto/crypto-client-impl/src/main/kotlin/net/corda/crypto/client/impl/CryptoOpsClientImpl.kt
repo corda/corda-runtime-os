@@ -28,7 +28,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
-import net.corda.messaging.api.exception.CordaRPCAPIResponderException
+import net.corda.messaging.api.exception.CordaRestAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.debug
@@ -381,7 +381,7 @@ class CryptoOpsClientImpl(
             }
             response.response as RESPONSE
         }
-    } catch (e: CordaRPCAPIResponderException) {
+    } catch (e: CordaRestAPIResponderException) {
         throw e.toClientException()
     } catch (e: Throwable) {
         logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
