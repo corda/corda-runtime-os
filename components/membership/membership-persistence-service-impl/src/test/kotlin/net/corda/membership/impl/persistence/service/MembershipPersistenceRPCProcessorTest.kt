@@ -22,7 +22,7 @@ import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
-import net.corda.data.membership.db.request.query.QueryRegistrationRequestsMGM
+import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
@@ -145,10 +145,13 @@ class MembershipPersistenceRPCProcessorTest {
         on { select(root) } doReturn mock
         on { where(predicate) } doReturn mock
     }
+    private val inStatus = mock<CriteriaBuilder.In<String>>()
     private val statusPath = mock<Path<String>>()
     private val shortHashPath = mock<Path<String>>()
+    private val createdPath = mock<Path<Instant>>()
     private val registrationRequestRoot = mock<Root<RegistrationRequestEntity>> {
         on { get<String>("status") } doReturn statusPath
+        on { get<Instant>("created") } doReturn createdPath
         on { get<String>("holdingIdentityShortHash") } doReturn shortHashPath
     }
     private val order = mock<Order>()
@@ -169,8 +172,8 @@ class MembershipPersistenceRPCProcessorTest {
         on { equal(ruleTypePath, ApprovalRuleType.STANDARD.name) } doReturn predicate
         on { equal(ruleRegexPath, DUMMY_RULE) } doReturn predicate
         on { and(predicate, predicate) } doReturn predicate
-        on { `in`(registrationRequestRoot.get<String>("status")) } doReturn mock()
-        on { asc(shortHashPath) } doReturn order
+        on { `in`(statusPath) } doReturn inStatus
+        on { asc(createdPath) } doReturn order
     }
     private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
         on { resultList } doReturn emptyList()
@@ -520,10 +523,10 @@ class MembershipPersistenceRPCProcessorTest {
     }
 
     @Test
-    fun `query registration requests as MGM returns success`() {
+    fun `query registration requests returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
-            QueryRegistrationRequestsMGM()
+            QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL))
         )
 
         processor.onNext(rq, responseFuture)

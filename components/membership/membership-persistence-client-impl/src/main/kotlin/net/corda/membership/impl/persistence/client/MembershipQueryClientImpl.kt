@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
@@ -14,7 +15,6 @@ import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
-import net.corda.data.membership.db.request.query.QueryRegistrationRequestsMGM
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
@@ -160,11 +160,15 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity):
-            MembershipQueryResult<List<RegistrationRequestStatus>> {
+    override fun queryRegistrationRequestsStatus(
+        viewOwningIdentity: HoldingIdentity,
+        requestSubjectX500Name: MemberX500Name?,
+        statuses: List<RegistrationStatus>
+    ): MembershipQueryResult<List<RegistrationRequestStatus>> {
+        val requestSubjectX500NameString = requestSubjectX500Name?.let { requestSubjectX500Name.toString() }
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests()
+            QueryRegistrationRequests(requestSubjectX500NameString, statuses)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {
@@ -182,21 +186,6 @@ class MembershipQueryClientImpl(
                 logger.warn(err)
                 MembershipQueryResult.Failure(err)
             }
-        }
-    }
-
-    override fun queryRegistrationRequests(
-        mgmHoldingIdentity: HoldingIdentity, requestingMemberX500Name: String?, viewHistoric: Boolean
-    ): MembershipQueryResult<Collection<RegistrationRequestStatus>> {
-        val result = MembershipPersistenceRequest(
-            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
-            QueryRegistrationRequestsMGM(requestingMemberX500Name, viewHistoric)
-        ).execute()
-        return when (val payload = result.payload) {
-            is RegistrationRequestsQueryResponse -> MembershipQueryResult.Success(
-                payload.registrationRequests.map { it.toStatus() }
-            )
-            else -> MembershipQueryResult.Failure("Failed to retrieve registration requests.")
         }
     }
 

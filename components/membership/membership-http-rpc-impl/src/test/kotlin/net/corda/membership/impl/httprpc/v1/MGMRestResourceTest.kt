@@ -1,13 +1,9 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.configuration.read.ConfigurationGetService
-import net.corda.data.membership.common.ApprovalAction
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
-import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
-import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
-import net.corda.data.membership.common.ManualApprovalDecision
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -19,11 +15,10 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
-import net.corda.membership.httprpc.v1.types.request.ManualApprovalAction
-import net.corda.membership.httprpc.v1.types.request.ManualApprovalDecisionRequest
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
@@ -54,6 +49,8 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
 class MGMRestResourceTest {
     companion object {
@@ -63,9 +60,10 @@ class MGMRestResourceTest {
         private const val INVALID_RULE_REGEX = "*"
         private const val RULE_LABEL = "rule-label"
         private const val RULE_ID = "rule-id"
-        private const val REQUEST_ID = "request-id"
+        private const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
 
         fun String.shortHash() = ShortHash.of(this)
+        fun String.uuid(): UUID = UUID.fromString(this)
     }
 
     private var coordinatorIsRunning = false
@@ -93,8 +91,7 @@ class MGMRestResourceTest {
         on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val initialTime = Instant.parse("2007-12-03T00:00:00.00Z")
-    private val manualApprovalDecisionRequest = ManualApprovalDecisionRequest(ManualApprovalAction.APPROVE, "test")
-    private val manualApprovalDecision = ManualApprovalDecision(ApprovalAction.APPROVE, "test")
+    private val manualDeclinationReason = ManualDeclinationReason("test")
 
     private val mgmRpcOps = MGMRestResourceImpl(
         lifecycleCoordinatorFactory,
@@ -405,55 +402,107 @@ class MGMRestResourceTest {
     }
 
     @Nested
-    inner class ReviewRegistrationRequestTests {
+    inner class ApproveRegistrationRequestTests {
         @Test
-        fun `reviewRegistrationRequest delegates correctly to mgm ops client`() {
+        fun `approveRegistrationRequest delegates correctly to mgm ops client`() {
             startService()
 
-            mgmRpcOps.reviewRegistrationRequest(
-                eq(HOLDING_IDENTITY_ID), eq(REQUEST_ID), eq(manualApprovalDecisionRequest)
-            )
+            mgmRpcOps.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
 
             verify(mgmOpsClient).reviewRegistrationRequest(
-                eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(REQUEST_ID), eq(manualApprovalDecision)
+                (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), true
             )
             stopService()
         }
 
         @Test
-        fun `reviewRegistrationRequest throws resource not found for invalid member`() {
+        fun `approveRegistrationRequest throws resource not found for invalid member`() {
             startService()
             whenever(mgmOpsClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID, manualApprovalDecision
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
             )).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
-                mgmRpcOps.reviewRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualApprovalDecisionRequest)
+                mgmRpcOps.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
             }
 
             stopService()
         }
 
         @Test
-        fun `reviewRegistrationRequest throws invalid input for non MGM member`() {
+        fun `approveRegistrationRequest throws invalid input for non MGM member`() {
             startService()
             whenever(mgmOpsClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID, manualApprovalDecision
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
             )).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
-                mgmRpcOps.reviewRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualApprovalDecisionRequest)
+                mgmRpcOps.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
             }
 
             stopService()
         }
 
         @Test
-        fun `reviewRegistrationRequest throws bad request if short hash is invalid`() {
+        fun `approveRegistrationRequest throws bad request if short hash is invalid`() {
             startService()
 
             assertThrows<BadRequestException> {
-                mgmRpcOps.reviewRegistrationRequest(INVALID_SHORT_HASH, REQUEST_ID, manualApprovalDecisionRequest)
+                mgmRpcOps.approveRegistrationRequest(INVALID_SHORT_HASH, REQUEST_ID)
+            }
+
+            stopService()
+        }
+    }
+
+    @Nested
+    inner class DeclineRegistrationRequestTests {
+        @Test
+        fun `declineRegistrationRequest delegates correctly to mgm ops client`() {
+            startService()
+
+            mgmRpcOps.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
+
+            verify(mgmOpsClient).reviewRegistrationRequest(
+                (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+            )
+            stopService()
+        }
+
+        @Test
+        fun `declineRegistrationRequest throws resource not found for invalid member`() {
+            startService()
+            whenever(mgmOpsClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+            )).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRpcOps.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
+            }
+
+            stopService()
+        }
+
+        @Test
+        fun `declineRegistrationRequest throws invalid input for non MGM member`() {
+            startService()
+            whenever(mgmOpsClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+            )).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRpcOps.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
+            }
+
+            stopService()
+        }
+
+        @Test
+        fun `declineRegistrationRequest throws bad request if short hash is invalid`() {
+            startService()
+
+            assertThrows<BadRequestException> {
+                mgmRpcOps.declineRegistrationRequest(INVALID_SHORT_HASH, REQUEST_ID, manualDeclinationReason)
             }
 
             stopService()

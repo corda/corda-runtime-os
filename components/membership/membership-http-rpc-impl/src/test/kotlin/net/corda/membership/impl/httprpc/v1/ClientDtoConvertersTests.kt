@@ -4,7 +4,7 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
-import net.corda.membership.httprpc.v1.types.response.RpcRegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -31,7 +31,7 @@ class ClientDtoConvertersTests {
         val status = dto.fromDto()
 
         assertThat(status).isEqualTo(
-            RpcRegistrationRequestStatus(
+            RestRegistrationRequestStatus(
                 "id",
                 Instant.ofEpochSecond(10),
                 Instant.ofEpochSecond(20),

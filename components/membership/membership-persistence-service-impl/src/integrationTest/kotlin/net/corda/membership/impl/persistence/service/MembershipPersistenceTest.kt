@@ -1219,24 +1219,24 @@ class MembershipPersistenceTest {
         val requestPersistentResult2 = persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
         assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        val result1 = membershipQueryClient.queryRegistrationRequests(
+        val result1 = membershipQueryClient.queryRegistrationRequestsStatus(
             viewOwningHoldingIdentity,
             null,
-            true
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
         ).getOrThrow()
         assertThat(result1.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2))
 
-        val result2 = membershipQueryClient.queryRegistrationRequests(
+        val result2 = membershipQueryClient.queryRegistrationRequestsStatus(
             viewOwningHoldingIdentity,
-            viewOwningHoldingIdentity.x500Name.toString(),
-            true
+            viewOwningHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
         ).getOrThrow()
         assertThat(result2.map { it.registrationId }).containsAll(listOf(registrationId2))
 
-        val result3 = membershipQueryClient.queryRegistrationRequests(
+        val result3 = membershipQueryClient.queryRegistrationRequestsStatus(
             viewOwningHoldingIdentity,
             null,
-            false
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         ).getOrThrow()
         assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
     }

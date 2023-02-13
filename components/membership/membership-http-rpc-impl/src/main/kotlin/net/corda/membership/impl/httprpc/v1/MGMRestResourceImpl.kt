@@ -3,11 +3,9 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.common.ApprovalRuleDetails
-import net.corda.data.membership.common.ApprovalAction
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
-import net.corda.data.membership.common.ManualApprovalDecision
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -23,12 +21,12 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRestResource
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
-import net.corda.membership.httprpc.v1.types.request.ManualApprovalDecisionRequest
+import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
-import net.corda.membership.httprpc.v1.types.response.RpcRegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -140,11 +138,13 @@ class MGMRestResourceImpl internal constructor(
 
         fun viewRegistrationRequests(
             holdingIdentityShortHash: String,
-            requestingMemberX500Name: String?,
+            requestSubjectX500Name: String?,
             viewHistoric: Boolean,
-        ): Collection<RpcRegistrationRequestStatus>
+        ): Collection<RestRegistrationRequestStatus>
 
-        fun reviewRegistrationRequest(holdingIdentityShortHash: String, requestId: String, decision: ManualApprovalDecisionRequest)
+        fun approveRegistrationRequest(holdingIdentityShortHash: String, requestId: String)
+
+        fun declineRegistrationRequest(holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason)
     }
 
     override val protocolVersion = 1
@@ -223,12 +223,16 @@ class MGMRestResourceImpl internal constructor(
         impl.deletePreAuthGroupApprovalRule(holdingIdentityShortHash, ruleId)
 
     override fun viewRegistrationRequests(
-        holdingIdentityShortHash: String, requestingMemberX500Name: String?, viewHistoric: Boolean
-    ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestingMemberX500Name, viewHistoric)
+        holdingIdentityShortHash: String, requestSubjectX500Name: String?, viewHistoric: Boolean
+    ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestSubjectX500Name, viewHistoric)
 
-    override fun reviewRegistrationRequest(
-        holdingIdentityShortHash: String, requestId: String, decision: ManualApprovalDecisionRequest
-    ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, decision)
+    override fun approveRegistrationRequest(
+        holdingIdentityShortHash: String, requestId: String
+    ) = impl.approveRegistrationRequest(holdingIdentityShortHash, requestId)
+
+    override fun declineRegistrationRequest(
+        holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
+    ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -311,14 +315,15 @@ class MGMRestResourceImpl internal constructor(
 
         override fun viewRegistrationRequests(
             holdingIdentityShortHash: String,
-            requestingMemberX500Name: String?,
+            requestSubjectX500Name: String?,
             viewHistoric: Boolean,
-        ): Collection<RpcRegistrationRequestStatus> = throwNotRunningException()
+        ): Collection<RestRegistrationRequestStatus> = throwNotRunningException()
 
-        override fun reviewRegistrationRequest(
-            holdingIdentityShortHash: String,
-            requestId: String,
-            decision: ManualApprovalDecisionRequest,
+        override fun approveRegistrationRequest(holdingIdentityShortHash: String, requestId: String): Unit =
+            throwNotRunningException()
+
+        override fun declineRegistrationRequest(
+            holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
         ): Unit = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
@@ -474,36 +479,72 @@ class MGMRestResourceImpl internal constructor(
 
         override fun viewRegistrationRequests(
             holdingIdentityShortHash: String,
-            requestingMemberX500Name: String?,
+            requestSubjectX500Name: String?,
             viewHistoric: Boolean,
-        ) = handleCommonErrors(holdingIdentityShortHash) {
-            mgmOpsClient.viewRegistrationRequests(
-                ShortHash.parseOrThrow(holdingIdentityShortHash),
-                requestingMemberX500Name,
-                viewHistoric,
-            )
-        }.map { it.toRpc() }
+        ): Collection<RestRegistrationRequestStatus> {
+            val requestSubject = requestSubjectX500Name?.let {
+                MemberX500Name.parse("requestSubjectX500Name", it)
+            }
+            return handleCommonErrors(holdingIdentityShortHash) {
+                mgmOpsClient.viewRegistrationRequests(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    requestSubject,
+                    viewHistoric,
+                )
+            }.map { it.toRpc() }
+        }
 
-        override fun reviewRegistrationRequest(
+        override fun approveRegistrationRequest(
             holdingIdentityShortHash: String,
             requestId: String,
-            decision: ManualApprovalDecisionRequest,
-        ) = handleCommonErrors(holdingIdentityShortHash) {
-            mgmOpsClient.reviewRegistrationRequest(
-                ShortHash.parseOrThrow(holdingIdentityShortHash),
-                requestId,
-                ManualApprovalDecision(ApprovalAction.valueOf(decision.action.name), decision.reason)
-            )
+        ) {
+            val registrationId = parseRegistrationRequestId(requestId)
+            handleCommonErrors(holdingIdentityShortHash) {
+                mgmOpsClient.reviewRegistrationRequest(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    registrationId,
+                    true
+                )
+            }
+        }
+
+        override fun declineRegistrationRequest(
+            holdingIdentityShortHash: String,
+            requestId: String,
+            reason: ManualDeclinationReason
+        ) {
+            val registrationId = parseRegistrationRequestId(requestId)
+            handleCommonErrors(holdingIdentityShortHash) {
+                mgmOpsClient.reviewRegistrationRequest(
+                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    registrationId,
+                    false,
+                    reason.reason
+                )
+            }
         }
 
         private fun RegistrationRequestStatus.toRpc() =
-            RpcRegistrationRequestStatus(
+            RestRegistrationRequestStatus(
                 registrationId,
                 registrationSent,
                 registrationLastModified,
-                RegistrationStatus.valueOf(status.name),
+                status.fromAvro(),
                 MemberInfoSubmitted(memberContext.toMap())
             )
+
+        private fun net.corda.data.membership.common.RegistrationStatus.fromAvro() = when (this) {
+            net.corda.data.membership.common.RegistrationStatus.NEW -> RegistrationStatus.NEW
+            net.corda.data.membership.common.RegistrationStatus.SENT_TO_MGM -> RegistrationStatus.SENT_TO_MGM
+            net.corda.data.membership.common.RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
+            net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatus.PENDING_MEMBER_VERIFICATION
+            net.corda.data.membership.common.RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatus.PENDING_APPROVAL_FLOW
+            net.corda.data.membership.common.RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL
+            net.corda.data.membership.common.RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
+            net.corda.data.membership.common.RegistrationStatus.DECLINED -> RegistrationStatus.DECLINED
+            net.corda.data.membership.common.RegistrationStatus.INVALID -> RegistrationStatus.INVALID
+            net.corda.data.membership.common.RegistrationStatus.APPROVED -> RegistrationStatus.APPROVED
+        }
 
         private fun deleteGroupApprovalRule(
             holdingIdentityShortHash: String,
@@ -533,6 +574,17 @@ class MGMRestResourceImpl internal constructor(
                 throw InvalidInputDataException(
                     details = mapOf("preAuthTokenId" to preAuthTokenId),
                     message = "tokenId is not a valid pre auth token."
+                )
+            }
+        }
+
+        private fun parseRegistrationRequestId(requestId: String): UUID {
+            return try {
+                UUID.fromString(requestId)
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    details = mapOf("registrationRequestId" to requestId),
+                    message = "requestId is not a valid registration request ID."
                 )
             }
         }

@@ -8,7 +8,7 @@ import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
-import net.corda.membership.httprpc.v1.types.response.RpcRegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
 
 /**
  * The Member Registration API consists of a number of endpoints which manage holding identities' participation in
@@ -78,7 +78,7 @@ interface MemberRegistrationRestResource : RestResource {
      *
      * @param holdingIdentityShortHash The ID of the holding identity whose view of the registration progress is to be checked.
      *
-     * @return List of [RpcRegistrationRequestStatus] to indicate the last known statuses of all registration requests made
+     * @return List of [RestRegistrationRequestStatus] to indicate the last known statuses of all registration requests made
      * by [holdingIdentityShortHash].
      */
     @HttpGET(
@@ -99,7 +99,7 @@ interface MemberRegistrationRestResource : RestResource {
     fun checkRegistrationProgress(
         @RestPathParameter(description = "The ID of the holding identity whose view of the registration progress is to be checked.")
         holdingIdentityShortHash: String
-    ): List<RpcRegistrationRequestStatus>
+    ): List<RestRegistrationRequestStatus>
 
     /**
      * The [checkSpecificRegistrationProgress] method enables you to check the status of the registration request
@@ -115,7 +115,7 @@ interface MemberRegistrationRestResource : RestResource {
      * @param holdingIdentityShortHash The ID of the holding identity whose view of the registration progress is to be checked.
      * @param registrationRequestId The ID of the registration request.
      *
-     * @return [RpcRegistrationRequestStatus] to indicate the last known status of the specified registration request made
+     * @return [RestRegistrationRequestStatus] to indicate the last known status of the specified registration request made
      * by [holdingIdentityShortHash].
      */
     @HttpGET(
@@ -138,5 +138,5 @@ interface MemberRegistrationRestResource : RestResource {
         holdingIdentityShortHash: String,
         @RestPathParameter(description = "The ID of the registration request")
         registrationRequestId: String,
-    ): RpcRegistrationRequestStatus?
+    ): RestRegistrationRequestStatus?
 }

@@ -2,7 +2,16 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
@@ -26,37 +35,28 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.mgm.ApproveRegistration
-import net.corda.data.membership.common.ApprovalAction
-import net.corda.data.membership.common.ApprovalRuleDetails
-import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.data.membership.preauth.PreAuthTokenStatus
-import net.corda.data.membership.common.ManualApprovalDecision
-import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.membership.persistence.client.MembershipQueryClient
-import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
@@ -92,7 +92,7 @@ class MGMOpsClientTest {
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
         private const val RULE_ID = "rule-id"
-        const val REQUEST_ID = "request-id"
+        const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
         private val RULE_TYPE = ApprovalRuleType.STANDARD
 
         val memberName = MemberX500Name.parse("CN=Member,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
@@ -100,6 +100,8 @@ class MGMOpsClientTest {
         val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), "DEFAULT_MEMBER_GROUP_ID")
         val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         val clock = TestClock(Instant.ofEpochSecond(100))
+
+        fun String.uuid(): UUID = UUID.fromString(this)
     }
 
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
@@ -705,10 +707,10 @@ class MGMOpsClientTest {
             mgmOpsClient.start()
             setUpRpcSender(null)
             whenever(
-                membershipQueryClient.queryRegistrationRequests(
+                membershipQueryClient.queryRegistrationRequestsStatus(
                     holdingIdentity,
-                    memberName.toString(),
-                    true
+                    memberName,
+                    listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
                 )
             ).doReturn(
                 MembershipQueryResult.Success(emptyList())
@@ -716,14 +718,14 @@ class MGMOpsClientTest {
 
             mgmOpsClient.viewRegistrationRequests(
                 shortHash,
-                memberName.toString(),
-                true
+                memberName,
+                false
             )
 
-            verify(membershipQueryClient).queryRegistrationRequests(
+            verify(membershipQueryClient).queryRegistrationRequestsStatus(
                 holdingIdentity,
-                memberName.toString(),
-                true
+                memberName,
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
             )
             mgmOpsClient.stop()
         }
@@ -735,7 +737,7 @@ class MGMOpsClientTest {
 
             assertThrows<CouldNotFindMemberException> {
                 mgmOpsClient.viewRegistrationRequests(
-                    ShortHash.of("000000000000"), memberName.toString(), true
+                    ShortHash.of("000000000000"), memberName, true
                 )
             }
             mgmOpsClient.stop()
@@ -749,7 +751,7 @@ class MGMOpsClientTest {
 
             assertThrows<CouldNotFindMemberException> {
                 mgmOpsClient.viewRegistrationRequests(
-                    shortHash, memberName.toString(), true
+                    shortHash, memberName, true
                 )
             }
             mgmOpsClient.stop()
@@ -767,7 +769,7 @@ class MGMOpsClientTest {
 
             assertThrows<MemberNotAnMgmException> {
                 mgmOpsClient.viewRegistrationRequests(
-                    shortHash, memberName.toString(), true
+                    shortHash, memberName, true
                 )
             }
             mgmOpsClient.stop()
@@ -777,14 +779,14 @@ class MGMOpsClientTest {
     @Nested
     inner class ReviewRegistrationRequestTests {
         @Test
-        fun `reviewRegistrationRequest should publish the correct command`() {
+        fun `reviewRegistrationRequest should publish the correct command when approved`() {
             mgmOpsClient.start()
             setUpRpcSender(null)
 
             mgmOpsClient.reviewRegistrationRequest(
                 shortHash,
-                REQUEST_ID,
-                ManualApprovalDecision(ApprovalAction.APPROVE, "test-reason")
+                REQUEST_ID.uuid(),
+                true
             )
 
             verify(publisher).publish(
@@ -800,6 +802,31 @@ class MGMOpsClientTest {
         }
 
         @Test
+        fun `reviewRegistrationRequest should publish the correct command when declined`() {
+            mgmOpsClient.start()
+            setUpRpcSender(null)
+            val reason = "sample reason"
+
+            mgmOpsClient.reviewRegistrationRequest(
+                shortHash,
+                REQUEST_ID.uuid(),
+                false,
+                reason
+            )
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
+                        "$REQUEST_ID-$shortHash",
+                        RegistrationCommand(DeclineRegistration(reason))
+                    )
+                )
+            )
+            mgmOpsClient.stop()
+        }
+
+        @Test
         fun `reviewRegistrationRequest should fail if the member cannot be found`() {
             mgmOpsClient.start()
             setUpRpcSender(null)
@@ -807,8 +834,8 @@ class MGMOpsClientTest {
             assertThrows<CouldNotFindMemberException> {
                 mgmOpsClient.reviewRegistrationRequest(
                     ShortHash.of("000000000000"),
-                    REQUEST_ID,
-                    ManualApprovalDecision(ApprovalAction.APPROVE, "test-reason")
+                    REQUEST_ID.uuid(),
+                    true
                 )
             }
             mgmOpsClient.stop()
@@ -823,8 +850,8 @@ class MGMOpsClientTest {
             assertThrows<CouldNotFindMemberException> {
                 mgmOpsClient.reviewRegistrationRequest(
                     shortHash,
-                    REQUEST_ID,
-                    ManualApprovalDecision(ApprovalAction.APPROVE, "test-reason")
+                    REQUEST_ID.uuid(),
+                    true
                 )
             }
             mgmOpsClient.stop()
@@ -843,8 +870,8 @@ class MGMOpsClientTest {
             assertThrows<MemberNotAnMgmException> {
                 mgmOpsClient.reviewRegistrationRequest(
                     shortHash,
-                    REQUEST_ID,
-                    ManualApprovalDecision(ApprovalAction.APPROVE, "test-reason")
+                    REQUEST_ID.uuid(),
+                    true
                 )
             }
             mgmOpsClient.stop()

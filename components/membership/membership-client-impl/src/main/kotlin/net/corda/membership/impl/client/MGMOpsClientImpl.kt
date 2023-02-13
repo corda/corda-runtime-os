@@ -2,15 +2,14 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.common.ApprovalAction
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.ManualApprovalDecision
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -57,8 +56,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.time.Instant
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
 @Component(service = [MGMOpsClient::class])
@@ -133,14 +132,15 @@ class MGMOpsClientImpl @Activate constructor(
 
         fun viewRegistrationRequests(
             holdingIdentityShortHash: ShortHash,
-            requestingMemberX500Name: String?,
+            requestSubjectX500Name: MemberX500Name?,
             viewHistoric: Boolean,
         ): Collection<RegistrationRequestStatus>
 
         fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash,
-            requestId: String,
-            decision: ManualApprovalDecision,
+            requestId: UUID,
+            approve: Boolean,
+            reason: String?,
         )
     }
 
@@ -226,12 +226,12 @@ class MGMOpsClientImpl @Activate constructor(
         impl.deleteApprovalRule(holdingIdentityShortHash, ruleId, ruleType)
 
     override fun viewRegistrationRequests(
-        holdingIdentityShortHash: ShortHash, requestingMemberX500Name: String?, viewHistoric: Boolean
-    ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestingMemberX500Name, viewHistoric)
+        holdingIdentityShortHash: ShortHash, requestSubjectX500Name: MemberX500Name?, viewHistoric: Boolean
+    ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestSubjectX500Name, viewHistoric)
 
     override fun reviewRegistrationRequest(
-        holdingIdentityShortHash: ShortHash, requestId: String, decision: ManualApprovalDecision
-    ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, decision)
+        holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
+    ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, approve, reason)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -317,11 +317,11 @@ class MGMOpsClientImpl @Activate constructor(
             throw IllegalStateException(ERROR_MSG)
 
         override fun viewRegistrationRequests(
-            holdingIdentityShortHash: ShortHash, requestingMemberX500Name: String?, viewHistoric: Boolean
+            holdingIdentityShortHash: ShortHash, requestSubjectX500Name: MemberX500Name?, viewHistoric: Boolean
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun reviewRegistrationRequest(
-            holdingIdentityShortHash: ShortHash, requestId: String, decision: ManualApprovalDecision
+            holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -478,22 +478,28 @@ class MGMOpsClientImpl @Activate constructor(
             ).getOrThrow()
 
         override fun viewRegistrationRequests(
-            holdingIdentityShortHash: ShortHash, requestingMemberX500Name: String?, viewHistoric: Boolean
-        ): Collection<RegistrationRequestStatus> =
-            membershipQueryClient.queryRegistrationRequests(
+            holdingIdentityShortHash: ShortHash, requestSubjectX500Name: MemberX500Name?, viewHistoric: Boolean
+        ): Collection<RegistrationRequestStatus> {
+            val statuses = if (viewHistoric) {
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+            } else {
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+            }
+            return membershipQueryClient.queryRegistrationRequestsStatus(
                 mgmHoldingIdentity(holdingIdentityShortHash),
-                requestingMemberX500Name,
-                viewHistoric,
+                requestSubjectX500Name,
+                statuses,
             ).getOrThrow()
+        }
 
         override fun reviewRegistrationRequest(
-            holdingIdentityShortHash: ShortHash, requestId: String, decision: ManualApprovalDecision
+            holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
         ) {
             mgmHoldingIdentity(holdingIdentityShortHash)
-            if (decision.action == ApprovalAction.APPROVE) {
-                publishApprovalDecision(ApproveRegistration(), holdingIdentityShortHash, requestId)
+            if (approve) {
+                publishApprovalDecision(ApproveRegistration(), holdingIdentityShortHash, requestId.toString())
             } else {
-                publishApprovalDecision(DeclineRegistration(decision.reason ?: ""), holdingIdentityShortHash, requestId)
+                publishApprovalDecision(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
             }
         }
 

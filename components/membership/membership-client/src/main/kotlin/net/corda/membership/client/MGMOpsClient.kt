@@ -3,7 +3,6 @@ package net.corda.membership.client
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.data.membership.common.ManualApprovalDecision
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -140,7 +139,7 @@ interface MGMOpsClient : Lifecycle {
      * requesting member, and/or by the status of the request (historic or in-progress).
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
-     * @param requestingMemberX500Name Optional. X.500 name of the requesting member.
+     * @param requestSubjectX500Name Optional. X.500 name of the subject of the registration request.
      * @param viewHistoric Optional. Set this to 'true' to view both in-progress and completed (historic) requests.
      * Defaults to 'false' (in-progress requests only).
      *
@@ -152,7 +151,7 @@ interface MGMOpsClient : Lifecycle {
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
     fun viewRegistrationRequests(
         holdingIdentityShortHash: ShortHash,
-        requestingMemberX500Name: String?,
+        requestSubjectX500Name: MemberX500Name?,
         viewHistoric: Boolean,
     ): Collection<RegistrationRequestStatus>
 
@@ -162,7 +161,8 @@ interface MGMOpsClient : Lifecycle {
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param requestId ID of the registration request.
-     * @param decision Decision [ManualApprovalDecision] to apply on the specified registration request.
+     * @param approve Set to 'true' if request is approved, 'false' if declined.
+     * @param reason Reason if registration request is declined.
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
@@ -170,7 +170,8 @@ interface MGMOpsClient : Lifecycle {
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
     fun reviewRegistrationRequest(
         holdingIdentityShortHash: ShortHash,
-        requestId: String,
-        decision: ManualApprovalDecision,
+        requestId: UUID,
+        approve: Boolean,
+        reason: String? = null,
     )
 }
