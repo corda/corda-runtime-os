@@ -288,7 +288,7 @@
                         "schema": {
                             "type": "string",
                             "default": "CONFIG",
-                            "title": "the schema in which the cluster database config entities will be stored, passed to workers on startup",
+                            "title": "the name of the cluster database schema",
                             "examples": [
                                 "CONFIG"
                             ],

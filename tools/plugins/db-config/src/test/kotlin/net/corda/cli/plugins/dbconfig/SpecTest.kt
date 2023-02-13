@@ -42,7 +42,7 @@ class SpecTest {
     )
 
     private companion object {
-        const val NUMBER_OF_DEFAULT_SCHEMAS = 3
+        const val NUMBER_OF_SUPPORTED_SCHEMAS = 4
 
         const val JDBC_URL = "url"
         const val USER = "user"
@@ -61,8 +61,8 @@ class SpecTest {
         verify(mockConnectionFactory, times(0)).invoke(any(), any(), any())
         verify(mockDatabaseFactory, times(0)).invoke(any())
 
-        verify(mockLiquibase, times(NUMBER_OF_DEFAULT_SCHEMAS)).update(any<Contexts>(), any<FileWriter>())
-        verify(mockWriter, times(NUMBER_OF_DEFAULT_SCHEMAS)).close()
+        verify(mockLiquibase, times(NUMBER_OF_SUPPORTED_SCHEMAS)).update(any<Contexts>(), any<FileWriter>())
+        verify(mockWriter, times(NUMBER_OF_SUPPORTED_SCHEMAS)).close()
     }
 
     @Test
@@ -113,11 +113,11 @@ class SpecTest {
 
         spec.run()
 
-        verify(mockConnectionFactory, times(NUMBER_OF_DEFAULT_SCHEMAS)).invoke(JDBC_URL, USER, PASSWORD)
-        verify(mockDatabaseFactory, times(NUMBER_OF_DEFAULT_SCHEMAS)).invoke(mockConnection)
-        verify(mockLiquibaseFactory, times(NUMBER_OF_DEFAULT_SCHEMAS)).invoke(any(), eq(mockDatabase))
+        verify(mockConnectionFactory, times(NUMBER_OF_SUPPORTED_SCHEMAS)).invoke(JDBC_URL, USER, PASSWORD)
+        verify(mockDatabaseFactory, times(NUMBER_OF_SUPPORTED_SCHEMAS)).invoke(mockConnection)
+        verify(mockLiquibaseFactory, times(NUMBER_OF_SUPPORTED_SCHEMAS)).invoke(any(), eq(mockDatabase))
 
-        verify(mockLiquibase, times(NUMBER_OF_DEFAULT_SCHEMAS)).update(any<Contexts>(), any<FileWriter>())
-        verify(mockWriter, times(NUMBER_OF_DEFAULT_SCHEMAS)).close()
+        verify(mockLiquibase, times(NUMBER_OF_SUPPORTED_SCHEMAS)).update(any<Contexts>(), any<FileWriter>())
+        verify(mockWriter, times(NUMBER_OF_SUPPORTED_SCHEMAS)).close()
     }
 }
