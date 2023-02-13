@@ -14,11 +14,6 @@
       "type": "string"
     },
     {
-      "doc": "The tenant ID under which the session initiation key is stored",
-      "name": "sessionKeyTenantId",
-      "type": "string"
-    },
-    {
       "doc": "The TLS certificates (in PEM format)",
       "name": "tlsCertificates",
       "type": {
