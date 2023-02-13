@@ -8,6 +8,7 @@ import net.corda.v5.application.flows.RestRequestBody
 import net.cordacon.example.landregistry.states.LandTitleState
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.detailedLogger
@@ -76,9 +77,10 @@ class FetchLandTitleFlow : ClientStartableFlow {
 }
 
 data class Filter(
-    val titleNumber: String
+    val titleNumber: String = ""
 )
 
+@CordaSerializable
 data class LandTitle(
     val titleNumber: String,
     val location: String,

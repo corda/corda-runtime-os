@@ -118,9 +118,6 @@ data class UtxoTransactionBuilderBase(
     fun sign(): UtxoSignedTransaction {
         val signatories = this.signatories
         check(!alreadySigned) { "The transaction cannot be signed twice." }
-        require(signatories.toList().isNotEmpty()) {
-            "At least one key needs to be provided in order to create a signed Transaction!"
-        }
         verifyTx()
 
         val unsignedTx = UtxoSignedTransactionBase(
@@ -151,6 +148,17 @@ data class UtxoTransactionBuilderBase(
         }
         checkNotNull(timeWindow) {
             "The time window of UtxoTransactionBuilder must not be null."
+        }
+
+        check(signatories.isNotEmpty()) {
+            "At least one signatory signing key must be applied to the current transaction."
+        }
+        check(inputStateRefs.isNotEmpty() ||
+                outputStates.isNotEmpty()) {
+            "At least one input state, or one output state must be applied to the current transaction."
+        }
+        check(commands.isNotEmpty()) {
+            "At least one command must be applied to the current transaction."
         }
     }
 

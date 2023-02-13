@@ -15,10 +15,12 @@ import net.corda.v5.ledger.utxo.ContractState
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.lang.IllegalStateException
 import java.security.PublicKey
 import java.time.Clock
 import java.time.Instant
@@ -70,6 +72,40 @@ class UtxoTransactionBuilderBaseTest {
         assertThat(tx.signatures[0].by, `is`(publicKeys[0]))
         assertThat(String(tx.signatures[0].signature.bytes), `is`("My fake signed things"))
         assertThat(tx.signatures[0].metadata.timestamp, `is`(Instant.EPOCH))
+    }
+
+    @Test
+    fun `should fail when mandatory fields are missing in the transactions`() {
+        val builder = UtxoTransactionBuilderBase(
+            signingService = mock(),
+            persistenceService = mock(),
+            configuration = mock()
+        )
+
+        assertThrows<IllegalStateException>{
+            builder.toSignedTransaction()
+        }
+        assertThrows<IllegalStateException>{
+            builder.setNotary(notary).toSignedTransaction()
+        }
+        assertThrows<IllegalStateException>{
+            builder.setNotary(notary)
+                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .toSignedTransaction()
+        }
+        assertThrows<IllegalStateException>{
+            builder.setNotary(notary)
+                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .addOutputState(TestUtxoState("StateData", publicKeys))
+                .toSignedTransaction()
+        }
+        assertThrows<IllegalStateException>{
+            builder.setNotary(notary)
+                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .addOutputState(TestUtxoState("StateData", publicKeys))
+                .addSignatories(publicKeys)
+                .toSignedTransaction()
+        }
     }
 
     class TestUtxoState(

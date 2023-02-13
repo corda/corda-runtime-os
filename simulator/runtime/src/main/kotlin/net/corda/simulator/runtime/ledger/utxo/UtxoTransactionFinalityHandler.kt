@@ -1,10 +1,7 @@
 package net.corda.simulator.runtime.ledger.utxo
 
-import net.corda.simulator.SimulatorConfiguration
-import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntityId
-import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -12,7 +9,6 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
-import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -26,16 +22,16 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import java.security.PublicKey
 import java.time.Instant
 
-class UtxoTransactionFinalizer(
+class UtxoTransactionFinalityHandler(
      private val memberLookup: MemberLookup,
      private val signingService: SigningService,
      private val notarySigningService: SigningService,
      private val persistenceService: PersistenceService,
-     private val configuration: SimulatorConfiguration
+     private val backchainHandler: TransactionBackchainHandler
 ) {
 
     fun finalizeTransaction(signedTransaction: UtxoSignedTransaction,
-                            sessions: List<FlowSession>): UtxoSignedTransaction{
+                            sessions: List<FlowSession>): UtxoSignedTransaction {
         val ledgerTx = signedTransaction.toLedgerTransaction()
         runTransactionVerifications(ledgerTx)
         runContractVerification(ledgerTx)
@@ -43,7 +39,7 @@ class UtxoTransactionFinalizer(
         val finalSignedTransaction = sessions.fold(signedTransaction) {
                 tx, sess ->
             sess.send(signedTransaction)
-            sendBackChain(sess)
+            backchainHandler.sendBackChain(sess)
             (tx as UtxoSignedTransactionBase).addSignatureAndMetadata(sess.receive())
         }
 
@@ -52,16 +48,13 @@ class UtxoTransactionFinalizer(
         sessions.forEach {
             it.send(notarizedTx)
         }
-        persistenceService.persist(notarizedTx.toEntity())
-        persistenceService.persist(notarizedTx.toOutputsEntity())
-        consumeInputs(notarizedTx)
-        return notarizedTx
+        return persist(notarizedTx)
     }
 
 
-    fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction{
+    fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
         val signedTransaction = session.receive<UtxoSignedTransactionBase>()
-        receiveBackChain(signedTransaction, session)
+        backchainHandler.receiveBackChain(signedTransaction, session)
         validator.checkTransaction(signedTransaction.toLedgerTransaction())
 
         val keysToSignWith = memberLookup.myInfo().ledgerKeys.filter {
@@ -70,80 +63,14 @@ class UtxoTransactionFinalizer(
         val signatures = sign(signedTransaction, keysToSignWith, signingService)
         session.send(signatures)
         val notarizedTx = session.receive<UtxoSignedTransactionBase>()
+        return persist(notarizedTx)
+    }
+
+    private fun persist(notarizedTx: UtxoSignedTransactionBase): UtxoSignedTransaction{
         persistenceService.persist(notarizedTx.toEntity())
-        persistenceService.persist(notarizedTx.toOutputsEntity())
+        persistenceService.persist(notarizedTx.toOutputsEntity(memberLookup.myInfo().ledgerKeys.toSet()))
         consumeInputs(notarizedTx)
         return notarizedTx
-    }
-
-    private fun sendBackChain(session: FlowSession) {
-        val serializationService = BaseSerializationService()
-        while (true) {
-            when (val request = session.receive<TransactionBackchainRequest>()) {
-                is TransactionBackchainRequest.Get -> {
-                    val transactions = request.transactionIds.map { id ->
-                        persistenceService.find(UtxoTransactionEntity::class.java, String(id.bytes))
-                            ?: throw CordaRuntimeException("Requested transaction does not exist locally")
-                    }
-                    transactions.map { session.send(listOf(
-                        UtxoSignedTransactionBase.fromEntity(it,
-                        signingService, serializationService, persistenceService, configuration)
-                    )) }
-                }
-
-                is TransactionBackchainRequest.Stop -> return
-            }
-        }
-    }
-
-    private fun receiveBackChain(transaction: UtxoSignedTransaction, session: FlowSession) {
-        val dependencies = getTxDependencies(transaction)
-        val availableTx = dependencies.filter {
-            persistenceService.find(UtxoTransactionEntity::class.java, String(it.bytes)) != null
-        }.toSet()
-        val originalTransactionsToRetrieve = dependencies - availableTx
-        val sortedTransactionIds = TopologicalSort()
-        val transactionsToRetrieve = LinkedHashSet(originalTransactionsToRetrieve)
-        if(transactionsToRetrieve.isNotEmpty()){
-            while (transactionsToRetrieve.isNotEmpty()){
-                val retrievedTransactions = session.sendAndReceive<List<UtxoSignedTransaction>>(
-                    TransactionBackchainRequest.Get(setOf(transactionsToRetrieve.first()))
-                )
-                for (retrievedTransaction in retrievedTransactions) {
-                    val retrievedTransactionId = retrievedTransaction.id
-                    persistenceService.persist((retrievedTransaction as UtxoSignedTransactionBase).toEntity())
-                    persistenceService.persist(retrievedTransaction.toOutputsEntity())
-                    transactionsToRetrieve.remove(retrievedTransactionId)
-                    addUnseenDependenciesToRetrieve(retrievedTransaction, sortedTransactionIds, transactionsToRetrieve)
-                }
-            }
-            if (sortedTransactionIds.isNotEmpty()) {
-                session.send(TransactionBackchainRequest.Stop)
-            }
-        }else{
-            session.send(TransactionBackchainRequest.Stop)
-        }
-    }
-
-    private fun addUnseenDependenciesToRetrieve(
-        retrievedTransaction: UtxoSignedTransaction,
-        sortedTransactionIds: TopologicalSort,
-        transactionsToRetrieve: LinkedHashSet<SecureHash>
-    ){
-        if (retrievedTransaction.id !in sortedTransactionIds.transactionIds) {
-            getTxDependencies(retrievedTransaction).let { dependencies ->
-                val unseenDependencies = dependencies - sortedTransactionIds.transactionIds
-
-                sortedTransactionIds.add(retrievedTransaction.id, unseenDependencies)
-                transactionsToRetrieve.addAll(unseenDependencies)
-            }
-        }
-    }
-
-    private fun getTxDependencies(transaction: UtxoSignedTransaction) : Set<SecureHash> {
-        return transaction.let { it.inputStateRefs.asSequence() + it.referenceStateRefs.asSequence() }
-            .map { it.transactionHash }
-            .toSet()
     }
 
     private fun consumeInputs(signedTransaction: UtxoSignedTransaction){
@@ -152,14 +79,17 @@ class UtxoTransactionFinalizer(
                 UtxoTransactionOutputEntityId(
                     it.transactionHash.toString(),
                     it.index
-                ))?:
-            throw IllegalArgumentException("Output not found from transaction id: ${it.transactionHash} " +
-                    "and index: ${it.index}")
-
-            entity.isConsumed = true
-            entity
+                ))
+            if(entity == null){
+                null
+            }
+            else {
+                entity.isConsumed = true
+                entity
+            }
         }
-        persistenceService.merge(updatedEntities)
+
+        persistenceService.merge(updatedEntities.filterNotNull())
     }
 
     private fun verifySignatures(finalTransaction: UtxoSignedTransaction){
@@ -194,8 +124,7 @@ class UtxoTransactionFinalizer(
 
     private fun runTransactionVerifications(ledgerTransaction: UtxoLedgerTransaction){
         check(ledgerTransaction.signatories.isNotEmpty()) {
-            "At least one signatory signing key must be applied to the current transaction" +
-                    " in order to create a signed transaction."
+            "At least one signatory signing key must be applied to the current transaction."
         }
         check(ledgerTransaction.inputStateRefs.isNotEmpty() ||
                 ledgerTransaction.outputContractStates.isNotEmpty()) {

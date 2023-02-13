@@ -56,7 +56,7 @@ class IssueLandTitleFlow: ClientStartableFlow {
             it.state.contractState.titleNumber == request.titleNumber
         }
         if(exists)
-            throw java.lang.IllegalArgumentException("Title Number: ${request.titleNumber} does not exist.")
+            throw java.lang.IllegalArgumentException("Title Number: ${request.titleNumber} already exist.")
 
         val myInfo = memberLookup.myInfo()
         val owner = memberLookup.lookup(request.owner)

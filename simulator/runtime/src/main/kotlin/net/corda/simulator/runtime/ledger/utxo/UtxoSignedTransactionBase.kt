@@ -96,9 +96,9 @@ class UtxoSignedTransactionBase(
         return transactionEntity
     }
 
-    internal fun toOutputsEntity() : List<UtxoTransactionOutputEntity> {
+    internal fun toOutputsEntity(keys: Set<PublicKey>) : List<UtxoTransactionOutputEntity> {
         val serializer = BaseSerializationService()
-        return ledgerInfo.outputStates.mapIndexed{ index, contractState ->
+        val outputEntities = ledgerInfo.outputStates.mapIndexed{ index, contractState ->
             val stateData = serializer.serialize(contractState).bytes
             UtxoTransactionOutputEntity(
                 id.toString(),
@@ -108,6 +108,12 @@ class UtxoSignedTransactionBase(
                 false
             )
         }
+
+        val relevantIndexes = this.outputStateAndRefs.withIndex().filter { (_, stateAndRef) ->
+            val contract = stateAndRef.state.contractType.getConstructor().newInstance()
+            contract.isRelevant(stateAndRef.state.contractState, keys)
+        }.map { it.index }
+        return outputEntities.filter { relevantIndexes.contains(it.index) }
     }
 
     override val metadata: TransactionMetadata

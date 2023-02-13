@@ -23,7 +23,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 
 class SimUtxoLedgerService(
-    private val member: MemberX500Name,
+    member: MemberX500Name,
     private val fiber: SimFiber,
     private val configuration: SimulatorConfiguration,
     private val utxoTransactionBuilderFactory: UtxoTransactionBuilderFactory =
@@ -35,8 +35,10 @@ class SimUtxoLedgerService(
     private val persistenceService = fiber.getOrCreatePersistenceService(member)
     private val memberLookup = fiber.createMemberLookup(member)
     private val serializationService = BaseSerializationService()
-    private val transactionFinalizer = UtxoTransactionFinalizer(
-        memberLookup, signingService, notarySigningService, persistenceService, configuration)
+    private val backchainHandler = TransactionBackchainHandlerBase(
+        persistenceService, signingService, memberLookup, configuration)
+    private val finalityHandler = UtxoTransactionFinalityHandler(
+        memberLookup, signingService, notarySigningService, persistenceService, backchainHandler)
 
     override fun getTransactionBuilder(): UtxoTransactionBuilder {
         return utxoTransactionBuilderFactory.createUtxoTransactionBuilder(
@@ -47,11 +49,11 @@ class SimUtxoLedgerService(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
     ): UtxoSignedTransaction {
-        return transactionFinalizer.finalizeTransaction(signedTransaction, sessions)
+        return finalityHandler.finalizeTransaction(signedTransaction, sessions)
     }
 
     override fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
-        return transactionFinalizer.receiveFinality(session, validator)
+        return finalityHandler.receiveFinality(session, validator)
     }
 
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
