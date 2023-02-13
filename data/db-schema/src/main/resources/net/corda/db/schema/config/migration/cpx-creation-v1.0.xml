@@ -3,15 +3,9 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <property name="schema.name" value="CONFIG" global="false"/>
-
     <changeSet author="R3.Corda" id="cpx-creation-v1.0">
 
-        <sql>
-            CREATE SCHEMA IF NOT EXISTS CONFIG;
-        </sql>
-
-        <createTable tableName="cpi" schemaName="${schema.name}">
+        <createTable tableName="cpi">
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -49,13 +43,11 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpi" columnNames="name, version, signer_summary_hash" constraintName="cpi_pk"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="cpi" columnNames="name, version, signer_summary_hash" constraintName="cpi_pk"/>
 
-        <addUniqueConstraint tableName="cpi" columnNames="file_checksum" constraintName="db_cpi_uc1"
-                             schemaName="${schema.name}"/>
+        <addUniqueConstraint tableName="cpi" columnNames="file_checksum" constraintName="db_cpi_uc1"/>
 
-        <createTable tableName="cpk_metadata" schemaName="${schema.name}">
+        <createTable tableName="cpk_metadata">
             <column name="cpk_name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -88,10 +80,9 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_metadata" columnNames="file_checksum" constraintName="cpk_metadata_pk"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="cpk_metadata" columnNames="file_checksum" constraintName="cpk_metadata_pk"/>
 
-        <createTable tableName="cpk_file" schemaName="${schema.name}">
+        <createTable tableName="cpk_file">
             <column name="file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -111,16 +102,13 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cpk_file" columnNames="file_checksum" constraintName="cpk_file_pk"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="cpk_file" columnNames="file_checksum" constraintName="cpk_file_pk"/>
 
         <addForeignKeyConstraint baseTableName="cpk_file" baseColumnNames="file_checksum"
                                  referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
-                                 constraintName="FK_cpk_file_cpk_metadata"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK_cpk_file_cpk_metadata"/>
 
-        <createTable tableName="cpk_db_change_log" schemaName="${schema.name}">
+        <createTable tableName="cpk_db_change_log">
             <column name="cpk_file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -144,15 +132,13 @@
         </createTable>
 
         <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_file_checksum, file_path"
-                       constraintName="cpk_db_change_log_pk" schemaName="${schema.name}"/>
+                       constraintName="cpk_db_change_log_pk"/>
 
         <addForeignKeyConstraint baseTableName="cpk_db_change_log" baseColumnNames="cpk_file_checksum"
                                  referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
-                                 constraintName="FK_cpk_db_change_log_cpk_metadata"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK_cpk_db_change_log_cpk_metadata"/>
         <!-- Append only audit table. Unlike cpk_db_change_logs which will be updated during CPI update process. -->
-        <createTable tableName="cpk_db_change_log_audit" schemaName="${schema.name}">
+        <createTable tableName="cpk_db_change_log_audit">
             <column name="id" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -175,9 +161,9 @@
         </createTable>
 
         <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="id"
-                       constraintName="cpk_db_change_log_audit_pk" schemaName="${schema.name}"/>
+                       constraintName="cpk_db_change_log_audit_pk"/>
 
-        <createTable tableName="cpi_cpk" schemaName="${schema.name}">
+        <createTable tableName="cpi_cpk">
             <column name="cpi_name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -207,19 +193,15 @@
         </createTable>
 
         <addPrimaryKey tableName="cpi_cpk" columnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
-                       constraintName="cpi_cpk_pk" schemaName="${schema.name}"/>
+                       constraintName="cpi_cpk_pk"/>
 
         <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash"
                                  referencedTableName="cpi" referencedColumnNames="name, version, signer_summary_hash"
-                                 constraintName="FK_cpi_cpk_cpi"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK_cpi_cpk_cpi"/>
 
         <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpk_file_checksum"
                                  referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
-                                 constraintName="FK_cpi_cpk_cpk_metadata"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK_cpi_cpk_cpk_metadata"/>
 
     </changeSet>
 </databaseChangeLog>

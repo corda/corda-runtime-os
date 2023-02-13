@@ -3,18 +3,12 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <property name="schema.name" value="CONFIG" global="false"/>
-
     <property name="now" value="now()" dbms="hsqldb"/>
     <property name="now" value="now()" dbms="postgresql"/>
 
     <changeSet author="R3.Corda" id="config-creation-v1.0">
 
-        <sql>
-            CREATE SCHEMA IF NOT EXISTS CONFIG;
-        </sql>
-
-        <createTable tableName="config" schemaName="${schema.name}">
+        <createTable tableName="config">
             <column name="section" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -40,10 +34,9 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="section" constraintName="config_pk" tableName="config"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey columnNames="section" constraintName="config_pk" tableName="config"/>
 
-        <insert tableName="config" schemaName="${schema.name}">
+        <insert tableName="config">
             <column name="section" value="corda.reconciliation"/>
             <column name="config" value=""/>
             <column name="schema_version_major" value="1"/>
@@ -54,7 +47,7 @@
             <column name="update_actor" value="admin"/>
         </insert>
 
-        <insert tableName="config" schemaName="${schema.name}">
+        <insert tableName="config">
             <column name="section" value="corda.p2p.linkManager"/>
             <column name="config" value=""/>
             <column name="schema_version_major" value="1"/>
@@ -65,7 +58,7 @@
             <column name="update_actor" value="admin"/>
         </insert>
 
-        <insert tableName="config" schemaName="${schema.name}">
+        <insert tableName="config">
             <column name="section" value="corda.p2p.gateway"/>
             <column name="config" value=""/>
             <column name="schema_version_major" value="1"/>
@@ -76,7 +69,7 @@
             <column name="update_actor" value="admin"/>
         </insert>
 
-        <insert tableName="config" schemaName="${schema.name}">
+        <insert tableName="config">
             <column name="section" value="corda.membership"/>
             <column name="config" value=""/>
             <column name="schema_version_major" value="1"/>
@@ -87,7 +80,7 @@
             <column name="update_actor" value="admin"/>
         </insert>
 
-        <insert tableName="config" schemaName="${schema.name}">
+        <insert tableName="config">
             <column name="section" value="corda.rest"/>
             <column name="config" value=""/>
             <column name="schema_version_major" value="1"/>
@@ -98,7 +91,7 @@
             <column name="update_actor" value="admin"/>
         </insert>
 
-        <insert tableName="config" schemaName="${schema.name}">
+        <insert tableName="config">
             <column name="section" value="corda.messaging"/>
             <column name="config" value=""/>
             <column name="schema_version_major" value="1"/>
@@ -109,7 +102,7 @@
             <column name="update_actor" value="admin"/>
         </insert>
 
-        <insert tableName="config" schemaName="${schema.name}">
+        <insert tableName="config">
             <column name="section" value="corda.flow"/>
             <column name="config" value=""/>
             <column name="schema_version_major" value="1"/>
@@ -120,7 +113,7 @@
             <column name="update_actor" value="admin"/>
         </insert>
 
-        <createTable tableName="config_audit" schemaName="${schema.name}">
+        <createTable tableName="config_audit">
             <column name="change_number" type="SERIAL">
                 <constraints nullable="false"/>
             </column>
@@ -140,12 +133,11 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="change_number" constraintName="config_audit_pk" tableName="config_audit"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey columnNames="change_number" constraintName="config_audit_pk" tableName="config_audit"/>
         <createSequence sequenceName="config_audit_id_seq"/>
 
         <!-- db connections -->
-        <createTable tableName="db_connection" schemaName="${schema.name}">
+        <createTable tableName="db_connection">
             <column name="connection_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
@@ -172,12 +164,10 @@
                 <constraints nullable="false"  />
             </column>
         </createTable>
-        <addPrimaryKey tableName="db_connection" columnNames="connection_id" constraintName="db_connection_pk"
-                       schemaName="${schema.name}"/>
-        <addUniqueConstraint tableName="db_connection" columnNames="connection_name, privilege" constraintName="db_connection_uc1"
-                             schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="db_connection" columnNames="connection_id" constraintName="db_connection_pk"/>
+        <addUniqueConstraint tableName="db_connection" columnNames="connection_name, privilege" constraintName="db_connection_uc1"/>
 
-        <createTable tableName="db_connection_audit" schemaName="${schema.name}">
+        <createTable tableName="db_connection_audit">
             <column name="change_number" type="SERIAL">
                 <constraints nullable="false"/>
             </column>
@@ -204,12 +194,11 @@
                 <constraints nullable="false"  />
             </column>
         </createTable>
-        <addPrimaryKey tableName="db_connection_audit" columnNames="change_number" constraintName="db_connection_audit_pk"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="db_connection_audit" columnNames="change_number" constraintName="db_connection_audit_pk"/>
         <createSequence sequenceName="db_connection_audit_id_seq"/>
 
         <!-- virtual nodes -->
-        <createTable tableName="holding_identity" schemaName="${schema.name}">
+        <createTable tableName="holding_identity">
             <column name="holding_identity_id" type="VARCHAR(12)">
                 <constraints nullable="false"/>
             </column>
@@ -226,10 +215,9 @@
                 <constraints nullable="true"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="holding_identity_id" constraintName="holding_identity_pk" tableName="holding_identity"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey columnNames="holding_identity_id" constraintName="holding_identity_pk" tableName="holding_identity"/>
 
-        <createTable tableName="virtual_node_operation" schemaName="${schema.name}">
+        <createTable tableName="virtual_node_operation">
             <column name="id" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -261,10 +249,9 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="id" constraintName="virtual_node_operation_pk" tableName="virtual_node_operation"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey columnNames="id" constraintName="virtual_node_operation_pk" tableName="virtual_node_operation"/>
 
-        <createTable tableName="virtual_node" schemaName="${schema.name}">
+        <createTable tableName="virtual_node">
             <column name="holding_identity_id" type="VARCHAR(12)">
                 <constraints nullable="false"/>
             </column>
@@ -322,49 +309,33 @@
             </column>
         </createTable>
         <addPrimaryKey tableName="virtual_node" columnNames="holding_identity_id"
-                       constraintName="virtual_node_pk" schemaName="${schema.name}"/>
+                       constraintName="virtual_node_pk"/>
 
         <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash"
                                  referencedTableName="cpi" referencedColumnNames="name, version, signer_summary_hash"
-                                 constraintName="FK_virtual_node_cpi"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK_virtual_node_cpi"/>
         <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="vault_ddl_connection_id"
                                  referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__virtual_node__vault_ddl_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK__virtual_node__vault_ddl_connection_id"/>
         <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="vault_dml_connection_id"
                                  referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__virtual_node__vault_dml_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK__virtual_node__vault_dml_connection_id"/>
         <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="crypto_ddl_connection_id"
                                  referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__virtual_node__crypto_ddl_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK__virtual_node__crypto_ddl_connection_id"/>
         <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="crypto_dml_connection_id"
                                  referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__virtual_node__crypto_dml_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK__virtual_node__crypto_dml_connection_id"/>
         <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="uniqueness_ddl_connection_id"
                                  referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__virtual_node__uniqueness_ddl_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK__virtual_node__uniqueness_ddl_connection_id"/>
         <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="uniqueness_dml_connection_id"
                                  referencedTableName="db_connection" referencedColumnNames="connection_id"
-                                 constraintName="FK__virtual_node__uniqueness_dml_connection_id"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 constraintName="FK__virtual_node__uniqueness_dml_connection_id"/>
         <addForeignKeyConstraint baseTableName="virtual_node" baseColumnNames="operation_in_progress"
                                  referencedTableName="virtual_node_operation" referencedColumnNames="id"
-                                 constraintName="FK__virtual_node_operation"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-        <createTable tableName="cluster_certificate" schemaName="${schema.name}">
+                                 constraintName="FK__virtual_node_operation"/>
+        <createTable tableName="cluster_certificate">
             <column name="alias" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -376,9 +347,8 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="cluster_certificate" columnNames="alias" constraintName="certificate_pk"
-                       schemaName="${schema.name}"/>
-        <createIndex indexName="cluster_certificate_usage" tableName="cluster_certificate" schemaName="${schema.name}">
+        <addPrimaryKey tableName="cluster_certificate" columnNames="alias" constraintName="certificate_pk"/>
+        <createIndex indexName="cluster_certificate_usage" tableName="cluster_certificate">
             <column name="usage"/>
         </createIndex>
     </changeSet>

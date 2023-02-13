@@ -3,17 +3,11 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <!-- this schema is intentional -->
-    <property name="schema.name" value="CONFIG" global="false"/>
     <property name="table.name" value="file_upload"/>
 
     <changeSet author="R3.Corda" id="chunks-creation-v1.0">
 
-        <sql>
-            CREATE SCHEMA IF NOT EXISTS CONFIG;
-        </sql>
-
-        <createTable tableName="${table.name}" schemaName="${schema.name}">
+        <createTable tableName="${table.name}">
             <column name="request_id" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -36,10 +30,9 @@
             </column>
         </createTable>
 
-        <addPrimaryKey tableName="${table.name}" columnNames="request_id, part_nr" constraintName="${table.name}_pk"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="${table.name}" columnNames="request_id, part_nr" constraintName="${table.name}_pk"/>
 
-        <createTable tableName="${table.name}_props" schemaName="${schema.name}"
+        <createTable tableName="${table.name}_props"
                      remarks="Holds properties for a file upload">
             <column name="update_ts" type="TIMESTAMP">
                 <constraints nullable="false"/>
@@ -54,10 +47,9 @@
                 <constraints nullable="true"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="${table.name}_props" columnNames="request_id, key" constraintName="${table.name}_props_pkey"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="${table.name}_props" columnNames="request_id, key" constraintName="${table.name}_props_pkey"/>
 
-        <createIndex tableName="${table.name}_props" indexName="${table.name}_props_reqId__idx" schemaName="${schema.name}">
+        <createIndex tableName="${table.name}_props" indexName="${table.name}_props_reqId__idx">
             <column name="request_id"/>
         </createIndex>
 

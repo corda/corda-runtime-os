@@ -3,15 +3,8 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
 
-    <property name="schema.name" value="RBAC" global="false"/>
-
     <changeSet author="vkolomeyko" id="rest-perm-creation-v1.0">
-
-        <sql>
-            CREATE SCHEMA IF NOT EXISTS RBAC;
-        </sql>
-
-        <createTable tableName="rbac_user" schemaName="${schema.name}">
+        <createTable tableName="rbac_user">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
@@ -43,12 +36,10 @@
                 <constraints nullable="true"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_user" columnNames="id" constraintName="rbac_user_pkey"
-                       schemaName="${schema.name}"/>
-        <addUniqueConstraint tableName="rbac_user" columnNames="login_name" constraintName="rbac_user_uc1"
-                             schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="rbac_user" columnNames="id" constraintName="rbac_user_pkey"/>
+        <addUniqueConstraint tableName="rbac_user" columnNames="login_name" constraintName="rbac_user_uc1"/>
 
-        <createTable tableName="rbac_user_props" schemaName="${schema.name}"
+        <createTable tableName="rbac_user_props"
                      remarks="Holds properties for an individual user">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
@@ -69,19 +60,15 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_user_props" columnNames="id" constraintName="rbac_user_props_pkey"
-                       schemaName="${schema.name}"/>
-        <addUniqueConstraint tableName="rbac_user_props" columnNames="user_ref, key" constraintName="rbac_user_props_uc1"
-                             schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="rbac_user_props" columnNames="id" constraintName="rbac_user_props_pkey"/>
+        <addUniqueConstraint tableName="rbac_user_props" columnNames="user_ref, key" constraintName="rbac_user_props_uc1"/>
 
         <addForeignKeyConstraint baseTableName="rbac_user_props" baseColumnNames="user_ref"
                                  referencedTableName="rbac_user" referencedColumnNames="id"
                                  constraintName="FK__rbac_user_props__user_ref"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
-        <createTable tableName="rbac_group" schemaName="${schema.name}">
+        <createTable tableName="rbac_group">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
@@ -98,26 +85,20 @@
                 <constraints nullable="true"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_group" columnNames="id" constraintName="rbac_group_pkey"
-                       schemaName="${schema.name}"/>
-        <addUniqueConstraint tableName="rbac_group" columnNames="name, parent_group" constraintName="rbac_group_uc1"
-                             schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="rbac_group" columnNames="id" constraintName="rbac_group_pkey"/>
+        <addUniqueConstraint tableName="rbac_group" columnNames="name, parent_group" constraintName="rbac_group_uc1"/>
 
         <addForeignKeyConstraint baseTableName="rbac_group" baseColumnNames="parent_group"
                                  referencedTableName="rbac_group" referencedColumnNames="id"
                                  constraintName="FK__rbac_gr__parent_gr"
-                                 onDelete="SET NULL"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="SET NULL"/>
 
         <addForeignKeyConstraint baseTableName="rbac_user" baseColumnNames="parent_group"
                                  referencedTableName="rbac_group" referencedColumnNames="id"
                                  constraintName="FK__rbac_user__parent_group"
-                                 onDelete="SET NULL"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="SET NULL"/>
 
-        <createTable tableName="rbac_group_props" remarks="Holds properties of the group" schemaName="${schema.name}">
+        <createTable tableName="rbac_group_props" remarks="Holds properties of the group">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
@@ -137,20 +118,16 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_group_props" columnNames="id" constraintName="rbac_group_props_pkey"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="rbac_group_props" columnNames="id" constraintName="rbac_group_props_pkey"/>
         <addUniqueConstraint tableName="rbac_group_props" columnNames="group_ref, key"
-                             constraintName="rbac_group_props_uc1"
-                             schemaName="${schema.name}"/>
+                             constraintName="rbac_group_props_uc1"/>
 
         <addForeignKeyConstraint baseTableName="rbac_group_props" baseColumnNames="group_ref"
                                  referencedTableName="rbac_group" referencedColumnNames="id"
                                  constraintName="FK__rbac_group_props__group_ref"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
-        <createTable tableName="rbac_change_audit" schemaName="${schema.name}">
+        <createTable tableName="rbac_change_audit">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
@@ -167,10 +144,9 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_change_audit" columnNames="id" constraintName="rbac_change_audit_pkey"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="rbac_change_audit" columnNames="id" constraintName="rbac_change_audit_pkey"/>
 
-        <createTable tableName="rbac_role" schemaName="${schema.name}">
+        <createTable tableName="rbac_role">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
@@ -188,22 +164,18 @@
                 <constraints nullable="true"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_role" columnNames="id" constraintName="rbac_role_pkey"
-                       schemaName="${schema.name}"/>
-        <addUniqueConstraint tableName="rbac_role" columnNames="name, group_vis" constraintName="rbac_role_uc1"
-                             schemaName="${schema.name}"/>
-        <createIndex tableName="rbac_role" indexName="rbac_role__group_vis__idx" schemaName="${schema.name}">
+        <addPrimaryKey tableName="rbac_role" columnNames="id" constraintName="rbac_role_pkey"/>
+        <addUniqueConstraint tableName="rbac_role" columnNames="name, group_vis" constraintName="rbac_role_uc1"/>
+        <createIndex tableName="rbac_role" indexName="rbac_role__group_vis__idx">
             <column name="group_vis"/>
         </createIndex>
 
         <addForeignKeyConstraint baseTableName="rbac_role" baseColumnNames="group_vis"
                                  referencedTableName="rbac_group" referencedColumnNames="id"
                                  constraintName="FK__rbac_role__group_vis"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
-        <createTable tableName="rbac_role_user_rel" schemaName="${schema.name}"
+        <createTable tableName="rbac_role_user_rel"
                      remarks="Represents 1-n relationship between user and roles">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
@@ -218,26 +190,21 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_role_user_rel" columnNames="id" constraintName="rbac_role_user_rel_pkey"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="rbac_role_user_rel" columnNames="id" constraintName="rbac_role_user_rel_pkey"/>
         <addUniqueConstraint tableName="rbac_role_user_rel" columnNames="user_id, role_id"
-                             constraintName="rbac_role_user_rel_uc1" schemaName="${schema.name}"/>
+                             constraintName="rbac_role_user_rel_uc1"/>
 
         <addForeignKeyConstraint baseTableName="rbac_role_user_rel" baseColumnNames="user_id"
                                  referencedTableName="rbac_user" referencedColumnNames="id"
                                  constraintName="FK__rbac_role_user_rel__user_id"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
         <addForeignKeyConstraint baseTableName="rbac_role_user_rel" baseColumnNames="role_id"
                                  referencedTableName="rbac_role" referencedColumnNames="id"
                                  constraintName="FK__rbac_role_user_rel__role_id"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
-        <createTable tableName="rbac_role_group_rel" schemaName="${schema.name}"
+        <createTable tableName="rbac_role_group_rel"
                      remarks="Represents 1-n relationship between group and roles">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
@@ -252,26 +219,21 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_role_group_rel" columnNames="id" constraintName="rbac_role_group_rel_pkey"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="rbac_role_group_rel" columnNames="id" constraintName="rbac_role_group_rel_pkey"/>
         <addUniqueConstraint tableName="rbac_role_group_rel" columnNames="group_id, role_id"
-                             constraintName="rbac_role_group_rel_uc1" schemaName="${schema.name}"/>
+                             constraintName="rbac_role_group_rel_uc1"/>
 
         <addForeignKeyConstraint baseTableName="rbac_role_group_rel" baseColumnNames="group_id"
                                  referencedTableName="rbac_group" referencedColumnNames="id"
                                  constraintName="FK__rbac_role_group_rel__group_id"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
         <addForeignKeyConstraint baseTableName="rbac_role_group_rel" baseColumnNames="role_id"
                                  referencedTableName="rbac_role" referencedColumnNames="id"
                                  constraintName="FK__rbac_role_group_rel__role_id"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
-        <createTable tableName="rbac_perm" schemaName="${schema.name}">
+        <createTable tableName="rbac_perm">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
@@ -295,20 +257,17 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_perm" columnNames="id" constraintName="rbac_perm_pkey"
-                       schemaName="${schema.name}"/>
-        <createIndex tableName="rbac_perm" indexName="rbac_perm__group_vis__idx" schemaName="${schema.name}">
+        <addPrimaryKey tableName="rbac_perm" columnNames="id" constraintName="rbac_perm_pkey"/>
+        <createIndex tableName="rbac_perm" indexName="rbac_perm__group_vis__idx">
             <column name="group_vis"/>
         </createIndex>
 
         <addForeignKeyConstraint baseTableName="rbac_perm" baseColumnNames="group_vis"
                                  referencedTableName="rbac_group" referencedColumnNames="id"
                                  constraintName="FK__rbac_perm__group_vis"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
-        <createTable tableName="rbac_role_perm_rel" schemaName="${schema.name}"
+        <createTable tableName="rbac_role_perm_rel"
                      remarks="Represents n-n relationship between roles and permissions">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
@@ -323,24 +282,19 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="rbac_role_perm_rel" columnNames="id" constraintName="rbac_role_perm_rel_pkey"
-                       schemaName="${schema.name}"/>
+        <addPrimaryKey tableName="rbac_role_perm_rel" columnNames="id" constraintName="rbac_role_perm_rel_pkey"/>
         <addUniqueConstraint tableName="rbac_role_perm_rel" columnNames="role_id, perm_id"
-                             constraintName="rbac_role_perm_rel_uc1" schemaName="${schema.name}"/>
+                             constraintName="rbac_role_perm_rel_uc1"/>
 
         <addForeignKeyConstraint baseTableName="rbac_role_perm_rel" baseColumnNames="role_id"
                                  referencedTableName="rbac_role" referencedColumnNames="id"
                                  constraintName="FK__rbac_role_perm_rel__role_id"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
         <addForeignKeyConstraint baseTableName="rbac_role_perm_rel" baseColumnNames="perm_id"
                                  referencedTableName="rbac_perm" referencedColumnNames="id"
                                  constraintName="FK__rbac_role_perm_rel__perm_id"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
+                                 onDelete="CASCADE"/>
 
     </changeSet>
 </databaseChangeLog>
