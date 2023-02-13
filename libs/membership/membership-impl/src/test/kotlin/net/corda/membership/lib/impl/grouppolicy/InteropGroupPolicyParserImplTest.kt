@@ -26,7 +26,7 @@ import org.mockito.kotlin.mock
 import java.security.PublicKey
 
 /**
- * Unit tests for [GroupPolicyParserImpl]
+ * Unit tests for [InteropGroupPolicyParserImpl]
  */
 class InteropGroupPolicyParserImplTest {
 

@@ -27,6 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -218,6 +219,15 @@ class GroupPolicyProviderImplTest {
         on { parse(eq(holdingIdentity5), eq(groupPolicy3), any()) }.doReturn(parsedMgmGroupPolicy)
     }
 
+    private val interopGroupPolicyParser: InteropGroupPolicyParser = mock {
+        on { parse(eq(holdingIdentity1), eq(groupPolicy1), any()) }.doReturn(parsedGroupPolicy1)
+        on { parse(eq(holdingIdentity1), eq(groupPolicy2), any()) }.doReturn(parsedGroupPolicy2)
+        on { parse(eq(holdingIdentity2), eq(groupPolicy2), any()) }.doReturn(parsedGroupPolicy2)
+        on { parse(eq(holdingIdentity3), eq(groupPolicy3), any()) }.doReturn(parsedGroupPolicy3)
+        on { parse(eq(holdingIdentity4), eq(null), any()) }.doThrow(BadGroupPolicyException(""))
+        on { parse(eq(holdingIdentity5), eq(groupPolicy3), any()) }.doReturn(parsedMgmGroupPolicy)
+    }
+
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(any()) }.doReturn(MembershipQueryResult.Success(properties))
     }
@@ -256,6 +266,7 @@ class GroupPolicyProviderImplTest {
             cpiInfoReader,
             lifecycleCoordinatorFactory,
             groupPolicyParser,
+            interopGroupPolicyParser,
             membershipQueryClient,
             subscriptionFactory,
             configurationReadService

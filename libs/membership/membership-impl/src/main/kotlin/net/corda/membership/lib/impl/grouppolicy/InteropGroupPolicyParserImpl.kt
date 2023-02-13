@@ -32,18 +32,6 @@ class InteropGroupPolicyParserImpl @Activate constructor(
     private val objectMapper = ObjectMapper()
     private val clock = UTCClock()
 
-    private val mgmVersions = mapOf(
-        1 to { holdingIdentity: HoldingIdentity,
-               root: JsonNode,
-               groupPolicyPropertiesQuery: () -> LayeredPropertyMap? ->
-            net.corda.membership.lib.impl.grouppolicy.v1.MGMGroupPolicyImpl(
-                holdingIdentity,
-                root,
-                groupPolicyPropertiesQuery
-            )
-        }
-    )
-
     private val memberVersions = mapOf(
         1 to { root: JsonNode ->
             net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl(root)
@@ -106,6 +94,9 @@ class InteropGroupPolicyParserImpl @Activate constructor(
         )
     }
 
+    /**
+     * Returns the implementation of the interop group policy, holding identity to be used in later implementations
+     */
     override fun get(holdingIdentity: HoldingIdentity): InteropGroupPolicy {
         return InteropGroupPolicyImpl()
     }

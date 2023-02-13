@@ -274,11 +274,7 @@ class GroupPolicyProviderImpl @Activate constructor(
             logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
         }
         val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
-        if (metadata == null) {
-            val groupPolicy = interopGroupPolicyParser.get(holdingIdentity)
-            if (groupPolicy != null){
-                return groupPolicy
-            }
+        if (metadata == null && !isInterop) {
             logger.warn(
                 "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
                         "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
@@ -295,13 +291,13 @@ class GroupPolicyProviderImpl @Activate constructor(
             if (isInterop) {
                 interopGroupPolicyParser.parse(
                     holdingIdentity,
-                    metadata.groupPolicy,
+                    interopGroupPolicyParser.get(holdingIdentity).toString(),
                     ::persistedPropertyQuery
                 )
             } else {
                 groupPolicyParser.parse(
                     holdingIdentity,
-                    metadata.groupPolicy,
+                    metadata!!.groupPolicy,
                     ::persistedPropertyQuery
                 )
             }
