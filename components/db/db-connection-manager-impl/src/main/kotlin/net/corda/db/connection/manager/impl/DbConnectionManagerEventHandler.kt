@@ -57,10 +57,8 @@ class DbConnectionManagerEventHandler(
 
     @Synchronized
     private fun checkDb(coordinator: LifecycleCoordinator) {
-        if (isDatabaseConnectionUp(dbConnectionManager.getClusterDataSource())) {
+        if (dbConnectionManager.testAllConnections()) {
             coordinator.updateStatus(LifecycleStatus.UP, "DB check passed")
-        } else {
-            coordinator.updateStatus(LifecycleStatus.ERROR, "DB check failed")
         }
         scheduleNextDbCheck(coordinator)
     }

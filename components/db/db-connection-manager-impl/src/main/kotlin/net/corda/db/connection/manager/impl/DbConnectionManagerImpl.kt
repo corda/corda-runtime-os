@@ -3,6 +3,7 @@ package net.corda.db.connection.manager.impl
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
+import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.createFromConfig
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
@@ -62,6 +63,7 @@ class DbConnectionManagerImpl (
     private val eventHandler = DbConnectionManagerEventHandler(this)
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator<DbConnectionManager>(eventHandler)
     private lateinit var lateInitialisedConfig: SmartConfig
+    private var dbConnectionsRepository: DbConnectionsRepository? = null
 
     override val clusterConfig: SmartConfig
         get() {
@@ -72,6 +74,10 @@ class DbConnectionManagerImpl (
 
     override fun bootstrap(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
+    }
+
+    override fun testAllConnections(): Boolean {
+        return dbConnectionsRepository?.testAllConnections() ?: false
     }
 
     override val isRunning: Boolean
@@ -102,6 +108,7 @@ class DbConnectionManagerImpl (
         val clusterEntityManagerFactory = createManagerFactory(CordaDb.CordaCluster.persistenceUnitName, clusterDataSource)
         val dbConnectionsRepository = dbConnectionRepositoryFactory.create(
             clusterDataSource, dataSourceFactory, clusterEntityManagerFactory, config.factory)
+        this.dbConnectionsRepository = dbConnectionsRepository
         if (dbConnectionOps is LateInitDbConnectionOps) {
             dbConnectionOps.delegate = DbConnectionOpsCachedImpl(
                 DbConnectionOpsImpl(dbConnectionsRepository, entitiesRegistry, entityManagerFactoryFactory),
@@ -117,12 +124,18 @@ class DbConnectionManagerImpl (
          * In a K8s setting we have to be careful that doesn't just trigger pods being terminated and re-created
          * because K8s thinks they're unhealthy while it's actually the downstream system.
          */
-        while (!isDatabaseConnectionUp(clusterDataSource)) {
-            logger.warn("Failed to connect to Cluster DB. Will be retrying in ${checkConnectionRetryTimeout.seconds}s")
-            sleeper(checkConnectionRetryTimeout)
+        while (true) {
+            try {
+                checkDatabaseConnection(clusterDataSource)
+                logger.info("Connection to Cluster DB is successful.")
+                eventHandler.scheduleNextDbCheck(lifecycleCoordinator)
+                return
+            } catch (e: DBConfigurationException) {
+                logger.warn("Failed to connect to Cluster DB. " +
+                        "Will be retrying in ${checkConnectionRetryTimeout.seconds}s: $e")
+                sleeper(checkConnectionRetryTimeout)
+            }
         }
-        logger.info("Connection to Cluster DB is successful.")
-        eventHandler.scheduleNextDbCheck(lifecycleCoordinator)
     }
 
     /**
@@ -139,5 +152,16 @@ class DbConnectionManagerImpl (
             throw DBConfigurationException("Entity set for $name not found"),
             DbEntityManagerConfiguration(dataSource),
         )
+    }
+
+    /**
+     * Checks that it is possible to connect to the cluster database using the [dataSource].
+     *
+     * @throws DBConfigurationException If the cluster database cannot be connected to.
+     */
+    private fun checkDatabaseConnection(dataSource: DataSource) = try {
+        dataSource.connection.close()
+    } catch (e: Exception) {
+        throw DBConfigurationException("Could not connect to cluster database.", e)
     }
 }
