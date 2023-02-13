@@ -16,7 +16,7 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 
-// TODO - rename to WrappingKeyAliasMap
+// TODO - rename to AliasWrappingKeyMap
 
 class CachingSoftWrappingKeyMap(
     config: SoftCacheConfig,
