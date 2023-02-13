@@ -17,6 +17,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
@@ -29,12 +31,14 @@ class UtxoLedgerTransactionContractVerifierTest {
     }
 
     private val transaction = mock<UtxoLedgerTransaction>()
+    private val transactionFactory = mock<() -> UtxoLedgerTransaction>()
 
     @BeforeEach
     fun beforeEach() {
         MyValidContractA.EXECUTION_COUNT = 0
         MyValidContractB.EXECUTION_COUNT = 0
         MyValidContractC.EXECUTION_COUNT = 0
+        whenever(transactionFactory.invoke()).thenReturn(transaction)
         whenever(transaction.id).thenReturn(TX_ID_1)
     }
 
@@ -46,7 +50,9 @@ class UtxoLedgerTransactionContractVerifierTest {
         val validContractCState2 = stateAndRef<MyValidContractC>(TX_ID_1, 0)
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, validContractCState1))
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        verifyContracts(transaction)
+        verifyContracts(transactionFactory)
+        // Called once for each of 3 contracts and once for other checks
+        verify(transactionFactory, times(4)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractB.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractC.EXECUTION_COUNT).isEqualTo(1)
@@ -60,9 +66,11 @@ class UtxoLedgerTransactionContractVerifierTest {
         val invalidContractBState = stateAndRef<MyInvalidContractB>(TX_ID_1, 0)
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, invalidContractAState))
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { verifyContracts(transaction) }
+        assertThatThrownBy { verifyContracts(transactionFactory) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
+        // Called once for each of 4 contracts and once for other checks
+        verify(transactionFactory, times(5)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractB.EXECUTION_COUNT).isEqualTo(1)
     }

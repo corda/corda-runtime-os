@@ -32,7 +32,7 @@ class UtxoLedgerTransactionVerifierTest {
     private val referenceTransactionState = mock<TransactionState<ContractState>>()
     private val metadata = mock<TransactionMetadata>()
 
-    private val verifier = UtxoLedgerTransactionVerifier(transaction)
+    private val verifier = UtxoLedgerTransactionVerifier { transaction }
 
     @BeforeEach
     fun beforeEach() {
