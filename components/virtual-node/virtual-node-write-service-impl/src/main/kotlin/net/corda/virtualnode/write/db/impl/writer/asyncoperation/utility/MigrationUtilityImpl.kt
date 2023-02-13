@@ -52,7 +52,7 @@ internal class MigrationUtilityImpl(
         }
 
         if(missingCpks.size > 0) {
-            logger.info("Found ${missingCpks.size} changelogs missing from virtual node vault $virtualNodeShortHash: " +
+            logger.warn("Found ${missingCpks.size} changelogs missing from virtual node vault $virtualNodeShortHash: " +
                     missingCpks.joinToString()
             )
         }

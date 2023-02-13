@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory
 import java.lang.System.currentTimeMillis
 import java.time.Instant
 import java.util.UUID
+import java.util.Locale
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
@@ -399,7 +400,7 @@ internal class VirtualNodeWriterProcessor(
                         nodeInfo.cpiIdentifier.version,
                         nodeInfo.cpiIdentifier.signerSummaryHash.toString()
                     )
-                    if (stateChangeRequest.newState == "ACTIVE") {
+                    if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
                         if (!migrationUtility.isVaultSchemaAndTargetCpiInSync(
                                 stateChangeRequest.holdingIdentityShortHash,
                                 changelogsPerCpk,
