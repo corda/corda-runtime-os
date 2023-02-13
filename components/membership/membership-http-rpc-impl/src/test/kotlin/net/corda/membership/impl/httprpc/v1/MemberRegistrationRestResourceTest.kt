@@ -177,7 +177,7 @@ class MemberRegistrationRestResourceTest {
     }
 
     @Test
-    fun `checkRegistrationProgress throw 503 when the database is not readt`() {
+    fun `checkRegistrationProgress throw 503 when the database is not read`() {
         whenever(memberOpsClient.checkRegistrationProgress(holdingIdShortHash)).doThrow(
             ServiceNotReadyException(
                 Exception("")
