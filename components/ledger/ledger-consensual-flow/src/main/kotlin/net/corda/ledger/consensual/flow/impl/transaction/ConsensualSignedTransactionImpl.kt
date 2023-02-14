@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -27,10 +28,7 @@ class ConsensualSignedTransactionImpl(
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
         }
-        require(wireTransaction.metadata.getLedgerModel() == ConsensualLedgerTransactionImpl::class.java.name) {
-            "The ledger model in the metadata of the transaction does not match with the expectation of the ledger. " +
-                    "'${wireTransaction.metadata.getLedgerModel()}' != '${ConsensualLedgerTransactionImpl::class.java.name}'"
-        }
+        verifyMetadata(wireTransaction.metadata)
     }
 
     override val id: SecureHash

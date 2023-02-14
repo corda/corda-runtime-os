@@ -2,10 +2,10 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
+import net.corda.ledger.utxo.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -33,10 +33,7 @@ data class UtxoSignedTransactionImpl(
 
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
-        require(wireTransaction.metadata.getLedgerModel() == UtxoLedgerTransactionImpl::class.java.name) {
-            "The ledger model in the metadata of the transaction does not match with the expectation of the ledger. " +
-                    "'${wireTransaction.metadata.getLedgerModel()}' != '${UtxoLedgerTransactionImpl::class.java.name}'"
-        }
+        verifyMetadata(wireTransaction.metadata)
     }
 
     private val wrappedWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
