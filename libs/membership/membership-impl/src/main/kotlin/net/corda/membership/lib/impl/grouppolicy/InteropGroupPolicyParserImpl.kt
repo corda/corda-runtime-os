@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.membership.lib.grouppolicy.*
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicy
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyParser
+import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.membership.lib.impl.grouppolicy.v1.InteropGroupPolicyImpl
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
