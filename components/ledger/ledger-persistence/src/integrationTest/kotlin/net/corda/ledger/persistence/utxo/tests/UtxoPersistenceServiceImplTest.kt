@@ -340,7 +340,7 @@ class UtxoPersistenceServiceImplTest {
                 .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
                     assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
                     assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
-                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionHash.toString())
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
                     assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
                     assertThat(dbInput.field<Boolean>("isRefInput")).isEqualTo(false)
                 }

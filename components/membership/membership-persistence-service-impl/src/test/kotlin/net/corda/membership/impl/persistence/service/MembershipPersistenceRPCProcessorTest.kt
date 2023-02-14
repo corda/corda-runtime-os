@@ -12,6 +12,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddPreAuthToken
+import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistMemberInfo
@@ -71,6 +72,7 @@ import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
@@ -152,16 +154,29 @@ class MembershipPersistenceRPCProcessorTest {
     private val approvalRulesQuery = mock<TypedQuery<ApprovalRulesEntity>> {
         on { resultList } doReturn emptyList()
     }
+    private val tokenTtl = Instant.now().plusSeconds(480)
     private val revokedAuthToken = PreAuthToken(
-        "", "", Instant.ofEpochMilli(100), PreAuthTokenStatus.REVOKED, null, null
+        UUID(0, 1).toString(),
+        ourX500Name,
+        tokenTtl,
+        PreAuthTokenStatus.REVOKED,
+        null,
+        null
     )
     private val preAuthTokenEntity = PreAuthTokenEntity(
-        "", "", Instant.ofEpochMilli(100), PreAuthTokenStatus.AVAILABLE.toString(), null, null
+        UUID(0, 1).toString(),
+        ourX500Name,
+        tokenTtl,
+        PreAuthTokenStatus.AVAILABLE.toString(),
+        null,
+        null
     )
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
         on { find(RegistrationRequestEntity::class.java, ourRegistrationId) } doReturn registrationRequest
-        on { find(PreAuthTokenEntity::class.java, preAuthTokenId) } doReturn preAuthTokenEntity
+        on {
+            find(PreAuthTokenEntity::class.java, preAuthTokenId, LockModeType.PESSIMISTIC_WRITE)
+        } doReturn preAuthTokenEntity
         on { createQuery(any(), eq(GroupPolicyEntity::class.java)) } doReturn groupPolicyQuery
         on { criteriaBuilder } doReturn criteriaBuilder
         on { createQuery(query) } doReturn approvalRulesQuery
@@ -557,6 +572,28 @@ class MembershipPersistenceRPCProcessorTest {
             assertThat(payload).isInstanceOf(RevokePreAuthTokenResponse::class.java)
             assertThat((payload as RevokePreAuthTokenResponse).preAuthToken)
                 .isEqualTo(revokedAuthToken)
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `consume pre auth token rules returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            ConsumePreAuthToken(preAuthTokenId, ourX500Name)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNull()
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

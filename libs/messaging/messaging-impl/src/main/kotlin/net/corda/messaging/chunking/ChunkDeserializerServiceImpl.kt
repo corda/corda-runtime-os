@@ -2,13 +2,15 @@ package net.corda.messaging.chunking
 
 import java.io.ByteArrayOutputStream
 import java.util.function.Consumer
-import net.corda.chunking.Checksum
 import net.corda.chunking.Constants
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messaging.api.chunking.ChunkDeserializerService
 import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
+import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 
@@ -20,7 +22,8 @@ import org.slf4j.LoggerFactory
 class ChunkDeserializerServiceImpl<K : Any, V : Any>(
     private val keyDeserializer: CordaAvroDeserializer<K>,
     private val valueDeserializer: CordaAvroDeserializer<V>,
-    private val onError: Consumer<ByteArray>
+    private val onError: Consumer<ByteArray>,
+    private val platformDigestService: PlatformDigestService
 ) : ConsumerChunkDeserializerService<K, V>, ChunkDeserializerService<V> {
 
     companion object {
@@ -38,6 +41,7 @@ class ChunkDeserializerServiceImpl<K : Any, V : Any>(
         val dataSingleArray = concat(dataList)
         return try {
             val checksum = getCheckSumFromFinalChunk(chunks)
+            logger.debug { "validating chunks for bytes size ${dataSingleArray.size}, chunk id ${chunks.first().requestId}" }
             validateBytes(dataSingleArray, checksum.array())
             valueDeserializer.deserialize(dataSingleArray)
         } catch (ex: IllegalArgumentException) {
@@ -52,7 +56,7 @@ class ChunkDeserializerServiceImpl<K : Any, V : Any>(
      * @throws IllegalArgumentException when no checksum is found
      */
     private fun getCheckSumFromFinalChunk(chunks: List<Chunk>) =
-        (chunks.sortedBy { it.partNumber}.last().checksum?.bytes
+        (chunks.find { it.checksum != null }?.checksum?.bytes
             ?: throw IllegalArgumentException(Constants.SECURE_HASH_MISSING_ERROR))
 
     /**
@@ -60,8 +64,8 @@ class ChunkDeserializerServiceImpl<K : Any, V : Any>(
      * @throws IllegalArgumentException if the given message digest does not match the recieved bytes
      */
     private fun validateBytes(receivedBytes: ByteArray, messageDigestBytes: ByteArray) {
-        val receivedDigest = Checksum.digestForBytes(receivedBytes)
-        val expectedDigest = SecureHash(Checksum.ALGORITHM, messageDigestBytes)
+        val receivedDigest = platformDigestService.hash(receivedBytes, DigestAlgorithmName.SHA2_256)
+        val expectedDigest = SecureHash(DigestAlgorithmName.SHA2_256.name, messageDigestBytes)
         if (receivedDigest != expectedDigest) {
             throw IllegalArgumentException(Constants.SECURE_HASH_VALIDATION_ERROR)
         }
