@@ -57,7 +57,7 @@ class TestCryptoConnectionsFactory(
 class SoftCryptoServiceProviderTests {
     private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
     private lateinit var schemeMetadata: CipherSchemeMetadataImpl
-    private lateinit var cryptoConnectionsFactory: TestCryptoConnectionsFactory
+    private lateinit var cryptoConnectionsFactory: TestCryptoConnectionsFactoryWithMap
     private lateinit var component: SoftCryptoServiceProviderImpl
     private lateinit var defaultConfig: SmartConfig
 
@@ -66,10 +66,10 @@ class SoftCryptoServiceProviderTests {
         defaultConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         schemeMetadata = CipherSchemeMetadataImpl()
-        cryptoConnectionsFactory = TestCryptoConnectionsFactory(coordinatorFactory).also {
+        cryptoConnectionsFactory = TestCryptoConnectionsFactoryWithMap(coordinatorFactory).also {
             it.start()
             eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator?.status)
             }
         }
         component = SoftCryptoServiceProviderImpl(
@@ -211,14 +211,14 @@ class SoftCryptoServiceProviderTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertNotNull(component.getInstance(defaultConfig))
-        cryptoConnectionsFactory.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        cryptoConnectionsFactory.lifecycleCoordinator?.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertThrows<IllegalStateException> {
             component.getInstance(defaultConfig)
         }
-        cryptoConnectionsFactory.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        cryptoConnectionsFactory.lifecycleCoordinator?.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
