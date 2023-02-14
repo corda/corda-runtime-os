@@ -100,7 +100,7 @@ class ApproveRegistrationHandlerTest {
                 any(),
                 anyOrNull(),
                 any(),
-                eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record
     }

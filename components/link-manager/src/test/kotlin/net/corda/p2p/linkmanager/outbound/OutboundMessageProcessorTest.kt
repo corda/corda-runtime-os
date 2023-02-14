@@ -465,7 +465,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces only a LinkManagerProcessed marker (per flowMessage) if SessionAlreadyPending`() {
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
+        whenever(sessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val numberOfMessages = 3
         val messages = (1..numberOfMessages).map { i ->
             val header = AuthenticatedMessageHeader(
@@ -499,7 +500,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext queue messages if SessionAlreadyPending`() {
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
+        whenever(sessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val numberOfMessages = 3
         val messages = (1..numberOfMessages).map { i ->
             val header = AuthenticatedMessageHeader(
@@ -524,13 +526,17 @@ class OutboundMessageProcessorTest {
 
         messages.forEach {
             verify(messagesPendingSession)
-                .queueMessage(AuthenticatedMessageAndKey(it.value?.message as AuthenticatedMessage?, it.key))
+                .queueMessage(
+                    AuthenticatedMessageAndKey(it.value?.message as AuthenticatedMessage?, it.key),
+                    sessionCounterparties
+                )
         }
     }
 
     @Test
     fun `processReplayedAuthenticatedMessage produces no records and queues no messages if SessionAlreadyPending`() {
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
+        whenever(sessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
@@ -547,7 +553,7 @@ class OutboundMessageProcessorTest {
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
         assertThat(records).isEmpty()
-        verify(messagesPendingSession, never()).queueMessage(any())
+        verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
 
     @Test
@@ -558,7 +564,8 @@ class OutboundMessageProcessorTest {
             listOf(
                 "session-id" to firstSessionInitMessage,
                 "another-session-id" to secondSessionInitMessage
-            )
+            ),
+            sessionCounterparties
         )
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val inboundSubscribedTopics = setOf(1, 5, 9)
@@ -613,7 +620,8 @@ class OutboundMessageProcessorTest {
                 listOf(
                     "session-id" to firstSessionInitMessage,
                     "another-session-id" to secondSessionInitMessage
-                )
+                ),
+                sessionCounterparties
             )
         )
         val inboundSubscribedTopics = setOf(1, 5, 9)
@@ -650,7 +658,8 @@ class OutboundMessageProcessorTest {
                 listOf(
                     "session-id" to firstSessionInitMessage,
                     "another-session-id" to secondSessionInitMessage
-                )
+                ),
+                sessionCounterparties
             )
         )
         val inboundSubscribedTopics = setOf(1, 5, 9)
@@ -667,7 +676,7 @@ class OutboundMessageProcessorTest {
 
         processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
-        verify(messagesPendingSession, never()).queueMessage(any())
+        verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
 
     @Test
@@ -773,7 +782,7 @@ class OutboundMessageProcessorTest {
             )
 
         }
-        verify(messagesPendingSession, never()).queueMessage(any())
+        verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
 
     @Test
@@ -796,7 +805,7 @@ class OutboundMessageProcessorTest {
         processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
         verify(sessionManager, times(1)).recordsForSessionEstablished(state.session, authenticatedMessageAndKey, serialNumber)
-        verify(messagesPendingSession, never()).queueMessage(any())
+        verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
 
     @Test
@@ -828,7 +837,7 @@ class OutboundMessageProcessorTest {
             .allSatisfy { assertThat(it.key).isEqualTo("message-id") }
             .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerProcessedMarker::class.java) }
-        verify(messagesPendingSession, never()).queueMessage(any())
+        verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
 
     @Test
@@ -849,7 +858,7 @@ class OutboundMessageProcessorTest {
         )
 
         assertThat(records).isEmpty()
-        verify(messagesPendingSession, never()).queueMessage(any())
+        verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
 
     @Test
@@ -882,12 +891,13 @@ class OutboundMessageProcessorTest {
                 .filter { it.marker is LinkManagerProcessedMarker }).hasSize(1)
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
-        verify(messagesPendingSession, never()).queueMessage(any())
+        verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
 
     @Test
     fun `processReplayedAuthenticatedMessage gives TtlExpiredMarker if TTL expiry true and replay true`() {
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
+        whenever(sessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
@@ -980,7 +990,7 @@ class OutboundMessageProcessorTest {
                 .filter { it.marker is LinkManagerDiscardedMarker }).hasSize(1)
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
-        verify(messagesPendingSession, never()).queueMessage(any())
+        verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
 
     @Test

@@ -14,6 +14,7 @@ import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -132,7 +133,8 @@ class ProcessMemberVerificationResponseHandlerTest {
                 eq(member),
                 capturedStatus.capture(),
                 any(),
-                any()
+                any(),
+                eq(MembershipStatusFilter.PENDING),
             )
         } doReturn record
     }
@@ -513,7 +515,8 @@ class ProcessMemberVerificationResponseHandlerTest {
                 registrationId == REGISTRATION_ID && newStatus == status
             },
             any(),
-            any()
+            any(),
+            eq(MembershipStatusFilter.PENDING),
         )
     }
 

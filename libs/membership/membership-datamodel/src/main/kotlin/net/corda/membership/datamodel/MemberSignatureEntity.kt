@@ -15,6 +15,7 @@ import javax.persistence.Table
 @Entity
 @Table(name = DbSchema.VNODE_MEMBER_SIGNATURE)
 @IdClass(MemberInfoEntityPrimaryKey::class)
+@Suppress("LongParameterList")
 class MemberSignatureEntity(
     @Id
     @Column(name = "group_id", nullable = false, updatable = false)

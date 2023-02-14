@@ -81,7 +81,7 @@ class PendingSessionMessageQueuesImplTest {
             val data = ByteBuffer.wrap("$it".toByteArray())
             AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
         }.onEach {
-            queue.queueMessage(it)
+            queue.queueMessage(it, sessionCounterparties)
         }
 
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
@@ -108,7 +108,7 @@ class PendingSessionMessageQueuesImplTest {
             AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
         }
         messages.onEach {
-            queue.queueMessage(it)
+            queue.queueMessage(it, sessionCounterparties)
         }
 
         queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
@@ -133,7 +133,7 @@ class PendingSessionMessageQueuesImplTest {
             val data = ByteBuffer.wrap("$it".toByteArray())
             AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
         }.onEach {
-            queue.queueMessage(it)
+            queue.queueMessage(it, sessionCounterparties)
         }
 
         val anotherSessionCounterparties = SessionManager.SessionCounterparties(
@@ -143,32 +143,6 @@ class PendingSessionMessageQueuesImplTest {
             serial
         )
         queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session)
-
-        assertThat(publishedRecords.allValues).isEmpty()
-    }
-
-    @Test
-    fun `message is not queued when session information cannot be retrieved`() {
-        val sessionCounterparties = SessionManager.SessionCounterparties(
-            createTestHoldingIdentity("CN=Alice, O=Corp, L=LDN, C=GB", "group-2"),
-            createTestHoldingIdentity("CN=Bob, O=Corp, L=LDN, C=GB", "group-2"),
-            MembershipStatusFilter.ACTIVE,
-            serial
-        )
-        val header = AuthenticatedMessageHeader(
-            sessionCounterparties.counterpartyId.toAvro(),
-            sessionCounterparties.ourId.toAvro(),
-            null,
-            "msg",
-            "",
-            "system-1",
-            MembershipStatusFilter.ACTIVE
-        )
-        val data = ByteBuffer.wrap("data".toByteArray())
-        val message = AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
-        queue.queueMessage(message)
-
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties, session)
 
         assertThat(publishedRecords.allValues).isEmpty()
     }

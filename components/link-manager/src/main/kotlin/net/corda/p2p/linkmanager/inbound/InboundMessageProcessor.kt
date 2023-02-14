@@ -161,7 +161,7 @@ internal class InboundMessageProcessor(
     }
 
     private fun checkIdentityBeforeProcessing(
-        counterparties: SessionManager.SessionCounterparties,
+        counterparties: SessionManager.Counterparties,
         innerMessage: AuthenticatedMessageAndKey,
         session: Session,
         messages: MutableList<Record<*, *>>
@@ -194,7 +194,7 @@ internal class InboundMessageProcessor(
     }
 
     private fun processLinkManagerPayload(
-        counterparties: SessionManager.SessionCounterparties,
+        counterparties: SessionManager.Counterparties,
         session: Session,
         sessionId: String,
         message: AvroSealedClasses.DataMessage
@@ -221,7 +221,7 @@ internal class InboundMessageProcessor(
     }
 
     private fun makeAckMessageForHeartbeatMessage(
-        counterparties: SessionManager.SessionCounterparties,
+        counterparties: SessionManager.Counterparties,
         session: Session
     ): Record<String, LinkOutMessage>? {
         val ackDest = counterparties.counterpartyId

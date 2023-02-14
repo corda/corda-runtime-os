@@ -41,15 +41,17 @@ internal interface SessionManager : LifecycleWithDominoTile {
     }
 
     sealed class SessionState {
-        data class NewSessionsNeeded(val messages: List<Pair<String, LinkOutMessage>>) : SessionState()
-        object SessionAlreadyPending : SessionState()
-        data class SessionEstablished(val session: Session, val sessionCounterparties: SessionCounterparties) : SessionState()
+        data class NewSessionsNeeded(val messages: List<Pair<String, LinkOutMessage>>,
+                                     val sessionCounterparties: SessionCounterparties) : SessionState()
+        data class SessionAlreadyPending(val sessionCounterparties: SessionCounterparties) : SessionState()
+        data class SessionEstablished(val session: Session,
+                                      val sessionCounterparties: SessionCounterparties) : SessionState()
         object CannotEstablishSession : SessionState()
     }
 
     sealed class SessionDirection {
-        data class Inbound(val counterparties: SessionCounterparties, val session: Session) : SessionDirection()
-        data class Outbound(val counterparties: SessionCounterparties, val session: Session) : SessionDirection()
+        data class Inbound(val counterparties: Counterparties, val session: Session) : SessionDirection()
+        data class Outbound(val counterparties: Counterparties, val session: Session) : SessionDirection()
         object NoSession : SessionDirection()
     }
 }

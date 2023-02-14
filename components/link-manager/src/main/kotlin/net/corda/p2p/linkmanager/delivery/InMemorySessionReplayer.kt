@@ -16,12 +16,10 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.membership.lookup
-import net.corda.p2p.linkmanager.sessions.OutboundSessionPool
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -32,8 +30,7 @@ internal class InMemorySessionReplayer(
     messagingConfiguration: SmartConfig,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val clock: Clock,
-    private val outboundSessionPool: OutboundSessionPool,
+    private val clock: Clock
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -72,8 +69,7 @@ internal class InMemorySessionReplayer(
     data class SessionMessageReplay(
         val message: Any,
         val sessionId: String,
-        val source: HoldingIdentity,
-        val dest: HoldingIdentity,
+        val sessionCounterparties: SessionManager.SessionCounterparties,
         val sentSessionMessageCallback: (counterparties: SessionManager.SessionCounterparties, sessionId: String) -> Unit
     )
 
@@ -101,35 +97,36 @@ internal class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
-        val sessionCounterparties = outboundSessionPool.getSessionCounterParties(messageReplay.sessionId)
-        if (sessionCounterparties == null) {
-            logger.warn("Attempted to replay a session negotiation message (type " +
-                    "${messageReplay.message::class.java.simpleName}) with peer ${messageReplay.dest}, but could not " +
-                    "get session information for session with ID `${messageReplay.sessionId}`. " +
-                    "The message was not replayed.")
-            return
-        }
-        val destinationMemberInfo = membershipGroupReaderProvider.lookup(messageReplay.source, messageReplay.dest)
-        if (destinationMemberInfo == null || destinationMemberInfo.serial != sessionCounterparties.serial) {
+        val destinationMemberInfo = membershipGroupReaderProvider.lookup(
+            messageReplay.sessionCounterparties.ourId,
+            messageReplay.sessionCounterparties.counterpartyId
+        )
+        if (destinationMemberInfo == null || destinationMemberInfo.serial != messageReplay.sessionCounterparties.serial) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                " with peer ${messageReplay.dest} with serial ${sessionCounterparties.serial} " +
+                " with peer ${messageReplay.sessionCounterparties.counterpartyId} with " +
+                    "serial ${messageReplay.sessionCounterparties.serial} " +
                     "which is not in the members map. The message was not replayed.")
             return
         }
 
-        val networkType = groupPolicyProvider.getGroupPolicy(messageReplay.source)?.networkType
+        val networkType = groupPolicyProvider.getGroupPolicy(messageReplay.sessionCounterparties.ourId)?.networkType
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                " could not find the network type in the GroupPolicyProvider for ${messageReplay.source}." +
+                " could not find the network type in the GroupPolicyProvider for ${messageReplay.sessionCounterparties.ourId}." +
                 " The message was not replayed.")
             return
         }
 
-        val message = MessageConverter.createLinkOutMessage(messageReplay.message, messageReplay.source, destinationMemberInfo, networkType)
+        val message = MessageConverter.createLinkOutMessage(
+            messageReplay.message,
+            messageReplay.sessionCounterparties.ourId,
+            destinationMemberInfo,
+            networkType
+        )
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(
-            sessionCounterparties,
+            messageReplay.sessionCounterparties,
             messageReplay.sessionId
         )
     }

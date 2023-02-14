@@ -55,6 +55,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -251,6 +252,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(membershipPackage1),
                 any(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record1
         on {
@@ -260,6 +262,7 @@ class MgmSynchronisationServiceImplTest {
                 eq(membershipPackage2),
                 any(),
                 any(),
+                eq(MembershipStatusFilter.ACTIVE),
             )
         } doReturn record2
     }

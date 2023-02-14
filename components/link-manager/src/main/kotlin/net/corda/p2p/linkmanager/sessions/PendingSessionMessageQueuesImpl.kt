@@ -55,17 +55,12 @@ internal class PendingSessionMessageQueuesImpl(
      * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
      * negotiation with the destination) or adds the message to a new queue if we need to negotiate a new session.
      */
-    override fun queueMessage(message: AuthenticatedMessageAndKey) {
-        val counterparties = getSessionCounterpartiesFromMessage(message.message)
-        if(counterparties != null) {
-            val oldQueue = queuedMessagesPendingSession.putIfAbsent(counterparties, LinkedList())
-            if (oldQueue != null) {
-                oldQueue.add(message)
-            } else {
-                queuedMessagesPendingSession[counterparties]?.add(message)
-            }
+    override fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionManager.SessionCounterparties) {
+        val oldQueue = queuedMessagesPendingSession.putIfAbsent(counterparties, LinkedList())
+        if (oldQueue != null) {
+            oldQueue.add(message)
         } else {
-            logger.warn("Could not queue message with ID `${message.message.header.messageId}`.")
+            queuedMessagesPendingSession[counterparties]?.add(message)
         }
     }
 

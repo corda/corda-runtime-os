@@ -89,7 +89,6 @@ class InboundMessageProcessorTest {
     )
 
     private val status = MembershipStatusFilter.ACTIVE
-    private val serial = 1L
 
     @AfterEach
     fun cleanUp() {
@@ -152,11 +151,9 @@ class InboundMessageProcessorTest {
             }
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         remoteIdentity,
-                        myIdentity,
-                        status,
-                        serial
+                        myIdentity
                     ),
                     session
                 )
@@ -199,11 +196,9 @@ class InboundMessageProcessorTest {
             val session = mock<AuthenticatedSession>()
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         remoteIdentity,
-                        myIdentity,
-                        status,
-                        serial
+                        myIdentity
                     ),
                     session
                 )
@@ -238,11 +233,9 @@ class InboundMessageProcessorTest {
             val session = mock<AuthenticatedSession>()
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         remoteIdentity,
-                        myIdentity,
-                        status,
-                        serial
+                        myIdentity
                     ),
                     session
                 )
@@ -270,11 +263,9 @@ class InboundMessageProcessorTest {
             val session = mock<AuthenticatedSession>()
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         remoteIdentity,
-                        myIdentity,
-                        status,
-                        serial
+                        myIdentity
                     ),
                     session
                 )
@@ -302,11 +293,9 @@ class InboundMessageProcessorTest {
             val session = mock<AuthenticatedSession>()
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         remoteIdentity,
-                        myIdentity,
-                        status,
-                        serial
+                        myIdentity
                     ),
                     session
                 )
@@ -341,7 +330,7 @@ class InboundMessageProcessorTest {
                 AuthenticatedMessageHeader(
                     remoteIdentity.toAvro(),
                     myIdentity.toAvro(),
-                    null, MESSAGE_ID, "trace-id", "system-1", MembershipStatusFilter.ACTIVE
+                    null, MESSAGE_ID, "trace-id", "system-1", status
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
             )
@@ -407,11 +396,9 @@ class InboundMessageProcessorTest {
             }
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         remoteIdentity,
-                        myIdentity,
-                        status,
-                        serial
+                        myIdentity
                     ),
                     session
                 )
@@ -478,11 +465,9 @@ class InboundMessageProcessorTest {
             }
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         myIdentity,
                         remoteIdentity,
-                        status,
-                        serial
                     ),
                     session
                 )
@@ -540,11 +525,9 @@ class InboundMessageProcessorTest {
             }
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         myIdentity,
                         myIdentity,
-                        status,
-                        serial
                     ),
                     session
                 )
@@ -591,11 +574,9 @@ class InboundMessageProcessorTest {
             }
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
-                    SessionManager.SessionCounterparties(
+                    SessionManager.Counterparties(
                         remoteIdentity,
-                        myIdentity,
-                        status,
-                        serial
+                        myIdentity
                     ),
                     session
                 )

@@ -260,7 +260,7 @@ internal class OutboundMessageProcessor(
                     "No existing session with ${messageAndKey.message.header.destination}. " +
                         "Initiating a new one.."
                 }
-                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
                 recordsForNewSessions(state)
             }
             is SessionManager.SessionState.SessionEstablished -> {
@@ -275,7 +275,7 @@ internal class OutboundMessageProcessor(
                     "Session already pending with ${messageAndKey.message.header.destination}. " +
                         "Message queued until session is established."
                 }
-                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
                 emptyList()
             }
             is SessionManager.SessionState.CannotEstablishSession -> {

@@ -16,7 +16,6 @@ import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
-import net.corda.p2p.linkmanager.sessions.OutboundSessionPool
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembers
@@ -99,14 +98,11 @@ class InMemorySessionReplayerTest {
     private val groupsAndMembers = mockMembersAndGroups(US, COUNTER_PARTY)
 
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
-    private val outboundSessionPool: OutboundSessionPool = mock {
-        on { getSessionCounterParties(id) } doReturn SESSION_COUNTERPARTIES
-    }
 
     @Test
     fun `The InMemorySessionReplacer adds a message to be replayed (by the replayScheduler) when addMessageForReplay`() {
         val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
-            mockTimeFacilitiesProvider.clock, outboundSessionPool)
+            mockTimeFacilitiesProvider.clock)
         val helloMessage = AuthenticationProtocolInitiator(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
@@ -117,7 +113,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
         replayer.addMessageForReplay(id, messageReplay, SESSION_COUNTERPARTIES)
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last()
@@ -128,7 +124,7 @@ class InMemorySessionReplayerTest {
     @Test
     fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeMessageFromReplay`() {
         val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
-            mockTimeFacilitiesProvider.clock, outboundSessionPool)
+            mockTimeFacilitiesProvider.clock)
         setRunning()
         replayer.removeMessageFromReplay(id, SESSION_COUNTERPARTIES)
         @Suppress("UNCHECKED_CAST")
@@ -140,7 +136,7 @@ class InMemorySessionReplayerTest {
     @Test
     fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeAllMessageFromReplay`() {
         val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
-            mockTimeFacilitiesProvider.clock, outboundSessionPool)
+            mockTimeFacilitiesProvider.clock)
 
         setRunning()
         replayer.removeAllMessagesFromReplay()
@@ -153,7 +149,7 @@ class InMemorySessionReplayerTest {
     @Test
     fun `The replaySchedular callback publishes the session message`() {
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
-            mockTimeFacilitiesProvider.clock, outboundSessionPool)
+            mockTimeFacilitiesProvider.clock)
         val helloMessage = AuthenticationProtocolInitiator(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
@@ -166,7 +162,7 @@ class InMemorySessionReplayerTest {
         setRunning()
         var sessionId: String? = null
         var counterparties: SessionManager.SessionCounterparties? = null
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { key, callbackId  ->
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { key, callbackId  ->
             counterparties = key
             sessionId = callbackId
         }
@@ -194,8 +190,7 @@ class InMemorySessionReplayerTest {
             on {getGroupPolicy(any()) } doReturnConsecutively listOf(null, groupPolicy)
         }
 
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first,
-            mockTimeFacilitiesProvider.clock, outboundSessionPool)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
         val helloMessage = AuthenticationProtocolInitiator(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
@@ -206,7 +201,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
@@ -231,7 +226,6 @@ class InMemorySessionReplayerTest {
             groupsAndMembers.second,
             membershipGroupReaderProvider,
             mockTimeFacilitiesProvider.clock,
-            outboundSessionPool,
         )
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -243,7 +237,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
@@ -262,7 +256,6 @@ class InMemorySessionReplayerTest {
             groupsAndMembers.second,
             membershipGroupReaderProvider,
             mockTimeFacilitiesProvider.clock,
-            outboundSessionPool,
         )
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -274,7 +267,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
@@ -293,11 +286,11 @@ class InMemorySessionReplayerTest {
             CertificateCheckMode.NoCertificate
         ).generateInitiatorHello()
         val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(),
-            groupsAndMembers.second, groupsAndMembers.first, mockTimeFacilitiesProvider.clock, outboundSessionPool)
+            groupsAndMembers.second, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
         assertThrows<IllegalStateException> {
             replayer.addMessageForReplay(
                 "",
-                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", US, COUNTER_PARTY) {_, _->},
+                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", SESSION_COUNTERPARTIES) {_, _->},
                 SESSION_COUNTERPARTIES
             )
         }

@@ -60,4 +60,8 @@ internal object SessionManagerWarnings {
     internal fun Logger.validationFailedWarning(messageName: String, sessionId: String, error: String?) {
         this.warn("Received $messageName with sessionId $sessionId, which failed validation with: $error The message was discarded.")
     }
+
+    internal fun Logger.couldNotFindSessionCounterpartiesWarning(messageName: String, sessionId: String) {
+        this.warn("Could not find session information for session with ID `$sessionId`. The $messageName was discarded.")
+    }
 }
