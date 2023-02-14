@@ -310,7 +310,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(context.items[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(context.items[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertThat(factory.wrappingKeyStore.keys).containsKey(masterKeyAlias)
+        assertThat(factory.cryptoConnectionsFactory.exists(masterKeyAlias)).isTrue()
     }
 
     @Test
@@ -329,6 +329,7 @@ class CryptoOpsBusProcessorTests {
         val otherKeyEnc = ByteBuffer.wrap(factory.schemeMetadata.encodeAsByteArray(otherKeyPair.public))
         val secret = process<CryptoDerivedSharedSecret>(DeriveSharedSecretCommand(keyEnc, otherKeyEnc, context))
         val operationContextMap = factory.recordedCryptoContexts[context.items[0].value]
+
         assertNotNull(operationContextMap)
         assertEquals(3, operationContextMap.size)
         assertEquals(context.items[0].value, operationContextMap[CTX_TRACKING])
