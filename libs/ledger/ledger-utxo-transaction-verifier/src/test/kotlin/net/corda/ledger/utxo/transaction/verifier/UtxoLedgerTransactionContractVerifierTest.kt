@@ -50,9 +50,9 @@ class UtxoLedgerTransactionContractVerifierTest {
         val validContractCState2 = stateAndRef<MyValidContractC>(TX_ID_1, 0)
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, validContractCState1))
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        verifyContracts(transactionFactory)
-        // Called once for each of 3 contracts and once for other checks
-        verify(transactionFactory, times(4)).invoke()
+        verifyContracts(transactionFactory, transaction)
+        // Called once for each of 3 contracts
+        verify(transactionFactory, times(3)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractB.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractC.EXECUTION_COUNT).isEqualTo(1)
@@ -66,11 +66,11 @@ class UtxoLedgerTransactionContractVerifierTest {
         val invalidContractBState = stateAndRef<MyInvalidContractB>(TX_ID_1, 0)
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, invalidContractAState))
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { verifyContracts(transactionFactory) }
+        assertThatThrownBy { verifyContracts(transactionFactory, transaction) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
-        // Called once for each of 4 contracts and once for other checks
-        verify(transactionFactory, times(5)).invoke()
+        // Called once for each of 4 contracts
+        verify(transactionFactory, times(4)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
         assertThat(MyValidContractB.EXECUTION_COUNT).isEqualTo(1)
     }

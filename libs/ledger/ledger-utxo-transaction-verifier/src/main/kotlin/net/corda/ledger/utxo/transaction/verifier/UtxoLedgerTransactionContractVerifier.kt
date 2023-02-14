@@ -4,8 +4,17 @@ import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
-fun verifyContracts(transactionFactory: () -> UtxoLedgerTransaction) {
-    val transaction = transactionFactory.invoke()
+/**
+ * Verifies contracts of ledger transaction. For security reasons, some verifications need to be run with a new instance
+ * of transaction.
+ *
+ * @param transactionFactory factory used for checks that require a new instance of [UtxoLedgerTransaction]
+ * @param transaction transaction used for checks that can reuse the same instance of [UtxoLedgerTransaction]
+ */
+fun verifyContracts(
+    transactionFactory: () -> UtxoLedgerTransaction,
+    transaction: UtxoLedgerTransaction = transactionFactory.invoke()
+) {
     val failureReasons = verifyEncumbrance(transaction).toMutableList()
 
     val allTransactionStateAndRefs = transaction.inputStateAndRefs + transaction.outputStateAndRefs
