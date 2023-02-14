@@ -94,7 +94,7 @@ class DbConfigSubcommand : Runnable {
             updateTimestamp = Instant.now(),
             updateActor = "Setup Script",
             description = description,
-            config = createDbConfig(jdbcUrl!!, username!!, password!!, jdbcPoolMaxSize, secretsService)
+            config = createConfigDbConfig(jdbcUrl!!, username!!, password!!, jdbcPoolMaxSize, secretsService)
         ).also { it.version = 0 }
 
 
@@ -112,7 +112,19 @@ class DbConfigSubcommand : Runnable {
     }
 }
 
-fun createDbConfig(
+/**
+ * Generate a JSON config string for the config database.
+ *
+ * @param jdbcUrl URL for the database
+ * @param usernmae
+ * @param password
+ * @param jdcbPoolMaxSize
+ * @param secretsService a factory that can produce representations of secrets
+ * @return a string containing a JSON config
+ *
+ */
+@Suppress("LongParameterList")
+fun createConfigDbConfig(
     jdbcUrl: String,
     username: String,
     password: String,
@@ -122,12 +134,12 @@ fun createDbConfig(
     return "{\"database\":{" +
             "\"jdbc\":" +
             "{\"url\":\"$jdbcUrl\"}," +
-            "\"pass\":${createSecureConfig(secretsService, password)}," +
+            "\"pass\":${createSecureConfig(secretsService, password, "corda-config-database-password")}," +
             "\"user\":\"$username\"," +
             "\"pool\":" +
             "{\"max_size\":$jdbcPoolMaxSize}}}"
 }
 
-fun createSecureConfig(secretsService: SecretsCreateService, value: String): String {
-    return secretsService.createValue(value).root().render(ConfigRenderOptions.concise())
+fun createSecureConfig(secretsService: SecretsCreateService, value: String, key: String): String {
+    return secretsService.createValue(value, key).root().render(ConfigRenderOptions.concise())
 }

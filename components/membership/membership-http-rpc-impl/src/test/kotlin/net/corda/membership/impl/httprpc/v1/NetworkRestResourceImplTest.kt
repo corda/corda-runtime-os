@@ -86,7 +86,6 @@ class NetworkRestResourceImplTest {
                 HostedIdentitySetupRequest(
                     "alias",
                     true,
-                    true,
                     "session"
                 )
             )
@@ -94,7 +93,6 @@ class NetworkRestResourceImplTest {
             verify(certificatesClient).setupLocallyHostedIdentity(
                 ShortHash.of("1234567890ab"),
                 "alias",
-                true,
                 true,
                 "session",
                 null
@@ -104,7 +102,6 @@ class NetworkRestResourceImplTest {
         fun `it catches resource not found exception`() {
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
-                    any(),
                     any(),
                     any(),
                     any(),
@@ -119,7 +116,6 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
-                        true,
                         "session"
                     )
                 )
@@ -134,7 +130,6 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
-                        true,
                         "session"
                     )
                 )
@@ -149,7 +144,6 @@ class NetworkRestResourceImplTest {
                     any(),
                     any(),
                     any(),
-                    any(),
                     anyOrNull()
                 )
             ).doAnswer { throw SignatureException("Mock failure") }
@@ -160,7 +154,6 @@ class NetworkRestResourceImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
-                        true,
                         "session"
                     )
                 )
@@ -175,7 +168,6 @@ class NetworkRestResourceImplTest {
                     any(),
                     any(),
                     any(),
-                    any(),
                     anyOrNull()
                 )
             ).doThrow(RuntimeException("Mock failure"))
@@ -185,7 +177,6 @@ class NetworkRestResourceImplTest {
                     "79ED40726773",
                     HostedIdentitySetupRequest(
                         "alias",
-                        true,
                         true,
                         "session"
                     )

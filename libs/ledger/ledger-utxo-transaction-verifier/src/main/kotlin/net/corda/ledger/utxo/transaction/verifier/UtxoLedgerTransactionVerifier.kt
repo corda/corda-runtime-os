@@ -2,14 +2,14 @@ package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
-class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransaction): UtxoTransactionVerifier()  {
+class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransaction) : UtxoTransactionVerifier() {
 
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
 
     fun verify() {
-        UtxoTransactionMetadataVerifier(transaction.metadata).verify()
+        verifyMetadata(transaction.metadata)
         verifyPlatformChecks()
-        UtxoLedgerTransactionContractVerifier(transaction).verify()
+        verifyContracts(transaction)
     }
 
     private fun verifyPlatformChecks() {
@@ -32,8 +32,9 @@ class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransacti
 
     private fun verifyInputNotaries() {
         val allInputs = transaction.inputTransactionStates + transaction.referenceTransactionStates
-        if(allInputs.isEmpty())
+        if (allInputs.isEmpty()) {
             return
+        }
         check(allInputs.map { it.notary }.distinct().size == 1) {
             "Input and reference states' notaries need to be the same."
         }
@@ -43,7 +44,7 @@ class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransacti
         // TODO CORE-8958 check rotated notaries
     }
 
-    private fun verifyInputsAreOlderThanOutputs(){
+    private fun verifyInputsAreOlderThanOutputs() {
         // TODO CORE-8957 (needs to access the previous transactions from the backchain somehow)
     }
 
