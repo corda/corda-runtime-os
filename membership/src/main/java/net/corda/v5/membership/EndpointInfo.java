@@ -1,6 +1,7 @@
-package net.corda.v5.membership
+package net.corda.v5.membership;
 
-import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.annotations.CordaSerializable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Information about a virtual node's endpoint (e.g. a virtual node's peer-to-peer gateway endpoint).
@@ -20,13 +21,18 @@ import net.corda.v5.base.annotations.CordaSerializable
  * val url = endpoints.first().url
  * val protocolVersion = endpoints.first().protocolVersion
  * ```
- *
- * @property url Full virtual node endpoint URL.
- * @property protocolVersion Version of end-to-end authentication protocol. If multiple versions are supported, multiple instances of
- * [EndpointInfo] can be created, each using a different protocol version.
  */
 @CordaSerializable
-interface EndpointInfo {
-    val url: String
-    val protocolVersion: Int
+public interface EndpointInfo {
+
+    /**
+     * @return Full virtual node endpoint URL.
+     */
+    @NotNull String getUrl();
+
+    /**
+     * @return Version of end-to-end authentication protocol. If multiple versions are supported, multiple instances of
+     * [EndpointInfo] can be created, each using a different protocol version.
+     */
+    int getProtocolVersion();
 }

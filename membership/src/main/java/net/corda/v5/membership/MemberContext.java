@@ -1,6 +1,6 @@
-package net.corda.v5.membership
+package net.corda.v5.membership;
 
-import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.LayeredPropertyMap;
 
 /**
  * Part of [MemberInfo], MemberContext part is provided by the member as part of the initial MemberInfo proposal (i.e.
@@ -29,8 +29,6 @@ import net.corda.v5.base.types.LayeredPropertyMap
  * Properties are exposed either through properties on interfaces in the public APIs, or internally through extension
  * properties.
  *
- * @property entries Returns [Set] of all entries in the underlying map.
- *
  * @see [LayeredPropertyMap] For further information on the properties and functions.
  */
-interface MemberContext: LayeredPropertyMap
+public interface MemberContext extends LayeredPropertyMap {}

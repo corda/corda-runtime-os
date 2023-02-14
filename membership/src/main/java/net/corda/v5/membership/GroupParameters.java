@@ -1,8 +1,11 @@
-package net.corda.v5.membership
+package net.corda.v5.membership;
 
-import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.base.types.LayeredPropertyMap
-import java.time.Instant
+import net.corda.v5.base.annotations.CordaSerializable;
+import net.corda.v5.base.types.LayeredPropertyMap;
+import org.jetbrains.annotations.NotNull;
+
+import java.time.Instant;
+import java.util.Collection;
 
 /**
  * This interface represents a set of group parameters under which all members of a group are expected to abide by.
@@ -29,17 +32,28 @@ import java.time.Instant
  * val epoch = groupParameters?.epoch
  * val notaries = groupParameters?.notaries
  * ```
- *
- * @property minimumPlatformVersion The minimum platform version required to be running on in order to transact within a group.
- * @property modifiedTime The [Instant] representing the last time the group parameters were modified.
- * @property epoch An [Int] representing the version of the group parameters. This is incremented on each modification to the
- * group parameters.
- * @property notaries A collection of all available notary services in the group.
  */
 @CordaSerializable
-interface GroupParameters : LayeredPropertyMap {
-    val minimumPlatformVersion: Int
-    val modifiedTime: Instant
-    val epoch: Int
-    val notaries: Collection<NotaryInfo>
+public interface GroupParameters extends LayeredPropertyMap {
+
+    /**
+     * @return The minimum platform version required to be running on in order to transact within a group.
+     */
+    int getMinimumPlatformVersion();
+
+    /**
+     * @return The [Instant] representing the last time the group parameters were modified.
+     */
+    @NotNull Instant getModifiedTime();
+
+    /**
+     * @return An [Int] representing the version of the group parameters. This is incremented on each modification to
+     * the group parameters.
+     */
+    int getEpoch();
+
+    /**
+     * @return A collection of all available notary services in the group.
+     */
+    @NotNull Collection<NotaryInfo> getNotaries();
 }

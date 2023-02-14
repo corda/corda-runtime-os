@@ -1,6 +1,6 @@
-package net.corda.v5.membership
+package net.corda.v5.membership;
 
-import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.LayeredPropertyMap;
 
 /**
  * Part of [MemberInfo], information is provided and added by MGM as part of member acceptance and upon updates
@@ -29,8 +29,6 @@ import net.corda.v5.base.types.LayeredPropertyMap
  * Properties are exposed either through properties on interfaces in the public APIs, or internally through extension
  * properties.
  *
- * @property entries Returns [Set] of all entries in the underlying map.
- *
  * @see [LayeredPropertyMap] For further information on the properties and functions.
  */
-interface MGMContext: LayeredPropertyMap
+public interface MGMContext extends LayeredPropertyMap {}
