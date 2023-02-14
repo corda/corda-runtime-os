@@ -102,29 +102,11 @@ class SoftCryptoServiceOperationsTests {
 
             // set up a CachingSoftWrappingKeyMap with a mocked out database, where the mock stores
             // a wrapping key so we can access it from this fixtur elater
-            var wrappingKeyEntity: WrappingKeyEntity? = null
-            val entityTransaction: EntityTransaction = mock()
-
-            val entityManager = mock<EntityManager> {
-                on { persist(any()) }.thenAnswer {
-                    wrappingKeyEntity = it.arguments.first() as WrappingKeyEntity
-                    null
-                }
-                on { find(WrappingKeyEntity::class.java, masterWrappingKeyAlias) }.thenAnswer {
-                    wrappingKeyEntity
-                }
-                on { transaction } doReturn entityTransaction
-            }
-            val emf = mock<EntityManagerFactory> {
-                on { createEntityManager() } doReturn entityManager
-            }
-            val cryptoConnectionsFactory = mock<CryptoConnectionsFactory> {
-                on { getEntityManagerFactory(any()) } doReturn emf
-            }
+            val testCryptoConnectionsFactoryWithMap = TestCryptoConnectionsFactoryWithMap()
             wrappingKeyMap = CachingSoftWrappingKeyMap(
                 SoftCacheConfig(0, 0),
                 masterKey,
-                cryptoConnectionsFactory
+                testCryptoConnectionsFactoryWithMap
             )
 
             // put together a DefaultSoftPrivateKeyWrapping that uses the master wrapping key in our CachedWrappingKeyMap
@@ -144,7 +126,7 @@ class SoftCryptoServiceOperationsTests {
             // push in the master wrapping key  from above            
             cryptoService.createWrappingKey(masterWrappingKeyAlias, true, emptyMap())
             // and make sure it gets into the mocked database underneath
-            assertThat(wrappingKeyEntity).isNotNull // captured it as expected
+            assertThat(testCryptoConnectionsFactoryWithMap.exists(masterWrappingKeyAlias)).isTrue()
 
             // now populate some private keys for test cases later
             softAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {
