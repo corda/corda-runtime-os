@@ -29,11 +29,13 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /applications/workers/release/member-worker/                    @corda/corda-platform-network-team
 /processors/link-manager-processor/                             @corda/corda-platform-network-team
 /processors/gateway-processor/                                  @corda/corda-platform-network-team
-/processors/link-manager-processor/                             @corda/corda-platform-network-team
+/processors/member-processor/                                   @corda/corda-platform-network-team
 /components/gateway/                                            @corda/corda-platform-network-team
 /components/link-manager/                                       @corda/corda-platform-network-team
 /components/membership/                                         @corda/corda-platform-network-team
 /libs/membership/                                               @corda/corda-platform-network-team
 /libs/p2p-crypto/                                               @corda/corda-platform-network-team
+/libs/layered-property-map/                                     @corda/corda-platform-network-team
 /tools/plugins/mgm/                                             @corda/corda-platform-network-team
+/tools/plugins/network/                                         @corda/corda-platform-network-team
 /applications/tools/p2p-test/                                   @corda/corda-platform-network-team
