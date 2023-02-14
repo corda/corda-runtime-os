@@ -1,17 +1,16 @@
-package net.corda.libs.cpi.datamodel.entities
+package net.corda.libs.cpi.datamodel
 
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
 import javax.persistence.Version
-import net.corda.db.schema.DbSchema
 
 /**
  * Cpk Metadata Entity without binary data
  */
 @Entity
-@Table(name = "cpk_metadata", schema = DbSchema.CONFIG)
+@Table(name = "cpk_metadata")
 class CpkMetadataEntity(
     @Id
     @Column(name = "file_checksum", nullable = false, unique = true)

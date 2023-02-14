@@ -4,7 +4,6 @@ import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -22,6 +21,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
@@ -32,11 +32,12 @@ internal class VirtualNodeWriterFactory(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
     private val dbConnectionManager: DbConnectionManager,
-    private val dbAdmin: DbAdmin,
+    private val virtualNodeDbAdmin: VirtualNodesDbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
 ) {
+
 
     private companion object {
         const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
@@ -112,7 +113,7 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val vNodeDbFactory = VirtualNodeDbFactoryImpl(
             dbConnectionManager,
-            dbAdmin,
+            virtualNodeDbAdmin,
             schemaMigrator
         )
         val processor = VirtualNodeWriterProcessor(

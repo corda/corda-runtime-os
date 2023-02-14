@@ -1,18 +1,17 @@
-package net.corda.libs.cpi.datamodel.entities
+package net.corda.libs.cpi.datamodel
 
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
-import net.corda.db.schema.DbSchema
 
 /**
  * Append only audit log of changelogs of a CPK.
  */
 @Suppress("LongParameterList")
 @Entity
-@Table(name = "cpk_db_change_log_audit", schema = DbSchema.CONFIG)
+@Table(name = "cpk_db_change_log_audit")
 internal class CpkDbChangeLogAuditEntity(
     @Id
     val id: String,

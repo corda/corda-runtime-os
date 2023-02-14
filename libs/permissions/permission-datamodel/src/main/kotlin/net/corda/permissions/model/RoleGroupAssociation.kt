@@ -1,6 +1,5 @@
 package net.corda.permissions.model
 
-import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -15,7 +14,7 @@ import javax.persistence.Table
  * A role can be associated with many groups and many roles can be associated with a group.
  */
 @Entity
-@Table(name = "rbac_role_group_rel", schema = DbSchema.RBAC)
+@Table(name = "rbac_role_group_rel")
 class RoleGroupAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

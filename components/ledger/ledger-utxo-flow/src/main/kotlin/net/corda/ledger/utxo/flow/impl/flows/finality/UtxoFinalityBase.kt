@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
@@ -17,8 +16,9 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.containsAny
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 import java.security.InvalidParameterException
 
 /**
@@ -42,10 +42,6 @@ enum class FinalityNotarizationFailureType(val value: String) {
 @CordaSystemFlow
 abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
-    private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     @CordaInject
     lateinit var transactionSignatureService: TransactionSignatureService
 
@@ -60,6 +56,8 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    abstract val log: Logger
 
     @Suspendable
     protected fun verifySignature(

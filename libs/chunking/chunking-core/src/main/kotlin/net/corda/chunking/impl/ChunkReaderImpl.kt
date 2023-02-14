@@ -1,8 +1,12 @@
 package net.corda.chunking.impl
 
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkReader
 import net.corda.chunking.ChunksCombined
+import net.corda.chunking.Constants.Companion.SECURE_HASH_VALIDATION_ERROR
 import net.corda.chunking.RequestId
 import net.corda.chunking.toCorda
 import net.corda.data.KeyValuePairList
@@ -10,9 +14,6 @@ import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
 
 /**
  * Receives binary chunks and reassembles full binary under [destDir] and executes completed
@@ -72,7 +73,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
         if (chunksReceived.expectedCount == chunksReceived.chunks.size) {
             val actualChecksum = Checksum.digestForPath(path)
             if (actualChecksum != chunksReceived.expectedChecksum) {
-                throw IllegalArgumentException("Checksums do not match, one or more of the chunks may be corrupt")
+                throw IllegalArgumentException(SECURE_HASH_VALIDATION_ERROR)
             }
 
             chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum, chunk.properties?.fromAvro())

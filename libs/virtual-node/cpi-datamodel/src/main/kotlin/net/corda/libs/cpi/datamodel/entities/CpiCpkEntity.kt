@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel.entities
+package net.corda.libs.cpi.datamodel
 
 import net.corda.db.schema.DbSchema
 import java.io.Serializable
@@ -19,7 +19,7 @@ import javax.persistence.Version
  * Cpi/cpk mapping table.
  */
 @Entity
-@Table(name = "cpi_cpk", schema = DbSchema.CONFIG)
+@Table(name = "cpi_cpk")
 class CpiCpkEntity(
     @EmbeddedId
     val id: CpiCpkKey,

@@ -1,6 +1,5 @@
 package net.corda.libs.cpi.datamodel.entities
 
-import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -29,7 +28,7 @@ const val QUERY_PARAM_ID = "id"
  * @property insertTimestamp when the CPK Data was inserted.
  */
 @Entity
-@Table(name = "cpk_file", schema = DbSchema.CONFIG)
+@Table(name = "cpk_file")
 @NamedQuery(
     name = QUERY_NAME_UPDATE_CPK_FILE_DATA,
     query = "UPDATE CpkFileEntity f" +
