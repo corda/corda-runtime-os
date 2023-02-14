@@ -7,7 +7,7 @@ description 'Kryo serialization test utilities'
 dependencies {
     implementation "org.osgi:osgi.core"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 

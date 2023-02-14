@@ -48,7 +48,7 @@ dependencies {
     implementation 'net.corda:corda-ledger-consensual'
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation project(':libs:ledger:ledger-utxo-data')

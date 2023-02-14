@@ -10,5 +10,5 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api project(":libs:lifecycle:lifecycle")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }

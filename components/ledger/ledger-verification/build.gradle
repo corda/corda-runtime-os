@@ -25,10 +25,11 @@ dependencies {
     implementation 'net.corda:corda-ledger-common'
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:virtual-node:cpk-read-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
 
     implementation project(':libs:crypto:cipher-suite')

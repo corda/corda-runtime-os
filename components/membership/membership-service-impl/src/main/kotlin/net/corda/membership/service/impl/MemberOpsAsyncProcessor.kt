@@ -5,7 +5,6 @@ import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -53,17 +52,23 @@ internal class MemberOpsAsyncProcessor(
         val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
         val holdingIdentity =
             virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw NotReadyMembershipRegistrationException(
-                    "Could not find holding identity associated with ${request.holdingIdentityId}"
-                )
+        if (holdingIdentity == null) {
+            logger.warn(
+                "Registration ${request.requestId} failed." +
+                    " Could not find holding identity associated with ${request.holdingIdentityId}"
+            )
+            return
+        }
         val registrationId = try {
             UUID.fromString(request.requestId)
         } catch (e: IllegalArgumentException) {
-            logger.warn("Registration ${request.requestId} failed., Invalid request ID.", e)
+            logger.warn("Registration ${request.requestId} failed. Invalid request ID.", e)
             return
         }
         try {
+            logger.info("Processing registration ${request.requestId} to ${holdingIdentity.x500Name}.")
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
+            logger.info("Processed registration ${request.requestId} to ${holdingIdentity.x500Name}.")
         } catch (e: Exception) {
             @Suppress("ForbiddenComment")
             // TODO: We need a mechanism to retry exceptions that are not InvalidMembershipRegistrationException.

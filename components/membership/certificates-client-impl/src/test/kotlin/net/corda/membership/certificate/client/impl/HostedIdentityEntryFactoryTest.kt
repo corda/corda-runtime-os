@@ -148,7 +148,6 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = null,
             sessionCertificateChainAlias = null
         )
@@ -159,7 +158,6 @@ class HostedIdentityEntryFactoryTest {
             softly.assertThat(record.value).isEqualTo(
                 HostedIdentityEntry(
                     validHoldingId.toAvro(),
-                    VALID_NODE.toString(),
                     VALID_NODE.toString(),
                     listOf(certificatePem),
                     PUBLIC_KEY_PEM,
@@ -177,7 +175,6 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             sessionKeyId = null,
             sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelSessionCertificateAndKey = false,
             useClusterLevelTlsCertificateAndKey = false,
         )
 
@@ -187,7 +184,6 @@ class HostedIdentityEntryFactoryTest {
             softly.assertThat(record.value).isEqualTo(
                 HostedIdentityEntry(
                     validHoldingId.toAvro(),
-                    VALID_NODE.toString(),
                     VALID_NODE.toString(),
                     listOf(certificatePem),
                     PUBLIC_KEY_PEM,
@@ -204,7 +200,6 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = INVALID_NODE,
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = false,
-                useClusterLevelSessionCertificateAndKey = true,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
             )
@@ -217,7 +212,6 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
             sessionCertificateChainAlias = null,
         )
@@ -231,7 +225,6 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
             sessionCertificateChainAlias = null,
         )
@@ -252,7 +245,6 @@ class HostedIdentityEntryFactoryTest {
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
-                useClusterLevelSessionCertificateAndKey = true,
                 useClusterLevelTlsCertificateAndKey = false,
             )
         }
@@ -264,7 +256,6 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
             sessionCertificateChainAlias = null,
         )
@@ -278,12 +269,11 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = true,
             sessionKeyId = null,
             sessionCertificateChainAlias = null,
         )
 
-        assertThat(record.value?.sessionPublicKey).isEqualTo(PUBLIC_CLUSTER_KEY_PEM)
+        assertThat(record.value?.sessionPublicKey).isEqualTo(PUBLIC_KEY_PEM)
     }
 
     @Test
@@ -292,12 +282,10 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
             sessionCertificateChainAlias = null,
         )
 
-        assertThat(record.value?.sessionKeyTenantId).isEqualTo(VALID_NODE.toString())
         assertThat(record.value?.sessionPublicKey).isEqualTo(PUBLIC_KEY_PEM)
     }
 
@@ -307,7 +295,6 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = "id1",
             sessionCertificateChainAlias = null,
         )
@@ -323,7 +310,6 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = null,
             sessionCertificateChainAlias = null,
         )
@@ -341,7 +327,6 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = false,
-                useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
             )
@@ -355,7 +340,6 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 tlsCertificateChainAlias = "NOP",
                 useClusterLevelTlsCertificateAndKey = false,
-                useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
             )
@@ -369,7 +353,6 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = false,
-                useClusterLevelSessionCertificateAndKey = true,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = "NOP",
             )
@@ -394,7 +377,6 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = true,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = null,
             sessionCertificateChainAlias = null,
         )
@@ -424,7 +406,6 @@ class HostedIdentityEntryFactoryTest {
             sessionKeyId = "id1",
             sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            useClusterLevelSessionCertificateAndKey = false,
         )
 
         assertThat(tenantId).contains(VALID_NODE)
@@ -436,29 +417,11 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = true,
-            useClusterLevelSessionCertificateAndKey = false,
             sessionKeyId = null,
             sessionCertificateChainAlias = null,
         )
 
         assertThat(record.value?.tlsTenantId).isEqualTo("p2p")
-    }
-
-    @Test
-    fun `createIdentityRecord with another session tenant will return that ID`() {
-        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
-        whenever(cryptoOpsClient.filterMyKeys(eq(VALID_NODE.value), any())).doReturn(listOf(certificatePublicKey))
-
-        val record = factory.createIdentityRecord(
-            holdingIdentityShortHash = VALID_NODE,
-            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            sessionKeyId = "id1",
-            sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelSessionCertificateAndKey = false,
-            useClusterLevelTlsCertificateAndKey = false,
-        )
-
-        assertThat(record.value?.sessionKeyTenantId).isEqualTo(VALID_NODE.value)
     }
 
     @Test
@@ -478,7 +441,6 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = false,
-                useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
             )
@@ -494,7 +456,6 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = false,
-                useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
             )
@@ -513,7 +474,6 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = false,
-                useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
             )
@@ -532,7 +492,6 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = false,
-                useClusterLevelSessionCertificateAndKey = false,
                 sessionKeyId = null,
                 sessionCertificateChainAlias = null,
             )
@@ -554,7 +513,6 @@ class HostedIdentityEntryFactoryTest {
                 sessionKeyId = null,
                 sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = true,
-                useClusterLevelSessionCertificateAndKey = true,
             )
         }
     }
@@ -574,7 +532,6 @@ class HostedIdentityEntryFactoryTest {
                 sessionKeyId = null,
                 sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 useClusterLevelTlsCertificateAndKey = true,
-                useClusterLevelSessionCertificateAndKey = true,
             )
         }
     }

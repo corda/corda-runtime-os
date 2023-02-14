@@ -17,6 +17,6 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:messaging:message-bus')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 }

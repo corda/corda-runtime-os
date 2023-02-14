@@ -22,7 +22,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-membership"
     implementation 'net.corda:corda-serialization'
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":testing:layered-property-map-testkit")

@@ -15,7 +15,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation 'net.corda:corda-base'
     api "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
