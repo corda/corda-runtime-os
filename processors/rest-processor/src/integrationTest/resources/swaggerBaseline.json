@@ -1944,10 +1944,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "nullable" : true,
-                  "allOf" : [ {
-                    "$ref" : "#/components/schemas/RestRegistrationRequestStatus"
-                  } ]
+                  "$ref" : "#/components/schemas/RestRegistrationRequestStatus"
                 }
               }
             }
