@@ -141,7 +141,7 @@ class MemberInfoExtension {
         /**
          * Interop role properties
          */
-        const val INTEROP_SERVICE_NAME = "corda.notary.service.name"
+        const val INTEROP_SERVICE_NAME = "corda.interop.service.name"
 
         /** Key name for TLS certificate subject. */
         const val TLS_CERTIFICATE_SUBJECT = "corda.tls.certificate.subject"

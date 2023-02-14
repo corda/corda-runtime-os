@@ -17,7 +17,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -266,7 +265,6 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     private fun parseGroupPolicy(
         holdingIdentity: HoldingIdentity,
-        isInterop: Boolean = false,
         virtualNodeInfo: VirtualNodeInfo? = null,
     ): GroupPolicy? {
         val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
@@ -274,12 +272,12 @@ class GroupPolicyProviderImpl @Activate constructor(
             logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
         }
         val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
-        if (metadata == null && !isInterop) {
+        if (metadata == null) {
             logger.warn(
                 "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
                         "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
             )
-            return null
+            return interopGroupPolicyParser.get(holdingIdentity)
         }
         fun persistedPropertyQuery(): LayeredPropertyMap? = try {
             membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
@@ -288,20 +286,11 @@ class GroupPolicyProviderImpl @Activate constructor(
             null
         }
         return try {
-            if (isInterop) {
-                interopGroupPolicyParser.parse(
-                    holdingIdentity,
-                    interopGroupPolicyParser.get(holdingIdentity).toString(),
-                    ::persistedPropertyQuery
-                )
-            } else {
-                groupPolicyParser.parse(
-                    holdingIdentity,
-                    metadata!!.groupPolicy,
-                    ::persistedPropertyQuery
-                )
-            }
-
+            groupPolicyParser.parse(
+                holdingIdentity,
+                metadata.groupPolicy,
+                ::persistedPropertyQuery
+            )
         } catch (e: BadGroupPolicyException) {
             logger.warn("Failed to parse group policy. Returning null.", e)
             null
@@ -342,7 +331,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                     (mgmContext[STATUS] == MEMBER_STATUS_ACTIVE)
                 ) {
                     val holdingIdentity = member.viewOwningMember.toCorda()
-                    val gp = parseGroupPolicy(holdingIdentity, checkForInteropRole(memberContext))
+                    val gp = parseGroupPolicy(holdingIdentity)
                     if (gp is MGMGroupPolicy) {
                         groupPolicies[holdingIdentity] = gp
                         callBack(holdingIdentity, gp)
@@ -353,10 +342,6 @@ class GroupPolicyProviderImpl @Activate constructor(
             } catch (e: Exception) {
                 logger.warn("Could not process events, caused by: $e")
             }
-        }
-
-        private fun checkForInteropRole(memberContext: Map<String, String>): Boolean {
-            return memberContext.entries.any { it.key.startsWith(MemberInfoExtension.ROLES_PREFIX) && it.value == MemberInfoExtension.INTEROP_ROLE }
         }
 
         override val keyClass = String::class.java

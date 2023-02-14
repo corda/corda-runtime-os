@@ -104,7 +104,7 @@ class InteropGroupPolicyParserImplTest {
                 .isEqualTo("net.corda.membership.impl.sync.staticnetwork.StaticMemberSyncService")
             softly.assertThat(result.protocolParameters.sessionKeyPolicy).isEqualTo(COMBINED)
             softly.assertThat(result.p2pParameters.sessionTrustRoots).hasSize(3)
-            softly.assertThat(result.p2pParameters.tlsTrustRoots).hasSize(4)
+            softly.assertThat(result.p2pParameters.tlsTrustRoots).hasSize(3)
             softly.assertThat(result.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD)
             softly.assertThat(result.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD)
             softly.assertThat(result.p2pParameters.tlsVersion).isEqualTo(TlsVersion.VERSION_1_3)
