@@ -39,7 +39,7 @@ interface CryptoOpsClient : Lifecycle {
     fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingFullIds: Boolean = false
+        usingShortIds: Boolean
     ): Collection<PublicKey>
 
     /**

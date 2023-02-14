@@ -77,9 +77,9 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingFullIds: Boolean
+        usingShortIds: Boolean
     ): Collection<PublicKey> =
-        impl.ops.filterMyKeys(tenantId, candidateKeys, usingFullIds)
+        impl.ops.filterMyKeys(tenantId, candidateKeys, usingShortIds)
 
     override fun generateKeyPair(
         tenantId: String,

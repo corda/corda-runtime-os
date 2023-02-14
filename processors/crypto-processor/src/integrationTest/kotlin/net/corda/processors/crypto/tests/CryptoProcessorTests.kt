@@ -845,8 +845,8 @@ class CryptoProcessorTests {
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
         val allKeys = vnodeKeys + vnode2Keys
 
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingShortIds = true))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingShortIds = true))
     }
 
     @Test
@@ -862,10 +862,10 @@ class CryptoProcessorTests {
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
         val allKeys = vnodeKeys + vnode2Keys
 
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingFullIds = true))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingFullIds = true))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingShortIds = true))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingShortIds = true))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingShortIds = false))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingShortIds = false))
     }
 
     @Test

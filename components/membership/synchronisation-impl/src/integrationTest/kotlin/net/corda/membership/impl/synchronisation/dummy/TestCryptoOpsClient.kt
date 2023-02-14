@@ -65,7 +65,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
     override fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingFullIds: Boolean
+        usingShortIds: Boolean
     ): Collection<PublicKey> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)

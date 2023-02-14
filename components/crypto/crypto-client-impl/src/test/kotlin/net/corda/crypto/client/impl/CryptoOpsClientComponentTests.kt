@@ -457,7 +457,11 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.filterMyKeys(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
+            component.filterMyKeys(
+                knownTenantId,
+                listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
+                usingShortIds = true
+            )
         }
         assertNotNull(result.value)
         assertEquals(2, result.value.count())
@@ -539,7 +543,11 @@ class CryptoOpsClientComponentTests {
             CryptoSigningKeys(emptyList())
         }
         val result = sender.act {
-            component.filterMyKeys(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
+            component.filterMyKeys(
+                knownTenantId,
+                listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
+                usingShortIds = true
+            )
         }
         assertNotNull(result.value)
         assertEquals(0, result.value.count())

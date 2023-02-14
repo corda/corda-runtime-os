@@ -89,23 +89,24 @@ class CryptoOpsClientImpl(
     fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingFullIds: Boolean
+        usingShortIds: Boolean
     ): Collection<PublicKey> {
         val keyIdsForLogging = mutableListOf<String>()
         val candidateKeyIds =
-            if (usingFullIds) {
+            if (usingShortIds) {
+                ShortHashes(
+                    candidateKeys.map {
+                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
+                            .also { shortHash -> keyIdsForLogging.add(shortHash) }
+                    }
+                )
+
+            } else {
                 SecureHashes(
                     candidateKeys.map {
                         val secureHash = it.fullId(schemeMetadata, digestService)
                             .also { secureHash -> keyIdsForLogging.add(secureHash.toString()) }
                         secureHash.toAvro()
-                    }
-                )
-            } else {
-                ShortHashes(
-                    candidateKeys.map {
-                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
-                            .also { shortHash -> keyIdsForLogging.add(shortHash) }
                     }
                 )
             }

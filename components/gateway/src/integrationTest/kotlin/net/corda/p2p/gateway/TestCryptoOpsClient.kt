@@ -125,7 +125,7 @@ internal class TestCryptoOpsClient(
     override fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingFullIds: Boolean
+        usingShortIds: Boolean
     ): Collection<PublicKey> {
         throw UnsupportedOperationException()
     }

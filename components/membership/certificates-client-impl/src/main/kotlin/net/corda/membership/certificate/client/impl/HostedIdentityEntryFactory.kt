@@ -222,7 +222,7 @@ internal class HostedIdentityEntryFactory(
             .generateCertificate(firstCertificate.byteInputStream())
 
         val publicKey = certificate.publicKey
-        cryptoOpsClient.filterMyKeys(keyTenantId, listOf(publicKey))
+        cryptoOpsClient.filterMyKeys(keyTenantId, listOf(publicKey), usingShortIds = true)
             .firstOrNull()
             ?: throw CordaRuntimeException("This certificate public key is unknown to $keyTenantId")
 
