@@ -3,6 +3,8 @@ plugins {
     id 'corda.quasar-app'
 }
 
+//Making a change to build.gradle to trigger Snyk Delta - DO NOT MERGE 
+
 description 'VNode Sandbox Example'
 
 osgiRun {
