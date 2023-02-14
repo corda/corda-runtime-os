@@ -80,7 +80,7 @@ import kotlin.system.measureTimeMillis
  *           Takes an EntityManager (since that lets us continue a transaction) and a CpiIdentifier as a parameter and
  *           returns a list of CpkDbChangeLogEntity.
  */
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class VirtualNodeWriterProcessor(
     private val vnodePublisher: Publisher,
     private val dbConnectionManager: DbConnectionManager,
@@ -101,7 +101,7 @@ internal class VirtualNodeWriterProcessor(
         val systemTerminatorTag = "${VAULT.name}-system-final"
     }
 
-    @Suppress("ReturnCount", "ComplexMethod")
+    @Suppress("ReturnCount", "ComplexMethod", "LongMethod")
     private fun createVirtualNode(
         instant: Instant,
         create: VirtualNodeCreateRequest,
@@ -378,6 +378,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     // State change request produced by VirtualNodeMaintenanceRPCOpsImpl
+    @Suppress("NestedBlockDepth", "ThrowsCount")
     private fun changeVirtualNodeState(
         instant: Instant,
         stateChangeRequest: VirtualNodeStateChangeRequest,
