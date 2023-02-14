@@ -67,12 +67,6 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         registrationRequestId: String,
     ) = MembershipPersistenceResult.Failure<MemberInfo>("Unsupported!")
 
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ) = MembershipPersistenceResult.success()
-
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,

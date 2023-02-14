@@ -96,7 +96,8 @@ class StartRegistrationHandlerTest {
                             ByteBuffer.wrap("456".toByteArray()),
                             ByteBuffer.wrap("789".toByteArray()),
                             KeyValuePairList(emptyList())
-                        )
+                        ),
+                        true
                     )
                 )
             )
