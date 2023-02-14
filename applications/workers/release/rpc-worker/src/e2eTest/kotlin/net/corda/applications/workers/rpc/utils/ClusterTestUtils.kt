@@ -248,8 +248,10 @@ fun E2eCluster.register(
 
                 eventually(duration = 1.minutes) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
-                    assertThat(registrationStatus.registrationStatus)
-                        .isEqualTo(RegistrationStatus.APPROVED)
+                    with(registrationStatus) {
+                        assertThat(this).isNotNull
+                        assertThat(this!!.registrationStatus).isEqualTo(RegistrationStatus.APPROVED)
+                    }
                 }
             }
         }

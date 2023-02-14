@@ -1228,6 +1228,12 @@ class MembershipPersistenceTest {
         val registrationId2 = randomUUID().toString()
         val requestPersistentResult2 = persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
         assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        // Persist a new request
+        val registrationId3 = randomUUID().toString()
+        val requestPersistentResult3 = persistRequest(
+            HoldingIdentity(MemberX500Name.parse("O=Charlie, C=GB, L=London"), groupId), registrationId3
+        )
+        assertThat(requestPersistentResult3).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val result1 = membershipQueryClient.queryRegistrationRequestsStatus(
             viewOwningHoldingIdentity,
@@ -1249,6 +1255,9 @@ class MembershipPersistenceTest {
             listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
         ).getOrThrow()
         assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
+
+        val result4 = membershipQueryClient.queryRegistrationRequestsStatus(viewOwningHoldingIdentity).getOrThrow()
+        assertThat(result4.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2, registrationId3))
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =

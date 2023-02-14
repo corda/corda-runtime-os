@@ -43,6 +43,7 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
                 }
                 predicates.add(inStatus)
             }
+            @Suppress("SpreadOperator")
             val query = queryBuilder
                 .select(root)
                 .where(*predicates.toTypedArray())
