@@ -128,7 +128,6 @@ internal class LinkManagerHostingMapImpl(
             holdingIdentity = entry.holdingIdentity.toCorda(),
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
-            sessionKeyTenantId = entry.sessionKeyTenantId,
             sessionPublicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey),
             sessionCertificates = entry.sessionCertificates
         )

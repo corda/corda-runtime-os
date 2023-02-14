@@ -5,7 +5,7 @@ import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
+import net.corda.membership.httprpc.v1.types.response.RestMemberInfoList
 
 /**
  * The Member Lookup API consists of endpoints used to look up information related to membership groups. The API allows
@@ -38,7 +38,7 @@ interface MemberLookupRestResource : RestResource {
      * @param state Optional. State (ST) attribute of the X.500 name to filter members by.
      * @param country Optional. Country (C) attribute of the X.500 name to filter members by.
      *
-     * @return List of active and pending members matching the criteria as [RpcMemberInfoList].
+     * @return List of active and pending members matching the criteria as [RestMemberInfoList].
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}",
@@ -85,5 +85,5 @@ interface MemberLookupRestResource : RestResource {
             required = false
         )
         country: String? = null
-    ): RpcMemberInfoList
+    ): RestMemberInfoList
 }

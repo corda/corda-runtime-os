@@ -380,7 +380,6 @@ class StaticMemberRegistrationService @Activate constructor(
         val hostedIdentity = HostedIdentityEntry(
             net.corda.data.identity.HoldingIdentity(memberName.toString(), groupId),
             memberId.value,
-            memberId.value,
             listOf(DUMMY_CERTIFICATE),
             DUMMY_PUBLIC_SESSION_KEY,
             null

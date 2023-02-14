@@ -27,6 +27,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 
 class RevokePreAuthTokenHandlerTest  {
     private companion object {
@@ -72,10 +73,20 @@ class RevokePreAuthTokenHandlerTest  {
         on { holdingIdentity } doReturn holdingIdentity
     }
 
+    private fun mockPreAuthTokenEntity(entity: PreAuthTokenEntity?) {
+        whenever(
+            entityManager.find(
+                PreAuthTokenEntity::class.java,
+                TOKEN_ID,
+                LockModeType.PESSIMISTIC_WRITE
+            )
+        ).thenReturn(entity)
+    }
+
     @Test
     fun `invoke throws a MembershipPersistenceException if PreAuthTokenEntity cannot be found`() {
         val removalRemark = "Removed because"
-        whenever(entityManager.find(PreAuthTokenEntity::class.java, TOKEN_ID)).thenReturn(null)
+        mockPreAuthTokenEntity(null)
         val mergedEntityCapture = argumentCaptor<PreAuthTokenEntity>()
         whenever(entityManager.merge(mergedEntityCapture.capture())).thenReturn(mock())
 
@@ -92,7 +103,7 @@ class RevokePreAuthTokenHandlerTest  {
             REMARK,
             null
         )
-        whenever(entityManager.find(PreAuthTokenEntity::class.java, TOKEN_ID)).thenReturn(availableTokenEntity)
+        mockPreAuthTokenEntity(availableTokenEntity)
         val removalRemark = "Removed because"
         val mergedEntityCapture = argumentCaptor<PreAuthTokenEntity>()
         whenever(entityManager.merge(mergedEntityCapture.capture())).thenReturn(mock())
@@ -128,7 +139,7 @@ class RevokePreAuthTokenHandlerTest  {
             REMARK,
             removalRemark
         )
-        whenever(entityManager.find(PreAuthTokenEntity::class.java, TOKEN_ID)).thenReturn(revokedTokenEntity)
+        mockPreAuthTokenEntity(revokedTokenEntity)
         val mergedEntityCapture = argumentCaptor<PreAuthTokenEntity>()
         whenever(entityManager.merge(mergedEntityCapture.capture())).thenReturn(mock())
 
@@ -146,7 +157,7 @@ class RevokePreAuthTokenHandlerTest  {
             REMARK,
             removalRemark
         )
-        whenever(entityManager.find(PreAuthTokenEntity::class.java, TOKEN_ID)).thenReturn(revokedTokenEntity)
+        mockPreAuthTokenEntity(revokedTokenEntity)
         val mergedEntityCapture = argumentCaptor<PreAuthTokenEntity>()
         whenever(entityManager.merge(mergedEntityCapture.capture())).thenReturn(mock())
 
@@ -164,7 +175,7 @@ class RevokePreAuthTokenHandlerTest  {
             REMARK,
             removalRemark
         )
-        whenever(entityManager.find(PreAuthTokenEntity::class.java, TOKEN_ID)).thenReturn(revokedTokenEntity)
+        mockPreAuthTokenEntity(revokedTokenEntity)
         val mergedEntityCapture = argumentCaptor<PreAuthTokenEntity>()
         whenever(entityManager.merge(mergedEntityCapture.capture())).thenReturn(mock())
 

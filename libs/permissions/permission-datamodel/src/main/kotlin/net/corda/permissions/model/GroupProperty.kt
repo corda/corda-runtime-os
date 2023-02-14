@@ -1,6 +1,5 @@
 package net.corda.permissions.model
 
-import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -12,7 +11,7 @@ import javax.persistence.Table
 import javax.persistence.Version
 
 @Entity
-@Table(name = "rbac_group_props", schema = DbSchema.RBAC)
+@Table(name = "rbac_group_props")
 class GroupProperty(
     @Id
     @Column(name = "id", nullable = false)

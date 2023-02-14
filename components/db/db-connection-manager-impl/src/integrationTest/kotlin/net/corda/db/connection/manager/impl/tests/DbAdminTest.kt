@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbAdmin
-import net.corda.db.connection.manager.impl.DbAdminImpl
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -14,7 +13,6 @@ import net.corda.db.testkit.DbUtils.getPostgresDatabase
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
-import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.orm.EntityManagerConfiguration
@@ -89,6 +87,9 @@ class DbAdminTest {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
 
+    /**
+     * Create a DbAdmin instance targeting the cluster db data source
+     */
     private fun createDbAdmin(adminUser: String? = null, adminPassword: String? = null): DbAdmin {
         val entitiesRegistry = JpaEntitiesRegistryImpl()
         val dbm =
@@ -103,7 +104,9 @@ class DbAdminTest {
             ConfigurationEntities.classes
         )
         dbm.initialise(config)
-        return DbAdminImpl(dbm)
+        return object : DbAdmin() {
+            override fun bindDataSource() = dbm.getClusterDataSource()
+        }
     }
 
     @Test

@@ -138,5 +138,5 @@ interface MemberRegistrationRestResource : RestResource {
         holdingIdentityShortHash: String,
         @RestPathParameter(description = "The ID of the registration request")
         registrationRequestId: String,
-    ): RegistrationRequestStatus?
+    ): RegistrationRequestStatus
 }
