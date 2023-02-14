@@ -2,12 +2,14 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -330,6 +332,29 @@ class KeysRestResourceImplTest {
         }
 
         @Test
+        fun `generateKeyPair throws InvalidInputDataException when the category is session init and the tenant is not a virtual node`() {
+            assertThrows<InvalidInputDataException> {
+                keysOps.generateKeyPair(tenantId = P2P, alias = ALIAS, hsmCategory = SESSION_INIT, scheme = SCHEME)
+            }
+        }
+
+        @Test
+        fun `generateKeyPair will not throw an exception when the category is session init and the tenant is a virtual node`() {
+            val tenantId = "123123123123"
+            val publicKey = mock<PublicKey> {
+                on { encoded } doReturn byteArrayOf(1, 2, 3)
+            }
+            whenever(cryptoOpsClient.generateKeyPair(tenantId, SESSION_INIT, ALIAS, SCHEME)).doReturn(publicKey)
+
+            keysOps.generateKeyPair(
+                tenantId = tenantId,
+                alias = ALIAS,
+                hsmCategory = SESSION_INIT,
+                scheme = SCHEME
+            )
+        }
+
+        @Test
         fun `generateKeyPair throws ServiceUnavailableException when repartition event happens while trying to generate the keyPair`() {
             whenever(cryptoOpsClient.generateKeyPair(TENANT_ID, CATEGORY.uppercase(), ALIAS, SCHEME))
                 .doThrow(CordaRPCAPIPartitionException("repartition event"))
@@ -380,7 +405,6 @@ class KeysRestResourceImplTest {
             }
 
             assertThat(details.message).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
-
         }
 
         @Test

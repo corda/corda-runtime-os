@@ -25,8 +25,10 @@ class ConsensualFinalityFlow(
 ) : ConsensualFinalityBase() {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(ConsensualFinalityFlow::class.java)
     }
+
+    override val log: Logger = ConsensualFinalityFlow.log
 
     private val transactionId = initialTransaction.id
 

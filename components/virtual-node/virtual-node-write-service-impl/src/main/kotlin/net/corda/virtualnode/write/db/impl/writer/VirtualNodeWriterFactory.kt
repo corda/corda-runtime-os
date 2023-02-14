@@ -4,7 +4,6 @@ import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
@@ -25,6 +24,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyn
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import javax.persistence.EntityManager
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 
 /** A factory for [VirtualNodeWriter]s. */
@@ -33,12 +33,13 @@ internal class VirtualNodeWriterFactory(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
     private val dbConnectionManager: DbConnectionManager,
-    private val dbAdmin: DbAdmin,
+    private val virtualNodeDbAdmin: VirtualNodesDbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
     private val getCurrentChangeLogsForCpi: (EntityManager, String, String, String) -> List<CpkDbChangeLogEntity> =
         ::findCurrentCpkChangeLogsForCpi
 ) {
+
 
     private companion object {
         const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
@@ -114,7 +115,7 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val vNodeDbFactory = VirtualNodeDbFactoryImpl(
             dbConnectionManager,
-            dbAdmin,
+            virtualNodeDbAdmin,
             schemaMigrator
         )
         val processor = VirtualNodeWriterProcessor(

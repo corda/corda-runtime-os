@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 
 class TransactionBackchainSenderFlowTest {
@@ -24,6 +23,7 @@ class TransactionBackchainSenderFlowTest {
     private val session = mock<FlowSession>()
     private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
 
+    private val transactionBackchainIsRequestedFor = mock<UtxoSignedTransaction>()
     private val transaction1 = mock<UtxoSignedTransaction>()
     private val transaction2 = mock<UtxoSignedTransaction>()
     private val transaction3 = mock<UtxoSignedTransaction>()
@@ -32,11 +32,13 @@ class TransactionBackchainSenderFlowTest {
     private val ledgerTransaction2 = mock<UtxoLedgerTransaction>()
     private val ledgerTransaction3 = mock<UtxoLedgerTransaction>()
 
-    private val flow = TransactionBackchainSenderFlow(session)
+    private val flow = TransactionBackchainSenderFlow(transactionBackchainIsRequestedFor, session)
 
     @BeforeEach
     fun beforeEach() {
         flow.utxoLedgerPersistenceService = utxoLedgerPersistenceService
+
+        whenever(transactionBackchainIsRequestedFor.id).thenReturn(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)))
 
         whenever(utxoLedgerPersistenceService.find(TX_ID_1)).thenReturn(transaction1)
         whenever(utxoLedgerPersistenceService.find(TX_ID_2)).thenReturn(transaction2)
@@ -54,7 +56,6 @@ class TransactionBackchainSenderFlowTest {
         flow.call()
 
         verify(session).receive(TransactionBackchainRequest::class.java)
-        verifyNoMoreInteractions(session)
         verifyNoInteractions(utxoLedgerPersistenceService)
     }
 

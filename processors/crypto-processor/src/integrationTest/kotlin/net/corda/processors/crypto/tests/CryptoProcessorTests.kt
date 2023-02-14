@@ -177,8 +177,7 @@ class CryptoProcessorTests {
 
         private val clusterDb = TestDbInfo.createConfig()
         private val cryptoDb = TestDbInfo(
-            name = CordaDb.Crypto.persistenceUnitName,
-            schemaName = DbSchema.CRYPTO
+            name = CordaDb.Crypto.persistenceUnitName
         )
         private val boostrapConfig = makeBootstrapConfig(clusterDb.config)
         private val messagingConfig = makeMessagingConfig()
