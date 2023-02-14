@@ -81,32 +81,35 @@ class SessionEventHandler @Activate constructor(
         val initiatedIdentity = sessionEvent.initiatedIdentity
         val holdingIdentity = initiatedIdentity.toCorda()
 
-        val cpks = context.checkpoint.cpks
-        val protocolStore = try {
-            flowSandboxService.get(holdingIdentity, cpks).protocolStore
-        } catch (e: Exception) {
-            // We assume that all sandbox creation failures are transient. This likely isn't true, but to handle
-            // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
-            // will get the right failure eventually, so this is fine for now.
-            throw FlowTransientException(
-                "Failed to create the flow sandbox: ${e.message}",
-                e
-            )
+        checkpointInitializer.initialize(
+            context.checkpoint,
+            WaitingFor(WaitingForSessionInit(sessionId)),
+            initiatedIdentity.toCorda()
+        ) {
+            val protocolStore = try {
+                flowSandboxService.get(holdingIdentity, it).protocolStore
+            } catch (e: Exception) {
+                // We assume that all sandbox creation failures are transient. This likely isn't true, but to handle
+                // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
+                // will get the right failure eventually, so this is fine for now.
+                throw FlowTransientException(
+                    "Failed to create the flow sandbox: ${e.message}",
+                    e
+                )
+            }
+            val initiatedFlow = protocolStore.responderForProtocol(sessionInit.protocol, sessionInit.versions, context)
+            FlowStartContext.newBuilder()
+                .setStatusKey(FlowKey(sessionId, initiatedIdentity))
+                .setInitiatorType(FlowInitiatorType.P2P)
+                .setRequestId(sessionId)
+                .setIdentity(initiatedIdentity)
+                .setCpiId(sessionInit.cpiId)
+                .setInitiatedBy(initiatingIdentity)
+                .setFlowClassName(initiatedFlow)
+                .setContextPlatformProperties(emptyKeyValuePairList())
+                .setCreatedTimestamp(Instant.now())
+                .build()
         }
-        val initiatedFlow = protocolStore.responderForProtocol(sessionInit.protocol, sessionInit.versions, context)
-        val startContext = FlowStartContext.newBuilder()
-            .setStatusKey(FlowKey(sessionId, initiatedIdentity))
-            .setInitiatorType(FlowInitiatorType.P2P)
-            .setRequestId(sessionId)
-            .setIdentity(initiatedIdentity)
-            .setCpiId(sessionInit.cpiId)
-            .setInitiatedBy(initiatingIdentity)
-            .setFlowClassName(initiatedFlow)
-            .setContextPlatformProperties(emptyKeyValuePairList())
-            .setCreatedTimestamp(Instant.now())
-            .build()
-
-        checkpointInitializer.initialize(context.checkpoint, startContext, WaitingFor(WaitingForSessionInit(sessionId)))
     }
 
     private fun discardSessionEvent(context: FlowEventContext<SessionEvent>, sessionEvent: SessionEvent) {

@@ -6,8 +6,9 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -20,18 +21,19 @@ class CheckpointInitializerImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService
 
 ) : CheckpointInitializer {
-    override fun initialize(checkpoint: FlowCheckpoint, startContext: FlowStartContext, waitingFor: WaitingFor) {
-        checkpoint.waitingFor = waitingFor
-        val vNodeInfo = virtualNodeInfoReadService.get(startContext.identity.toCorda())
+    override fun initialize(checkpoint: FlowCheckpoint, waitingFor: WaitingFor, holdingIdentity: HoldingIdentity, contextBuilder:(Set<SecureHash>) -> FlowStartContext) {
+        val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
         checkNotNull(vNodeInfo) {
-            "Failed to find the virtual node info for holder '${startContext.identity.toCorda()}'"
+            "Failed to find the virtual node info for holder '$holdingIdentity'"
         }
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
         checkNotNull(cpiMetadata) {
             "Failed to find the cpiMetadata for identifier '${vNodeInfo.cpiIdentifier}'"
         }
         val cpks = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
-        checkpoint.initFlowState(startContext, cpks)
+
+        checkpoint.initFlowState(contextBuilder(cpks), cpks)
+        checkpoint.waitingFor = waitingFor
 
     }
 }

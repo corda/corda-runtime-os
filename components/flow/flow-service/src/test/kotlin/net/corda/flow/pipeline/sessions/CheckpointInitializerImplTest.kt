@@ -46,10 +46,13 @@ class CheckpointInitializerImplTest {
 
         val cpiMetadata = mock<CpiMetadata>()
         val cpkMetadata = mock<CpkMetadata>()
+
         whenever(cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)).thenReturn(cpiMetadata)
         whenever(cpiMetadata.cpksMetadata).thenReturn(setOf(cpkMetadata))
 
-        checkpointInitializer.initialize(checkpoint, startContext, waitingFor)
+        checkpointInitializer.initialize(checkpoint, waitingFor, holdingIdentity.toCorda()) {
+            startContext
+        }
         verify(checkpoint).initFlowState(any(), any())
         assertThat(checkpoint.cpks).hasSameClassAs(java.util.HashSet<SecureHash>())
     }
@@ -78,7 +81,15 @@ class CheckpointInitializerImplTest {
         val nullCpiMetadata = null
         whenever(cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)).thenReturn(nullCpiMetadata)
 
-        assertThrows<IllegalStateException>{checkpointInitializer.initialize(checkpoint, startContext, waitingFor)}
+        assertThrows<IllegalStateException> {
+            checkpointInitializer.initialize(
+                checkpoint,
+                waitingFor,
+                holdingIdentity.toCorda()
+            ) {
+                startContext
+            }
+        }
     }
 
     @Test
@@ -101,7 +112,15 @@ class CheckpointInitializerImplTest {
         val nullVirtualNodeInfo = null
         whenever(virtualNodeInfoReadService.get(startContext.identity.toCorda())).thenReturn(nullVirtualNodeInfo)
 
-        assertThrows<IllegalStateException>{checkpointInitializer.initialize(checkpoint, startContext, waitingFor)}
+        assertThrows<IllegalStateException> {
+            checkpointInitializer.initialize(
+                checkpoint,
+                waitingFor,
+                holdingIdentity.toCorda()
+            ) {
+                startContext
+            }
+        }
     }
 
     @Test
@@ -127,10 +146,13 @@ class CheckpointInitializerImplTest {
 
         val cpiMetadata = mock<CpiMetadata>()
         val cpkMetadata = mock<CpkMetadata>()
+
         whenever(cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)).thenReturn(cpiMetadata)
         whenever(cpiMetadata.cpksMetadata).thenReturn(setOf(cpkMetadata))
 
-        checkpointInitializer.initialize(checkpoint, startContext, waitingFor)
+        checkpointInitializer.initialize(checkpoint, waitingFor, holdingIdentity.toCorda()){
+            startContext
+        }
 
         verify(checkpoint).waitingFor = waitingFor
     }
