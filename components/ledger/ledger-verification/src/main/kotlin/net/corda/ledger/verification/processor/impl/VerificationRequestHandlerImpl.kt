@@ -27,15 +27,16 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
 
     override fun handleRequest(sandbox: SandboxGroupContext, request: TransactionVerificationRequestAvro): Record<*, *> {
         val serializationService = sandbox.getSerializationService()
-        val ledgerTransaction = request.getLedgerTransaction(serializationService)
+        val transactionFactory = { request.getLedgerTransaction(serializationService) }
+        val transaction = transactionFactory.invoke()
         return try {
-            UtxoLedgerTransactionVerifier(ledgerTransaction).verify()
+            UtxoLedgerTransactionVerifier(transactionFactory, transaction).verify()
             responseFactory.success(
                 request.flowExternalEventContext,
                 TransactionVerificationResult(TransactionVerificationStatus.VERIFIED).toAvro()
             )
         } catch (e: Exception) {
-            log.error("Error verifying ledger transaction with ID ${ledgerTransaction.id}", e)
+            log.error("Error verifying ledger transaction with ID ${transaction.id}", e)
             responseFactory.success(
                 request.flowExternalEventContext,
                 TransactionVerificationResult(
