@@ -5,7 +5,6 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Lob
 import javax.persistence.Table
-import javax.persistence.EntityManager
 import javax.persistence.Id
 import javax.persistence.NamedQuery
 import javax.persistence.Version
@@ -39,7 +38,7 @@ const val QUERY_PARAM_ID = "id"
             " WHERE f.entityVersion = :$QUERY_PARAM_ENTITY_VERSION" +
             " AND f.id = :$QUERY_PARAM_ID"
 )
-class CpkFileEntity(
+internal class CpkFileEntity(
     @Id
     @Column(name = "file_checksum", nullable = false, unique = true)
     var fileChecksum: String,
@@ -72,23 +71,3 @@ class CpkFileEntity(
         return fileChecksum.hashCode()
     }
 }
-
-fun EntityManager.findCpkChecksumsNotIn(checksums: List<String>): List<String> {
-    return createQuery(
-        "SELECT cpk.fileChecksum FROM ${CpkFileEntity::class.simpleName} cpk " +
-                "WHERE cpk.fileChecksum NOT IN (:checksums)",
-        String::class.java
-    )
-        .setParameter(
-            "checksums",
-            checksums.ifEmpty { "null" })
-        .resultList
-}
-
-fun EntityManager.findCpkDataEntity(checksum: String): CpkFileEntity? = createQuery(
-    "FROM ${CpkFileEntity::class.java.simpleName} WHERE fileChecksum = :checksum",
-    CpkFileEntity::class.java
-)
-    .setParameter("checksum", checksum)
-    .resultList
-    .firstOrNull()

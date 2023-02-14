@@ -65,13 +65,13 @@ object TestObject {
         val cpiVersion = "1.0"
         val cpiSignerSummaryHash = SecureHash("SHA1","test-cpi-hash".toByteArray()).toString()
         val cpkList: List<CpiCpkEntity> = (1..numberOfCpks).map {
-            val cpkFileChecksum = randomChecksumString()
+            val cpkFileChecksum = randomChecksum()
             val cpkName = UUID.randomUUID().toString()
             val cpkId = "test-cpk-$cpkName.cpk"
             createCpiCpkEntity(
                 cpiName, cpiVersion, cpiSignerSummaryHash,
                 cpkId, "1.0", SecureHash("SHA1", "test-cpk-hash".toByteArray()).toString(),
-                "test-cpi-$id.cpk", cpkFileChecksum
+                "test-cpi-$id.cpk", cpkFileChecksum.toString()
             )
         }
         val cpi = createCpi(id, cpiName, cpiVersion, cpiSignerSummaryHash, cpkList.toSet())
