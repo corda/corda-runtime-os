@@ -5,12 +5,6 @@ import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 
-fun cpiCpk(init: CpiCpkBuilder.() -> Unit): CpiCpkBuilder {
-    val cpiCpk = CpiCpkBuilder()
-    init(cpiCpk)
-    return cpiCpk
-}
-
 class CpiCpkBuilder(
     private var cpkFileChecksumSupplier: () -> String? = { null },
     private var cpiNameSupplier: () -> String? = { null },

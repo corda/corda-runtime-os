@@ -5,14 +5,16 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
+import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepositoryImpl
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
@@ -24,7 +26,6 @@ import java.nio.file.Files
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
-import javax.persistence.NonUniqueResultException
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated metadata.
@@ -35,6 +36,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
         val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
+        val cpkFileRepository = CpkFileRepositoryImpl()
+        val cpiMetadataRepository = CpiMetadataRepositoryImpl()
     }
 
     /**
@@ -43,16 +46,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
      * @return true if checksum exists in database
      */
     override fun cpkExists(cpkChecksum: SecureHash): Boolean {
-        val query = "SELECT count(c) FROM ${CpkFileEntity::class.simpleName} c WHERE c.fileChecksum = :cpkFileChecksum"
-        val entitiesFound = entityManagerFactory.createEntityManager().transaction {
-            it.createQuery(query)
-                .setParameter("cpkFileChecksum", cpkChecksum.toString())
-                .singleResult as Long
+        return entityManagerFactory.createEntityManager().transaction {
+            cpkFileRepository.exists(it, cpkChecksum)
         }
-
-        if (entitiesFound > 1) throw NonUniqueResultException("CpkFileEntity with fileChecksum = $cpkChecksum was not unique")
-
-        return entitiesFound > 0
     }
 
     override fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean =
@@ -283,20 +279,14 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     }
 
     private fun persistNewCpkFileEntities(cpiFileChecksum: String, em: EntityManager, cpks: Collection<Cpk>) {
-        val existingCpkMap = em.createQuery(
-            "FROM ${CpkFileEntity::class.java.simpleName} f WHERE f.fileChecksum IN :ids",
-            CpkFileEntity::class.java
-        )
-            .setParameter("ids", cpks.map { it.metadata.fileChecksum.toString() })
-            .resultList
-            .associateBy { it.fileChecksum }
+        val existingCpkMap = cpkFileRepository.findById(em, cpks.map { it.metadata.fileChecksum }).associateBy { it.fileChecksum }
 
         val (existingCpks, newCpks) = cpks.partition { it.metadata.fileChecksum.toString() in existingCpkMap.keys }
 
         check(existingCpks.toSet().size == existingCpkMap.keys.size)
 
         newCpks.forEach {
-            em.persist(CpkFileEntity(it.metadata.fileChecksum.toString(), Files.readAllBytes(it.path!!)))
+            cpkFileRepository.put(em, CpkFile(it.metadata.fileChecksum.toString(), Files.readAllBytes(it.path!!)))
         }
 
         if (existingCpks.isNotEmpty()) {
@@ -316,18 +306,11 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         requestId: String
     ) {
         val sameCPis = entityManagerFactory.createEntityManager().transaction {
-            it.createQuery(
-                "FROM ${CpiMetadataEntity::class.simpleName} c " +
-                        "WHERE c.name = :cpiName " +
-                        "AND c.signerSummaryHash = :cpiSignerSummaryHash",
-                CpiMetadataEntity::class.java
-            )
-                .setParameter("cpiName", cpiName)
-                .setParameter("cpiSignerSummaryHash", cpiSignerSummaryHash).resultList
+            cpiMetadataRepository.findByNameAndCpiSignerSummaryHash(it, cpiName, cpiSignerSummaryHash)
         }
 
         if (forceUpload) {
-            if (!sameCPis.any { it.version == cpiVersion }) {
+            if (!sameCPis.any { it.version == cpiVersion.toInt() }) {
                 throw ValidationException("No instance of same CPI with previous version found", requestId)
             }
             if (sameCPis.first().groupId != groupId) {
@@ -338,7 +321,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
 
         // outside a force-update, anything goes except identical ID (name, signer and version)
-        if (sameCPis.any { it.version == cpiVersion }) {
+        if (sameCPis.any { it.version == cpiVersion.toInt() }) {
             throw DuplicateCpiUploadException("CPI $cpiName, $cpiVersion, $cpiSignerSummaryHash already exists.")
         }
 

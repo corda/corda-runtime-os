@@ -21,6 +21,18 @@ class CpiMetadataRepositoryImpl: CpiMetadataRepository {
         ).resultStream.map { it.toDto() }
     }
 
+    override fun findByNameAndCpiSignerSummaryHash(em: EntityManager, cpiName: String, cpiSignerSummaryHash: String): List<CpiMetadata> {
+        return em.createQuery(
+            "FROM ${CpiMetadataEntity::class.simpleName} c " +
+                    "WHERE c.name = :cpiName " +
+                    "AND c.signerSummaryHash = :cpiSignerSummaryHash",
+            CpiMetadataEntity::class.java
+        )
+            .setParameter("cpiName", cpiName)
+            .setParameter("cpiSignerSummaryHash", cpiSignerSummaryHash)
+            .resultList.map { it.toDto() }
+    }
+
     /**
     * Converts an entity to a data transport object.
     */
@@ -32,7 +44,8 @@ class CpiMetadataRepositoryImpl: CpiMetadataRepository {
             groupPolicy = groupPolicy,
             version = entityVersion,
             timestamp = insertTimestamp.getOrNow(),
-            isDeleted = isDeleted
+            isDeleted = isDeleted,
+            groupId = groupId
         )
 
     private fun CpiMetadataEntity.genCpiIdentifier() =

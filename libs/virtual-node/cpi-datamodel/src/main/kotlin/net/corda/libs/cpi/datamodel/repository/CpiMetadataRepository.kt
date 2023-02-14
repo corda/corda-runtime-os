@@ -12,5 +12,8 @@ interface CpiMetadataRepository {
      * Find all cpi metadata.
      */
     fun findAll(em: EntityManager): Stream<CpiMetadata>
+
+    fun findByNameAndCpiSignerSummaryHash(em: EntityManager, cpiName: String, cpiSignerSummaryHash: String): List<CpiMetadata>
+
 }
 

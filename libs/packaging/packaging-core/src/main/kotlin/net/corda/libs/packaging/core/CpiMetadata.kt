@@ -12,7 +12,8 @@ data class CpiMetadata(
     val groupPolicy: String?,
     val version: Int = -1,
     val timestamp: Instant,
-    val isDeleted: Boolean = false) {
+    val isDeleted: Boolean = false,
+    val groupId: String = "" ) {
     companion object {
         fun fromAvro(other: CpiMetadataAvro) = CpiMetadata(
             CpiIdentifier.fromAvro(other.id),
