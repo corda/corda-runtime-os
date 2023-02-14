@@ -17,8 +17,6 @@ import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
-import net.corda.crypto.persistence.CryptoConnectionsFactory
-import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
@@ -44,15 +42,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import java.security.KeyPair
 import java.security.PublicKey
 import java.util.UUID
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -102,11 +94,11 @@ class SoftCryptoServiceOperationsTests {
 
             // set up a CachingSoftWrappingKeyMap with a mocked out database, where the mock stores
             // a wrapping key so we can access it from this fixtur elater
-            val testCryptoConnectionsFactoryWithMap = TestCryptoConnectionsFactoryWithMap()
+            val inMemoryCryptoConnectionsFactory = InMemoryCryptoConnectionsFactory()
             wrappingKeyMap = CachingSoftWrappingKeyMap(
                 SoftCacheConfig(0, 0),
                 masterKey,
-                testCryptoConnectionsFactoryWithMap
+                inMemoryCryptoConnectionsFactory
             )
 
             // put together a DefaultSoftPrivateKeyWrapping that uses the master wrapping key in our CachedWrappingKeyMap
@@ -126,7 +118,7 @@ class SoftCryptoServiceOperationsTests {
             // push in the master wrapping key  from above            
             cryptoService.createWrappingKey(masterWrappingKeyAlias, true, emptyMap())
             // and make sure it gets into the mocked database underneath
-            assertThat(testCryptoConnectionsFactoryWithMap.exists(masterWrappingKeyAlias)).isTrue()
+            assertThat(inMemoryCryptoConnectionsFactory.exists(masterWrappingKeyAlias)).isTrue()
 
             // now populate some private keys for test cases later
             softAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {

@@ -19,7 +19,7 @@ import javax.persistence.EntityTransaction
  *
  * Doesn't need lifecycle, but can optionally participate in lifecycle for test purposes.
  */
-class TestCryptoConnectionsFactoryWithMap(
+class InMemoryCryptoConnectionsFactory(
     val coordinatorFactory: LifecycleCoordinatorFactory? = null
 ) : CryptoConnectionsFactory {
     val keys: ConcurrentHashMap<String, WrappingKeyEntity> = ConcurrentHashMap()

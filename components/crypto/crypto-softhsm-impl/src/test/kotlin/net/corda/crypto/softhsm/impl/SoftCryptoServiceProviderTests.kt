@@ -57,7 +57,7 @@ class TestCryptoConnectionsFactory(
 class SoftCryptoServiceProviderTests {
     private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
     private lateinit var schemeMetadata: CipherSchemeMetadataImpl
-    private lateinit var cryptoConnectionsFactory: TestCryptoConnectionsFactoryWithMap
+    private lateinit var cryptoConnectionsFactory: InMemoryCryptoConnectionsFactory
     private lateinit var component: SoftCryptoServiceProviderImpl
     private lateinit var defaultConfig: SmartConfig
 
@@ -66,7 +66,7 @@ class SoftCryptoServiceProviderTests {
         defaultConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         schemeMetadata = CipherSchemeMetadataImpl()
-        cryptoConnectionsFactory = TestCryptoConnectionsFactoryWithMap(coordinatorFactory).also {
+        cryptoConnectionsFactory = InMemoryCryptoConnectionsFactory(coordinatorFactory).also {
             it.start()
             eventually {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator?.status)
