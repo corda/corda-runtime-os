@@ -27,6 +27,7 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-orm-impl')
     integrationTestImplementation project(':testing:db-testkit')
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
 
 // This is required for Hibernate Proxy generation. Without it OSGi will report:
