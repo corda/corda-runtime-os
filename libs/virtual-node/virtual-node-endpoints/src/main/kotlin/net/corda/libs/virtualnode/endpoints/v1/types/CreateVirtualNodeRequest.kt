@@ -6,7 +6,7 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  * @param x500Name The X500 name for the new virtual node.
  * @param cpiFileChecksum The checksum of the CPI file.
  */
-data class VirtualNodeRequest(
+data class CreateVirtualNodeRequest(
     val x500Name: String,
     val cpiFileChecksum: String,
     val vaultDdlConnection: String?,

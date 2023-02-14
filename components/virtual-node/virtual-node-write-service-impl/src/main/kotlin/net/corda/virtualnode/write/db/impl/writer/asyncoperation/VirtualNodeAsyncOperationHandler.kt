@@ -1,6 +1,5 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation
 
-import net.corda.messaging.api.records.Record
 import java.time.Instant
 
 /**
@@ -14,5 +13,5 @@ interface VirtualNodeAsyncOperationHandler<REQUEST> {
      * @param requestId the identifier of the request, used for traceability and logging purposes
      * @param request the request itself, each implemention should handle one type
      */
-    fun handle(requestTimestamp: Instant, requestId: String, request: REQUEST): Record<*, *>?
+    fun handle(requestTimestamp: Instant, requestId: String, request: REQUEST)
 }

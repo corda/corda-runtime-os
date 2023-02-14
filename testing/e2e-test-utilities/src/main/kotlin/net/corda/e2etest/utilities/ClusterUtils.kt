@@ -90,17 +90,18 @@ fun getOrCreateVirtualNodeFor(
         }.toJson()
 
         val normalizedX500 = MemberX500Name.parse(x500).toString()
-        val vNodeJson = if (vNodesJson.findValuesAsText("x500Name").contains(normalizedX500)) {
+
+        if (vNodesJson.findValuesAsText("x500Name").contains(normalizedX500)) {
             vNodeList().toJson()["virtualNodes"].toList().first {
-                it["holdingIdentity"]["x500Name"].textValue() == x500
-            }
+                it["holdingIdentity"]["x500Name"].textValue() == normalizedX500
+            }["holdingIdentity"]["shortHash"].textValue()
         } else {
-            val vNodeInfo = assertWithRetry {
+            val createVNodeRequest = assertWithRetry {
                 command { vNodeCreate(hash, x500) }
-                condition { it.code == 200 }
+                condition { it.code == 202 }
                 failMessage("Failed to create the virtual node for '$x500'")
             }.toJson()
-            val holdingId = vNodeInfo["holdingIdentity"]["shortHash"].textValue()
+            val holdingId = createVNodeRequest["requestId"].textValue()
 
             // Wait for the vNode creation to propagate through the system before moving on
             eventually {
@@ -111,12 +112,8 @@ fun getOrCreateVirtualNodeFor(
                 )
             }
 
-            vNodeInfo
+            holdingId
         }
-
-        val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()
-        assertThat(holdingId).isNotNull.isNotEmpty
-        holdingId
     }
 }
 

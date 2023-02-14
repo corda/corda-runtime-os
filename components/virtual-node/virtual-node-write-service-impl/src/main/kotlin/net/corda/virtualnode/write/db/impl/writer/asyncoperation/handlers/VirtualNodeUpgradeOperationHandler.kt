@@ -46,7 +46,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestTimestamp: Instant,
         requestId: String,
         request: VirtualNodeUpgradeRequest
-    ): Record<*, *>? {
+    ) {
         logger.info("Virtual node upgrade operation requested by ${request.actor} at $requestTimestamp: $request ")
         request.validateMandatoryFields()
 
@@ -60,7 +60,7 @@ internal class VirtualNodeUpgradeOperationHandler(
             handleMigrationsFailed(request, requestId, requestTimestamp, e)
         }
 
-        return null
+        return
     }
 
     /**
