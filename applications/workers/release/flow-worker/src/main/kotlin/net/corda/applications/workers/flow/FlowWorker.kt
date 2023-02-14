@@ -43,7 +43,7 @@ class FlowWorker @Activate constructor(
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
-    @Reference(service = FlowProcessor::class)
+    @Reference(service = InteropProcessor::class)
     private val interopProcessor: InteropProcessor,
 ) : Application {
 
