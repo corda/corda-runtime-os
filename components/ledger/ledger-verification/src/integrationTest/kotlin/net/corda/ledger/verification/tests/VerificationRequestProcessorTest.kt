@@ -131,11 +131,11 @@ class VerificationRequestProcessorTest {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
         val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
-        val cpkFileChecksums = cpksMetadata.mapTo(HashSet()) { it.fileChecksum }
+        val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
-        val sandbox = verificationSandboxService.get(holdingIdentity, cpkFileChecksums)
+        val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
         val transaction = createTestTransaction(sandbox, isValid = true)
-        val request = createRequest(sandbox, holdingIdentity, transaction, cpksMetadata.map { it.toCpkSummary() })
+        val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
 
         // Create request processor
         val processor = VerificationRequestProcessor(
@@ -165,11 +165,11 @@ class VerificationRequestProcessorTest {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
         val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
-        val cpkFileChecksums = cpksMetadata.mapTo(HashSet()) { it.fileChecksum }
+        val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
-        val sandbox = verificationSandboxService.get(holdingIdentity, cpkFileChecksums)
+        val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
         val transaction = createTestTransaction(sandbox, isValid = false)
-        val request = createRequest(sandbox, holdingIdentity, transaction, cpksMetadata.map { it.toCpkSummary() })
+        val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
 
         // Create request processor
         val processor = VerificationRequestProcessor(
@@ -203,9 +203,9 @@ class VerificationRequestProcessorTest {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
         val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
-        val cpkFileChecksums = cpksMetadata.mapTo(HashSet()) { it.fileChecksum }
+        val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
-        val sandbox = verificationSandboxService.get(holdingIdentity, cpkFileChecksums)
+        val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
         val transaction = createTestTransaction(sandbox, isValid = true)
         val request = createRequest(sandbox, holdingIdentity, transaction, listOf(NON_EXISTING_CPK))
 

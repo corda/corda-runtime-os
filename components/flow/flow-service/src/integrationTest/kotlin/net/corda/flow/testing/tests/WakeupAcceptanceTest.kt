@@ -29,6 +29,7 @@ class WakeupAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a wakeup event for a flow that finished discards the event`() {
         given {
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.FlowFinished("done"))
         }
@@ -48,6 +49,7 @@ class WakeupAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a wakeup event for a flow that failed discards the event`() {
         given {
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.FlowFailed(RuntimeException("done")))
         }

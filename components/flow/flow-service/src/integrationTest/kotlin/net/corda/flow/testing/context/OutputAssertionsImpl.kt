@@ -272,7 +272,7 @@ class OutputAssertionsImpl(
             assertNotNull(testRun.response)
             assertTrue(
                 testRun.response!!.responseEvents.any {
-                    matchStatusRecord(flowId, state, result, errorType, errorMessage, it)
+                    matchStatusRecord(flowId, state, result, errorType, errorMessage, null, it)
                 },
                 "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
             )
@@ -313,6 +313,7 @@ class OutputAssertionsImpl(
         result: String?,
         errorType: String?,
         errorMessage: String?,
+        flowTerminatedReason: String?,
         record: Record<*, *>
     ): Boolean {
         if (record.value !is FlowStatus) {
@@ -325,6 +326,7 @@ class OutputAssertionsImpl(
                 && payload.result == result
                 && payload.error?.errorType == errorType
                 && payload.error?.errorMessage == errorMessage
+                && payload.processingTerminatedReason == flowTerminatedReason
     }
 
     override fun nullStateRecord() {
@@ -369,6 +371,18 @@ class OutputAssertionsImpl(
                 it.value is EntityRequest
             }
             assertTrue(entityRequests.isEmpty(), "Entity request found in response events.")
+        }
+    }
+
+    override fun flowKilledStatus(flowTerminatedReason: String) {
+        asserts.add { testRun ->
+            assertNotNull(testRun.response)
+            assertTrue(
+                testRun.response!!.responseEvents.any {
+                    matchStatusRecord(flowId, FlowStates.KILLED, null, null, null, flowTerminatedReason, it)
+                },
+                "Expected Flow Status: KILLED result = null, errorType = null, error = null, processingTerminatedReason: $flowTerminatedReason"
+            )
         }
     }
 

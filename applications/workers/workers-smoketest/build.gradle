@@ -61,7 +61,7 @@ kotlin {
 
 dependencies {
     // NO CORDA DEPENDENCIES!!
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
     // Avoid having the schema names and keys scattered across projects

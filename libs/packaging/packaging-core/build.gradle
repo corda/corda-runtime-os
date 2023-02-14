@@ -15,7 +15,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     api platform("net.corda:corda-api:$cordaApiVersion")
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api 'net.corda:corda-avro-schema'
     api 'net.corda:corda-crypto'
 

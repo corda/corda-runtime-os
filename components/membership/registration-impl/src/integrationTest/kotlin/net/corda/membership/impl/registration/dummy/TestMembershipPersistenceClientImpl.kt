@@ -88,6 +88,12 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         remarks: String?,
     ) = MembershipPersistenceResult.success()
 
+    override fun consumePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name,
+        preAuthTokenId: UUID
+    ) = MembershipPersistenceResult.success()
+
     override fun revokePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,

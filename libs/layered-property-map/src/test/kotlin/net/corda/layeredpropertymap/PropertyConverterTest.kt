@@ -6,6 +6,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.format.DateTimeParseException
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
@@ -38,6 +39,9 @@ class PropertyConverterTest {
         private const val MEMBERX500NAME_KEY = "memberX500Name"
         private val MEMBERX500NAME_VALUE = MemberX500Name.parse("O=Alice,L=London,C=GB")
 
+        private const val UUID_KEY = "uuid"
+        private val UUID_VALUE = UUID(0, 1)
+
         private val layeredPropertyMapImpl = LayeredPropertyMapImpl(
             sortedMapOf(
                 INT_KEY to INT_VALUE.toString(),
@@ -47,7 +51,8 @@ class PropertyConverterTest {
                 DOUBLE_KEY to DOUBLE_VALUE.toString(),
                 STRING_KEY to STRING_VALUE,
                 INSTANT_KEY to INSTANT_VALUE.toString(),
-                MEMBERX500NAME_KEY to MEMBERX500NAME_VALUE.toString()
+                MEMBERX500NAME_KEY to MEMBERX500NAME_VALUE.toString(),
+                UUID_KEY to UUID_VALUE.toString(),
             ),
             propertyConverter
         )
@@ -104,6 +109,12 @@ class PropertyConverterTest {
     fun `converting MemberX500Name should work`() {
         val context = createContext(MEMBERX500NAME_KEY)
         assertEquals(MEMBERX500NAME_VALUE, propertyConverter.convert(context, MemberX500Name::class.java))
+    }
+
+    @Test
+    fun `converting UUID should work`() {
+        val context = createContext(UUID_KEY)
+        assertEquals(UUID_VALUE, propertyConverter.convert(context, UUID::class.java))
     }
 
     @Test

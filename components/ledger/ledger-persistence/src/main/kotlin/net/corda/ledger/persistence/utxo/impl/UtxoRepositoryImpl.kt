@@ -154,7 +154,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("groupIndices", groupIndices)
             .setParameter(
                 "transactionIds",
-                stateRefs.map { it.transactionHash.toString() })
+                stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
             .resultListAsTuples()
@@ -211,7 +211,7 @@ class UtxoRepositoryImpl @Activate constructor(
             WHERE transaction_id in (:transactionIds)
             AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
         )
-            .setParameter("transactionIds", stateRefs.map { it.transactionHash.toString() })
+            .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .executeUpdate()
     }

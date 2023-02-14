@@ -9,7 +9,6 @@ interface HostingMapListener {
         val holdingIdentity: HoldingIdentity,
         val tlsCertificates: List<PemCertificate>,
         val tlsTenantId: String,
-        val sessionKeyTenantId: String,
         val sessionPublicKey: PublicKey,
         val sessionCertificates: List<PemCertificate>?
     )

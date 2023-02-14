@@ -23,7 +23,7 @@ configurations {
 dependencies {
     integrationTestCompileOnly 'org.osgi:osgi.core'
     integrationTestCompileOnly 'org.osgi:org.osgi.service.component.annotations'
-    integrationTestImplementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    integrationTestImplementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     integrationTestImplementation project(":components:kafka-topic-admin")
 

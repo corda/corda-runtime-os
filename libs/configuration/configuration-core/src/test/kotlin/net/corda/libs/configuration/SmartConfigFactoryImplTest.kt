@@ -13,7 +13,7 @@ import org.mockito.kotlin.verify
 class SmartConfigFactoryImplTest {
     private val secretsLookupService = mock<SecretsLookupService>()
     private val secretsCreateService = mock<SecretsCreateService>() {
-        on { createValue(any()) }.doReturn(mock())
+        on { createValue(any(), any()) }.doReturn(mock())
     }
     private val config = ConfigFactory.parseString("foo=bar")
 
@@ -45,8 +45,8 @@ class SmartConfigFactoryImplTest {
     fun `when makeSecret use SecretsCreateService`() {
         val factory = SmartConfigFactoryImpl(secretsLookupService, secretsCreateService)
 
-        factory.makeSecret("hello")
+        factory.makeSecret("hello", "test")
 
-        verify(secretsCreateService).createValue("hello")
+        verify(secretsCreateService).createValue("hello", "test")
     }
 }

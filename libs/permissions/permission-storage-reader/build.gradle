@@ -14,7 +14,7 @@ dependencies {
     api project(":libs:permissions:permission-management-cache")
     api project(":libs:permissions:permission-validation-cache")
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api "javax.persistence:javax.persistence-api"
 
     implementation project(":libs:lifecycle:lifecycle")

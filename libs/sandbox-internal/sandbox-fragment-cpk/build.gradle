@@ -17,6 +17,7 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'org.osgi:org.osgi.service.component.annotations'
+    cordaProvided 'org.jetbrains:annotations'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-base'
     implementation project('fragment')

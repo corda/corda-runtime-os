@@ -27,7 +27,7 @@ dependencies {
 
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-notary-plugin'
-    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     cordaProvided "org.osgi:osgi.core"

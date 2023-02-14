@@ -2,6 +2,7 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
@@ -25,6 +26,8 @@ import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.ShortHashException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -164,6 +167,16 @@ class KeysRestResourceImpl @Activate constructor(
             throw InvalidInputDataException(
                 details = mapOf("alias" to "Empty alias")
             )
+        }
+        if (hsmCategory == SESSION_INIT) {
+            try {
+                ShortHash.parse(tenantId)
+            } catch (e: ShortHashException) {
+                throw InvalidInputDataException(
+                    "Could not create a session init key with a cluster tenant ID.",
+                    details = mapOf("tenantId" to "Invalid tenantId"),
+                )
+            }
         }
         return try {
             KeyPairIdentifier(

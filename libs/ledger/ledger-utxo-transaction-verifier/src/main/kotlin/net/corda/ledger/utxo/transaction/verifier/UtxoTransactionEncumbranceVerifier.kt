@@ -3,16 +3,14 @@ package net.corda.ledger.utxo.transaction.verifier
 import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractVerificationFailure
-import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
-private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)
+fun verifyEncumbrance(transaction: UtxoLedgerTransaction): List<ContractVerificationFailure> {
 
-
-fun verifyEncumberedInput(inputStateAndRefs: List<StateAndRef<*>>): List<ContractVerificationFailure> {
     val failureReasons = mutableListOf<ContractVerificationFailure>()
 
     // group input by transaction id (encumbrance is only unique within one transaction output)
-    inputStateAndRefs.groupBy { it.ref.transactionHash }.forEach { statesByTx ->
+    transaction.inputStateAndRefs.groupBy { it.ref.transactionId }.forEach { statesByTx ->
 
 
         // Filter out unencumbered states
@@ -28,10 +26,16 @@ fun verifyEncumberedInput(inputStateAndRefs: List<StateAndRef<*>>): List<Contrac
     return failureReasons
 }
 
-private fun checkEncumbranceGroup(txId: SecureHash, encumbranceTag: String, stateInfos: List<EncumbranceInfo>)
-        : List<ContractVerificationFailure> {
+private fun checkEncumbranceGroup(
+    txId: SecureHash,
+    encumbranceTag: String,
+    stateInfos: List<EncumbranceInfo>
+): List<ContractVerificationFailure> {
     // Check that no input states have been duplicated to fool our counting
-    val duplicationFailures = stateInfos.groupBy { it.stateIndex }.filter { it.value.size > 1 }.map { (index, infos) ->
+    val duplicationFailures = stateInfos
+        .groupBy { it.stateIndex }
+        .filter { it.value.size > 1 }
+        .map { (index, infos) ->
             ContractVerificationFailureImpl(
                 contractClassName = "",
                 contractStateClassNames = emptyList(),
@@ -39,9 +43,9 @@ private fun checkEncumbranceGroup(txId: SecureHash, encumbranceTag: String, stat
                 exceptionMessage = "Encumbrance check failed: State $txId, $index " +
                         "is used ${infos.size} times as input!"
             )
-    }
+        }
 
-    if (duplicationFailures.isNotEmpty()){
+    if (duplicationFailures.isNotEmpty()) {
         return duplicationFailures
     }
 
@@ -59,10 +63,11 @@ private fun checkEncumbranceGroup(txId: SecureHash, encumbranceTag: String, stat
                         "of encumbrance group $encumbranceTag, but only " +
                         "$numberOfStatesPresent states out of " +
                         "${encumbranceInfo.encumbranceGroupSize} encumbered states are present as inputs."
-
             )
-        }
-        else
+        } else {
             null
+        }
     }
 }
+
+private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)
