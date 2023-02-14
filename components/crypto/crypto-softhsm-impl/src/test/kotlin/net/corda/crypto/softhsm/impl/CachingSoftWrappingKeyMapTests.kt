@@ -1,7 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity

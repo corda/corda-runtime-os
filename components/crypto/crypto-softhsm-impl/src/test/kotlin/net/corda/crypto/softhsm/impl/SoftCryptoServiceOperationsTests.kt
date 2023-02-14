@@ -33,7 +33,6 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.crypto.softhsm.SoftCacheConfig
-import net.corda.crypto.softhsm.WRAPPING_KEY_ENCODING_VERSION
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.interfaces.ECKey
@@ -50,7 +49,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import java.security.KeyPair
 import java.security.PublicKey
-import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -58,7 +56,6 @@ import javax.persistence.EntityTransaction
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
-import org.mockito.kotlin.whenever
 
 
 /**
