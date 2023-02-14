@@ -70,11 +70,11 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
                 VirtualNodeOperationDto(
                     it.requestId,
                     it.data,
-                    it.state.name,
                     it.operationType.name,
                     it.requestTimestamp,
                     it.latestUpdateTimestamp,
                     it.heartbeatTimestamp,
+                    it.state.name,
                     it.errors
                 )
             }

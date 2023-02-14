@@ -6,12 +6,10 @@ import java.time.Instant
 
 data class VirtualNodeOperationStatus(
     val requestId: String,
-    val virtualNodeShortHash: String,
-    val actor: String,
-    val operationData: Any,
+    val operationData: String,
     val requestTimestamp: Instant,
     val latestUpdateTimestamp: Instant,
-    val heartbeatTimestamp: Instant,
-    val state: AsynchronousOperationState,
-    val errors: List<ExceptionEnvelope>
+    val heartbeatTimestamp: Instant?,
+    val state: String,
+    val errors: String?
 )

@@ -8,10 +8,10 @@ import java.time.Instant
 data class VirtualNodeOperationDto(
     val requestId: String,
     val requestData: String,
-    val state: String,
     val operationType: String,
     val requestTimestamp: Instant,
     val latestUpdateTimestamp: Instant?,
     val heartbeatTimestamp: Instant?,
+    val state: String,
     val errors: String?
 )

@@ -253,17 +253,14 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
 
         logger.warn("response for VirtualNodeOPerationStatusRequest ${resp.responseType} $resp")
-        logger.warn("response for VirtualNodeOPerationStatusRequest ${resp.responseType} $resp")
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeOperationStatusResponse -> {
                 resolvedResponse.run {
-                    val statuses = this.status.map{
+                    val statuses = this.statuses.map{
                         VirtualNodeOperationStatus(
                             it.requestId,
-                            it.virtualNodeShortHash,
-                            it.actor,
-                            it.operationData,
+                            it.requestData,
                             it.requestTimestamp,
                             it.latestUpdateTimestamp,
                             it.heartbeatTimestamp,

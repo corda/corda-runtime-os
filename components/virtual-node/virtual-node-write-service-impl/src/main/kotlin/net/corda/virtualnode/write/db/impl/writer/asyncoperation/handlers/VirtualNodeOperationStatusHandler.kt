@@ -49,7 +49,6 @@ internal class VirtualNodeOperationStatusHandler(
             )
             respFuture.complete(response)
         } catch (e: Exception) {
-            logger.warn("handler exception ${e.message}")
             respFuture.complete(
                 VirtualNodeManagementResponse(
                     instant,
