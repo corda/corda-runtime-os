@@ -27,9 +27,9 @@ class ConsensualSignedTransactionImpl(
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
         }
-        require(wireTransaction.metadata.getLedgerModel() == ConsensualLedgerTransactionImpl::class.java.canonicalName) {
+        require(wireTransaction.metadata.getLedgerModel() == ConsensualLedgerTransactionImpl::class.java.name) {
             "The ledger model in the metadata of the transaction does not match with the expectation of the ledger. " +
-                    "'${wireTransaction.metadata.getLedgerModel()}' != '${ConsensualLedgerTransactionImpl::class.java.canonicalName}'"
+                    "'${wireTransaction.metadata.getLedgerModel()}' != '${ConsensualLedgerTransactionImpl::class.java.name}'"
         }
     }
 

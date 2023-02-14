@@ -94,7 +94,7 @@ class ConsensualFinalityFlowTest {
         whenever(updatedSignedTransaction.id).thenReturn(TX_ID)
         whenever(updatedSignedTransaction.addSignature(any())).thenReturn(updatedSignedTransaction)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
-        whenever(transactionMetadata.getLedgerModel()).thenReturn(ConsensualLedgerTransactionImpl::class.java.canonicalName)
+        whenever(transactionMetadata.getLedgerModel()).thenReturn(ConsensualLedgerTransactionImpl::class.java.name)
 
         whenever(ledgerTransaction.id).thenReturn(TX_ID)
         whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))

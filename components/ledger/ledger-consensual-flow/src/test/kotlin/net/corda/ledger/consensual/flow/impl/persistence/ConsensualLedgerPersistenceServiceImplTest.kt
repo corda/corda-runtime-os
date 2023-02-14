@@ -80,7 +80,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
     @Test
     fun `find executes successfully`() {
         val metadata = mock<TransactionMetadata>()
-        whenever(metadata.getLedgerModel()).thenReturn(ConsensualLedgerTransactionImpl::class.java.canonicalName)
+        whenever(metadata.getLedgerModel()).thenReturn(ConsensualLedgerTransactionImpl::class.java.name)
         val wireTransaction = mock<WireTransaction>()
         whenever(wireTransaction.metadata).thenReturn(metadata)
 

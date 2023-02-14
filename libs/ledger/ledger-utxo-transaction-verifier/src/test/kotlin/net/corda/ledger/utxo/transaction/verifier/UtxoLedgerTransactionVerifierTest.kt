@@ -37,7 +37,7 @@ class UtxoLedgerTransactionVerifierTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.canonicalName)
+        whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
         whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
 
         whenever(transaction.id).thenReturn(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)))

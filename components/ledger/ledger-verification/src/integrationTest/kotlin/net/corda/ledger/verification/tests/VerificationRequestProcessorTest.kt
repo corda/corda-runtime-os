@@ -265,7 +265,7 @@ class VerificationRequestProcessorTest {
                 listOf(outputState),
                 listOf(command)
             ),
-            ledgerModel = UtxoLedgerTransactionImpl::class.java.canonicalName,
+            ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
             transactionSubType = "GENERAL"
         )
         val inputStateAndRefs: List<StateAndRef<*>> = listOf()

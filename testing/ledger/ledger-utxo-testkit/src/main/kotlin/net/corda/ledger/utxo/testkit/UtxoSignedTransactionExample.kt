@@ -29,7 +29,7 @@ fun UtxoSignedTransactionFactory.createExample(
         jsonMarshallingService,
         jsonValidator,
         componentGroups,
-        ledgerModel = UtxoLedgerTransactionImpl::class.java.canonicalName,
+        ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
         transactionSubType = "GENERAL"
     )
     return create(wireTransaction, listOf(getSignatureWithMetadataExample()))

@@ -33,9 +33,9 @@ data class UtxoSignedTransactionImpl(
 
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
-        require(wireTransaction.metadata.getLedgerModel() == UtxoLedgerTransactionImpl::class.java.canonicalName) {
+        require(wireTransaction.metadata.getLedgerModel() == UtxoLedgerTransactionImpl::class.java.name) {
             "The ledger model in the metadata of the transaction does not match with the expectation of the ledger. " +
-                    "'${wireTransaction.metadata.getLedgerModel()}' != '${UtxoLedgerTransactionImpl::class.java.canonicalName}'"
+                    "'${wireTransaction.metadata.getLedgerModel()}' != '${UtxoLedgerTransactionImpl::class.java.name}'"
         }
     }
 
