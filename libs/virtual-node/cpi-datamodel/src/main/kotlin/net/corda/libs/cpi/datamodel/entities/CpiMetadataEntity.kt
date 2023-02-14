@@ -1,13 +1,11 @@
-package net.corda.libs.cpi.datamodel
+package net.corda.libs.cpi.datamodel.entities
 
 import java.io.Serializable
 import java.time.Instant
-import java.util.stream.Stream
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
-import javax.persistence.EntityManager
 import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.IdClass

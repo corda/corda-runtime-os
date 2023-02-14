@@ -1,6 +1,5 @@
-package net.corda.libs.cpi.datamodel
+package net.corda.libs.cpi.datamodel.entities
 
-import net.corda.db.schema.DbSchema
 import java.io.Serializable
 import java.time.Instant
 import javax.persistence.CascadeType
