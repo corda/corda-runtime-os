@@ -69,9 +69,6 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
         val properties = roleConfig.toKafkaProperties()
 
-        //enforce the partitioner to be our custom partitioner. Kafka Config requires it to be of type CLASS
-        properties[PARTITIONER_CLASS_CONFIG] = KafkaProducerPartitioner::class.java
-
         logger.debug {"Kafka properties for role $rolePath: $properties" }
         return properties
     }
@@ -106,6 +103,8 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      */
     fun resolve(messageBusConfig: SmartConfig, producerConfig: ProducerConfig): Pair<ResolvedProducerConfig, Properties> {
         val kafkaProperties = resolve(messageBusConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
+        //enforce the partitioner to be our custom partitioner for producers only
+        kafkaProperties[PARTITIONER_CLASS_CONFIG] = KafkaProducerPartitioner::class.java
         val resolvedConfig = ResolvedProducerConfig(
             producerConfig.clientId,
             producerConfig.transactional,
