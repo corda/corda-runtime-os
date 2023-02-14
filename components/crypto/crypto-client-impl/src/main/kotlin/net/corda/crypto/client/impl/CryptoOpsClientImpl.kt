@@ -136,8 +136,8 @@ class CryptoOpsClientImpl(
         return lookupKeysByShortIdsProxy(tenantId, ShortHashes(publicKeyIds))
     }
 
-    // This one is normally coming from flows
-    fun lookupKeysByShortIdsProxy(tenantId: String, shortKeyIds: ShortHashes): CryptoSigningKeys {
+    // This method is only used by `filterMyKeysProxy` which is not used - consider removing it
+    private fun lookupKeysByShortIdsProxy(tenantId: String, shortKeyIds: ShortHashes): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,

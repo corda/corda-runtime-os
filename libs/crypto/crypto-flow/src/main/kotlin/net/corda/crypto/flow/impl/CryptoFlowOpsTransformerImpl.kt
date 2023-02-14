@@ -54,9 +54,9 @@ class CryptoFlowOpsTransformerImpl(
     private val requestValidityWindowSeconds: Long = 300,
 ) : CryptoFlowOpsTransformer {
 
-    // This method is currently only being used by `SigningServiceImpl.findMySigningKeys`, which
-    // is critical key operation and needs to not suffer from short id clashes so it needs to
-    // look for keys by full key ids (and not short key ids).
+    // This method is used by flows (currently only being used by `SigningServiceImpl.findMySigningKeys`).
+    // We can't risk getting back a key which is not actually owned by the caller due to a clashed short id.
+    // So use full ids.
     override fun createFilterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,

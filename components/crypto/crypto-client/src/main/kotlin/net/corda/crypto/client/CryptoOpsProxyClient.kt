@@ -29,11 +29,6 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
     fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys
 
     /**
-     * Looks up for keys by ids owned by tenant of [tenantId] (has private keys for).
-     */
-    fun lookupKeysByShortIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys
-
-    /**
      * Looks up for keys by ids (full ids) owned by tenant of [tenantId] (has private keys for).
      */
     fun lookupKeysByIdsProxy(tenantId: String, keyIds: SecureHashes): CryptoSigningKeys

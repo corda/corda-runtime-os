@@ -166,9 +166,6 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
 
-    override fun lookupKeysByShortIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys =
-        impl.ops.lookupKeysByShortIdsProxy(tenantId, candidateKeys)
-
     override fun lookupKeysByIdsProxy(tenantId: String, keyIds: SecureHashes): CryptoSigningKeys =
         impl.ops.lookupKeysByIdsProxy(tenantId, keyIds)
 
