@@ -1166,20 +1166,21 @@ class GatewayIntegrationTest : TestBase() {
 
     @Nested
     inner class MutualTls {
-        @Test
-        @Timeout(60)
-        fun `gateway to gateway - mutual TLS`() {
-            val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
-            val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
+        private fun `gateway to gateway - mutual TLS`(
+            aliceHostAndKeystore: Pair<String, KeyStoreWithPassword>,
+            bobHostAndKeystore: Pair<String, KeyStoreWithPassword>,
+        ) {
+            val aliceGatewayAddress = URI.create("https://${aliceHostAndKeystore.first}:${getOpenPort()}")
+            val bobGatewayAddress = URI.create("https://${bobHostAndKeystore.first}:${getOpenPort()}")
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             alice.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem))))
             bob.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$bobX500Name-$GROUP_ID", GatewayTruststore(HoldingIdentity(bobX500Name, GROUP_ID), listOf(truststoreCertificatePem))))
-            alice.publishKeyStoreCertificatesAndKeys(chipKeyStore, aliceHoldingIdentity)
-            bob.publishKeyStoreCertificatesAndKeys(daleKeyStore, bobHoldingIdentity)
-            bob.allowCertificates(chipKeyStore)
-            alice.allowCertificates(daleKeyStore)
+            alice.publishKeyStoreCertificatesAndKeys(aliceHostAndKeystore.second, aliceHoldingIdentity)
+            bob.publishKeyStoreCertificatesAndKeys(bobHostAndKeystore.second, bobHoldingIdentity)
+            bob.allowCertificates(aliceHostAndKeystore.second)
+            alice.allowCertificates(bobHostAndKeystore.second)
 
             val receivedLatch = CountDownLatch(messageCount * 2)
             var bobReceivedMessages = 0
@@ -1316,6 +1317,32 @@ class GatewayIntegrationTest : TestBase() {
             }.forEach {
                 it.join()
             }
+        }
+        @Test
+        @Timeout(60)
+        fun `gateway to gateway - mutual TLS - host name`() {
+            `gateway to gateway - mutual TLS`(
+                "www.chip.net" to chipKeyStore,
+                "www.dale.net" to daleKeyStore,
+            )
+        }
+
+        @Test
+        @Timeout(60)
+        fun `gateway to gateway - mutual TLS - ip address`() {
+            `gateway to gateway - mutual TLS`(
+                "127.0.0.1" to ipKeyStore,
+                "127.0.0.1" to ipKeyStore,
+            )
+        }
+
+        @Test
+        @Timeout(60)
+        fun `gateway to gateway - mutual TLS - ip address to host name`() {
+            `gateway to gateway - mutual TLS`(
+                "127.0.0.1" to ipKeyStore,
+                "www.alice.net" to aliceKeyStore,
+            )
         }
     }
 }
