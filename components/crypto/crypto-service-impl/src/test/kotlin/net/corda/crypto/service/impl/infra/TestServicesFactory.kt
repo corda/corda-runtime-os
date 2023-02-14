@@ -19,7 +19,6 @@ import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
@@ -198,15 +197,14 @@ class TestServicesFactory {
         }
     }
 
-    val cryptoConnectionsFactory by lazy {
-        TestCryptoConnectionsFactoryWithMap(coordinatorFactory)
-    }.also {
-        it.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+    val cryptoConnectionsFactory: InMemoryCryptoConnectionsFactory by lazy {
+        InMemoryCryptoConnectionsFactory(coordinatorFactory).also {
+            it.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator?.status ?: LifecycleStatus.DOWN)
+            }
         }
     }
-}
 
     val cryptoService: CryptoService by lazy {
         val wrappingKeyMap = CachingSoftWrappingKeyMap(
