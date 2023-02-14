@@ -39,7 +39,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
         fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String
-        ): RestRegistrationRequestStatus?
+        ): RestRegistrationRequestStatus
     }
 
     override val protocolVersion = 1
@@ -149,7 +149,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
         override fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String,
-        ): RestRegistrationRequestStatus? {
+        ): RestRegistrationRequestStatus {
             return try {
                 memberOpsClient.checkSpecificRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
