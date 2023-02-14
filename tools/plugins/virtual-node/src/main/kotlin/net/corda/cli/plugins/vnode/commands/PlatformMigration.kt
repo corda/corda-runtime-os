@@ -57,40 +57,35 @@ class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMi
         private const val SQL_FILENAME = "./vnodes.sql"
     }
 
-    private var holdingIdsToMigrate: List<String> = mutableListOf<String>().apply {
-        // Regex checks holdingId matches expected format and is one per line
-        val regex = Regex("^[a-f0-9]{12}\$")
-        config.lineReader(holdingIdFilename) {
-            if (regex.matches(it)) {
-                add(it)
-            } else if (it.isNotEmpty()) { // allow and ignore empty lines
-                throw IllegalArgumentException("Found invalid holding Id: $it")
+    /**
+     * Lazy because we don't want the list generated until run() is called, to ensure all the parameters are set
+     */
+    private val holdingIdsToMigrate: List<String> by lazy {
+        mutableListOf<String>().apply {
+            // Regex checks holdingId matches expected format and is one per line
+            val regex = Regex("^[a-f0-9]{12}\$")
+            config.lineReader(holdingIdFilename) {
+                if (regex.matches(it)) {
+                    add(it)
+                } else if (it.isNotEmpty()) { // allow and ignore empty lines
+                    throw IllegalArgumentException("Found invalid holding Id: $it")
+                }
             }
         }
     }
 
-    private data class LiquibaseFileAndSchema(
-        val filename: String,
-        val schemaPrefix: String
-    )
+    private data class LiquibaseFileAndSchema(val filename: String, val schemaPrefix: String)
 
     data class PlatformMigrationConfig(
         val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
         val lineReader: (String, (String) -> Unit) -> Unit = { filename, block ->
-            File(filename).forEachLine {
-                block(
-                    it
-                )
-            }
+            File(filename).forEachLine { block(it) }
         },
-        val liquibaseFactory: (String, Database) -> Liquibase =
-            { file: String, database: Database -> Liquibase(file, ClassLoaderResourceAccessor(), database) },
+        val liquibaseFactory: (String, Database) -> Liquibase = { file: String, database: Database ->
+            Liquibase(file, ClassLoaderResourceAccessor(), database)
+        },
         val jdbcConnectionFactory: (String?, String?, String?) -> Connection = { jdbcUrl, user, password ->
-            DriverManager.getConnection(
-                jdbcUrl,
-                user,
-                password
-            )
+            DriverManager.getConnection(jdbcUrl, user, password)
         },
         val jdbcDatabaseFactory: (Connection) -> Database = { connection ->
             DatabaseFactory.getInstance().findCorrectDatabaseImplementation(JdbcConnection(connection))
@@ -98,12 +93,12 @@ class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMi
     )
 
     override fun run() {
-        listOf(
-            LiquibaseFileAndSchema("net/corda/db/schema/vnode-crypto/db.changelog-master.xml", "vnode_crypto_"),
-            LiquibaseFileAndSchema("net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml", "vnode_uniq_"),
-            LiquibaseFileAndSchema("net/corda/db/schema/vnode-vault/db.changelog-master.xml", "vnode_vault_")
-        ).forEach { fileAndSchema ->
-            config.writerFactory(outputFilename).use { fileWriter ->
+        config.writerFactory(outputFilename).use { fileWriter ->
+            listOf(
+                LiquibaseFileAndSchema("net/corda/db/schema/vnode-crypto/db.changelog-master.xml", "vnode_crypto_"),
+                LiquibaseFileAndSchema("net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml", "vnode_uniq_"),
+                LiquibaseFileAndSchema("net/corda/db/schema/vnode-vault/db.changelog-master.xml", "vnode_vault_")
+            ).forEach { fileAndSchema ->
                 holdingIdsToMigrate.forEach { holdingId ->
                     generateSql(fileWriter, holdingId, fileAndSchema)
                 }
