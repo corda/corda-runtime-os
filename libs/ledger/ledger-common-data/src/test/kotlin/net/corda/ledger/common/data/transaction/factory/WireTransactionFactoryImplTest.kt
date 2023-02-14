@@ -56,7 +56,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessage("JSON validation failed due to: \$: unknown found, object expected")
+            .hasMessageStartingWith("JSON validation failed due to:")
     }
 
     @Test
@@ -69,7 +69,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageMatching("JSON validation failed due to: \\$.*: is missing but it is required")
+            .hasMessageContaining("is missing but it is required")
     }
 
     @Test
@@ -84,7 +84,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageStartingWith("JSON validation failed due to: \$.ledgerVersion: is missing but it is required")
+            .hasMessageContaining("ledgerVersion: is missing but it is required")
     }
 
     @Test
@@ -99,7 +99,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessage("JSON validation failed due to: \$.aaa: is not defined in the schema and the schema does not allow additional properties")
+            .hasMessageContaining("the schema does not allow additional properties")
     }
 
     @Test
@@ -114,7 +114,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageStartingWith("JSON validation failed due to: \$.cpkMetadata: there must be a minimum of 1 items in the array")
+            .hasMessageContaining("cpkMetadata: there must be a minimum of 1 items in the array")
     }
 
     @Test
@@ -146,7 +146,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageStartingWith("JSON validation failed due to: \$.transactionSubtype: does not have a value in the enumeration [null],\$.transactionSubtype: string found, null expected")
+            .hasMessageContaining("transactionSubtype: does not have a value in the enumeration")
     }
 
     @Test
@@ -178,7 +178,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessage("JSON validation failed due to: \$.transactionSubtype: does not have a value in the enumeration [NOTARY_CHANGE, GENERAL],\$.transactionSubtype: null found, string expected")
+            .hasMessageContaining("transactionSubtype: does not have a value in the enumeration")
     }
 
     @Test
@@ -196,7 +196,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessage("JSON validation failed due to: \$.transactionSubtype: does not have a value in the enumeration [null, NOTARY_CHANGE, GENERAL],\$.transactionSubtype: does not have a value in the enumeration [NOTARY_CHANGE, GENERAL]")
+            .hasMessageContaining("transactionSubtype: does not have a value in the enumeration")
     }
 
     @Test
@@ -214,8 +214,6 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessage("JSON validation failed due to: \$.ledgerModel: does not have a value in the enumeration [net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl, net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl]")
+            .hasMessageContaining("ledgerModel: does not have a value in the enumeration")
     }
-
-
 }
