@@ -242,17 +242,14 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
     override fun getVirtualNodeOperationStatus(requestId: String): VirtualNodeOperationStatuses {
         val instant = clock.instant()
 
-        logger.warn("getVirtualNodeStatus called with requestId: $requestId")
-
-        // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
+        // Send request for update to kafka, processed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
             VirtualNodeOperationStatusRequest(requestId)
         )
+
         // Actually send request and await response message on bus
         val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
-
-        logger.warn("response for VirtualNodeOPerationStatusRequest ${resp.responseType} $resp")
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeOperationStatusResponse -> {

@@ -54,6 +54,7 @@ data class VirtualNodeInfo(
     }
 }
 
+
 typealias VirtualNodeInfoAvro = net.corda.data.virtualnode.VirtualNodeInfo
 
 fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =

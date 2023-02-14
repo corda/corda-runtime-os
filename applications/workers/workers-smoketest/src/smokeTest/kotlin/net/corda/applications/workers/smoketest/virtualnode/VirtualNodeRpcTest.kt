@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
+import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.CACHE_INVALIDATION_TEST_CPB
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
@@ -502,7 +503,6 @@ class VirtualNodeRpcTest {
         }
     }
 
-    /*
     @Test
     @Order(82)
     fun `persist dog`() {
@@ -651,7 +651,6 @@ class VirtualNodeRpcTest {
             runSimplePersistenceCheckFlow("Could persist dog")
         }
     }
-     */
 
     @Test
     @Order(110)
@@ -680,7 +679,6 @@ class VirtualNodeRpcTest {
         }
     }
 
-    /*
     @Test
     @Order(112)
     fun `upgrading without transitioning virtual node to maintenance fails with bad request`() {
@@ -697,7 +695,6 @@ class VirtualNodeRpcTest {
 
         }
     }
-     */
 
     @Test
     @Order(113)
@@ -705,16 +702,14 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            println("calling update with id $bobHoldingId")
             eventuallyUpdateVirtualNodeState(bobHoldingId, "maintenance", "INACTIVE")
 
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
             val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
 
-            println("requestId: $requestId")
-
-            val getStatusResponse = getVirtualNodeStatus(requestId!!)
-            println("getStatusResponse: $getStatusResponse")
+            val statusResponse = getVirtualNodeStatus(requestId!!)
+            val state = statusResponse["response"].single()["state"].textValue()
+            assertThat(state).isIn("COMPLETED", "IN_PROGRESS")
 
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
             awaitVirtualNodeOperationCompletion(bobHoldingId)
@@ -745,14 +740,13 @@ class VirtualNodeRpcTest {
         return vNodeJson["requestId"].textValue()
     }
 
-    private fun ClusterBuilder.getVirtualNodeStatus(requestId: String): String? {
+    private fun ClusterBuilder.getVirtualNodeStatus(requestId: String): JsonNode {
         val operationStatus = assertWithRetry {
             command { getVNodeOperationStatus(requestId) }
             condition { it.code == 200 }
             failMessage(ERROR_REQUEST_ID)
         }.toJson()
-        println(operationStatus.toString())
-        return operationStatus["requestId"].textValue()
+        return operationStatus
     }
 
     private fun ClusterBuilder.eventuallyAssertVirtualNodeHasCpi(
@@ -762,9 +756,6 @@ class VirtualNodeRpcTest {
         command { getVNode(virtualNodeShortHash) }
         condition { response ->
 
-//            println("holdingId: ${response.toJson()["holdingIdentity"]["x500Name"].textValue()} contains? $bobX500")
-//            println("cpi name: ${response.toJson()["cpiIdentifier"]["cpiName"].textValue()} contains? $cpiName")
-//            println("cpiversion: ${response.toJson()["cpiIdentifier"]["cpiVersion"].textValue()} contains? $cpiVersion")
             response.code == 200 &&
                     response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(bobX500) &&
                     response.toJson()["cpiIdentifier"]["cpiName"].textValue().equals(cpiName) &&

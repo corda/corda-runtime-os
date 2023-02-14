@@ -9,7 +9,6 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
-import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
@@ -17,10 +16,6 @@ internal class VirtualNodeOperationStatusHandler(
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
 ) {
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     fun handle(
         instant: Instant,
         request: VirtualNodeOperationStatusRequest,
