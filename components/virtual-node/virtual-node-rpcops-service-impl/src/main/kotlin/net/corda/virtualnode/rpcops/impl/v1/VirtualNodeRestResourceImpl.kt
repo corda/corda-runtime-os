@@ -254,7 +254,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeOperationStatusResponse -> {
                 resolvedResponse.run {
-                    val statuses = this.statuses.map{
+                    val statuses = this.operationHistory.map{
                         VirtualNodeOperationStatus(
                             it.requestId,
                             it.requestData,
