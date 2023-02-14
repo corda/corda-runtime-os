@@ -302,7 +302,7 @@ fun E2eCluster.allowClientCertificates(certificatePem: String, mgm: E2eClusterMe
     }
 }
 
-fun E2eCluster.sslConfiguration(mutualTls: Boolean) {
+fun E2eCluster.setSslConfiguration(mutualTls: Boolean) {
     val tlsType = if (mutualTls) {
         "MUTUAL"
     } else {
@@ -366,7 +366,7 @@ fun E2eCluster.onboardMembers(
     memberGroupPolicy: String,
     tempDir: Path,
     useSessionCertificate: Boolean = false,
-    certificateUploaded: (String) -> Unit = {},
+    certificateUploadedCallback: (String) -> Unit = {},
 ): List<E2eClusterMember> {
     val holdingIds = mutableListOf<E2eClusterMember>()
     val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray(), tempDir)
@@ -381,7 +381,7 @@ fun E2eCluster.onboardMembers(
             val memberTlsCsr = generateCsr(member, memberTlsKeyId)
             val memberTlsCert = getCa().generateCert(memberTlsCsr)
             uploadTlsCertificate(memberTlsCert)
-            certificateUploaded(memberTlsCert)
+            certificateUploadedCallback(memberTlsCert)
         }
 
         val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)

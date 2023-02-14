@@ -7,7 +7,7 @@ import net.corda.applications.workers.rpc.utils.E2eClusterFactory
 import net.corda.applications.workers.rpc.utils.E2eClusterMember
 import net.corda.applications.workers.rpc.utils.allowClientCertificates
 import net.corda.applications.workers.rpc.utils.assertAllMembersAreInMemberList
-import net.corda.applications.workers.rpc.utils.sslConfiguration
+import net.corda.applications.workers.rpc.utils.setSslConfiguration
 import net.corda.applications.workers.rpc.utils.generateGroupPolicy
 import net.corda.applications.workers.rpc.utils.getGroupId
 import net.corda.applications.workers.rpc.utils.onboardMembers
@@ -78,13 +78,13 @@ class MultiClusterDynamicNetworkTest {
     private fun onboardMultiClusterGroup(mutualTls: Boolean): String {
         val mgm = clusterC.members[0]
 
-        clusterC.sslConfiguration(mutualTls)
+        clusterC.setSslConfiguration(mutualTls)
         clusterC.onboardMgm(mgm, tempDir, mutualTls = mutualTls)
 
         val memberGroupPolicy = clusterC.generateGroupPolicy(mgm.holdingId)
 
         memberClusters.forEach { cordaCluster ->
-            cordaCluster.sslConfiguration(mutualTls)
+            cordaCluster.setSslConfiguration(mutualTls)
             cordaCluster.onboardMembers(mgm, memberGroupPolicy, tempDir) { certificatePem ->
                 if (mutualTls) {
                     clusterC.allowClientCertificates(certificatePem, mgm)
