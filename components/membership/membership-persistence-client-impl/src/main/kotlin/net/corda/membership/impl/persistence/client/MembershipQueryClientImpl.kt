@@ -165,10 +165,9 @@ class MembershipQueryClientImpl(
         requestSubjectX500Name: MemberX500Name?,
         statuses: List<RegistrationStatus>
     ): MembershipQueryResult<List<RegistrationRequestStatus>> {
-        val requestSubjectX500NameString = requestSubjectX500Name?.let { requestSubjectX500Name.toString() }
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests(requestSubjectX500NameString, statuses)
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {

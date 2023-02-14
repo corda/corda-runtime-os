@@ -79,16 +79,17 @@ class MGMOpsClientImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
 ) : MGMOpsClient {
 
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
         const val ERROR_MSG = "Service is in an incorrect state for calling."
-
         const val CLIENT_ID = "mgm-ops-client"
         const val GROUP_NAME = "mgm-ops-client"
+        const val FOLLOW_CHANGES_RESOURCE_NAME = "MGMOpsClient.followStatusChangesByName"
+        const val WAIT_FOR_CONFIG_RESOURCE_NAME = "MGMOpsClient.registerComponentForUpdates"
+        const val PUBLISHER_RESOURCE_NAME = "MGMOpsClient.publisher"
 
-        private val clock = UTCClock()
-
-        private val TIMEOUT = 10.seconds
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val clock = UTCClock()
+        val TIMEOUT = 10.seconds
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
@@ -145,20 +146,6 @@ class MGMOpsClientImpl @Activate constructor(
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
-
-    // for watching the config changes
-    private var configHandle: AutoCloseable? = null
-
-    // for checking the components' health
-    private var componentHandle: AutoCloseable? = null
-
-    private var _publisher: Publisher? = null
-
-    /**
-     * Publisher for Kafka messaging. Recreated after every [ConfigKeys.MESSAGING_CONFIG] change.
-     */
-    private val publisher: Publisher
-        get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
 
     private val coordinator = coordinatorFactory.createCoordinator<MGMOpsClient>(::processEvent)
 
@@ -236,33 +223,43 @@ class MGMOpsClientImpl @Activate constructor(
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                componentHandle?.close()
-                componentHandle = coordinator.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
-                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                coordinator.createManagedResource(FOLLOW_CHANGES_RESOURCE_NAME) {
+                    coordinator.followStatusChangesByName(
+                        setOf(
+                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                            LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                            LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                        )
                     )
-                )
+                }
             }
             is StopEvent -> {
-                componentHandle?.close()
-                configHandle?.close()
+                coordinator.closeManagedResources(
+                    setOf(
+                        FOLLOW_CHANGES_RESOURCE_NAME,
+                        WAIT_FOR_CONFIG_RESOURCE_NAME,
+                        PUBLISHER_RESOURCE_NAME,
+                    )
+                )
                 deactivate("Handling the stop event for component.")
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        configHandle?.close()
-                        configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator,
-                            setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
-                        )
+                        coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
+                            configurationReadService.registerComponentForUpdates(
+                                coordinator, setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                            )
+                        }
                     }
                     else -> {
-                        configHandle?.close()
+                        coordinator.closeManagedResources(
+                            setOf(
+                                WAIT_FOR_CONFIG_RESOURCE_NAME,
+                            )
+                        )
                         deactivate("Service dependencies have changed status causing this component to deactivate.")
                     }
                 }
@@ -283,12 +280,14 @@ class MGMOpsClientImpl @Activate constructor(
                         it.start()
                     }
                 )
-                _publisher?.close()
-                _publisher = publisherFactory.createPublisher(
-                    PublisherConfig("mgm-ops-client"),
-                    event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-                )
-                _publisher?.start()
+                coordinator.createManagedResource(PUBLISHER_RESOURCE_NAME) {
+                    publisherFactory.createPublisher(
+                        messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
+                        publisherConfig = PublisherConfig(CLIENT_ID)
+                    ).also {
+                        it.start()
+                    }
+                }
                 coordinator.updateStatus(LifecycleStatus.UP, "Dependencies are UP and configuration received.")
             }
         }
@@ -504,7 +503,7 @@ class MGMOpsClientImpl @Activate constructor(
         }
 
         private fun publishApprovalDecision(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {
-            publisher.publish(
+            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
                 listOf(
                     Record(
                         REGISTRATION_COMMAND_TOPIC,
@@ -512,7 +511,9 @@ class MGMOpsClientImpl @Activate constructor(
                         RegistrationCommand(command)
                     )
                 )
-            )
+            )?.forEach {
+                it.join()
+            }
         }
 
         override fun close() = rpcSender.close()

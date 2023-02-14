@@ -68,6 +68,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -89,12 +90,12 @@ class MGMOpsClientTest {
     private companion object {
         const val HOLDING_IDENTITY_STRING = "1234567890AB"
         const val KNOWN_KEY = "12345"
-        private const val RULE_REGEX = "rule-regex"
-        private const val RULE_LABEL = "rule-label"
-        private const val RULE_ID = "rule-id"
+        const val RULE_REGEX = "rule-regex"
+        const val RULE_LABEL = "rule-label"
+        const val RULE_ID = "rule-id"
         const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
-        private val RULE_TYPE = ApprovalRuleType.STANDARD
 
+        val RULE_TYPE = ApprovalRuleType.STANDARD
         val memberName = MemberX500Name.parse("CN=Member,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
         val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), "DEFAULT_MEMBER_GROUP_ID")
@@ -212,6 +213,11 @@ class MGMOpsClientTest {
         on { start() } doAnswer { coordinatorIsRunning = true }
         on { stop() } doAnswer { coordinatorIsRunning = false }
         on { followStatusChangesByName(any()) } doReturn componentHandle
+        on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
+            val function: () -> Resource = it.getArgument(1)
+            function.invoke()
+            Unit
+        }
     }
 
     private var lifecycleHandler: LifecycleEventHandler? = null
@@ -288,14 +294,6 @@ class MGMOpsClientTest {
 
         // kicks off the MessagingConfigurationReceived event to be able to mock the rpc sender
         changeConfig()
-    }
-
-    @Test
-    fun `starting and stopping the service succeeds`() {
-        mgmOpsClient.start()
-        assertTrue(mgmOpsClient.isRunning)
-        mgmOpsClient.stop()
-        assertFalse(mgmOpsClient.isRunning)
     }
 
     @Test
@@ -780,6 +778,8 @@ class MGMOpsClientTest {
     inner class ReviewRegistrationRequestTests {
         @Test
         fun `reviewRegistrationRequest should publish the correct command when approved`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             mgmOpsClient.start()
             setUpRpcSender(null)
 
@@ -803,6 +803,8 @@ class MGMOpsClientTest {
 
         @Test
         fun `reviewRegistrationRequest should publish the correct command when declined`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             mgmOpsClient.start()
             setUpRpcSender(null)
             val reason = "sample reason"
@@ -878,118 +880,124 @@ class MGMOpsClientTest {
         }
     }
 
-    @Test
-    fun `start event starts following the statuses of the required dependencies`() {
-        startComponent()
+    @Nested
+    inner class LifecycleTests {
+        @Test
+        fun `starting and stopping the service succeeds`() {
+            mgmOpsClient.start()
+            assertTrue(mgmOpsClient.isRunning)
+            mgmOpsClient.stop()
+            assertFalse(mgmOpsClient.isRunning)
+        }
 
-        verify(coordinator).followStatusChangesByName(
-            eq(
-                setOf(
-                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                    LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
-                    LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+        @Test
+        fun `start event starts following the statuses of the required dependencies`() {
+            startComponent()
+
+            verify(coordinator).followStatusChangesByName(
+                eq(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                    )
                 )
             )
-        )
-    }
+        }
 
-    @Test
-    fun `start event closes dependency handle if it exists`() {
-        startComponent()
-        startComponent()
+        @Test
+        fun `stop event will close managed resources and set status to down`() {
+            stopComponent()
 
-        verify(componentHandle).close()
-    }
+            verify(coordinator).closeManagedResources(argThat {
+                size == 3
+            })
+            verify(coordinator).updateStatus(LifecycleStatus.DOWN, "Handling the stop event for component.")
+        }
 
-    @Test
-    fun `stop event doesn't closes handles before they are created`() {
-        stopComponent()
+        @Test
+        fun `start will start the coordinator`() {
+            mgmOpsClient.start()
 
-        verify(componentHandle, never()).close()
-        verify(configHandle, never()).close()
-    }
+            verify(coordinator).start()
+        }
 
-    @Test
-    fun `component handle is created after starting and closed when stopping`() {
-        startComponent()
-        stopComponent()
+        @Test
+        fun `stop will stop the coordinator`() {
+            mgmOpsClient.stop()
 
-        verify(componentHandle).close()
-    }
+            verify(coordinator).stop()
+        }
 
-    @Test
-    fun `config handle is created after registration status changes to UP and closed when stopping`() {
-        changeRegistrationStatus(LifecycleStatus.UP)
-        stopComponent()
+        @Test
+        fun `config changed event will create the publisher`() {
+            changeConfig()
 
-        verify(configHandle).close()
-    }
+            verify(publisherFactory).createPublisher(any(), eq(messagingConfig))
+        }
 
-    @Test
-    fun `registration status UP registers for config updates`() {
-        changeRegistrationStatus(LifecycleStatus.UP)
+        @Test
+        fun `config changed event will start the publisher`() {
+            changeConfig()
 
-        verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
-        )
-        verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
-    }
+            verify(publisher).start()
+        }
 
-    @Test
-    fun `registration status DOWN sets component status to DOWN`() {
-        startComponent()
-        changeRegistrationStatus(LifecycleStatus.UP)
-        changeRegistrationStatus(LifecycleStatus.DOWN)
+        @Test
+        fun `registration status UP registers for config updates`() {
+            changeRegistrationStatus(LifecycleStatus.UP)
 
-        verify(configHandle).close()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-    }
+            verify(configurationReadService).registerComponentForUpdates(
+                any(), any()
+            )
+            verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
+        }
 
-    @Test
-    fun `registration status ERROR sets component status to DOWN`() {
-        startComponent()
-        changeRegistrationStatus(LifecycleStatus.UP)
-        changeRegistrationStatus(LifecycleStatus.ERROR)
+        @Test
+        fun `registration status DOWN sets component status to DOWN and closes resource`() {
+            startComponent()
+            changeRegistrationStatus(LifecycleStatus.UP)
+            changeRegistrationStatus(LifecycleStatus.DOWN)
 
-        verify(configHandle).close()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-    }
+            verify(coordinator).closeManagedResources(argThat { size == 1 })
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        }
 
-    @Test
-    fun `registration status DOWN closes config handle if status was previously UP`() {
-        startComponent()
-        changeRegistrationStatus(LifecycleStatus.UP)
+        @Test
+        fun `registration status ERROR sets component status to DOWN`() {
+            startComponent()
+            changeRegistrationStatus(LifecycleStatus.UP)
+            changeRegistrationStatus(LifecycleStatus.ERROR)
 
-        verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
-        )
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        }
 
-        changeRegistrationStatus(LifecycleStatus.DOWN)
+        @Test
+        fun `registration status DOWN closes config handle if status was previously UP`() {
+            startComponent()
+            changeRegistrationStatus(LifecycleStatus.UP)
 
-        verify(configHandle).close()
-    }
+            verify(configurationReadService).registerComponentForUpdates(
+                any(), any()
+            )
 
-    @Test
-    fun `registration status UP closes config handle if status was previously UP`() {
-        changeRegistrationStatus(LifecycleStatus.UP)
+            changeRegistrationStatus(LifecycleStatus.DOWN)
 
-        verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
-        )
+            verify(coordinator).closeManagedResources(argThat { size == 1 })
+        }
 
-        changeRegistrationStatus(LifecycleStatus.UP)
-
-        verify(configHandle).close()
-    }
-
-    @Test
-    fun `after receiving the messaging configuration the rpc sender is initialized`() {
-        changeConfig()
-        verify(publisherFactory).createRPCSender(any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(), any())
-        verify(rpcSender).start()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+        @Test
+        fun `after receiving the messaging configuration the rpc sender is initialized`() {
+            changeConfig()
+            verify(publisherFactory).createRPCSender(
+                any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(),
+                any()
+            )
+            verify(rpcSender).start()
+            verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+        }
     }
 
     @Nested
