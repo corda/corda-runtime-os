@@ -6,7 +6,6 @@ plugins {
 description 'Crypto persistent data model'
 
 dependencies {
-    implementation project(path: ':testing:db-testkit')
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"
 
