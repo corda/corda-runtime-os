@@ -240,7 +240,9 @@
                         "port",
                         "username",
                         "database",
-                        "schema"
+                        "configSchema",
+                        "rbacSchema",
+                        "cryptoSchema"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -285,12 +287,30 @@
                             ],
                             "minLength": 1
                         },
-                        "schema": {
+                        "configSchema": {
                             "type": "string",
                             "default": "CONFIG",
-                            "title": "the name of the cluster database schema",
+                            "title": "the schema in which the cluster database config entities will be stored, passed to workers on startup",
                             "examples": [
                                 "CONFIG"
+                            ],
+                            "minLength": 1
+                        },
+                        "rbacSchema": {
+                            "type": "string",
+                            "default": "RBAC",
+                            "title": "the schema in which the cluster database rbac entities will be stored, written to the config schema",
+                            "examples": [
+                                "RBAC"
+                            ],
+                            "minLength": 1
+                        },
+                        "cryptoSchema": {
+                            "type": "string",
+                            "default": "CRYPTO",
+                            "title": "the schema in which the cluster database crypto entities will be stored, written to the config schema",
+                            "examples": [
+                                "CRYPTO"
                             ],
                             "minLength": 1
                         }
@@ -306,7 +326,9 @@
                             "value": "password"
                         },
                         "database": "cordacluster",
-                        "schema": "CONFIG"
+                        "configSchema": "CONFIG",
+                        "rbacSchema": "RBAC",
+                        "cryptoSchema": "CRYPTO"
                     }]
                 }
             },
@@ -317,7 +339,9 @@
                     "port": 5432,
                     "user": "user",
                     "database": "cordacluster",
-                    "schema": "CONFIG",
+                    "configSchema": "CONFIG",
+                    "rbacSchema": "RBAC",
+                    "cryptoSchema": "CRYPTO",
                     "existingSecret": "postgresql-secret"
                 }
             }]

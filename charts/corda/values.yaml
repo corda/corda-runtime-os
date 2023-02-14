@@ -91,8 +91,12 @@ db:
           # -- the cluster database password secret key
           key: ""
     database: cordacluster
-    # the schema in which the cluster database will be stored
-    schema: CONFIG
+    # -- the schema in which the cluster database config entities will be stored, passed to workers on startup
+    configSchema: CONFIG
+    # -- the schema in which the cluster database rbac entities will be stored, written to the config schema
+    rbacSchema: RBAC
+    # -- the schema in which the cluster database crypto entities will be stored, written to the config schema
+    cryptoSchema: CRYPTO
 
 # Kafka configuration
 kafka:
