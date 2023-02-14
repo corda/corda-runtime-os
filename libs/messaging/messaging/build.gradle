@@ -8,10 +8,12 @@ dependencies {
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
+    implementation project(":libs:chunking:chunking-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:configuration:configuration-core")

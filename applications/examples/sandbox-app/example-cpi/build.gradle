@@ -21,7 +21,7 @@ cordapp {
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
-    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-crypto-extensions'
     cordaProvided 'org.slf4j:slf4j-api'

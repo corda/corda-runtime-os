@@ -29,6 +29,7 @@ configurations {
 }
 
 dependencies {
+    compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"

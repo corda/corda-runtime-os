@@ -19,6 +19,7 @@ cordapp {
 dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    cordaProvided 'org.jetbrains:annotations'
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
     cordaProvided "org.osgi:osgi.core"

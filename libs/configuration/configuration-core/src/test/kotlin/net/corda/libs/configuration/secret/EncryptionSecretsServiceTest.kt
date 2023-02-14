@@ -98,7 +98,7 @@ class EncryptionSecretsServiceTest {
     fun `when createValue can decrypt again`() {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
 
-        val secretConfig = service.createValue("secret1")
+        val secretConfig = service.createValue("secret1", "test")
         val secret = service.getValue(secretConfig)
 
         assertThat(secret).isEqualTo("secret1")
@@ -107,7 +107,7 @@ class EncryptionSecretsServiceTest {
     @Test
     fun `when createValue encrypt with encryptor with correct passphrase and salt`() {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
-        val secretConfig = service.createValue("secret1")
+        val secretConfig = service.createValue("secret1", "test")
 
         secretConfig.atKey("root")
 
@@ -118,7 +118,7 @@ class EncryptionSecretsServiceTest {
     fun `when createValue create correct paths`() {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock )
 
-        val secretConfig1 = service.createValue("secret1").atKey("root")
+        val secretConfig1 = service.createValue("secret1", "test").atKey("root")
 
         assertThat(secretConfig1.hasPath("root.configSecret")).isEqualTo(true)
         assertThat(secretConfig1.getString("root.configSecret.encryptedSecret"))
@@ -130,7 +130,7 @@ class EncryptionSecretsServiceTest {
         // using to real Encryptor for this test
         val service = EncryptionSecretsServiceImpl(passphrase, salt)
 
-        val secretConfig = service.createValue("")
+        val secretConfig = service.createValue("", "test")
 
         assertThat(secretConfig.getString("configSecret.encryptedSecret")).isNotBlank
         assertThat(service.getValue(secretConfig)).isEqualTo("")

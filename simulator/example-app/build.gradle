@@ -10,7 +10,7 @@ version = "$cordaApiVersion"
 
 dependencies {
 
-    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-base'
     cordaProvided 'net.corda:corda-application'

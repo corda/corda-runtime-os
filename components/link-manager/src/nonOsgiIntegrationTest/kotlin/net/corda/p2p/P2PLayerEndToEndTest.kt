@@ -678,7 +678,6 @@ class P2PLayerEndToEndTest {
                     HostedIdentityEntry(
                         info.identity.id.toAvro(),
                         TLS_KEY_TENANT_ID,
-                        info.identity.x500Name,
                         info.tlsCertificatesPem,
                         info.keyPair.public.toPem(),
                         null

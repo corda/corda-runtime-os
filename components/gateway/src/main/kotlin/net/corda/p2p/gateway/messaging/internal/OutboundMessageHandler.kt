@@ -19,7 +19,6 @@ import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
-import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.types.MemberX500Name
@@ -60,12 +59,6 @@ internal class OutboundMessageHandler(
         configurationReaderService
     )
 
-    private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        messagingConfiguration
-    )
-
     private val subscriptionConfig = SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC)
     private val outboundSubscription = {
         subscriptionFactory.createPubSubSubscription(
@@ -89,11 +82,9 @@ internal class OutboundMessageHandler(
         dependentChildren = listOf(
             outboundSubscriptionTile.coordinatorName,
             commonComponents.dominoTile.coordinatorName,
-            dynamicCertificateSubjectStore.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             outboundSubscriptionTile.toNamedLifecycle(),
-            dynamicCertificateSubjectStore.dominoTile.toNamedLifecycle(),
         ),
     )
 

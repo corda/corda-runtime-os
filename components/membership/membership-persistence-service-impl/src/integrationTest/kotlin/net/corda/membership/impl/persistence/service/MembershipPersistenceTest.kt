@@ -303,6 +303,16 @@ class MembershipPersistenceTest {
                 )
             }
 
+            override fun consumePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                ownerX500Name: MemberX500Name,
+                preAuthTokenId: UUID
+            )= safeCall {
+                membershipPersistenceClient.consumePreAuthToken(
+                    mgmHoldingIdentity, ownerX500Name, preAuthTokenId
+                )
+            }
+
             override fun revokePreAuthToken(
                 mgmHoldingIdentity: HoldingIdentity,
                 preAuthTokenId: UUID,

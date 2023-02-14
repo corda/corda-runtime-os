@@ -29,7 +29,7 @@ dependencies {
     implementation project(':libs:permissions:permission-storage-writer')
     implementation project(":libs:utilities")
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'javax.persistence:javax.persistence-api'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 

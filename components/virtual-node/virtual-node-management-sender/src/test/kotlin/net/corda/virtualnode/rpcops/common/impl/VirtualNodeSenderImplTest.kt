@@ -49,5 +49,6 @@ internal class VirtualNodeSenderImplTest {
     fun `test close cleans up sender`() {
         senderWrapper.close()
         verify(rpcSender).close()
+        verify(asyncOperationPublisher).close()
     }
 }

@@ -7,8 +7,8 @@ import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
-import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
+import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
+import net.corda.membership.httprpc.v1.types.response.RestMemberInfoList
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -102,17 +102,17 @@ class MemberLookupRestResourceTest {
     private val bob = createMemberInfo("CN=Bob,O=Bob,OU=Unit2,L=Dublin,ST=State2,C=IE")
     private val memberInfoList = listOf(alice, bob)
 
-    private val aliceRpcResult = RpcMemberInfoList(
+    private val aliceRpcResult = RestMemberInfoList(
         listOf(
-            RpcMemberInfo(
+            RestMemberInfo(
                 alice.memberProvidedContext.entries.associate { it.key to it.value },
                 alice.mgmProvidedContext.entries.associate { it.key to it.value }
             )
         )
     )
-    private val bobRpcResult = RpcMemberInfoList(
+    private val bobRpcResult = RestMemberInfoList(
         listOf(
-            RpcMemberInfo(
+            RestMemberInfo(
                 bob.memberProvidedContext.entries.associate { it.key to it.value },
                 bob.mgmProvidedContext.entries.associate { it.key to it.value }
             )
@@ -207,9 +207,9 @@ class MemberLookupRestResourceTest {
         val result = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING)
         assertEquals(2, result.members.size)
         assertEquals(
-            RpcMemberInfoList(
+            RestMemberInfoList(
                 memberInfoList.map {
-                    RpcMemberInfo(
+                    RestMemberInfo(
                         it.memberProvidedContext.entries.associate { it.key to it.value },
                         it.mgmProvidedContext.entries.associate { it.key to it.value }
                     )

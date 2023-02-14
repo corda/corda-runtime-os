@@ -8,7 +8,7 @@ description 'Corda REST tools'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
     implementation project(':libs:rest:rest')
     implementation project(':libs:rest:rest-common')

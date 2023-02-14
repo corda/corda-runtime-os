@@ -91,6 +91,8 @@ db:
           # -- the cluster database password secret key
           key: ""
     database: cordacluster
+    # the schema in which the cluster database will be stored
+    schema: CONFIG
 
 # Kafka configuration
 kafka:

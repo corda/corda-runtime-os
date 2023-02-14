@@ -107,7 +107,7 @@ class UtxoTransactionReaderImpl(
     }
 
     override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
-        return wrappedWireTransaction.inputStateRefs.groupBy { it.transactionHash }
+        return wrappedWireTransaction.inputStateRefs.groupBy { it.transactionId }
             .flatMap { inputsByTransaction ->
                 // this is not the most efficient way of doing this - to be fixed in CORE-8971
                 val tx =

@@ -1,6 +1,5 @@
 package net.corda.permissions.model
 
-import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -18,7 +17,7 @@ import javax.persistence.Version
  */
 @Suppress("LongParameterList")
 @Entity
-@Table(name = "rbac_perm", schema = DbSchema.RBAC)
+@Table(name = "rbac_perm")
 class Permission(
     @Id
     @Column(name = "id", nullable = false)
