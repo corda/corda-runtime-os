@@ -20,6 +20,7 @@ import net.corda.crypto.softhsm.SoftWrappingKeyMapConfig
 import net.corda.crypto.softhsm.WRAPPING_DEFAULT_NAME
 import net.corda.crypto.softhsm.WRAPPING_HSM_NAME
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.getStringOrDefault
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import org.osgi.service.component.annotations.Activate
@@ -94,28 +95,23 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             config: SmartConfig
         ): SoftWrappingKeyMap {
             // TODO - find a way to avoid magic strings
-            val name = config.getString("name")
+            val name = config.getStringOrDefault("path", KEY_MAP_CACHING_NAME)
             val wrappingKeyMapCacheConfig = SoftCacheConfig(
                 config.getConfig("cache").getLong("expireAfterAccessMins"),
                 config.getConfig("cache").getLong("maximumSize")
             )
             val softWrappingKeyMapConfig = SoftWrappingKeyMapConfig(
-                config.getString("name"),
                 config.getString("salt"),
                 config.getString("passphrase"),
                 wrappingKeyMapCacheConfig
             )
             val masterKey = createMasterWrappingKey(softWrappingKeyMapConfig)
             logger.info("set up soft wrapping key map with master key $masterKey")
-            return when (name) {
-                KEY_MAP_TRANSIENT_NAME -> TransientSoftWrappingKeyMap(store, masterKey)
-                KEY_MAP_CACHING_NAME -> CachingSoftWrappingKeyMap(wrappingKeyMapCacheConfig, store, masterKey)
-                else -> throw IllegalStateException(
-                    "Unknown configuration value '$name}' for " +
-                            "${SoftWrappingKeyMap::class.java.simpleName}, must be " +
-                            "$KEY_MAP_TRANSIENT_NAME or $KEY_MAP_CACHING_NAME."
-                )
+            val finalWrappingKeyMapCacheConfig = when (name) {
+                KEY_MAP_TRANSIENT_NAME -> SoftCacheConfig(0, 0)
+                else -> wrappingKeyMapCacheConfig
             }
+            return CachingSoftWrappingKeyMap(finalWrappingKeyMapCacheConfig, store, masterKey)
         }
 
         // TODO - rework to use Config directly
