@@ -33,7 +33,7 @@ class SoftCryptoServiceProviderTests {
 
     @BeforeEach
     fun setup() {
-        defaultConfig = createCustomConfig(KEY_MAP_CACHING_NAME, KEY_MAP_CACHING_NAME)
+        defaultConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         schemeMetadata = CipherSchemeMetadataImpl()
         wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
@@ -90,7 +90,7 @@ class SoftCryptoServiceProviderTests {
         assertNotSame(i1, i2)
     }
 
-    private fun createCustomConfig(keyMapName: String, wrappingKeyMapName: String) =
+    private fun createCustomConfig(keyMapName: String) =
         SmartConfigFactory.createWithoutSecurityServices().create(
             ConfigFactory.parseString(
                 """
@@ -103,7 +103,6 @@ class SoftCryptoServiceProviderTests {
                     }
                 },
                 "wrappingKeyMap": {
-                    "name" : "$wrappingKeyMapName",
                     "salt" : "salt",
                     "passphrase" : "passphrase",
                     "cache" : {
@@ -121,7 +120,7 @@ class SoftCryptoServiceProviderTests {
 
     @Test
     fun `getInstance should return new instance with custom config each time`() {
-        val customConfig = createCustomConfig(KEY_MAP_TRANSIENT_NAME, KEY_MAP_TRANSIENT_NAME)
+        val customConfig = createCustomConfig(KEY_MAP_TRANSIENT_NAME)
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
             component.getInstance(customConfig)
@@ -140,26 +139,13 @@ class SoftCryptoServiceProviderTests {
 
     @Test
     fun `getInstance should throw IllegalStateException when creating new instance with unknown soft key map`() {
-        val customConfig = createCustomConfig("<unknown name>", KEY_MAP_TRANSIENT_NAME)
+        val customConfig = createCustomConfig("<unknown name>")
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertThrows<ConfigException.WrongType> {
-            component.getInstance(customConfig)
-        }
-    }
-
-    @Test
-    fun `getInstance should throw IllegalStateException when creating new instance with unknown wrapping key map`() {
-        val customConfig = createCustomConfig(KEY_MAP_TRANSIENT_NAME, "<unknown name>")
-        component.start()
-        eventually {
-            assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        assertThrows<IllegalStateException> {
             component.getInstance(customConfig)
         }
     }
