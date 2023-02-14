@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Membership HTTP RPC definition'
+description 'Membership REST definition'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"

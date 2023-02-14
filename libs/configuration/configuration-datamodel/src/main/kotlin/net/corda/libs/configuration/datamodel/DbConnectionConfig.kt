@@ -32,7 +32,7 @@ internal const val QUERY_PARAM_PRIVILEGE = "privilege"
  * @property version The version number used for optimistic locking.
  */
 @Entity
-@Table(name = DbSchema.DB_CONNECTION_TABLE, schema = DbSchema.CONFIG)
+@Table(name = DbSchema.DB_CONNECTION_TABLE)
 @NamedQuery(
     name = QUERY_FIND_BY_NAME_AND_PRIVILEGE,
     query = "SELECT c FROM DbConnectionConfig c WHERE c.name=:$QUERY_PARAM_NAME AND c.privilege=:$QUERY_PARAM_PRIVILEGE")

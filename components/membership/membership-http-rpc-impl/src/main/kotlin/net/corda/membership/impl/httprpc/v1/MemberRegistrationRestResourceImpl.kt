@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.httprpc.v1.MemberRegistrationRestResource
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
@@ -38,7 +39,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
         fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String
-        ): RegistrationRequestStatus?
+        ): RegistrationRequestStatus
     }
 
     override val protocolVersion = 1
@@ -138,22 +139,28 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 memberOpsClient.checkRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash)
                 ).map { it.fromDto() }
-            } catch (e: RegistrationProgressNotFoundException) {
+            } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException(e.message!!)
+            } catch (e: ServiceNotReadyException) {
+                throw ServiceUnavailableException(e.message!!)
             }
         }
 
         override fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String,
-        ): RegistrationRequestStatus? {
+        ): RegistrationRequestStatus {
             return try {
                 memberOpsClient.checkSpecificRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     registrationRequestId
-                )?.fromDto()
+                ).fromDto()
             } catch (e: RegistrationProgressNotFoundException) {
                 throw ResourceNotFoundException(e.message!!)
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException(e.message!!)
+            } catch (e: ServiceNotReadyException) {
+                throw ServiceUnavailableException(e.message!!)
             }
         }
     }
