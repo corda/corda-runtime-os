@@ -6,7 +6,6 @@ import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.SoftCacheConfig
 import net.corda.crypto.softhsm.WRAPPING_KEY_ENCODING_VERSION
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
