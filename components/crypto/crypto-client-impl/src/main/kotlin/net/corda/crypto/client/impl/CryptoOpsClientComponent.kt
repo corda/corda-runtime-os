@@ -159,8 +159,8 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey> =
         impl.ops.lookupKeysByShortIds(tenantId, shortKeyIds)
 
-    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> =
-        impl.ops.lookupKeysByFullIds(tenantId, fullKeyIds)
+    override fun lookupKeysByIds(tenantId: String, keyIds: List<SecureHash>): List<CryptoSigningKey> =
+        impl.ops.lookupKeysByIds(tenantId, keyIds)
 
     // This path is not being currently used - consider removing it
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
@@ -169,8 +169,8 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun lookupKeysByShortIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys =
         impl.ops.lookupKeysByShortIdsProxy(tenantId, candidateKeys)
 
-    override fun lookupKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys =
-        impl.ops.lookupKeysByFullIdsProxy(tenantId, fullKeyIds)
+    override fun lookupKeysByIdsProxy(tenantId: String, keyIds: SecureHashes): CryptoSigningKeys =
+        impl.ops.lookupKeysByIdsProxy(tenantId, keyIds)
 
     override fun signProxy(
         tenantId: String,

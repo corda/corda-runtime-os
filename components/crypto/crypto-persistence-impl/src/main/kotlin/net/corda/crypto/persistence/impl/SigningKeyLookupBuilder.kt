@@ -40,7 +40,7 @@ class SigningKeyLookupBuilder(private val entityManager: EntityManager) {
         cr.where(cb.and(*predicates.toTypedArray()))
         when (orderBy) {
             SigningKeyOrderBy.NONE -> Unit
-            SigningKeyOrderBy.ID -> ascOrderBy(SigningKeyEntity::keyId)
+            SigningKeyOrderBy.ID -> ascOrderBy(SigningKeyEntity::shortKeyId)
             SigningKeyOrderBy.TIMESTAMP -> ascOrderBy(SigningKeyEntity::timestamp)
             SigningKeyOrderBy.CATEGORY -> ascOrderBy(SigningKeyEntity::category)
             SigningKeyOrderBy.SCHEME_CODE_NAME -> ascOrderBy(SigningKeyEntity::schemeCodeName)
@@ -53,7 +53,7 @@ class SigningKeyLookupBuilder(private val entityManager: EntityManager) {
             SigningKeyOrderBy.ALIAS_DESC -> descOrderBy(SigningKeyEntity::alias)
             SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> descOrderBy(SigningKeyEntity::masterKeyAlias)
             SigningKeyOrderBy.EXTERNAL_ID_DESC -> descOrderBy(SigningKeyEntity::externalId)
-            SigningKeyOrderBy.ID_DESC -> descOrderBy(SigningKeyEntity::keyId)
+            SigningKeyOrderBy.ID_DESC -> descOrderBy(SigningKeyEntity::shortKeyId)
         }
         return entityManager.createQuery(cr)
             .setFirstResult(skip)

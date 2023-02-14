@@ -126,7 +126,7 @@ class CryptoFlowOpsBusProcessor(
                         cryptoOpsClient.lookupKeysByShortIdsProxy(context.tenantId, avroKeyIds)
                     }
                     is SecureHashes ->
-                        cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, avroKeyIds)
+                        cryptoOpsClient.lookupKeysByIdsProxy(context.tenantId, avroKeyIds)
                     else -> throw IllegalArgumentException("Unexpected type for key ids: ${avroKeyIds::class.java.name}")
                 }
             }

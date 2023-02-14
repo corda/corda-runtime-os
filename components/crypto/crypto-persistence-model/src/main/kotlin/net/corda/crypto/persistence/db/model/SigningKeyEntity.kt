@@ -33,17 +33,17 @@ class SigningKeyEntity(
     var tenantId: String,
 
     /**
-     * The full key id, which is calculated as SHA256 converted to HEX string.
+     * The key id, which is calculated as SHA256 converted to HEX string.
      */
     @Id
-    @Column(name = "full_key_id", nullable = false, updatable = false)
-    var fullKeyId: String,
+    @Column(name = "key_id", nullable = false, updatable = false)
+    var keyId: String,
 
     /**
-     * The key id, which is calculated as SHA256 converted to HEX string with only first 12 characters if it.
+     * The short key id, which is calculated as SHA256 converted to HEX string with only first 12 characters if it.
      */
-    @Column(name = "key_id", nullable = false, updatable = false, length = 12)
-    var keyId: String,
+    @Column(name = "short_key_id", nullable = false, updatable = false, length = 12)
+    var shortKeyId: String,
 
     /**
      * When the key was generated.
@@ -120,5 +120,5 @@ class SigningKeyEntity(
 @Embeddable
 data class SigningKeyEntityPrimaryKey(
     val tenantId: String,
-    val fullKeyId: String
+    val keyId: String
 ): Serializable

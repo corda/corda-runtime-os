@@ -27,7 +27,6 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
-import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
@@ -889,8 +888,8 @@ class CryptoProcessorTests {
 
         val queriedVnodeKeysEncoded = opsClient.lookupKeysByShortIds(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
         val queriedVnode2KeysEncoded = opsClient.lookupKeysByShortIds(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
-        val queriedByFullIdsVnodeKeysEncoded = opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
-        val queriedByFullIdsVnode2KeysEncoded = opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnodeKeysEncoded = opsClient.lookupKeysByIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnode2KeysEncoded = opsClient.lookupKeysByIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
 
         assertTrue(listsOfBytesAreEqual(vnodeKeysEncoded, queriedVnodeKeysEncoded))
         assertTrue(listsOfBytesAreEqual(vnode2KeysEncoded, queriedVnode2KeysEncoded))

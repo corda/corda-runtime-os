@@ -68,14 +68,14 @@ interface SigningService {
     ): Collection<SigningKeyInfo>
 
     /**
-     * Looks for keys by full key ids.
+     * Looks for keys by key ids (full key ids).
      *
      * @param tenantId The tenant's id which the keys belong to.
-     * @param fullKeyIds Full key ids to look keys for.
+     * @param keyIds Key ids to look keys for.
      */
-    fun lookupByFullIds(
+    fun lookupByIds(
         tenantId: String,
-        fullKeyIds: List<SecureHash>
+        keyIds: List<SecureHash>
     ): Collection<SigningKeyInfo>
 
     /**

@@ -136,28 +136,28 @@ class CryptoOpsClientImpl(
     }
 
     // This one is normally coming from flows
-    fun lookupKeysByShortIdsProxy(tenantId: String, candidateKeys: ShortHashes): CryptoSigningKeys {
+    fun lookupKeysByShortIdsProxy(tenantId: String, shortKeyIds: ShortHashes): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            candidateKeys.hashes.joinToString { it }
+            shortKeyIds.hashes.joinToString { it }
         )
 
         val request = createRequest(
             tenantId = tenantId,
-            request = ByIdsRpcQuery(candidateKeys)
+            request = ByIdsRpcQuery(shortKeyIds)
         )
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
 
     @Suppress("MaxLineLength")
-    fun lookupKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys {
+    fun lookupKeysByIdsProxy(tenantId: String, keyIds: SecureHashes): CryptoSigningKeys {
         logger.info(
-            "Sending '{}'(tenant={},candidateKeys={})", ByIdsRpcQuery::class.java.simpleName, tenantId, fullKeyIds.toDto().joinToString()
+            "Sending '{}'(tenant={},candidateKeys={})", ByIdsRpcQuery::class.java.simpleName, tenantId, keyIds.toDto().joinToString()
         )
 
-        val request = createRequest(tenantId, request = ByIdsRpcQuery(fullKeyIds))
+        val request = createRequest(tenantId, request = ByIdsRpcQuery(keyIds))
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
 
@@ -375,7 +375,7 @@ class CryptoOpsClientImpl(
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
-    // TODO Users who are using this API need to revisit to determine if they need to migrate to search by full Id
+    // TODO Users who are using this API need to revisit to determine if they need to migrate to search ByIds (full ids)
     fun lookupKeysByShortIds(tenantId: String, ids: List<ShortHash>): List<CryptoSigningKey> {
         logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${ids.joinToString()}])" }
         require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
@@ -388,15 +388,15 @@ class CryptoOpsClientImpl(
     }
 
     @Suppress("MaxLineLength")
-    fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
-        logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${fullKeyIds.joinToString { it.toString() }}])" }
-        require(fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
+    fun lookupKeysByIds(tenantId: String, keyIds: List<SecureHash>): List<CryptoSigningKey> {
+        logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${keyIds.joinToString { it.toString() }}])" }
+        require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
 
         val request = createRequest(
             tenantId,
             ByIdsRpcQuery(
                 SecureHashes(
-                    fullKeyIds.map {
+                    keyIds.map {
                         it.toAvro()
                     }
                 )

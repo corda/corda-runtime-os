@@ -128,7 +128,7 @@ class CryptoOpsBusProcessor(
                         )
                     }
                     is SecureHashes -> {
-                        signingService.lookupByFullIds(
+                        signingService.lookupByIds(
                             context.tenantId,
                             avroSecureHashesToDto(avroKeyIds)
                         )

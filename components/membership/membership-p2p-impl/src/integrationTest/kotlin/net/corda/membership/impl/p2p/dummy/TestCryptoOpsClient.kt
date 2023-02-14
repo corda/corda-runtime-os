@@ -157,7 +157,7 @@ internal class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
-    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
+    override fun lookupKeysByIds(tenantId: String, keyIds: List<SecureHash>): List<CryptoSigningKey> {
         throw UnsupportedOperationException()
     }
 

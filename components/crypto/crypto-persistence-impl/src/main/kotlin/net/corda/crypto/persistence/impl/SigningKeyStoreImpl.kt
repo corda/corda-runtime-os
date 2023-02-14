@@ -108,8 +108,8 @@ class SigningKeyStoreImpl @Activate constructor(
     override fun lookupByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): Collection<SigningCachedKey> =
         impl.lookupByShortKeyIds(tenantId, shortKeyIds)
 
-    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> =
-        impl.lookupByFullKeyIds(tenantId, fullKeyIds)
+    override fun lookupByIds(tenantId: String, keyIds: List<SecureHash>): Collection<SigningCachedKey> =
+        impl.lookupByKeyIds(tenantId, keyIds)
 
     class Impl(
         event: ConfigChangedEvent,
@@ -134,16 +134,16 @@ class SigningKeyStoreImpl @Activate constructor(
 
         fun save(tenantId: String, context: SigningKeySaveContext) {
             val keyId: String
-            val fullKeyId: String
+            val shortKeyId: String
             val entity = when (context) {
                 is SigningPublicKeySaveContext -> {
                     val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
-                    fullKeyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
-                    keyId = publicKeyIdFromBytes(publicKeyBytes)
+                    keyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
+                    shortKeyId = publicKeyIdFromBytes(publicKeyBytes)
                     SigningKeyEntity(
                         tenantId = tenantId,
-                        fullKeyId = fullKeyId,
                         keyId = keyId,
+                        shortKeyId = shortKeyId,
                         timestamp = Instant.now(),
                         category = context.category,
                         schemeCodeName = context.keyScheme.codeName,
@@ -160,12 +160,12 @@ class SigningKeyStoreImpl @Activate constructor(
                 }
                 is SigningWrappedKeySaveContext -> {
                     val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
-                    fullKeyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
-                    keyId = publicKeyIdFromBytes(publicKeyBytes)
+                    keyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
+                    shortKeyId = publicKeyIdFromBytes(publicKeyBytes)
                     SigningKeyEntity(
                         tenantId = tenantId,
-                        fullKeyId = fullKeyId,
                         keyId = keyId,
+                        shortKeyId = shortKeyId,
                         timestamp = Instant.now(),
                         category = context.category,
                         schemeCodeName = context.keyScheme.codeName,
@@ -185,7 +185,7 @@ class SigningKeyStoreImpl @Activate constructor(
             entityManagerFactory(tenantId).transaction {
                 it.persist(entity)
             }
-            cache.put(CacheKey(tenantId, keyId), entity.toSigningCachedKey())
+            cache.put(CacheKey(tenantId, shortKeyId), entity.toSigningCachedKey())
         }
 
         fun find(tenantId: String, alias: String): SigningCachedKey? {
@@ -198,14 +198,14 @@ class SigningKeyStoreImpl @Activate constructor(
 
         // TODO Add caching
         fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
-            val fullKeyId = publicKey.fullId(keyEncodingService, digestService)
+            val keyId = publicKey.fullId(keyEncodingService, digestService)
 //            return cache.get(CacheKey(tenantId, publicKey.publicKeyId())) { cacheKey ->
             return entityManagerFactory(tenantId).use { em ->
                 em.find(
                     SigningKeyEntity::class.java,
                     SigningKeyEntityPrimaryKey(
                         tenantId = tenantId,
-                        fullKeyId = fullKeyId
+                        keyId = keyId
                     )
                 )?.toSigningCachedKey()
             }
@@ -258,13 +258,13 @@ class SigningKeyStoreImpl @Activate constructor(
         }
 
         // TODO Add caching
-        fun lookupByFullKeyIds(tenantId: String, _fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
-            require(_fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+        fun lookupByKeyIds(tenantId: String, _keyIds: List<SecureHash>): Collection<SigningCachedKey> {
+            require(_keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
                 "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
             }
 
-            val fullKeyIds = _fullKeyIds.map { it.toString() }
-            val fetched = findByFullKeyIds(tenantId, fullKeyIds).map {
+            val keyIds = _keyIds.map { it.toString() }
+            val fetched = findByKeyIds(tenantId, keyIds).map {
                 it.toSigningCachedKey()
             }.distinctBy {
                 it.id
@@ -275,24 +275,24 @@ class SigningKeyStoreImpl @Activate constructor(
         private fun findByShortKeyIds(tenantId: String, shortKeyIds: Collection<String>): Collection<SigningKeyEntity> =
             entityManagerFactory(tenantId).use { em ->
                 em.createQuery(
-                    "FROM SigningKeyEntity WHERE tenantId=:tenantId AND keyId IN(:ids)",
+                    "FROM SigningKeyEntity WHERE tenantId=:tenantId AND shortKeyId IN(:shortKeyIds)",
                     SigningKeyEntity::class.java
                 ).also { q ->
                     q.setParameter("tenantId", tenantId)
-                    q.setParameter("ids", shortKeyIds)
+                    q.setParameter("shortKeyIds", shortKeyIds)
                 }.resultList
             }
 
-        private fun findByFullKeyIds(tenantId: String, fullKeyIds: List<String>): Collection<SigningKeyEntity> =
+        private fun findByKeyIds(tenantId: String, keyIds: List<String>): Collection<SigningKeyEntity> =
             entityManagerFactory(tenantId).use { em ->
                 em.createQuery(
                     "FROM ${SigningKeyEntity::class.java.simpleName} " +
                             "WHERE tenantId=:tenantId " +
-                            "AND fullKeyId IN(:fullKeyIds) " +
+                            "AND keyId IN(:keyIds) " +
                             "ORDER BY timestamp",
                     SigningKeyEntity::class.java
                 ).setParameter("tenantId", tenantId)
-                    .setParameter("fullKeyIds", fullKeyIds)
+                    .setParameter("keyIds", keyIds)
                     .resultList
             }
 
@@ -309,8 +309,8 @@ class SigningKeyStoreImpl @Activate constructor(
 
         private fun SigningKeyEntity.toSigningCachedKey(): SigningCachedKey =
             SigningCachedKey(
-                id = keyId,
-                fullId = fullKeyId,
+                id = shortKeyId,
+                fullId = keyId,
                 tenantId = tenantId,
                 category = category,
                 alias = alias,
