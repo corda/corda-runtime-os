@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.SessionEvent
+import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -14,7 +15,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -40,9 +40,7 @@ class InteropService @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    @Reference(service = MemberInfoFactory::class)
-    private val memberInfoFactory: MemberInfoFactory
+    private val publisherFactory: PublisherFactory
 ) : Lifecycle {
 
     companion object {
@@ -88,9 +86,7 @@ class InteropService @Activate constructor(
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-
         coordinator.createManagedResource(SUBSCRIPTION) {
-
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
                 InteropProcessor(cordaAvroSerializationFactory),
@@ -100,14 +96,14 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
-
         _publisher?.close()
         _publisher = publisherFactory.createPublisher(
-            PublisherConfig("static-member-registration-service"),
+            PublisherConfig("interop-registration-service"),
             event.config.getConfig(MESSAGING_CONFIG)
         )
         _publisher?.start()
-//        _publisher!!.publish(InteropMemberRegistrationService(memberInfoFactory).createDummyMemberInfo())
+        _publisher!!.publish(InteropMemberRegistrationService().createDummyMemberInfo())
+        _publisher!!.publish(listOf(InteropMemberRegistrationService().createDummyHostedIdentity()))
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 

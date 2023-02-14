@@ -11,6 +11,8 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.interop.InteropMessage
+import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.app.AppMessage
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigImpl
@@ -21,10 +23,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.interop.InteropService
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
@@ -64,9 +66,6 @@ class InteropServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
 
-//    @InjectService(timeout = 4000)
-//    lateinit var memberInfoFactory: MemberInfoFactory
-
     @InjectService(timeout = 4000)
     lateinit var configService: ConfigurationReadService
 
@@ -90,7 +89,6 @@ class InteropServiceIntegrationTest {
             setupConfig(publisher)
         }
     }
-
     @Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
@@ -156,6 +154,61 @@ class InteropServiceIntegrationTest {
         interopService.stop()
     }
 
+    @Test
+    fun `verify messages in memebrship-info topic and hosted-identities topic`() {
+        val clearMemberInfoSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("member-info", Schemas.Membership.MEMBER_LIST_TOPIC),
+            ClearMemberInfoProcessor(),
+            bootConfig,
+            null
+        )
+        val clearHostedIdsSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("hosted-identities", Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC),
+            ClearHostedIdentitiesProcessor(),
+            bootConfig,
+            null
+        )
+        val latch = CountDownLatch(2)
+        clearMemberInfoSub.start()
+        clearHostedIdsSub.start()
+        latch.await(10, TimeUnit.SECONDS)
+        clearMemberInfoSub.close()
+        clearHostedIdsSub.close()
+
+        interopService.start()
+        val memberExpectedOutputMessages = 2
+        val memberMapperLatch = CountDownLatch(memberExpectedOutputMessages)
+        val memberProcessor = MemberInfoMessageCounter(memberMapperLatch, memberExpectedOutputMessages)
+        val memberOutSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("member-info", Schemas.Membership.MEMBER_LIST_TOPIC),
+            memberProcessor,
+            bootConfig,
+            null
+        )
+        memberOutSub.start()
+        assertTrue(memberMapperLatch.await(30, TimeUnit.SECONDS),
+            "Fewer membership messages were observed (${memberProcessor.recordCount}) than expected ($memberExpectedOutputMessages).")
+        assertEquals(memberExpectedOutputMessages, memberProcessor.recordCount, "More membership messages were observed that expected.")
+        memberOutSub.close()
+
+        val hostedIdsExpected = 1
+        val hostedIdMapperLatch = CountDownLatch(hostedIdsExpected)
+        val hostedIdProcessor = HostedIdentitiesMessageCounter(hostedIdMapperLatch, hostedIdsExpected)
+        val hostedIdOutSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("hosted-identities", Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC),
+            hostedIdProcessor,
+            bootConfig,
+            null
+        )
+        hostedIdOutSub.start()
+        assertTrue(hostedIdMapperLatch.await(30, TimeUnit.SECONDS),
+            "Fewer hosted identities messages were observed (${hostedIdProcessor.recordCount}) than expected ($hostedIdsExpected).")
+        assertEquals(hostedIdsExpected, hostedIdProcessor.recordCount, "More hosted identities messages were observed that expected.")
+        hostedIdOutSub.close()
+
+        interopService.stop()
+    }
+
     private fun setupConfig(publisher: Publisher) {
         publishConfig(publisher)
         configService.start()
@@ -183,7 +236,6 @@ class InteropServiceIntegrationTest {
         publishConfig(publisher)
     }
 
-
     private val messagingConf = """
             componentVersion="5.1"
             subscription {
@@ -202,18 +254,14 @@ class InteropServiceIntegrationTest {
       """
 }
 
-
 class P2POutMessageCounter(
     private val key: String,
     private val latch: CountDownLatch,
     private val expectedRecordCount: Int
 ) : DurableProcessor<String, AppMessage> {
-
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
-
     var recordCount = 0
-
     override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
         for (event in events) {
             println("Event : $event")
@@ -225,7 +273,65 @@ class P2POutMessageCounter(
                 latch.countDown()
             }
         }
+        return emptyList()
+    }
+}
 
+class MemberInfoMessageCounter(
+    private val latch: CountDownLatch,
+    private val expectedRecordCount: Int
+) : DurableProcessor<String, PersistentMemberInfo> {
+    override val keyClass = String::class.java
+    override val valueClass = PersistentMemberInfo::class.java
+    var recordCount = 0
+    override fun onNext(events: List<Record<String, PersistentMemberInfo>>): List<Record<*, *>> {
+        for (event in events) {
+            println("Member Info : $event")
+            recordCount++
+            if (recordCount > expectedRecordCount) {
+                fail("Expected record count exceeded in events processed for this key")
+            }
+            latch.countDown()
+        }
+        return emptyList()
+    }
+}
+class HostedIdentitiesMessageCounter(
+    private val latch: CountDownLatch,
+    private val expectedRecordCount: Int
+) : DurableProcessor<String, HostedIdentityEntry> {
+    override val keyClass = String::class.java
+    override val valueClass = HostedIdentityEntry::class.java
+    var recordCount = 0
+    override fun onNext(events: List<Record<String, HostedIdentityEntry>>): List<Record<*, *>> {
+        for (event in events) {
+            println("Hosted Identity : $event")
+            recordCount++
+            if (recordCount > expectedRecordCount) {
+                fail("Expected record count exceeded in events processed for this key")
+            }
+            latch.countDown()
+        }
+        return emptyList()
+    }
+}
+class ClearHostedIdentitiesProcessor : DurableProcessor<String, HostedIdentityEntry> {
+    override val keyClass = String::class.java
+    override val valueClass = HostedIdentityEntry::class.java
+    override fun onNext(events: List<Record<String, HostedIdentityEntry>>): List<Record<*, *>> {
+        for (event in events) {
+            println("Hosted identity cleared : $event")
+        }
+        return emptyList()
+    }
+}
+class ClearMemberInfoProcessor : DurableProcessor<String, PersistentMemberInfo> {
+    override val keyClass = String::class.java
+    override val valueClass = PersistentMemberInfo::class.java
+    override fun onNext(events: List<Record<String, PersistentMemberInfo>>): List<Record<*, *>> {
+        for (event in events) {
+            println("Member info cleared : $event")
+        }
         return emptyList()
     }
 }
