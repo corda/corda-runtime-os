@@ -53,7 +53,7 @@ class InteropService @Activate constructor(
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
-    private var _publisher: Publisher? = null
+    private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -96,14 +96,14 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
-        _publisher?.close()
-        _publisher = publisherFactory.createPublisher(
+        publisher?.close()
+        publisher = publisherFactory.createPublisher(
             PublisherConfig("interop-registration-service"),
             event.config.getConfig(MESSAGING_CONFIG)
         )
-        _publisher?.start()
-        _publisher!!.publish(InteropMemberRegistrationService().createDummyMemberInfo())
-        _publisher!!.publish(listOf(InteropMemberRegistrationService().createDummyHostedIdentity()))
+        publisher?.start()
+        publisher?.publish(InteropMemberRegistrationService().createDummyMemberInfo())
+        publisher?.publish(InteropMemberRegistrationService().createDummyHostedIdentity())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 

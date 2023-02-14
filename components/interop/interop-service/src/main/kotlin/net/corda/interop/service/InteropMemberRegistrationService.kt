@@ -35,14 +35,14 @@ class InteropMemberRegistrationService {
         private val ALICE_ALTER_EGO_X500_NAME = MemberX500Name.parse(ALICE_ALTER_EGO_X500)
         private val ALICE_X500_NAME = MemberX500Name.parse(ALICE_X500)
         private val DUMMY_CERTIFICATE =
-            this::class.java.getResource("/dummy_certificate.pem")!!.readText()
+            this::class.java.getResource("/dummy_certificate.pem")?.readText()
         private val DUMMY_PUBLIC_SESSION_KEY =
-            this::class.java.getResource("/dummy_session_key.pem")!!.readText()
+            this::class.java.getResource("/dummy_session_key.pem")?.readText()
+        private val memberList = listOf(HoldingIdentity(ALICE_X500_NAME, "group1"), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, "group1"))
     }
 
     //Below method is to push the dummy interops memeber data to MEMBER_LIST_TOPIC
      fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>> {
-        val memberList = listOf(HoldingIdentity(ALICE_X500_NAME, "group1"), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, "group1"))
         val registeringMember = memberList[0]
         val memberId = registeringMember.shortHash.value
 
@@ -78,20 +78,24 @@ class InteropMemberRegistrationService {
         }
     }
 
-    fun createDummyHostedIdentity(): Record<String, HostedIdentityEntry> {
-        val registeringMember = HoldingIdentity(ALICE_X500_NAME, "group1")
-        val hostedIdentity = HostedIdentityEntry(
-            net.corda.data.identity.HoldingIdentity(registeringMember.x500Name.toString(), registeringMember.groupId),
-            registeringMember.shortHash.value,
-            registeringMember.shortHash.value,
-            listOf(DUMMY_CERTIFICATE),
-            DUMMY_PUBLIC_SESSION_KEY,
-            null
-        )
-        return Record(
-            Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
-            registeringMember.shortHash.value,
-            hostedIdentity
-        )
+    fun createDummyHostedIdentity(): List<Record<String, HostedIdentityEntry>> {
+        return memberList.map {
+            val registeringMember = it
+            val hostedIdentity = HostedIdentityEntry(
+                net.corda.data.identity.HoldingIdentity(
+                    registeringMember.x500Name.toString(),
+                    registeringMember.groupId
+                ),
+                registeringMember.shortHash.value,
+                listOf(DUMMY_CERTIFICATE),
+                DUMMY_PUBLIC_SESSION_KEY,
+                null
+            )
+            Record(
+                Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
+                registeringMember.shortHash.value,
+                hostedIdentity
+            )
+        }
     }
 }

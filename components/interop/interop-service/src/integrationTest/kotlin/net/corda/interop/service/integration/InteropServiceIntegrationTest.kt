@@ -191,7 +191,7 @@ class InteropServiceIntegrationTest {
         assertEquals(memberExpectedOutputMessages, memberProcessor.recordCount, "More membership messages were observed that expected.")
         memberOutSub.close()
 
-        val hostedIdsExpected = 1
+        val hostedIdsExpected = 2
         val hostedIdMapperLatch = CountDownLatch(hostedIdsExpected)
         val hostedIdProcessor = HostedIdentitiesMessageCounter(hostedIdMapperLatch, hostedIdsExpected)
         val hostedIdOutSub = subscriptionFactory.createDurableSubscription(
