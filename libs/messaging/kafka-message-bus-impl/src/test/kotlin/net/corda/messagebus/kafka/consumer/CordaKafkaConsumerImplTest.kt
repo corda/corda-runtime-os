@@ -57,7 +57,6 @@ class CordaKafkaConsumerImplTest {
     private lateinit var consumer: MockConsumer<Any, Any>
     private lateinit var partition: TopicPartition
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
-    private val onSerializationError: (ByteArray) -> Unit = mock()
     private val chunkDeserializerService: ConsumerChunkDeserializerService<String, String> = mock()
     private val consumerRecord = CordaConsumerRecord("prefixtopic", 1, 1, "key", "value", 0)
     private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
@@ -89,7 +88,6 @@ class CordaKafkaConsumerImplTest {
             listenerParam,
             chunkDeserializerService,
             String::class.java,
-            onSerializationError
         )
     }
 
@@ -438,7 +436,6 @@ class CordaKafkaConsumerImplTest {
         assertThat(result.size).isEqualTo(5)
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
         verify(chunkDeserializerService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
-        verifyNoInteractions(onSerializationError)
     }
 
     @Test
@@ -459,11 +456,10 @@ class CordaKafkaConsumerImplTest {
         assertThat(result.size).isEqualTo(4)
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
         verify(chunkDeserializerService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
-        verifyNoInteractions(onSerializationError)
     }
 
     @Test
-    fun `Received incomplete chunks within a single poll with normal records before and after`() {
+    fun `Received incomplete chunks within a single poll with normal records before and after, only returns records before the chunks`() {
         val beforeChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 0)
         val chunkedRecords = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2, false)
         val afterChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 5)
@@ -475,10 +471,9 @@ class CordaKafkaConsumerImplTest {
         cordaKafkaConsumer = createConsumer(consumer)
 
         val result = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
-        assertThat(result.size).isEqualTo(4)
+        assertThat(result.size).isEqualTo(2)
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
         verifyNoInteractions(chunkDeserializerService)
-        verify(onSerializationError, times(1)).invoke(any())
     }
 
     @Test
@@ -511,14 +506,48 @@ class CordaKafkaConsumerImplTest {
         assertThat(secondResult.size).isEqualTo(3)
         verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
         verify(chunkDeserializerService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
-        verifyNoInteractions(onSerializationError)
+    }
+
+
+    @Test
+    fun `Received chunks across two polls with normal records interleaved`() {
+        val beforeChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 0)
+        val chunkedRecords = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2)
+        val afterChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 5)
+        val firstConsumerRecords = generateConsumerRecords(beforeChunkedRecords.plus(chunkedRecords.first()),
+            eventTopic, 1)
+        val secondConsumerRecords = generateConsumerRecords(chunkedRecords.minus(chunkedRecords.first()).plus(afterChunkedRecords),
+            eventTopic, 1)
+
+        consumer = mock()
+
+        var firstPollCalled = false
+        doAnswer {
+            if (!firstPollCalled) {
+                firstPollCalled = true
+                firstConsumerRecords
+            } else {
+                secondConsumerRecords
+            }
+        }.whenever(consumer).poll(Mockito.any(Duration::class.java))
+
+        cordaKafkaConsumer = createConsumer(consumer)
+
+        val firstResult = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
+        val secondResult = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
+        assertThat(firstResult.size).isEqualTo(2)
+        assertThat(secondResult.size).isEqualTo(3)
+        verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
+        verify(chunkDeserializerService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
     }
 
     @Test
-    fun `Received chunks across two polls with normal records before and after on multiple partitions`() {
+    fun `Received chunks across two polls with normal records before, interleaved and after on multiple partitions`() {
         val beforeChunkedRecordsPartition1 = generateMockConsumerRecords(2, eventTopic, 1, 0)
         val chunkedRecordsPartition1 = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2)
         val afterChunkedRecordsPartition1 = generateMockConsumerRecords(2, eventTopic, 1, 5)
+
+
         val beforeChunkedRecordsPartition2 = generateMockConsumerRecords(2, eventTopic, 2, 0)
         val chunkedRecordsPartition2 = generateMockChunkedConsumerRecordsList(3, eventTopic, 2, 2)
         val afterChunkedRecordsPartition2 = generateMockConsumerRecords(2, eventTopic, 2, 5)
@@ -555,7 +584,6 @@ class CordaKafkaConsumerImplTest {
         assertThat(secondResult.size).isEqualTo(6)
         verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
         verify(chunkDeserializerService, times(2)).assembleChunks(any<Map<ChunkKey, Chunk>>())
-        verifyNoInteractions(onSerializationError)
     }
 
     private fun commitOffsetForConsumer(offsetCommit: Long) {

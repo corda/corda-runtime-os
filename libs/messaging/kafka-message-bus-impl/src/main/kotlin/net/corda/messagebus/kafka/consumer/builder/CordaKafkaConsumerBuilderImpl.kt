@@ -58,7 +58,7 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
                 val consumerChunkDeserializerService =
                     messagingChunkFactory.createConsumerChunkDeserializerService(keyDeserializer, valueDeserializer, onSerializationError)
                 val consumer = createKafkaConsumer(kafkaProperties, keyDeserializer, valueDeserializer)
-                CordaKafkaConsumerImpl(resolvedConfig, consumer, listener, consumerChunkDeserializerService, vClazz, onSerializationError)
+                CordaKafkaConsumerImpl(resolvedConfig, consumer, listener, consumerChunkDeserializerService, vClazz)
             },
             errorMessage = {
                 "MessageBusConsumerBuilder failed to create consumer for group ${consumerConfig.group}, " +
