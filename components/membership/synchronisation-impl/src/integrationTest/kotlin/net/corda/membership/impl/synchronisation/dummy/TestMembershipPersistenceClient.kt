@@ -180,6 +180,12 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         remarks: String?
     ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
+    override fun consumePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name,
+        preAuthTokenId: UUID
+    ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
     override fun revokePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,

@@ -48,8 +48,6 @@ interface NetworkRestResource : RestResource {
                 p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias
                 useClusterLevelTlsCertificateAndKey: Should the cluster-level P2P TLS certificate type and key be 
                 used or the virtual node certificate and key.
-                useClusterLevelSessionCertificateAndKey: Should the cluster-level P2P SESSION certificate type 
-                and key be used or the virtual node certificate and key.
                 sessionKeyId: the session key identifier""",
         )
         request: HostedIdentitySetupRequest
