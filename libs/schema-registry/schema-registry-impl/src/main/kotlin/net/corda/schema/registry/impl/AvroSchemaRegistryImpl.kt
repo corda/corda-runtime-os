@@ -6,7 +6,7 @@ import net.corda.data.Fingerprint
 import net.corda.data.SchemaLoadException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.toHexString
+import net.corda.v5.base.types.ByteArrays.toHexString
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.avro.Schema
@@ -109,7 +109,7 @@ class AvroSchemaRegistryImpl(
         ?: throw CordaRuntimeException("Could not find fingerprint for class ${clazz.name}")
 
     private fun getSchema(fingerprint: Fingerprint) = schemasByFingerprint[fingerprint]
-        ?: throw CordaRuntimeException("Could not find schema for fingerprint ${fingerprint.bytes().toHexString()}")
+        ?: throw CordaRuntimeException("Could not find schema for fingerprint ${toHexString(fingerprint.bytes())}")
 
     private fun <T : Any> getRecordData(clazz: Class<T>) = recordDataByFingerprint[getFingerprint(clazz)]
         ?: throw CordaRuntimeException("Could not record data for class: $clazz")
@@ -218,7 +218,7 @@ class AvroSchemaRegistryImpl(
     }
 
     override fun <T : Any> deserialize(bytes: ByteBuffer, offset: Int, length: Int, clazz: Class<T>, reusable: T?): T {
-        log.trace("Deserializing from: ${bytes.array().toHexString()}")
+        log.trace("Deserializing from: ${toHexString(bytes.array())}")
         val envelope = decodeAvroEnvelope(bytes.array())
         if (envelope.magic != MAGIC) {
             throw CordaRuntimeException("Incorrect Header detected.  Cannot deserialize message.")

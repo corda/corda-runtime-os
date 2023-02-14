@@ -55,8 +55,8 @@ internal class SandboxGroupContextCacheImpl private constructor(
      *
      * @return number of contexts to be closed.
      */
-    @VisibleForTesting
     internal val evictedContextsToBeClosed: Int
+        @VisibleForTesting
         get() {
             purgeExpiryQueue()
             return toBeClosed.size

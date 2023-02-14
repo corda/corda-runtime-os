@@ -18,8 +18,8 @@ class NotaryLookupImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
 ) : NotaryLookup, UsedByFlow, SingletonSerializeAsToken {
-    @Suspendable
     override val notaryServices: Collection<NotaryInfo>
+        @Suspendable
         get() = notaries ?: emptyList()
 
     @Suspendable
@@ -35,11 +35,11 @@ class NotaryLookupImpl @Activate constructor(
         }
     }
 
-    @Suspendable
     private val groupReader
+        @Suspendable
         get() = flowFiberService.getExecutingFiber().getExecutionContext().membershipGroupReader
 
-    @Suspendable
     private val notaries
+        @Suspendable
         get() = groupReader.groupParameters?.notaries
 }

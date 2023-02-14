@@ -8,7 +8,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
 
-@InitiatedBy("absence-call")
+@InitiatedBy(protocol = "absence-call")
 class AbsenceCallResponderFlow: ResponderFlow {
 
     private companion object {

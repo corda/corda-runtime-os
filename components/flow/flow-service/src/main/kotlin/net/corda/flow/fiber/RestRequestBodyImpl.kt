@@ -18,16 +18,16 @@ class RestRequestBodyImpl(private val fiberService: FlowFiberService) : RestRequ
             ?: throw IllegalStateException("Failed to find the start args for Rest started flow")
     }
 
-    override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
-        return marshallingService.parse(getRequestBody(), clazz)
+    override fun <T : Any> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
+        return marshallingService.parse(requestBody, clazz)
     }
 
     override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
-        return marshallingService.parseList(getRequestBody(), clazz)
+        return marshallingService.parseList(requestBody, clazz)
     }
 
     override fun toString(): String {
         // Truncate the JSON object to ensure that we don't try and write too much data into logs.
-        return "RestRequestBody(input=${getRequestBody().take(MAX_STRING_LENGTH)})"
+        return "RestRequestBody(input=${requestBody.take(MAX_STRING_LENGTH)})"
     }
 }

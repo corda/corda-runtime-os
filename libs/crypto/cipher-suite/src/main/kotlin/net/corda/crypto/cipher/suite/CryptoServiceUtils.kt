@@ -2,7 +2,7 @@
 
 package net.corda.crypto.cipher.suite
 
-import net.corda.v5.base.types.toHexString
+import net.corda.v5.base.types.ByteArrays
 import net.corda.v5.crypto.HMAC_SHA256_ALGORITHM
 import net.corda.v5.crypto.hmac
 
@@ -66,6 +66,6 @@ fun computeHSMAlias(
     return (tenantId + alias)
         .encodeToByteArray()
         .hmac(secret, HMAC_SHA256_ALGORITHM)
-        .toHexString()
+        .let(ByteArrays::toHexString)
         .take(take)
 }

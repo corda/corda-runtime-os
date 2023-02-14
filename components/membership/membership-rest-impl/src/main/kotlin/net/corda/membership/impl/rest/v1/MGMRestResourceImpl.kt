@@ -303,7 +303,7 @@ class MGMRestResourceImpl internal constructor(
             subject: String
         ) {
             verifyMutualTlsIsRunning()
-            val subjectName = MemberX500Name.parse("subject", subject)
+            val subjectName = parseX500Name("subject", subject)
             handleCommonErrors(holdingIdentityShortHash) {
                 mgmResourceClient.mutualTlsAllowClientCertificate(it, subjectName)
             }
@@ -311,7 +311,7 @@ class MGMRestResourceImpl internal constructor(
 
         override fun mutualTlsDisallowClientCertificate(holdingIdentityShortHash: String, subject: String) {
             verifyMutualTlsIsRunning()
-            val subjectName = MemberX500Name.parse("subject", subject)
+            val subjectName = parseX500Name("subject", subject)
             handleCommonErrors(holdingIdentityShortHash) {
                 mgmResourceClient.mutualTlsDisallowClientCertificate(it, subjectName)
             }
@@ -331,7 +331,7 @@ class MGMRestResourceImpl internal constructor(
             val ttlAsInstant = request.ttl?.let { ttl ->
                 clock.instant() + ttl
             }
-            val x500Name = MemberX500Name.parse("ownerX500Name", request.ownerX500Name)
+            val x500Name = parseX500Name("ownerX500Name", request.ownerX500Name)
             return handleCommonErrors(holdingIdentityShortHash) { shortHash ->
                 mgmResourceClient.generatePreAuthToken(
                     shortHash,
@@ -349,7 +349,7 @@ class MGMRestResourceImpl internal constructor(
             viewInactive: Boolean
         ): Collection<PreAuthToken> {
             val ownerX500 = ownerX500Name?.let {
-                MemberX500Name.parse("ownerX500Name", it)
+                parseX500Name("ownerX500Name", it)
             }
             val tokenId = preAuthTokenId?.let {
                 parsePreAuthTokenId(it)
@@ -468,9 +468,9 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
-        private fun MemberX500Name.Companion.parse(keyName: String, x500Name: String): MemberX500Name {
+        private fun parseX500Name(keyName: String, x500Name: String): MemberX500Name {
             return try {
-                parse(x500Name)
+                MemberX500Name.parse(x500Name)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     details = mapOf(keyName to x500Name),

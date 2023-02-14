@@ -23,7 +23,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
         )
 
         private val secondNotaryServiceIdentity = Party(
-            MemberX500Name.Companion.parse("O=MySecondNotaryService, L=London, C=GB"),
+            MemberX500Name.parse("O=MySecondNotaryService, L=London, C=GB"),
             mock()
         )
 
