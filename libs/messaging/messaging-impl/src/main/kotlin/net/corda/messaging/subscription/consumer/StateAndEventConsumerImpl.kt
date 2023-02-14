@@ -69,7 +69,11 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         stateConsumer.poll(STATE_POLL_TIMEOUT).forEach { state ->
             log.debug { "Updating state: $state" }
-            updateInMemoryState(state)
+            val partition = state.partition
+            //dont update in memory state unless we are syncing as we are already garunteed to have the latest state
+            if (partitionsToSync.containsKey(partition)) {
+                updateInMemoryState(state)
+            }
         }
 
         if (syncPartitions && partitionsToSync.isNotEmpty()) {

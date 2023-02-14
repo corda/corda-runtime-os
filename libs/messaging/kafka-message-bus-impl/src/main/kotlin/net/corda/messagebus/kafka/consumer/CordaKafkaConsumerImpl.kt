@@ -108,7 +108,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         val partition = consumerRecord.partition()
         val value = consumerRecord.value()
         val key = consumerRecord.key()
-        return if (key is ChunkKey && vClazz != Chunk::class && value is Chunk) {
+        return if (key is ChunkKey && vClazz != Chunk::class.java && value is Chunk) {
             getRecordIfComplete(key, value, consumerRecord)
         } else {
             verifyNoPartialChunks(partition)
@@ -130,7 +130,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
      */
     private fun verifyNoPartialChunks(partition: Int) {
         val chunks = bufferedChunksByPartition[partition]
-        if (chunks != null && chunks.isNotEmpty()) {
+        if (!chunks.isNullOrEmpty()) {
             val out = ByteArrayOutputStream()
             chunks.values.forEach { out.write(it.data.array()) }
             onSerializationError(out.toByteArray())
