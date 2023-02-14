@@ -20,11 +20,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
+import java.time.Instant
 
 @Component(service = [InteropMemberRegistrationService::class])
 class InteropMemberRegistrationService {
@@ -62,7 +62,7 @@ class InteropMemberRegistrationService {
         )
         val mgmContext = listOf(
             KeyValuePair(STATUS, MemberInfoExtension.MEMBER_STATUS_ACTIVE),
-            KeyValuePair(MODIFIED_TIME, UTCClock().instant().toString()),
+            KeyValuePair(MODIFIED_TIME, Instant.now().toString()),
             KeyValuePair(PARTY_NAME, "1"),
         )
         return memberList.map {
