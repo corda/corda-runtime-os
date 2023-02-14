@@ -7,7 +7,7 @@ description 'Corda Packaging Verify'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     api platform("net.corda:corda-api:$cordaApiVersion")
 

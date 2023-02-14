@@ -1,6 +1,5 @@
 package net.corda.libs.cpi.datamodel
 
-import net.corda.db.schema.DbSchema
 import java.io.Serializable
 import java.time.Instant
 import java.util.stream.Stream
@@ -34,7 +33,7 @@ import javax.persistence.Version
  * @property isDeleted Flag used for soft db deletes
  */
 @Entity
-@Table(name = "cpi", schema = DbSchema.CONFIG)
+@Table(name = "cpi")
 @IdClass(CpiMetadataEntityKey::class)
 @Suppress("LongParameterList")
 data class CpiMetadataEntity(

@@ -239,7 +239,8 @@
                         "type",
                         "port",
                         "username",
-                        "database"                    
+                        "database",
+                        "schema"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -283,6 +284,15 @@
                                 "cordacluster"
                             ],
                             "minLength": 1
+                        },
+                        "schema": {
+                            "type": "string",
+                            "default": "CONFIG",
+                            "title": "the name of the cluster database schema",
+                            "examples": [
+                                "CONFIG"
+                            ],
+                            "minLength": 1
                         }
                     },
                     "examples": [{
@@ -295,7 +305,8 @@
                         "password": {
                             "value": "password"
                         },
-                        "database": "cordacluster"
+                        "database": "cordacluster",
+                        "schema": "CONFIG"
                     }]
                 }
             },
@@ -306,6 +317,7 @@
                     "port": 5432,
                     "user": "user",
                     "database": "cordacluster",
+                    "schema": "CONFIG",
                     "existingSecret": "postgresql-secret"
                 }
             }]

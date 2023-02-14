@@ -30,7 +30,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(":libs:p2p-crypto")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")

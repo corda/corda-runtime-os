@@ -49,8 +49,8 @@ class ResolveStateRefsExternalEventFactory(
         return ResolveStateRefs(parameters.stateRefs.map {
             net.corda.data.ledger.utxo.StateRef(
                 SecureHash(
-                    it.transactionHash.algorithm,
-                    ByteBuffer.wrap(it.transactionHash.bytes)
+                    it.transactionId.algorithm,
+                    ByteBuffer.wrap(it.transactionId.bytes)
                 ), it.index
             )
         })

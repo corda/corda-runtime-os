@@ -119,6 +119,17 @@ data class UtxoSignedTransactionImpl(
     }
 
     @Suspendable
+    override fun verifyNotarySignatureAttached() {
+        if (!notary.owningKey.isFulfilledBy(signatures.map { it.by })) {
+            throw TransactionVerificationException(
+                id,
+                "There are no notary signatures attached to the transaction.",
+                null
+            )
+        }
+    }
+
+    @Suspendable
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
         return utxoLedgerTransactionFactory.create(wireTransaction)
     }

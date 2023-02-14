@@ -10,7 +10,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"

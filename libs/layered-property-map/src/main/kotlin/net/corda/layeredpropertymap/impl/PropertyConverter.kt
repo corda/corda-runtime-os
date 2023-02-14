@@ -4,6 +4,7 @@ import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.v5.base.types.MemberX500Name
 import java.time.Instant
+import java.util.UUID
 
 /**
  * Converter class, converting from String to actual Objects.
@@ -34,6 +35,7 @@ class PropertyConverter constructor(
                     String::class -> value as T
                     Instant::class -> Instant.parse(value) as T
                     MemberX500Name::class -> MemberX500Name.parse(value) as T
+                    UUID::class -> UUID.fromString(value) as T
                     else -> throw IllegalStateException("Unknown '${clazz.name}' type.")
                 }
             }

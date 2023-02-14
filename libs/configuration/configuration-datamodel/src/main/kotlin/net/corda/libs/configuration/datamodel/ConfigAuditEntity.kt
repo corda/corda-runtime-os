@@ -24,7 +24,7 @@ import javax.persistence.Table
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
 @Entity
-@Table(name = DbSchema.CONFIG_AUDIT_TABLE, schema = DbSchema.CONFIG)
+@Table(name = DbSchema.CONFIG_AUDIT_TABLE)
 data class ConfigAuditEntity(
     @Id
     @SequenceGenerator(

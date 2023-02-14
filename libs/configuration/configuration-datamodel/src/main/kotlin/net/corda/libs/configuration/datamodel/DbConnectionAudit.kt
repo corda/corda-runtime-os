@@ -28,7 +28,7 @@ import javax.persistence.Table
  * @property config DB configuration section that can be parsed as SmartConfig.
  */
 @Entity
-@Table(name = DbSchema.DB_CONNECTION_AUDIT_TABLE, schema = DbSchema.CONFIG)
+@Table(name = DbSchema.DB_CONNECTION_AUDIT_TABLE)
 data class DbConnectionAudit (
     @Id
     @SequenceGenerator(

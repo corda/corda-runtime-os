@@ -18,19 +18,21 @@ gradle_run() {
  ./gradlew -Dscan.tag.${TAG_BENCHMARK} -Dscan.tag.${TAG_EXP} -Dscan.tag.${TAG_EXP} -Dscan.tag.${TAG_BENCHMARK_ID} -Dscan.tag.$1 --parallel --max-workers=${MAX_WORKERS} $2
 }
 
+set -x
+
 ./gradlew --stop
 
 echo "Using ${MAX_WORKERS} workers"
 
 echo "Building without cache"
 gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache clean"
-gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache publishOSGiImage"
-gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache publishOSGiImage"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_CLEAN}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
+gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache publishOSGiImage -PmultiArchSupport=false"
 
 echo "Building with cache"
 gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache clean"
-gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache publishOSGiImage"
-gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_INCREMENTAL}" "--build-cache publishOSGiImage"
+gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_CLEAN}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
+gradle_run "${TAG_EXP}-${TAG_CACHE}-${TAG_INCREMENTAL}" "--build-cache publishOSGiImage -PmultiArchSupport=false"
 
 echo "(Incremental) Detekt without cache"
 gradle_run "${TAG_EXP}-${TAG_NO_CACHE}-${TAG_INCREMENTAL}" "--no-build-cache detekt"
