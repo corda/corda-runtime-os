@@ -103,10 +103,16 @@ class MGMGroupPolicyImpl(
         }
 
         override val tlsTrustRoots by lazy {
+            println("QQQ in MGMGroupPolicyImpl reading tlsTrustRoots...")
+            persistedProperties.entries.forEach {
+                println("QQQ \t entry -> ${it.key} -> ${it.value}")
+            }
             if (!persistedProperties.entries.any { it.key.startsWith(PropertyKeys.TLS_TRUST_ROOTS) }) {
                 emptyList()
             } else {
                 persistedProperties.parseList(PropertyKeys.TLS_TRUST_ROOTS, String::class.java)
+            }.also {
+                println("QQQ MGMGroupPolicyImpl will return $it")
             }
         }
 

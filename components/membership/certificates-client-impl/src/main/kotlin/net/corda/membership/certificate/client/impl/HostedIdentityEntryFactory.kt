@@ -235,6 +235,7 @@ internal class HostedIdentityEntryFactory(
         certificateType.trustRoots
             .asSequence()
             .map { rootCertificateStr ->
+                println("QQQ rootCertificateStr -> $rootCertificateStr")
                 CertificateFactory.getInstance("X.509")
                     .generateCertificate(rootCertificateStr.byteInputStream())
             }.filter { rootCertificate ->

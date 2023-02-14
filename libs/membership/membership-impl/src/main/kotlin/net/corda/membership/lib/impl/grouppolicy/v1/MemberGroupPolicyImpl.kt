@@ -141,6 +141,9 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
                     throw BadGroupPolicyException(getMissingCertError(TLS_TRUST_ROOTS))
                 }
             }.onEachIndexed { index, pemCert -> validatePemCert(pemCert, TLS_TRUST_ROOTS, index) }
+                .also {
+                    println("QQQ in MemberGroupPolicyImpl got $it")
+                }
 
 
         override val tlsPki = p2pParameters.getMandatoryEnum(TLS_PKI) {
