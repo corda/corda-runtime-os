@@ -18,6 +18,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
@@ -27,8 +28,10 @@ class UtxoFinalityFlow(
 ) : UtxoFinalityBase() {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(UtxoFinalityFlow::class.java)
     }
+
+    override val log: Logger = UtxoFinalityFlow.log
 
     private val transactionId = initialTransaction.id
 
@@ -69,7 +72,7 @@ class UtxoFinalityFlow(
     private fun sendTransactionAndBackchainToCounterparties() {
         sessions.forEach {
             it.send(initialTransaction)
-            flowEngine.subFlow(TransactionBackchainSenderFlow(it))
+            flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction, it))
         }
     }
 

@@ -848,8 +848,8 @@ class UtxoFinalityFlowTest {
 
         callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(sessionAlice))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(sessionBob))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(initialTx, sessionAlice))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(initialTx, sessionBob))
     }
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {

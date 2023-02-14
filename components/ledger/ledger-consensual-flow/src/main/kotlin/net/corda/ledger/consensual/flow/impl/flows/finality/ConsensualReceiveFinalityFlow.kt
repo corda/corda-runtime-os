@@ -23,8 +23,10 @@ class ConsensualReceiveFinalityFlow(
 ) : ConsensualFinalityBase() {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(ConsensualReceiveFinalityFlow::class.java)
     }
+
+    override val log: Logger = ConsensualReceiveFinalityFlow.log
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
