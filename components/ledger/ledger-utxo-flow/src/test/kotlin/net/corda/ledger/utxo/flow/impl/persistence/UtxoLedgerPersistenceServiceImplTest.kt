@@ -139,6 +139,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     fun `find executes successfully`() {
         val metadata = mock<TransactionMetadata>()
         whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
+        whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
         val wireTransaction = mock<WireTransaction>()
         whenever(wireTransaction.componentGroupLists).thenReturn(List(UtxoComponentGroup.values().size) { listOf() })
         whenever(wireTransaction.metadata).thenReturn(metadata)

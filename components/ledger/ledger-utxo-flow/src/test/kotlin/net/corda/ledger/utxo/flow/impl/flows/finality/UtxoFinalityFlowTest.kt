@@ -7,7 +7,6 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
-import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
