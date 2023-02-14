@@ -2,7 +2,6 @@ package net.corda.virtualnode.write.db.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -29,8 +28,6 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     publisherFactory: PublisherFactory,
     @Reference(service = DbConnectionManager::class)
     dbConnectionManager: DbConnectionManager,
-    @Reference(service = DbAdmin::class)
-    dbAdmin: DbAdmin,
     @Reference(service = LiquibaseSchemaMigrator::class)
     schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = GroupPolicyParser::class)
@@ -41,7 +38,7 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             subscriptionFactory,
             publisherFactory,
             dbConnectionManager,
-            dbAdmin,
+            VirtualNodesDbAdmin(dbConnectionManager),
             schemaMigrator,
             groupPolicyParser
         )

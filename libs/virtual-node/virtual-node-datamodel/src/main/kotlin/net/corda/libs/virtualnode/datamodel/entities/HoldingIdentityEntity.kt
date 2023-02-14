@@ -1,6 +1,5 @@
 package net.corda.libs.virtualnode.datamodel.entities
 
-import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.HOLDING_IDENTITY_DB_TABLE
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -20,7 +19,7 @@ import javax.persistence.Table
  * @param hsmConnectionId A pointer to the holding identity's entry in the HSM connection table.
  */
 @Entity
-@Table(name = HOLDING_IDENTITY_DB_TABLE, schema = CONFIG)
+@Table(name = HOLDING_IDENTITY_DB_TABLE)
 @Suppress("LongParameterList")
 internal class HoldingIdentityEntity(
     @Id

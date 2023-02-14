@@ -3,13 +3,13 @@ package net.corda.virtualnode.write.db.impl.tests
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbImpl
@@ -32,7 +32,7 @@ class VirtualNodeDbImplTest {
     private val holdingIdShortHash = ShortHash.of("AAAAAAAAAAAA")
     private val dbType = VirtualNodeDbType.VAULT
     private val schema = dbType.getSchemaName(holdingIdShortHash)
-    private val dbAdmin = mock<DbAdmin>().apply {
+    private val dbAdmin = mock<VirtualNodesDbAdmin>().apply {
         whenever(userExists(any())).thenReturn(false)
     }
     private val dbConnectionManager = mock<DbConnectionManager>()

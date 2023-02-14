@@ -29,8 +29,7 @@ object CryptoDBSetup {
     val clusterDb = TestDbInfo.createConfig()
 
     val cryptoDb = TestDbInfo(
-        name = CordaDb.Crypto.persistenceUnitName,
-        schemaName = DbSchema.CRYPTO
+        name = CordaDb.Crypto.persistenceUnitName
     )
 
     val vnodeDb = TestDbInfo(

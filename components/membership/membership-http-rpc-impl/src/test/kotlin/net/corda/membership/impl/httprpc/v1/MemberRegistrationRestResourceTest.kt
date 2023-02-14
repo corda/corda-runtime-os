@@ -7,6 +7,8 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.client.RegistrationProgressNotFoundException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
@@ -28,6 +30,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.whenever
+import java.lang.Exception
 import java.time.Instant
 import kotlin.test.assertFailsWith
 
@@ -162,6 +165,34 @@ class MemberRegistrationRestResourceTest {
     }
 
     @Test
+    fun `checkRegistrationProgress throw 404 when member can not be found`() {
+        whenever(
+            memberOpsClient.checkRegistrationProgress(holdingIdShortHash)
+        ).doThrow(CouldNotFindMemberException(holdingIdShortHash))
+        memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
+
+        assertThrows<ResourceNotFoundException> {
+            memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
+        }
+    }
+
+    @Test
+    fun `checkRegistrationProgress throw 503 when the database is not read`() {
+        whenever(memberOpsClient.checkRegistrationProgress(holdingIdShortHash)).doThrow(
+            ServiceNotReadyException(
+                Exception("")
+            )
+        )
+        memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
+
+        assertThrows<ServiceUnavailableException> {
+            memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
+        }
+    }
+
+    @Test
     fun `checkSpecificRegistrationProgress returns the correct data`() {
         val data = RegistrationRequestStatusDto(
             "id",
@@ -182,15 +213,39 @@ class MemberRegistrationRestResourceTest {
     }
 
     @Test
-    fun `checkSpecificRegistrationProgress returns null when no data is returned`() {
-        whenever(memberOpsClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id")).doReturn(null)
+    fun `checkSpecificRegistrationProgress throw 404 when the member can not be found`() {
+        whenever(memberOpsClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id"))
+            .doThrow(CouldNotFindMemberException(holdingIdShortHash))
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.activate("")
 
-        val status = memberRegistrationRpcOps.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+        assertThrows<ResourceNotFoundException> {
+            memberRegistrationRpcOps.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+        }
+    }
 
-        assertThat(status)
-            .isNull()
+    @Test
+    fun `checkSpecificRegistrationProgress throw 404 when the request can not be found`() {
+        whenever(memberOpsClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id"))
+            .doThrow(RegistrationProgressNotFoundException(""))
+        memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
+
+        assertThrows<ResourceNotFoundException> {
+            memberRegistrationRpcOps.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+        }
+    }
+
+    @Test
+    fun `checkSpecificRegistrationProgress throw 503 when the db is not ready`() {
+        whenever(memberOpsClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id"))
+            .doThrow(ServiceNotReadyException(Exception("")))
+        memberRegistrationRpcOps.start()
+        memberRegistrationRpcOps.activate("")
+
+        assertThrows<ServiceUnavailableException> {
+            memberRegistrationRpcOps.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+        }
     }
 
     @Test

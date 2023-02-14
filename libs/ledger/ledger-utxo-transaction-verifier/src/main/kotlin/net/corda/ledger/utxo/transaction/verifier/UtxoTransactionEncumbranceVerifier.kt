@@ -10,7 +10,7 @@ fun verifyEncumbrance(transaction: UtxoLedgerTransaction): List<ContractVerifica
     val failureReasons = mutableListOf<ContractVerificationFailure>()
 
     // group input by transaction id (encumbrance is only unique within one transaction output)
-    transaction.inputStateAndRefs.groupBy { it.ref.transactionHash }.forEach { statesByTx ->
+    transaction.inputStateAndRefs.groupBy { it.ref.transactionId }.forEach { statesByTx ->
 
 
         // Filter out unencumbered states

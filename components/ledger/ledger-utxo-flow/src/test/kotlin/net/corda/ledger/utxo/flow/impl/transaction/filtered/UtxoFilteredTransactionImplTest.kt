@@ -65,8 +65,8 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         val inputStateRefs = utxoFilteredTx.inputStateRefs as UtxoFilteredData.Audit<StateRef>
         assertThat(inputStateRefs.size).isEqualTo(2)
         assertThat(inputStateRefs.values.keys.first()).isEqualTo(0)
-        assertThat(inputStateRefs.values[0]?.transactionHash).isEqualTo(inputId)
-        assertThat(inputStateRefs.values[1]?.transactionHash).isEqualTo(inputId)
+        assertThat(inputStateRefs.values[0]?.transactionId).isEqualTo(inputId)
+        assertThat(inputStateRefs.values[1]?.transactionId).isEqualTo(inputId)
         assertThat(inputStateRefs.values[0]?.index).isEqualTo(0)
         assertThat(inputStateRefs.values[1]?.index).isEqualTo(5)
     }
@@ -108,7 +108,7 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         assertThat(inputStateRefs.size).isEqualTo(2)
         assertThat(inputStateRefs.values.size).isEqualTo(1)
         assertThat(inputStateRefs.values.keys.first()).isEqualTo(1)
-        assertThat(inputStateRefs.values[1]?.transactionHash).isEqualTo(inputId)
+        assertThat(inputStateRefs.values[1]?.transactionId).isEqualTo(inputId)
         assertThat(inputStateRefs.values[1]?.index).isEqualTo(5)
     }
 

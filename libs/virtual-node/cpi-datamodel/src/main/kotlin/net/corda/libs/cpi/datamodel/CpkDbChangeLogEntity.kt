@@ -1,6 +1,5 @@
 package net.corda.libs.cpi.datamodel
 
-import net.corda.db.schema.DbSchema
 import java.io.Serializable
 import java.time.Instant
 import javax.persistence.Column
@@ -15,7 +14,7 @@ import javax.persistence.Version
  * Representation of a DB ChangeLog (Liquibase) file associated with a CPK.
  */
 @Entity
-@Table(name = "cpk_db_change_log", schema = DbSchema.CONFIG)
+@Table(name = "cpk_db_change_log")
 class CpkDbChangeLogEntity(
     @EmbeddedId
     var id: CpkDbChangeLogKey,

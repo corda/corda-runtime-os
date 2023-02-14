@@ -9,11 +9,10 @@ import javax.persistence.Enumerated
 import javax.persistence.Id
 import javax.persistence.Table
 import javax.persistence.Version
-import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 
 @Entity
-@Table(name = "virtual_node_operation", schema = CONFIG)
+@Table(name = "virtual_node_operation")
 @Suppress("LongParameterList")
 internal class VirtualNodeOperationEntity(
     @Id

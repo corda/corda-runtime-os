@@ -10,14 +10,6 @@ import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAction
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.common.RegistrationStatusDetails
-import net.corda.data.membership.rpc.request.MembershipRpcRequest
-import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
-import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
-import net.corda.data.membership.rpc.response.MembershipRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationStatusResponse
-import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -31,6 +23,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
@@ -38,23 +31,19 @@ import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -64,7 +53,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
-import java.util.concurrent.TimeoutException
 
 @Component(service = [MemberOpsClient::class])
 @Suppress("LongParameterList")
@@ -79,6 +67,8 @@ class MemberOpsClientImpl @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = CordaAvroSerializationFactory::class)
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : MemberOpsClient {
@@ -86,19 +76,15 @@ class MemberOpsClientImpl @Activate constructor(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val ERROR_MSG = "Service is in an incorrect state for calling."
 
-        const val RPC_CLIENT_ID = "membership.ops.rpc"
         const val ASYNC_CLIENT_ID = "membership.ops.async"
-        const val GROUP_NAME = "membership.ops.rpc"
 
         private val clock = UTCClock()
-
-        private val TIMEOUT = 20.seconds
     }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
-    private interface InnerMemberOpsClient : AutoCloseable {
+    private interface InnerMemberOpsClient {
         fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
 
         fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto>
@@ -106,7 +92,7 @@ class MemberOpsClientImpl @Activate constructor(
         fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: ShortHash,
             registrationRequestId: String
-        ): RegistrationRequestStatusDto?
+        ): RegistrationRequestStatusDto
     }
 
     private var impl: InnerMemberOpsClient = InactiveImpl
@@ -178,21 +164,8 @@ class MemberOpsClientImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                impl.close()
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 impl = ActiveImpl(
-                    publisherFactory.createRPCSender(
-                        RPCConfig(
-                            groupName = GROUP_NAME,
-                            clientName = RPC_CLIENT_ID,
-                            requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
-                            requestType = MembershipRpcRequest::class.java,
-                            responseType = MembershipRpcResponse::class.java
-                        ),
-                        messagingConfig,
-                    ).also {
-                        it.start()
-                    },
                     publisherFactory.createPublisher(
                         PublisherConfig(
                             ASYNC_CLIENT_ID
@@ -207,9 +180,7 @@ class MemberOpsClientImpl @Activate constructor(
 
     private fun deactivate(reason: String) {
         coordinator.updateStatus(LifecycleStatus.DOWN, reason)
-        val current = impl
         impl = InactiveImpl
-        current.close()
     }
 
     private object InactiveImpl : InnerMemberOpsClient {
@@ -224,12 +195,9 @@ class MemberOpsClientImpl @Activate constructor(
             registrationRequestId: String,
         ) =
             throw IllegalStateException(ERROR_MSG)
-
-        override fun close() = Unit
     }
 
     private inner class ActiveImpl(
-        private val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>,
         private val asyncPublisher: Publisher,
     ) : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {
@@ -319,118 +287,53 @@ class MemberOpsClientImpl @Activate constructor(
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
+                ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
             return try {
-                val request = MembershipRpcRequest(
-                    MembershipRpcRequestContext(
-                        UUID.randomUUID().toString(),
-                        clock.instant()
-                    ),
-                    RegistrationStatusRpcRequest(holdingIdentityShortHash.toString())
-                )
-
-                val result = registrationsResponse(request.sendRequest())
-                if (result.isEmpty()) {
-                    throw RegistrationProgressNotFoundException(
-                        "There are no requests for '$holdingIdentityShortHash' holding identity."
-                    )
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    holdingIdentity.holdingIdentity
+                ).getOrThrow().map {
+                    it.toDto()
                 }
-                result
-            } catch (e: RegistrationProgressNotFoundException) {
-                throw e
-            } catch (e: Exception) {
-                logger.warn(
-                    "Could not check statuses of registration requests made by holding identity ID" +
-                            " [${holdingIdentityShortHash}].", e
-                )
-                emptyList()
+            } catch (e: MembershipQueryResult.QueryException) {
+                throw ServiceNotReadyException(e)
             }
         }
 
         override fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: ShortHash,
             registrationRequestId: String,
-        ): RegistrationRequestStatusDto? {
-            try {
-                val request = MembershipRpcRequest(
-                    MembershipRpcRequestContext(
-                        UUID.randomUUID().toString(),
-                        clock.instant()
-                    ),
-                    RegistrationStatusSpecificRpcRequest(
-                        holdingIdentityShortHash.toString(),
+        ): RegistrationRequestStatusDto {
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
+                ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
+            return try {
+                val status =
+                    membershipQueryClient.queryRegistrationRequestStatus(
+                        holdingIdentity.holdingIdentity,
                         registrationRequestId,
-                    )
-                )
-
-                val response: RegistrationStatusResponse = request.sendRequest()
-                val status = response.status
-                    ?: throw RegistrationProgressNotFoundException(
+                    ).getOrThrow() ?: throw RegistrationProgressNotFoundException(
                         "There is no request with '$registrationRequestId' id in '$holdingIdentityShortHash'."
                     )
-                return status.toDto()
-            } catch (e: RegistrationProgressNotFoundException) {
-                throw e
-            } catch (e: Exception) {
-                logger.warn(
-                    "Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
-                            " [$holdingIdentityShortHash].", e
-                )
-                return null
-            }
-        }
-
-        override fun close() = rpcSender.close()
-
-        private fun registrationsResponse(response: RegistrationsStatusResponse): List<RegistrationRequestStatusDto> {
-            return response.requests.map {
-                it.toDto()
+                status.toDto()
+            } catch (e: MembershipQueryResult.QueryException) {
+                throw ServiceNotReadyException(e)
             }
         }
 
         @Suppress("SpreadOperator")
-        private fun RegistrationStatusDetails.toDto(): RegistrationRequestStatusDto =
+        private fun RegistrationRequestStatus.toDto(): RegistrationRequestStatusDto =
             RegistrationRequestStatusDto(
                 this.registrationId,
                 this.registrationSent,
                 this.registrationLastModified,
-                this.registrationStatus.toDto(),
+                this.status.toDto(),
                 MemberInfoSubmittedDto(
                     mapOf(
-                        "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
-                        *this.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
+                        "registrationProtocolVersion" to this.protocolVersion.toString(),
+                        *this.memberContext.items.map { it.key to it.value }.toTypedArray(),
                     )
                 )
             )
-
-
-        private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
-            try {
-                logger.debug { "Sending request: $this" }
-                val response = rpcSender.sendRequest(this).getOrThrow(TIMEOUT)
-                require(response != null && response.responseContext != null && response.response != null) {
-                    "Response cannot be null."
-                }
-                require(this.requestContext.requestId == response.responseContext.requestId) {
-                    "Request ID must match in the request and response."
-                }
-                require(this.requestContext.requestTimestamp == response.responseContext.requestTimestamp) {
-                    "Request timestamp must match in the request and response."
-                }
-                require(response.response is RESPONSE) {
-                    "Expected ${RESPONSE::class.java} as response type, but received ${response.response.javaClass}."
-                }
-
-                return response.response as RESPONSE
-            } catch (e: TimeoutException) {
-                // If we get a timeout, the other side may well have got the request and may be processing it. Throw a
-                // different exception to allow the calling function to decide what it wants to do in this case.
-                throw e
-            } catch (e: Exception) {
-                throw CordaRuntimeException(
-                    "Failed to send request and receive response for membership RPC operation. " + e.message, e
-                )
-            }
-        }
     }
 
     private fun RegistrationStatus.toDto(): RegistrationStatusDto {
