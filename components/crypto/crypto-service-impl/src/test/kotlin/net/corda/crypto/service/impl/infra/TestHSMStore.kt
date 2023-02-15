@@ -10,7 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
@@ -100,7 +100,7 @@ class TestHSMStore(
     }
 
     private fun generateRandomShortAlias() =
-        UUID.randomUUID().toString().toByteArray().toHex().take(12)
+        toHex(UUID.randomUUID().toString().toByteArray()).take(12)
 
     private fun HSMCategoryAssociationEntity.toHSMAssociation() = HSMAssociationInfo(
         id,
