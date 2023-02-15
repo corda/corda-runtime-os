@@ -46,7 +46,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
                 externalEventExecutor, serializationService, transactionSignatureService
         )
 
-        whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
+        whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(
             externalEventExecutor.execute(
                 argumentCaptor.capture(),
@@ -70,7 +70,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
             )
         ).isEqualTo(listOf(expectedObj))
 
-        verify(serializationService).serialize(any())
+        verify(serializationService).serialize(any<Any>())
         verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }

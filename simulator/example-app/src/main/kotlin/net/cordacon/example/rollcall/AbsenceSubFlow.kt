@@ -7,7 +7,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
-@InitiatingFlow("absence-call")
+@InitiatingFlow(protocol = "absence-call")
 class AbsenceSubFlow(private val counterparty: MemberX500Name) : SubFlow<String> {
 
     @CordaInject

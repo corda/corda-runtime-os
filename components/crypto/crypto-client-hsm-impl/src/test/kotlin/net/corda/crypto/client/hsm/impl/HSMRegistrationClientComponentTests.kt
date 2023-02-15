@@ -23,7 +23,7 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
@@ -63,7 +63,7 @@ class HSMRegistrationClientComponentTests {
 
     @BeforeEach
     fun setup() {
-        knownTenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
+        knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         sender = TestRPCSender(coordinatorFactory)
         publisherFactory = mock {

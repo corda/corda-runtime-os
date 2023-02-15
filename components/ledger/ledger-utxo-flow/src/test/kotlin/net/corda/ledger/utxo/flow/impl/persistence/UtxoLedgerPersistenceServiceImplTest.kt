@@ -56,7 +56,7 @@ class UtxoLedgerPersistenceServiceImplTest {
             utxoSignedTransactionFactory
         )
 
-        whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
+        whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(
             externalEventExecutor.execute(
                 argumentCaptor.capture(),
@@ -80,7 +80,7 @@ class UtxoLedgerPersistenceServiceImplTest {
             )
         ).isEqualTo(listOf(expectedObj))
 
-        verify(serializationService).serialize(any())
+        verify(serializationService).serialize(any<Any>())
         verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }
@@ -176,7 +176,7 @@ class UtxoLedgerPersistenceServiceImplTest {
 
         test(transaction, packageSummary)
 
-        verify(serializationService).serialize(any())
+        verify(serializationService).serialize(any<Any>())
         verify(serializationService).deserialize<Pair<String?, List<CordaPackageSummary>>>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionIfDoesNotExistExternalEventFactory::class.java)
     }

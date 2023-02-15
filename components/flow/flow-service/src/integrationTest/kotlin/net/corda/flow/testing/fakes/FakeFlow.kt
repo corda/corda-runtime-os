@@ -7,7 +7,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 
-@InitiatingFlow("protocol")
+@InitiatingFlow(protocol = "protocol")
 class FakeFlow: ClientStartableFlow {
 
     override fun call(requestBody: RestRequestBody): String {
@@ -15,7 +15,7 @@ class FakeFlow: ClientStartableFlow {
     }
 }
 
-@InitiatedBy("protocol")
+@InitiatedBy(protocol = "protocol")
 class FakeInitiatedFlow: ResponderFlow {
 
     override fun call(session: FlowSession) {
