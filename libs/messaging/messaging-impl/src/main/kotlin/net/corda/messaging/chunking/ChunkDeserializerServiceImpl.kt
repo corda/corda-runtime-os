@@ -2,6 +2,7 @@ package net.corda.messaging.chunking
 
 import java.io.ByteArrayOutputStream
 import java.util.function.Consumer
+import net.corda.chunking.Checksum
 import net.corda.chunking.Constants
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroDeserializer
@@ -64,8 +65,8 @@ class ChunkDeserializerServiceImpl<K : Any, V : Any>(
      * @throws IllegalArgumentException if the given message digest does not match the recieved bytes
      */
     private fun validateBytes(receivedBytes: ByteArray, messageDigestBytes: ByteArray) {
-        val receivedDigest = platformDigestService.hash(receivedBytes, DigestAlgorithmName.SHA2_256)
-        val expectedDigest = SecureHash(DigestAlgorithmName.SHA2_256.name, messageDigestBytes)
+        val receivedDigest = platformDigestService.hash(receivedBytes, DigestAlgorithmName(Checksum.ALGORITHM))
+        val expectedDigest = SecureHash(DigestAlgorithmName(Checksum.ALGORITHM).name, messageDigestBytes)
         if (receivedDigest != expectedDigest) {
             throw IllegalArgumentException(Constants.SECURE_HASH_VALIDATION_ERROR)
         }

@@ -2,6 +2,7 @@ package net.corda.messaging.chunking
 
 import java.nio.ByteBuffer
 import java.util.UUID
+import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.Constants.Companion.CORDA_MESSAGE_OVERHEAD
 import net.corda.crypto.cipher.suite.PlatformDigestService
@@ -67,7 +68,7 @@ class ChunkSerializerServiceImpl(
             logger.debug { "Failed to deserialize bytes or object is too small for chunking" }
             return emptyList()
         }
-        val hash = platformDigestService.hash(bytes, DigestAlgorithmName.SHA2_256)
+        val hash = platformDigestService.hash(bytes, DigestAlgorithmName(Checksum.ALGORITHM))
         var partNumber = INITIAL_PART_NUMBER
         val requestId = UUID.randomUUID().toString()
 
