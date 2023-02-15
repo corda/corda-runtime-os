@@ -27,6 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -204,6 +205,9 @@ class GroupPolicyProviderImplTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
     }
+
+    private val interopGroupPolicyReader: InteropGroupPolicyReader = mock {}
+
     private val subscriptionFactory: SubscriptionFactory = mock {
         on { createCompactedSubscription(any(), any<FinishedRegistrationsProcessor>(), any()) } doReturn subscription
     }
@@ -258,7 +262,8 @@ class GroupPolicyProviderImplTest {
             groupPolicyParser,
             membershipQueryClient,
             subscriptionFactory,
-            configurationReadService
+            configurationReadService,
+            interopGroupPolicyReader
         )
     }
 
