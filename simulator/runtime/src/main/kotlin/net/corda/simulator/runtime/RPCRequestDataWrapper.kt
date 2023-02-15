@@ -24,10 +24,10 @@ data class RPCRequestDataWrapper(
     override fun toRPCRequestData() : RestRequestBody {
         return object : RestRequestBody {
             override fun getRequestBody(): String {
-                return requestBody
+                return this@RPCRequestDataWrapper.requestBody
             }
 
-            override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
+            override fun <T : Any> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
                 return marshallingService.parse(requestBody, clazz)
             }
 

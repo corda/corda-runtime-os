@@ -6,7 +6,7 @@ import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.serialization.checkpoint.NonSerializable
-import net.corda.v5.application.flows.FlowContextProperties.Companion.CORDA_RESERVED_PREFIX
+import net.corda.v5.application.flows.FlowContextProperties.CORDA_RESERVED_PREFIX
 
 /**
  * [FlowStackBasedContext] is the core means of interacting with flow context internally in Corda. It is stack based
