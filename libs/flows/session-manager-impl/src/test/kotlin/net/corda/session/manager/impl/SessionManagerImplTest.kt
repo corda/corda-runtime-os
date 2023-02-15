@@ -2,7 +2,10 @@ package net.corda.session.manager.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.nio.ByteBuffer
 import java.time.Instant
+import net.corda.data.chunking.Chunk
+import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
@@ -12,16 +15,27 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.messaging.api.chunking.ChunkDeserializerService
+import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.configuration.FlowConfig
+import net.corda.session.manager.SessionManager
+import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 class SessionManagerImplTest {
 
-    private val sessionManager = SessionManagerImpl(mock(), mock())
+    private lateinit var messagingChunkFactory: MessagingChunkFactory
+    private lateinit var chunkDeserializerService: ChunkDeserializerService<ByteArray>
+    private lateinit var sessionManager: SessionManager
+    private val realBytes =ByteArray(500)
+    private val realBytesBuffer = ByteBuffer.wrap(realBytes)
     private val testResendWindow = 5000L
     private val testHeartbeatTimeout = 30000L
     private val testIdentity = HoldingIdentity()
@@ -30,6 +44,17 @@ class SessionManagerImplTest {
         .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(testHeartbeatTimeout))
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val testSmartConfig = configFactory.create(testConfig)
+
+    @BeforeEach
+    fun setup() {
+        chunkDeserializerService = mock()
+        messagingChunkFactory = mock()
+
+        whenever(chunkDeserializerService.assembleChunks(any())).thenReturn(realBytes)
+        whenever(messagingChunkFactory.createChunkDeserializerService(any<Class<ByteArray>>(), any())).thenReturn(chunkDeserializerService)
+
+        sessionManager = SessionManagerImpl(SessionEventProcessorFactory(mock()), messagingChunkFactory)
+    }
 
     @Test
     fun testGetNextReceivedEvent() {
@@ -260,5 +285,100 @@ class SessionManagerImplTest {
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CLOSED)
         assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
+    }
+
+    @Test
+    fun `next message is a chunk but all chunks are not present, returns null`() {
+        val instant = Instant.now()
+        val requestId = "chunkId"
+        val chunks = listOf(
+            buildChunk(requestId, ByteArray(20), 1),
+            buildChunk(requestId, ByteArray(20), 2),
+            buildChunk(requestId, ByteArray(20), 3),
+        )
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            4,
+            listOf(
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0]), 0, emptyList(), instant),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1]), 0, emptyList(), instant),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2]), 0, emptyList(), instant),
+            ),
+            4,
+            listOf(),
+        )
+        val nextMessage = sessionManager.getNextReceivedEvent(sessionState)
+        assertThat(nextMessage).isNull()
+        assertThat(sessionState.receivedEventsState.undeliveredMessages.size).isEqualTo(3)
+    }
+
+    @Test
+    fun `next message is a chunk and all chunks are present, assembled record, returns the record and clears out chunks from state`() {
+        val instant = Instant.now()
+        val requestId = "chunkId"
+        val chunks = listOf(
+            buildChunk(requestId, ByteArray(20), 1),
+            buildChunk(requestId, ByteArray(20), 2),
+            buildChunk(requestId, ByteArray(20), 3, SecureHash("", ByteBuffer.wrap(ByteArray(1)))),
+        )
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            4,
+            listOf(
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0]), 0, emptyList(), instant),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1]), 0, emptyList(), instant),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2]), 0, emptyList(), instant),
+            ),
+            4,
+            listOf(),
+        )
+
+        val nextMessage = sessionManager.getNextReceivedEvent(sessionState)
+        assertThat(nextMessage).isNotNull
+        assertThat((nextMessage?.payload as SessionData).payload).isEqualTo(realBytesBuffer)
+        assertThat(sessionState.receivedEventsState.undeliveredMessages.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `next message is a chunk and all chunks are present but deserialization fails, returns null and updates the session state to error`
+                () {
+        whenever(chunkDeserializerService.assembleChunks(any())).thenReturn(null)
+        val instant = Instant.now()
+        val requestId = "chunkId"
+        val chunks = listOf(
+            buildChunk(requestId, ByteArray(20), 1),
+            buildChunk(requestId, ByteArray(20), 2),
+            buildChunk(requestId, ByteArray(20), 3, SecureHash("", ByteBuffer.wrap(ByteArray(1)))),
+        )
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            4,
+            listOf(
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0]), 0, emptyList(), instant),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1]), 0, emptyList(), instant),
+                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2]), 0, emptyList(), instant),
+            ),
+            4,
+            listOf(),
+        )
+        val nextMessage = sessionManager.getNextReceivedEvent(sessionState)
+        assertThat(nextMessage).isNull()
+        assertThat(sessionState.receivedEventsState.undeliveredMessages.size).isEqualTo(3)
+        assertThat(sessionState.sendEventsState.undeliveredMessages.size).isEqualTo(1)
+        assertThat(sessionState.status).isEqualTo(SessionStateType.ERROR)
+        val messageToSend = sessionState.sendEventsState.undeliveredMessages.first()
+        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
+    }
+
+    private fun buildChunk(id: String, bytes: ByteArray, partNumber: Long, checksum: SecureHash? = null): Chunk {
+        return Chunk.newBuilder()
+            .setProperties(null)
+            .setFileName(null)
+            .setChecksum(checksum)
+            .setRequestId(id)
+            .setPartNumber(partNumber.toInt())
+            .setOffset(partNumber)
+            .setData(ByteBuffer.wrap(bytes))
+            .build()
     }
 }

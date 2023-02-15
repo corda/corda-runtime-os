@@ -326,7 +326,6 @@ class SessionManagerImpl @Activate constructor(
         }
 
         return if (!chunkMissing(chunks)) {
-            val undeliveredMessages = receivedEventState.undeliveredMessages.filterNot { chunkSessionEvents.contains(it) }.toMutableList()
             val dataPayload = chunkDeserializerService.assembleChunks(chunks)
             if (dataPayload == null) {
                 val errorMessage = "Failed to deserialize chunks into a complete data message. First chunk seqNum is ${
@@ -334,11 +333,12 @@ class SessionManagerImpl @Activate constructor(
                         .first().sequenceNum
                 }"
                 logger.warn(errorMessage)
-                setErrorState(sessionState, undeliveredMessages.first(), Instant.now(), errorMessage, "SessionData-ChunkError")
+                setErrorState(sessionState, receivedEventState.undeliveredMessages.first(), Instant.now(), errorMessage, "SessionData-ChunkError")
                 null
             } else {
                 val sessionEvent = chunkSessionEvents.last()
                 (sessionEvent.payload as SessionData).payload = ByteBuffer.wrap(dataPayload)
+                val undeliveredMessages = receivedEventState.undeliveredMessages.filterNot { chunkSessionEvents.contains(it) }.toMutableList()
                 receivedEventState.undeliveredMessages = undeliveredMessages.apply {
                     add(sessionEvent)
                 }

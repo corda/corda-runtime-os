@@ -54,7 +54,8 @@ interface SessionManager {
 
     /**
      * Get and return the next available buffered event in the correct sequence from the [sessionState] received from a counterparty.
-     * @param sessionState The session state.
+     * Updates the [sessionState] to ERROR state if there are chunks that fail to deserialize
+     * @param sessionState The session state. Can be mutated as part of processing
      * @return The next session event to be processed. Return null when the next session event in the correct sequence is not available.
      */
     fun getNextReceivedEvent(sessionState: SessionState): SessionEvent?
