@@ -21,6 +21,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.flow.FlowProcessor
+import net.corda.processors.interop.InteropProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
@@ -71,6 +72,8 @@ class CombinedWorker @Activate constructor(
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
+    @Reference(service = InteropProcessor::class)
+    private val interopProcessor: InteropProcessor,
 ) : Application {
 
     private companion object {
@@ -155,6 +158,7 @@ class CombinedWorker @Activate constructor(
         restProcessor.start(config)
         linkManagerProcessor.start(config)
         gatewayProcessor.start(config)
+        interopProcessor.start(config)
     }
 
     override fun shutdown() {
@@ -169,7 +173,7 @@ class CombinedWorker @Activate constructor(
         restProcessor.stop()
         linkManagerProcessor.stop()
         gatewayProcessor.stop()
-
+        interopProcessor.stop()
         workerMonitor.stop()
     }
 }
