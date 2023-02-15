@@ -9,7 +9,7 @@ import kotlin.reflect.KProperty
  * testcase which contains this property, giving an opportunity to "personalize" implementation
  * for a specific test.
  *
- * Such personalization may, for example, include RPC user names that are matching the name of the test class.
+ * Such personalization may, for example, include REST user names that are matching the name of the test class.
  */
 class TestToolkitProperty(private val host: String, private val port: Int) :
     ReadOnlyProperty<Any, TestToolkit> {

@@ -1,7 +1,7 @@
 package net.corda.applications.workers.rpc
 
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
-import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rpc.http.SkipWhenRestEndpointUnavailable
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -15,7 +15,7 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 
-@SkipWhenRpcEndpointUnavailable
+@SkipWhenRestEndpointUnavailable
 class CreatePermissionE2eTest {
 
     private val testToolkit by TestToolkitProperty()
