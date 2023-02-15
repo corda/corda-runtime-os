@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
@@ -36,6 +37,9 @@ class UtxoLedgerTransactionVerifierTest {
 
     @BeforeEach
     fun beforeEach() {
+        whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
+        whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
+
         whenever(transaction.id).thenReturn(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)))
         whenever(transaction.signatories).thenReturn(listOf(signatory))
         whenever(transaction.inputStateRefs).thenReturn(listOf(stateRef))
