@@ -84,7 +84,7 @@ class SessionEventHandler @Activate constructor(
         checkpointInitializer.initialize(
             context.checkpoint,
             WaitingFor(WaitingForSessionInit(sessionId)),
-            initiatedIdentity.toCorda()
+            holdingIdentity
         ) {
             val protocolStore = try {
                 flowSandboxService.get(holdingIdentity, it).protocolStore
