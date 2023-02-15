@@ -61,4 +61,11 @@ interface TransactionMetadata {
      * @return The schema version.
      */
     fun getSchemaVersion(): Int
+
+    /**
+     * Gets the version of the platform at the time of the creation of the transaction.
+     *
+     * @return The platform version.
+     */
+    fun getPlatformVersion(): Int
 }
