@@ -81,11 +81,23 @@ class MemberResourceClientTest {
     private val configHandle: Resource = mock()
 
     private var coordinatorIsRunning = false
+    private val resources = mutableMapOf<String, Resource>()
     private val coordinator: LifecycleCoordinator = mock {
         on { isRunning } doAnswer { coordinatorIsRunning }
         on { start() } doAnswer { coordinatorIsRunning = true }
         on { stop() } doAnswer { coordinatorIsRunning = false }
         on { followStatusChangesByName(any()) } doReturn componentHandle
+        on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
+            resources.compute(it.getArgument(0)) { _, r ->
+                r?.close()
+                it.getArgument<() -> Resource>(1).invoke()
+            }
+        }
+        on { closeManagedResources(any()) } doAnswer {
+            it.getArgument<Collection<String>>(0).forEach { name ->
+                resources.remove(name)?.close()
+            }
+        }
     }
 
     private var lifecycleHandler: LifecycleEventHandler? = null
@@ -170,7 +182,6 @@ class MemberResourceClientTest {
         memberOpsClient.stop()
         assertFalse(memberOpsClient.isRunning)
     }
-
 
     @Test
     fun `start event starts following the statuses of the required dependencies`() {
@@ -268,6 +279,16 @@ class MemberResourceClientTest {
         changeRegistrationStatus(LifecycleStatus.UP)
 
         verify(configHandle).close()
+    }
+
+    @Test
+    fun `second config change will closes the publisher if status was previously UP`() {
+        changeRegistrationStatus(LifecycleStatus.UP)
+        changeConfig()
+
+        changeConfig()
+
+        verify(asyncPublisher).close()
     }
 
     @Test
