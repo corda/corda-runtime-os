@@ -67,7 +67,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
-        clearBuffersForUnassignedPartitions()
         val polledRecords = try {
             consumer.poll(timeout)
         } catch (ex: Exception) {
@@ -94,6 +93,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 else -> logErrorAndThrowFatalException("Unexpected error attempting to poll.", ex)
             }
         }
+        clearBuffersForUnassignedPartitions()
 
         val recordsToReturn = mutableListOf<CordaConsumerRecord<K, V>>()
         polledRecords.groupBy { it.partition() }.forEach { (partition, records) ->
