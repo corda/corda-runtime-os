@@ -12,8 +12,11 @@ import net.corda.orm.utils.use
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.time.Instant
+import javax.persistence.PersistenceException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SigningKeyEntityTest {
@@ -71,8 +74,8 @@ class SigningKeyEntityTest {
     }
 
     @Test
-    fun `signing keys with same id short key ids can be saved`() {
-        // Check clashing short ids can be saved
+    fun `signing keys with same short key id cannot be saved`() {
+        // Clashing short ids per tenant id cannot be saved
         val tenantId = randomShortHash()
         val shortKeyId = randomShortHash()
         val signingKeyEntity0 = createSigningKeyEntity(
@@ -92,11 +95,16 @@ class SigningKeyEntityTest {
             CryptoEntities.classes.toList(),
             dbConfig
         ).use { em ->
-            em.transaction {
-                it.persist(signingKeyEntity0)
-                it.persist(signingKeyEntity1)
-                it.flush()
+            val e = assertThrows<PersistenceException> {
+                em.transaction {
+                    it.persist(signingKeyEntity0)
+                    it.persist(signingKeyEntity1)
+                    it.flush()
+                }
             }
+            assertEquals(
+                "integrity constraint violation: unique constraint or index violation ; " +
+                        "CRYPTO_SIGNING_KEY_SHORT_KEY_UC table: CRYPTO_SIGNING_KEY", e.cause!!.cause!!.message)
         }
     }
 }

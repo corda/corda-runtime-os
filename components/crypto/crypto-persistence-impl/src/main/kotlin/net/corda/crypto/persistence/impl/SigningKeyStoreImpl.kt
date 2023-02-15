@@ -132,6 +132,10 @@ class SigningKeyStoreImpl @Activate constructor(
             }
         }
 
+        /**
+         * If short key id clashes with existing key for this [tenantId], [save] will fail. It will fail upon
+         * persisting to the DB due to unique constraint of <tenant id, short key id>.
+         */
         fun save(tenantId: String, context: SigningKeySaveContext) {
             val keyId: String
             val shortKeyId: String
@@ -277,10 +281,9 @@ class SigningKeyStoreImpl @Activate constructor(
                 em.createQuery(
                     "FROM SigningKeyEntity WHERE tenantId=:tenantId AND shortKeyId IN(:shortKeyIds)",
                     SigningKeyEntity::class.java
-                ).also { q ->
-                    q.setParameter("tenantId", tenantId)
-                    q.setParameter("shortKeyIds", shortKeyIds)
-                }.resultList
+                ).setParameter("tenantId", tenantId)
+                    .setParameter("shortKeyIds", shortKeyIds)
+                    .resultList
             }
 
         private fun findByKeyIds(tenantId: String, keyIds: List<String>): Collection<SigningKeyEntity> =
