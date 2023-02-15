@@ -9,9 +9,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
@@ -61,7 +58,8 @@ class InteropMemberRegistrationService {
                 KeyValuePair(LEDGER_KEY_SIGNATURE_SPEC.format(0), "SHA256withECDSA"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                 KeyValuePair(PLATFORM_VERSION, "5000"),
-                //TODO : Following info may not be required for interops group, need to investigate that LinkManager is happy without this info.
+                //TODO : Following info may not be required for interops group,
+                // need to investigate that LinkManager is happy without this info.
 //            KeyValuePair(MEMBER_CPI_NAME, "calculator.cpi"),
 //            KeyValuePair(MEMBER_CPI_VERSION, "1.0.0.0-SNAPSHOT"),
 //            KeyValuePair(
