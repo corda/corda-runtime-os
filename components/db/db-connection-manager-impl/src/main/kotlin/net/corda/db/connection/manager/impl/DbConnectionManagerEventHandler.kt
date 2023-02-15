@@ -59,6 +59,8 @@ class DbConnectionManagerEventHandler(
     private fun checkDb(coordinator: LifecycleCoordinator) {
         if (dbConnectionManager.testAllConnections()) {
             coordinator.updateStatus(LifecycleStatus.UP, "DB check passed")
+        } else {
+            coordinator.updateStatus(LifecycleStatus.ERROR, "DB check failed")
         }
         scheduleNextDbCheck(coordinator)
     }
