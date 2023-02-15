@@ -28,8 +28,9 @@ import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.impl.DefaultSoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.impl.SoftCryptoService
+import net.corda.crypto.softhsm.impl.CachingSoftWrappingKeyMap
 import net.corda.crypto.softhsm.impl.TransientSoftKeyMap
-import net.corda.crypto.softhsm.impl.TransientSoftWrappingKeyMap
+import net.corda.crypto.softhsm.SoftCacheConfig
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -206,7 +207,8 @@ class TestServicesFactory {
     }
 
     val cryptoService: CryptoService by lazy {
-        val wrappingKeyMap = TransientSoftWrappingKeyMap(
+        val wrappingKeyMap = CachingSoftWrappingKeyMap(
+            SoftCacheConfig(0, 0),
             wrappingKeyStore,
             WrappingKey.generateWrappingKey(schemeMetadata)
         )
