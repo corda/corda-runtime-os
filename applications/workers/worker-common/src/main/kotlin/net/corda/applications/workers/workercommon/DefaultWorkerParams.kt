@@ -27,7 +27,8 @@ class DefaultWorkerParams {
     // This needs revision as arguably it belongs to the `messagingParams`
     var topicPrefix = ""
 
-    // This needs revision as arguably it belongs to the `messagingParams`
+    // This needs revision as arguably it belongs to the `messagingParams`. Defaulting to 1MB to match kafkas default and our config
+    // schema default
     @Option(
         names = ["-M", "--max-message-size"],
         description = ["The maximum message size in bytes allowed to be sent to the message bus."]
