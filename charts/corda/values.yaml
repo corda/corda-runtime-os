@@ -845,3 +845,71 @@ workers:
               name: ""
               # -- the P2P gateway worker SASL password secret key for client connection to Kafka
               key: ""
+
+  # interop worker configuration
+  interop:
+    # interop worker image configuration
+    image:
+      # -- interop worker image registry, defaults to image.registry
+      registry: ""
+      # -- interop worker image repository
+      repository: "corda-os-interop-worker"
+      # -- interop worker image tag, defaults to image.tag
+      tag: ""
+    # -- interop worker replica count
+    replicaCount: 1
+    # -- interop worker extra annotations
+    annotations: {}
+    # -- additional Java options for the interop worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # interop worker debug configuration
+    debug:
+      # -- run interop worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the interop worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run interop worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the interop worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the interop worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the interop worker containers
+      limits: {}
+    # -- run interop worker with Quasar's verifyInstrumentation enabled
+    verifyInstrumentation: false
+    # interop worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the interop worker
+      sasl:
+        # interop worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the interop worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the interop worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the interop worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the interop worker SASL username secret key for client connection to Kafka
+              key: ""
+        # interop worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the interop worker SASL password for client connection to Kafka
+          value: ""
+          # the interop worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the interop worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the interop worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the interop worker SASL password secret key for client connection to Kafka
+              key: ""

@@ -940,7 +940,8 @@
                 "membership",
                 "rpc",
                 "p2pLinkManager",
-                "p2pGateway"
+                "p2pGateway",
+                "interop"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1375,6 +1376,66 @@
                             }]
                         }
                     ]
+                },
+                "interop": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "required": [
+                                "verifyInstrumentation"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "verifyInstrumentation": {
+                                    "type": "boolean",
+                                    "default": false,
+                                    "title": "run interop worker with Quasar's verifyInstrumentation enabled",
+                                    "examples": [
+                                        false
+                                    ]
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-interop-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                },
+                                "verifyInstrumentation": false
+                            }]
+                        }
+                    ]
                 }
             },
             "examples": [{
@@ -1583,6 +1644,35 @@
                     "service": {
                         "port": 8080
                     }
+                },
+                "interop": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-interop-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
+                    },
+                    "verifyInstrumentation": false
                 }
             }]
         }

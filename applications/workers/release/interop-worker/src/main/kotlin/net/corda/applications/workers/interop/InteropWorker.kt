@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 
 // Based on FlowWorker without verificationProcessor
-/** The worker for handling flows. */
+/** The worker for handling Interoperability. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class InteropWorker @Activate constructor(
