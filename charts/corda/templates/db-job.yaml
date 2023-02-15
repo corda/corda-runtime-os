@@ -40,14 +40,14 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: [ 'database', 'spec', '-g', '-c', '-l', '/tmp/working_dir', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]
+          args: [ 'database', 'spec', '-g', 'config:{{ .Values.db.cluster.schema }},rbac:{{ .Values.bootstrap.db.rbac.schema }},crypto:{{ .Values.bootstrap.db.crypto.schema }}', '-c', '-l', '/tmp/working_dir', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]
           workingDir: /tmp/working_dir
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
             {{ include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{- include "corda.clusterDbEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{ include "corda.cliEnv" . | nindent 12 }}
         - name: apply-db-schemas
           image: {{ include "corda.dbClientImage" . }}
@@ -85,7 +85,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-          {{- include "corda.clusterDbEnv" . | nindent 12 }}
+          {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
         - name: create-initial-vnodes-db-config
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
