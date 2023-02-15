@@ -46,7 +46,7 @@ class SessionEventExecutor(
         val eventPayload = sessionEvent.payload
 
         return if (eventPayload !is SessionError) {
-            log.error("Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
+            log.warn("Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
                     "counterparty. Key: $eventKey, Event: $sessionEvent")
             val sessionId = sessionEvent.sessionId
             FlowMapperResult(
