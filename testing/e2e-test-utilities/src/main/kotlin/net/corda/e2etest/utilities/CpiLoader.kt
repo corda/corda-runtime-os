@@ -2,7 +2,6 @@ package net.corda.e2etest.utilities
 
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
-import net.corda.e2etest.utilities.GroupPolicyUtils.getDefaultStaticNetworkGroupPolicy
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.readAll
 import java.io.FileNotFoundException
@@ -17,8 +16,8 @@ object CpiLoader {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
     }
 
-    fun get(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String, cpiVersion: String) =
-        cpbToCpi(getInputStream(resourceName), groupId, staticMemberNames, cpiName, cpiVersion)
+    fun get(resourceName: String, groupPolicy: String, cpiName: String, cpiVersion: String) =
+        cpbToCpi(getInputStream(resourceName), groupPolicy, cpiName, cpiVersion)
 
     fun getRawResource(resourceName: String) = getInputStream(resourceName)
 
@@ -27,8 +26,7 @@ object CpiLoader {
      */
     private fun cpbToCpi(
         inputStream: InputStream,
-        groupId: String,
-        staticMemberNames: List<String>,
+        networkPolicy: String,
         cpiNameValue: String,
         cpiVersionValue: String
     ): InputStream {
@@ -43,9 +41,8 @@ object CpiLoader {
 
             // Save group policy to disk
             val groupPolicyPath = tempDirectory.resolve("groupPolicy")
-            val networkPolicyStr = getStaticNetworkPolicy(groupId, staticMemberNames)
             Files.newBufferedWriter(groupPolicyPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
-                it.write(networkPolicyStr)
+                it.write(networkPolicy)
             }
 
             // Save keystore to disk
@@ -79,7 +76,4 @@ object CpiLoader {
 
     private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("cordadevcodesign.p12")?.use { it.readAllBytes() }
         ?: throw FileNotFoundException("cordadevcodesign.p12 not found")
-
-    private fun getStaticNetworkPolicy(groupId: String, staticMemberNames: List<String>) =
-        getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames)
 }
