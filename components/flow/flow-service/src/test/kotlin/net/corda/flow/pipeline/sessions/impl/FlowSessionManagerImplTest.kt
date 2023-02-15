@@ -163,7 +163,7 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `sendInitMessage creates a SessionInit message and processes it`() {
-        whenever(sessionManager.processMessageToSend(any(), eq(null), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(null), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -223,7 +223,7 @@ class FlowSessionManagerImplTest {
             instant
         )
 
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(null), any(), eq(instant))
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(null), any(), eq(instant), any())
         assertEquals(expectedSessionEvent, sessionState.sendEventsState.undeliveredMessages.single())
     }
 
@@ -231,7 +231,7 @@ class FlowSessionManagerImplTest {
     fun `sendDataMessages creates SessionData messages and processes them`() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
 
-        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -239,7 +239,7 @@ class FlowSessionManagerImplTest {
                 )
             }
         }
-        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -278,8 +278,8 @@ class FlowSessionManagerImplTest {
             instant
         )
 
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant))
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant))
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant), any())
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant), any())
         assertEquals(expectedSessionEvent, sessionStates[0].sendEventsState.undeliveredMessages.single())
         assertEquals(anotherExpectedSessionEvent, sessionStates[1].sendEventsState.undeliveredMessages.single())
     }
@@ -288,7 +288,7 @@ class FlowSessionManagerImplTest {
     fun `sendDataMessages does nothing when there are no sessions passed in`() {
         val instant = Instant.now()
         flowSessionManager.sendDataMessages(checkpoint, emptyMap(), instant)
-        verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant))
+        verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant), any())
     }
 
     @Test
@@ -308,7 +308,7 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `sendCloseMessages creates SessionClose messages and processes them`() {
-        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -316,7 +316,7 @@ class FlowSessionManagerImplTest {
                 )
             }
         }
-        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -352,8 +352,8 @@ class FlowSessionManagerImplTest {
             instant
         )
 
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant))
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant))
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant), any())
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant), any())
         assertEquals(expectedSessionEvent, sessionStates[0].sendEventsState.undeliveredMessages.single())
         assertEquals(anotherExpectedSessionEvent, sessionStates[1].sendEventsState.undeliveredMessages.single())
     }
@@ -362,7 +362,7 @@ class FlowSessionManagerImplTest {
     fun `sendCloseMessages does nothing when there are no sessions passed in`() {
         val instant = Instant.now()
         flowSessionManager.sendCloseMessages(checkpoint, emptyList(), instant)
-        verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant))
+        verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant), any())
     }
 
     @Test
@@ -769,7 +769,7 @@ class FlowSessionManagerImplTest {
         val instant = Instant.now()
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
 
-        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -777,7 +777,7 @@ class FlowSessionManagerImplTest {
                 )
             }
         }
-        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -814,8 +814,8 @@ class FlowSessionManagerImplTest {
             instant
         )
 
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant))
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant))
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant), any())
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant), any())
         assertEquals(expectedSessionEvent, sessionStates[0].sendEventsState.undeliveredMessages.single())
         assertEquals(anotherExpectedSessionEvent, sessionStates[1].sendEventsState.undeliveredMessages.single())
     }
@@ -825,7 +825,7 @@ class FlowSessionManagerImplTest {
         val instant = Instant.now()
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
 
-        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -833,7 +833,7 @@ class FlowSessionManagerImplTest {
                 )
             }
         }
-        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any())).then {
+        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
                     1,
@@ -870,8 +870,8 @@ class FlowSessionManagerImplTest {
             instant
         )
 
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant))
-        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant))
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant), any())
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant), any())
         assertEquals(expectedSessionEvent, sessionStates[0].sendEventsState.undeliveredMessages.single())
         assertEquals(anotherExpectedSessionEvent, sessionStates[1].sendEventsState.undeliveredMessages.single())
     }

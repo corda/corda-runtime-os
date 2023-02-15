@@ -2,6 +2,7 @@ package net.corda.session.manager.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
@@ -16,11 +17,11 @@ import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.time.Instant
+import org.mockito.kotlin.mock
 
 class SessionManagerImplTest {
 
-    private val sessionManager = SessionManagerImpl()
+    private val sessionManager = SessionManagerImpl(mock(), mock())
     private val testResendWindow = 5000L
     private val testHeartbeatTimeout = 30000L
     private val testIdentity = HoldingIdentity()

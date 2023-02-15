@@ -1,12 +1,14 @@
 package net.corda.session.manager.integration
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.session.manager.impl.SessionManagerImpl
+import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.integration.helper.generateMessage
-import java.time.Instant
+import org.mockito.kotlin.mock
 
 /**
  * Helper class to encapsulate a party involved in a session and the message bus in which it sends and receives session events.
@@ -18,12 +20,13 @@ class SessionParty (
     var sessionState: SessionState? = null
 ) : SessionInteractions, BusInteractions by inboundMessages {
 
-    private val sessionManager = SessionManagerImpl()
+    private val sessionManager = SessionManagerImpl(SessionEventProcessorFactory(mock()), mock())
     private val testIdentity = HoldingIdentity()
+    private val maxMsgSize = 10000000L
 
     override fun processNewOutgoingMessage(messageType: SessionMessageType, sendMessages: Boolean, instant: Instant) {
         val sessionEvent = generateMessage(messageType, instant)
-        sessionState = sessionManager.processMessageToSend("key", sessionState, sessionEvent, instant)
+        sessionState = sessionManager.processMessageToSend("key", sessionState, sessionEvent, instant, maxMsgSize)
 
         if (sendMessages) {
             sendMessages(instant)

@@ -1,22 +1,37 @@
 package net.corda.session.manager.impl.processor
 
 import java.time.Instant
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 class SessionDataProcessorSendTest {
+
+    private lateinit var chunkSerializerService: ChunkSerializerService
+    private lateinit var chunkSerializer: CordaAvroSerializer<Any>
+    private val payload: SessionData = mock()
+
+    @BeforeEach
+    fun setup() {
+        chunkSerializer = mock()
+        chunkSerializerService = mock()
+    }
 
     @Test
     fun `Send data when state is null`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", null, SessionData())
 
-        val result = SessionDataProcessorSend("key", null, sessionEvent, Instant.now()).execute()
+        val result = SessionDataProcessorSend("key", null, sessionEvent, Instant.now(), chunkSerializerService,  payload)
+            .execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
@@ -31,7 +46,8 @@ class SessionDataProcessorSendTest {
             SessionStateType.ERROR, 0, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
+        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, 
+            payload).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
@@ -45,7 +61,8 @@ class SessionDataProcessorSendTest {
             SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
+        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, 
+            payload).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
@@ -60,7 +77,8 @@ class SessionDataProcessorSendTest {
             SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
+        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, 
+            payload).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CREATED)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
@@ -75,7 +93,7 @@ class SessionDataProcessorSendTest {
             SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
+        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, payload).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)

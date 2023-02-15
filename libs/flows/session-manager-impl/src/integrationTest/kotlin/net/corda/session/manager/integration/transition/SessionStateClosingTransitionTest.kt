@@ -1,28 +1,32 @@
 package net.corda.session.manager.integration.transition
 
+import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionManagerImpl
-import net.corda.test.flow.util.buildSessionState
+import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.helper.generateMessage
+import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import java.time.Instant
+import org.mockito.kotlin.mock
 
 class SessionStateClosingTransitionTest {
 
-    private val sessionManager = SessionManagerImpl()
+    private val sessionManager = SessionManagerImpl(SessionEventProcessorFactory(mock()), mock())
+
     private val instant = Instant.now()
+    private val maxMsgSize = 10000000L
 
     @Test
     fun `Send duplicate session init when in state closing`() {
         val sessionState = buildClosingState(true)
 
         val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
@@ -31,7 +35,7 @@ class SessionStateClosingTransitionTest {
         val sessionState = buildClosingState(true)
 
         val sessionEvent = generateMessage(SessionMessageType.DATA, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
@@ -40,7 +44,7 @@ class SessionStateClosingTransitionTest {
         val sessionState = buildClosingState(false)
 
         val sessionEvent = generateMessage(SessionMessageType.DATA, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
@@ -49,7 +53,7 @@ class SessionStateClosingTransitionTest {
         val sessionState = buildClosingState(false)
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
     }
 
@@ -58,7 +62,7 @@ class SessionStateClosingTransitionTest {
         val sessionState = buildClosingState(true)
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
     }
 

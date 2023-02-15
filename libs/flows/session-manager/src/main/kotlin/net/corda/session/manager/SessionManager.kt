@@ -1,10 +1,10 @@
 package net.corda.session.manager
 
+import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
-import java.time.Instant
 
 /**
  * Session Manager offers methods to interact with and update the [SessionState].
@@ -47,9 +47,10 @@ interface SessionManager {
      * @param sessionState The session state. This should be null in the case of [SessionInit]
      * @param event Session event to process.
      * @param instant Timestamp to be applied for any output messages.
+     * @param maxMsgSize Max size of messages to send
      * @return Updated session state with any output messages added to the undelivered sentEvents queue
      */
-    fun processMessageToSend(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant): SessionState
+    fun processMessageToSend(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant, maxMsgSize: Long): SessionState
 
     /**
      * Get and return the next available buffered event in the correct sequence from the [sessionState] received from a counterparty.
