@@ -3,13 +3,15 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import com.r3.corda.notary.plugin.common.NotaryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionSignatureMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
+import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
@@ -31,7 +33,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.Contract
@@ -205,7 +206,7 @@ class UtxoFinalityFlowTest {
     fun `called with an invalid transaction initially throws and persists as invalid`() {
         whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
-                TX_ID, "Verification error", null)
+                TX_ID, TransactionVerificationStatus.INVALID, null, "Verification error")
         )
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionVerificationException::class.java)
@@ -791,11 +792,11 @@ class UtxoFinalityFlowTest {
         )
 
         whenever(updatedTxSomeSigs.verifySignatures()).thenThrow(
-            TransactionMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
+            TransactionSignatureMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
         )
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionMissingSignaturesException::class.java)
+            .isInstanceOf(TransactionSignatureMissingSignaturesException::class.java)
             .hasMessageContainingAll(
                 "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}",
                 "The following counterparties provided signatures while finalizing the transaction:",
@@ -818,7 +819,7 @@ class UtxoFinalityFlowTest {
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
         whenever(updatedTxAllSigs.verifySignatures()).thenThrow(
-            TransactionMissingSignaturesException(
+            TransactionSignatureMissingSignaturesException(
                 TX_ID,
                 setOf(),
                 "failed"
@@ -826,7 +827,7 @@ class UtxoFinalityFlowTest {
         )
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionMissingSignaturesException::class.java)
+            .isInstanceOf(TransactionSignatureMissingSignaturesException::class.java)
             .hasMessageContaining("is missing signatures for signatories")
 
         verify(initialTx).addSignature(signatureAlice1)

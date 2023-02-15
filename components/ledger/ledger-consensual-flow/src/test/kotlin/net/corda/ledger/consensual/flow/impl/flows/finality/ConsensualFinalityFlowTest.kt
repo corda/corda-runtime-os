@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionSignatureMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
@@ -23,8 +23,8 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionVerificationException
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -167,7 +167,7 @@ class ConsensualFinalityFlowTest {
         )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(ConsensualTransactionVerificationException::class.java)
             .hasMessageContaining("State verification failed")
 
         verify(signedTransaction, never()).addMissingSignatures()
@@ -245,11 +245,11 @@ class ConsensualFinalityFlowTest {
         )
 
         whenever(updatedSignedTransaction.verifySignatures()).thenThrow(
-            TransactionMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
+            TransactionSignatureMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
         )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionMissingSignaturesException::class.java)
+            .isInstanceOf(TransactionSignatureMissingSignaturesException::class.java)
             .hasMessageContainingAll(
                 "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}",
                 "The following counterparties provided signatures while finalizing the transaction:",
@@ -271,10 +271,16 @@ class ConsensualFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        whenever(updatedSignedTransaction.verifySignatures()).thenThrow(TransactionMissingSignaturesException(TX_ID, setOf(), "failed"))
+        whenever(updatedSignedTransaction.verifySignatures()).thenThrow(
+            TransactionSignatureMissingSignaturesException(
+                TX_ID,
+                setOf(),
+                "failed"
+            )
+        )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionMissingSignaturesException::class.java)
+            .isInstanceOf(TransactionSignatureMissingSignaturesException::class.java)
             .hasMessageContaining("is missing signatures for signatories")
 
         verify(signedTransaction).addSignature(signatureAlice1)

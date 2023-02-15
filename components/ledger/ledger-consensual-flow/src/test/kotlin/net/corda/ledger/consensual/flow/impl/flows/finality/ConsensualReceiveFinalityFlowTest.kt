@@ -21,8 +21,9 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
+import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionVerificationException
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -134,7 +135,7 @@ class ConsensualReceiveFinalityFlowTest {
             publicKeyExample))))
 
         assertThatThrownBy { callReceiveFinalityFlow() }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(ConsensualTransactionVerificationException::class.java)
             .hasMessageContaining("State verification failed")
 
         verify(signedTransaction, never()).addMissingSignatures()
@@ -217,11 +218,11 @@ class ConsensualReceiveFinalityFlowTest {
 
     @Test
     fun `receiving a transaction to record that is not fully signed throws an exception`() {
-        whenever(signedTransaction.verifySignatures()).thenThrow(TransactionVerificationException(ID, "There are missing signatures", null))
+        whenever(signedTransaction.verifySignatures()).thenThrow(TransactionSignatureException(ID, "There are missing signatures", null))
         whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
 
         assertThatThrownBy { callReceiveFinalityFlow() }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(TransactionSignatureException::class.java)
             .hasMessageContaining("There are missing signatures")
 
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)

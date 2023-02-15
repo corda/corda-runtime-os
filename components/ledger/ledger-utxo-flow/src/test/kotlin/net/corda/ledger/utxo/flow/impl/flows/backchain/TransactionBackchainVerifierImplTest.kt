@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
-import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionSignatureMissingSignaturesException
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -133,7 +133,7 @@ class TransactionBackchainVerifierImplTest {
     @Test
     fun `returns false when a single transaction has invalid signatures`() {
         whenever(transaction1.verifySignatures()).thenThrow(
-            TransactionMissingSignaturesException(
+            TransactionSignatureMissingSignaturesException(
                 TX_ID_1,
                 setOf(signatory),
                 "Invalid signature"
@@ -148,7 +148,7 @@ class TransactionBackchainVerifierImplTest {
     @Test
     fun `returns false when a single transaction does not have notary signatures`() {
         whenever(transaction1.verifyNotarySignatureAttached()).thenThrow(
-            TransactionMissingSignaturesException(
+            TransactionSignatureMissingSignaturesException(
                 TX_ID_1,
                 setOf(signatory),
                 "Missing notary signature"

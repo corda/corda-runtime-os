@@ -2,7 +2,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionSignatureMissingSignaturesException
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -119,7 +119,7 @@ class ConsensualFinalityFlow(
 
         try {
             transaction.verifySignatures()
-        } catch (e: TransactionMissingSignaturesException) {
+        } catch (e: TransactionSignatureMissingSignaturesException) {
             val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
                 "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
                         signatures.map { it.by.encoded }
@@ -134,7 +134,7 @@ class ConsensualFinalityFlow(
                     "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
             persistInvalidTransaction(transaction)
-            throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
+            throw TransactionSignatureMissingSignaturesException(transactionId, e.missingSignatories, message)
         }
     }
 
