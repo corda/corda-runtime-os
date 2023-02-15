@@ -432,7 +432,8 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(em), eq(vnodeId), eq(cpiName), eq("v2"), eq(sshString), eq(requestId), eq(requestTimestamp), eq(request.toString())
             )
         ).thenReturn(inProgressOpVnodeInfo)
-        whenever(migrationUtility.isVaultSchemaAndTargetCpiInSync(request.virtualNodeShortHash, cpkDbChangelogs, vaultDmlConnectionId)).thenReturn(true)
+        whenever(migrationUtility.isVaultSchemaAndTargetCpiInSync(request.virtualNodeShortHash, cpkDbChangelogs, vaultDmlConnectionId))
+            .thenReturn(true)
         whenever(virtualNodeRepository.completeOperation(em, request.virtualNodeShortHash)).thenReturn(migrationsCompleteVnodeInfo)
 
         val vnodeInfoRecordsCapture =
