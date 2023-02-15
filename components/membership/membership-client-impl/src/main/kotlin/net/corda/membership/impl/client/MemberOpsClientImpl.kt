@@ -80,9 +80,9 @@ class MemberOpsClientImpl @Activate constructor(
 
         const val PUBLISHER_NAME = "MemberOpsClient.publisher"
         // for watching the config changes
-        const val CONFIG_HANDLE_NAME = "MemberOpsClient.componentHandle"
+        const val CONFIG_HANDLE_NAME = "MemberOpsClient.configHandle"
         // for checking the components' health
-        const val COMPONENT_HANDLE_NAME = "MemberOpsClient.configHandle"
+        const val COMPONENT_HANDLE_NAME = "MemberOpsClient.componentHandle"
 
         private val clock = UTCClock()
     }
@@ -146,7 +146,7 @@ class MemberOpsClientImpl @Activate constructor(
                     setOf(
                         COMPONENT_HANDLE_NAME,
                         CONFIG_HANDLE_NAME,
-                        COMPONENT_HANDLE_NAME
+                        PUBLISHER_NAME,
                     )
                 )
                 deactivate("Handling the stop event for component.")
