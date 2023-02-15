@@ -1,18 +1,17 @@
 plugins {
     id 'corda-api.common-library'
     id 'corda.common-publishing'
-    id 'org.jetbrains.kotlin.jvm'
 }
 
 description 'Corda Membership'
 
 dependencies {
     api platform(project(':corda-api'))
-    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     compileOnly 'org.osgi:osgi.annotation'
 
     api project(':base')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
 }
