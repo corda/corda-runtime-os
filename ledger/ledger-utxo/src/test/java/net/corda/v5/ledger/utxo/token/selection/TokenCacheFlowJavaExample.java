@@ -1,7 +1,7 @@
 package net.corda.v5.ledger.utxo.token.selection;
 
 import net.corda.v5.application.flows.CordaInject;
-import net.corda.v5.application.flows.RestRequestBody;
+import net.corda.v5.application.flows.ClientRequestBody;
 import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.SecureHash;
@@ -20,7 +20,7 @@ public class TokenCacheFlowJavaExample implements ClientStartableFlow {
 
     @Override
     @NotNull
-    public String call(@NotNull RestRequestBody requestBody) {
+    public String call(@NotNull ClientRequestBody requestBody) {
 
         // Create a criteria describing the tokens to be selected and
         // the target amount to be claimed.

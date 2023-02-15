@@ -1,7 +1,7 @@
 package net.corda.v5.application.persistence;
 
 import net.corda.v5.application.flows.CordaInject;
-import net.corda.v5.application.flows.RestRequestBody;
+import net.corda.v5.application.flows.ClientRequestBody;
 import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.base.annotations.CordaSerializable;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +35,7 @@ public class PersistenceServiceFindAllFlowJavaExample implements ClientStartable
 
     @Override
     @NotNull
-    public String call(@NotNull RestRequestBody requestBody) {
+    public String call(@NotNull ClientRequestBody requestBody) {
         // create a named query setting parameters one-by-one, that returns the second page of up to 100 records
         ParameterizedQuery<Dog> pagedQuery = persistenceService
                 .query("find_by_name_and_age", Dog.class)

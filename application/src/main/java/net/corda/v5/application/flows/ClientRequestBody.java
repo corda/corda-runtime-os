@@ -6,13 +6,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * {@link RestRequestBody} wraps the `requestData` parameter of the HTTP call that triggered a {@link ClientStartableFlow}.
+ * {@link ClientRequestBody} wraps the `requestData` parameter of the HTTP call that triggered a {@link ClientStartableFlow}.
  * <p>
  * A {@link ClientStartableFlow} receives an instance of this interface, which can be used to retrieve the request body.
  *
  * @see ClientStartableFlow
  */
-public interface RestRequestBody {
+public interface ClientRequestBody {
 
     /**
      * Gets the request body for the {@link ClientStartableFlow}.
