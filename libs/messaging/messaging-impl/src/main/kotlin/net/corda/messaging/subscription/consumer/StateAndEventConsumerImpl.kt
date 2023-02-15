@@ -68,8 +68,11 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
 
         stateConsumer.poll(STATE_POLL_TIMEOUT).forEach { state ->
-            log.debug { "Updating state: $state" }
-            updateInMemoryState(state)
+            log.debug { "Processing state: $state" }
+            // Do not update in memory state unless we are syncing as we are already guaranteed to have the latest state
+            if (partitionsToSync.containsKey(state.partition)) {
+                updateInMemoryState(state)
+            }
         }
 
         if (syncPartitions && partitionsToSync.isNotEmpty()) {
