@@ -111,7 +111,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on {
-            lookupKeysByShortIds(
+            lookupKeysByIds(
                 eq(holdingIdentity.shortHash.value),
                 argThat {
                     this.firstOrNull()?.value == ecdhKeyId
@@ -133,7 +133,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         )
         on {
-            lookupKeysByShortIds(
+            lookupKeysByIds(
                 eq(holdingIdentity.shortHash.value),
                 argThat {
                     this.firstOrNull()?.value == sessionKeyId
@@ -242,7 +242,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         verify(platformInfoProvider).localWorkerSoftwareVersion
         verify(keyEncodingService, times(2)).encodeAsString(any())
         verify(keyEncodingService, times(2)).decodePublicKey(any<ByteArray>())
-        verify(cryptoOpsClient, times(2)).lookupKeysByShortIds(any(), any())
+        verify(cryptoOpsClient, times(2)).lookupKeysByIds(any(), any())
         verify(virtualNodeInfoReadService).get(any())
     }
 
@@ -316,13 +316,13 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
-        verify(cryptoOpsClient, never()).lookupKeysByShortIds(any(), any())
+        verify(cryptoOpsClient, never()).lookupKeysByIds(any(), any())
     }
 
     @Test
     fun `expected exception thrown if key cannot be found for holding identity`() {
         whenever(
-            cryptoOpsClient.lookupKeysByShortIds(
+            cryptoOpsClient.lookupKeysByIds(
                 eq(holdingIdentity.shortHash.value),
                 eq(listOf(ShortHash.of(sessionKeyId)))
             )
@@ -336,7 +336,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
-        verify(cryptoOpsClient).lookupKeysByShortIds(
+        verify(cryptoOpsClient).lookupKeysByIds(
             eq(holdingIdentity.shortHash.value),
             eq(listOf(ShortHash.of(sessionKeyId)))
         )
@@ -357,7 +357,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
-        verify(cryptoOpsClient).lookupKeysByShortIds(any(), any())
+        verify(cryptoOpsClient).lookupKeysByIds(any(), any())
         verify(keyEncodingService).decodePublicKey(any<ByteArray>())
     }
 
@@ -429,7 +429,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             on { algorithm } doReturn "RSA"
         }
         whenever(
-            cryptoOpsClient.lookupKeysByShortIds(
+            cryptoOpsClient.lookupKeysByIds(
                 holdingIdentity.shortHash.value,
                 listOf(
                     ShortHash.of(ecdhKeyId)
@@ -466,7 +466,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `session key with the wrong category will cause an exception`() {
         whenever(
-            cryptoOpsClient.lookupKeysByShortIds(
+            cryptoOpsClient.lookupKeysByIds(
                 holdingIdentity.shortHash.value,
                 listOf(
                     ShortHash.of(sessionKeyId)
@@ -502,7 +502,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `ECDH key with the wrong category will cause an exception`() {
         whenever(
-            cryptoOpsClient.lookupKeysByShortIds(
+            cryptoOpsClient.lookupKeysByIds(
                 holdingIdentity.shortHash.value,
                 listOf(
                     ShortHash.of(ecdhKeyId)

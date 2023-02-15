@@ -429,9 +429,9 @@ class CryptoProcessorTests {
     fun `Should not find unknown public key by its id`(
         tenantId: String
     ) {
-        val found = opsClient.lookupKeysByShortIds(
+        val found = opsClient.lookupKeysByIds(
             tenantId = tenantId,
-            shortKeyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
+            keyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
         assertEquals(0, found.size)
     }
@@ -597,9 +597,9 @@ class CryptoProcessorTests {
         category: String,
         externalId: String?
     ) {
-        val found = opsClient.lookupKeysByShortIds(
+        val found = opsClient.lookupKeysByIds(
             tenantId = tenantId,
-            shortKeyIds = listOf(ShortHash.of(publicKey.publicKeyId()))
+            keyIds = listOf(ShortHash.of(publicKey.publicKeyId()))
         )
         assertEquals(1, found.size)
         assertEquals(publicKey.publicKeyId(), found[0].id)
@@ -886,8 +886,8 @@ class CryptoProcessorTests {
         val allKeyIds = allKeys.map { it.publicKeyId() }.map { ShortHash.of(it) }
         val allKeyFullIds = allKeys.map { it.fullId() }
 
-        val queriedVnodeKeysEncoded = opsClient.lookupKeysByShortIds(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
-        val queriedVnode2KeysEncoded = opsClient.lookupKeysByShortIds(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedVnodeKeysEncoded = opsClient.lookupKeysByIds(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedVnode2KeysEncoded = opsClient.lookupKeysByIds(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
         val queriedByFullIdsVnodeKeysEncoded = opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
         val queriedByFullIdsVnode2KeysEncoded = opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
 

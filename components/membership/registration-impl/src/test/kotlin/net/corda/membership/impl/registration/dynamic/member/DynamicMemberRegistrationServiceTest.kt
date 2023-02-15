@@ -205,9 +205,9 @@ class DynamicMemberRegistrationServiceTest {
             )
         )
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookupKeysByShortIds(memberId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
-        on { lookupKeysByShortIds(memberId.value, listOf(ShortHash.of(LEDGER_KEY_ID))) } doReturn listOf(ledgerCryptoSigningKey)
-        on { lookupKeysByShortIds(memberId.value, listOf(ShortHash.of(NOTARY_KEY_ID))) } doReturn listOf(notaryCryptoSigningKey)
+        on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(LEDGER_KEY_ID))) } doReturn listOf(ledgerCryptoSigningKey)
+        on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(NOTARY_KEY_ID))) } doReturn listOf(notaryCryptoSigningKey)
         on {
             sign(
                 any(),

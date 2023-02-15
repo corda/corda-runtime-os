@@ -128,7 +128,7 @@ class SigningKeyStoreTests {
             )
         }
         assertThrows<IllegalArgumentException> {
-            component.lookupByShortIds(UUID.randomUUID().toString(), keys.map { ShortHash.of(it) })
+            component.lookupByIds(UUID.randomUUID().toString(), keys.map { ShortHash.of(it) })
         }
     }
 }

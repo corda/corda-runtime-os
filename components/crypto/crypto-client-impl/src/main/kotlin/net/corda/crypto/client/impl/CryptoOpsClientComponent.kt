@@ -155,8 +155,8 @@ class CryptoOpsClientComponent @Activate constructor(
             filter = filter
         )
 
-    override fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey> =
-        impl.ops.lookupKeysByShortIds(tenantId, shortKeyIds)
+    override fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> =
+        impl.ops.lookupKeysByIds(tenantId, keyIds)
 
     override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> =
         impl.ops.lookupKeysByFullIds(tenantId, fullKeyIds)

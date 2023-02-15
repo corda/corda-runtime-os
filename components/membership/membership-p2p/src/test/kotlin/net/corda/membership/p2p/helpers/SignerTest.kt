@@ -32,7 +32,7 @@ class SignerTest {
         val key = mock<CryptoSigningKey> {
             on { schemeCodeName } doReturn RSA_CODE_NAME
         }
-        whenever(cryptoOpsClient.lookupKeysByShortIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(listOf(key))
+        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(listOf(key))
         val signature = mock<DigitalSignature.WithKey>()
         whenever(
             cryptoOpsClient.sign(
@@ -53,7 +53,7 @@ class SignerTest {
         val key = mock<CryptoSigningKey> {
             on { schemeCodeName } doReturn "NOP"
         }
-        whenever(cryptoOpsClient.lookupKeysByShortIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(listOf(key))
+        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(listOf(key))
 
         assertThrows<CordaRuntimeException> {
             signer.sign(data)
@@ -63,7 +63,7 @@ class SignerTest {
     @Test
     fun `sign fail if key can not be found`() {
         val data = byteArrayOf(1, 2, 3)
-        whenever(cryptoOpsClient.lookupKeysByShortIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(emptyList())
+        whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))).doReturn(emptyList())
 
         assertThrows<CordaRuntimeException> {
             signer.sign(data)

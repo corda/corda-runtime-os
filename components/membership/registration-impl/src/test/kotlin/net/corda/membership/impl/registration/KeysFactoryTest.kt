@@ -77,7 +77,7 @@ class KeysFactoryTest {
             )
         } doThrow KeyAlreadyExistsException("", "", "")
         on {
-            lookupKeysByShortIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))
+            lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))
         } doReturn listOf(cryptoSigningKey)
     }
 

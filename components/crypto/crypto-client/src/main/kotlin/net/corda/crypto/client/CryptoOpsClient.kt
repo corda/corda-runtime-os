@@ -181,11 +181,11 @@ interface CryptoOpsClient : Lifecycle {
     ): List<CryptoSigningKey>
 
     /**
-     * Looks for keys owned by tenant of id [tenantId] from the list of [shortKeyIds].
+     * Looks for keys owned by tenant of id [tenantId] from the list of [keyIds].
      *
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
-    fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey>
+    fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey>
 
     /**
      * Looks for keys owned by tenant of id [tenantId] from the list of [fullKeyIds].

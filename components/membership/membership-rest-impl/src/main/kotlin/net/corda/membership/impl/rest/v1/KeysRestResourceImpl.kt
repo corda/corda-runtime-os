@@ -83,9 +83,9 @@ class KeysRestResourceImpl @Activate constructor(
     ): Map<String, KeyMetaData> {
         if (ids?.isNotEmpty() == true) {
             return tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
-                cryptoOpsClient.lookupKeysByShortIds(
+                cryptoOpsClient.lookupKeysByIds(
                     tenantId = tenantId,
-                    shortKeyIds = ids.map { ShortHash.of(it) }
+                    keyIds = ids.map { ShortHash.of(it) }
                 )
             }.associate { it.id to it.toMetaData() }
         }
@@ -208,9 +208,9 @@ class KeysRestResourceImpl @Activate constructor(
         keyId: String,
     ): String {
         val key = tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
-            cryptoOpsClient.lookupKeysByShortIds(
+            cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                shortKeyIds = listOf(ShortHash.of(keyId))
+                keyIds = listOf(ShortHash.of(keyId))
             )
         }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
 

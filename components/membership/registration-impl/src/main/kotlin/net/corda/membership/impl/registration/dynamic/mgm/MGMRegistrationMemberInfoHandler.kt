@@ -79,7 +79,7 @@ internal class MGMRegistrationMemberInfoHandler(
 
     @Suppress("ThrowsCount")
     private fun getKeyFromId(keyId: String, tenantId: String, expectedCategory: String): PublicKey {
-        return cryptoOpsClient.lookupKeysByShortIds(
+        return cryptoOpsClient.lookupKeysByIds(
             tenantId,
             listOf(ShortHash.of(keyId))
         ).firstOrNull()?.let {

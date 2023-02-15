@@ -165,7 +165,7 @@ internal class TestCryptoOpsClient(
         throw UnsupportedOperationException()
     }
 
-    override fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey> {
+    override fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
         throw UnsupportedOperationException()
     }
 

@@ -69,8 +69,8 @@ class SigningServiceImpl(
         ).map { key -> key.toSigningKeyInfo() }
     }
 
-    override fun lookupByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): Collection<SigningKeyInfo> =
-        store.lookupByShortIds(tenantId, shortKeyIds)
+    override fun lookupByIds(tenantId: String, keyIds: List<ShortHash>): Collection<SigningKeyInfo> =
+        store.lookupByIds(tenantId, keyIds)
             .map { foundKey ->
                 foundKey.toSigningKeyInfo()
             }

@@ -347,12 +347,12 @@ class PersistenceTests {
     fun `Should persist and retrieve raw SigningKeyEntity`() {
         val keyPair = generateKeyPair(EDDSA_ED25519_CODE_NAME)
         val tenantId = randomTenantId()
-        val keyId = keyPair.public.fullId()
-        val shortKeyId = keyPair.public.publicKeyId()
+        val keyId = keyPair.public.publicKeyId()
+        val fullKeyId = keyPair.public.fullId()
         val entity = SigningKeyEntity(
             tenantId = tenantId,
-            fullKeyId = keyId,
-            shortKeyId = shortKeyId,
+            keyId = keyId,
+            fullKeyId = fullKeyId,
             timestamp = Instant.now(),
             category = CryptoConsts.Categories.LEDGER,
             schemeCodeName = EDDSA_ED25519_CODE_NAME,
@@ -373,13 +373,13 @@ class PersistenceTests {
             val retrieved = em.find(
                 SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
                     tenantId = tenantId,
-                    shortKeyId = shortKeyId
+                    keyId = keyId
                 )
             )
             assertNotNull(retrieved)
             assertEquals(entity.tenantId, retrieved.tenantId)
+            assertEquals(entity.keyId, retrieved.keyId)
             assertEquals(entity.fullKeyId, retrieved.fullKeyId)
-            assertEquals(entity.shortKeyId, retrieved.shortKeyId)
             assertEquals(entity.timestamp.epochSecond, retrieved.timestamp.epochSecond)
             assertEquals(entity.category, retrieved.category)
             assertEquals(entity.schemeCodeName, retrieved.schemeCodeName)
@@ -675,19 +675,19 @@ class PersistenceTests {
         signingKeyStore.save(tenantId1, w1)
         signingKeyStore.save(tenantId2, w1)
         val keyP11 =
-            signingKeyStore.lookupByShortIds(tenantId1, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
+            signingKeyStore.lookupByIds(tenantId1, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
         assertEquals(1, keyP11.size)
         assertSigningCachedKey(tenantId1, p1, keyP11.first())
         val keyP12 =
-            signingKeyStore.lookupByShortIds(tenantId2, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
+            signingKeyStore.lookupByIds(tenantId2, listOf(ShortHash.of(p1.key.publicKey.publicKeyId())))
         assertEquals(1, keyP12.size)
         assertSigningCachedKey(tenantId2, p1, keyP12.first())
         val keyW11 =
-            signingKeyStore.lookupByShortIds(tenantId1, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
+            signingKeyStore.lookupByIds(tenantId1, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
         assertEquals(1, keyW11.size)
         assertSigningCachedKey(tenantId1, w1, keyW11.first())
         val keyW12 =
-            signingKeyStore.lookupByShortIds(tenantId2, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
+            signingKeyStore.lookupByIds(tenantId2, listOf(ShortHash.of(w1.key.publicKey.publicKeyId())))
         assertEquals(1, keyW12.size)
         assertSigningCachedKey(tenantId2, w1, keyW12.first())
     }
@@ -725,7 +725,7 @@ class PersistenceTests {
         signingKeyStore.save(tenantId, w1)
         signingKeyStore.save(tenantId, w2)
         signingKeyStore.save(tenantId, w3)
-        val keys = signingKeyStore.lookupByShortIds(
+        val keys = signingKeyStore.lookupByIds(
             tenantId,
             listOf(
                 ShortHash.of(p1.key.publicKey.publicKeyId()),
@@ -880,13 +880,13 @@ class PersistenceTests {
         val hsmId = UUID.randomUUID().toString()
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         signingKeyStore.save(tenantId, p1)
-        val shortKeyId = p1.key.publicKey.publicKeyId()
+        val keyId = p1.key.publicKey.publicKeyId()
         val fullKeyId = p1.key.publicKey.fullId()
-        val keyLookedUpByShortKeyId =
-            signingKeyStore.lookupByShortIds(tenantId, listOf(ShortHash.of(shortKeyId)))
         val keyLookedUpByKeyId =
+            signingKeyStore.lookupByIds(tenantId, listOf(ShortHash.of(keyId)))
+        val keyLookedUpByFullKeyId =
             signingKeyStore.lookupByFullIds(tenantId, listOf(SecureHash.parse(fullKeyId)))
-        assertEquals(keyLookedUpByShortKeyId.single().id, keyLookedUpByKeyId.single().id)
+        assertEquals(keyLookedUpByKeyId.single().id, keyLookedUpByFullKeyId.single().id)
     }
 
     /**

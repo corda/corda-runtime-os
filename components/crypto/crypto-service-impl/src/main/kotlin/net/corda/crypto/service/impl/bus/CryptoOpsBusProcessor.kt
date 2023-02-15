@@ -122,7 +122,7 @@ class CryptoOpsBusProcessor(
             val foundKeys =
                 when (val avroKeyIds = request.keyIds) {
                     is ShortHashes -> {
-                        signingService.lookupByShortIds(
+                        signingService.lookupByIds(
                             context.tenantId,
                             avroShortHashesToDto(avroKeyIds)
                         )

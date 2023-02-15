@@ -132,21 +132,21 @@ class CryptoOpsClientImpl(
         val publicKeyIds = candidateKeys.map {
             publicKeyIdFromBytes(it.array())
         }
-        return lookupKeysByShortIdsProxy(tenantId, ShortHashes(publicKeyIds))
+        return lookupKeysByIdsProxy(tenantId, ShortHashes(publicKeyIds))
     }
 
     // This method is only used by `filterMyKeysProxy` which is not used - consider removing it
-    private fun lookupKeysByShortIdsProxy(tenantId: String, shortKeyIds: ShortHashes): CryptoSigningKeys {
+    private fun lookupKeysByIdsProxy(tenantId: String, keyIds: ShortHashes): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            shortKeyIds.hashes.joinToString { it }
+            keyIds.hashes.joinToString { it }
         )
 
         val request = createRequest(
             tenantId = tenantId,
-            request = ByIdsRpcQuery(shortKeyIds)
+            request = ByIdsRpcQuery(keyIds)
         )
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
@@ -376,13 +376,13 @@ class CryptoOpsClientImpl(
     }
 
     // TODO Users who are using this API need to revisit to determine if they need to migrate to search ByFullIds
-    fun lookupKeysByShortIds(tenantId: String, ids: List<ShortHash>): List<CryptoSigningKey> {
-        logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${ids.joinToString()}])" }
-        require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
+    fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
+        logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${keyIds.joinToString()}])" }
+        require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
 
         val request = createRequest(
             tenantId,
-            ByIdsRpcQuery(ShortHashes(ids.map { it.value }))
+            ByIdsRpcQuery(ShortHashes(keyIds.map { it.value }))
         )
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }

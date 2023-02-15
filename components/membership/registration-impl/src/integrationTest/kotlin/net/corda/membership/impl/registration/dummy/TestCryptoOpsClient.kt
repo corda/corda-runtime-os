@@ -165,9 +165,9 @@ class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
-    override fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey> {
+    override fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
         val result = mutableListOf<CryptoSigningKey>()
-        shortKeyIds.forEach {
+        keyIds.forEach {
             result.add(keys[it] ?: throw IllegalArgumentException("No key found under ID: $it."))
         }
         return result

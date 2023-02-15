@@ -52,9 +52,9 @@ internal class HostedIdentityEntryFactory(
         sessionKeyId: String?,
     ): String {
         val sessionKey = if (sessionKeyId != null) {
-            cryptoOpsClient.lookupKeysByShortIds(
+            cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                shortKeyIds = listOf(ShortHash.of(sessionKeyId))
+                keyIds = listOf(ShortHash.of(sessionKeyId))
             )
         } else {
             cryptoOpsClient.lookup(

@@ -28,8 +28,8 @@ class KeySpecExtractorTest {
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
     }
     private val cryptoOpsClient = mock<CryptoOpsClient> {
-        on { lookupKeysByShortIds(tenantId, listOf(ShortHash.of(publicKeyOne.publicKeyId()))) } doReturn listOf(signingKey)
-        on { lookupKeysByShortIds(tenantId, listOf(ShortHash.of(publicKeyTwo.publicKeyId()))) } doReturn emptyList()
+        on { lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKeyOne.publicKeyId()))) } doReturn listOf(signingKey)
+        on { lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKeyTwo.publicKeyId()))) } doReturn emptyList()
     }
 
     private val extractor = KeySpecExtractor(tenantId, cryptoOpsClient)

@@ -57,14 +57,14 @@ interface SigningService {
     ): Collection<SigningKeyInfo>
 
     /**
-     * Looks for keys by short key ids.
+     * Looks for keys by key ids.
      *
      * @param tenantId The tenant's id which the keys belong to.
-     * @param shortKeyIds Short key ids to look keys for.
+     * @param keyIds Key ids to look keys for.
      */
-    fun lookupByShortIds(
+    fun lookupByIds(
         tenantId: String,
-        shortKeyIds: List<ShortHash>
+        keyIds: List<ShortHash>
     ): Collection<SigningKeyInfo>
 
     /**

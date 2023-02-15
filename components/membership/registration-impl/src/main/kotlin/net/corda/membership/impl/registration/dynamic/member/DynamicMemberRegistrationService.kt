@@ -453,7 +453,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             tenantId: String,
             expectedCategory: String,
         ): List<CryptoSigningKey> =
-            cryptoOpsClient.lookupKeysByShortIds(tenantId, keyIds.map { ShortHash.of(it) }).also { keys ->
+            cryptoOpsClient.lookupKeysByIds(tenantId, keyIds.map { ShortHash.of(it) }).also { keys ->
                 val ids = keys.onEach { key ->
                     if (key.category != expectedCategory) {
                         throw IllegalArgumentException("Key ${key.id} is not in category $expectedCategory but in ${key.category}")

@@ -351,7 +351,7 @@ class CryptoOperationsTests {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
         val key2 = signingFreshKeys.values.first().publicKey
-        val ourKeys = signingFreshKeys.values.first().signingService.lookupByShortIds(
+        val ourKeys = signingFreshKeys.values.first().signingService.lookupByIds(
             tenantId,
             listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
@@ -367,7 +367,7 @@ class CryptoOperationsTests {
         val key2 = mock<PublicKey> {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
-        val ourKeys = signingFreshKeys.values.first().signingService.lookupByShortIds(
+        val ourKeys = signingFreshKeys.values.first().signingService.lookupByIds(
             tenantId,
             listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
@@ -381,7 +381,7 @@ class CryptoOperationsTests {
     ) {
         val info = signingAliasedKeys.getValue(scheme)
         val returned =
-            info.signingService.lookupByShortIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, info.alias, null, scheme)
@@ -394,7 +394,7 @@ class CryptoOperationsTests {
     ) {
         val info = signingFreshKeys.getValue(scheme)
         val returned =
-            info.signingService.lookupByShortIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, null, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, null, info.externalId, scheme)
@@ -406,7 +406,7 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookupByShortIds(
+        val returned = info.signingService.lookupByIds(
             tenantId,
             listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
@@ -460,7 +460,7 @@ class CryptoOperationsTests {
         val unknownPublicKey = unknownKeyPairs.getValue(scheme).public
         val info = signingFreshKeys.getValue(scheme)
         val returned =
-            info.signingService.lookupByShortIds(tenantId, listOf(ShortHash.of(unknownPublicKey.publicKeyId())))
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(unknownPublicKey.publicKeyId())))
         assertEquals(0, returned.size)
     }
 

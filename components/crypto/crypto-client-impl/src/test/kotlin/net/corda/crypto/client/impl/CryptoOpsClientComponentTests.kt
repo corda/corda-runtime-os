@@ -346,7 +346,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.lookupKeysByShortIds(
+            component.lookupKeysByIds(
                 knownTenantId,
                 listOf(
                     ShortHash.of(keyPair.public.publicKeyId())
@@ -402,7 +402,7 @@ class CryptoOpsClientComponentTests {
             ShortHash.of(keyPair.public.publicKeyId())
         }
         assertThrows(IllegalArgumentException::class.java) {
-            component.lookupKeysByShortIds(knownTenantId, ids)
+            component.lookupKeysByIds(knownTenantId, ids)
         }
     }
 
@@ -417,7 +417,7 @@ class CryptoOpsClientComponentTests {
         }
         val id = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
         val result = sender.act {
-            component.lookupKeysByShortIds(knownTenantId, listOf(ShortHash.of(id)))
+            component.lookupKeysByIds(knownTenantId, listOf(ShortHash.of(id)))
         }
         assertEquals(0, result.value.size)
         val query = assertOperationType<ByIdsRpcQuery>()
@@ -924,7 +924,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookupKeysByShortIds(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
     }
 
@@ -947,7 +947,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookupKeysByShortIds(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
     }
 
@@ -970,7 +970,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookupKeysByShortIds(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
     }
 
@@ -990,7 +990,7 @@ class CryptoOpsClientComponentTests {
         )
         setupCompletedResponse { throw error }
         val exception = assertThrows(expected) {
-            component.lookupKeysByShortIds(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
         assertEquals(error.message, exception.message)
     }
@@ -1007,7 +1007,7 @@ class CryptoOpsClientComponentTests {
         )
         setupCompletedResponse { throw error }
         val exception = assertThrows(CryptoException::class.java) {
-            component.lookupKeysByShortIds(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
         assertSame(error, exception.cause)
     }

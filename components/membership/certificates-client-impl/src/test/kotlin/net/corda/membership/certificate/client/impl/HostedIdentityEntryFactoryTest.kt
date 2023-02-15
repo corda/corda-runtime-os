@@ -91,7 +91,7 @@ class HostedIdentityEntryFactoryTest {
             )
         } doReturn listOf(clusterSessionKey)
         on {
-            lookupKeysByShortIds(
+            lookupKeysByIds(
                 eq(VALID_NODE.toString()),
                 ids.capture()
             )

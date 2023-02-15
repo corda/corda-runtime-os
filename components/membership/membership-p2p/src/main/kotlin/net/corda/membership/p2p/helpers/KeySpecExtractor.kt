@@ -65,7 +65,7 @@ class KeySpecExtractor(
     }
 
     fun getSpec(publicKey: PublicKey): SignatureSpec {
-        val keyInfo = cryptoOpsClient.lookupKeysByShortIds(
+        val keyInfo = cryptoOpsClient.lookupKeysByIds(
             tenantId,
             listOf(
                 ShortHash.of(publicKey.publicKeyId())

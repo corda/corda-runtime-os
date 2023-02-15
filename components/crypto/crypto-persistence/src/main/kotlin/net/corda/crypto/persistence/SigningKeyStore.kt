@@ -48,13 +48,13 @@ interface SigningKeyStore : Lifecycle {
     ): Collection<SigningCachedKey>
 
     /**
-     * Looks for keys by short key ids.
+     * Looks for keys by key ids.
      *
-     * @param shortKeyIds Short key ids to look keys for.
+     * @param keyIds Key ids to look keys for.
      */
-    fun lookupByShortIds(
+    fun lookupByIds(
         tenantId: String,
-        shortKeyIds: List<ShortHash>
+        keyIds: List<ShortHash>
     ): Collection<SigningCachedKey>
 
     /**
