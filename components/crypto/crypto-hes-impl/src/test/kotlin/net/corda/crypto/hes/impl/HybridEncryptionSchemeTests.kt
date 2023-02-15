@@ -10,7 +10,7 @@ import net.corda.crypto.hes.impl.infra.TestCryptoOpsClient
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
@@ -43,7 +43,7 @@ class HybridEncryptionSchemeTests {
         @BeforeAll
         @JvmStatic
         fun setup() {
-            tenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
+            tenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
             coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
             schemeMetadata = CipherSchemeMetadataImpl()
             ecdhKeySchemes = listOf(

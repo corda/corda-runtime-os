@@ -15,7 +15,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
@@ -59,13 +58,11 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.sql.Connection
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
 
 /** Tests of [VirtualNodeWriterProcessor]. */
 class VirtualNodeWriterProcessorTests {
@@ -133,28 +130,28 @@ class VirtualNodeWriterProcessorTests {
             "update_actor"
         )
 
-    private val em = mock<EntityManager>() {
-        on { transaction }.doReturn(mock<EntityTransaction>())
+    private val em = mock<EntityManager> {
+        on { transaction }.doReturn(mock())
     }
 
-    private val emf = mock<EntityManagerFactory>() {
+    private val emf = mock<EntityManagerFactory> {
         on { createEntityManager() }.doReturn(em)
     }
 
-    private val dataSource = mock<CloseableDataSource>() {
-        on { connection }.doReturn(mock<Connection>())
+    private val dataSource = mock<CloseableDataSource> {
+        on { connection }.doReturn(mock())
     }
 
-    private val connectionManager = mock<DbConnectionManager>() {
+    private val connectionManager = mock<DbConnectionManager> {
         on { getDataSource(any()) }.doReturn(dataSource)
         on { getClusterEntityManagerFactory() }.doReturn(emf)
         on { putConnection(any(), any(), any(), any(), any(), any()) }.doReturn(UUID.fromString(connectionId))
     }
 
-    private val dbConnection = mock<DbConnectionImpl>() {
+    private val dbConnection = mock<DbConnectionImpl> {
         on { name }.doReturn("connection")
         on { privilege }.doReturn(DbPrivilege.DDL)
-        on { config }.doReturn(mock<SmartConfig>())
+        on { config }.doReturn(mock())
         on { description }.doReturn("description")
         on { getUser() }.doReturn("user")
         on { getPassword() }.doReturn("password")
@@ -183,7 +180,7 @@ class VirtualNodeWriterProcessorTests {
         whenever(dbType).thenReturn(VirtualNodeDbType.UNIQUENESS)
     }
 
-    private val vNodeFactory = mock<VirtualNodeDbFactory>() {
+    private val vNodeFactory = mock<VirtualNodeDbFactory> {
         on { createVNodeDbs(any(), any()) }.doReturn(
             mapOf(
                 VirtualNodeDbType.VAULT to vaultDb,
@@ -193,7 +190,7 @@ class VirtualNodeWriterProcessorTests {
         )
     }
 
-    private val vNodeRepo = mock<VirtualNodeEntityRepository>() {
+    private val vNodeRepo = mock<VirtualNodeEntityRepository> {
         on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
     }
     private val mgmMemberContextKey = "member-context-key"
@@ -243,8 +240,8 @@ class VirtualNodeWriterProcessorTests {
         return respFuture.get()
     }
 
-    private fun virtualNodeRepositoryMock(): VirtualNodeRepository = mock<VirtualNodeRepository>()
-    private fun holdingIdentityRepositoryMock(): HoldingIdentityRepository = mock<HoldingIdentityRepository>()
+    private fun virtualNodeRepositoryMock(): VirtualNodeRepository = mock()
+    private fun holdingIdentityRepositoryMock(): HoldingIdentityRepository = mock()
 
     @Test
     fun `publishes correct virtual node info to Kafka`() {
@@ -353,7 +350,7 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `skips MGM member info publishing to Kafka without error if MGM information is not present in group policy`() {
         val publisher = getPublisher()
-        val vNodeRepo = mock<VirtualNodeEntityRepository>() {
+        val vNodeRepo = mock<VirtualNodeEntityRepository> {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
         val processor = VirtualNodeWriterProcessor(
@@ -724,7 +721,7 @@ class VirtualNodeWriterProcessorTests {
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getCpiMetadataByChecksum(any())).thenReturn(cpiMetaData)
         }
-        val vnodeRepo = mock<VirtualNodeRepository>() {
+        val vnodeRepo = mock<VirtualNodeRepository> {
             on { find(any(), any()) }.doReturn(mock())
         }
         val processor = VirtualNodeWriterProcessor(
@@ -750,14 +747,14 @@ class VirtualNodeWriterProcessorTests {
             ""
         )
 
-        val entityRepository = mock<VirtualNodeEntityRepository>() {
+        val entityRepository = mock<VirtualNodeEntityRepository> {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
 
-        val holdingIdentityRepository = mock<HoldingIdentityRepository>() {
-            on { find(any(), any()) }.doReturn(mock<HoldingIdentity>())
+        val holdingIdentityRepository = mock<HoldingIdentityRepository> {
+            on { find(any(), any()) }.doReturn(mock())
         }
-        val vnodeRepo = mock<VirtualNodeRepository>() {
+        val vnodeRepo = mock<VirtualNodeRepository> {
             on { find(any(), any()) }.doReturn(null)
         }
 

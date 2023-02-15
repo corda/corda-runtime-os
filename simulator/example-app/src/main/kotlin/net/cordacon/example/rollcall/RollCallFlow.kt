@@ -22,7 +22,7 @@ import net.cordacon.example.rollcall.utils.findStudents
 import org.slf4j.LoggerFactory
 
 
-@InitiatingFlow("roll-call")
+@InitiatingFlow(protocol = "roll-call")
 class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): ClientStartableFlow {
 
     private data class SessionAndRecipient(val flowSession: FlowSession, val receipient : MemberX500Name)

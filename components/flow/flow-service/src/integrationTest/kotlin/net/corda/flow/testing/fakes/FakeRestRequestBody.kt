@@ -8,7 +8,7 @@ class FakeRestRequestBody: RestRequestBody {
         return ""
     }
 
-    override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
+    override fun <T : Any> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
         TODO("Not yet implemented")
     }
 

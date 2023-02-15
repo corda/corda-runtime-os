@@ -173,7 +173,7 @@ class MembershipPersistenceRPCProcessorTest {
     )
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
-        on { find(RegistrationRequestEntity::class.java, ourRegistrationId) } doReturn registrationRequest
+        on { find(RegistrationRequestEntity::class.java, ourRegistrationId, LockModeType.PESSIMISTIC_WRITE) } doReturn registrationRequest
         on {
             find(PreAuthTokenEntity::class.java, preAuthTokenId, LockModeType.PESSIMISTIC_WRITE)
         } doReturn preAuthTokenEntity

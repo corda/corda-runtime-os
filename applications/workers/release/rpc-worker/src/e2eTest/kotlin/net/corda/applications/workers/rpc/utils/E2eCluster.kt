@@ -22,7 +22,7 @@ interface E2eCluster {
      * Creates the [RestClient] for a given [RestResource] class.
      */
     fun <I : RestResource> clusterHttpClientFor(
-        rpcOpsClass: Class<I>,
+        restResourceClass: Class<I>,
         userName: String = AdminPasswordUtil.adminUser
     ): RestClient<I>
 }
@@ -39,8 +39,8 @@ private class E2eClusterImpl(
     override val members = mutableListOf<E2eClusterMember>()
 
     private val testToolkit by TestToolkitProperty(
-        clusterConfig.rpcHost,
-        clusterConfig.rpcPort
+        clusterConfig.restHost,
+        clusterConfig.restPort
     )
 
     override val p2pUrl get() = "https://${clusterConfig.p2pHost}:${clusterConfig.p2pPort}"
@@ -57,7 +57,7 @@ private class E2eClusterImpl(
         get() = testToolkit.uniqueName
 
     override fun <I : RestResource> clusterHttpClientFor(
-        rpcOpsClass: Class<I>,
+        restResourceClass: Class<I>,
         userName: String
-    ): RestClient<I> = testToolkit.httpClientFor(rpcOpsClass, userName, clusterConfig.rpcPassword)
+    ): RestClient<I> = testToolkit.httpClientFor(restResourceClass, userName, clusterConfig.restPassword)
 }
