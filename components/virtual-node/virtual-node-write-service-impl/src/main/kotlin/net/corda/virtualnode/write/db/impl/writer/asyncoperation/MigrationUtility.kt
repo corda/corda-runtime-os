@@ -34,6 +34,8 @@ internal interface MigrationUtility {
      * @param virtualNodeShortHash the virtual node identifier of which to perform diff function
      * @param cpkChangelogs the changelogs with which to compare
      * @param vaultDmlConnectionId the DML connection ID of the vault to be compared
+     *
+     * @return Boolean indicating if the vault is in sync with the CPI
      */
     fun isVaultSchemaAndTargetCpiInSync(
         virtualNodeShortHash: String,

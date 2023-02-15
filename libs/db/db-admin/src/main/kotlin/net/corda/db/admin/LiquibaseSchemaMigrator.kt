@@ -73,6 +73,8 @@ interface LiquibaseSchemaMigrator {
      *
      * @param datasource the connection of the datasource to compare
      * @param dbChange the changesets to compare
+     *
+     * @return a list of filepaths for the unrun change sets
      */
     fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String>
 }
