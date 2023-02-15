@@ -11,3 +11,4 @@ kafka:
           - "p2pGateway"
           - "p2pLinkManager"
           - "rpc"
+          - "interop"

@@ -105,3 +105,13 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "rpc"
+  interop:
+    kafka:
+      sasl:
+        username:
+          value: "interop"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "interop"
