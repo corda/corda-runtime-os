@@ -149,15 +149,21 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     private val requestId = "requestId"
 
     private fun mockMemberInfoEntity(entity: MemberInfoEntity? = memberInfoEntity) {
-        whenever(entityManager.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))).doReturn(entity)
+        whenever(
+            entityManager.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
+        ).doReturn(entity)
     }
 
-    private fun mockRegistrationRequestEntity(entity: RegistrationRequestEntity? = mock()) {
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId), eq(LockModeType.PESSIMISTIC_WRITE))).doReturn(entity)
+    private fun mockRegistrationRequestEntity(entity: RegistrationRequestEntity? = requestEntity) {
+        whenever(
+            entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId), eq(LockModeType.PESSIMISTIC_WRITE))
+        ).doReturn(entity)
     }
 
     private fun mockMemberSignatureEntity(entity: MemberSignatureEntity? = memberSignatureEntity) {
-        whenever(entityManager.find(eq(MemberSignatureEntity::class.java), eq(primaryKey))).doReturn(entity)
+        whenever(
+            entityManager.find(eq(MemberSignatureEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
+        ).doReturn(entity)
     }
 
     @Test
@@ -312,9 +318,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING)))
         )
         mockMemberInfoEntity()
-        val requestEntity = mock<RegistrationRequestEntity>()
         mockMemberInfoEntity()
-        mockRegistrationRequestEntity(requestEntity)
+        mockRegistrationRequestEntity()
         mockMemberSignatureEntity()
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
@@ -329,43 +334,14 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     @Test
     fun `invoke will not update a declined request`() {
         whenever(requestEntity.status).doReturn(RegistrationStatus.DECLINED.name)
-        val mgmContextBytes = byteArrayOf(1, 10)
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
             KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING)))
         )
-        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
-        val entity = mock<MemberInfoEntity> {
-            on { mgmContext } doReturn mgmContextBytes
-        }
-        val requestId = "requestId"
-        whenever(
-            entityManager.find(
-                eq(MemberInfoEntity::class.java),
-                eq(
-                    MemberInfoEntityPrimaryKey(
-                        groupId = member.groupId,
-                        memberX500Name = member.x500Name,
-                    )
-                ),
-                eq(LockModeType.PESSIMISTIC_WRITE),
-            )
-        ).doReturn(entity)
-        whenever(
-            entityManager.find(
-                eq(RegistrationRequestEntity::class.java),
-                eq(requestId),
-                eq(LockModeType.PESSIMISTIC_WRITE),
-            )
-        ).doReturn(requestEntity)
-        val context = MembershipRequestContext(
-            clock.instant(),
-            "id",
-            HoldingIdentity(member.x500Name.toString(), "group"),
-        )
-        val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity(member.x500Name.toString(), "group"),
-            requestId,
-        )
+        mockMemberInfoEntity()
+        mockRegistrationRequestEntity()
+        mockMemberSignatureEntity()
+        val context = MembershipRequestContext(clock.instant(), requestId, member,)
+        val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
         assertThrows<MembershipPersistenceException> {
             handler.invoke(context, request)

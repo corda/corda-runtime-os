@@ -69,18 +69,18 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             val serializedMgmContext = keyValuePairListSerializer.serialize(mgmContext)
                 ?: throw MembershipPersistenceException("Can not serialize the mgm context")
 
-            val memberInfoEntity = MemberInfoEntity(
-                member.groupId,
-                member.memberX500Name,
-                false,
-                MEMBER_STATUS_ACTIVE,
-                now,
-                member.memberContext,
-                serializedMgmContext,
-                member.serialNumber
+            em.merge(
+                MemberInfoEntity(
+                    member.groupId,
+                    member.memberX500Name,
+                    false,
+                    MEMBER_STATUS_ACTIVE,
+                    now,
+                    member.memberContext,
+                    serializedMgmContext,
+                    member.serialNumber
+                )
             )
-
-            em.merge(memberInfoEntity)
 
             val registrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
@@ -97,19 +97,20 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
 
             val signature = em.find(
                 MemberSignatureEntity::class.java,
-                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true)
+                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true),
+                LockModeType.PESSIMISTIC_WRITE,
             ) ?: throw MembershipPersistenceException("Could not find signature for member: ${request.member}")
 
-            val signatureEntity = MemberSignatureEntity(
-                member.groupId,
-                member.memberX500Name,
-                false,
-                signature.publicKey,
-                signature.context,
-                signature.content
+            em.merge(
+                MemberSignatureEntity(
+                    member.groupId,
+                    member.memberX500Name,
+                    false,
+                    signature.publicKey,
+                    signature.context,
+                    signature.content
+                )
             )
-
-            em.merge(signatureEntity)
 
             UpdateMemberAndRegistrationRequestResponse(
                 PersistentMemberInfo(
