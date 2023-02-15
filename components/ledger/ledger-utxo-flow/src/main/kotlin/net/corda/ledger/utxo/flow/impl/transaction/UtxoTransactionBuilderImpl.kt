@@ -17,7 +17,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.Objects
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     override var notary: Party? = null,
@@ -30,11 +30,6 @@ class UtxoTransactionBuilderImpl(
     override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
-    // TODO : Review implementation...
-    // 1. Introduces mutability to what is effectively an immutable builder.
-    // 2. Calling toSignedTransaction is an idempotent call, but results in signed transactions with different privacy salt.
-    // 3. Probably won't be needed if we move to an implementation where the developer passes a transaction builder directly to finality.
-    // 4. Consider the same implementation for the consensual transaction builder.
     private var alreadySigned = false
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
