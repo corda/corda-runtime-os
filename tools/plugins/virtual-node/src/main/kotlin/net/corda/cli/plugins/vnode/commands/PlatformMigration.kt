@@ -6,13 +6,13 @@ import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
-import net.corda.cli.plugins.vnode.VirtualNodeCliPlugin
+import net.corda.cli.plugins.vnode.withPluginClassLoader
 import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter
-import java.lang.IllegalArgumentException
 import java.sql.Connection
 import java.sql.DriverManager
+
 
 @CommandLine.Command(
     name = "platform-migration",
@@ -46,7 +46,7 @@ class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMi
     var outputFilename: String = SQL_FILENAME
 
     @CommandLine.Option(
-        names = ["-h", "--holdingid-filename"],
+        names = ["-i", "--input-filename"],
         description = ["File containing list of Virtual Node Short Holding Ids to migrate. File should contain one short" +
                 "holding Id per line and nothing else. Default is '$HOLDING_ID_FILENAME'"]
     )
@@ -107,21 +107,17 @@ class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMi
     }
 
     private fun generateSql(fileWriter: FileWriter, holdingId: String, fileAndSchema: LiquibaseFileAndSchema) {
-        // This is a workaround to make liquibase play nicely with the logger that's on the class loader
-        val oldCl = Thread.currentThread().contextClassLoader
-        Thread.currentThread().contextClassLoader = VirtualNodeCliPlugin.classLoader
+        withPluginClassLoader {
+            val connection = config.jdbcConnectionFactory(jdbcUrl, user, password)
+            val database = config.jdbcDatabaseFactory(connection).apply {
+                val schemaName = fileAndSchema.schemaPrefix + holdingId
+                defaultSchemaName = schemaName // our tables
+                liquibaseSchemaName = schemaName // liquibase tracking tables
+            }
 
-        val connection = config.jdbcConnectionFactory(jdbcUrl, user, password)
-        val database = config.jdbcDatabaseFactory(connection).apply {
-            val schemaName = fileAndSchema.schemaPrefix + holdingId
-            defaultSchemaName = schemaName // our tables
-            liquibaseSchemaName = schemaName // liquibase tracking tables
+            connection.use {
+                config.liquibaseFactory(fileAndSchema.filename, database).update(Contexts(), fileWriter)
+            }
         }
-
-        connection.use {
-            config.liquibaseFactory(fileAndSchema.filename, database).update(Contexts(), fileWriter)
-        }
-
-        Thread.currentThread().contextClassLoader = oldCl
     }
 }
