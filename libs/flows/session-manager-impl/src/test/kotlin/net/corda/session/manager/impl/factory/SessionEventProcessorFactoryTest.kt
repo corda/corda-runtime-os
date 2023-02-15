@@ -8,6 +8,7 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.session.manager.SessionManagerException
 import net.corda.session.manager.impl.processor.SessionAckProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
@@ -22,11 +23,18 @@ import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class SessionEventProcessorFactoryTest {
 
-    private val sessionEventProcessorFactory = SessionEventProcessorFactory(mock())
+    private val messagingChunkFactory: MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
+        whenever(createChunkDeserializerService(any<Class<ByteArray>>(), any())).thenReturn(mock())
+    }
+    private val sessionEventProcessorFactory = SessionEventProcessorFactory(messagingChunkFactory)
 
     private companion object {
         val maxMsgSize = 1000000L
@@ -57,6 +65,7 @@ class SessionEventProcessorFactoryTest {
             "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData()), null, Instant.now(), maxMsgSize
         )
 
+        verify(messagingChunkFactory, times(1)).createChunkDeserializerService(any<Class<ByteArray>>(), any())
         assertThat(processor::class.java).isEqualTo(SessionDataProcessorSend::class.java)
     }
 
