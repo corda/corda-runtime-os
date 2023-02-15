@@ -13,8 +13,8 @@ import picocli.CommandLine
 @Suppress("unused")
 class VirtualNodeCliPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
     override fun start() {
