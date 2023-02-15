@@ -4,7 +4,7 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
@@ -14,8 +14,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionMetadataVerifier
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.ledger.utxo.transaction.verifier.verifyMetadata
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -53,7 +53,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = WireTransactionFactory::class)
     private val wireTransactionFactory: WireTransactionFactory,
     @Reference(service = UtxoLedgerTransactionFactory::class)
-    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    @Reference(service = UtxoLedgerTransactionVerificationService::class)
+    private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -63,16 +65,19 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     ): UtxoSignedTransaction {
         val metadata = transactionMetadataFactory.create(utxoMetadata())
 
-        UtxoTransactionMetadataVerifier(metadata).verify()
+        verifyMetadata(metadata)
 
         val metadataBytes = serializeMetadata(metadata)
         val componentGroups = calculateComponentGroups(utxoTransactionBuilder, metadataBytes)
         val wireTransaction = wireTransactionFactory.create(componentGroups)
 
-        UtxoLedgerTransactionVerifier(utxoLedgerTransactionFactory.create(wireTransaction)).verify(utxoTransactionBuilder.notary!!)
+        utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
 
-        val signaturesWithMetadata = signatories.map { transactionSignatureService.sign(wireTransaction.id, it) }
-
+        val signaturesWithMetadata =
+            transactionSignatureService.sign(
+                wireTransaction,
+                utxoTransactionBuilder.signatories
+            )
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
@@ -93,7 +98,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         signaturesWithMetaData
     )
 
-    private fun utxoMetadata() = linkedMapOf(
+    private fun utxoMetadata() = mapOf(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
         TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,

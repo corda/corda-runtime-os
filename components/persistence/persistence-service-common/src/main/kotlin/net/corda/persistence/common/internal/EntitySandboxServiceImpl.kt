@@ -2,14 +2,14 @@ package net.corda.persistence.common.internal
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
-import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
 import net.corda.persistence.common.EntitySandboxService
-import net.corda.persistence.common.exceptions.NotReadyException
-import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
@@ -23,7 +23,6 @@ import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.ContractState
@@ -34,6 +33,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * This is a sandbox service that is internal to this component.
@@ -59,7 +59,7 @@ class EntitySandboxServiceImpl @Activate constructor(
     private val dbConnectionManager: DbConnectionManager
 ) : EntitySandboxService {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext {
@@ -73,7 +73,7 @@ class EntitySandboxServiceImpl @Activate constructor(
 
         val cpkIds = cpks.mapTo(mutableSetOf(), CpkMetadata::fileChecksum)
         if (!sandboxService.hasCpks(cpkIds))
-            throw NotReadyException("CPKs not available (yet): $cpkIds")
+            throw CpkNotAvailableException("CPKs not available (yet): $cpkIds")
 
         return sandboxService.getOrCreate(getVirtualNodeContext(virtualNode, cpks)) { _, ctx ->
             initializeSandbox(cpks, virtualNode, ctx)

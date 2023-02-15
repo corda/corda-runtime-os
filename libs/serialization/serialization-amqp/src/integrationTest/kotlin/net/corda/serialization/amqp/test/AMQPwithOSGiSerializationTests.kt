@@ -1,6 +1,7 @@
 package net.corda.serialization.amqp.test
 
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.CordaSerializationEncoding.SNAPPY
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope
@@ -47,23 +48,27 @@ import java.nio.file.StandardCopyOption
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-@Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Timeout(value = 60, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class AMQPwithOSGiSerializationTests {
-    private val testSerializationContext = AMQP_STORAGE_CONTEXT
+    private companion object {
+        private const val TIMEOUT_MILLIS = 10000L
+    }
+
+    private val testSerializationContext = AMQP_STORAGE_CONTEXT.withEncoding(SNAPPY)
 
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
     private lateinit var sandboxFactory: SandboxFactory
 
-    @InjectService(timeout = 1000)
+    @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var securityManagerService: SecurityManagerService
 
     @BeforeAll
     fun setUp(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = TIMEOUT_MILLIS)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -73,7 +78,7 @@ class AMQPwithOSGiSerializationTests {
         applyPolicyFile("security-deny-platform-serializers.policy")
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxFactory = setup.fetchService(timeout = 1500)
+            sandboxFactory = setup.fetchService(timeout = TIMEOUT_MILLIS)
         }
     }
 

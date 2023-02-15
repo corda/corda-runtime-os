@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import java.time.Instant
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -10,10 +9,11 @@ import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.helper.recordFlowRuntimeMetric
 import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("Unused")
 @Component(service = [FlowRequestHandler::class])
@@ -25,7 +25,7 @@ class FlowFinishedRequestHandler @Activate constructor(
 ) : FlowRequestHandler<FlowIORequest.FlowFinished> {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val type = FlowIORequest.FlowFinished::class.java

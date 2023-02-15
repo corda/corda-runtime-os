@@ -43,7 +43,6 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
@@ -51,50 +50,54 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
-@Suppress("LongParameterList")
 @Component(service = [SynchronisationService::class])
 class MgmSynchronisationServiceImpl internal constructor(
-    private val publisherFactory: PublisherFactory,
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    private val configurationReadService: ConfigurationReadService,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val membershipQueryClient: MembershipQueryClient,
-    private val merkleTreeGenerator: MerkleTreeGenerator,
-    private val membershipPackageFactory: MembershipPackageFactory,
-    private val signerFactory: SignerFactory,
-    private val p2pRecordsFactory: P2pRecordsFactory,
+    private val services: InjectedServices,
 ) : MgmSynchronisationService {
-    private constructor(
-        publisherFactory: PublisherFactory,
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        configurationReadService: ConfigurationReadService,
-        membershipGroupReaderProvider: MembershipGroupReaderProvider,
-        membershipQueryClient: MembershipQueryClient,
-        merkleTreeGenerator: MerkleTreeGenerator,
+    @Suppress("LongParameterList")
+    internal class InjectedServices(
+        val publisherFactory: PublisherFactory,
+        val coordinatorFactory: LifecycleCoordinatorFactory,
+        val configurationReadService: ConfigurationReadService,
+        val membershipGroupReaderProvider: MembershipGroupReaderProvider,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-        signerFactory: SignerFactory,
         cipherSchemeMetadata: CipherSchemeMetadata,
-        p2pRecordsFactory: P2pRecordsFactory,
-    ) : this(
-        publisherFactory,
-        coordinatorFactory,
-        configurationReadService,
-        membershipGroupReaderProvider,
-        membershipQueryClient,
-        merkleTreeGenerator,
-        MembershipPackageFactory(
-            clock,
-            cordaAvroSerializationFactory,
-            cipherSchemeMetadata,
-            DistributionType.SYNC,
-            merkleTreeGenerator
-        ) { UUID.randomUUID().toString() },
-        signerFactory,
-        p2pRecordsFactory,
-    )
+        cryptoOpsClient: CryptoOpsClient,
+        val membershipQueryClient: MembershipQueryClient,
+        merkleTreeProvider: MerkleTreeProvider,
+    ) {
+        val merkleTreeGenerator by lazy {
+            MerkleTreeGenerator(
+                merkleTreeProvider,
+                cordaAvroSerializationFactory
+            )
+        }
+        val membershipPackageFactory by lazy {
+            MembershipPackageFactory(
+                clock,
+                cordaAvroSerializationFactory,
+                cipherSchemeMetadata,
+                DistributionType.SYNC,
+                merkleTreeGenerator,
+            ) { UUID.randomUUID().toString() }
+        }
 
+        val signerFactory by lazy {
+            SignerFactory(cryptoOpsClient)
+        }
+
+        val p2pRecordsFactory by lazy {
+            P2pRecordsFactory(
+                cordaAvroSerializationFactory,
+                clock,
+            )
+        }
+    }
+
+    @Suppress("LongParameterList")
     @Activate constructor(
         @Reference(service = PublisherFactory::class)
         publisherFactory: PublisherFactory,
@@ -115,34 +118,28 @@ class MgmSynchronisationServiceImpl internal constructor(
         @Reference(service = MerkleTreeProvider::class)
         merkleTreeProvider: MerkleTreeProvider,
     ) :
-            this(
+        this(
+            InjectedServices(
                 publisherFactory,
                 coordinatorFactory,
                 configurationReadService,
                 membershipGroupReaderProvider,
-                membershipQueryClient,
-                MerkleTreeGenerator(
-                    merkleTreeProvider,
-                    cordaAvroSerializationFactory
-                ),
                 cordaAvroSerializationFactory,
-                SignerFactory(cryptoOpsClient),
                 cipherSchemeMetadata,
-                P2pRecordsFactory(
-                    cordaAvroSerializationFactory,
-                    clock,
-                )
+                cryptoOpsClient,
+                membershipQueryClient,
+                merkleTreeProvider,
             )
-
+        )
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SERVICE = "MgmSynchronisationService"
         private val clock: Clock = UTCClock()
         const val IDENTITY_EX_MESSAGE = "is not part of the membership group!"
     }
 
     // Component lifecycle coordinator
-    private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
+    private val coordinator = services.coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
 
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
@@ -206,7 +203,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             val memberHashFromTheReq = request.syncRequest.membersHash
             val mgm = request.synchronisationMetaData.mgm
             val requester = request.synchronisationMetaData.member
-            val groupReader = membershipGroupReaderProvider.getGroupReader(mgm.toCorda())
+            val groupReader = services.membershipGroupReaderProvider.getGroupReader(mgm.toCorda())
             val mgmName = MemberX500Name.parse(mgm.x500Name)
             val mgmInfo = groupReader.lookup(mgmName)
                 ?: throw CordaRuntimeException("MGM $mgmName $IDENTITY_EX_MESSAGE")
@@ -240,7 +237,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         ) {
             val syncPackage = publisher.publish(
                 listOf(
-                    p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    services.p2pRecordsFactory.createAuthenticatedMessageRecord(
                         source = source,
                         destination = dest,
                         content = data,
@@ -260,7 +257,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         }
 
         private fun calculateHash(memberInfo: MemberInfo): SecureHash {
-            return merkleTreeGenerator.generateTree(listOf(memberInfo)).root
+            return services.merkleTreeGenerator.generateTree(listOf(memberInfo)).root
         }
 
         private fun createMembershipPackage(
@@ -268,17 +265,17 @@ class MgmSynchronisationServiceImpl internal constructor(
             members: Collection<MemberInfo>,
             groupParameters: GroupParameters,
         ): MembershipPackage {
-            val mgmSigner = signerFactory.createSigner(mgm)
-            val signatures = membershipQueryClient
+            val mgmSigner = services.signerFactory.createSigner(mgm)
+            val signatures = services.membershipQueryClient
                 .queryMembersSignatures(
                     mgm.holdingIdentity,
                     members.map {
                         it.holdingIdentity
                     }
                 ).getOrThrow()
-            val membersTree = merkleTreeGenerator.generateTree(members)
+            val membersTree = services.merkleTreeGenerator.generateTree(members)
 
-            return membershipPackageFactory.createMembershipPackage(
+            return services.membershipPackageFactory.createMembershipPackage(
                 mgmSigner,
                 signatures,
                 members,
@@ -326,7 +323,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         when (event.status) {
             LifecycleStatus.UP -> {
                 configHandle?.close()
-                configHandle = configurationReadService.registerComponentForUpdates(
+                configHandle = services.configurationReadService.registerComponentForUpdates(
                     coordinator,
                     setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
                 )
@@ -341,7 +338,7 @@ class MgmSynchronisationServiceImpl internal constructor(
     // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
     private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         _publisher?.close()
-        _publisher = publisherFactory.createPublisher(
+        _publisher = services.publisherFactory.createPublisher(
             PublisherConfig("mgm-synchronisation-service"),
             event.config.getConfig(MESSAGING_CONFIG)
         )

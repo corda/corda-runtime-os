@@ -3,13 +3,13 @@ package net.corda.layeredpropertymap.impl
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicy
+import org.slf4j.LoggerFactory
 
 @Component(
     service = [ LayeredPropertyMapFactory::class ],
@@ -27,7 +27,7 @@ class LayeredPropertyMapFactoryImpl @Activate constructor(
 ) : LayeredPropertyMapFactory {
     companion object {
         const val CUSTOM_CONVERTERS_REFERENCE_NAME = "customConverters"
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suppress("unchecked_cast", "SameParameterValue")

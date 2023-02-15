@@ -1,29 +1,30 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.membership.MemberInfo
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -48,7 +49,6 @@ class ConsensualFinalityFlowTest {
     private val transactionSignatureService = mock<TransactionSignatureService>()
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<ConsensualLedgerPersistenceService>()
-    private val serializationService = mock<SerializationService>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -56,16 +56,20 @@ class ConsensualFinalityFlowTest {
     private val memberInfoAlice = mock<MemberInfo>()
     private val memberInfoBob = mock<MemberInfo>()
 
+    private val publicKey0 = mock<PublicKey>()
     private val publicKeyAlice1 = mock<PublicKey>()
     private val publicKeyAlice2 = mock<PublicKey>()
     private val publicKeyBob = mock<PublicKey>()
 
+    private val signature0 = digitalSignatureAndMetadata(publicKey0, byteArrayOf(1, 2, 0))
     private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1, byteArrayOf(1, 2, 3))
     private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2, byteArrayOf(1, 2, 4))
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
 
     private val signedTransaction = mock<ConsensualSignedTransactionInternal>()
     private val updatedSignedTransaction = mock<ConsensualSignedTransactionInternal>()
+    private val transactionMetadata = mock<TransactionMetadata>()
+    private val wireTransaction = mock<WireTransaction>()
     private val ledgerTransaction = mock<ConsensualLedgerTransaction>()
 
     @BeforeEach
@@ -83,12 +87,16 @@ class ConsensualFinalityFlowTest {
         whenever(signedTransaction.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob))
         whenever(signedTransaction.addSignature(any())).thenReturn(updatedSignedTransaction)
         whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
+        whenever(signedTransaction.signatures).thenReturn(listOf(signature0))
+        whenever(signedTransaction.wireTransaction).thenReturn(wireTransaction)
+
         whenever(updatedSignedTransaction.id).thenReturn(TX_ID)
         whenever(updatedSignedTransaction.addSignature(any())).thenReturn(updatedSignedTransaction)
+        whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
+
+        whenever(ledgerTransaction.id).thenReturn(TX_ID)
         whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
         whenever(ledgerTransaction.requiredSignatories).thenReturn(setOf(publicKeyExample))
-
-        whenever(serializationService.serialize(any())).thenReturn(SerializedBytes(byteArrayOf(1, 2, 3, 4)))
     }
 
     @Test
@@ -121,6 +129,50 @@ class ConsensualFinalityFlowTest {
     }
 
     @Test
+    fun `called with a transaction initially without signatures throws and persists as invalid`() {
+        whenever(signedTransaction.signatures).thenReturn(listOf())
+        assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Received initial transaction without signatures.")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
+    }
+
+    @Test
+    fun `called with a transaction initially with invalid signature throws and persists as invalid`() {
+        whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
+            CryptoSignatureException("Verifying signature failed!!")
+        )
+        assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(CryptoSignatureException::class.java)
+            .hasMessageContaining("Verifying signature failed!!")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
+    }
+
+    @Test
+    fun `called with an invalid transaction initially throws and persists as invalid`() {
+        whenever(ledgerTransaction.states).thenReturn(
+            listOf(
+                ConsensualStateClassExample(
+                    "throw", listOf(
+                        publicKeyExample
+                    )
+                )
+            )
+        )
+
+        assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(TransactionVerificationException::class.java)
+            .hasMessageContaining("State verification failed")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
+    }
+
+    @Test
     fun `receiving a session error instead of signatures rethrows the error`() {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenThrow(CordaRuntimeException("session error"))
@@ -129,13 +181,14 @@ class ConsensualFinalityFlowTest {
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("session error")
 
-        verify(transactionSignatureService, never()).verifySignature(any(), any())
+        verify(transactionSignatureService, never()).verifySignature(eq(updatedSignedTransaction), any())
 
         verify(signedTransaction, never()).addSignature(signatureAlice1)
         verify(updatedSignedTransaction, never()).addSignature(signatureAlice2)
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
         verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
     }
 
     @Test
@@ -157,6 +210,7 @@ class ConsensualFinalityFlowTest {
 
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
     }
 
     @Test
@@ -174,6 +228,7 @@ class ConsensualFinalityFlowTest {
         verify(updatedSignedTransaction, never()).addSignature(signatureBob)
 
         verify(persistenceService, never()).persist(updatedSignedTransaction, TransactionStatus.VERIFIED)
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.INVALID)
     }
 
     @Test
@@ -206,6 +261,7 @@ class ConsensualFinalityFlowTest {
 
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED))
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.INVALID)
     }
 
     @Test
@@ -213,11 +269,11 @@ class ConsensualFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        whenever(updatedSignedTransaction.verifySignatures()).thenThrow(TransactionVerificationException(TX_ID, "failed", null))
+        whenever(updatedSignedTransaction.verifySignatures()).thenThrow(TransactionMissingSignaturesException(TX_ID, setOf(), "failed"))
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionVerificationException::class.java)
-            .hasMessageContaining("failed")
+            .isInstanceOf(TransactionMissingSignaturesException::class.java)
+            .hasMessageContaining("is missing signatures for signatories")
 
         verify(signedTransaction).addSignature(signatureAlice1)
         verify(updatedSignedTransaction).addSignature(signatureAlice2)
@@ -225,15 +281,15 @@ class ConsensualFinalityFlowTest {
 
         verify(persistenceService).persist(signedTransaction, TransactionStatus.UNVERIFIED)
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED))
+        verify(persistenceService).persist(updatedSignedTransaction, TransactionStatus.INVALID)
     }
-    
+
     private fun callFinalityFlow(signedTransaction: ConsensualSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = ConsensualFinalityFlow(signedTransaction, sessions)
         flow.flowMessaging = flowMessaging
         flow.transactionSignatureService = transactionSignatureService
         flow.memberLookup = memberLookup
         flow.persistenceService = persistenceService
-        flow.serializationService = serializationService
         flow.call()
     }
 

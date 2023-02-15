@@ -1,0 +1,33 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'REST Gateway component'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:rbac-security-manager-service")
+    implementation project(':components:permissions:permission-management-service')
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:rest:rest')
+    implementation project(':libs:rest:ssl-cert-read')
+    implementation project(':libs:rest:rest-server')
+    implementation project(":libs:utilities")
+
+    implementation project(":osgi-framework-api")
+
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

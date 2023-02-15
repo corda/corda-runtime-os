@@ -16,12 +16,14 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -33,11 +35,11 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 internal class StartRegistrationHandler(
@@ -50,7 +52,8 @@ internal class StartRegistrationHandler(
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val SERIAL_CONST = "1"
     }
 
     private val keyValuePairListDeserializer =
@@ -86,6 +89,9 @@ internal class StartRegistrationHandler(
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
+
+            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo)
+
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
@@ -145,8 +151,6 @@ internal class StartRegistrationHandler(
             Pair(DeclineRegistration("Failed to verify registration request due to: [${ex.message}]"), emptyList())
         }
 
-
-
         return RegistrationHandlerResult(
             RegistrationState(
                 registrationRequest.registrationId,
@@ -164,7 +168,7 @@ internal class StartRegistrationHandler(
     private fun validateRegistrationRequest(condition: Boolean, errorMsg: () -> String) {
         if (!condition) {
             with(errorMsg.invoke()) {
-                logger.error(this)
+                logger.info(this)
                 throw InvalidRegistrationRequestException(this)
             }
         }
@@ -173,19 +177,20 @@ internal class StartRegistrationHandler(
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
         val memberContext = keyValuePairListDeserializer
             .deserialize(registrationRequest.memberContext.array())
-            ?.items?.associate { it.key to it.value }?.toSortedMap()
+            ?.items?.associate { it.key to it.value }
             ?: emptyMap()
-        validateRegistrationRequest(memberContext.entries.isNotEmpty()) {
+        validateRegistrationRequest(memberContext.isNotEmpty()) {
             "Empty member context in the registration request."
         }
 
         val now = clock.instant().toString()
         return memberInfoFactory.create(
-            memberContext.entries.associate { it.key to it.value }.toSortedMap(),
+            memberContext.toSortedMap(),
             sortedMapOf(
                 CREATION_TIME to now,
                 MODIFIED_TIME to now,
-                STATUS to MEMBER_STATUS_PENDING
+                STATUS to MEMBER_STATUS_PENDING,
+                SERIAL to SERIAL_CONST,
             )
         )
     }
@@ -200,7 +205,7 @@ internal class StartRegistrationHandler(
 
     private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
         return RegistrationRequest(
-            RegistrationStatus.NEW,
+            RegistrationStatus.RECEIVED_BY_MGM,
             memberRegistrationRequest.registrationId,
             source.toCorda(),
             memberRegistrationRequest.memberContext,
@@ -218,6 +223,50 @@ internal class StartRegistrationHandler(
                 validateRegistrationRequest(
                     it.isNotBlank()
                 ) { "Registering member has specified an invalid notary service plugin type." }
+            }
+        }
+    }
+
+    /**
+     * Fail to validate a registration request if a pre-auth token is present in the registration context, and
+     * it is not a valid UUID or it is not currently an active token for the registering member.
+     */
+    private fun validatePreAuthTokenUsage(mgmHoldingId: HoldingIdentity, pendingMemberInfo: MemberInfo) {
+        try {
+            pendingMemberInfo.preAuthToken?.let {
+                val result = membershipQueryClient.queryPreAuthTokens(
+                    mgmHoldingIdentity = mgmHoldingId,
+                    ownerX500Name = pendingMemberInfo.name,
+                    preAuthTokenId = it,
+                    viewInactive = false
+                ).getOrThrow()
+                validateRegistrationRequest(result.isNotEmpty()) {
+                    logger.warn(
+                        "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' attempted to " +
+                                "register with invalid pre-auth token '$it'."
+                    )
+                    "Registration attempted to use a pre-auth token which is " +
+                            "not currently active for this member."
+                }
+                result.first().ttl?.let {
+                    validateRegistrationRequest(it >= clock.instant()) {
+                        "Registration attempted to use a pre-auth token which has expired."
+                    }
+                }
+                logger.info(
+                    "'${pendingMemberInfo.name}' in group '${pendingMemberInfo.groupId}' has provided " +
+                            "valid pre-auth token '$it' during registration."
+                )
+            }
+        } catch (e: IllegalArgumentException) {
+            with("Registration failed due to invalid format for the provided pre-auth token.") {
+                logger.info(this, e)
+                throw InvalidRegistrationRequestException(this)
+            }
+        } catch (e: MembershipQueryResult.QueryException) {
+            with("Registration failed due to failure to query configured pre-auth tokens.") {
+                logger.info(this, e)
+                throw InvalidRegistrationRequestException(this)
             }
         }
     }

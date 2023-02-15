@@ -278,7 +278,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             SOFTWARE_VERSION,
             MEMBER_CPI_NAME,
             MEMBER_CPI_VERSION,
-            SERIAL,
             URL_KEY.format(0),
             PROTOCOL_VERSION.format(0),
             MEMBER_CPI_SIGNER_HASH
@@ -296,7 +295,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         assertThat(mgmContext)
-            .containsOnlyKeys(CREATION_TIME, MODIFIED_TIME, STATUS, IS_MGM)
+            .containsOnlyKeys(CREATION_TIME, MODIFIED_TIME, STATUS, IS_MGM, SERIAL)
             .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
             .containsEntry(IS_MGM, true.toString())
     }

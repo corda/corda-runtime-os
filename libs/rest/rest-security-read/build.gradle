@@ -1,0 +1,16 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Corda Rest Security Read'
+
+dependencies {
+
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    api project(":libs:lifecycle:lifecycle")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    api project(":libs:rest:rest-common")
+}

@@ -79,7 +79,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         val inputs = deserialized.inputStateRefs as UtxoFilteredData.Audit<StateRef>
         assertThat(inputs.size).isEqualTo(2)
         assertThat(inputs.values.size).isEqualTo(2)
-        assertThat(inputs.values[0]?.transactionHash).isEqualTo(inputHash)
+        assertThat(inputs.values[0]?.transactionId).isEqualTo(inputHash)
 
         assertThat(deserialized.outputStateAndRefs).isInstanceOf(UtxoFilteredData.Audit::class.java)
         val outputs = deserialized.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>
@@ -137,7 +137,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
         val inputs = deserialized.inputStateRefs as UtxoFilteredData.Audit<StateRef>
         assertThat(inputs.size).isEqualTo(2)
         assertThat(inputs.values.size).isEqualTo(2)
-        assertThat(inputs.values[0]?.transactionHash).isEqualTo(inputHash)
+        assertThat(inputs.values[0]?.transactionId).isEqualTo(inputHash)
 
         assertThat(deserialized.outputStateAndRefs).isInstanceOf(UtxoFilteredData.SizeOnly::class.java)
         val outputs = deserialized.outputStateAndRefs as UtxoFilteredData.SizeOnly

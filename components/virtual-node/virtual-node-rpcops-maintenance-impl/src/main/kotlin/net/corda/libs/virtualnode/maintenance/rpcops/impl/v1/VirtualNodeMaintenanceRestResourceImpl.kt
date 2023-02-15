@@ -1,6 +1,5 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
-import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
@@ -14,7 +13,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
@@ -28,17 +27,18 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.lang.Exception
+import org.slf4j.LoggerFactory
+import java.time.Duration
 
 @Suppress("unused")
 @Component(service = [PluggableRestResource::class])
@@ -55,11 +55,12 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
 
     companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID = "VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT"
     }
 
     override val targetInterface: Class<VirtualNodeMaintenanceRestResource> = VirtualNodeMaintenanceRestResource::class.java
@@ -114,7 +115,9 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
-                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
+                        virtualNodeSenderFactory.createSender(
+                            duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID)
+                        )
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
@@ -138,7 +141,7 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         logger.info("Requesting synchronization of vault schema for virtual node '$virtualNodeShortId' with its current CPI.")
 
         val instant = clock.instant()
-        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val actor = CURRENT_REST_CONTEXT.get().principal
         val request = VirtualNodeManagementRequest(
             instant,
             VirtualNodeDBResetRequest(

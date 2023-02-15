@@ -46,7 +46,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
@@ -64,8 +63,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -76,6 +73,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
@@ -94,6 +93,7 @@ import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.KArgumentCaptor
@@ -278,7 +278,14 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on {
+            persistRegistrationRequest(
+                any(),
+                any(),
+            )
+        } doReturn MembershipPersistenceResult.success()
+    }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
@@ -371,11 +378,10 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            val result = registrationService.register(registrationResultId, member, context)
+            registrationService.register(registrationResultId, member, context)
             verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
             val publishedMessageList = capturedPublishedList.firstValue
             SoftAssertions.assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
                 it.assertThat(publishedMessageList.size).isEqualTo(1)
                 val publishedMessage = publishedMessageList.first()
                 it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
@@ -405,7 +411,7 @@ class DynamicMemberRegistrationServiceTest {
 
             registrationService.register(registrationResultId, member, context)
 
-            assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.NEW)
+            assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.SENT_TO_MGM)
         }
 
         @Test
@@ -425,7 +431,6 @@ class DynamicMemberRegistrationServiceTest {
                 SOFTWARE_VERSION,
                 PLATFORM_VERSION,
                 REGISTRATION_ID,
-                SERIAL,
                 URL_KEY.format(0),
                 PROTOCOL_VERSION.format(0),
                 PARTY_SESSION_KEY,
@@ -466,13 +471,12 @@ class DynamicMemberRegistrationServiceTest {
     inner class FailedRegistrationTests {
         @Test
         fun `registration fails when coordinator is not running`() {
-            val registrationResult = registrationService.register(registrationResultId, member, mock())
-            assertThat(registrationResult).isEqualTo(
-                MembershipRequestRegistrationResult(
-                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. Reason: DynamicMemberRegistrationService is not running."
-                )
-            )
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, mock())
+            }
+
+            assertThat(exception)
+                .hasMessageContaining("Registration failed. Reason: DynamicMemberRegistrationService is not running.")
         }
 
         @ParameterizedTest
@@ -489,9 +493,9 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.start()
             val testContext = context - propertyName
 
-            val result = registrationService.register(registrationResultId, member, testContext)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testContext)
+            }
         }
 
         @Test
@@ -502,15 +506,12 @@ class DynamicMemberRegistrationServiceTest {
                     "corda.ledger.keys.100.id" to "9999"
                 )
             registrationService.start()
-            val result = registrationService.register(registrationResultId, member, testProperties)
-            SoftAssertions.assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message)
-                    .isEqualTo(
-                        "Registration failed. " +
-                                "The registration context is invalid: Provided ledger key IDs are incorrectly numbered."
-                    )
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
             }
+            assertThat(exception)
+                .hasMessageContaining("The registration context is invalid: Provided ledger key IDs are incorrectly numbered.")
             registrationService.stop()
         }
 
@@ -520,9 +521,9 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, context)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
         }
 
         @Test
@@ -531,9 +532,9 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, context)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
         }
 
         @Test
@@ -557,12 +558,14 @@ class DynamicMemberRegistrationServiceTest {
             )
 
             registrationService.start()
-            val result = registrationService.register(registrationResultId, member, context)
-            SoftAssertions.assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message).contains(err)
-                it.assertThat(result.message).contains(errReason)
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
             }
+
+            assertThat(exception)
+                .hasMessageContaining(err)
+                .hasMessageContaining(errReason)
             registrationService.stop()
         }
 
@@ -571,14 +574,13 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             whenever(mgmInfo.ecdhKey).thenReturn(null)
             registrationService.start()
-            val result = registrationService.register(registrationResultId, member, context)
-            SoftAssertions.assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message)
-                    .isEqualTo(
-                        "Registration failed. Reason: MGM's ECDH key is missing."
-                    )
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
             }
+            assertThat(exception).hasMessageContaining(
+                "Registration failed. Reason: MGM's ECDH key is missing."
+            )
             registrationService.stop()
         }
 
@@ -588,9 +590,9 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, registrationContext)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, registrationContext)
+            }
         }
 
         @Test
@@ -599,9 +601,9 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, registrationContext)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, registrationContext)
+            }
         }
 
         @Test
@@ -614,12 +616,11 @@ class DynamicMemberRegistrationServiceTest {
             )
             whenever(virtualNodeInfoReadService.get(eq(noVNodeMember))).thenReturn(null)
 
-            val result = registrationService.register(registrationResultId, noVNodeMember, context)
-
-            SoftAssertions.assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message).isNotNull.contains("Could not find virtual node")
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationResultId, noVNodeMember, context)
             }
+
+            assertThat(exception).hasMessageContaining("Could not find virtual node")
             registrationService.stop()
         }
 
@@ -629,12 +630,11 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, context)
-
-            SoftAssertions.assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message).isNotNull.contains("is not locally hosted")
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
             }
+
+            assertThat(exception).hasMessageContaining("is not locally hosted")
         }
 
         @Test
@@ -647,12 +647,11 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, context)
-
-            SoftAssertions.assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message).isNotNull.contains("is missing TLS certificates")
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
             }
+
+            assertThat(exception).hasMessageContaining("is missing TLS certificates")
         }
     }
 
@@ -669,9 +668,9 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, testProperties)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
         }
 
         @Test
@@ -685,9 +684,9 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, testProperties)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
         }
 
         @Test
@@ -702,9 +701,9 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, testProperties)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
         }
 
         @Test
@@ -739,7 +738,9 @@ class DynamicMemberRegistrationServiceTest {
             postConfigChangedEvent()
             registrationService.start()
 
-            registrationService.register(registrationResultId, member, registrationContext)
+            assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, registrationContext)
+            }
 
             assertThat(memberContext.firstValue.toMap())
                 .containsEntry("corda.session.key.signature.spec", SignatureSpec.ECDSA_SHA256.signatureName)
@@ -770,9 +771,9 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, testProperties)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
         }
 
         @Test
@@ -786,9 +787,9 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, testProperties)
-
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
         }
 
         @Test
@@ -801,10 +802,11 @@ class DynamicMemberRegistrationServiceTest {
                 )
             registrationService.start()
 
-            val result = registrationService.register(registrationResultId, member, testProperties)
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
 
-            assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-            assertThat(result.message).contains("notary key")
+            assertThat(exception).hasMessageContaining("notary key")
         }
     }
 

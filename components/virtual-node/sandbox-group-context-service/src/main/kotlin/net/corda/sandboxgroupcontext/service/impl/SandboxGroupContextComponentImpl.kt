@@ -1,8 +1,5 @@
 package net.corda.sandboxgroupcontext.service.impl
 
-import java.time.Duration
-import java.util.Collections.unmodifiableList
-import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
@@ -22,7 +19,6 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
@@ -31,6 +27,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
+import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.util.Collections.unmodifiableList
+import java.util.concurrent.CompletableFuture
 
 /**
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
@@ -52,7 +52,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     private val bundleContext: BundleContext
 ) : SandboxGroupContextComponent, SandboxGroupContextService by sandboxGroupContextService {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val PLATFORM_PUBLIC_BUNDLE_NAMES: List<String> = unmodifiableList(
             listOf(
@@ -64,8 +64,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.base",
                 "net.corda.crypto",
                 "net.corda.crypto-extensions",
-                "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
-                "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
                 "net.corda.ledger-common",
                 "net.corda.ledger-consensual",
                 "net.corda.ledger-utxo",

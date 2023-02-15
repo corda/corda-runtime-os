@@ -3,26 +3,6 @@ package net.corda.p2p.linkmanager.sessions
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.grouppolicy.GroupPolicy
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.CORDA_4
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD_EV3
-import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.HeartbeatMessage
 import net.corda.data.p2p.LinkInMessage
@@ -35,29 +15,49 @@ import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.CORDA_4
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD_EV3
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
+import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
-import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
-import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
+import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.getSignatureSpec
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-import net.corda.p2p.linkmanager.common.MessageConverter
-import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.grouppolicy.protocolModes
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.membership.lookupByKey
+import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
@@ -72,16 +72,16 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.time.Clock
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.trace
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.*
+import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -528,7 +528,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val tenantId = ourIdentityInfo.sessionKeyTenantId
+        val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
 
         val signWithOurGroupId = { data: ByteArray ->
             cryptoOpsClient.sign(
@@ -747,7 +747,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val tenantId = ourIdentityInfo.sessionKeyTenantId
+        val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
 
         val response = try {
             val ourPublicKey = ourIdentityInfo.sessionPublicKey
@@ -844,7 +844,7 @@ internal class SessionManagerImpl(
     ) : LifecycleWithDominoTile {
 
         companion object {
-            private val logger = contextLogger()
+            private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
             const val HEARTBEAT_MANAGER_CLIENT_ID = "heartbeat-manager-client"
         }
 

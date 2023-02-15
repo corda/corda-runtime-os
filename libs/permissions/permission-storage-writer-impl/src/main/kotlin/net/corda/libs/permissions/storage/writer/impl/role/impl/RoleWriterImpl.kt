@@ -1,9 +1,6 @@
 package net.corda.libs.permissions.storage.writer.impl.role.impl
 
 import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroRole
@@ -15,8 +12,11 @@ import net.corda.permissions.model.Permission
 import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RolePermissionAssociation
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.Role as AvroRole
 
 class RoleWriterImpl(
@@ -24,7 +24,7 @@ class RoleWriterImpl(
 ) : RoleWriter {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun createRole(request: CreateRoleRequest, requestUserId: String): AvroRole {

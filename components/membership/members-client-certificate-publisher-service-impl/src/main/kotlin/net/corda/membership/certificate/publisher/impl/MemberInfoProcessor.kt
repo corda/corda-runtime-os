@@ -1,7 +1,7 @@
 package net.corda.membership.certificate.publisher.impl
 
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.p2p.mtls.ClientCertificateSubject
+import net.corda.data.p2p.mtls.MemberAllowedCertificateSubject
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
@@ -19,7 +19,7 @@ internal class MemberInfoProcessor : DurableProcessor<String, PersistentMemberIn
         }
     }
 
-    private fun Record<String, PersistentMemberInfo>.toRecord(): Record<String, ClientCertificateSubject> {
+    private fun Record<String, PersistentMemberInfo>.toRecord(): Record<String, MemberAllowedCertificateSubject> {
         val value = this.value?.toClientCertificateSubject()
         val key = this.key
         return Record(
@@ -36,13 +36,13 @@ internal class MemberInfoProcessor : DurableProcessor<String, PersistentMemberIn
         return status.value == MEMBER_STATUS_ACTIVE
     }
 
-    private fun PersistentMemberInfo.toClientCertificateSubject(): ClientCertificateSubject? {
+    private fun PersistentMemberInfo.toClientCertificateSubject(): MemberAllowedCertificateSubject? {
         if (!this.isActive()) {
             return null
         }
         val subject = this.memberContext.items.firstOrNull {
             it.key == TLS_CERTIFICATE_SUBJECT
         }?.value ?: return null
-        return ClientCertificateSubject(subject)
+        return MemberAllowedCertificateSubject(subject)
     }
 }

@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -12,6 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -54,34 +55,33 @@ data class UtxoSignedTransactionImpl(
     override val commands: List<Command>
         get() = wrappedWireTransaction.commands
 
+    override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
+        UtxoSignedTransactionImpl(serializationService, transactionSignatureService, utxoLedgerTransactionFactory,
+            wireTransaction, signatures + signature)
+
     @Suspendable
-    override fun sign(publicKey: PublicKey): Pair<UtxoSignedTransactionInternal, DigitalSignatureAndMetadata> {
-        val newSignature = transactionSignatureService.sign(id, publicKey)
+    override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
+        val newSignatures = try {
+            transactionSignatureService.sign(this, getMissingSignatories())
+        } catch (_: TransactionNoAvailableKeysException) { // No signatures are needed if no keys are available.
+            return Pair(this, emptyList())
+        }
         return Pair(
             UtxoSignedTransactionImpl(
                 serializationService,
                 transactionSignatureService,
                 utxoLedgerTransactionFactory,
                 wireTransaction,
-                signatures + newSignature
+                signatures + newSignatures
             ),
-            newSignature
+            newSignatures
         )
-    }
-
-    override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
-        UtxoSignedTransactionImpl(serializationService, transactionSignatureService, utxoLedgerTransactionFactory,
-            wireTransaction, signatures + signature)
-
-    @Suspendable
-    override fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>>{
-        TODO("Not implemented yet")
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.filter {
             try {
-                transactionSignatureService.verifySignature(id, it)
+                transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
                 false
@@ -96,7 +96,7 @@ data class UtxoSignedTransactionImpl(
     override fun verifySignatures() {
         val appliedSignatories = signatures.filter {
             try {
-                transactionSignatureService.verifySignature(id, it)
+                transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
                 throw TransactionVerificationException(
@@ -114,6 +114,17 @@ data class UtxoSignedTransactionImpl(
                 id,
                 missingSignatories,
                 "Transaction $id is missing signatures for signatories (encoded) ${missingSignatories.map { it.encoded }}"
+            )
+        }
+    }
+
+    @Suspendable
+    override fun verifyNotarySignatureAttached() {
+        if (!notary.owningKey.isFulfilledBy(signatures.map { it.by })) {
+            throw TransactionVerificationException(
+                id,
+                "There are no notary signatures attached to the transaction.",
+                null
             )
         }
     }

@@ -16,12 +16,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
-import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -29,6 +28,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [BackingStore::class])
@@ -39,7 +39,7 @@ open class BackingStoreImplFake @Activate constructor(
 ) : BackingStore {
 
     private companion object {
-        private val log: Logger = contextLogger()
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory

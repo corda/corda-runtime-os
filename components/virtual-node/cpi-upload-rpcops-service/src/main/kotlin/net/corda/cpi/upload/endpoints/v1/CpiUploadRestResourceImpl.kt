@@ -18,12 +18,12 @@ import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [PluggableRestResource::class])
 class CpiUploadRestResourceImpl @Activate constructor(
@@ -35,7 +35,7 @@ class CpiUploadRestResourceImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService
 ) : CpiUploadRestResource, PluggableRestResource<CpiUploadRestResource>, Lifecycle {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpiUploadRestResource>(

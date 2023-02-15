@@ -26,7 +26,7 @@ class DbConfigTest {
         "secret" to "secret value"
     )), mock(), mock())
     private val smartConfigFactory = mock<SmartConfigFactory>() {
-        on { makeSecret(any()) }.doReturn(secretConfig)
+        on { makeSecret(any(), any()) }.doReturn(secretConfig)
     }
     private val secretsLookupService = mock<SecretsLookupService>()
 

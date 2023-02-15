@@ -1,8 +1,8 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
-import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.Bundle
+import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableSet
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -17,7 +17,7 @@ internal open class SandboxImpl(
     final override val publicBundles: Set<Bundle>,
     final override val privateBundles: Set<Bundle>
 ) : Sandbox {
-    private val logger = loggerFor<SandboxImpl>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     // The other sandboxes whose services, bundles and events this sandbox can receive.
     // We use the sandboxes' IDs, rather than the sandboxes, to allow unloaded sandboxes to be garbage-collected.

@@ -3,21 +3,21 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'RBAC Security Manager for HTTP RPC'
+description 'RBAC Security Manager for REST'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
     implementation project(':components:permissions:permission-management-service')
-    implementation project(':libs:http-rpc:rbac-security-manager')
+    implementation project(':libs:rest:rbac-security-manager')
     implementation project(":libs:utilities")
 
     api project(":libs:lifecycle:lifecycle")
-    api project(':libs:http-rpc:http-rpc-security-read')
+    api project(':libs:rest:rest-security-read')
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

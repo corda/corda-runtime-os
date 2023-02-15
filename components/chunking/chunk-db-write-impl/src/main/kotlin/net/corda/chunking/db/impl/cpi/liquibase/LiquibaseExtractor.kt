@@ -3,12 +3,12 @@ package net.corda.chunking.db.impl.cpi.liquibase
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
 class LiquibaseExtractor {
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

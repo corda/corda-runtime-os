@@ -2,27 +2,27 @@ package net.corda.membership.impl.read
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler
 import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.libs.configuration.helper.getConfig
-import net.corda.membership.read.GroupParametersReaderService
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 /**
  * Membership component implementing [MembershipGroupReaderProvider].
@@ -51,7 +51,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
 ) : MembershipGroupReaderProvider {
 
     companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val ILLEGAL_ACCESS = "Tried to read group data before starting the component " +
                 "or while the component is down."

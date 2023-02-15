@@ -53,8 +53,8 @@ class SessionConfirmationWaitingForHandlerTest {
     }
 
     @Test
-    fun `When the session being waited for is confirmed while waiting for a session confirmation (Initiate) returns a FlowContinuation#Run`() {
-        whenever(flowSessionManager.doAllSessionsHaveStatus(checkpoint, listOf(SESSION_ID), SessionStateType.CONFIRMED)).thenReturn(true)
+    fun `When the session being waited for is confirmed or closing while waiting for a session confirmation (Initiate) returns a FlowContinuation#Run`() {
+        whenever(flowSessionManager.doAllSessionsHaveStatusIn(checkpoint, listOf(SESSION_ID), listOf(SessionStateType.CONFIRMED, SessionStateType.CLOSING))).thenReturn(true)
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
             inputEventPayload = SessionEvent().apply {

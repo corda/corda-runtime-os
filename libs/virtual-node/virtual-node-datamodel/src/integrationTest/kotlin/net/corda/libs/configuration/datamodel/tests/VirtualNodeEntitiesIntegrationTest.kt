@@ -3,7 +3,6 @@ package net.corda.libs.configuration.datamodel.tests
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
@@ -25,6 +24,7 @@ import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
+import net.corda.libs.virtualnode.datamodel.entities.OperationType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeEntitiesIntegrationTest {
@@ -132,6 +132,7 @@ class VirtualNodeEntitiesIntegrationTest {
             "req-$rand",
             "some-data",
             VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE,
             Instant.now()
         )
         val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, hash, virtualNodeOperationEntity)

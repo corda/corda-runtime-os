@@ -9,12 +9,12 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-rbac-schema"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    api project(":libs:http-rpc:http-rpc")
+    api project(":libs:rest:rest")
     implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:lifecycle:lifecycle")
 

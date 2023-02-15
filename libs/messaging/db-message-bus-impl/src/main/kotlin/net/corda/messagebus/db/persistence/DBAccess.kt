@@ -36,7 +36,7 @@ class DBAccess(
     private val autoCreate = true
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
 

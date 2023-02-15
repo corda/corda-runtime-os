@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.sessions
 import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -10,6 +11,8 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
 
@@ -17,6 +20,15 @@ import net.corda.v5.base.types.MemberX500Name
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
  */
 interface FlowSessionManager {
+
+    /**
+     * Get error event records for session errors.
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param flowConfig The config containing the flow session config values such as the resend time window
+     * @param instant The [Instant] used within the created error events.
+     */
+    fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant): List<Record<*, FlowMapperEvent>>
 
     /**
      * Create a new [SessionState] and queue a [SessionInit] message to send.
@@ -149,6 +161,23 @@ interface FlowSessionManager {
     ): List<SessionState>
 
     /**
+     * Do all the specified sessions have a [SessionStateType] included within [statuses]?
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The session ids to check the status of.
+     * @param statuses The acceptable statuses the sessions can have.
+     *
+     * @return `true`, if all sessions have status included within [statuses], `false` otherwise.
+     *
+     * @throws [FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
+     */
+    fun doAllSessionsHaveStatusIn(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        statuses: List<SessionStateType>
+    ): Boolean
+
+    /**
      * Are all the specified sessions have a [SessionStateType] of [status]?
      *
      * @param checkpoint The flow's [FlowCheckpoint].
@@ -159,7 +188,8 @@ interface FlowSessionManager {
      *
      * @throws [FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
+    fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType) =
+        doAllSessionsHaveStatusIn(checkpoint, sessionIds, listOf(status))
 
     /**
      * Get the states whose next ordered message is a SessionClose.

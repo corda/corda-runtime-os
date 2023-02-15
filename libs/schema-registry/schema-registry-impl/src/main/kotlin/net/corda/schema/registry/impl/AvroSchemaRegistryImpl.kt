@@ -6,10 +6,9 @@ import net.corda.data.Fingerprint
 import net.corda.data.SchemaLoadException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.types.toHexString
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.uncheckedCast
 import org.apache.avro.Schema
 import org.apache.avro.SchemaNormalization
 import org.apache.avro.io.DecoderFactory
@@ -19,6 +18,7 @@ import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
 import org.apache.avro.specific.SpecificRecord
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
@@ -63,7 +63,7 @@ class AvroSchemaRegistryImpl(
     }
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

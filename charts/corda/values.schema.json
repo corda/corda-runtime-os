@@ -239,7 +239,8 @@
                         "type",
                         "port",
                         "username",
-                        "database"                    
+                        "database",
+                        "schema"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -283,6 +284,15 @@
                                 "cordacluster"
                             ],
                             "minLength": 1
+                        },
+                        "schema": {
+                            "type": "string",
+                            "default": "CONFIG",
+                            "title": "the name of the cluster database schema",
+                            "examples": [
+                                "CONFIG"
+                            ],
+                            "minLength": 1
                         }
                     },
                     "examples": [{
@@ -295,7 +305,8 @@
                         "password": {
                             "value": "password"
                         },
-                        "database": "cordacluster"
+                        "database": "cordacluster",
+                        "schema": "CONFIG"
                     }]
                 }
             },
@@ -306,6 +317,7 @@
                     "port": 5432,
                     "user": "user",
                     "database": "cordacluster",
+                    "schema": "CONFIG",
                     "existingSecret": "postgresql-secret"
                 }
             }]
@@ -890,6 +902,33 @@
                 }
             }
         },
+        "config": {
+            "type": "object",
+            "title": "config service configuration",
+            "required": [
+                "encryption"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "encryption": {
+                    "type": "object",
+                    "title": "configuration for encryption of configuration",
+                    "required": [
+                        "salt",
+                        "passphrase"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "salt": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "passphrase": {
+                            "$ref": "#/$defs/config"
+                        }
+                    }
+                }
+            }
+        },
         "workers": {
             "type": "object",
             "default": {},
@@ -981,12 +1020,6 @@
                                             ]
                                         }
                                     }
-                                },
-                                "salt": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "passphrase": {
-                                    "$ref": "#/$defs/config"
                                 }
                             },
                             "examples": [{
@@ -1006,8 +1039,6 @@
                                 "profiling": {
                                     "enabled": false
                                 },
-                                "salt": "password",
-                                "passphrase": "password",
                                 "resources": {
                                     "requests": {
                                         "cpu": "1",
@@ -1392,8 +1423,6 @@
                     "profiling": {
                         "enabled": false
                     },
-                    "salt": "",
-                    "passphrase": "",
                     "resources": {
                         "requests": {
                             "cpu": "1",

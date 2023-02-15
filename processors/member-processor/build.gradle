@@ -33,7 +33,7 @@ dependencies {
     implementation project(':components:membership:locally-hosted-identities-service')
     implementation project(':components:membership:members-client-certificate-publisher-service')
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation project(':libs:configuration:configuration-core')
 

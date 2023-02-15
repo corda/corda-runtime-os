@@ -12,7 +12,15 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerProcessedMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
@@ -48,9 +56,6 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.gateway.Gateway
@@ -59,11 +64,6 @@ import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerProcessedMarker
-import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.data.p2p.markers.TtlExpiredMarker
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -75,7 +75,6 @@ import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ParameterizedSignatureSpec
@@ -84,8 +83,8 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.PEMKeyPair
@@ -99,6 +98,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.net.URL
 import java.nio.ByteBuffer
@@ -120,7 +120,7 @@ class P2PLayerEndToEndTest {
     companion object {
         private val EXPIRED_TTL = Instant.ofEpochMilli(0)
         private const val SUBSYSTEM = "e2e.test.app"
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val GROUP_ID = "group-1"
         private const val TLS_KEY_TENANT_ID = "p2p"
         private const val URL_PATH = "/gateway"
@@ -678,7 +678,6 @@ class P2PLayerEndToEndTest {
                     HostedIdentityEntry(
                         info.identity.id.toAvro(),
                         TLS_KEY_TENANT_ID,
-                        info.identity.x500Name,
                         info.tlsCertificatesPem,
                         info.keyPair.public.toPem(),
                         null

@@ -20,10 +20,10 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Mixin
 
@@ -48,7 +48,7 @@ class CryptoWorker @Activate constructor(
 ) : Application {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun startup(args: Array<String>) {
@@ -98,6 +98,7 @@ class CryptoWorkerParams {
     @CommandLine.Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
+    // TODO - delete me as part of removing multiple HSM support, CORE-10050
     @CommandLine.Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
 }

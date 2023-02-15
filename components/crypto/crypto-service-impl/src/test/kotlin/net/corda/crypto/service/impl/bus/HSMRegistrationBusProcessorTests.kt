@@ -1,11 +1,10 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.config.impl.createTestCryptoConfig
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.service.HSMService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -19,6 +18,7 @@ import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.toHex
 import net.corda.v5.crypto.sha256Bytes
@@ -48,7 +48,10 @@ class HSMRegistrationBusProcessorTests {
 
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
-            mapOf(ConfigKeys.CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt")))
+            mapOf(ConfigKeys.CRYPTO_CONFIG to SmartConfigFactory.createWithoutSecurityServices().create(
+                createDefaultCryptoConfig("pass", "salt")
+            )
+            )
         )
 
         private fun createRequestContext(): CryptoRequestContext = CryptoRequestContext(

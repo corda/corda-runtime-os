@@ -20,6 +20,9 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
@@ -50,34 +53,31 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
-import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toWire
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
-import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
-import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -86,7 +86,6 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
@@ -97,6 +96,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -141,11 +141,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult
+        )
     }
 
     private companion object {
-        val logger: Logger = contextLogger()
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock: Clock = UTCClock()
 
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
@@ -155,7 +155,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val SERIAL_CONST = "1"
 
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
         val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
@@ -218,17 +217,16 @@ class DynamicMemberRegistrationService @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>,
-    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
+    ) = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationService {
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult {
+        ) {
             logger.warn("DynamicMemberRegistrationService is currently inactive.")
-            return MembershipRequestRegistrationResult(
-                MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+            throw NotReadyMembershipRegistrationException(
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
             )
         }
@@ -237,11 +235,12 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerRegistrationService {
+        @Suppress("LongMethod")
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>,
-        ): MembershipRequestRegistrationResult {
+        ) {
             try {
                 membershipSchemaValidatorFactory
                     .createValidator()
@@ -251,17 +250,17 @@ class DynamicMemberRegistrationService @Activate constructor(
                         context
                     )
             } catch (ex: MembershipSchemaValidationException) {
-                return MembershipRequestRegistrationResult(
-                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. The registration context is invalid. " + ex.message
+                throw InvalidMembershipRegistrationException(
+                    "Registration failed. The registration context is invalid. " + ex.message,
+                    ex
                 )
             }
             try {
                 validateContext(context)
             } catch (ex: IllegalArgumentException) {
-                return MembershipRequestRegistrationResult(
-                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. The registration context is invalid: " + ex.message
+                throw InvalidMembershipRegistrationException(
+                    "Registration failed. The registration context is invalid: " + ex.message,
+                    ex,
                 )
             }
             try {
@@ -343,24 +342,34 @@ class DynamicMemberRegistrationService @Activate constructor(
                 membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
-                        status = RegistrationStatus.NEW,
+                        status = RegistrationStatus.SENT_TO_MGM,
                         registrationId = registrationId.toString(),
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
                     )
-                )
+                ).getOrThrow()
 
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            } catch (e: InvalidMembershipRegistrationException) {
+                logger.warn("Registration failed.", e)
+                throw e
+            } catch (e: IllegalArgumentException) {
+                logger.warn("Registration failed.", e)
+                throw InvalidMembershipRegistrationException(
+                    "Registration failed. Reason: ${e.message}",
+                    e,
+                )
+            } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
+                logger.warn("Registration failed.", e)
+                throw NotReadyMembershipRegistrationException("Could not persist request: ${e.message}", e)
             } catch (e: Exception) {
                 logger.warn("Registration failed.", e)
-                return MembershipRequestRegistrationResult(
-                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. Reason: ${e.message}"
+                throw NotReadyMembershipRegistrationException(
+                    "Registration failed. Reason: ${e.message}",
+                    e,
                 )
             }
-
-            return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
 
         override fun close() {
@@ -390,7 +399,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
                 MEMBER_CPI_NAME to cpi.name,
                 MEMBER_CPI_VERSION to cpi.version,
-                SERIAL to SERIAL_CONST,
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())

@@ -19,6 +19,21 @@ class ExtensionsTest {
     }
 
     @Test
+    fun canCastToSameType() {
+        val state = TestContract.TestState(emptyList())
+
+        Assertions.assertDoesNotThrow {
+            state.cast(TestContract.TestState::class.java)
+        }
+    }
+
+    @Test
+    fun canCastToContractState() {
+        val state = TestContract.TestState(emptyList())
+        Assertions.assertEquals(state, state.cast(ContractState::class.java))
+    }
+
+    @Test
     fun canGetContractClassWhenEnclosed() {
         val state = TestContract.TestState(emptyList())
 

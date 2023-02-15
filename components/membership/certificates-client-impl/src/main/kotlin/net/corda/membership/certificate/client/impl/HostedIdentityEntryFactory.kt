@@ -6,6 +6,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
@@ -13,10 +14,8 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -25,6 +24,7 @@ import net.corda.virtualnode.toAvro
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
+import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.security.InvalidKeyException
 import java.security.cert.CertificateFactory
@@ -39,7 +39,7 @@ internal class HostedIdentityEntryFactory(
     private val retrieveCertificates: (ShortHash?, CertificateUsage, String) -> String?,
 ) {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private fun getNode(holdingIdentityShortHash: ShortHash): VirtualNodeInfo {
@@ -103,7 +103,6 @@ internal class HostedIdentityEntryFactory(
         tlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
         sessionCertificateChainAlias: String?,
-        useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,
     ): Record<String, HostedIdentityEntry> {
         val nodeInfo = getNode(holdingIdentityShortHash)
@@ -113,12 +112,7 @@ internal class HostedIdentityEntryFactory(
             logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
             null
         } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${nodeInfo.holdingIdentity.shortHash}].")
-        val (sessionKeyTenantId, sessionCertificateHoldingId) = if (useClusterLevelSessionCertificateAndKey) {
-            P2P to null
-        } else {
-            holdingIdentityShortHash.value to holdingIdentityShortHash
-        }
-        val sessionPublicKey = getKey(sessionKeyTenantId, sessionKeyId)
+        val sessionPublicKey = getKey(holdingIdentityShortHash.value, sessionKeyId)
         val (tlsKeyTenantId, tlsCertificateHoldingId) = if (useClusterLevelTlsCertificateAndKey) {
             P2P to null
         } else {
@@ -137,16 +131,14 @@ internal class HostedIdentityEntryFactory(
             tlsCertificates.first(),
         )
         val sessionCertificate = getAndValidateSessionCertificate(
-            sessionCertificateHoldingId,
+            holdingIdentityShortHash,
             sessionCertificateChainAlias,
-            sessionKeyTenantId,
             nodeInfo,
             policy
         )
 
         val hostedIdentityBuilder = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
-            .setSessionKeyTenantId(sessionKeyTenantId)
             .setSessionPublicKey(sessionPublicKey)
             .setTlsCertificates(tlsCertificates)
             .setTlsTenantId(tlsKeyTenantId)
@@ -160,9 +152,8 @@ internal class HostedIdentityEntryFactory(
     }
 
     private fun getAndValidateSessionCertificate(
-        sessionCertificateHoldingId: ShortHash?,
+        sessionCertificateHoldingId: ShortHash,
         sessionCertificateChainAlias: String?,
-        sessionKeyTenantId: String,
         nodeInfo: VirtualNodeInfo,
         policy: GroupPolicy,
     ): List<String>? {
@@ -179,7 +170,7 @@ internal class HostedIdentityEntryFactory(
                 sessionCertificateChainAlias
             )
             validateCertificates(
-                sessionKeyTenantId,
+                sessionCertificateHoldingId.value,
                 nodeInfo.holdingIdentity,
                 certificate,
                 CertificateType.SessionCertificate(policy.p2pParameters)

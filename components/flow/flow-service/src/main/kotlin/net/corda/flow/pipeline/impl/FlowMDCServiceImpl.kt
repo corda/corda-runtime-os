@@ -8,9 +8,9 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.pipeline.FlowMDCService
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowMDCService::class])
 class FlowMDCServiceImpl : FlowMDCService {
@@ -21,7 +21,7 @@ class FlowMDCServiceImpl : FlowMDCService {
         const val MDC_VNODE_ID = "vnode_id"
         const val MDC_SESSION_EVENT_ID = "session_event_id"
         const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     
     override fun getMDCLogging(checkpoint: Checkpoint?, event: FlowEvent?, flowId: String): Map<String, String> {
@@ -44,7 +44,7 @@ class FlowMDCServiceImpl : FlowMDCService {
                 mapOf(
                     MDC_VNODE_ID to holdingIdentityShortHash,
                     MDC_CLIENT_ID to startContext.requestId,
-                    MDC_FLOW_ID to startKey.id
+                    MDC_FLOW_ID to flowId
                 )
             }
             is SessionEvent -> {

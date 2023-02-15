@@ -4,8 +4,8 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import org.slf4j.LoggerFactory
 import java.util.*
 import net.corda.data.packaging.CpiIdentifier as CpiIdAvro
 import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
@@ -19,7 +19,7 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
     CompactedProcessor<CpiIdAvro, CpiMetadataAvro> {
 
     companion object {
-        private val log = contextLogger()
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     /**

@@ -2,17 +2,17 @@ package net.corda.p2p.gateway.messaging
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
-class ReconfigurableConnectionManager(
+internal class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     val configurationReaderService: ConfigurationReadService,
     private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =
@@ -29,7 +29,7 @@ class ReconfigurableConnectionManager(
     private var manager: ConnectionManager? = null
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     fun acquire(destinationInfo: DestinationInfo): HttpClient {

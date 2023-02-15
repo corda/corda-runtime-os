@@ -1,10 +1,10 @@
 package net.corda.cli.plugin.initialconfig
 
 import com.github.stefanbirkner.systemlambda.SystemLambda
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.PrivateKeyPolicy
-import net.corda.crypto.config.impl.createCryptoSmartConfigFactory
 import net.corda.crypto.config.impl.cryptoConnectionFactory
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
@@ -13,10 +13,9 @@ import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
 import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.signingService
-import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -49,7 +48,7 @@ class TestInitialConfigPluginCrypto {
 
     @Suppress("MaxLineLength")
     private val expectedPrefix =
-        "insert into CONFIG.config (config, is_deleted, schema_version_major, schema_version_minor, section, update_actor, update_ts, version) values ('"
+        "insert into config (config, is_deleted, schema_version_major, schema_version_minor, section, update_actor, update_ts, version) values ('"
 
     @Test
     fun `Should be able to create default initial crypto configuration with defined wrapping key`() {
@@ -70,13 +69,10 @@ class TestInitialConfigPluginCrypto {
         assertThat(outText).startsWith(expectedPrefix)
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
+        assertThat(json).containsSubsequence("\"passphrase\":{\"configSecret\":{\"encryptedSecret\":")
         assertGeneratedJson(json) {
             assertEquals("master-salt", it.getString("wrappingKeyMap.salt"))
-            assertEquals(
-                "master-passphrase", it.toConfigurationSecrets().getSecret(
-                    it.getConfig("wrappingKeyMap.passphrase").root().unwrapped()
-                )
-            )
+            assertEquals("master-passphrase", it.getString("wrappingKeyMap.passphrase"))
         }
     }
 
@@ -98,20 +94,23 @@ class TestInitialConfigPluginCrypto {
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
         assertGeneratedJson(json) {
-            assertThat(it.getString("wrappingKeyMap.salt")).hasSize(44)
-            assertThat(it.toConfigurationSecrets().getSecret(
-                it.getConfig("wrappingKeyMap.passphrase").root().unwrapped()
-            )).hasSize(44)
+            assertThat(it.getValue("wrappingKeyMap.salt").render()).contains("configSecret")
+            assertThat(it.getValue("wrappingKeyMap.salt").render()).contains("encryptedSecret")
+            assertThat(it.getValue("wrappingKeyMap.passphrase").render()).contains("configSecret")
+            assertThat(it.getValue("wrappingKeyMap.passphrase").render()).contains("encryptedSecret")
         }
     }
 
-    private fun assertGeneratedJson(json: String, wrappingKeyAssert: (SmartConfig) -> Unit) {
-        val config = createCryptoSmartConfigFactory(
-            KeyCredentials(
-                passphrase = "passphrase",
-                salt = "salt"
-            )
-        ).create(ConfigFactory.parseString(json))
+    private fun assertGeneratedJson(json: String, wrappingKeyAssert: (Config) -> Unit) {
+        val smartConfigFactory = SmartConfigFactory.createWith(
+            ConfigFactory.parseString("""
+            ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=passphrase
+            ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
+        """.trimIndent()
+            ),
+            listOf(EncryptionSecretsServiceFactory())
+        )
+        val config = smartConfigFactory.create(ConfigFactory.parseString(json))
         val connectionFactory = config.cryptoConnectionFactory()
         assertEquals(5, connectionFactory.expireAfterAccessMins)
         assertEquals(3, connectionFactory.maximumSize)

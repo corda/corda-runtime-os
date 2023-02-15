@@ -1,9 +1,6 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
@@ -49,8 +46,8 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.fake.VirtualNodeInfoReadServiceFake
 import net.corda.virtualnode.toCorda
@@ -58,6 +55,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -79,7 +80,7 @@ class FlowServiceTestContext @Activate constructor(
 ) : StepSetup, ThenSetup {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val testConfig = mutableMapOf<String, Any>(
@@ -117,7 +118,7 @@ class FlowServiceTestContext @Activate constructor(
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
-    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity) {
+    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity, flowOperationalStatus: OperationalStatus) {
         val emptyUUID = UUID(0, 0)
 
         virtualNodeInfoReadService.addOrUpdate(
@@ -130,7 +131,8 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
-                timestamp = Instant.now()
+                timestamp = Instant.now(),
+                flowOperationalStatus = flowOperationalStatus
             )
         )
     }

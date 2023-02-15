@@ -2,7 +2,6 @@ package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
-import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
@@ -12,13 +11,12 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
-@Suppress("DEPRECATION")
 internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     @Test
     fun `can build a simple Transaction`() {
         val tx = consensualTransactionBuilder
             .withStates(consensualStateExample)
-            .toSignedTransaction(publicKeyExample)
+            .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
     }
 
@@ -28,35 +26,35 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             val builder = consensualTransactionBuilder
                 .withStates(consensualStateExample)
 
-            builder.toSignedTransaction(publicKeyExample)
-            builder.toSignedTransaction(publicKeyExample)
+            builder.toSignedTransaction()
+            builder.toSignedTransaction()
         }
     }
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
-            consensualTransactionBuilder.toSignedTransaction(publicKeyExample)
+        val exception = assertThrows(IllegalStateException::class.java) {
+            consensualTransactionBuilder.toSignedTransaction()
         }
-        assertEquals("At least one consensual state is required", exception.message)
+        assertEquals("At least one consensual state is required.", exception.message)
     }
 
     @Test
     fun `cannot build Transaction with Consensual States without participants`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
+        val exception = assertThrows(IllegalStateException::class.java) {
             consensualTransactionBuilder
                 .withStates(consensualStateExample)
                 .withStates(ConsensualStateClassExample("test", emptyList()))
-                .toSignedTransaction(publicKeyExample)
+                .toSignedTransaction()
         }
-        assertEquals("All consensual states must have participants", exception.message)
+        assertEquals("All consensual states must have participants.", exception.message)
     }
 
     @Test
     fun `includes CPI and CPK information in metadata`() {
         val tx = consensualTransactionBuilder
             .withStates(consensualStateExample)
-            .toSignedTransaction(publicKeyExample) as ConsensualSignedTransactionImpl
+            .toSignedTransaction() as ConsensualSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
         assertEquals(1, metadata.getLedgerVersion())
@@ -73,14 +71,14 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "1",
-                dummyCpkSignerSummaryHash.toHexString(),
-                "0101010101010101010101010101010101010101010101010101010101010101"
+                dummyCpkSignerSummaryHash.toString(),
+                "SHA-256:0101010101010101010101010101010101010101010101010101010101010101"
             ),
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "3",
-                dummyCpkSignerSummaryHash.toHexString(),
-                "0303030303030303030303030303030303030303030303030303030303030303"
+                dummyCpkSignerSummaryHash.toString(),
+                "SHA-256:0303030303030303030303030303030303030303030303030303030303030303"
             )
         )
         assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())

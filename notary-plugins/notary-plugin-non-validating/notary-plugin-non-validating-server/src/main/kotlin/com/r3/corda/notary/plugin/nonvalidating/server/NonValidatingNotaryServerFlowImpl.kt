@@ -1,10 +1,10 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.toNotarisationResponse
-import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationRequest
 import com.r3.corda.notary.plugin.common.NotarisationResponse
 import com.r3.corda.notary.plugin.common.NotaryErrorGeneralImpl
+import com.r3.corda.notary.plugin.common.toNotarisationResponse
+import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
@@ -13,20 +13,20 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
-import kotlin.IllegalStateException
+import org.slf4j.LoggerFactory
 
 /**
  * The server-side implementation of the non-validating notary logic.
@@ -37,7 +37,7 @@ import kotlin.IllegalStateException
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {
-        val logger: Logger = loggerFor<NonValidatingNotaryServerFlowImpl>()
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -52,20 +52,26 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @CordaInject
     private lateinit var memberLookup: MemberLookup
 
+    @CordaInject
+    private lateinit var transactionSignatureService: TransactionSignatureService
+
     /**
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
+    @Suppress("LongParameterList")
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
         serializationService: SerializationService,
         signatureVerifier: DigitalSignatureVerificationService,
-        memberLookup: MemberLookup
+        memberLookup: MemberLookup,
+        transactionSignatureService: TransactionSignatureService
     ) : this() {
         this.clientService = clientService
         this.serializationService = serializationService
         this.signatureVerifier = signatureVerifier
         this.memberLookup = memberLookup
+        this.transactionSignatureService = transactionSignatureService
     }
 
     /**
@@ -106,35 +112,35 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             verifyTransaction(requestPayload)
 
-            // If the key is a composite key (multiple notary VNodes) we need to extract the leaves
-            // If the key is not a composite key (single notary VNode) we can simply use that public key
-            val notaryServicePublicKeys = (requestPayload.notaryKey as? CompositeKey)?.leafKeys?.toList()
-                ?: listOf(requestPayload.notaryKey)
-
             logger.trace { "Requesting uniqueness check for transaction ${txDetails.id}" }
 
-            val uniquenessResponse = clientService.requestUniquenessCheck(
+            val uniquenessResult = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
                 txDetails.inputs.map { it.toString() },
                 txDetails.references.map { it.toString() },
                 txDetails.numOutputs,
                 txDetails.timeWindow.from,
-                txDetails.timeWindow.until,
-                notaryServicePublicKeys
+                txDetails.timeWindow.until
             )
 
             logger.debug {
-                "Uniqueness check completed for transaction ${txDetails.id}, result is: ${uniquenessResponse.result}. Sending response " +
+                "Uniqueness check completed for transaction ${txDetails.id}, result is: ${uniquenessResult}. Sending response " +
                         "to ${session.counterparty}"
             }
 
-            session.send(uniquenessResponse.toNotarisationResponse())
+            val signature = if (uniquenessResult is UniquenessCheckResultSuccess) {
+                transactionSignatureService.signBatch(listOf(txDetails), listOf(requestPayload.notaryKey)).first().first()
+            } else null
+
+            session.send(uniquenessResult.toNotarisationResponse(signature))
         } catch (e: Exception) {
-            logger.warn("Error while processing request from client. Cause: $e")
-            session.send(NotarisationResponse(
-                emptyList(),
-                NotaryErrorGeneralImpl("Error while processing request from client.", e)
-            ))
+            logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
+            session.send(
+                NotarisationResponse(
+                    emptyList(),
+                    NotaryErrorGeneralImpl("Error while processing request from client.", e)
+                )
+            )
         }
     }
 
@@ -169,6 +175,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             "Notary component could not be found on the transaction"
         }
 
+        requireNotNull(filteredTx.metadata) {
+            "Metadata component could not be found on the transaction"
+        }
+
         requireNotNull(filteredTx.timeWindow) {
             "Time window component could not be found on the transaction"
         }
@@ -187,6 +197,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
         return NonValidatingNotaryTransactionDetails(
             filteredTx.id,
+            filteredTx.metadata,
             outputStates.size,
             filteredTx.timeWindow!!,
             inputStates.values.values.toList(),
@@ -218,4 +229,5 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private inline fun <reified T> Any.castOrThrow(error: () -> String) = this as? T
         ?: throw java.lang.IllegalStateException(error())
+
 }

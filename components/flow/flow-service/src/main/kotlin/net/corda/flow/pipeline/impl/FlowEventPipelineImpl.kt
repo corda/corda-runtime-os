@@ -12,12 +12,16 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
+import net.corda.flow.pipeline.exceptions.FlowTransientException
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -28,6 +32,7 @@ import java.util.concurrent.TimeoutException
  * @param flowRunner The [FlowRunner] that is used to start or resume a flow's fiber.
  * @param flowGlobalPostProcessor The [FlowGlobalPostProcessor] applied to all events .
  * @param context The [FlowEventContext] that should be modified by the pipeline steps.
+ * @param virtualNodeInfoReadService The [VirtualNodeInfoReadService] is responsible for reading virtual node information.
  * @param output The [FlowIORequest] that is output by a flow's fiber when it suspends.
  */
 @Suppress("LongParameterList")
@@ -38,11 +43,12 @@ class FlowEventPipelineImpl(
     private val flowRunner: FlowRunner,
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
     context: FlowEventContext<Any>,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private var output: FlowIORequest<*>? = null
 ) : FlowEventPipeline {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override var context: FlowEventContext<Any> = context
@@ -74,6 +80,22 @@ class FlowEventPipelineImpl(
         val handler = getFlowEventHandler(updatedContext.inputEvent)
         context = handler.preProcess(updatedContext)
 
+        return this
+    }
+
+    override fun virtualNodeFlowOperationalChecks(): FlowEventPipeline {
+        if (!context.checkpoint.doesExist) {
+            log.warn("Could not perform flow operational validation as the checkpoint does not exist.")
+            return this
+        }
+        val holdingIdentity = context.checkpoint.holdingIdentity
+        val virtualNode = virtualNodeInfoReadService.get(holdingIdentity)
+            ?: throw FlowTransientException("Failed to find the virtual node info for holder " +
+                    "'HoldingIdentity(x500Name=${holdingIdentity.x500Name}, groupId=${holdingIdentity.groupId})'")
+
+        if (virtualNode.flowOperationalStatus == OperationalStatus.INACTIVE) {
+            throw FlowMarkedForKillException("Flow operational status is ${virtualNode.flowOperationalStatus.name}")
+        }
         return this
     }
 

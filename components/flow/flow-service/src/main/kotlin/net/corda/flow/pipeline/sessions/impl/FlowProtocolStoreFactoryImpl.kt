@@ -9,15 +9,15 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowProtocolStoreFactory::class])
 class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
 
     private companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suppress("ThrowsCount")

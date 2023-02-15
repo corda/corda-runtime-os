@@ -16,8 +16,8 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:permissions:permission-validation-service')
     implementation project(':libs:configuration:configuration-core')
-    implementation project(':libs:http-rpc:http-rpc')
-    implementation project(':libs:http-rpc:http-rpc-common')
+    implementation project(':libs:rest:rest')
+    implementation project(':libs:rest:rest-common')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:virtual-node-info')
@@ -29,7 +29,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-rbac-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "com.google.guava:guava:$guavaVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"

@@ -21,7 +21,6 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -30,6 +29,7 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.slf4j.LoggerFactory
 
 class OutputAssertionsImpl(
     private val serializer: CordaAvroSerializer<Any>,
@@ -42,7 +42,7 @@ class OutputAssertionsImpl(
 ) : OutputAssertions {
 
     private companion object {
-        val log = contextLogger()
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     val asserts = mutableListOf<(TestRun) -> Unit>()
@@ -169,6 +169,22 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun flowResumedWithData(value: Map<String, ByteArray>) {
+        asserts.add { testRun ->
+            assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
+            val resumedWith = (testRun.flowContinuation as FlowContinuation.Run).value
+
+            if (resumedWith is Map<*, *>) {
+                assertEquals(value.keys, resumedWith.keys)
+                value.values.zip(resumedWith.values).forEach { pair ->
+                    assertArrayEquals(pair.component1(), pair.component2() as ByteArray,
+                        "Expected flow to resume with $value but was $resumedWith"
+                    )
+                }
+            }
+        }
+    }
+
     override fun flowResumedWith(value: Any?) {
         asserts.add { testRun ->
             assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
@@ -256,7 +272,7 @@ class OutputAssertionsImpl(
             assertNotNull(testRun.response)
             assertTrue(
                 testRun.response!!.responseEvents.any {
-                    matchStatusRecord(flowId, state, result, errorType, errorMessage, it)
+                    matchStatusRecord(flowId, state, result, errorType, errorMessage, null, it)
                 },
                 "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
             )
@@ -297,6 +313,7 @@ class OutputAssertionsImpl(
         result: String?,
         errorType: String?,
         errorMessage: String?,
+        flowTerminatedReason: String?,
         record: Record<*, *>
     ): Boolean {
         if (record.value !is FlowStatus) {
@@ -309,6 +326,7 @@ class OutputAssertionsImpl(
                 && payload.result == result
                 && payload.error?.errorType == errorType
                 && payload.error?.errorMessage == errorMessage
+                && payload.processingTerminatedReason == flowTerminatedReason
     }
 
     override fun nullStateRecord() {
@@ -353,6 +371,18 @@ class OutputAssertionsImpl(
                 it.value is EntityRequest
             }
             assertTrue(entityRequests.isEmpty(), "Entity request found in response events.")
+        }
+    }
+
+    override fun flowKilledStatus(flowTerminatedReason: String) {
+        asserts.add { testRun ->
+            assertNotNull(testRun.response)
+            assertTrue(
+                testRun.response!!.responseEvents.any {
+                    matchStatusRecord(flowId, FlowStates.KILLED, null, null, null, flowTerminatedReason, it)
+                },
+                "Expected Flow Status: KILLED result = null, errorType = null, error = null, processingTerminatedReason: $flowTerminatedReason"
+            )
         }
     }
 

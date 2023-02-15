@@ -5,14 +5,13 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
-import net.corda.db.schema.DbSchema
 
 /**
  * Append only audit log of changelogs of a CPK.
  */
 @Suppress("LongParameterList")
 @Entity
-@Table(name = "cpk_db_change_log_audit", schema = DbSchema.CONFIG)
+@Table(name = "cpk_db_change_log_audit")
 class CpkDbChangeLogAuditEntity(
     @Id
     val id: String,

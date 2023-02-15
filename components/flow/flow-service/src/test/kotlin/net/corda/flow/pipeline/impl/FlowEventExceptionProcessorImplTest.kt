@@ -32,11 +32,13 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 
 class FlowEventExceptionProcessorImplTest {
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val flowEventContextConverter = mock<FlowEventContextConverter>()
+    private val flowSessionManager = mock<FlowSessionManager>()
     private val flowCheckpoint = mock<FlowCheckpoint>()
 
     private val flowConfig = ConfigFactory.empty()
@@ -53,7 +55,8 @@ class FlowEventExceptionProcessorImplTest {
     private val target = FlowEventExceptionProcessorImpl(
         flowMessageFactory,
         flowRecordFactory,
-        flowEventContextConverter
+        flowEventContextConverter,
+        flowSessionManager
     )
 
     @BeforeEach

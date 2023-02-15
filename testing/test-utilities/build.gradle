@@ -1,5 +1,6 @@
 plugins {
     id 'corda.common-library'
+    id 'corda.common-publishing'
 }
 
 description 'Test Utilities'
@@ -9,7 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api project(":libs:utilities")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.mockito:mockito-core:$mockitoVersion"
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:lifecycle:lifecycle")

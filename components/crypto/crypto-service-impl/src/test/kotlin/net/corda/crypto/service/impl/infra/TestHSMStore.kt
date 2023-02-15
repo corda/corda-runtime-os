@@ -1,17 +1,17 @@
 package net.corda.crypto.service.impl.infra
 
 import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.persistence.HSMStore
+import net.corda.crypto.persistence.HSMUsage
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
-import net.corda.crypto.persistence.HSMUsage
-import net.corda.crypto.persistence.HSMStore
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toHex
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
@@ -21,7 +21,7 @@ class TestHSMStore(
     coordinatorFactory: LifecycleCoordinatorFactory
 ) : HSMStore {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lock = ReentrantLock()

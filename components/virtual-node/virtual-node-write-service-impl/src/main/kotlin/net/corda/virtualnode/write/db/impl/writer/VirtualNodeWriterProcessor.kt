@@ -22,14 +22,16 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.findChangelogEntitiesForGivenCpkFileChecksums
 import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
+import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
-import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -44,23 +46,21 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import org.slf4j.LoggerFactory
 import java.lang.System.currentTimeMillis
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
 import javax.sql.DataSource
 import kotlin.system.measureTimeMillis
-import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.findChangelogEntitiesForGivenCpkFileChecksums
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -93,7 +93,7 @@ internal class VirtualNodeWriterProcessor(
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         val systemTerminatorTag = "${VAULT.name}-system-final"
     }
@@ -463,7 +463,7 @@ internal class VirtualNodeWriterProcessor(
 
     private fun createSchemasAndUsers(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
         try {
-            vNodeDbs.filter { it.isClusterDb }.forEach { it.createSchemasAndUsers() }
+            vNodeDbs.filter { it.isPlatformManagedDb }.forEach { it.createSchemasAndUsers() }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Error creating virtual node DB schemas and users for holding identity $holdingIdentity", e

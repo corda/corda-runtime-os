@@ -5,7 +5,6 @@ import net.corda.sandbox.SandboxCreationService
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
-import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.BundleContext
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.ComponentContext
@@ -15,6 +14,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
+import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.util.Collections.unmodifiableSet
 import java.util.Deque
@@ -52,8 +52,6 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.base",
             "net.corda.crypto",
             "net.corda.crypto-extensions",
-            "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
-            "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
             "net.corda.ledger-consensual",
             "net.corda.ledger-utxo",
             "net.corda.membership",
@@ -68,7 +66,7 @@ class SandboxSetupImpl @Activate constructor(
             "slf4j.api"
         ))
 
-        private val logger = loggerFor<SandboxSetup>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val cleanups: Deque<AutoCloseable> = LinkedList()

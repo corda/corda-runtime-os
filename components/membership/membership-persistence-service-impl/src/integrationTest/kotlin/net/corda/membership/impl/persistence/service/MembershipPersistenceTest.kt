@@ -36,6 +36,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.datamodel.ApprovalRulesEntity
+import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -82,7 +83,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
@@ -102,9 +102,11 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.time.Instant
+import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
 
@@ -120,7 +122,7 @@ class MembershipPersistenceTest {
         private const val RULE_REGEX = "rule-regex"
         private const val RULE_LABEL = "rule-label"
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
@@ -289,6 +291,36 @@ class MembershipPersistenceTest {
                 )
             }
 
+            override fun generatePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                preAuthTokenId: UUID,
+                ownerX500Name: MemberX500Name,
+                ttl: Instant?,
+                remarks: String?
+            )= safeCall {
+                membershipPersistenceClient.generatePreAuthToken(
+                    mgmHoldingIdentity, preAuthTokenId, ownerX500Name, ttl, remarks
+                )
+            }
+
+            override fun consumePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                ownerX500Name: MemberX500Name,
+                preAuthTokenId: UUID
+            )= safeCall {
+                membershipPersistenceClient.consumePreAuthToken(
+                    mgmHoldingIdentity, ownerX500Name, preAuthTokenId
+                )
+            }
+
+            override fun revokePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                preAuthTokenId: UUID,
+                remarks: String?
+            ) = safeCall {
+                membershipPersistenceClient.revokePreAuthToken(mgmHoldingIdentity, preAuthTokenId, remarks)
+            }
+
             override fun addApprovalRule(
                 viewOwningIdentity: HoldingIdentity,
                 ruleParams: ApprovalRuleParams
@@ -300,10 +332,11 @@ class MembershipPersistenceTest {
 
             override fun deleteApprovalRule(
                 viewOwningIdentity: HoldingIdentity,
-                ruleId: String
+                ruleId: String,
+                ruleType: ApprovalRuleType
             ) = safeCall {
                 membershipPersistenceClient.deleteApprovalRule(
-                    viewOwningIdentity, ruleId
+                    viewOwningIdentity, ruleId, ruleType
                 )
             }
 
@@ -447,12 +480,12 @@ class MembershipPersistenceTest {
     @Test
     fun `registration requests can persist over RPC topic`() {
         val registrationId = randomUUID().toString()
-        val status = RegistrationStatus.NEW
+        val status = RegistrationStatus.SENT_TO_MGM
 
         val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -605,20 +638,20 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
-                KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair("corda.notary.service.name", notaryServiceName),
                 KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
                 KeyValuePair("corda.roles.0", "notary"),
                 KeyValuePair("corda.notary.keys.0.pem", keyEncodingService.encodeAsString(notaryKey)),
                 KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val expectedGroupParameters = listOf(
@@ -671,20 +704,20 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
-                KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair("corda.notary.service.name", notaryServiceName),
                 KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
                 KeyValuePair("corda.roles.0", "notary"),
                 KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
                 KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         vnodeEmf.transaction {
@@ -756,20 +789,20 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "11"),
-                KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
                 KeyValuePair("corda.notary.service.name", notaryServiceName),
                 KeyValuePair("corda.notary.service.plugin", notaryServicePlugin),
                 KeyValuePair("corda.roles.0", "notary"),
                 KeyValuePair("corda.notary.keys.0.pem", notaryKeyAsString),
                 KeyValuePair("corda.notary.keys.0.signature.spec", "SHA512withECDSA"),
-                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value)
+                KeyValuePair("corda.notary.keys.0.hash", notaryKeyHash.value),
             ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val oldNotaryKey = with(keyGenerator) {
@@ -838,14 +871,14 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
                 KeyValuePair(PLATFORM_VERSION, "5000"),
-                KeyValuePair(SERIAL, "1"),
-                KeyValuePair(SOFTWARE_VERSION, "5.0.0")
-            )
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+            ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
 
         val result = membershipPersistenceClientWrapper.persistMemberInfo(
@@ -874,10 +907,10 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity.serialNumber).isEqualTo(1)
         assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
 
-        fun contextIsEqual(actual: String?, expected: String) = assertThat(actual).isEqualTo(expected)
-
         val persistedMgmContext = persistedEntity.mgmContext.deserializeContextAsMap()
-        contextIsEqual(persistedMgmContext[STATUS], MEMBER_STATUS_ACTIVE)
+        assertThat(persistedMgmContext)
+            .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
+            .containsEntry(SERIAL, "1")
 
         val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
         assertThat(persistedMemberContext)
@@ -886,7 +919,6 @@ class MembershipPersistenceTest {
             .containsEntry(GROUP_ID, groupId)
             .containsEntry(PARTY_NAME, memberx500Name.toString())
             .containsEntry(PLATFORM_VERSION, "5000")
-            .containsEntry(SERIAL, "1")
             .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
 
@@ -915,7 +947,7 @@ class MembershipPersistenceTest {
         val requestEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
 
         val approveResult = membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
             viewOwningHoldingIdentity,
@@ -968,7 +1000,7 @@ class MembershipPersistenceTest {
         val requestEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
 
         membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsDeclined(
             viewOwningHoldingIdentity,
@@ -1016,7 +1048,7 @@ class MembershipPersistenceTest {
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
-                    RegistrationStatus.NEW,
+                    RegistrationStatus.SENT_TO_MGM,
                     registrationId,
                     holdingId,
                     ByteBuffer.wrap(
@@ -1051,7 +1083,7 @@ class MembershipPersistenceTest {
         val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -1079,7 +1111,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
         assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
-        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.NEW.name)
+        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.name)
 
         val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
             viewOwningHoldingIdentity,
@@ -1109,7 +1141,13 @@ class MembershipPersistenceTest {
         ).getOrThrow()
 
         val approvalRuleEntity = vnodeEmf.use {
-            it.find(ApprovalRulesEntity::class.java, ruleDetails.ruleId)
+            it.find(
+                ApprovalRulesEntity::class.java,
+                ApprovalRulesEntityPrimaryKey(
+                    ruleDetails.ruleId,
+                    ApprovalRuleType.STANDARD.name
+                )
+            )
         }
         with(approvalRuleEntity) {
             assertThat(ruleRegex).isEqualTo(RULE_REGEX)
@@ -1123,15 +1161,25 @@ class MembershipPersistenceTest {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
         }
-        val testRule = ApprovalRulesEntity(RULE_ID, RULE_REGEX, ApprovalRuleType.STANDARD.name, RULE_LABEL)
+        val testRule = ApprovalRulesEntity(RULE_ID, ApprovalRuleType.STANDARD.name, RULE_REGEX, RULE_LABEL)
         vnodeEmf.transaction {
             it.persist(testRule)
         }
 
-        membershipPersistenceClientWrapper.deleteApprovalRule(viewOwningHoldingIdentity, RULE_ID).getOrThrow()
+        membershipPersistenceClientWrapper.deleteApprovalRule(
+            viewOwningHoldingIdentity, RULE_ID, ApprovalRuleType.STANDARD
+        ).getOrThrow()
 
         vnodeEmf.use {
-            assertThat(it.find(ApprovalRulesEntity::class.java, RULE_ID)).isNull()
+            assertThat(
+                it.find(
+                    ApprovalRulesEntity::class.java,
+                    ApprovalRulesEntityPrimaryKey(
+                        RULE_ID,
+                        ApprovalRuleType.STANDARD.name
+                    )
+                )
+            ).isNull()
         }
     }
 
@@ -1147,8 +1195,8 @@ class MembershipPersistenceTest {
         val rule1 = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
         val rule2 = ApprovalRuleDetails("rule-id-2", "rule-regex-2", "rule-label-2")
         val entities = listOf(
-            ApprovalRulesEntity(rule1.ruleId, rule1.ruleRegex, ApprovalRuleType.STANDARD.name, rule1.ruleLabel),
-            ApprovalRulesEntity(rule2.ruleId, rule2.ruleRegex, ApprovalRuleType.STANDARD.name, rule2.ruleLabel)
+            ApprovalRulesEntity(rule1.ruleId, ApprovalRuleType.STANDARD.name, rule1.ruleRegex, rule1.ruleLabel),
+            ApprovalRulesEntity(rule2.ruleId, ApprovalRuleType.STANDARD.name, rule2.ruleRegex, rule2.ruleLabel)
         )
         vnodeEmf.transaction { em ->
             entities.forEach { em.persist(it) }
@@ -1177,14 +1225,14 @@ class MembershipPersistenceTest {
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberName.toString()),
                 KeyValuePair(PLATFORM_VERSION, "5000"),
-                KeyValuePair(SERIAL, "1"),
-                KeyValuePair(SOFTWARE_VERSION, "5.0.0")
-            )
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0"),
+            ).sorted()
         )
         val mgmContext = KeyValuePairList(
             listOf(
-                KeyValuePair(STATUS, MEMBER_STATUS_PENDING)
-            )
+                KeyValuePair(STATUS, MEMBER_STATUS_PENDING),
+                KeyValuePair(SERIAL, "1"),
+            ).sorted()
         )
 
         return membershipPersistenceClientWrapper.persistMemberInfo(
@@ -1202,7 +1250,7 @@ class MembershipPersistenceTest {
         return membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 member,
                 ByteBuffer.wrap(

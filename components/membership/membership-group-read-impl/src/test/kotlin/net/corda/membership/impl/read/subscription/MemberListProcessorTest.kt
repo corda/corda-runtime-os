@@ -91,11 +91,11 @@ class MemberListProcessorTest {
                 *convertEndpoints().toTypedArray(),
                 SOFTWARE_VERSION to "5.0.0",
                 PLATFORM_VERSION to "5000",
-                SERIAL to "1",
             ),
             sortedMapOf(
                 STATUS to status,
                 MODIFIED_TIME to modifiedTime.toString(),
+                SERIAL to "1",
             )
 
         )

@@ -12,7 +12,6 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
@@ -20,6 +19,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -47,7 +47,7 @@ class ConsensualRepositoryImpl @Activate constructor(
     companion object {
         private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
         private val consensualComponentGroupMapper = ConsensualComponentGroupMapper()
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun findTransaction(entityManager: EntityManager, id: String): SignedTransactionContainer? {

@@ -2,7 +2,14 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.p2p.LinkInMessage
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.data.p2p.crypto.InitiatorHelloMessage
+import net.corda.data.p2p.crypto.ResponderHandshakeMessage
+import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
@@ -14,22 +21,15 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.LinkInMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.crypto.AuthenticatedDataMessage
-import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
-import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
-import net.corda.data.p2p.crypto.InitiatorHelloMessage
-import net.corda.data.p2p.crypto.ResponderHandshakeMessage
-import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
+import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
 
@@ -43,7 +43,7 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    cryptoOpsClient: CryptoOpsClient,
+    commonComponents: CommonComponents,
     private val avroSchemaRegistry: AvroSchemaRegistry
 ) : HttpServerListener, LifecycleWithDominoTile {
 
@@ -55,7 +55,7 @@ internal class InboundMessageHandler(
 
     companion object {
         const val AVRO_LIMIT = 5_000_000
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var p2pInPublisher = PublisherWithDominoLogic(
@@ -70,13 +70,18 @@ internal class InboundMessageHandler(
         messagingConfiguration
     )
 
+    private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        messagingConfiguration
+    )
+
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         this,
-        subscriptionFactory,
-        messagingConfiguration,
-        cryptoOpsClient
+        commonComponents,
+        dynamicCertificateSubjectStore,
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -85,11 +90,13 @@ internal class InboundMessageHandler(
             sessionPartitionMapper.dominoTile.coordinatorName,
             p2pInPublisher.dominoTile.coordinatorName,
             server.dominoTile.coordinatorName,
+            dynamicCertificateSubjectStore.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             sessionPartitionMapper.dominoTile.toNamedLifecycle(),
             p2pInPublisher.dominoTile.toNamedLifecycle(),
             server.dominoTile.toNamedLifecycle(),
+            dynamicCertificateSubjectStore.dominoTile.toNamedLifecycle(),
         )
     )
 

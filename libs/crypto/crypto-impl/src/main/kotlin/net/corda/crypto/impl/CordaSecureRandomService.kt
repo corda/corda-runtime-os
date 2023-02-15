@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
-import net.corda.v5.base.util.loggerFor
 import org.apache.commons.lang3.SystemUtils
+import org.slf4j.LoggerFactory
 import java.io.DataInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -17,7 +17,7 @@ class CordaSecureRandomService(provider: Provider) :
 
     companion object {
         const val algorithm = "CordaPRNG"
-        private val logger = loggerFor<CordaSecureRandomService>()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val instance: SecureRandomSpi = if (SystemUtils.IS_OS_LINUX) tryAndUseLinuxSecureRandomSpi() else CordaSecureRandomSpi()

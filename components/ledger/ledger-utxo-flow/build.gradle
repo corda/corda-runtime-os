@@ -26,6 +26,7 @@ dependencies {
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':libs:flows:flow-api')
     implementation project(':components:flow:flow-service')
     implementation project(':components:ledger:ledger-common-flow-api')
@@ -37,6 +38,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':components:virtual-node:sandbox-notary')
+    implementation project(':notary-plugins:notary-plugin-common')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

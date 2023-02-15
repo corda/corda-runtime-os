@@ -12,11 +12,12 @@ import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.locks.ReentrantLock
+import javax.net.ssl.X509ExtendedTrustManager
 import kotlin.concurrent.withLock
 
 /**
@@ -30,15 +31,16 @@ import kotlin.concurrent.withLock
  * and a response is sent back to the client. The response body is empty unless it follows a session handshake request,
  * in which case the body will contain additional information.
  */
-class HttpServer(
+internal class HttpServer(
     private val eventListener: HttpServerListener,
     private val configuration: GatewayConfiguration,
     private val keyStore: KeyStoreWithPassword,
+    private val serverTrustManager: X509ExtendedTrustManager?,
 ) : Resource,
     HttpServerListener {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         /**
          * Default number of thread to use for the worker group
@@ -102,7 +104,7 @@ class HttpServer(
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(keyStore))
+            pipeline.addLast("sslHandler", createServerSslHandler(keyStore, serverTrustManager))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpServerChannelHandler(this@HttpServer, configuration.maxRequestSize, configuration.urlPath, logger))

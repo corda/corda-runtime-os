@@ -27,7 +27,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:virtual-node:sandbox-group-context')
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
 

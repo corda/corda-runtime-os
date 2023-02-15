@@ -24,7 +24,7 @@ class UtxoResolveStateRefsRequestHandler(
         val stateAndRefs = persistenceService.resolveStateRefs(
             resolveStateRefs.stateRefs.map {
                 StateRef(
-                    SecureHash(it.transactionHash.algorithm, it.transactionHash.serverHash.array()),
+                    SecureHash(it.transactionId.algorithm, it.transactionId.bytes.array()),
                     it.index
                 )
             }

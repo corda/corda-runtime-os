@@ -35,7 +35,6 @@ import java.security.PublicKey
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@Suppress("DEPRECATION")
 class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
@@ -68,7 +67,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
-            .toSignedTransaction(publicKeyExample)
+            .toSignedTransaction()
 
         assertIs<UtxoSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)

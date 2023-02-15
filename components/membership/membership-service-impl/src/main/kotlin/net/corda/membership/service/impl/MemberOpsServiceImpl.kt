@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -12,25 +13,27 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.registration.RegistrationProxy
-import net.corda.membership.service.MemberOpsService
-import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.Resource
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.RegistrationProxy
+import net.corda.membership.service.MemberOpsService
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [MemberOpsService::class])
 @Suppress("LongParameterList")
@@ -49,11 +52,14 @@ class MemberOpsServiceImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
-): MemberOpsService {
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+) : MemberOpsService {
     private companion object {
-        private val logger = contextLogger()
-        const val GROUP_NAME = "membership.ops.rpc"
-        const val CLIENT_NAME = "membership.ops.rpc"
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val RPC_GROUP_NAME = "membership.ops.rpc"
+        const val RPC_CLIENT_NAME = "membership.ops.rpc"
+        const val ASYNC_GROUP_NAME = "membership.ops.async"
 
         const val SUBSCRIPTION_RESOURCE = "MemberOpsService.SUBSCRIPTION_RESOURCE"
         const val CONFIG_HANDLE = "MemberOpsService.CONFIG_HANDLE"
@@ -156,22 +162,42 @@ class MemberOpsServiceImpl @Activate constructor(
             logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
             val subscription = subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
-                    groupName = GROUP_NAME,
-                    clientName = CLIENT_NAME,
+                    groupName = RPC_GROUP_NAME,
+                    clientName = RPC_CLIENT_NAME,
                     requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
                     requestType = MembershipRpcRequest::class.java,
                     responseType = MembershipRpcResponse::class.java
                 ),
                 responderProcessor = MemberOpsServiceProcessor(
-                    registrationProxy,
                     virtualNodeInfoReadService,
                     membershipGroupReaderProvider,
                     membershipQueryClient,
                 ),
                 messagingConfig = messagingConfig
             ).also { it.start() }
-            val handle = coordinator.followStatusChangesByName(setOf(subscription.subscriptionName))
-            MembershipSubscriptionAndRegistration(subscription, handle)
+            val asyncSubscription = subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(
+                    ASYNC_GROUP_NAME,
+                    MEMBERSHIP_ASYNC_REQUEST_TOPIC,
+                ),
+                MemberOpsAsyncProcessor(
+                    registrationProxy,
+                    virtualNodeInfoReadService,
+                    membershipPersistenceClient,
+                    membershipQueryClient,
+                ),
+                messagingConfig,
+                null,
+            ).also {
+                it.start()
+            }
+            val handle = coordinator.followStatusChangesByName(
+                setOf(
+                    subscription.subscriptionName,
+                    asyncSubscription.subscriptionName,
+                )
+            )
+            MembershipSubscriptionAndRegistration(subscription, asyncSubscription, handle)
         }
     }
 
@@ -183,6 +209,7 @@ class MemberOpsServiceImpl @Activate constructor(
      */
     private class MembershipSubscriptionAndRegistration(
         val subscription: RPCSubscription<MembershipRpcRequest, MembershipRpcResponse>,
+        val asyncSubscription: Resource,
         val registrationHandle: RegistrationHandle
     ) : Resource {
         override fun close() {
@@ -190,6 +217,7 @@ class MemberOpsServiceImpl @Activate constructor(
             // events being posted.
             registrationHandle.close()
             subscription.close()
+            asyncSubscription.close()
         }
     }
 }

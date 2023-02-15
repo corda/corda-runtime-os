@@ -19,9 +19,9 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_STATIC_NETWORK_TOPIC
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
 class GroupParametersCache(
@@ -30,7 +30,7 @@ class GroupParametersCache(
     private val keyEncodingService: KeyEncodingService
 ) {
     private companion object {
-        val logger = contextLogger()
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock = UTCClock()
 
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()

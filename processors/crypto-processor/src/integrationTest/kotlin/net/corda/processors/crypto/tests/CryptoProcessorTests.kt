@@ -64,7 +64,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
@@ -87,6 +86,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
@@ -97,7 +97,7 @@ import javax.persistence.EntityManagerFactory
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val CLIENT_ID = makeClientId<CryptoProcessorTests>()
 
@@ -177,8 +177,7 @@ class CryptoProcessorTests {
 
         private val clusterDb = TestDbInfo.createConfig()
         private val cryptoDb = TestDbInfo(
-            name = CordaDb.Crypto.persistenceUnitName,
-            schemaName = DbSchema.CRYPTO
+            name = CordaDb.Crypto.persistenceUnitName
         )
         private val boostrapConfig = makeBootstrapConfig(clusterDb.config)
         private val messagingConfig = makeMessagingConfig()

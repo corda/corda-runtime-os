@@ -6,8 +6,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.merger.ConfigMerger
-import java.io.Closeable
-import java.sql.Timestamp
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -15,7 +13,9 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.v5.base.util.contextLogger
+import org.slf4j.LoggerFactory
+import java.io.Closeable
+import java.sql.Timestamp
 
 @Suppress("LongParameterList")
 class Sink(
@@ -26,7 +26,7 @@ class Sink(
     ) : Closeable {
 
     companion object {
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
