@@ -612,10 +612,10 @@ class P2PLayerEndToEndTest {
         private val otherHostMembers = ConcurrentHashMap<MemberX500Name, MemberInfo>()
         private val otherHostMembersByKey = ConcurrentHashMap<PublicKeyHash, MemberInfo>()
         private val groupReader = mock<MembershipGroupReader> {
-            on { lookup(any()) } doAnswer {
+            on { lookup(any(), any()) } doAnswer {
                 otherHostMembers[it.getArgument(0)]
             }
-            on { lookupBySessionKey(any()) } doAnswer {
+            on { lookupBySessionKey(any(), any()) } doAnswer {
                 otherHostMembersByKey[it.getArgument(0)]
             }
         }
