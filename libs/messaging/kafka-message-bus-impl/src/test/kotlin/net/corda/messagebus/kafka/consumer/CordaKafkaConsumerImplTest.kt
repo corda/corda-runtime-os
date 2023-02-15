@@ -100,6 +100,7 @@ class CordaKafkaConsumerImplTest {
         cordaKafkaConsumer = createConsumer(consumer)
 
         cordaKafkaConsumer.poll(Duration.ofMillis(100L))
+        verify(consumer, times(1)).assignment()
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
     }
 
