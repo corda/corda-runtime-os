@@ -11,6 +11,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRe
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
@@ -117,6 +118,13 @@ private fun UniquenessCheckError.toNotaryError(): NotaryError {
             timeWindowUpperBound
         )
         is UniquenessCheckErrorMalformedRequest -> NotaryErrorMalformedRequestImpl(errorText)
+        is UniquenessCheckErrorUnhandledException -> NotaryErrorGeneralImpl(
+            unhandledExceptionMessage,
+            // We know that the type will be a fully qualified name so it is safe to assume that we can instantiate it
+            Class.forName(unhandledExceptionType)
+                .getConstructor(String::class.java)
+                .newInstance(unhandledExceptionMessage) as? Throwable
+        )
         else -> NotaryErrorGeneralImpl(
             "Unknown error type received from uniqueness checker: ${this::class.java.canonicalName}"
         )
