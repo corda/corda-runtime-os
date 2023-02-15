@@ -79,7 +79,8 @@ fun createMgmRegistrationContext(
     sessionKeyId: String,
     ecdhKeyId: String,
     p2pUrl: String,
-    sessionPkiMode: String = "NoPKI"
+    sessionPkiMode: String = "NoPKI",
+    tlsType: String = "OneWay",
 ) = mapOf(
     "corda.session.key.id" to sessionKeyId,
     "corda.ecdh.key.id" to ecdhKeyId,
@@ -89,7 +90,7 @@ fun createMgmRegistrationContext(
             to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
     "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
     "corda.group.key.session.policy" to "Distinct",
-    "corda.group.tls.type" to "OneWay",
+    "corda.group.tls.type" to tlsType,
     "corda.group.pki.session" to sessionPkiMode,
     "corda.group.pki.tls" to "Standard",
     "corda.group.tls.version" to "1.3",
