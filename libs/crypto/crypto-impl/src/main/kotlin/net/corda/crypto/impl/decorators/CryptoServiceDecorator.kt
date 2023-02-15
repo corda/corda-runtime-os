@@ -70,12 +70,13 @@ class CryptoServiceDecorator(
             throw CryptoException("Calling supportedSchemes failed", e)
         }
 
+    // TODO - rename masterKeyAlias to wrappingKeyAlias
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
         withTimeout.executeWithRetry {
             cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
         }
     } catch (e: RuntimeException) {
-        if(e.isRecoverable()) {
+        if (e.isRecoverable()) {
             throw CryptoException(
                 "Calling createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
                 e
