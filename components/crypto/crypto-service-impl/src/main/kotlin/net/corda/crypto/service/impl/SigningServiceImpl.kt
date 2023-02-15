@@ -91,11 +91,7 @@ class SigningServiceImpl(
             "createWrappingKey(hsmId=$hsmId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
                     "onBehalf=${context[CRYPTO_TENANT_ID]})"
         }
-        cryptoServiceFactory.getInstance(hsmId).createWrappingKey(
-            masterKeyAlias = masterKeyAlias,
-            failIfExists = failIfExists,
-            context = context
-        )
+        cryptoServiceFactory.getInstance(hsmId).createWrappingKey(masterKeyAlias, failIfExists, context)
     }
 
     override fun generateKeyPair(
@@ -178,7 +174,7 @@ class SigningServiceImpl(
                 publicKey = record.publicKey,
                 keyMaterialSpec = KeyMaterialSpec(
                     keyMaterial = record.data.keyMaterial!!,
-                    masterKeyAlias = record.data.masterKeyAlias,
+                    masterKeyAlias = record.data.masterKeyAlias!!,
                     encodingVersion = record.data.encodingVersion!!
                 ),
                 keyScheme = scheme,
@@ -216,7 +212,7 @@ class SigningServiceImpl(
                 publicKey = record.publicKey,
                 keyMaterialSpec = KeyMaterialSpec(
                     keyMaterial = record.data.keyMaterial!!,
-                    masterKeyAlias = record.data.masterKeyAlias,
+                    masterKeyAlias = record.data.masterKeyAlias!!,
                     encodingVersion = record.data.encodingVersion!!
                 ),
                 keyScheme = scheme,
@@ -255,7 +251,7 @@ class SigningServiceImpl(
             KeyGenerationSpec(
                 keyScheme = scheme,
                 alias = alias,
-                masterKeyAlias = ref.masterKeyAlias
+                masterKeyAlias = ref.masterKeyAlias!!
             ),
             context + mapOf(
                 CRYPTO_TENANT_ID to tenantId,

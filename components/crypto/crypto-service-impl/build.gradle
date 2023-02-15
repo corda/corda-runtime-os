@@ -38,6 +38,7 @@ dependencies {
 
     api project(":components:crypto:crypto-softhsm-impl")
 
+    testImplementation project(":libs:cache:cache-caffeine")
     testImplementation 'net.corda:corda-application'
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")
