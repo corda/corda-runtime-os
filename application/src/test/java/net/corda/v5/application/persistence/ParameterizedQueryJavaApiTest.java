@@ -9,7 +9,7 @@ import static org.mockito.Mockito.*;
 
 public class ParameterizedQueryJavaApiTest {
 
-    class TestObject {
+    static class TestObject {
         public int foo;
     }
 

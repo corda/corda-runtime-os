@@ -1,6 +1,6 @@
 package net.corda.v5.crypto
 
-import net.corda.v5.base.util.toBase58
+import net.corda.v5.base.util.EncodingUtils.toBase58
 import net.corda.v5.crypto.mocks.ECDSA_SECP256K1_SPEC
 import net.corda.v5.crypto.mocks.ECDSA_SECP256R1_SPEC
 import net.corda.v5.crypto.mocks.EDDSA_ED25519_SPEC
@@ -62,7 +62,7 @@ class CryptoUtilsTests {
     @MethodSource("publicKeys")
     fun `toStringShort should return base58 representation with DL prefix of SHA256 for a given public key`(key: PublicKey) {
         val str = key.toStringShort()
-        val expected = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(key.encoded).toBase58()
+        val expected = toBase58(MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(key.encoded))
         assertEquals("DL$expected", str)
     }
 

@@ -1,10 +1,10 @@
 package net.corda.v5.base.types
 
-import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_COMMON_NAME
-import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_LOCALITY
-import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_ORGANIZATION
-import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_ORGANIZATION_UNIT
-import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_STATE
+import net.corda.v5.base.types.MemberX500Name.MAX_LENGTH_COMMON_NAME
+import net.corda.v5.base.types.MemberX500Name.MAX_LENGTH_LOCALITY
+import net.corda.v5.base.types.MemberX500Name.MAX_LENGTH_ORGANIZATION
+import net.corda.v5.base.types.MemberX500Name.MAX_LENGTH_ORGANIZATION_UNIT
+import net.corda.v5.base.types.MemberX500Name.MAX_LENGTH_STATE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -303,12 +303,7 @@ class MemberX500NameTest {
 
     @Test
     fun `Should create MemberX500Name without organizationUnit and state`() {
-        val member = MemberX500Name(
-            commonName = "Service Name",
-            organization = "Org",
-            locality = "New York",
-            country = "US"
-        )
+        val member = MemberX500Name("Service Name", "Org", "New York", "US")
         assertEquals("Service Name", member.commonName)
         assertEquals( "Org", member.organization)
         assertEquals("New York", member.locality)
@@ -319,11 +314,7 @@ class MemberX500NameTest {
 
     @Test
     fun `Should create MemberX500Name without commonName, organizationUnit and state`() {
-        val member = MemberX500Name(
-            organization = "Org",
-            locality = "New York",
-            country = "US"
-        )
+        val member = MemberX500Name("Org", "New York", "US")
         assertEquals("Org", member.organization)
         assertEquals("New York", member.locality)
         assertEquals("US", member.country)

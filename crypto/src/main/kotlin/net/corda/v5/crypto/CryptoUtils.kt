@@ -2,7 +2,7 @@
 
 package net.corda.v5.crypto
 
-import net.corda.v5.base.util.toBase58
+import net.corda.v5.base.util.EncodingUtils.toBase58
 import java.io.InputStream
 import java.security.KeyPair
 import java.security.MessageDigest
@@ -48,7 +48,7 @@ fun ByteArray.sha256Bytes(): ByteArray = messageDigestSha256().digest(this)
 fun PublicKey.sha256Bytes(): ByteArray = messageDigestSha256().digest(encoded)
 
 /** Render a public key to its hash (in Base58) of its serialised form using the DL prefix. */
-fun PublicKey.toStringShort(): String = "DL" + this.sha256Bytes().toBase58()
+fun PublicKey.toStringShort(): String = "DL" + toBase58(sha256Bytes())
 
 /**
  * Calculates HMAC using provided secret and algorithm for provided byte array.

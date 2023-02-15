@@ -1,6 +1,6 @@
 package net.corda.v5.crypto
 
-import net.corda.v5.base.types.toHexString
+import net.corda.v5.base.types.ByteArrays.toHexString
 import net.corda.v5.crypto.mocks.generateKeyPair
 import net.corda.v5.crypto.mocks.specs
 import org.junit.jupiter.api.Test
@@ -43,8 +43,8 @@ class PublicKeyHashTests {
     @MethodSource("publicKeys")
     fun `hash is computed correctly for a given public key using top level function`(publicKey: PublicKey) {
         val hash = publicKey.calculateHash()
-        val expected =
-            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        val expected = toHexString(
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded))
         assertEquals(expected, hash.value)
     }
 
@@ -52,8 +52,8 @@ class PublicKeyHashTests {
     @MethodSource("publicKeys")
     fun `hash is computed correctly for a given public key`(publicKey: PublicKey) {
         val hash = PublicKeyHash.calculate(publicKey)
-        val expected =
-            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        val expected = toHexString(
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded))
         assertEquals(expected, hash.value)
     }
 
@@ -61,8 +61,8 @@ class PublicKeyHashTests {
     @MethodSource("publicKeys")
     fun `hash is computed correctly for a given encoded public key`(publicKey: PublicKey) {
         val hash = PublicKeyHash.calculate(publicKey.encoded)
-        val expected =
-            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        val expected = toHexString(
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded))
         assertEquals(expected, hash.value)
     }
 
@@ -70,8 +70,8 @@ class PublicKeyHashTests {
     @MethodSource("publicKeys")
     fun `id is computed correctly for a given public key`(publicKey: PublicKey) {
         val hash = PublicKeyHash.calculate(publicKey)
-        val expected =
-            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        val expected = toHexString(
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded))
         assertEquals(expected.substring(0, 12), hash.id)
     }
 
@@ -79,10 +79,11 @@ class PublicKeyHashTests {
     @MethodSource("publicKeys")
     fun `id is computed correctly for a given public key using top level function`(publicKey: PublicKey) {
         val id = publicKey.publicKeyId()
-        val expected =
-            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        val expected = toHexString(
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded))
         assertEquals(expected.substring(0, 12), id)
     }
+
     @Test
     fun `toString output is Hex representation of hash value`() {
         val bytes = "abc".toByteArray().sha256Bytes()

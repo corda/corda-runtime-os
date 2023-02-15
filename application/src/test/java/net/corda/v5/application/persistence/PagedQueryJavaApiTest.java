@@ -8,7 +8,7 @@ import static org.mockito.Mockito.*;
 
 public class PagedQueryJavaApiTest {
 
-    class TestObject {
+    static class TestObject {
         public int foo;
     }
 

@@ -4,6 +4,7 @@ import net.corda.v5.application.flows.CordaInject;
 import net.corda.v5.application.flows.RestRequestBody;
 import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.base.types.MemberX500Name;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * KDoc example compilation test
@@ -13,7 +14,8 @@ public class FlowMessagingFlowJavaExample implements ClientStartableFlow {
     public FlowMessaging flowMessaging;
 
     @Override
-    public String call(RestRequestBody requestBody) {
+    @NotNull
+    public String call(@NotNull RestRequestBody requestBody) {
         MemberX500Name counterparty = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB");
         FlowSession session = flowMessaging.initiateFlow(counterparty);
 

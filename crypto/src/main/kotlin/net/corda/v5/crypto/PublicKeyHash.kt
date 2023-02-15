@@ -1,7 +1,7 @@
 @file:JvmName("PublicKeyUtils")
 package net.corda.v5.crypto
 
-import net.corda.v5.base.types.toHexString
+import net.corda.v5.base.types.ByteArrays.toHexString
 import java.security.PublicKey
 
 /**
@@ -39,7 +39,7 @@ class PublicKeyHash private constructor(
             require(bytes.size == 32) {
                 "Input must be 32 bytes long for SHA-256 hash."
             }
-            return PublicKeyHash(value = bytes.toHexString())
+            return PublicKeyHash(value = toHexString(bytes))
         }
 
         /**
@@ -68,7 +68,7 @@ class PublicKeyHash private constructor(
          */
         @JvmStatic
         fun calculate(publicKey: PublicKey): PublicKeyHash =
-            PublicKeyHash(value = publicKey.sha256Bytes().toHexString())
+            PublicKeyHash(value = toHexString(publicKey.sha256Bytes()))
 
         /**
          * Computes the public key hash from a given encoded [PublicKey].
@@ -78,7 +78,7 @@ class PublicKeyHash private constructor(
          */
         @JvmStatic
         fun calculate(publicKey: ByteArray): PublicKeyHash =
-            PublicKeyHash(value = publicKey.sha256Bytes().toHexString())
+            PublicKeyHash(value = toHexString(publicKey.sha256Bytes()))
     }
 
     /**
@@ -98,7 +98,7 @@ class PublicKeyHash private constructor(
     override fun equals(other: Any?): Boolean {
         return when (other) {
             is PublicKeyHash -> value == other.value
-            is ByteArray -> value == other.toHexString()
+            is ByteArray -> value == toHexString(other)
             is String -> value.equals(other, true)
             else -> false
         }

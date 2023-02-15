@@ -1,5 +1,6 @@
 package net.corda.v5.base.types
 
+import net.corda.v5.base.types.ByteArrays.toHexString
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -22,7 +23,7 @@ class ByteArraysTest {
     private fun sliceWorksImpl(array: ByteArray, seq: ByteSequence) {
         // Python-style negative indices can be implemented later if needed:
         assertSame(IllegalArgumentException::class.java, catchThrowable { seq.slice(-1) }.javaClass)
-        assertSame(IllegalArgumentException::class.java, catchThrowable { seq.slice(start = 0, end = -1) }.javaClass)
+        assertSame(IllegalArgumentException::class.java, catchThrowable { seq.slice(0, -1) }.javaClass)
         fun check(expected: ByteArray, actual: ByteBuffer) {
             assertEquals(ByteBuffer.wrap(expected), actual)
             assertSame(ReadOnlyBufferException::class.java, catchThrowable { actual.array() }.javaClass)
@@ -53,7 +54,7 @@ class ByteArraysTest {
         val hexRegex = "^[0-9A-F]+\$".toRegex()
 
         val opaqueBytes = OpaqueBytes.of(1, 23, 63, 127, 34, 44, 55, 66, 22, 110)
-        val hexString = opaqueBytes.bytes.toHexString()
+        val hexString = toHexString(opaqueBytes.bytes)
         assertTrue(hexString.matches(hexRegex))
     }
 }

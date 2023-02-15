@@ -1,9 +1,9 @@
 package net.corda.v5.crypto
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.types.ByteArrays.parseAsHex
+import net.corda.v5.base.types.ByteArrays.toHexString
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.base.types.parseAsHex
-import net.corda.v5.base.types.toHexString
 import java.nio.ByteBuffer
 
 /**
@@ -43,7 +43,7 @@ class SecureHash(
             } else {
                 val algorithm = str.substring(0, idx)
                 val value = str.substring(idx + 1)
-                val data = value.parseAsHex()
+                val data = parseAsHex(value)
                 SecureHash(algorithm, data)
             }
         }
@@ -52,7 +52,7 @@ class SecureHash(
     /**
      * Returns hexadecimal representation of the hash value.
      */
-    fun toHexString(): String = bytes.toHexString()
+    fun toHexString(): String = toHexString(bytes)
 
     /**
      * Returns the first [prefixLen] hexadecimal digits of the [SecureHash] value.

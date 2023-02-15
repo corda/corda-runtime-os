@@ -37,7 +37,7 @@ public class JsonWriterJavaApiTest {
 
 
     @Test
-    void callEveryMethod() {
+    void callEveryMethod() throws IOException {
         jw.writeStartObject();
         jw.writeEndObject();
         jw.writeFieldName(TEST_STRING);
