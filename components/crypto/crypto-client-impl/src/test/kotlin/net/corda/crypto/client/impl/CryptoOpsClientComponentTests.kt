@@ -48,7 +48,7 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
@@ -100,7 +100,7 @@ class CryptoOpsClientComponentTests {
 
     @BeforeEach
     fun setup() {
-        knownTenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
+        knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
         knownAlias = UUID.randomUUID().toString()
         knownOperationContext = mapOf(
             UUID.randomUUID().toString() to UUID.randomUUID().toString()

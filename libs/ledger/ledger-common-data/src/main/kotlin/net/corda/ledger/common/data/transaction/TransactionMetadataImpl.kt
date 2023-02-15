@@ -83,4 +83,16 @@ class TransactionMetadataImpl (private val properties: Map<String, Any>) : Trans
                 "Transaction metadata representation error: JSON schema version should be an integer but could not be parsed: $version")
         }
     }
+
+    override fun getPlatformVersion(): Int {
+        val version = this[PLATFORM_VERSION_KEY].toString()
+
+        return try {
+            version.toInt()
+        } catch (e: NumberFormatException) {
+            throw CordaRuntimeException(
+                "Transaction metadata representation error: Platform version should be an integer but could not be parsed: $version")
+        }
+    }
+
 }

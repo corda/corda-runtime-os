@@ -68,7 +68,7 @@ import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
@@ -109,7 +109,7 @@ import java.net.http.HttpRequest as JavaHttpRequest
 
 class GatewayIntegrationTest : TestBase() {
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val GROUP_ID = "Group - 1"
 
         const val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
@@ -351,7 +351,7 @@ class GatewayIntegrationTest : TestBase() {
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
             val bigMessage = ByteArray(10_000_000)
-            val linkInMessage = LinkInMessage(authenticatedP2PMessage(bigMessage.toHex()))
+            val linkInMessage = LinkInMessage(authenticatedP2PMessage(toHex(bigMessage)))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(
                 createConfigurationServiceFor(
@@ -1169,17 +1169,17 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to gateway - mutual TLS`() {
-            val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
-            val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
+            val aliceGatewayAddress = URI.create("https://127.0.0.1:${getOpenPort()}")
+            val bobGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             alice.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem))))
             bob.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$bobX500Name-$GROUP_ID", GatewayTruststore(HoldingIdentity(bobX500Name, GROUP_ID), listOf(truststoreCertificatePem))))
-            alice.publishKeyStoreCertificatesAndKeys(chipKeyStore, aliceHoldingIdentity)
-            bob.publishKeyStoreCertificatesAndKeys(daleKeyStore, bobHoldingIdentity)
-            bob.allowCertificates(chipKeyStore)
-            alice.allowCertificates(daleKeyStore)
+            alice.publishKeyStoreCertificatesAndKeys(ipKeyStore, aliceHoldingIdentity)
+            bob.publishKeyStoreCertificatesAndKeys(chipKeyStore, bobHoldingIdentity)
+            bob.allowCertificates(ipKeyStore)
+            alice.allowCertificates(chipKeyStore)
 
             val receivedLatch = CountDownLatch(messageCount * 2)
             var bobReceivedMessages = 0

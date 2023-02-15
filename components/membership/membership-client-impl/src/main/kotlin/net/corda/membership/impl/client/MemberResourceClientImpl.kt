@@ -78,6 +78,12 @@ class MemberResourceClientImpl @Activate constructor(
 
         const val ASYNC_CLIENT_ID = "membership.ops.async"
 
+        const val PUBLISHER_NAME = "MemberOpsClient.publisher"
+        // for watching the config changes
+        const val CONFIG_HANDLE_NAME = "MemberOpsClient.configHandle"
+        // for checking the components' health
+        const val COMPONENT_HANDLE_NAME = "MemberOpsClient.componentHandle"
+
         private val clock = UTCClock()
     }
 
@@ -96,12 +102,6 @@ class MemberResourceClientImpl @Activate constructor(
     }
 
     private var impl: InnerMemberOpsClient = InactiveImpl
-
-    // for watching the config changes
-    private var configHandle: AutoCloseable? = null
-
-    // for checking the components' health
-    private var componentHandle: AutoCloseable? = null
 
     private val coordinator = coordinatorFactory.createCoordinator<MemberResourceClient>(::processEvent)
 
@@ -132,32 +132,44 @@ class MemberResourceClientImpl @Activate constructor(
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                componentHandle?.close()
-                componentHandle = coordinator.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                coordinator.createManagedResource(COMPONENT_HANDLE_NAME) {
+                    coordinator.followStatusChangesByName(
+                        setOf(
+                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        )
                     )
-                )
+                }
             }
 
             is StopEvent -> {
-                componentHandle?.close()
-                configHandle?.close()
+                coordinator.closeManagedResources(
+                    setOf(
+                        COMPONENT_HANDLE_NAME,
+                        CONFIG_HANDLE_NAME,
+                        PUBLISHER_NAME,
+                    )
+                )
                 deactivate("Handling the stop event for component.")
             }
 
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        configHandle?.close()
-                        configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator,
-                            setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
-                        )
+                        coordinator.createManagedResource(CONFIG_HANDLE_NAME) {
+                            configurationReadService.registerComponentForUpdates(
+                                coordinator,
+                                setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
+                            )
+                        }
                     }
 
                     else -> {
-                        configHandle?.close()
+                        coordinator.closeManagedResources(
+                            setOf(
+                                PUBLISHER_NAME,
+                                CONFIG_HANDLE_NAME,
+                            )
+                        )
                         deactivate("Service dependencies have changed status causing this component to deactivate.")
                     }
                 }
@@ -165,13 +177,16 @@ class MemberResourceClientImpl @Activate constructor(
 
             is ConfigChangedEvent -> {
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-                impl = ActiveImpl(
+                val publisher = coordinator.createManagedResource(PUBLISHER_NAME) {
                     publisherFactory.createPublisher(
                         PublisherConfig(
                             ASYNC_CLIENT_ID
                         ),
                         messagingConfig,
                     )
+                }
+                impl = ActiveImpl(
+                    publisher
                 )
                 coordinator.updateStatus(LifecycleStatus.UP, "Dependencies are UP and configuration received.")
             }
@@ -207,23 +222,6 @@ class MemberResourceClientImpl @Activate constructor(
                     ?.holdingIdentity
                     ?: throw CouldNotFindMemberException(memberRegistrationRequest.holdingIdentityShortHash)
             try {
-                val context = keyValuePairListSerializer.serialize(
-                    memberRegistrationRequest.context.toWire()
-                )
-                membershipPersistenceClient.persistRegistrationRequest(
-                    holdingIdentity,
-                    RegistrationRequest(
-                        RegistrationStatus.NEW,
-                        requestId,
-                        holdingIdentity,
-                        ByteBuffer.wrap(context),
-                        CryptoSignatureWithKey(
-                            ByteBuffer.wrap(byteArrayOf()),
-                            ByteBuffer.wrap(byteArrayOf()),
-                            KeyValuePairList(emptyList())
-                        ),
-                    )
-                ).getOrThrow()
                 asyncPublisher.publish(
                     listOf(
                         Record(
@@ -242,13 +240,6 @@ class MemberResourceClientImpl @Activate constructor(
                 ).forEach {
                     it.join()
                 }
-                return RegistrationRequestProgressDto(
-                    requestId,
-                    clock.instant(),
-                    SubmittedRegistrationStatus.SUBMITTED,
-                    "Submitting registration request was successful.",
-                    MemberInfoSubmittedDto(memberRegistrationRequest.context)
-                )
             } catch (e: Exception) {
                 logger.warn(
                     "Could not submit registration request for holding identity ID" +
@@ -260,7 +251,51 @@ class MemberResourceClientImpl @Activate constructor(
                     requestId,
                     null,
                     SubmittedRegistrationStatus.NOT_SUBMITTED,
+                    false,
                     cause.message ?: "No cause was provided for failure.",
+                    MemberInfoSubmittedDto(emptyMap())
+                )
+            }
+            val sent = clock.instant()
+            try {
+                val context = keyValuePairListSerializer.serialize(
+                    memberRegistrationRequest.context.toWire()
+                )
+                membershipPersistenceClient.persistRegistrationRequest(
+                    holdingIdentity,
+                    RegistrationRequest(
+                        RegistrationStatus.NEW,
+                        requestId,
+                        holdingIdentity,
+                        ByteBuffer.wrap(context),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap(byteArrayOf()),
+                            ByteBuffer.wrap(byteArrayOf()),
+                            KeyValuePairList(emptyList())
+                        ),
+                    )
+                ).getOrThrow()
+                return RegistrationRequestProgressDto(
+                    requestId,
+                    sent,
+                    SubmittedRegistrationStatus.SUBMITTED,
+                    true,
+                    "Submitting registration request was successful.",
+                    MemberInfoSubmittedDto(memberRegistrationRequest.context)
+                )
+            } catch (e: Exception) {
+                logger.warn(
+                    "Could not persist registration request for holding identity ID" +
+                        " [${memberRegistrationRequest.holdingIdentityShortHash}].",
+                    e
+                )
+                return RegistrationRequestProgressDto(
+                    requestId,
+                    sent,
+                    SubmittedRegistrationStatus.SUBMITTED,
+                    false,
+                    "Submitting registration request was successful. " +
+                        "The request will be available in the API eventually.",
                     MemberInfoSubmittedDto(emptyMap())
                 )
             }

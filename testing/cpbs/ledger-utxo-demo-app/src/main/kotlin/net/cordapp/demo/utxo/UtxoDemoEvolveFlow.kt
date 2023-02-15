@@ -21,7 +21,7 @@ import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-@InitiatingFlow("utxo-evolve-protocol")
+@InitiatingFlow(protocol = "utxo-evolve-protocol")
 class UtxoDemoEvolveFlow : ClientStartableFlow {
 
     data class EvolveMessage(val update: String, val transactionId: String, val index: Int)
@@ -104,7 +104,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
 }
 
 
-@InitiatedBy("utxo-evolve-protocol")
+@InitiatedBy(protocol = "utxo-evolve-protocol")
 class UtxoEvolveResponderFlow : ResponderFlow {
 
     private val log = LoggerFactory.getLogger(this::class.java)

@@ -27,7 +27,7 @@ import java.time.Instant
  * TODO expand description
  */
 
-@InitiatingFlow("utxo-flow-protocol")
+@InitiatingFlow(protocol = "utxo-flow-protocol")
 class UtxoDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>, val notary: String)
 
@@ -101,7 +101,7 @@ class UtxoDemoFlow : ClientStartableFlow {
     }
 }
 
-@InitiatedBy("utxo-flow-protocol")
+@InitiatedBy(protocol = "utxo-flow-protocol")
 class UtxoResponderFlow : ResponderFlow {
 
     private companion object {

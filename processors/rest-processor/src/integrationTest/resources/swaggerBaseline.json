@@ -4586,9 +4586,14 @@
         }
       },
       "RegistrationRequestProgress" : {
-        "required" : [ "memberInfoSubmitted", "reason", "registrationId", "registrationStatus" ],
+        "required" : [ "availableNow", "memberInfoSubmitted", "reason", "registrationId", "registrationStatus" ],
         "type" : "object",
         "properties" : {
+          "availableNow" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
           "memberInfoSubmitted" : {
             "$ref" : "#/components/schemas/MemberInfoSubmitted"
           },

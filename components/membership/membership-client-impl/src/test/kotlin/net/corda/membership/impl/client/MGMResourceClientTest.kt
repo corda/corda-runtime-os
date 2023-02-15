@@ -217,7 +217,6 @@ class MGMResourceClientTest {
         on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
             val function: () -> Resource = it.getArgument(1)
             function.invoke()
-            Unit
         }
     }
 

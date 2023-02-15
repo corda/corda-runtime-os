@@ -1,6 +1,6 @@
 package net.corda.applications.workers.rpc
 
-import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rpc.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.TestMethodOrder
 /**
  * Confirms that certain roles been pre-created at cluster bootstrap time
  */
-@SkipWhenRpcEndpointUnavailable
+@SkipWhenRestEndpointUnavailable
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CheckClusterRolesE2eTest {
 

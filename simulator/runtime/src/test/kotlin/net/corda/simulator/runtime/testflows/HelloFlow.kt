@@ -17,7 +17,7 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 
-@InitiatingFlow("hello")
+@InitiatingFlow(protocol = "hello")
 class HelloFlow : ClientStartableFlow {
 
     @CordaInject

@@ -179,7 +179,7 @@ class VirtualNodeRepositoryTest {
     @Test
     fun `put throws when Holding Identity does not exist`() {
         val hi = HoldingIdentity(
-            MemberX500Name.Companion.parse("C=GB,L=London,O=Test"),
+            MemberX500Name.parse("C=GB,L=London,O=Test"),
             "group"
         )
         val cpiId = CpiIdentifier("cpi ${UUID.randomUUID()}", "1.0", TestRandom.secureHash())

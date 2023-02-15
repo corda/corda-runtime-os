@@ -28,7 +28,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-@InitiatingFlow("utxo-backchain-resolution-protocol")
+@InitiatingFlow(protocol = "utxo-backchain-resolution-protocol")
 class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
 
@@ -247,7 +247,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
     }
 }
 
-@InitiatedBy("utxo-backchain-resolution-protocol")
+@InitiatedBy(protocol = "utxo-backchain-resolution-protocol")
 class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
 
     private companion object {

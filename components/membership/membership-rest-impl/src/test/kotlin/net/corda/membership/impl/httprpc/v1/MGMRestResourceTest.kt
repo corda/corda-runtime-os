@@ -562,7 +562,7 @@ class MGMRestResourceTest {
 
             verify(mgmResourceClient).mutualTlsAllowClientCertificate(
                 HOLDING_IDENTITY_ID.shortHash(),
-                MemberX500Name.Companion.parse(subject),
+                MemberX500Name.parse(subject),
             )
         }
     }
@@ -618,7 +618,7 @@ class MGMRestResourceTest {
 
             verify(mgmResourceClient).mutualTlsDisallowClientCertificate(
                 HOLDING_IDENTITY_ID.shortHash(),
-                MemberX500Name.Companion.parse(subject),
+                MemberX500Name.parse(subject),
             )
         }
     }

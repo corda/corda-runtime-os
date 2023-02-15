@@ -5,6 +5,7 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
+import net.corda.ledger.utxo.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -32,7 +33,7 @@ data class UtxoSignedTransactionImpl(
 
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
-        // TODO(CORE-7237 Check WireTx's metadata's ledger type and allow only the matching ones.)
+        verifyMetadata(wireTransaction.metadata)
     }
 
     private val wrappedWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)

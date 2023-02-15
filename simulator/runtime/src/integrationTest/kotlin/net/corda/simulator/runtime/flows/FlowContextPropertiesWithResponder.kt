@@ -59,7 +59,7 @@ class FlowContextPropertiesInitiator : ClientStartableFlow{
     }
 }
 
-@InitiatedBy("flow-context-2")
+@InitiatedBy(protocol = "flow-context-2")
 class FlowContextPropertiesResponder : ResponderFlow {
     @CordaInject
     lateinit var flowEngine: FlowEngine

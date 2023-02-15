@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
@@ -74,7 +73,7 @@ class MembershipGroupPolicyValidatorImplTest {
         @Test
         fun `start event follow changes`() {
             val creator = argumentCaptor<() -> Resource>()
-            whenever(coordinator.createManagedResource(any(), creator.capture())).doAnswer { }
+            whenever(coordinator.createManagedResource(any(), creator.capture())).doReturn(mock())
 
             handler.firstValue.processEvent(StartEvent(), coordinator)
             creator.firstValue.invoke()

@@ -16,7 +16,6 @@ class SoftKeyMapConfig(
 )
 
 class SoftWrappingKeyMapConfig(
-    val name: String,
     val salt: String,
     val passphrase: String,
     val cache: SoftCacheConfig
