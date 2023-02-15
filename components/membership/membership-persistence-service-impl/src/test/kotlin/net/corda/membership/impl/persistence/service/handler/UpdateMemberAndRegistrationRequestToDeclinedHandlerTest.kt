@@ -28,7 +28,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -43,6 +43,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.LockModeType
 
 class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
     private val clock = TestClock(Instant.ofEpochMilli(0))
@@ -94,6 +95,9 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
             )
         } doReturn factory
     }
+    private val requestEntity = mock<RegistrationRequestEntity> {
+        on { status } doReturn RegistrationStatus.PENDING_MEMBER_VERIFICATION.name
+    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
     private val service = PersistenceHandlerServices(
@@ -119,7 +123,16 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
     @Test
     fun `invoke does not throw exception if member cannot be found`() {
         mockMemberQuery(member, null)
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(mock())
+        val requestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
 
         assertDoesNotThrow {
             handler.invoke(context, request)
@@ -131,7 +144,13 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
         val entity = mock<MemberInfoEntity>()
 
         mockMemberQuery(member, entity)
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(null)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            ),
+        ).doReturn(null)
 
         assertThrows<MembershipPersistenceException> {
             handler.invoke(context, request)
@@ -156,8 +175,16 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
         }
 
         mockMemberQuery(member, entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        val requestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
 
 
         clock.setTime(Instant.ofEpochMilli(500))
@@ -186,13 +213,21 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
         }
 
         mockMemberQuery(member, entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        val requestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
 
         clock.setTime(Instant.ofEpochMilli(500))
         handler.invoke(context, request)
 
-        Assertions.assertThat(mgmContextCapture.firstValue.items).containsExactly(
+        assertThat(mgmContextCapture.firstValue.items).containsExactly(
             KeyValuePair(MemberInfoExtension.STATUS, MemberInfoExtension.MEMBER_STATUS_DECLINED),
             KeyValuePair("another-key", "value"),
         )
@@ -218,7 +253,13 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
 
         mockMemberQuery(member, entity)
         val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
 
         clock.setTime(Instant.ofEpochMilli(500))
         assertThrows<CordaRuntimeException> {
@@ -236,7 +277,13 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
 
         mockMemberQuery(member, entity)
         val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
 
         clock.setTime(Instant.ofEpochMilli(500))
         assertThrows<MembershipPersistenceException> {
@@ -262,8 +309,16 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
             on { mgmContext } doReturn mgmContextBytes
         }
         mockMemberQuery(member, entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        val requestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
 
         clock.setTime(Instant.ofEpochMilli(500))
         handler.invoke(context, request)
@@ -279,8 +334,16 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
             on { mgmContext } doReturn byteArrayOf(2)
         }
         mockMemberQuery(member, entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        val requestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
 
         val mgmContext = KeyValuePairList(
             listOf(
@@ -297,7 +360,53 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
 
         val result = handler.invoke(context, request)
 
-        Assertions.assertThat(result).isInstanceOf(Unit::class.java)
+        assertThat(result).isInstanceOf(Unit::class.java)
+    }
+
+    @Test
+    fun `invoke will not decline an approve member`() {
+        whenever(requestEntity.status).doReturn(RegistrationStatus.APPROVED.name)
+        val mgmContextBytes = byteArrayOf(1, 10)
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.STATUS, MemberInfoExtension.MEMBER_STATUS_PENDING)))
+        )
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
+        val entity = mock<MemberInfoEntity> {
+            on { mgmContext } doReturn mgmContextBytes
+        }
+        val requestId = "requestId"
+        whenever(
+            entityManager.find(
+                eq(MemberInfoEntity::class.java),
+                eq(
+                    MemberInfoEntityPrimaryKey(
+                        groupId = member.groupId,
+                        memberX500Name = member.x500Name,
+                    )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(entity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
+        val context = MembershipRequestContext(
+            clock.instant(),
+            "id",
+            HoldingIdentity(member.x500Name, "group"),
+        )
+        val request = UpdateMemberAndRegistrationRequestToDeclined(
+            HoldingIdentity(member.x500Name, "group"),
+            requestId,
+        )
+
+        assertThrows<MembershipPersistenceException> {
+            handler.invoke(context, request)
+        }
     }
 
     private fun mockMemberQuery(
@@ -312,7 +421,8 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
                         groupId = holdingId.groupId,
                         memberX500Name = holdingId.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
             )
         ).doReturn(entity)
     }

@@ -61,6 +61,7 @@ class MemberRegistrationRestResourceTest {
         "RequestId",
         clock.instant(),
         SubmittedRegistrationStatus.SUBMITTED,
+        true,
         "",
         MemberInfoSubmittedDto(emptyMap())
     )
