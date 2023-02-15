@@ -153,12 +153,6 @@ class MemberResourceClientImpl @Activate constructor(
             }
 
             is RegistrationStatusChangeEvent -> {
-                coordinator.closeManagedResources(
-                    setOf(
-                        PUBLISHER_NAME,
-                        CONFIG_HANDLE_NAME,
-                    )
-                )
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         coordinator.createManagedResource(CONFIG_HANDLE_NAME) {
@@ -170,6 +164,12 @@ class MemberResourceClientImpl @Activate constructor(
                     }
 
                     else -> {
+                        coordinator.closeManagedResources(
+                            setOf(
+                                PUBLISHER_NAME,
+                                CONFIG_HANDLE_NAME,
+                            )
+                        )
                         deactivate("Service dependencies have changed status causing this component to deactivate.")
                     }
                 }
