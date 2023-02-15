@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@CORE-3819/add-properties-helper') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',
