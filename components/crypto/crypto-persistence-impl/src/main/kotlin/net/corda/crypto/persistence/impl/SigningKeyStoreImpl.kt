@@ -285,7 +285,7 @@ class SigningKeyStoreImpl @Activate constructor(
                     SigningKeyEntity::class.java
                 ).setParameter("tenantId", tenantId)
                     .setParameter("fullKeyId", fullKeyId)
-                    .singleResult
+                    .resultList.singleOrNull()
             }
 
         private fun findKeysByFullIds(tenantId: String, fullKeyIds: List<String>): Collection<SigningKeyEntity> =
