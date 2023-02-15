@@ -146,8 +146,7 @@ class MemberProcessorIntegrationTest {
         private val clusterDb = TestDbInfo.createConfig()
 
         private val cryptoDb = TestDbInfo(
-            name = CordaDb.Crypto.persistenceUnitName,
-            schemaName = DbSchema.CRYPTO
+            name = CordaDb.Crypto.persistenceUnitName
         )
 
         private val aliceVNodeDb = TestDbInfo(

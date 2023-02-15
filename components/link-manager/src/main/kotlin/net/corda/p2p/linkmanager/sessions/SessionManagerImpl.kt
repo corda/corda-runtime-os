@@ -528,7 +528,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val tenantId = ourIdentityInfo.sessionKeyTenantId
+        val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
 
         val signWithOurGroupId = { data: ByteArray ->
             cryptoOpsClient.sign(
@@ -747,7 +747,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val tenantId = ourIdentityInfo.sessionKeyTenantId
+        val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
 
         val response = try {
             val ourPublicKey = ourIdentityInfo.sessionPublicKey

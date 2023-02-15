@@ -16,6 +16,9 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.lib.toMap
@@ -33,6 +36,7 @@ import net.corda.v5.membership.MemberContext
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class ProcessMemberVerificationResponseHandler(
@@ -54,7 +58,11 @@ internal class ProcessMemberVerificationResponseHandler(
 
     override val commandType = ProcessMemberVerificationResponse::class.java
 
-    override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationResponse): RegistrationHandlerResult {
+    override fun invoke(
+        state: RegistrationState?,
+        key: String,
+        command: ProcessMemberVerificationResponse
+    ): RegistrationHandlerResult {
         if (state == null) throw MissingRegistrationStateException
         val registrationId = state.registrationId
         val mgm = state.mgm
@@ -71,10 +79,14 @@ internal class ProcessMemberVerificationResponseHandler(
                 throw CordaRuntimeException(message)
             }
             if (memberTypeChecker.isMgm(member)) {
-                throw CordaRuntimeException("Member ${member.x500Name} is an MGM and can not register.")
+                throw CordaRuntimeException(
+                    "Member ${member.x500Name} is an MGM and can not register."
+                )
             }
             if (!memberTypeChecker.isMgm(mgm)) {
-                throw CordaRuntimeException("Member ${mgm.x500Name} is not an MGM and can not process member's registration.")
+                throw CordaRuntimeException(
+                    "Member ${mgm.x500Name} is not an MGM and can not process member's registration."
+                )
             }
 
             val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId)
@@ -127,26 +139,74 @@ internal class ProcessMemberVerificationResponseHandler(
         member: HoldingIdentity,
         registrationId: String
     ): RegistrationStatus {
-        val proposedMemberInfo = membershipQueryClient.queryRegistrationRequestStatus(mgm, registrationId)
-            .getOrThrow()?.memberContext?.toMap() ?: throw CordaRuntimeException(
-            "Could not read the proposed MemberInfo for registration request (ID=$registrationId) submitted by ${member.x500Name}."
-        )
+        val proposedMemberInfo = membershipQueryClient
+            .queryRegistrationRequestStatus(mgm, registrationId)
+            .getOrThrow()
+            ?.memberContext
+            ?.toMap()
+            ?: throw CordaRuntimeException(
+                "Could not read the proposed MemberInfo for registration request " +
+                        "(ID=$registrationId) submitted by ${member.x500Name}."
+            )
 
-        val activeMemberInfo = with(membershipGroupReaderProvider.getGroupReader(mgm)) {
-            lookup(member.x500Name)?.memberProvidedContext?.toMap()
-        }
+        val activeMemberInfo = membershipGroupReaderProvider
+            .getGroupReader(mgm)
+            .lookup(member.x500Name)
+            ?.takeIf { it.status != MEMBER_STATUS_PENDING }
+            ?.memberProvidedContext
+            ?.toMap()
 
-        val rules = membershipQueryClient.getApprovalRules(mgm, ApprovalRuleType.STANDARD).getOrThrow()
+        val preAuthToken = proposedMemberInfo[PRE_AUTH_TOKEN]
+
+        val approvalRuleType = preAuthToken?.let {
+            val tokenExists = membershipQueryClient.queryPreAuthTokens(
+                mgm,
+                member.x500Name,
+                UUID.fromString(it),
+                false
+            ).getOrThrow().isNotEmpty()
+
+            if (tokenExists) {
+                ApprovalRuleType.PREAUTH
+            } else {
+                throw InvalidPreAuthTokenException("Pre-auth token ID is invalid.")
+            }
+        } ?: ApprovalRuleType.STANDARD
+
+        val rules = membershipQueryClient
+            .getApprovalRules(mgm, approvalRuleType)
+            .getOrThrow()
             .map { RegistrationRule.Impl(it.ruleRegex.toRegex()) }
 
-        return with(RegistrationRulesEngine.Impl(rules)) {
-            if (requiresManualApproval(proposedMemberInfo, activeMemberInfo)) {
-                RegistrationStatus.PENDING_MANUAL_APPROVAL
-            } else {
-                RegistrationStatus.PENDING_AUTO_APPROVAL
-            }
+        preAuthToken?.let {
+            // Consume token after retrieving rules.
+            membershipPersistenceClient.consumePreAuthToken(
+                mgm,
+                member.x500Name,
+                parsePreAuthToken(it)
+            ).getOrThrow()
+        }
+
+        return if (RegistrationRulesEngine.Impl(rules).requiresManualApproval(proposedMemberInfo, activeMemberInfo)) {
+            RegistrationStatus.PENDING_MANUAL_APPROVAL
+        } else {
+            RegistrationStatus.PENDING_AUTO_APPROVAL
         }
     }
+
+    private fun parsePreAuthToken(input: String): UUID {
+        return try {
+            UUID.fromString(input)
+        } catch (e: IllegalArgumentException) {
+            logger.warn(
+                "Pre-auth token is incorrectly formatted and should have been handled when starting the " +
+                        "registration.", e
+            )
+            throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. A valid UUID is expected.")
+        }
+    }
+
+    class InvalidPreAuthTokenException(msg: String) : CordaRuntimeException(msg)
 
     private fun MemberContext.toMap() = entries.associate { it.key to it.value }
 }

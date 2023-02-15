@@ -15,6 +15,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
@@ -24,8 +25,10 @@ class UtxoReceiveFinalityFlow(
 ) : UtxoFinalityBase() {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(UtxoReceiveFinalityFlow::class.java)
     }
+
+    override val log: Logger = UtxoReceiveFinalityFlow.log
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {

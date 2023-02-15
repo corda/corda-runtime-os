@@ -16,14 +16,12 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 @CordaSystemFlow
 abstract class ConsensualFinalityBase : SubFlow<ConsensualSignedTransaction> {
 
-    private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
+    abstract val log: Logger
 
     @CordaInject
     lateinit var transactionSignatureService: TransactionSignatureService
