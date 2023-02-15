@@ -11,7 +11,10 @@
     },
     {
       "name": "fileName",
-      "type": "string",
+      "type": [
+        "null",
+        "string"
+      ],
       "doc": "the filename, if any, that this binary originated from"
     },
     {
