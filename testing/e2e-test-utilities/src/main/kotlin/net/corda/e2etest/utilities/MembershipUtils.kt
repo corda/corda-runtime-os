@@ -159,7 +159,7 @@ fun register(
                     && it.toJson().get("registrationStatus")?.textValue() == REGISTRATION_SUBMITTED
         }
         failMessage("Failed to register to the network '$holdingIdentityShortHash'")
-    }.toJson().textValue()
+    }.toJson().get("registrationId")!!.textValue()
 }.also {
     if (waitForApproval) {
         waitForRegistrationStatus(

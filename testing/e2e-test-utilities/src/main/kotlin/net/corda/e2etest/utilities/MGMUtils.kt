@@ -193,18 +193,15 @@ fun getPreAuthTokens(
     mgmHoldingId: String,
     tokenId: String? = null,
     ownerX500name: String? = null,
-    viewinactive: Boolean? = null
+    viewInactive: Boolean = false
 ) = cluster(clusterConfig) {
-    val queries = mutableListOf<String>().apply {
+    val queries = mutableListOf(
+        "viewinactive=$viewInactive"
+    ).apply {
         tokenId?.let { add("preauthtokenid=$it") }
         ownerX500name?.let { add("ownerx500name=${encode(it, defaultCharset())}") }
-        viewinactive?.let { add("viewinactive=$it") }
     }
-    val query = if (queries.isNotEmpty()) {
-        queries.joinToString(prefix = "?", separator = "&")
-    } else {
-        ""
-    }
+    val query = queries.joinToString(prefix = "?", separator = "&")
     assertWithRetry {
         timeout(10.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/preauthtoken$query") }
@@ -251,7 +248,7 @@ fun approveRegistration(
         assertWithRetry {
             timeout(10.seconds)
             command { post("/api/v1/mgm/$mgmHoldingId/approve/$registrationId", "") }
-            condition { it.code == ResponseCode.OK.statusCode }
+            condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
 }
@@ -267,7 +264,10 @@ fun declineRegistration(
     cluster(clusterConfig) {
         assertWithRetry {
             timeout(10.seconds)
-            command { post("/api/v1/mgm/$mgmHoldingId/decline/$registrationId", "") }
+            command { post(
+                "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
+                "{\"reason\":\"Declined by automated test with runId $testRunUniqueId.\"}")
+            }
             condition { it.code == ResponseCode.OK.statusCode }
         }
     }

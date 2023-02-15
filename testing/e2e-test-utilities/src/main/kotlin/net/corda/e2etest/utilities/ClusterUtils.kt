@@ -195,12 +195,7 @@ fun keyExists(
 ): Boolean {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-        assertWithRetry {
-            command { getKey(tenantId, category, alias, ids) }
-            condition { it.code == ResponseCode.OK.statusCode }
-            failMessage(
-                "Failed to get key for holding id '$tenantId', category '$category', alias '$alias' and IDs '$ids'"
-            )
-        }.toJson().fieldNames().hasNext()
+        val result = getKey(tenantId, category, alias, ids)
+        result.code == ResponseCode.OK.statusCode && result.toJson().fieldNames().hasNext()
     }
 }
