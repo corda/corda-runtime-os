@@ -8,15 +8,16 @@ import java.security.PublicKey;
 import java.util.List;
 
 /**
- * The member information consists of two parts:
- * - Member provided context: Parameters added and signed by member as part of the initial MemberInfo proposal.
- * - MGM provided context: Parameters added by MGM as a part of member acceptance.
+ * <p>The member information consists of two parts; The member provided context which consists of parameters added and
+ * signed by member as part of the initial MemberInfo proposal, and the MGM provided context which consists of
+ * parameters added by MGM as a part of member acceptance.</p>
  *
- * Internally visible properties are accessible via extension properties.
+ * <p>Internally visible properties are accessible via extension properties.</p>
  *
- * Example usages:
+ * <p>Example usages:</p>
  *
- * ```java
+ * <p>Java:</p>
+ * <pre>{@code
  * MGMContext mgmContext = memberInfo.getMgmProvidedContext();
  * MemberContext memberContext = memberInfo.getMemberProvidedContext();
  * MemberX500Name x500Name = memberInfo.getName();
@@ -25,9 +26,10 @@ import java.util.List;
  * int platformVersion = memberInfo.getPlatformVersion();
  * PublicKey sessionKey = memberInfo.getSessionInitiationKey();
  * Boolean isActive = memberInfo.isActive();
- * ```
+ * }</pre>
  *
- * ```kotlin
+ * <p>Kotlin:</p>
+ * <pre>{@code
  * val mgmContext: MGMContext = memberInfo.mgmProvidedContext
  * val memberContext: MemberContext = memberInfo.memberProvidedContext
  * val x500Name: MemberX500Name = memberInfo.name
@@ -36,7 +38,7 @@ import java.util.List;
  * val platformVersion: Int = memberInfo.platformVersion
  * val sessionKey: PublicKey = memberInfo.sessionInitiationKey
  * val isActive: Boolean = memberInfo.isActive
- * ```
+ * }</pre>
  */
 @CordaSerializable
 public interface MemberInfo {
@@ -75,7 +77,7 @@ public interface MemberInfo {
     int getPlatformVersion();
 
     /**
-     * @return An arbitrary number incremented each time the [MemberInfo] is changed.
+     * @return An arbitrary number incremented each time the {@link MemberInfo} is changed.
      */
     long getSerial();
 

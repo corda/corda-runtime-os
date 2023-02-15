@@ -4,23 +4,25 @@ import net.corda.v5.base.annotations.CordaSerializable;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Information about a virtual node's endpoint (e.g. a virtual node's peer-to-peer gateway endpoint).
+ * <p>Information about a virtual node's endpoint (e.g. a virtual node's peer-to-peer gateway endpoint).</p>
  *
- * Example usages:
+ * <p>Example usages:</p>
  *
- * ```java
+ * <p>Java:</p>
+ * <pre>{@code
  * MemberInfo memberInfo = memberLookup.myInfo();
  * List<EndpointInfo> endpoints = memberInfo.getMemberProvidedContext().parseList("corda.endpoints", EndpointInfo.class);
  * String url = endpoints.get(0).getUrl();
  * int protocolVersion = endpoints.get(0).getProtocolVersion();
- * ```
+ * }</pre>
  *
- * ``` kotlin
+ * <p>Kotlin:</p>
+ * <pre>{@code
  * val memberInfo = memberLookup.myInfo()
  * val endpoints = memberInfo.memberProvidedContext.parseList("corda.endpoints", EndpointInfo::class.java)
  * val url = endpoints.first().url
  * val protocolVersion = endpoints.first().protocolVersion
- * ```
+ * }</pre>>
  */
 @CordaSerializable
 public interface EndpointInfo {
@@ -32,7 +34,7 @@ public interface EndpointInfo {
 
     /**
      * @return Version of end-to-end authentication protocol. If multiple versions are supported, multiple instances of
-     * [EndpointInfo] can be created, each using a different protocol version.
+     * {@link EndpointInfo} can be created, each using a different protocol version.
      */
     int getProtocolVersion();
 }

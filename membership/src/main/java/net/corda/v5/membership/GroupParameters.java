@@ -8,30 +8,32 @@ import java.time.Instant;
 import java.util.Collection;
 
 /**
- * This interface represents a set of group parameters under which all members of a group are expected to abide by.
- * Parameters are stored as a [LayeredPropertyMap] and exposed via interface properties.
+ * <p>This interface represents a set of group parameters under which all members of a group are expected to abide by.
+ * Parameters are stored as a {@link LayeredPropertyMap} and exposed by get methods.</p>
  *
- * Note: any values in the group parameters values map need to be
+ * <p>Note: any values in the group parameters values map need to be
  * a.) serializable for P2P (AMQP) and checkpoints (Kryo)
- * b.) comparable with .equals()
+ * b.) comparable with .equals() </p>
  *
- * Example usages:
+ * <p>Example usages:</p>
  *
- * ```java
+ * <p>Java:</p>
+ * <pre>{@code
  * GroupParameters groupParameters = fullTransaction.getMembershipParameters();
  * int minimumPlatformVersion = groupParameters.getMinimumPlatformVersion();
  * Instant modifiedTime = groupParameters.getModifiedTime();
  * int epoch = groupParameters.getEpoch();
  * Collection<NotaryInfo> notaries = groupParameters.getNotaries();
- * ```
+ * }</pre>
  *
- * ```kotlin
+ * <p>Kotlin:</p>
+ * <pre>{@code
  * val groupParameters = fullTransaction.membershipParameters
  * val minimumPlatformVersion = groupParameters?.minimumPlatformVersion
  * val modifiedTime = groupParameters?.modifiedTime
  * val epoch = groupParameters?.epoch
  * val notaries = groupParameters?.notaries
- * ```
+ * }</pre>
  */
 @CordaSerializable
 public interface GroupParameters extends LayeredPropertyMap {
@@ -42,12 +44,12 @@ public interface GroupParameters extends LayeredPropertyMap {
     int getMinimumPlatformVersion();
 
     /**
-     * @return The [Instant] representing the last time the group parameters were modified.
+     * @return The {@link Instant} representing the last time the group parameters were modified.
      */
     @NotNull Instant getModifiedTime();
 
     /**
-     * @return An [Int] representing the version of the group parameters. This is incremented on each modification to
+     * @return An int representing the version of the group parameters. This is incremented on each modification to
      * the group parameters.
      */
     int getEpoch();
