@@ -20,7 +20,8 @@ class MessagingChunkFactoryImplTest {
     private val chunkBuilderService: ChunkBuilderService = mock()
     private val cordaAvroFactory: CordaAvroSerializationFactory = mock()
     private val platformDigestService: PlatformDigestService = mock()
-    private val messagingChunkFactory: MessagingChunkFactory = MessagingChunkFactoryImpl(chunkBuilderService, cordaAvroFactory, platformDigestService)
+    private val messagingChunkFactory: MessagingChunkFactory =
+        MessagingChunkFactoryImpl(chunkBuilderService, cordaAvroFactory, platformDigestService)
 
     @BeforeEach
     fun setup() {
