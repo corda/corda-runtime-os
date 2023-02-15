@@ -12,6 +12,7 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
@@ -28,7 +29,6 @@ import net.corda.crypto.persistence.category
 import net.corda.crypto.persistence.createdAfter
 import net.corda.crypto.persistence.createdBefore
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
-import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.externalId
 import net.corda.crypto.persistence.masterKeyAlias
@@ -42,7 +42,6 @@ import net.corda.orm.utils.use
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -202,18 +201,9 @@ class SigningKeyStoreImpl @Activate constructor(
 
         // TODO Add caching
         fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
-            // TODO Change to use full key ids
-            val keyId = publicKey.publicKeyId()
+            val fullKeyId = publicKey.fullId(keyEncodingService, digestService)
 //            return cache.get(CacheKey(tenantId, publicKey.publicKeyId())) { cacheKey ->
-            return entityManagerFactory(tenantId).use { em ->
-                em.find(
-                    SigningKeyEntity::class.java,
-                    SigningKeyEntityPrimaryKey(
-                        tenantId = tenantId,
-                        keyId = keyId
-                    )
-                )?.toSigningCachedKey()
-            }
+            return findKeyByFullId(tenantId, fullKeyId)?.toSigningCachedKey()
 //            }
         }
 
@@ -250,7 +240,7 @@ class SigningKeyStoreImpl @Activate constructor(
                 return cached.values
             }
             val notFound = keyIds.filter { id -> !cached.containsKey(CacheKey(tenantId, id)) }
-            val fetched = findByKeyIds(tenantId, notFound).map {
+            val fetched = findKeyByIds(tenantId, notFound).map {
                 it.toSigningCachedKey()
             }.distinctBy {
                 it.id
@@ -268,7 +258,7 @@ class SigningKeyStoreImpl @Activate constructor(
             }
 
             val keyIds = _fullKeyIds.map { it.toString() }
-            val fetched = findByFullKeyIds(tenantId, keyIds).map {
+            val fetched = findKeysByFullIds(tenantId, keyIds).map {
                 it.toSigningCachedKey()
             }.distinctBy {
                 it.id
@@ -276,7 +266,7 @@ class SigningKeyStoreImpl @Activate constructor(
             return fetched
         }
 
-        private fun findByKeyIds(tenantId: String, keyIds: Collection<String>): Collection<SigningKeyEntity> =
+        private fun findKeyByIds(tenantId: String, keyIds: Collection<String>): Collection<SigningKeyEntity> =
             entityManagerFactory(tenantId).use { em ->
                 em.createQuery(
                     "FROM SigningKeyEntity WHERE tenantId=:tenantId AND keyId IN(:keyIds)",
@@ -286,7 +276,19 @@ class SigningKeyStoreImpl @Activate constructor(
                     .resultList
             }
 
-        private fun findByFullKeyIds(tenantId: String, fullKeyIds: List<String>): Collection<SigningKeyEntity> =
+        private fun findKeyByFullId(tenantId: String, fullKeyId: String): SigningKeyEntity? =
+            entityManagerFactory(tenantId).use { em ->
+                em.createQuery(
+                    "FROM ${SigningKeyEntity::class.java.simpleName} " +
+                            "WHERE tenantId=:tenantId " +
+                            "AND fullKeyId=:fullKeyId",
+                    SigningKeyEntity::class.java
+                ).setParameter("tenantId", tenantId)
+                    .setParameter("fullKeyId", fullKeyId)
+                    .singleResult
+            }
+
+        private fun findKeysByFullIds(tenantId: String, fullKeyIds: List<String>): Collection<SigningKeyEntity> =
             entityManagerFactory(tenantId).use { em ->
                 em.createQuery(
                     "FROM ${SigningKeyEntity::class.java.simpleName} " +
