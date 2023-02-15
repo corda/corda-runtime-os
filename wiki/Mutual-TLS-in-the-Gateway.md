@@ -1,4 +1,4 @@
-## What is Mutual TLS in Croda 5
+## What is Mutual TLS in Corda 5
 Corda is using TLS to secure a connection between two clusters. While establishing a TLS connection between two gateways, the server gateway will send its certificate to the client gateway. The client gateway will verify the server certificate using its trust root certificate. In mutual TLS, in addition to that, the server gateway will also ask the client gateway to send a client certificate and verify it using its trust root certificate.
 
 Since the gateway manages the TLS connections for an entire cluster, the TLS mode (i.e. mutual or one-way) will be managed by the gateway configuration and will apply to the cluster. That means any group hosted in a mutual TLS cluster has to be a mutual TLS group, and all its members must be hosted on a mutual TLS cluster (see limitation below).
