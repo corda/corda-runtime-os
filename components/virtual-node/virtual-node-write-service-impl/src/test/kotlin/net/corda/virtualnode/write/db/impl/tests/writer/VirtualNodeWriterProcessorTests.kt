@@ -63,7 +63,6 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 
 /** Tests of [VirtualNodeWriterProcessor]. */
