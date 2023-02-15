@@ -23,7 +23,7 @@ internal class EndpointAvailabilityCondition : ExecutionCondition {
     override fun evaluateExecutionCondition(context: ExtensionContext): ConditionEvaluationResult {
 
         val existingAnnotation =
-            AnnotationUtils.findAnnotation(context.element, SkipWhenRpcEndpointUnavailable::class.java)
+            AnnotationUtils.findAnnotation(context.element, SkipWhenRestEndpointUnavailable::class.java)
 
         if (existingAnnotation.isPresent) {
 
@@ -35,7 +35,7 @@ internal class EndpointAvailabilityCondition : ExecutionCondition {
             return if (checkEndpoint()) {
                 ConditionEvaluationResult.enabled("Connection is up")
             } else {
-                "HTTP RPC Connection is down or not forwarded, skipping the test".let {
+                "HTTP REST Connection is down or not forwarded, skipping the test".let {
                     log.warn(it)
                     ConditionEvaluationResult.disabled(it)
                 }

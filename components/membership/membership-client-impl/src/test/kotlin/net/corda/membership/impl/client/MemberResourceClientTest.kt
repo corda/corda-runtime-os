@@ -58,10 +58,12 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -79,11 +81,23 @@ class MemberResourceClientTest {
     private val configHandle: Resource = mock()
 
     private var coordinatorIsRunning = false
+    private val resources = mutableMapOf<String, Resource>()
     private val coordinator: LifecycleCoordinator = mock {
         on { isRunning } doAnswer { coordinatorIsRunning }
         on { start() } doAnswer { coordinatorIsRunning = true }
         on { stop() } doAnswer { coordinatorIsRunning = false }
         on { followStatusChangesByName(any()) } doReturn componentHandle
+        on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
+            resources.compute(it.getArgument(0)) { _, r ->
+                r?.close()
+                it.getArgument<() -> Resource>(1).invoke()
+            }
+        }
+        on { closeManagedResources(any()) } doAnswer {
+            it.getArgument<Collection<String>>(0).forEach { name ->
+                resources.remove(name)?.close()
+            }
+        }
     }
 
     private var lifecycleHandler: LifecycleEventHandler? = null
@@ -168,7 +182,6 @@ class MemberResourceClientTest {
         memberOpsClient.stop()
         assertFalse(memberOpsClient.isRunning)
     }
-
 
     @Test
     fun `start event starts following the statuses of the required dependencies`() {
@@ -266,6 +279,16 @@ class MemberResourceClientTest {
         changeRegistrationStatus(LifecycleStatus.UP)
 
         verify(configHandle).close()
+    }
+
+    @Test
+    fun `second config change will closes the publisher if status was previously UP`() {
+        changeRegistrationStatus(LifecycleStatus.UP)
+        changeConfig()
+
+        changeConfig()
+
+        verify(asyncPublisher).close()
     }
 
     @Test
@@ -503,6 +526,7 @@ class MemberResourceClientTest {
         val result = memberOpsClient.startRegistration(request)
 
         assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
+        assertThat(result.availableNow).isEqualTo(true)
     }
 
     @Test
@@ -536,7 +560,7 @@ class MemberResourceClientTest {
     }
 
     @Test
-    fun `startRegistration will fail if persistence failed`() {
+    fun `startRegistration will be successful if persistence failed`() {
         whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
             .doReturn(MembershipPersistenceResult.Failure("Ooops"))
         memberOpsClient.start()
@@ -544,18 +568,19 @@ class MemberResourceClientTest {
 
         val result = memberOpsClient.startRegistration(request)
 
-        assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.NOT_SUBMITTED)
+        assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
+        assertThat(result.availableNow).isEqualTo(false)
     }
 
     @Test
-    fun `startRegistration will not try to register if persistence failed`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .doReturn(MembershipPersistenceResult.Failure("Ooops"))
+    fun `startRegistration will not try to persist if published will fail`() {
+        whenever(asyncPublisher.publish(any()))
+            .doThrow(CordaRuntimeException(""))
         memberOpsClient.start()
         setUpConfig()
 
         memberOpsClient.startRegistration(request)
 
-        verify(asyncPublisher, never()).publish(any())
+        verifyNoInteractions(membershipPersistenceClient)
     }
 }

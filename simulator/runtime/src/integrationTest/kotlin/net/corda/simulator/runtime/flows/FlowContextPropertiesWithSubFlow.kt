@@ -93,7 +93,7 @@ class FlowContextPropertiesSubFlow2 : SubFlow<FlowContextProperties> {
     }
 }
 
-@InitiatedBy("flow-context-2")
+@InitiatedBy(protocol = "flow-context-2")
 class FlowContextPropertiesSubFlowResponder : ResponderFlow {
     @CordaInject
     lateinit var flowEngine: FlowEngine

@@ -419,7 +419,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
         // 5. Serialization service has no part in this testing so just returning a dummy
         val mockSerializationService = mock<SerializationService> {
-            on { serialize(any()) } doReturn SerializedBytes("ABC".toByteArray())
+            on { serialize(any<Any>()) } doReturn SerializedBytes("ABC".toByteArray())
         }
 
         val server = NonValidatingNotaryServerFlowImpl(

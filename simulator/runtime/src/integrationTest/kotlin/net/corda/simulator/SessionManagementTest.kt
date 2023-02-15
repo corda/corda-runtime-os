@@ -27,7 +27,7 @@ class SessionManagementTest {
         val bob = createMember("Bob")
         val charlie =createMember("Charlie")
 
-        @InitiatingFlow("send-receive")
+        @InitiatingFlow(protocol = "send-receive")
         class InitiatingSendingFlow: ClientStartableFlow {
             @CordaInject
             private lateinit var flowMessaging: FlowMessaging
@@ -40,7 +40,7 @@ class SessionManagementTest {
             }
         }
 
-        @InitiatedBy("send-receive")
+        @InitiatedBy(protocol = "send-receive")
         class ReceivingAndSendingOnFlow: ResponderFlow {
             @CordaInject
             private lateinit var flowEngine: FlowEngine
@@ -53,7 +53,7 @@ class SessionManagementTest {
             }
         }
 
-        @InitiatingFlow("receive-send")
+        @InitiatingFlow(protocol = "receive-send")
         class SendingOnSubFlow: SubFlow<String> {
             @CordaInject
             private lateinit var flowMessaging: FlowMessaging

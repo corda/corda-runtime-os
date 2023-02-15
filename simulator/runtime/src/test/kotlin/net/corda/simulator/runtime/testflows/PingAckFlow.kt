@@ -13,7 +13,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
-@InitiatingFlow("ping-ack")
+@InitiatingFlow(protocol = "ping-ack")
 class PingAckFlow : ClientStartableFlow {
 
     @CordaInject
@@ -31,7 +31,7 @@ class PingAckFlow : ClientStartableFlow {
     }
 }
 
-@InitiatedBy("ping-ack")
+@InitiatedBy(protocol = "ping-ack")
 class PingAckResponderFlow : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {

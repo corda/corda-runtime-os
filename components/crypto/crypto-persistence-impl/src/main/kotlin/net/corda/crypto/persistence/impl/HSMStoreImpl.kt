@@ -14,7 +14,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -148,7 +148,7 @@ class HSMStoreImpl @Activate constructor(
         }
 
         private fun generateRandomShortAlias() =
-            UUID.randomUUID().toString().toByteArray().toHex().take(12)
+            toHex(UUID.randomUUID().toString().toByteArray()).take(12)
 
         private fun HSMCategoryAssociationEntity.toHSMAssociation() = HSMAssociationInfo(
             id,

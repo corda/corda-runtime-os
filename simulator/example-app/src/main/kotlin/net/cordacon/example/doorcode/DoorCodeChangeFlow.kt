@@ -26,7 +26,7 @@ import java.security.PublicKey
 /**
  * A flow to ensure that everyone living in a building gets the new door code before it's changed.
  */
-@InitiatingFlow("door-code")
+@InitiatingFlow(protocol = "door-code")
 class DoorCodeChangeFlow : ClientStartableFlow {
 
     private companion object {
@@ -85,7 +85,7 @@ class DoorCodeChangeFlow : ClientStartableFlow {
     }
 }
 
-@InitiatedBy("door-code")
+@InitiatedBy(protocol = "door-code")
 class DoorCodeChangeResponderFlow : ResponderFlow {
 
     private companion object {
