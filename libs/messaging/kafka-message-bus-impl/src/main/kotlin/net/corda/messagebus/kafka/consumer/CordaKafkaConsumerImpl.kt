@@ -50,6 +50,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val vClazz: Class<V>,
 ) : CordaConsumer<K, V> {
 
+    private var currentAssignment = mutableSetOf<Int>()
     private val bufferedRecords = mutableMapOf<Int, List<ConsumerRecord<Any, Any>>>()
 
     companion object {
@@ -66,6 +67,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
+        clearBuffersForUnassignedPartitions()
         val polledRecords = try {
             consumer.poll(timeout)
         } catch (ex: Exception) {
@@ -96,14 +98,28 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         val recordsToReturn = mutableListOf<CordaConsumerRecord<K, V>>()
         polledRecords.groupBy { it.partition() }.forEach { (partition, records) ->
             val bufferedRecords = bufferedRecords[partition] ?: emptyList()
-            log.info(
+            log.trace {
                 "Taking  ${bufferedRecords.size} buffered records from partition $partition and adding them to the polled records" +
                         " of size ${records.size}"
-            )
+            }
             recordsToReturn.addAll(parseRecords(partition, bufferedRecords.plus(records)))
         }
 
         return recordsToReturn.sortedBy { it.timestamp }
+    }
+
+    /**
+     * Check to see if we have been unassigned any partitions and clear the buffered records due to partial read of a chunked record.
+     * Note: this call does not communicate with kafka. it is a field in the KafkaConsumer which is updated within its poll() invocation
+     * after rebalances.
+     */
+    private fun clearBuffersForUnassignedPartitions() {
+        val assignment = consumer.assignment().map { it.partition() }.toMutableSet()
+        if (assignment != currentAssignment) {
+            val buffersToClear = currentAssignment.minus(assignment)
+            buffersToClear.forEach { bufferedRecords.remove(it) }
+            currentAssignment = assignment
+        }
     }
 
     /**
