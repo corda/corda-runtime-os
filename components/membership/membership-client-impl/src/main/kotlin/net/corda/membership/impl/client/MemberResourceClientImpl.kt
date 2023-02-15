@@ -258,6 +258,7 @@ class MemberResourceClientImpl @Activate constructor(
                             ByteBuffer.wrap(byteArrayOf()),
                             KeyValuePairList(emptyList())
                         ),
+                        true
                     )
                 ).getOrThrow()
                 return RegistrationRequestProgressDto(
