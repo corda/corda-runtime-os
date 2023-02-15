@@ -146,7 +146,7 @@ class CertificatesRestResourceImplTest {
         @BeforeEach
         fun setUp() {
             whenever(
-                cryptoOpsClient.lookupKeysByShortIds(
+                cryptoOpsClient.lookupKeysByIds(
                     holdingIdentityShortHash,
                     listOf(ShortHash.of(keyId))
                 )
@@ -171,7 +171,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws exception if key is not available`() {
-            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any())).doReturn(emptyList())
+            whenever(cryptoOpsClient.lookupKeysByIds(any(), any())).doReturn(emptyList())
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
@@ -186,7 +186,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws ServiceUnavailableException when repartition event happens while trying to retrieve key`() {
-            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
+            whenever(cryptoOpsClient.lookupKeysByIds(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 certificatesOps.generateCsr(
@@ -359,7 +359,7 @@ class CertificatesRestResourceImplTest {
         fun `it will throw an exception for session certificate cluster key where the member can not be found`() {
             whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
             whenever(virtualNodeInfoReadService.getAll()).doReturn(emptyList())
-            whenever(cryptoOpsClient.lookupKeysByShortIds(P2P, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByIds(P2P, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
 
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(
@@ -397,7 +397,7 @@ class CertificatesRestResourceImplTest {
                     emptyMap()
                 )
             )
-            whenever(cryptoOpsClient.lookupKeysByShortIds(P2P, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByIds(P2P, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
 
             val csr = certificatesOps.generateCsr(
                 P2P,
@@ -440,7 +440,7 @@ class CertificatesRestResourceImplTest {
                     emptyMap()
                 )
             )
-            whenever(cryptoOpsClient.lookupKeysByShortIds(tenantId, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
 
             val csr = certificatesOps.generateCsr(
                 tenantId,
@@ -483,7 +483,7 @@ class CertificatesRestResourceImplTest {
                     emptyMap()
                 )
             )
-            whenever(cryptoOpsClient.lookupKeysByShortIds(tenantId, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByIds(tenantId, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
 
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(

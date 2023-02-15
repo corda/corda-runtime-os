@@ -134,7 +134,7 @@ class KeysRestResourceImplTest {
                     on { masterKeyAlias } doReturn mka
                 }
             }
-            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any())).doReturn(keys)
+            whenever(cryptoOpsClient.lookupKeysByIds(any(), any())).doReturn(keys)
 
             val list = keysOps.listKeys(
                 tenantId = TENANT_ID,
@@ -250,7 +250,7 @@ class KeysRestResourceImplTest {
 
         @Test
         fun `listKeys will throw ServiceUnavailableException when repartition event happens while trying to lookup keys for tenant`() {
-            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
+            whenever(cryptoOpsClient.lookupKeysByIds(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
                 keysOps.listKeys(
@@ -380,7 +380,7 @@ class KeysRestResourceImplTest {
                 on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
             }
             val decodedPublicKey = mock<PublicKey>()
-            whenever(cryptoOpsClient.lookupKeysByShortIds(holdingIdentityShortHash, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookupKeysByIds(holdingIdentityShortHash, listOf(ShortHash.of(keyId)))).doReturn(listOf(key))
             whenever(keyEncodingService.decodePublicKey(publicKeyBytes)).doReturn(decodedPublicKey)
             whenever(keyEncodingService.encodeAsString(decodedPublicKey)).doReturn("PEM")
 
@@ -393,7 +393,7 @@ class KeysRestResourceImplTest {
         fun `generateKeyPem throws Exception when the key is unknwon`() {
             val keyId = createKeyId("A")
             val holdingIdentityShortHash = "holdingIdentityShortHash"
-            whenever(cryptoOpsClient.lookupKeysByShortIds(holdingIdentityShortHash, listOf(ShortHash.of(keyId)))).doReturn(emptyList())
+            whenever(cryptoOpsClient.lookupKeysByIds(holdingIdentityShortHash, listOf(ShortHash.of(keyId)))).doReturn(emptyList())
 
             assertThrows<ResourceNotFoundException> {
                 keysOps.generateKeyPem(holdingIdentityShortHash, keyId)
@@ -402,7 +402,7 @@ class KeysRestResourceImplTest {
 
         @Test
         fun `generateKeyPem throws ServiceUnavailableException when repartition event happens while trying to lookup keys for tenant`() {
-            whenever(cryptoOpsClient.lookupKeysByShortIds(any(), any()))
+            whenever(cryptoOpsClient.lookupKeysByIds(any(), any()))
                 .doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
