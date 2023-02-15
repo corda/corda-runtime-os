@@ -4,10 +4,9 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
-import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
-import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningSpec
@@ -19,123 +18,66 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
-import net.corda.crypto.softhsm.SoftKeyMap
-import net.corda.crypto.softhsm.SoftWrappingKeyMap
+import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.utilities.debug
-import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.RSA_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.SM2_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.SPHINCS256_CODE_NAME
-import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
+import java.security.PublicKey
 import javax.crypto.Cipher
+import com.github.benmanes.caffeine.cache.Cache
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
+import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.deriveSupportedSchemes
 
-class SoftCryptoService(
-    private val keyMap: SoftKeyMap,
-    private val wrappingKeyMap: SoftWrappingKeyMap,
+val WRAPPING_KEY_ENCODING_VERSION: Int = 1
+val PRIVATE_KEY_ENCODING_VERSION: Int = 1
+
+/**
+ * The heart of the crypto processor.
+ *
+ * @param wrappingKeyStore which provides save and find operations for wrapping keys.
+ * @param schemeMetadata which specifies encryption schemes, digests schemes and a source of randomness
+
+ * This class is all about the business logic of generating, storing and using key pairs; it can be run
+ * without a database, without OSGi and without SmartConfig, which makes it easy to test.
+ */
+open class SoftCryptoService(
+    private val wrappingKeyStore: WrappingKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
-    private val digestService: PlatformDigestService
+    private val rootWrappingKey: WrappingKey,
+    private val wrappingKeyCache: Cache<String, WrappingKey>,
+    private val privateKeyCache: Cache<PublicKey, PrivateKey>
 ) : CryptoService {
+    private val digestService = PlatformDigestServiceImpl(schemeMetadata)
+
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        fun produceSupportedSchemes(schemeMetadata: CipherSchemeMetadata): Map<KeyScheme, List<SignatureSpec>> =
-            mutableMapOf<KeyScheme, List<SignatureSpec>>().apply {
-                addIfSupported(
-                    schemeMetadata, RSA_CODE_NAME, listOf(
-                        SignatureSpec.RSA_SHA256,
-                        SignatureSpec.RSA_SHA384,
-                        SignatureSpec.RSA_SHA512,
-                        SignatureSpec.RSASSA_PSS_SHA256,
-                        SignatureSpec.RSASSA_PSS_SHA384,
-                        SignatureSpec.RSASSA_PSS_SHA512,
-                        SignatureSpec.RSA_SHA256_WITH_MGF1,
-                        SignatureSpec.RSA_SHA384_WITH_MGF1,
-                        SignatureSpec.RSA_SHA512_WITH_MGF1
-                    )
-                )
-                addIfSupported(
-                    schemeMetadata, ECDSA_SECP256K1_CODE_NAME, listOf(
-                        SignatureSpec.ECDSA_SHA256,
-                        SignatureSpec.ECDSA_SHA384,
-                        SignatureSpec.ECDSA_SHA512
-                    )
-                )
-                addIfSupported(
-                    schemeMetadata, ECDSA_SECP256R1_CODE_NAME, listOf(
-                        SignatureSpec.ECDSA_SHA256,
-                        SignatureSpec.ECDSA_SHA384,
-                        SignatureSpec.ECDSA_SHA512
-                    )
-                )
-                addIfSupported(
-                    schemeMetadata, EDDSA_ED25519_CODE_NAME, listOf(
-                        SignatureSpec.EDDSA_ED25519
-                    )
-                )
-                addIfSupported(schemeMetadata, X25519_CODE_NAME, emptyList())
-                addIfSupported(
-                    schemeMetadata, SPHINCS256_CODE_NAME, listOf(
-                        SignatureSpec.SPHINCS256_SHA512
-                    )
-                )
-                addIfSupported(
-                    schemeMetadata, SM2_CODE_NAME, listOf(
-                        SignatureSpec.SM2_SM3
-                    )
-                )
-                addIfSupported(
-                    schemeMetadata, GOST3410_GOST3411_CODE_NAME, listOf(
-                        SignatureSpec.GOST3410_GOST3411
-                    )
-                )
-            }
-
-        private fun MutableMap<KeyScheme, List<SignatureSpec>>.addIfSupported(
-            schemeMetadata: CipherSchemeMetadata,
-            codeName: String,
-            signatures: List<SignatureSpec>
-        ) {
-            if (schemeMetadata.schemes.any { it.codeName == codeName }) {
-                val scheme = schemeMetadata.findKeyScheme(codeName)
-                if(signatures.isNotEmpty()) {
-                    require(scheme.canDo(KeySchemeCapability.SIGN)) {
-                        "Key scheme '${scheme.codeName}' cannot be used for signing."
-                    }
-                }
-                put(scheme, signatures)
-            }
-        }
     }
 
     private val signatureInstances = SignatureInstances(schemeMetadata.providers)
 
-    override val supportedSchemes = produceSupportedSchemes(schemeMetadata)
+    override val supportedSchemes = deriveSupportedSchemes(schemeMetadata)
 
     override val extensions = listOf(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
-        logger.info("createWrappingKey(masterKeyAlias={}, failIfExists={})", masterKeyAlias, failIfExists)
-        val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
-        if (wrappingKeyMap.exists(masterKeyAlias)) {
-            if (failIfExists) {
-                throw IllegalStateException("There is an existing key with the alias: $masterKeyAlias")
-            } else {
-                logger.info(
-                    "Wrapping with alias '$masterKeyAlias' already exists, " +
-                            "continue as normal as failIfExists is false"
-                )
-            }
-        } else {
-            wrappingKeyMap.putWrappingKey(masterKeyAlias, wrappingKey)
+        require(masterKeyAlias != "") { "Alias must not be empty" }
+        val cached = wrappingKeyCache.getIfPresent(masterKeyAlias) != null
+        val available = if (cached) true else wrappingKeyStore.findWrappingKey(masterKeyAlias) != null
+        logger.info("createWrappingKey(alias=$masterKeyAlias failIfExists=$failIfExists) cached=$cached available=$available")
+        if (available) {
+            if (failIfExists) throw IllegalStateException("There is an existing key with the alias: $masterKeyAlias")
+            logger.info("Not creating wrapping key for '$masterKeyAlias' since a key is available")
+            return
         }
+        val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        val wrappedKeyMaterial = rootWrappingKey.wrap(wrappingKey)
+        val wrappingKeyInfo =
+            WrappingKeyInfo(WRAPPING_KEY_ENCODING_VERSION, wrappingKey.algorithm, wrappedKeyMaterial)
+        wrappingKeyStore.saveWrappingKey(masterKeyAlias, wrappingKeyInfo)
+        wrappingKeyCache.put(masterKeyAlias, wrappingKey)
     }
 
     override fun delete(alias: String, context: Map<String, String>): Boolean =
@@ -159,12 +101,17 @@ class SoftCryptoService(
         val provider = schemeMetadata.providers.getValue(spec.keyScheme.providerName)
         return deriveDHSharedSecret(
             provider,
-            keyMap.getPrivateKey(spec.publicKey, spec.keyMaterialSpec),
+            getPrivateKey(spec.publicKey, spec.keyMaterialSpec),
             spec.otherPublicKey
         )
     }
 
-    override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
+    // This is pulled out as a separate method so that it can be overriden and test fixtures can count
+    // the number of times this was called. TODO - Consider add metrics for wrap and unwrap and using those
+    // from the test cases.
+    open fun wrapPrivateKey(wrappingKey: WrappingKey, privateKey: PrivateKey): ByteArray = wrappingKey.wrap(privateKey)
+
+    override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey {
         require(supportedSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
         }
@@ -184,12 +131,10 @@ class SoftCryptoService(
             keyPairGenerator.initialize(spec.keyScheme.keySize!!, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
-        val privateKeyMaterial = keyMap.wrapPrivateKey(keyPair, spec.masterKeyAlias)
-        return GeneratedWrappedKey(
-            publicKey = keyPair.public,
-            keyMaterial = privateKeyMaterial.keyMaterial,
-            encodingVersion = privateKeyMaterial.encodingVersion
-        )
+        val wrappingKey = getWrappingKey(spec.masterKeyAlias)
+        val privateKeyMaterial = wrapPrivateKey(wrappingKey, keyPair.private)
+        privateKeyCache.put(keyPair.public, keyPair.private)
+        return GeneratedWrappedKey(keyPair.public, privateKeyMaterial, PRIVATE_KEY_ENCODING_VERSION)
     }
 
     override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
@@ -206,7 +151,7 @@ class SoftCryptoService(
             "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
         }
         logger.debug { "sign(spec=$spec)" }
-        return sign(spec, keyMap.getPrivateKey(spec.publicKey, spec.keyMaterialSpec), data)
+        return sign(spec, getPrivateKey(spec.publicKey, spec.keyMaterialSpec), data)
     }
 
     private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
@@ -228,4 +173,30 @@ class SoftCryptoService(
     }
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
+
+    fun getWrappingKey(alias: String): WrappingKey = wrappingKeyCache.get(alias) {
+        val wrappingKeyInfo =
+            wrappingKeyStore.findWrappingKey(alias) ?: throw IllegalStateException("The $alias is not created yet.")
+        require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
+            "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
+        }
+        require(rootWrappingKey.algorithm == wrappingKeyInfo.algorithmName) {
+            "Expected algorithm is ${rootWrappingKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+        }
+        rootWrappingKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
+    }
+
+    // See comment on wrapPrivateKey - also pulled out so it can be counted.
+    open fun unwrapPrivateKey(key: WrappingKey, keyMaterial: ByteArray): PrivateKey = key.unwrap(keyMaterial)
+
+    fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey =
+        privateKeyCache.get(publicKey) {
+            unwrapPrivateKey(getWrappingKey(spec.masterKeyAlias), spec.keyMaterial)
+        }
+
+    fun wrappingKeyExists(wrappingKeyAlias: String): Boolean {
+        if (wrappingKeyCache.getIfPresent(wrappingKeyAlias) != null) return true
+        if (wrappingKeyStore.findWrappingKey(wrappingKeyAlias) != null) return true
+        return false
+    }
 }

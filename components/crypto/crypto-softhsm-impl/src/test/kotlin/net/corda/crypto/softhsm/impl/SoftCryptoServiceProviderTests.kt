@@ -1,12 +1,8 @@
 package net.corda.crypto.softhsm.impl
 
-import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.crypto.softhsm.KEY_MAP_CACHING_NAME
-import net.corda.crypto.softhsm.KEY_MAP_TRANSIENT_NAME
 import net.corda.crypto.softhsm.SoftCryptoServiceProvider
-import net.corda.crypto.softhsm.WRAPPING_DEFAULT_NAME
 import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -14,10 +10,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -25,30 +19,16 @@ import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
 class SoftCryptoServiceProviderTests {
-    private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
-    private lateinit var schemeMetadata: CipherSchemeMetadataImpl
-    private lateinit var wrappingKeyStore: TestWrappingKeyStore
-    private lateinit var component: SoftCryptoServiceProviderImpl
-    private lateinit var defaultConfig: SmartConfig
-
-    @BeforeEach
-    fun setup() {
-        defaultConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
-        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-        schemeMetadata = CipherSchemeMetadataImpl()
-        wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
+    private val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+    private val schemeMetadata = CipherSchemeMetadataImpl()
+    private val wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
+        it.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
         }
-        component = SoftCryptoServiceProviderImpl(
-            coordinatorFactory,
-            schemeMetadata,
-            mock(),
-            wrappingKeyStore
-        )
     }
+    private val component = SoftCryptoServiceProviderImpl(coordinatorFactory, schemeMetadata, wrappingKeyStore)
+    private val defaultConfig: SmartConfig = createCustomConfig(KEY_MAP_CACHING_NAME)
 
     @Test
     fun `Should return expected lifecycle coordinator name`() {
@@ -145,7 +125,7 @@ class SoftCryptoServiceProviderTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertThrows<ConfigException.WrongType> {
+        assertThrows<IllegalStateException> {
             component.getInstance(customConfig)
         }
     }
