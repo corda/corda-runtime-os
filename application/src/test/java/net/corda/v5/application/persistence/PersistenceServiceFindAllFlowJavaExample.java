@@ -4,6 +4,7 @@ import net.corda.v5.application.flows.CordaInject;
 import net.corda.v5.application.flows.RestRequestBody;
 import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.base.annotations.CordaSerializable;
+import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
 import java.util.List;
@@ -17,7 +18,7 @@ public class PersistenceServiceFindAllFlowJavaExample implements ClientStartable
     @Entity
     @Table(name = "DOGS")
     @NamedQuery(name = "find_by_name_and_age", query = "SELECT d FROM Dog d WHERE d.name = :name AND d.age <= :maxAge")
-    class Dog {
+    static class Dog {
         @Id
         private UUID id;
         @Column(name = "DOG_NAME", length = 50, nullable = false, unique = false)
@@ -33,7 +34,8 @@ public class PersistenceServiceFindAllFlowJavaExample implements ClientStartable
     public PersistenceService persistenceService;
 
     @Override
-    public String call(RestRequestBody requestBody) {
+    @NotNull
+    public String call(@NotNull RestRequestBody requestBody) {
         // create a named query setting parameters one-by-one, that returns the second page of up to 100 records
         ParameterizedQuery<Dog> pagedQuery = persistenceService
                 .query("find_by_name_and_age", Dog.class)

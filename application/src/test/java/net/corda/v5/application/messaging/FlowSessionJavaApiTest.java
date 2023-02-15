@@ -59,8 +59,8 @@ public class FlowSessionJavaApiTest {
         verify(flowSession, times(1)).close();
     }
 
-    class Message {
-        private String message;
+    static class Message {
+        private final String message;
 
         public Message(String message) {
             this.message = message;

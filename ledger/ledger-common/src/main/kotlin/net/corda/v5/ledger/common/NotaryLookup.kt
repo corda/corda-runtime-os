@@ -18,7 +18,7 @@ interface NotaryLookup {
      *
      * @return A collection of the network's Notary services.
      */
-    @Suspendable
+    @get:Suspendable
     val notaryServices: Collection<NotaryInfo>
 
     /**
