@@ -324,8 +324,8 @@ interface MGMRestResource : RestResource {
 
     /**
      * The [viewRegistrationRequests] method enables you to view registration requests submitted for joining the
-     * membership group. The requests may be optionally filtered by the X.500 name of the requesting member, and/or by
-     * the status of the request (historic or in-progress).
+     * membership group which require a manual review. The requests may be optionally filtered by the X.500 name of the
+     * requesting member, and/or by the status of the request (historic or pending review).
      *
      * Example usage:
      * ```
@@ -336,13 +336,13 @@ interface MGMRestResource : RestResource {
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param requestSubjectX500Name Optional. X.500 name of the subject of the registration request.
-     * @param viewHistoric Optional. Set this to 'true' to view both in-progress and completed (historic) requests.
-     * Defaults to 'false' (in-progress requests only).
+     * @param viewHistoric Optional. Set this to 'true' to view both pending review and completed (historic) requests.
+     * Defaults to 'false' (requests pending review only).
      *
      * @return Registration requests as a collection of [RestRegistrationRequestStatus].
      */
     @HttpGET(
-        path = "{holdingIdentityShortHash}/registrations/",
+        path = "{holdingIdentityShortHash}/registrations",
     )
     fun viewRegistrationRequests(
         @RestPathParameter(

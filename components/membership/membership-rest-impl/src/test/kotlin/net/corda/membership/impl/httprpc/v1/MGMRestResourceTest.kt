@@ -356,69 +356,64 @@ class MGMRestResourceTest {
 
     @Nested
     inner class ViewRegistrationRequestsTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
         @Test
         fun `viewRegistrationRequests delegates correctly to mgm ops client`() {
-            startService()
-
             mgmRestResource.viewRegistrationRequests(HOLDING_IDENTITY_ID)
 
             verify(mgmResourceClient).viewRegistrationRequests(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(null), eq(false))
-            stopService()
         }
 
         @Test
         fun `viewRegistrationRequests throws resource not found for invalid member`() {
-            startService()
             whenever(mgmResourceClient.viewRegistrationRequests(any(), eq(null), eq(false))).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.viewRegistrationRequests(HOLDING_IDENTITY_ID)
             }
-
-            stopService()
         }
 
         @Test
         fun `viewRegistrationRequests throws invalid input for non MGM member`() {
-            startService()
             whenever(mgmResourceClient.viewRegistrationRequests(any(), eq(null), eq(false))).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRestResource.viewRegistrationRequests(HOLDING_IDENTITY_ID)
             }
-
-            stopService()
         }
 
         @Test
         fun `viewRegistrationRequests throws bad request if short hash is invalid`() {
-            startService()
-
             assertThrows<BadRequestException> {
                 mgmRestResource.viewRegistrationRequests(INVALID_SHORT_HASH)
             }
-
-            stopService()
         }
     }
 
     @Nested
     inner class ApproveRegistrationRequestTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
         @Test
         fun `approveRegistrationRequest delegates correctly to mgm ops client`() {
-            startService()
-
             mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
 
             verify(mgmResourceClient).reviewRegistrationRequest(
                 (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), true
             )
-            stopService()
         }
 
         @Test
         fun `approveRegistrationRequest throws resource not found for invalid member`() {
-            startService()
             whenever(mgmResourceClient.reviewRegistrationRequest(
                 ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
             )).doThrow(mock<CouldNotFindMemberException>())
@@ -426,13 +421,10 @@ class MGMRestResourceTest {
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
             }
-
-            stopService()
         }
 
         @Test
         fun `approveRegistrationRequest throws invalid input for non MGM member`() {
-            startService()
             whenever(mgmResourceClient.reviewRegistrationRequest(
                 ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
             )).doThrow(mock<MemberNotAnMgmException>())
@@ -440,39 +432,46 @@ class MGMRestResourceTest {
             assertThrows<InvalidInputDataException> {
                 mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
             }
-
-            stopService()
         }
 
         @Test
         fun `approveRegistrationRequest throws bad request if short hash is invalid`() {
-            startService()
-
             assertThrows<BadRequestException> {
                 mgmRestResource.approveRegistrationRequest(INVALID_SHORT_HASH, REQUEST_ID)
             }
+        }
 
-            stopService()
+        @Test
+        fun `approveRegistrationRequest throws bad request if request is not found or is not pending review`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
+            }
         }
     }
 
     @Nested
     inner class DeclineRegistrationRequestTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
         @Test
         fun `declineRegistrationRequest delegates correctly to mgm ops client`() {
-            startService()
-
             mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
 
             verify(mgmResourceClient).reviewRegistrationRequest(
                 (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
             )
-            stopService()
         }
 
         @Test
         fun `declineRegistrationRequest throws resource not found for invalid member`() {
-            startService()
             whenever(mgmResourceClient.reviewRegistrationRequest(
                 ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
             )).doThrow(mock<CouldNotFindMemberException>())
@@ -480,13 +479,10 @@ class MGMRestResourceTest {
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
             }
-
-            stopService()
         }
 
         @Test
         fun `declineRegistrationRequest throws invalid input for non MGM member`() {
-            startService()
             whenever(mgmResourceClient.reviewRegistrationRequest(
                 ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
             )).doThrow(mock<MemberNotAnMgmException>())
@@ -494,19 +490,24 @@ class MGMRestResourceTest {
             assertThrows<InvalidInputDataException> {
                 mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
             }
-
-            stopService()
         }
 
         @Test
         fun `declineRegistrationRequest throws bad request if short hash is invalid`() {
-            startService()
-
             assertThrows<BadRequestException> {
                 mgmRestResource.declineRegistrationRequest(INVALID_SHORT_HASH, REQUEST_ID, manualDeclinationReason)
             }
+        }
 
-            stopService()
+        @Test
+        fun `declineRegistrationRequest throws bad request if request is not found or is not pending review`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
+            }
         }
     }
 

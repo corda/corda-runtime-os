@@ -81,18 +81,18 @@ class MGMResourceClientImpl @Activate constructor(
 
     private companion object {
         const val ERROR_MSG = "Service is in an incorrect state for calling."
-        const val CLIENT_ID = "mgm-ops-client"
-        const val GROUP_NAME = "mgm-ops-client"
-        const val FOLLOW_CHANGES_RESOURCE_NAME = "MGMOpsClient.followStatusChangesByName"
-        const val WAIT_FOR_CONFIG_RESOURCE_NAME = "MGMOpsClient.registerComponentForUpdates"
-        const val PUBLISHER_RESOURCE_NAME = "MGMOpsClient.publisher"
+        const val CLIENT_ID = "mgm-resource-client"
+        const val GROUP_NAME = "mgm-resource-client"
+        const val FOLLOW_CHANGES_RESOURCE_NAME = "MGMResourceClient.followStatusChangesByName"
+        const val WAIT_FOR_CONFIG_RESOURCE_NAME = "MGMResourceClient.registerComponentForUpdates"
+        const val PUBLISHER_RESOURCE_NAME = "MGMResourceClient.publisher"
 
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock = UTCClock()
         val TIMEOUT = 10.seconds
     }
 
-    private interface InnerMGMOpsClient : AutoCloseable {
+    private interface InnerMGMResourceClient : AutoCloseable {
         fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
         fun mutualTlsAllowClientCertificate(
             holdingIdentityShortHash: ShortHash,
@@ -145,7 +145,7 @@ class MGMResourceClientImpl @Activate constructor(
         )
     }
 
-    private var impl: InnerMGMOpsClient = InactiveImpl
+    private var impl: InnerMGMResourceClient = InactiveImpl
 
     private val coordinator = coordinatorFactory.createCoordinator<MGMResourceClient>(::processEvent)
 
@@ -300,7 +300,7 @@ class MGMResourceClientImpl @Activate constructor(
         current.close()
     }
 
-    private object InactiveImpl : InnerMGMOpsClient {
+    private object InactiveImpl : InnerMGMResourceClient {
         override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
             throw IllegalStateException(ERROR_MSG)
 
@@ -359,7 +359,7 @@ class MGMResourceClientImpl @Activate constructor(
 
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
-    ) : InnerMGMOpsClient {
+    ) : InnerMGMResourceClient {
         @Suppress("ThrowsCount")
         fun mgmHoldingIdentity(holdingIdentityShortHash: ShortHash): HoldingIdentity {
             val holdingIdentity =
@@ -494,7 +494,15 @@ class MGMResourceClientImpl @Activate constructor(
         override fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
         ) {
-            mgmHoldingIdentity(holdingIdentityShortHash)
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
+            val requestStatus =
+                membershipQueryClient.queryRegistrationRequestStatus(mgm, requestId.toString()).getOrThrow()
+                    ?: throw IllegalArgumentException(
+                        "No request with registration request ID '$requestId' was found."
+                    )
+            require(requestStatus.status == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
+                "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
+            }
             if (approve) {
                 publishApprovalDecision(ApproveRegistration(), holdingIdentityShortHash, requestId.toString())
             } else {

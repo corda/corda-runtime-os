@@ -487,11 +487,11 @@ class MGMRestResourceImpl internal constructor(
             }
             return handleCommonErrors(holdingIdentityShortHash) {
                 mgmResourceClient.viewRegistrationRequests(
-                    ShortHash.parseOrThrow(holdingIdentityShortHash),
+                    it,
                     requestSubject,
                     viewHistoric,
                 )
-            }.map { it.toRpc() }
+            }.map { it.toRest() }
         }
 
         override fun approveRegistrationRequest(
@@ -499,12 +499,14 @@ class MGMRestResourceImpl internal constructor(
             requestId: String,
         ) {
             val registrationId = parseRegistrationRequestId(requestId)
-            handleCommonErrors(holdingIdentityShortHash) {
-                mgmResourceClient.reviewRegistrationRequest(
-                    ShortHash.parseOrThrow(holdingIdentityShortHash),
-                    registrationId,
-                    true
-                )
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.reviewRegistrationRequest(
+                        it, registrationId, true
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
             }
         }
 
@@ -514,17 +516,18 @@ class MGMRestResourceImpl internal constructor(
             reason: ManualDeclinationReason
         ) {
             val registrationId = parseRegistrationRequestId(requestId)
-            handleCommonErrors(holdingIdentityShortHash) {
-                mgmResourceClient.reviewRegistrationRequest(
-                    ShortHash.parseOrThrow(holdingIdentityShortHash),
-                    registrationId,
-                    false,
-                    reason.reason
-                )
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.reviewRegistrationRequest(
+                        it, registrationId, false, reason.reason
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
             }
         }
 
-        private fun RegistrationRequestStatus.toRpc() =
+        private fun RegistrationRequestStatus.toRest() =
             RestRegistrationRequestStatus(
                 registrationId,
                 registrationSent,
