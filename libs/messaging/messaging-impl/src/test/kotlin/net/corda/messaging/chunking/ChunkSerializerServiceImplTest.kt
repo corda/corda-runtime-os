@@ -2,6 +2,7 @@ package net.corda.messaging.chunking
 
 import java.nio.ByteBuffer
 import net.corda.chunking.ChunkBuilderService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
@@ -29,6 +30,7 @@ class ChunkSerializerServiceImplTest {
     private lateinit var serializer: CordaAvroSerializer<Any>
     private lateinit var chunkBuilderService: ChunkBuilderService
     private lateinit var chunkSerializerService: ChunkSerializerServiceImpl
+    private lateinit var platformDigestService: PlatformDigestService
     private lateinit var producerRecord: CordaProducerRecord<*, *>
     private val value: String = "somevalue"
     private val key: String = "somekey"
@@ -38,7 +40,8 @@ class ChunkSerializerServiceImplTest {
         serializer = mock()
         chunkBuilderService = mock()
         producerRecord = mock()
-        chunkSerializerService = ChunkSerializerServiceImpl(chunkSize, serializer, chunkBuilderService)
+        platformDigestService = mock()
+        chunkSerializerService = ChunkSerializerServiceImpl(chunkSize, serializer, chunkBuilderService, platformDigestService)
 
         var partNumber = 0
         doAnswer {

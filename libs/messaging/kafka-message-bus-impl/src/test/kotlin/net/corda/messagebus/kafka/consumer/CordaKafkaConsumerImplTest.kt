@@ -546,16 +546,20 @@ class CordaKafkaConsumerImplTest {
         val beforeChunkedRecordsPartition1 = generateMockConsumerRecords(2, eventTopic, 1, 0)
         val chunkedRecordsPartition1 = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2)
         val afterChunkedRecordsPartition1 = generateMockConsumerRecords(2, eventTopic, 1, 5)
-
+        val interLeavedChunkedRecordsPartition1 = generateMockConsumerRecords(2, eventTopic, 1, 7)
 
         val beforeChunkedRecordsPartition2 = generateMockConsumerRecords(2, eventTopic, 2, 0)
         val chunkedRecordsPartition2 = generateMockChunkedConsumerRecordsList(3, eventTopic, 2, 2)
         val afterChunkedRecordsPartition2 = generateMockConsumerRecords(2, eventTopic, 2, 5)
+        val interLeavedChunkedRecordsPartition2 = generateMockConsumerRecords(2, eventTopic, 2, 7)
 
         val firstConsumerRecordsList = beforeChunkedRecordsPartition1
             .plus(beforeChunkedRecordsPartition2)
             .plus(chunkedRecordsPartition1.first())
+            .plus(interLeavedChunkedRecordsPartition1)
             .plus(chunkedRecordsPartition2.first())
+            .plus(interLeavedChunkedRecordsPartition2)
+
         val secondConsumerRecordsList = chunkedRecordsPartition1.minus(chunkedRecordsPartition1.first())
             .plus(chunkedRecordsPartition2.minus(chunkedRecordsPartition2.first()))
             .plus(afterChunkedRecordsPartition1)
@@ -581,7 +585,7 @@ class CordaKafkaConsumerImplTest {
         val firstResult = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         val secondResult = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
         assertThat(firstResult.size).isEqualTo(4)
-        assertThat(secondResult.size).isEqualTo(6)
+        assertThat(secondResult.size).isEqualTo(10)
         verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
         verify(chunkDeserializerService, times(2)).assembleChunks(any<Map<ChunkKey, Chunk>>())
     }

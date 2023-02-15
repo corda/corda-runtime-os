@@ -87,9 +87,11 @@ fun generateConsumerRecords(records: List<ConsumerRecord<Any, Any>>, topic: Stri
  */
 @Suppress("UNCHECKED_CAST")
 fun generateMockChunkedConsumerRecordsList(
-    numberOfRecords: Long, topic: String, partition: Int, startOffset: Long = 0,
-    buildFinalChunk:
-    Boolean = true,
+    numberOfRecords: Long,
+    topic: String,
+    partition: Int,
+    startOffset: Long = 0,
+    buildFinalChunk: Boolean = true,
 ):
         List<ConsumerRecord<Any, Any>> {
     val records = mutableListOf<ConsumerRecord<Any, Any>>()

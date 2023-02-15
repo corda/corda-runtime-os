@@ -1,6 +1,7 @@
 package net.corda.messaging.chunking
 
 import net.corda.chunking.ChunkBuilderService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -18,7 +19,8 @@ class MessagingChunkFactoryImplTest {
     private val serializer: CordaAvroSerializer<Any> = mock()
     private val chunkBuilderService: ChunkBuilderService = mock()
     private val cordaAvroFactory: CordaAvroSerializationFactory = mock()
-    private val messagingChunkFactory: MessagingChunkFactory = MessagingChunkFactoryImpl(chunkBuilderService, cordaAvroFactory)
+    private val platformDigestService: PlatformDigestService = mock()
+    private val messagingChunkFactory: MessagingChunkFactory = MessagingChunkFactoryImpl(chunkBuilderService, cordaAvroFactory, platformDigestService)
 
     @BeforeEach
     fun setup() {
