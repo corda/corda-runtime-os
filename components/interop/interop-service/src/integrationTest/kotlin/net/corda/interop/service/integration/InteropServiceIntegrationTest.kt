@@ -176,7 +176,7 @@ class InteropServiceIntegrationTest {
         clearHostedIdsSub.close()
 
         interopService.start()
-        val memberExpectedOutputMessages = 2
+        val memberExpectedOutputMessages = 4
         val memberMapperLatch = CountDownLatch(memberExpectedOutputMessages)
         val memberProcessor = MemberInfoMessageCounter(memberMapperLatch, memberExpectedOutputMessages)
         val memberOutSub = subscriptionFactory.createDurableSubscription(
