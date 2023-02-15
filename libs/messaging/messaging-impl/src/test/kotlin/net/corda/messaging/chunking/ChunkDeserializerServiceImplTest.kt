@@ -49,10 +49,12 @@ class ChunkDeserializerServiceImplTest {
         chunkDeserializerService = ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, { }, platformDigestService)
         whenever(keyDeserializer.deserialize(realKeyBytes)).thenReturn(realKey)
         whenever(valueDeserializer.deserialize(fullBytes)).thenReturn(completeValue)
+        val digest = Checksum.digestForBytes(fullBytes)
+        whenever(platformDigestService.hash(any<ByteArray>(), any())).thenReturn(digest)
 
         testChunk1 = chunkBuilder.buildChunk(id, 1,  ByteBuffer.wrap(bytes1), 10)
         testChunk2 = chunkBuilder.buildChunk(id, 2,  ByteBuffer.wrap(bytes2), 20)
-        testFinalChunk = chunkBuilder.buildFinalChunk(id, 3,  Checksum.digestForBytes(fullBytes), 20)
+        testFinalChunk = chunkBuilder.buildFinalChunk(id, 3,  digest, 20)
         chunks = mutableListOf(testChunk1, testChunk2, testFinalChunk)
         chunkMap = mutableMapOf(
             testChunkKey1 to testChunk1,
