@@ -58,12 +58,12 @@ interface SigningKeyStore : Lifecycle {
     ): Collection<SigningCachedKey>
 
     /**
-     * Looks for keys by key ids (full key ids).
+     * Looks for keys by full key ids.
      *
-     * @param keyIds Key ids to look keys for.
+     * @param fullKeyIds Key ids to look keys for.
      */
-    fun lookupByIds(
+    fun lookupByFullIds(
         tenantId: String,
-        keyIds: List<SecureHash>
+        fullKeyIds: List<SecureHash>
     ): Collection<SigningCachedKey>
 }

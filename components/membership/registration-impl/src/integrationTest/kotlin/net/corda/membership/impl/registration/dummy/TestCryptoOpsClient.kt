@@ -58,7 +58,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
     override fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingShortIds: Boolean
+        usingFullIds: Boolean
     ): Collection<PublicKey> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
@@ -173,7 +173,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         return result
     }
 
-    override fun lookupKeysByIds(tenantId: String, keyIds: List<SecureHash>): List<CryptoSigningKey> {
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
         throw UnsupportedOperationException()
     }
 

@@ -75,8 +75,8 @@ class SigningServiceImpl(
                 foundKey.toSigningKeyInfo()
             }
 
-    override fun lookupByIds(tenantId: String, keyIds: List<SecureHash>): Collection<SigningKeyInfo> =
-        store.lookupByIds(tenantId, keyIds)
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningKeyInfo> =
+        store.lookupByFullIds(tenantId, fullKeyIds)
             .map { foundKey ->
                 foundKey.toSigningKeyInfo()
             }
@@ -277,7 +277,7 @@ class SigningServiceImpl(
                 it.fullId(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
-                val found = store.lookupByIds(
+                val found = store.lookupByFullIds(
                     tenantId,
                     chunk.map { SecureHash.parse(it.first) }
                 )

@@ -39,7 +39,7 @@ interface CryptoOpsClient : Lifecycle {
     fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingShortIds: Boolean
+        usingFullIds: Boolean = false
     ): Collection<PublicKey>
 
     /**
@@ -188,11 +188,11 @@ interface CryptoOpsClient : Lifecycle {
     fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey>
 
     /**
-     * Looks for keys owned by tenant of id [tenantId] from the list of [keyIds].
+     * Looks for keys owned by tenant of id [tenantId] from the list of [fullKeyIds].
      *
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
-    fun lookupKeysByIds(tenantId: String, keyIds: List<SecureHash>): List<CryptoSigningKey>
+    fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey>
 
     /**
      * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of

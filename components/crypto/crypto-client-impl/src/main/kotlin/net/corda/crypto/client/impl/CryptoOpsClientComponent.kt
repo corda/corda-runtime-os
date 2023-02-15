@@ -10,7 +10,6 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
-import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -77,9 +76,9 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingShortIds: Boolean
+        usingFullIds: Boolean
     ): Collection<PublicKey> =
-        impl.ops.filterMyKeys(tenantId, candidateKeys, usingShortIds)
+        impl.ops.filterMyKeys(tenantId, candidateKeys, usingFullIds)
 
     override fun generateKeyPair(
         tenantId: String,
@@ -159,15 +158,15 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun lookupKeysByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): List<CryptoSigningKey> =
         impl.ops.lookupKeysByShortIds(tenantId, shortKeyIds)
 
-    override fun lookupKeysByIds(tenantId: String, keyIds: List<SecureHash>): List<CryptoSigningKey> =
-        impl.ops.lookupKeysByIds(tenantId, keyIds)
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> =
+        impl.ops.lookupKeysByFullIds(tenantId, fullKeyIds)
 
     // This path is not being currently used - consider removing it
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
 
-    override fun lookupKeysByIdsProxy(tenantId: String, keyIds: SecureHashes): CryptoSigningKeys =
-        impl.ops.lookupKeysByIdsProxy(tenantId, keyIds)
+    override fun lookupKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys =
+        impl.ops.lookupKeysByFullIdsProxy(tenantId, fullKeyIds)
 
     override fun signProxy(
         tenantId: String,

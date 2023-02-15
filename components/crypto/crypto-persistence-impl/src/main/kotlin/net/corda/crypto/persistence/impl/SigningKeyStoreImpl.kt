@@ -12,7 +12,6 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
-import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
@@ -43,6 +42,7 @@ import net.corda.orm.utils.use
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -108,8 +108,8 @@ class SigningKeyStoreImpl @Activate constructor(
     override fun lookupByShortIds(tenantId: String, shortKeyIds: List<ShortHash>): Collection<SigningCachedKey> =
         impl.lookupByShortKeyIds(tenantId, shortKeyIds)
 
-    override fun lookupByIds(tenantId: String, keyIds: List<SecureHash>): Collection<SigningCachedKey> =
-        impl.lookupByKeyIds(tenantId, keyIds)
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> =
+        impl.lookupByFullKeyIds(tenantId, fullKeyIds)
 
     class Impl(
         event: ConfigChangedEvent,
@@ -146,7 +146,7 @@ class SigningKeyStoreImpl @Activate constructor(
                     shortKeyId = publicKeyIdFromBytes(publicKeyBytes)
                     SigningKeyEntity(
                         tenantId = tenantId,
-                        keyId = keyId,
+                        fullKeyId = keyId,
                         shortKeyId = shortKeyId,
                         timestamp = Instant.now(),
                         category = context.category,
@@ -168,7 +168,7 @@ class SigningKeyStoreImpl @Activate constructor(
                     shortKeyId = publicKeyIdFromBytes(publicKeyBytes)
                     SigningKeyEntity(
                         tenantId = tenantId,
-                        keyId = keyId,
+                        fullKeyId = keyId,
                         shortKeyId = shortKeyId,
                         timestamp = Instant.now(),
                         category = context.category,
@@ -202,14 +202,15 @@ class SigningKeyStoreImpl @Activate constructor(
 
         // TODO Add caching
         fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
-            val keyId = publicKey.fullId(keyEncodingService, digestService)
+            // TODO Change to use full key ids
+            val shortKeyId = publicKey.publicKeyId()
 //            return cache.get(CacheKey(tenantId, publicKey.publicKeyId())) { cacheKey ->
             return entityManagerFactory(tenantId).use { em ->
                 em.find(
                     SigningKeyEntity::class.java,
                     SigningKeyEntityPrimaryKey(
                         tenantId = tenantId,
-                        keyId = keyId
+                        shortKeyId = shortKeyId
                     )
                 )?.toSigningCachedKey()
             }
@@ -238,7 +239,6 @@ class SigningKeyStoreImpl @Activate constructor(
             }
         }
 
-        // TODO Test edge scenario where short Ids clash at lookup
         fun lookupByShortKeyIds(tenantId: String, _shortKeyIds: List<ShortHash>): Collection<SigningCachedKey> {
             require(_shortKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
                 "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
@@ -262,13 +262,13 @@ class SigningKeyStoreImpl @Activate constructor(
         }
 
         // TODO Add caching
-        fun lookupByKeyIds(tenantId: String, _keyIds: List<SecureHash>): Collection<SigningCachedKey> {
-            require(_keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+        fun lookupByFullKeyIds(tenantId: String, _fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
+            require(_fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
                 "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
             }
 
-            val keyIds = _keyIds.map { it.toString() }
-            val fetched = findByKeyIds(tenantId, keyIds).map {
+            val keyIds = _fullKeyIds.map { it.toString() }
+            val fetched = findByFullKeyIds(tenantId, keyIds).map {
                 it.toSigningCachedKey()
             }.distinctBy {
                 it.id
@@ -286,16 +286,16 @@ class SigningKeyStoreImpl @Activate constructor(
                     .resultList
             }
 
-        private fun findByKeyIds(tenantId: String, keyIds: List<String>): Collection<SigningKeyEntity> =
+        private fun findByFullKeyIds(tenantId: String, fullKeyIds: List<String>): Collection<SigningKeyEntity> =
             entityManagerFactory(tenantId).use { em ->
                 em.createQuery(
                     "FROM ${SigningKeyEntity::class.java.simpleName} " +
                             "WHERE tenantId=:tenantId " +
-                            "AND keyId IN(:keyIds) " +
+                            "AND fullKeyId IN(:fullKeyIds) " +
                             "ORDER BY timestamp",
                     SigningKeyEntity::class.java
                 ).setParameter("tenantId", tenantId)
-                    .setParameter("keyIds", keyIds)
+                    .setParameter("fullKeyIds", fullKeyIds)
                     .resultList
             }
 
@@ -313,7 +313,7 @@ class SigningKeyStoreImpl @Activate constructor(
         private fun SigningKeyEntity.toSigningCachedKey(): SigningCachedKey =
             SigningCachedKey(
                 id = shortKeyId,
-                fullId = keyId,
+                fullId = fullKeyId,
                 tenantId = tenantId,
                 category = category,
                 alias = alias,

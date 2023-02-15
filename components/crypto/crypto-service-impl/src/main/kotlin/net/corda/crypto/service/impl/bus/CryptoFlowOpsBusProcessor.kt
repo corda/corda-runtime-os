@@ -9,8 +9,6 @@ import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.SecureHashes
-import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
@@ -121,7 +119,7 @@ class CryptoFlowOpsBusProcessor(
                     context = request.context
                 )
             is ByIdsFlowQuery ->
-                cryptoOpsClient.lookupKeysByIdsProxy(context.tenantId, request.keyIds)
+                cryptoOpsClient.lookupKeysByFullIdsProxy(context.tenantId, request.fullKeyIds)
             else ->
                 throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }

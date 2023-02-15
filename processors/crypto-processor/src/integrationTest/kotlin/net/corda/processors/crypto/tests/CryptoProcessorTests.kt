@@ -845,8 +845,8 @@ class CryptoProcessorTests {
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
         val allKeys = vnodeKeys + vnode2Keys
 
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingShortIds = true))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingShortIds = true))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
     }
 
     @Test
@@ -862,10 +862,10 @@ class CryptoProcessorTests {
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
         val allKeys = vnodeKeys + vnode2Keys
 
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingShortIds = true))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingShortIds = true))
-        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingShortIds = false))
-        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingShortIds = false))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingFullIds = true))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingFullIds = true))
     }
 
     @Test
@@ -888,8 +888,8 @@ class CryptoProcessorTests {
 
         val queriedVnodeKeysEncoded = opsClient.lookupKeysByShortIds(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
         val queriedVnode2KeysEncoded = opsClient.lookupKeysByShortIds(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
-        val queriedByFullIdsVnodeKeysEncoded = opsClient.lookupKeysByIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
-        val queriedByFullIdsVnode2KeysEncoded = opsClient.lookupKeysByIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnodeKeysEncoded = opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnode2KeysEncoded = opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
 
         assertTrue(listsOfBytesAreEqual(vnodeKeysEncoded, queriedVnodeKeysEncoded))
         assertTrue(listsOfBytesAreEqual(vnode2KeysEncoded, queriedVnode2KeysEncoded))

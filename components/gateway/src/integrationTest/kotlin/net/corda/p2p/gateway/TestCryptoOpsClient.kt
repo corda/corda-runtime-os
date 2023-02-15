@@ -125,7 +125,7 @@ internal class TestCryptoOpsClient(
     override fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingShortIds: Boolean
+        usingFullIds: Boolean
     ): Collection<PublicKey> {
         throw UnsupportedOperationException()
     }
@@ -169,7 +169,7 @@ internal class TestCryptoOpsClient(
         throw UnsupportedOperationException()
     }
 
-    override fun lookupKeysByIds(tenantId: String, keyIds: List<SecureHash>): List<CryptoSigningKey> {
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
         throw UnsupportedOperationException()
     }
 

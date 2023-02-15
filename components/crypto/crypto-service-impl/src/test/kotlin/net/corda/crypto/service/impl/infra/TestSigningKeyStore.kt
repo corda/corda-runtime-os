@@ -152,8 +152,8 @@ class TestSigningKeyStore(
         return result
     }
 
-    override fun lookupByIds(tenantId: String, keyIds: List<SecureHash>): Collection<SigningCachedKey> {
-        val shortKeyIds = keyIds.map {
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
+        val shortKeyIds = fullKeyIds.map {
             ShortHash.of(it)
         }
         return lookupByShortIds(tenantId, shortKeyIds)
