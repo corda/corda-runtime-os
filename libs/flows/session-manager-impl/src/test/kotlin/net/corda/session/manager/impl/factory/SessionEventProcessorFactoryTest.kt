@@ -32,7 +32,7 @@ import org.mockito.kotlin.whenever
 class SessionEventProcessorFactoryTest {
 
     private val messagingChunkFactory: MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
-        whenever(createChunkDeserializerService(any<Class<ByteArray>>(), any())).thenReturn(mock())
+        whenever(createChunkSerializerService(any())).thenReturn(mock())
     }
     private val sessionEventProcessorFactory = SessionEventProcessorFactory(messagingChunkFactory)
 
@@ -65,7 +65,7 @@ class SessionEventProcessorFactoryTest {
             "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData()), null, Instant.now(), maxMsgSize
         )
 
-        verify(messagingChunkFactory, times(1)).createChunkDeserializerService(any<Class<ByteArray>>(), any())
+        verify(messagingChunkFactory, times(1)).createChunkSerializerService(any())
         assertThat(processor::class.java).isEqualTo(SessionDataProcessorSend::class.java)
     }
 
