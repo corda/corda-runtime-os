@@ -91,6 +91,8 @@ db:
           # -- the cluster database password secret key
           key: ""
     database: cordacluster
+    # -- the schema in which the cluster database config entities will be stored, passed to workers on startup
+    schema: CONFIG
 
 # Kafka configuration
 kafka:
@@ -193,6 +195,8 @@ bootstrap:
     enabled: true
     # crypto configuration
     crypto:
+      # -- the schema in which the cluster database crypto entities will be stored
+      schema: CRYPTO
       # JDBC connection pool configuration for crypto DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for crypto DB
@@ -224,6 +228,8 @@ bootstrap:
 
     # RBAC configuration
     rbac:
+      # -- the schema in which the cluster database rbac entities will be stored
+      schema: RBAC
       # JDBC connection pool configuration for RBAC DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for RBAC DB

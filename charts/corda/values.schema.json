@@ -239,7 +239,8 @@
                         "type",
                         "port",
                         "username",
-                        "database"                    
+                        "database",
+                        "schema"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -283,6 +284,15 @@
                                 "cordacluster"
                             ],
                             "minLength": 1
+                        },
+                        "schema": {
+                            "type": "string",
+                            "default": "CONFIG",
+                            "title": "the schema in which the cluster database config entities will be stored, passed to workers on startup",
+                            "examples": [
+                                "CONFIG"
+                            ],
+                            "minLength": 1
                         }
                     },
                     "examples": [{
@@ -295,7 +305,8 @@
                         "password": {
                             "value": "password"
                         },
-                        "database": "cordacluster"
+                        "database": "cordacluster",
+                        "schema": "CONFIG"
                     }]
                 }
             },
@@ -306,6 +317,7 @@
                     "port": 5432,
                     "user": "user",
                     "database": "cordacluster",
+                    "schema": "CONFIG",
                     "existingSecret": "postgresql-secret"
                 }
             }]
@@ -516,10 +528,20 @@
                             "default": {},
                             "title": "crypto configuration",
                             "required": [
-                                "dbConnectionPool"
+                                "dbConnectionPool",
+                                "schema"
                             ],
                             "additionalProperties": false,
                             "properties": {
+                                "schema": {
+                                    "type": "string",
+                                    "default": "CRYPTO",
+                                    "title": "the schema in which the cluster database crypto entities will be stored",
+                                    "examples": [
+                                        "CRYPTO"
+                                    ],
+                                    "minLength": 1
+                                },
                                 "username": {
                                     "$ref": "#/$defs/config"
                                 },
@@ -550,6 +572,7 @@
                                 }
                             },
                             "examples": [{
+                                "schema": "CRYPTO",
                                 "password": {
                                     "value": "password"
                                 },
@@ -566,9 +589,19 @@
                             "default": {},
                             "title": "RBAC configuration",
                             "required": [
-                                "dbConnectionPool"
+                                "dbConnectionPool",
+                                "schema"
                             ],
                             "properties": {
+                                "schema": {
+                                    "type": "string",
+                                    "default": "RBAC",
+                                    "title": "the schema in which the cluster database rbac entities will be stored",
+                                    "examples": [
+                                        "RBAC"
+                                    ],
+                                    "minLength": 1
+                                },
                                 "username": {
                                     "$ref": "#/$defs/config"
                                 },
@@ -598,6 +631,7 @@
                                 }
                             },
                             "examples": [{
+                                "schema": "RBAC",
                                 "password": {
                                     "value": "password"
                                 },
@@ -657,11 +691,13 @@
                     "examples": [{
                         "enabled": true,
                         "crypto": {
+                            "schema": "CRYPTO",
                             "dbConnectionPool": {
                                 "maxSize": 5
                             }
                         },
                         "rbac": {
+                            "schema": "RBAC",
                             "dbConnectionPool": {
                                 "maxSize": 5
                             }

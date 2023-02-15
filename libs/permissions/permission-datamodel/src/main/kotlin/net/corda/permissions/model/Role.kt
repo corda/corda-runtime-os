@@ -1,6 +1,5 @@
 package net.corda.permissions.model
 
-import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.CascadeType
 import javax.persistence.Column
@@ -17,7 +16,7 @@ import javax.persistence.Version
  * A named collection of permissions.
  */
 @Entity
-@Table(name = "rbac_role", schema = DbSchema.RBAC)
+@Table(name = "rbac_role")
 class Role(
     @Id
     @Column(name = "id", nullable = false, updatable = false)
