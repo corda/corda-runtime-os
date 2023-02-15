@@ -1,7 +1,7 @@
 package net.corda.applications.workers.rpc
 
 import net.corda.applications.workers.rpc.cli.CliTask
-import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rpc.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.TestToolkitProperty.Companion.DEFAULT_HTTP_HOST
 import net.corda.applications.workers.rpc.http.TestToolkitProperty.Companion.DEFAULT_HTTP_PORT
@@ -27,7 +27,7 @@ class FlowExecutorE2eTest {
     }
 
     @Test
-    @SkipWhenRpcEndpointUnavailable
+    @SkipWhenRestEndpointUnavailable
     fun `check FlowExecutor role creation`() {
         val randomVNodeHash = UUID.randomUUID().toString().replace("-", "").take(12)
 

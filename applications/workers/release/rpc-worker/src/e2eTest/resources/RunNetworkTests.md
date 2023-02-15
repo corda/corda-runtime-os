@@ -1,5 +1,5 @@
 # Run Network End-to-End (E2E) tests
-Before running the tests for the membership groups, you will need to configure the endpoints for RPC and P2P for all running clusters. The e2e tests require either a single cluster for single cluster tests (cluster A) or three clusters for multi-cluster tests (clusters A, B, and C). You can either rely on the defaults (which will only work for a locally deployed cluster and not for multi-cluster testing), set these as build properties, or set these as system properties.
+Before running the tests for the membership groups, you will need to configure the endpoints for REST and P2P for all running clusters. The e2e tests require either a single cluster for single cluster tests (cluster A) or three clusters for multi-cluster tests (clusters A, B, and C). You can either rely on the defaults (which will only work for a locally deployed cluster and not for multi-cluster testing), set these as build properties, or set these as system properties.
 
 Below is an example of properties which can be set in the projects `build.properties`
 ``` properties
