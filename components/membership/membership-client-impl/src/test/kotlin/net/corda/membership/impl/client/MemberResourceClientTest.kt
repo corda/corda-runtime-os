@@ -58,10 +58,12 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -503,6 +505,7 @@ class MemberResourceClientTest {
         val result = memberOpsClient.startRegistration(request)
 
         assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
+        assertThat(result.availableNow).isEqualTo(true)
     }
 
     @Test
@@ -536,7 +539,7 @@ class MemberResourceClientTest {
     }
 
     @Test
-    fun `startRegistration will fail if persistence failed`() {
+    fun `startRegistration will be successful if persistence failed`() {
         whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
             .doReturn(MembershipPersistenceResult.Failure("Ooops"))
         memberOpsClient.start()
@@ -544,18 +547,19 @@ class MemberResourceClientTest {
 
         val result = memberOpsClient.startRegistration(request)
 
-        assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.NOT_SUBMITTED)
+        assertThat(result.registrationStatus).isEqualTo(SubmittedRegistrationStatus.SUBMITTED)
+        assertThat(result.availableNow).isEqualTo(false)
     }
 
     @Test
-    fun `startRegistration will not try to register if persistence failed`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .doReturn(MembershipPersistenceResult.Failure("Ooops"))
+    fun `startRegistration will not try to persist if published will fail`() {
+        whenever(asyncPublisher.publish(any()))
+            .doThrow(CordaRuntimeException(""))
         memberOpsClient.start()
         setUpConfig()
 
         memberOpsClient.startRegistration(request)
 
-        verify(asyncPublisher, never()).publish(any())
+        verifyNoInteractions(membershipPersistenceClient)
     }
 }
