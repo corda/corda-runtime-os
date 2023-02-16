@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import com.r3.corda.notary.plugin.common.NotaryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionSignatureMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -128,7 +128,7 @@ class UtxoFinalityFlow(
 
         try {
             transaction.verifySignatures()
-        } catch (e: TransactionSignatureMissingSignaturesException) {
+        } catch (e: TransactionMissingSignaturesException) {
             val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
                 "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (encoded) " +
                         signatures.map { it.by.encoded }
@@ -143,7 +143,7 @@ class UtxoFinalityFlow(
                     "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
             persistInvalidTransaction(transaction)
-            throw TransactionSignatureMissingSignaturesException(transactionId, e.missingSignatories, message)
+            throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
         }
     }
 

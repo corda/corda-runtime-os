@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.transaction.TransactionSignatureMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -111,7 +111,7 @@ data class UtxoSignedTransactionImpl(
         // isFulfilledBy() helps to make this working with CompositeKeys.
         val missingSignatories = signatories.filterNot { it.isFulfilledBy(appliedSignatories) }.toSet()
         if (missingSignatories.isNotEmpty()) {
-            throw TransactionSignatureMissingSignaturesException(
+            throw TransactionMissingSignaturesException(
                 id,
                 missingSignatories,
                 "Transaction $id is missing signatures for signatories (encoded) ${missingSignatories.map { it.encoded }}"

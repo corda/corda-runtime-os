@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.transaction.TransactionSignatureMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.verifyMetadata
@@ -98,7 +98,7 @@ class ConsensualSignedTransactionImpl(
             .filterNot { it.isFulfilledBy(appliedSignatories) }
             .toSet()
         if (missingSignatories.isNotEmpty()) {
-            throw TransactionSignatureMissingSignaturesException(
+            throw TransactionMissingSignaturesException(
                 id,
                 missingSignatories,
                 "Transaction $id is missing signatures for signatories (encoded) ${missingSignatories.map { it.encoded }}"

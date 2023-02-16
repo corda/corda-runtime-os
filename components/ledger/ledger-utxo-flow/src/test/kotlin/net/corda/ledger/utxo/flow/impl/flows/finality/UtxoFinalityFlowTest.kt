@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import com.r3.corda.notary.plugin.common.NotaryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.common.flow.transaction.TransactionSignatureMissingSignaturesException
+import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
@@ -792,11 +792,11 @@ class UtxoFinalityFlowTest {
         )
 
         whenever(updatedTxSomeSigs.verifySignatures()).thenThrow(
-            TransactionSignatureMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
+            TransactionMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
         )
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionSignatureMissingSignaturesException::class.java)
+            .isInstanceOf(TransactionMissingSignaturesException::class.java)
             .hasMessageContainingAll(
                 "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}",
                 "The following counterparties provided signatures while finalizing the transaction:",
@@ -819,7 +819,7 @@ class UtxoFinalityFlowTest {
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
         whenever(updatedTxAllSigs.verifySignatures()).thenThrow(
-            TransactionSignatureMissingSignaturesException(
+            TransactionMissingSignaturesException(
                 TX_ID,
                 setOf(),
                 "failed"
@@ -827,7 +827,7 @@ class UtxoFinalityFlowTest {
         )
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionSignatureMissingSignaturesException::class.java)
+            .isInstanceOf(TransactionMissingSignaturesException::class.java)
             .hasMessageContaining("is missing signatures for signatories")
 
         verify(initialTx).addSignature(signatureAlice1)
