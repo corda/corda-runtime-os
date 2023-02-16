@@ -258,7 +258,7 @@ fun declineRegistration(
         assertWithRetry {
             command { post(
                 "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
-                "{\"reason\": {\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}}")
+                "{\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}")
             }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
