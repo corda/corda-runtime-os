@@ -6,7 +6,10 @@
   "fields": [
     {
       "name": "payload",
-      "type": "bytes"
+      "type": [
+        "net.corda.data.chunking.Chunk",
+        "bytes"
+      ]
     }
   ]
 }
