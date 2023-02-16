@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.flow.impl
 
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderInternal
 import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.crypto.SecureHash
@@ -20,6 +21,7 @@ class ConsensualLedgerServiceImplTest: ConsensualLedgerTest() {
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(consensualStateExample)
+            .let { it as ConsensualTransactionBuilderInternal }
             .toSignedTransaction()
         assertIs<ConsensualSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)

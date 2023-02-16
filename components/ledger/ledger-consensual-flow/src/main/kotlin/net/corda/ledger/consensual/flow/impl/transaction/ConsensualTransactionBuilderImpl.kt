@@ -12,7 +12,7 @@ class ConsensualTransactionBuilderImpl(
     private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     override val states: MutableList<ConsensualState> = mutableListOf(),
-) : ConsensualTransactionBuilder {
+) : ConsensualTransactionBuilder, ConsensualTransactionBuilderInternal {
 
     private var alreadySigned = false
 
@@ -22,12 +22,7 @@ class ConsensualTransactionBuilderImpl(
     }
 
     @Suspendable
-    override fun toSignedTransaction(): ConsensualSignedTransaction {
-        return sign()
-    }
-
-    @Suspendable
-    fun sign(): ConsensualSignedTransaction {
+    override fun toSignedTransaction(): ConsensualSignedTransactionInternal {
         check(!alreadySigned) { "A transaction cannot be signed twice." }
         ConsensualTransactionBuilderVerifier(this).verify()
         return consensualSignedTransactionFactory.create(this).also {

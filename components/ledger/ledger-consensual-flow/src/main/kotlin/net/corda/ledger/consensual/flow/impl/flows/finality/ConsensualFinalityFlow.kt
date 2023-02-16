@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -14,13 +15,15 @@ import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class ConsensualFinalityFlow(
-    private val initialTransaction: ConsensualSignedTransactionInternal,
+    private val transactionBuilder: ConsensualTransactionBuilder,
     private val sessions: List<FlowSession>
 ) : ConsensualFinalityBase() {
 
@@ -30,7 +33,6 @@ class ConsensualFinalityFlow(
 
     override val log: Logger = ConsensualFinalityFlow.log
 
-    private val transactionId = initialTransaction.id
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -40,34 +42,54 @@ class ConsensualFinalityFlow(
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
+
+        val initialTransaction = verifyAndSignTransactionBuilder()
+
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
         // Initial verifications passed, the transaction can be saved in the database.
-        persistUnverifiedTransaction()
+        persistUnverifiedTransaction(initialTransaction)
 
-        val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
+        val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction(initialTransaction)
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
-        sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
+        sendUnseenSignaturesToCounterparties(initialTransaction, transaction, signaturesReceivedFromSessions)
 
         if (sessions.isNotEmpty()) {
-            log.debug { "All sessions received and acknowledged storage of transaction $transactionId" }
+            log.debug { "All sessions received and acknowledged storage of transaction ${initialTransaction.id}" }
         }
 
         return transaction
     }
 
     @Suspendable
-    private fun persistUnverifiedTransaction() {
+    private fun verifyAndSignTransactionBuilder(): ConsensualSignedTransactionInternal {
+        return try {
+            (transactionBuilder as ConsensualTransactionBuilderInternal).toSignedTransaction()
+        } catch (e: Exception) {
+            when (e) {
+                is IllegalStateException -> log.warn(
+                    "Failed to verify platform checks and initially sign transaction with content $transactionBuilder"
+                )
+                is TransactionNoAvailableKeysException -> log.warn(
+                    "No keys available to initially sign transaction with content $transactionBuilder"
+                )
+            }
+            throw e
+        }
+    }
+
+    @Suspendable
+    private fun persistUnverifiedTransaction(initialTransaction: ConsensualSignedTransactionInternal) {
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
-        log.debug { "Recorded transaction with initial signatures $transactionId" }
+        log.debug { "Recorded transaction with initial signatures ${initialTransaction.id}" }
     }
 
     @Suppress("MaxLineLength")
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(): Pair<ConsensualSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>>  {
-
+    private fun receiveSignaturesAndAddToTransaction(initialTransaction: ConsensualSignedTransactionInternal): Pair<ConsensualSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
+        val transactionId = initialTransaction.id
         // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
         val signaturesPayloads = sessions.associateWith { session ->
             try {
@@ -115,6 +137,7 @@ class ConsensualFinalityFlow(
         transaction: ConsensualSignedTransactionInternal,
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
     ) {
+        val transactionId = transaction.id
         log.debug { "Verifying all signatures for transaction $transactionId." }
 
         try {
@@ -141,21 +164,22 @@ class ConsensualFinalityFlow(
     @Suspendable
     private fun persistTransactionWithCounterpartySignatures(transaction: ConsensualSignedTransactionInternal) {
         persistenceService.persist(transaction, TransactionStatus.VERIFIED)
-        log.debug { "Recorded transaction with all parties' signatures $transactionId" }
+        log.debug { "Recorded transaction with all parties' signatures ${transaction.id}" }
     }
 
     @Suspendable
     private fun sendUnseenSignaturesToCounterparties(
+        initialTransaction: ConsensualSignedTransactionInternal,
         transaction: ConsensualSignedTransactionInternal,
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
     ) {
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
                 it !in initialTransaction.signatures &&             // These have already been distributed with the first go
-                it !in signatures                                   // These came from that party
+                        it !in signatures                                   // These came from that party
             }
         }.toMap()
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
-        log.debug { "Sent updated signatures to counterparties for transaction $transactionId" }
+        log.debug { "Sent updated signatures to counterparties for transaction ${transaction.id}" }
     }
 }

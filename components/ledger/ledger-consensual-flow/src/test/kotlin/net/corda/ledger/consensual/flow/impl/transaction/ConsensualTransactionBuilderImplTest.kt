@@ -17,6 +17,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     fun `can build a simple Transaction`() {
         val tx = consensualTransactionBuilder
             .withStates(consensualStateExample)
+            .let { it as ConsensualTransactionBuilderInternal }
             .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
     }
@@ -27,7 +28,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             val builder = consensualTransactionBuilder
                 .withStates(consensualStateExample)
 
-            builder.toSignedTransaction()
+            (builder as ConsensualTransactionBuilderInternal).toSignedTransaction()
             builder.toSignedTransaction()
         }
     }
@@ -46,6 +47,7 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             consensualTransactionBuilder
                 .withStates(consensualStateExample)
                 .withStates(ConsensualStateClassExample("test", emptyList()))
+                .let { it as ConsensualTransactionBuilderInternal }
                 .toSignedTransaction()
         }
         assertEquals("All consensual states must have participants.", exception.message)
@@ -55,7 +57,8 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     fun `includes CPI and CPK information in metadata`() {
         val tx = consensualTransactionBuilder
             .withStates(consensualStateExample)
-            .toSignedTransaction() as ConsensualSignedTransactionImpl
+            .let { it as ConsensualTransactionBuilderInternal }
+            .toSignedTransaction()
 
         val metadata = tx.wireTransaction.metadata
         assertEquals(1, metadata.getLedgerVersion())

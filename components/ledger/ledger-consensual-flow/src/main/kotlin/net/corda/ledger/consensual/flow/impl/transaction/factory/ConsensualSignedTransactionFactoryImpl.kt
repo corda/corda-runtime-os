@@ -9,6 +9,7 @@ import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.verifyMetadata
 import net.corda.sandbox.type.UsedByFlow
@@ -19,7 +20,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -56,7 +56,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     @Suspendable
     override fun create(
         consensualTransactionBuilder: ConsensualTransactionBuilder
-    ): ConsensualSignedTransaction {
+    ): ConsensualSignedTransactionInternal {
         val metadata: TransactionMetadata = transactionMetadataFactory.create(consensualMetadata())
         verifyMetadata(metadata)
         val metadataBytes = serializeMetadata(metadata)
@@ -84,7 +84,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     override fun create(
         wireTransaction: WireTransaction,
         signaturesWithMetaData: List<DigitalSignatureAndMetadata>
-    ): ConsensualSignedTransaction {
+    ): ConsensualSignedTransactionInternal {
         return ConsensualSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
