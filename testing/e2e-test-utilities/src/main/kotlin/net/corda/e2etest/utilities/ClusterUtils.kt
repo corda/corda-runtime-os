@@ -3,6 +3,7 @@ package net.corda.e2etest.utilities
 import com.fasterxml.jackson.module.kotlin.contains
 import net.corda.httprpc.ResponseCode
 import net.corda.test.util.eventually
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import java.time.Duration
 
@@ -88,7 +89,8 @@ fun getOrCreateVirtualNodeFor(
             failMessage("Failed to retrieve virtual nodes")
         }.toJson()
 
-        val vNodeJson = if (vNodesJson.findValuesAsText("x500Name").contains(x500)) {
+        val normalizedX500 = MemberX500Name.parse(x500).toString()
+        val vNodeJson = if (vNodesJson.findValuesAsText("x500Name").contains(normalizedX500)) {
             vNodeList().toJson()["virtualNodes"].toList().first {
                 it["holdingIdentity"]["x500Name"].textValue() == x500
             }
@@ -103,10 +105,10 @@ fun getOrCreateVirtualNodeFor(
             // Wait for the vNode creation to propagate through the system before moving on
             eventually {
                 assertThat(
-                    vNodeList().toJson()["virtualNodes"].toList().firstOrNull {
-                        it["holdingIdentity"]["shortHash"].textValue() == holdingId
-                    }
-                ).isNotNull
+                    vNodeList().toJson()["virtualNodes"].map {
+                        it["holdingIdentity"]["shortHash"].textValue()
+                    }.contains(holdingId)
+                )
             }
 
             vNodeInfo

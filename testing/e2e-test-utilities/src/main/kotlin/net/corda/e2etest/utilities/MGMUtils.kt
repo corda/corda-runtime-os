@@ -18,7 +18,8 @@ import java.time.Duration
 fun onboardMgm(
     clusterConfig: ClusterConfig,
     resourceName: String,
-    mgmName: MemberX500Name = MemberX500Name.parse("O=Mgm, L=London, C=GB, OU=$testRunUniqueId")
+    mgmName: MemberX500Name = MemberX500Name.parse("O=Mgm, L=London, C=GB, OU=$testRunUniqueId"),
+    groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
 ): NetworkOnboardingMetadata {
     val mgmCpiName = "mgm_$testRunUniqueId.cpi"
     conditionallyUploadCordaPackage(mgmCpiName, resourceName, getMgmGroupPolicy())
@@ -38,7 +39,8 @@ fun onboardMgm(
         getCa().caCertificate.toPem(),
         sessionKeyId,
         ecdhKeyId,
-        clusterConfig.p2pUri.toString()
+        clusterConfig,
+        groupPolicyConfig
     )
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
@@ -266,14 +268,26 @@ fun declineRegistration(
 }
 
 /**
+ * Data class for customising the group policy file during MGM registration.
+ */
+data class GroupPolicyConfig(
+    val sessionPkiMode: String = "NoPKI",
+    val tlsType: String = "OneWay",
+    val p2pMode: String = "Authenticated_Encryption",
+    val sessionPolicy: String = "Distinct",
+    val tlsPkiMode: String = "Standard",
+    val tlsVersion: String = "1.3"
+)
+
+/**
  * Create a default registration context for registering the MGM
  */
 private fun createMgmRegistrationContext(
     caTrustRoot: String,
     sessionKeyId: String,
     ecdhKeyId: String,
-    p2pUrl: String,
-    sessionPkiMode: String = "NoPKI"
+    clusterConfig: ClusterConfig,
+    groupPolicyConfig: GroupPolicyConfig
 ) = mapOf(
     "corda.session.key.id" to sessionKeyId,
     "corda.ecdh.key.id" to ecdhKeyId,
@@ -281,14 +295,14 @@ private fun createMgmRegistrationContext(
             to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
     "corda.group.protocol.synchronisation"
             to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
-    "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
-    "corda.group.key.session.policy" to "Distinct",
-    "corda.group.tls.type" to "OneWay",
-    "corda.group.pki.session" to sessionPkiMode,
-    "corda.group.pki.tls" to "Standard",
-    "corda.group.tls.version" to "1.3",
-    "corda.endpoints.0.connectionURL" to p2pUrl,
-    "corda.endpoints.0.protocolVersion" to "1",
+    "corda.group.protocol.p2p.mode" to groupPolicyConfig.p2pMode,
+    "corda.group.key.session.policy" to groupPolicyConfig.sessionPolicy,
+    "corda.group.tls.type" to groupPolicyConfig.tlsType,
+    "corda.group.pki.session" to groupPolicyConfig.sessionPkiMode,
+    "corda.group.pki.tls" to groupPolicyConfig.tlsPkiMode,
+    "corda.group.tls.version" to groupPolicyConfig.tlsVersion,
+    "corda.endpoints.0.connectionURL" to clusterConfig.p2pUri.toString(),
+    "corda.endpoints.0.protocolVersion" to clusterConfig.p2pProtocolVersion,
     "corda.group.truststore.tls.0" to caTrustRoot,
     "corda.group.truststore.session.0" to caTrustRoot,
 )

@@ -8,7 +8,7 @@ import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.ResponseCode
 import net.corda.v5.base.types.MemberX500Name
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.File
@@ -32,7 +32,7 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
             parser.readObject()
         }
     }?.also {
-        Assertions.assertThat(it).isInstanceOf(PKCS10CertificationRequest::class.java)
+        assertThat(it).isInstanceOf(PKCS10CertificationRequest::class.java)
     }
     return signCsr(request as PKCS10CertificationRequest).also { save() }.toPem()
 }

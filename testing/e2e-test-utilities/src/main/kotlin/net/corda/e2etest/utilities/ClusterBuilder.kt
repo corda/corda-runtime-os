@@ -2,6 +2,7 @@ package net.corda.e2etest.utilities
 
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.InputStream
 import java.net.URI
 import java.nio.file.Paths
 
@@ -52,25 +53,26 @@ class ClusterBuilder {
         }
     }
 
-    private fun uploadCertificateResource(cmd: String, resourceName: String, alias: String): SimpleResponse {
-        val fileName = Paths.get(resourceName).fileName.toString()
-        return getInputStream(resourceName).use {
-            client!!.putMultiPart(
-                cmd,
-                mapOf("alias" to alias),
-                mapOf("certificate" to HttpsClientFileUpload(it, fileName))
-            )
-        }
-    }
+    private fun uploadCertificateResource(cmd: String, resourceName: String, alias: String) =
+        getInputStream(resourceName).uploadCertificateInputStream(
+            cmd,
+            alias,
+            Paths.get(resourceName).fileName.toString()
+        )
 
-    private fun uploadCertificateResource(cmd: String, certificate: File, alias: String): SimpleResponse {
-        return certificate.inputStream().use {
-            client!!.putMultiPart(
-                cmd,
-                mapOf("alias" to alias),
-                mapOf("certificate" to HttpsClientFileUpload(it, certificate.name))
-            )
-        }
+
+    private fun uploadCertificateFile(cmd: String, certificate: File, alias: String) =
+        certificate.inputStream().uploadCertificateInputStream(cmd, alias, certificate.name)
+
+
+    private fun InputStream.uploadCertificateInputStream(
+        cmd: String, alias: String, fileName: String
+    ) = use {
+        client!!.putMultiPart(
+            cmd,
+            mapOf("alias" to alias),
+            mapOf("certificate" to HttpsClientFileUpload(it, fileName))
+        )
     }
 
     private fun getInputStream(resourceName: String) =
@@ -81,7 +83,7 @@ class ClusterBuilder {
         uploadCertificateResource("/api/v1/certificates/cluster/$usage", resourceName, alias)
 
     fun importCertificate(file: File, usage: String, alias: String) =
-        uploadCertificateResource("/api/v1/certificates/cluster/$usage", file, alias)
+        uploadCertificateFile("/api/v1/certificates/cluster/$usage", file, alias)
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)

@@ -3,11 +3,7 @@ package net.corda.e2etest.utilities
 import java.net.URI
 
 abstract class ClusterConfig {
-    abstract val restHostPropertyName: String
-    abstract val restPortPropertyName: String
-    abstract val restPasswordPropertyName: String
-    abstract val p2pHostPropertyName: String
-    abstract val p2pPortPropertyName: String
+    abstract val clusterId: String
 
     private companion object {
         private const val DEFAULT_REST_HOST = "localhost"
@@ -15,6 +11,12 @@ abstract class ClusterConfig {
         private const val DEFAULT_P2P_HOST = "localhost"
         private const val DEFAULT_P2P_PORT = 8080
     }
+
+    private val restHostPropertyName = "E2E_CLUSTER_${clusterId}_RPC_HOST"
+    private val restPortPropertyName = "E2E_CLUSTER_${clusterId}_RPC_PORT"
+    private val restPasswordPropertyName = "E2E_CLUSTER_${clusterId}_RPC_PASSWORD"
+    private val p2pHostPropertyName = "E2E_CLUSTER_${clusterId}_P2P_HOST"
+    private val p2pPortPropertyName = "E2E_CLUSTER_${clusterId}_P2P_PORT"
 
     val restHost: String get() = System.getenv(restHostPropertyName) ?: DEFAULT_REST_HOST
     val restPort: Int get() = System.getenv(restPortPropertyName)?.toInt() ?: DEFAULT_REST_PORT
@@ -28,25 +30,13 @@ abstract class ClusterConfig {
 }
 
 object ClusterAConfig : ClusterConfig() {
-    override val restHostPropertyName = "E2E_CLUSTER_A_RPC_HOST"
-    override val restPortPropertyName = "E2E_CLUSTER_A_RPC_PORT"
-    override val restPasswordPropertyName = "E2E_CLUSTER_A_RPC_PASSWORD"
-    override val p2pHostPropertyName = "E2E_CLUSTER_A_P2P_HOST"
-    override val p2pPortPropertyName = "E2E_CLUSTER_A_P2P_PORT"
+    override val clusterId = "A"
 }
 
 object ClusterBConfig : ClusterConfig() {
-    override val restHostPropertyName = "E2E_CLUSTER_B_RPC_HOST"
-    override val restPortPropertyName = "E2E_CLUSTER_B_RPC_PORT"
-    override val restPasswordPropertyName = "E2E_CLUSTER_B_RPC_PASSWORD"
-    override val p2pHostPropertyName = "E2E_CLUSTER_B_P2P_HOST"
-    override val p2pPortPropertyName = "E2E_CLUSTER_B_P2P_PORT"
+    override val clusterId = "B"
 }
 
 object ClusterCConfig : ClusterConfig() {
-    override val restHostPropertyName = "E2E_CLUSTER_C_RPC_HOST"
-    override val restPortPropertyName = "E2E_CLUSTER_C_RPC_PORT"
-    override val restPasswordPropertyName = "E2E_CLUSTER_C_RPC_PASSWORD"
-    override val p2pHostPropertyName = "E2E_CLUSTER_C_P2P_HOST"
-    override val p2pPortPropertyName = "E2E_CLUSTER_C_P2P_PORT"
+    override val clusterId = "C"
 }
