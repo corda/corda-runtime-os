@@ -3,6 +3,7 @@ package net.corda.db.connection.manager.impl
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
+import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.createFromConfig
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
@@ -62,6 +63,7 @@ class DbConnectionManagerImpl (
     private val eventHandler = DbConnectionManagerEventHandler(this)
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator<DbConnectionManager>(eventHandler)
     private lateinit var lateInitialisedConfig: SmartConfig
+    private var dbConnectionsRepository: DbConnectionsRepository? = null
 
     override val clusterConfig: SmartConfig
         get() {
@@ -72,6 +74,13 @@ class DbConnectionManagerImpl (
 
     override fun bootstrap(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
+    }
+
+    override fun testAllConnections(): Boolean {
+        return dbConnectionsRepository?.testAllConnections() ?: run {
+            logger.warn("DB check scheduled while dbConnectionsRepository is null")
+            false
+        }
     }
 
     override val isRunning: Boolean
@@ -102,6 +111,7 @@ class DbConnectionManagerImpl (
         val clusterEntityManagerFactory = createManagerFactory(CordaDb.CordaCluster.persistenceUnitName, clusterDataSource)
         val dbConnectionsRepository = dbConnectionRepositoryFactory.create(
             clusterDataSource, dataSourceFactory, clusterEntityManagerFactory, config.factory)
+        this.dbConnectionsRepository = dbConnectionsRepository
         if (dbConnectionOps is LateInitDbConnectionOps) {
             dbConnectionOps.delegate = DbConnectionOpsCachedImpl(
                 DbConnectionOpsImpl(dbConnectionsRepository, entitiesRegistry, entityManagerFactoryFactory),
@@ -121,6 +131,7 @@ class DbConnectionManagerImpl (
             try {
                 checkDatabaseConnection(clusterDataSource)
                 logger.info("Connection to Cluster DB is successful.")
+                eventHandler.scheduleNextDbCheck(lifecycleCoordinator)
                 return
             } catch (e: DBConfigurationException) {
                 logger.warn("Failed to connect to Cluster DB. " +
