@@ -7,6 +7,7 @@ import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messaging.api.chunking.ChunkSerializerService
+import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
@@ -47,8 +48,10 @@ class CordaKafkaProducerImplTest {
     private val producer: Producer<Any, Any> = mock()
     private val consumer: Consumer<Any, Any> = mock()
     private val chunkSerializerService: ChunkSerializerService = mock()
+    private val consumerChunkDeserializerService: ConsumerChunkDeserializerService<Any, Any> = mock()
     private val mockedCallback: CordaProducer.Callback = mock()
-    private val cordaConsumer = CordaKafkaConsumerImpl(consumerConfig, consumer, null)
+    private val cordaConsumer =
+        CordaKafkaConsumerImpl(consumerConfig, consumer, null, consumerChunkDeserializerService, Any::class.java)
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
     private val record: CordaProducerRecord<Any, Any> = CordaProducerRecord("topic", "key", "value")

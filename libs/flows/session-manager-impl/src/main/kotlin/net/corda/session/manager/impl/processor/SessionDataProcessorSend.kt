@@ -1,27 +1,37 @@
 package net.corda.session.manager.impl.processor
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
+import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 /**
  * Process a [SessionData] event to be sent to a counterparty.
  * If the current state is not CONFIRMED or CREATED it indicates a session mismatch bug, return an error message to the counterparty.
  * Set the sequence number of the outbound message and add it to the list of unacked outbound messages to be sent to a counterparty.
+ * If the message is too large to send then it will be chunked and sent as separate data messages with the payload set to [Chunk]
  */
+@Suppress("LongParameterList")
 class SessionDataProcessorSend(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
-    private val instant: Instant
+    private val instant: Instant,
+    private val chunkSerializer: ChunkSerializerService,
+    private val payload: SessionData
 ) : SessionEventProcessor {
 
-    private companion object {
+    companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -41,13 +51,17 @@ class SessionDataProcessorSend(
                 sessionState
             }
             SessionStateType.CREATED, SessionStateType.CONFIRMED  -> {
-                val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
-                sessionEvent.sequenceNum = nextSeqNum
-
-                sessionState.apply {
-                    sendEventsState.lastProcessedSequenceNum = nextSeqNum
-                    sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
+                val bytes = (payload.payload as ByteBuffer).array()
+                val chunks = chunkSerializer.generateChunksFromBytes(bytes)
+                val sendEventsState = sessionState.sendEventsState
+                if (chunks.isNotEmpty()) {
+                    chunks.forEach {
+                        addDataEventToSendEvents(sendEventsState, generateChunkedDataEvent(it))
+                    }
+                } else {
+                    addDataEventToSendEvents(sendEventsState, sessionEvent)
                 }
+                sessionState
             }
             else -> {
                 //If the session is in states CREATED, CLOSING, WAIT_FOR_FINAL_ACK or CLOSED then this indicates a session mismatch as no
@@ -71,5 +85,27 @@ class SessionDataProcessorSend(
                 }
             }
         }
+    }
+
+    /**
+     * Take a [sessionEvent], and add it to the [sendEventsState]. Increment the [sendEventsState] lastProcessedSequenceNum
+     */
+    private fun addDataEventToSendEvents(sendEventsState: SessionProcessState, sessionEvent: SessionEvent) {
+        val nextSeqNum = sendEventsState.lastProcessedSequenceNum + 1
+        sessionEvent.sequenceNum = nextSeqNum
+        sendEventsState.lastProcessedSequenceNum = nextSeqNum
+        logger.debug { "Adding data message with seqNum ${sessionEvent.sequenceNum} to send queue. ${sessionEvent.sessionId}" }
+        sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
+    }
+
+    /**
+     * Generate a new session data SessionEvent object with the payload set as a chunk
+     * @param chunk the chunk to generate a data message for
+     * @return SessionData event with chunk payload
+     */
+    private fun generateChunkedDataEvent(chunk: Chunk) : SessionEvent {
+        val copy = SessionEvent.newBuilder(sessionEvent).build()
+        (copy.payload as SessionData).payload = chunk
+        return copy
     }
 }
