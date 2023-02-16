@@ -40,6 +40,7 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.time.Instant
 
+@Suppress("MaxLineLength")
 class ConsensualFinalityFlowTest {
 
     private companion object {

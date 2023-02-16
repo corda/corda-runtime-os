@@ -6,7 +6,6 @@ import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysExceptio
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 

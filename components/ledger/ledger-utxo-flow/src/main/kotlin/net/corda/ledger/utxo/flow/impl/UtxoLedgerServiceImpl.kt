@@ -29,9 +29,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.security.AccessController
-import java.security.PrivilegedActionException
-import java.security.PrivilegedExceptionAction
 
 @Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
 class UtxoLedgerServiceImpl @Activate constructor(
