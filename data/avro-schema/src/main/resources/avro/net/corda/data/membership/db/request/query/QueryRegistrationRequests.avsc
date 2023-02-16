@@ -3,5 +3,19 @@
   "name": "QueryRegistrationRequests",
   "namespace": "net.corda.data.membership.db.request.query",
   "doc": "Query for one or more registration request status",
-  "fields": []
+  "fields": [
+    {
+      "name": "requestSubjectX500Name",
+      "doc": "X.500 name of the subject of the registration request.",
+      "type": ["string", "null"]
+    },
+    {
+      "name": "statuses",
+      "doc": "Requests in the specified statuses will be included in the query result.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.common.RegistrationStatus"
+      }
+    }
+  ]
 }
