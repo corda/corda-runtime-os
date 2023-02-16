@@ -1,5 +1,6 @@
 package net.cordapp.testing.smoketests.flow
 
+import java.util.concurrent.ThreadLocalRandom
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
@@ -52,7 +53,7 @@ class SendReceiveAllMessagingFlow(
         flowMessaging.sendAll(MyClass("Serialize me please", 3), setOf(sessionOne, sessionTwo))
 
         //additional send via session to help verify init isn't sent again
-        val largeString = getLargeString(2200)
+        val largeString = getLargeString(1100)
         sessionOne.send(MyClass(largeString, 4))
         sessionTwo.send(MyClass("Serialize me please", 5))
 
@@ -103,7 +104,7 @@ class SendReceiveAllMessagingFlow(
     private fun getLargeString(kiloBytes: Int) : String {
         val stringBuilder = StringBuilder()
         for (i in 0..CHARS_PER_KB*kiloBytes) {
-            stringBuilder.append("A")
+            stringBuilder.append(ThreadLocalRandom.current().nextInt(0,9) )
         }
         return stringBuilder.toString()
     }
