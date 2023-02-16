@@ -230,7 +230,7 @@ class GroupPolicyProviderImplTest {
         on { parse(eq(holdingIdentity3), eq(groupPolicy3), any()) }.doReturn(parsedGroupPolicy3)
         on { parse(eq(holdingIdentity4), eq(null), any()) }.doThrow(BadGroupPolicyException(""))
         on { parse(eq(holdingIdentity5), eq(groupPolicy3), any()) }.doReturn(parsedMgmGroupPolicy)
-        on { parse(eq(holdingIdentity6), eq(interopGroupPolicyReader.getGroupPolicy()), any()) }.doReturn(parsedGroupPolicy6)
+        on { parse(eq(holdingIdentity6), eq(groupPolicy6), any()) }.doReturn(parsedGroupPolicy6)
     }
 
     private val membershipQueryClient: MembershipQueryClient = mock {
