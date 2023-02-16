@@ -304,7 +304,8 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText)
-                .contains("Unhandled error!")
+                .contains("Unhandled exception of type java.lang.IllegalArgumentException encountered during " +
+                        "uniqueness checking with message: Unhandled error!")
         }
     }
 

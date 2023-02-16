@@ -118,7 +118,10 @@ private fun UniquenessCheckError.toNotaryError(): NotaryError {
             timeWindowUpperBound
         )
         is UniquenessCheckErrorMalformedRequest -> NotaryErrorMalformedRequestImpl(errorText)
-        is UniquenessCheckErrorUnhandledException -> NotaryErrorGeneralImpl(unhandledExceptionMessage)
+        is UniquenessCheckErrorUnhandledException -> NotaryErrorGeneralImpl(
+            "Unhandled exception of type $unhandledExceptionType encountered during uniqueness checking with " +
+                    "message: $unhandledExceptionMessage"
+        )
         else -> NotaryErrorGeneralImpl(
             "Unknown error type received from uniqueness checker: ${this::class.java.canonicalName}"
         )
