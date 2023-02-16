@@ -27,7 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReaderImpl
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -214,7 +214,7 @@ class GroupPolicyProviderImplTest {
         on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
     }
 
-    private val interopGroupPolicyReader: InteropGroupPolicyReader = mock {
+    private val interopGroupPolicyReader: InteropGroupPolicyReaderImpl = mock {
         on { getGroupPolicy(holdingIdentity6) } doReturn groupPolicy6
     }
 
