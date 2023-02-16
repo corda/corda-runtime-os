@@ -3,10 +3,12 @@ package net.corda.flow.testing.tests
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateSingleFlow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
@@ -54,7 +56,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `A flow finishing when previously in a retry state publishes a completed flow status and schedules flow cleanup`() {
+    fun `A flow finishing when previously in a retry state throws a transient exception`() {
         // Trigger a retry state
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
@@ -79,13 +81,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.FlowFinished(DONE))
         }
 
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
-                flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
-            }
-        }
+        assertThrows<FlowTransientException> {  }
 
     }
 

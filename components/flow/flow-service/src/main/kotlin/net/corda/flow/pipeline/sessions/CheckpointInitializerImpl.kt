@@ -4,6 +4,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.CheckpointInitializer
+import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
@@ -23,13 +24,11 @@ class CheckpointInitializerImpl @Activate constructor(
 ) : CheckpointInitializer {
     override fun initialize(checkpoint: FlowCheckpoint, waitingFor: WaitingFor, holdingIdentity: HoldingIdentity, contextBuilder:(Set<SecureHash>) -> FlowStartContext) {
         val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
-        checkNotNull(vNodeInfo) {
-            "Failed to find the virtual node info for holder '$holdingIdentity'"
-        }
+            ?: throw FlowTransientException("Failed to find the virtual node info for holder '$holdingIdentity'")
+
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
-        checkNotNull(cpiMetadata) {
-            "Failed to find the cpiMetadata for identifier '${vNodeInfo.cpiIdentifier}'"
-        }
+            ?: throw FlowTransientException("Failed to find the cpiMetadata for identifier '${vNodeInfo.cpiIdentifier}'")
+
         val cpks = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
 
         checkpoint.initFlowState(contextBuilder(cpks), cpks)
