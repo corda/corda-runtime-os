@@ -104,6 +104,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         entityManager.persist(foundVNode)
     }
 
+    @Suppress("ComplexCondition")
     override fun updateVirtualNodeState(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
