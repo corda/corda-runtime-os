@@ -32,6 +32,8 @@ import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
 import net.corda.e2etest.utilities.getFlowStatus
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.assertAll
 
 /**
  * Any 'unordered' tests are run *last*
@@ -428,10 +430,38 @@ class VirtualNodeRpcTest {
                         val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
                             virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
                         }
-                        vNodeInfo["flowP2pOperationalStatus"].textValue() == expectedOperationalStatuses &&
-                                vNodeInfo["flowStartOperationalStatus"].textValue() == expectedOperationalStatuses &&
-                                vNodeInfo["flowOperationalStatus"].textValue() == expectedOperationalStatuses &&
-                                vNodeInfo["vaultDbOperationalStatus"].textValue() == expectedOperationalStatuses
+                        assertAll(
+                            {
+                                assertEquals(
+                                    expectedOperationalStatuses,
+                                    vNodeInfo["flowP2pOperationalStatus"].textValue(),
+                                    "flowP2pOperationalStatus"
+                                )
+                            },
+                            {
+                                assertEquals(
+                                    expectedOperationalStatuses,
+                                    vNodeInfo["flowStartOperationalStatus"].textValue(),
+                                    "flowStartOperationalStatus"
+                                )
+                            },
+                            {
+                                assertEquals(
+                                    expectedOperationalStatuses,
+                                    vNodeInfo["flowOperationalStatus"].textValue(),
+                                    "flowOperationalStatus"
+                                )
+                            },
+                            {
+                                assertEquals(
+                                    expectedOperationalStatuses,
+                                    vNodeInfo["vaultDbOperationalStatus"].textValue(),
+                                    "vaultDbOperationalStatus"
+                                )
+                            }
+                        )
+                        true
+
                     } else {
                         false
                     }
