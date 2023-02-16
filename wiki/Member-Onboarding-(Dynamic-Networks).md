@@ -421,7 +421,7 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 Note: If you upload a certificate chain consisting of more than one certificates, you need to ensure that `-----END CERTIFICATE-----` and `-----BEGIN CERTIFICATE-----` from the next certificate are separated by a new line and no empty spaces in between.
 
 ## Optional: Allow mutual TLS certificate
-If the mutual TLS was enabled you will need to [add the member TLS certificate subject to the MGM allowed list](Mutual-TLS-in-the-Gateway#add-the-member-tls-certificate-subject-to-the-mgm-allowed-list).
+Note: If the mutual TLS was enabled you will need to [add the member TLS certificate subject to the MGM's allowed list](Mutual-TLS-in-the-Gateway#add-the-member-tls-certificate-subject-to-the-mgm-allowed-list).
 
 ## Configure virtual node as network participant
 At this point, the member virtual node must be configured with properties required for P2P messaging. The order is slightly different to MGM onboarding in that for members, we must do this before registering and for MGMs, it is the opposite.

@@ -444,7 +444,7 @@ If you want to set the cluster to support mutual TLS you will need to [change th
 ## Build registration context
 > Note: At the moment, a separate HSM category for ECDH key is not present. Until support is added - for the purpose of completing this process - the same session initiation key may be specified in both places.  
 
-_Note: If the mutual TLS was enabled you will need to [set the TLS type in the MGM context to mutual](Mutual-TLS-in-the-Gateway#set-the-tls-type-in-the-mgm-context-to-mutual) _
+Note: If the mutual TLS was enabled you will need to [set the TLS type in the MGM context to mutual](Mutual-TLS-in-the-Gateway#set-the-tls-type-in-the-mgm-context-to-mutual)
 
 <details>
 <summary>Bash</summary>
