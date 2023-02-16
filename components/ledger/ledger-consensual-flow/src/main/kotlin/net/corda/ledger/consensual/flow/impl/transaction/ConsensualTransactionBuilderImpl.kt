@@ -4,17 +4,13 @@ import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSigne
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualTransactionBuilderVerifier
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.consensual.ConsensualState
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.util.Objects
 
 class ConsensualTransactionBuilderImpl(
     private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
-    // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     override val states: MutableList<ConsensualState> = mutableListOf(),
 ) : ConsensualTransactionBuilder, ConsensualTransactionBuilderInternal {
-
-    private var alreadySigned = false
 
      override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder {
         this.states += states
@@ -23,11 +19,8 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     override fun toSignedTransaction(): ConsensualSignedTransactionInternal {
-        check(!alreadySigned) { "A transaction cannot be signed twice." }
         ConsensualTransactionBuilderVerifier(this).verify()
-        return consensualSignedTransactionFactory.create(this).also {
-            alreadySigned = true
-        }
+        return consensualSignedTransactionFactory.create(this)
     }
 
     override fun equals(other: Any?): Boolean {

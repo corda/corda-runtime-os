@@ -112,22 +112,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `can't sign twice`() {
-        assertThrows(IllegalStateException::class.java) {
-            val builder = utxoTransactionBuilder
-                .setNotary(utxoNotaryExample)
-                .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-                .addOutputState(utxoStateExample)
-                .addSignatories(listOf(publicKeyExample))
-                .addCommand(UtxoCommandExample())
-                .addAttachment(SecureHash("SHA-256", ByteArray(12)))
-
-            (builder as UtxoTransactionBuilderInternal).toSignedTransaction()
-            builder.toSignedTransaction()
-        }
-    }
-
-    @Test
     fun `Calculate encumbrance groups correctly`() {
         val inputStateAndRef = getUtxoInvalidStateAndRef()
         val inputStateRef = inputStateAndRef.ref

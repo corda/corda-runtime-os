@@ -30,8 +30,6 @@ class UtxoTransactionBuilderImpl(
     override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
-    private var alreadySigned = false
-
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         this.attachments += attachmentId
         return this
@@ -132,11 +130,8 @@ class UtxoTransactionBuilderImpl(
 
     @Suspendable
     override fun toSignedTransaction(): UtxoSignedTransactionInternal {
-        check(!alreadySigned) { "The transaction cannot be signed twice." }
         UtxoTransactionBuilderVerifier(this).verify()
-        return utxoSignedTransactionFactory.create(this, signatories).also {
-            alreadySigned = true
-        }
+        return utxoSignedTransactionFactory.create(this, signatories)
     }
 
     private fun ContractState.withEncumbrance(tag: String?): ContractStateAndEncumbranceTag {
