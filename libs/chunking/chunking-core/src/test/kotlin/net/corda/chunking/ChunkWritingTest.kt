@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test
 class ChunkWritingTest {
     lateinit var fs: FileSystem
 
+    private val extraSpace = CORDA_MESSAGE_OVERHEAD * 2
     private val chunkBuilderService: ChunkBuilderService = ChunkBuilderServiceImpl()
 
     @BeforeEach
@@ -102,7 +103,7 @@ class ChunkWritingTest {
     fun `ensure chunks are trimmed to minimum size`() {
         val chunkSize = 32 * KB
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(chunkSize + CORDA_MESSAGE_OVERHEAD, chunkBuilderService).apply {
+        val writer = ChunkWriterImpl(chunkSize + extraSpace, chunkBuilderService).apply {
             onChunk { chunks.add(it) }
         }
 
