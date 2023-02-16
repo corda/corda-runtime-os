@@ -438,79 +438,13 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 </details>
 
 ### Optional: Enable mutual TLS
-If you want to set the cluster to support mutual TLS you will need to set the gateway SSL configuration to support it.
-_Note: Mutual TLS is set per cluster. It has to apply to all the groups that the cluster will host and all the clusters that those groups will be hosted on._
-
-First we need to get the current gateway configuration version.
-<details>
-<summary>Bash</summary>
-
-```
-curl --insecure -u admin:admin -X GET $API_URL/config/corda.p2p.gateway
-```
-Stores the version number (in the `version` field) from the response
-```
-export CONFIG_VERSION=<configuration version>
-```
-
-Using that config version, send the following request, which disables revocation checks for the gateway worker.
-```
-curl -k -u admin:admin -X PUT -d '{"section":"corda.p2p.gateway", "version":"'$CONFIG_VERSION'", "config":"{ \"sslConfig\": { \"tlsType\": \"MUTUAL\"  }  }", "schemaVersion": {"major": 1, "minor": 0}}' $API_URL"/config"
-```
-_Note: This will overwrite the renovation check setting. to set both of them do:._
-```
-curl -k -u admin:admin -X PUT -d '{"section":"corda.p2p.gateway", "version":"'$CONFIG_VERSION'", "config":"{ \"sslConfig\": { \"tlsType\": \"MUTUAL\" , \"revocationCheck\": {\"mode\" : \"OFF\"} } }", "schemaVersion": {"major": 1, "minor": 0}}' $API_URL"/config"
-```
-
-</details>
-<details>
-<summary>PowerShell</summary>
-
-```PowerShell
-$CONFIG_VERSION = (Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Uri "$API_URL/config/corda.p2p.gateway").version
-Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Method Put -Uri "$API_URL/config" -Body (ConvertTo-Json -Depth 4 @{
-    section = "corda.p2p.gateway"
-    version = $CONFIG_VERSION
-    config = @{
-        sslConfig = @{
-            tlsType = "MUTUAL"
-        }
-    }
-    schemaVersion = @{
-        major = 1
-        minor = 0
-    }
-})
-
-```
-_Note: This will overwrite the renovation check setting. to set both of them do:._
-```PowerShell
-$CONFIG_VERSION = (Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Uri "$API_URL/config/corda.p2p.gateway").version
-Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Method Put -Uri "$API_URL/config" -Body (ConvertTo-Json -Depth 4 @{
-    section = "corda.p2p.gateway"
-    version = $CONFIG_VERSION
-    config = @{
-        sslConfig = @{
-            revocationCheck = @{
-                mode = "OFF"
-            }
-            tlsType = "MUTUAL"
-        }
-    }
-    schemaVersion = @{
-        major = 1
-        minor = 0
-    }
-})
-
-```
-</details>
+If you want to set the cluster to support mutual TLS you will need to [change the cluster configuration](Mutual-TLS-in-the-Gateway#change-the-cluster-configuration).
 
 
 ## Build registration context
 > Note: At the moment, a separate HSM category for ECDH key is not present. Until support is added - for the purpose of completing this process - the same session initiation key may be specified in both places.  
 
-_Note: If the mutual TLS was enabled - make sure to set the field `corda.group.tls.type` to `Mutual`._
+_Note: If the mutual TLS was enabled you will need to [set the TLS type in the MGM context to mutual](Mutual-TLS-in-the-Gateway#set-the-tls-type-in-the-mgm-context-to-mutual) _
 
 <details>
 <summary>Bash</summary>

@@ -78,6 +78,7 @@ export RUNTIME_OS=~/dev/corda-runtime-os
 $RUNTIME_OS = "~/dev/corda-runtime-os"
 ```
 </details>
+
 ### Optional: Disable revocation checks
 If the used CA has not been configured with revocation (e.g. via CRL or OCSP), you can disable revocation checks. By default, revocation checks are enabled. Note that the fake CA dev tool does not support revocation, so if you are using that you will need to disable revocation checks. Again, this only needs to be done once per cluster. First we need to get the current gateway configuration version.
 <details>
@@ -121,73 +122,7 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 </details>
 
 ### Optional: Enable mutual TLS
-If you want to set the cluster to support mutual TLS you will need to set the gateway SSL configuration to support it.
-_Note: Mutual TLS is set per cluster. It has to apply to all the groups that the cluster will host and all the clusters that those groups will be hosted on. One can not onboard a member unless the TLS type of the MGM cluster is align with the TLS type of the member cluster_
-
-First we need to get the current gateway configuration version.
-<details>
-<summary>Bash</summary>
-
-```
-curl --insecure -u admin:admin -X GET $API_URL/config/corda.p2p.gateway
-```
-Stores the version number (in the `version` field) from the response
-```
-export CONFIG_VERSION=<configuration version>
-```
-
-Using that config version, send the following request, which disables revocation checks for the gateway worker.
-```
-curl -k -u admin:admin -X PUT -d '{"section":"corda.p2p.gateway", "version":"'$CONFIG_VERSION'", "config":"{ \"sslConfig\": { \"tlsType\": \"MUTUAL\"  }  }", "schemaVersion": {"major": 1, "minor": 0}}' $API_URL"/config"
-```
-_Note: This will overwrite the renovation check setting. to set both of them do:._
-```
-curl -k -u admin:admin -X PUT -d '{"section":"corda.p2p.gateway", "version":"'$CONFIG_VERSION'", "config":"{ \"sslConfig\": { \"tlsType\": \"MUTUAL\" , \"revocationCheck\": {\"mode\" : \"OFF\"} } }", "schemaVersion": {"major": 1, "minor": 0}}' $API_URL"/config"
-```
-
-</details>
-<details>
-<summary>PowerShell</summary>
-
-```PowerShell
-$CONFIG_VERSION = (Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Uri "$API_URL/config/corda.p2p.gateway").version
-Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Method Put -Uri "$API_URL/config" -Body (ConvertTo-Json -Depth 4 @{
-    section = "corda.p2p.gateway"
-    version = $CONFIG_VERSION
-    config = @{
-        sslConfig = @{
-            tlsType = "MUTUAL"
-        }
-    }
-    schemaVersion = @{
-        major = 1
-        minor = 0
-    }
-})
-
-```
-_Note: This will overwrite the renovation check setting. to set both of them do:._
-```PowerShell
-$CONFIG_VERSION = (Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Uri "$API_URL/config/corda.p2p.gateway").version
-Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Method Put -Uri "$API_URL/config" -Body (ConvertTo-Json -Depth 4 @{
-    section = "corda.p2p.gateway"
-    version = $CONFIG_VERSION
-    config = @{
-        sslConfig = @{
-            revocationCheck = @{
-                mode = "OFF"
-            }
-            tlsType = "MUTUAL"
-        }
-    }
-    schemaVersion = @{
-        major = 1
-        minor = 0
-    }
-})
-
-```
-</details>
+If you want to set the cluster to support mutual TLS you will need to [change the cluster configuration](Mutual-TLS-in-the-Gateway#change-the-cluster-configuration).
 
 
 ## Build and upload a CPI
@@ -485,41 +420,8 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 
 Note: If you upload a certificate chain consisting of more than one certificates, you need to ensure that `-----END CERTIFICATE-----` and `-----BEGIN CERTIFICATE-----` from the next certificate are separated by a new line and no empty spaces in between.
 
-## Allow mutual TLS certificate
-If the cluster supports mutual TLS we need to allow the MGM to accept TLS connections with the created certificate. To do that we need to use the MGM mutual TLS allow list APIs.
-
-<details>
-<summary>Bash</summary>
-Set the MGM properties:
-```bash
-export MGM_RPC_HOST=localhost
-export MGM_RPC_PORT=8888
-export MGM_API_URL="https://$MGM_RPC_HOST:$MGM_RPC_PORT/api/v1"
-export MGM_HOLDING_ID=<MGM Holding ID>
-```
-And then allow the certificate subject:
-```bash
-curl -k -u admin:admin  -X PUT -s "$MGM_API_URL/mgm/$MGM_HOLDING_ID/mutual-tls/allowed-client-certificate-subjects/CN=CordaOperator,C=GB,L=London,O=Org"
-```
-</details>
-<details>
-<summary>PowerShell</summary>
-
-Set the MGM properties:
-```PowerShell
-$MGM_RPC_HOST = "localhost"
-$MGM_RPC_PORT = "8888"
-$MGM_API_URL = "https://$MGM_RPC_HOST`:$MGM_RPC_PORT/api/v1"
-$MGM_HOLDING_ID = <MGM Holding ID>
-Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Uri "$MGM_API_URL/mgm/$MGM_HOLDING_ID/info" | ConvertTo-Json -Depth 4 > $WORK_DIR/GroupPolicy.json
-```
-And then allow the certificate subject:
-```PowerShell
-Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -f $AUTH_INFO)} -Uri "$MGM_API_URL/mgm/$MGM_HOLDING_ID/mutual-tls/allowed-client-certificate-subjects/CN=CordaOperator,C=GB,L=London,O=Org" -Method Put
-```
-
-</details>
-
+## Optional: Allow mutual TLS certificate
+If the mutual TLS was enabled you will need to [add the member TLS certificate subject to the MGM allowed list](Mutual-TLS-in-the-Gateway#add-the-member-tls-certificate-subject-to-the-mgm-allowed-list).
 
 ## Configure virtual node as network participant
 At this point, the member virtual node must be configured with properties required for P2P messaging. The order is slightly different to MGM onboarding in that for members, we must do this before registering and for MGMs, it is the opposite.
