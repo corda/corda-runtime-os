@@ -77,7 +77,10 @@ class DbConnectionManagerImpl (
     }
 
     override fun testAllConnections(): Boolean {
-        return dbConnectionsRepository?.testAllConnections() ?: false
+        return dbConnectionsRepository?.testAllConnections() ?: run {
+            logger.warn("DB check scheduled while dbConnectionsRepository is null")
+            false
+        }
     }
 
     override val isRunning: Boolean
