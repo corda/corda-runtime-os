@@ -71,7 +71,7 @@ class OutputAssertionsImpl(
                 sessionToPayload.map { it.first },
                 initiatingIdentity,
                 initiatedIdentity
-            ).associate { it.sessionId to (it.payload as SessionData).payload as ByteBuffer }
+            ).associate { it.sessionId to ((it.payload as SessionData).payload as ByteBuffer).array() }
 
             assertEquals(
                 sessionToPayload.toMap(),
