@@ -63,6 +63,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 
 /** Tests of [VirtualNodeWriterProcessor]. */
 class VirtualNodeWriterProcessorTests {
@@ -242,6 +243,7 @@ class VirtualNodeWriterProcessorTests {
 
     private fun virtualNodeRepositoryMock(): VirtualNodeRepository = mock()
     private fun holdingIdentityRepositoryMock(): HoldingIdentityRepository = mock()
+    private fun migrationUtilityMock(): MigrationUtility = mock<MigrationUtility>()
 
     @Test
     fun `publishes correct virtual node info to Kafka`() {
@@ -257,7 +259,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -290,7 +293,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf(changelog) },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
 
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
@@ -313,7 +317,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -362,7 +367,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -414,7 +420,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
 
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), mgmVnodeCreationReq))
@@ -465,7 +472,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -490,7 +498,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(
             processor,
@@ -518,7 +527,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), request))
 
@@ -697,7 +707,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -733,7 +744,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = vnodeRepo
+            virtualNodeRepository = vnodeRepo,
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -767,7 +779,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepository,
-            virtualNodeRepository = vnodeRepo
+            virtualNodeRepository = vnodeRepo,
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(
             processor,

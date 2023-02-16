@@ -1,6 +1,7 @@
 package net.corda.messaging.chunking
 
 import net.corda.chunking.ChunkBuilderService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.messaging.api.chunking.ChunkDeserializerService
@@ -17,6 +18,8 @@ class MessagingChunkFactoryImpl @Activate constructor(
     private val chunkBuilderService: ChunkBuilderService,
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = PlatformDigestService::class)
+    private val platformDigestService: PlatformDigestService,
 ) : MessagingChunkFactory {
 
     override fun <K : Any, V : Any> createConsumerChunkDeserializerService(
@@ -24,7 +27,7 @@ class MessagingChunkFactoryImpl @Activate constructor(
         valueDeserializer: CordaAvroDeserializer<V>,
         onError: (ByteArray) -> Unit,
     ): ConsumerChunkDeserializerService<K, V> {
-        return ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, onError)
+        return ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, onError, platformDigestService)
     }
 
     override fun <V : Any> createChunkDeserializerService(
@@ -32,12 +35,12 @@ class MessagingChunkFactoryImpl @Activate constructor(
         onError: (ByteArray) -> Unit,
     ): ChunkDeserializerService<V> {
         val deserializer = cordaAvroSerializationFactory.createAvroDeserializer(onError, expectedType)
-        return ChunkDeserializerServiceImpl(deserializer, deserializer, onError)
+        return ChunkDeserializerServiceImpl(deserializer, deserializer, onError, platformDigestService)
     }
 
     override fun createChunkSerializerService(maxAllowedMessageSize: Long): ChunkSerializerService {
         return ChunkSerializerServiceImpl(maxAllowedMessageSize,
-            cordaAvroSerializationFactory.createAvroSerializer({}),
-            chunkBuilderService)
+            cordaAvroSerializationFactory.createAvroSerializer {},
+            chunkBuilderService, platformDigestService)
     }
 }
