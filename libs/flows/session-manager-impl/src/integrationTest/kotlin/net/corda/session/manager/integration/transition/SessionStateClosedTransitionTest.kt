@@ -4,6 +4,7 @@ import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.session.manager.impl.SessionManagerImpl
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.integration.SessionMessageType
@@ -11,11 +12,16 @@ import net.corda.session.manager.integration.helper.generateMessage
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 class SessionStateClosedTransitionTest {
 
-    private val sessionManager = SessionManagerImpl(SessionEventProcessorFactory(mock()), mock())
+    private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
+        whenever(createChunkSerializerService(any())).thenReturn(mock())
+    }
+    private val sessionManager = SessionManagerImpl(SessionEventProcessorFactory(messagingChunkFactory), messagingChunkFactory)
     private val instant = Instant.now()
     private val maxMsgSize = 10000000L
     
