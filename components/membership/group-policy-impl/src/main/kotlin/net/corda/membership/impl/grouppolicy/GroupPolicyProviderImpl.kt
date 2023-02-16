@@ -80,7 +80,6 @@ class GroupPolicyProviderImpl @Activate constructor(
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CONSUMER_GROUP = "membership.group.policy.provider.group"
     }
-
     private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy?> = ConcurrentHashMap()
 
     private var configHandle: AutoCloseable? = null
@@ -198,10 +197,8 @@ class GroupPolicyProviderImpl @Activate constructor(
             logger.warn("Could not parse group policy file for holding identity [$holdingIdentity].", e)
             null
         } catch (e: Throwable) {
-            logger.warn(
-                "Unexpected exception occurred when retrieving group policy file for " +
-                        "holding identity [$holdingIdentity].", e
-            )
+            logger.warn("Unexpected exception occurred when retrieving group policy file for " +
+                    "holding identity [$holdingIdentity].", e)
             null
         }
 
@@ -281,99 +278,97 @@ class GroupPolicyProviderImpl @Activate constructor(
                         "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
             )
         }
-            var groupPolicy: String? = metadata?.groupPolicy ?: interopGroupPolicyReader.getGroupPolicy()
-            ?: return null
+        var groupPolicy: String? = metadata?.groupPolicy ?: interopGroupPolicyReader.getGroupPolicy()
+        ?: return null
 
+        fun persistedPropertyQuery(): LayeredPropertyMap? = try {
+            membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
+        } catch (e: MembershipQueryResult.QueryException) {
+            logger.warn("Failed to retrieve persisted group policy properties.", e)
+            null
+        }
+        return try {
+            groupPolicyParser.parse(
+                holdingIdentity,
+                groupPolicy,
+                ::persistedPropertyQuery
+            )
+        } catch (e: BadGroupPolicyException) {
+            logger.warn("Failed to parse group policy. Returning null.", e)
+            null
+        }
+    }
 
-            fun persistedPropertyQuery(): LayeredPropertyMap? = try {
-                membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
-            } catch (e: MembershipQueryResult.QueryException) {
-                logger.warn("Failed to retrieve persisted group policy properties.", e)
-                null
-            }
-            return try {
-                groupPolicyParser.parse(
-                    holdingIdentity,
-                    groupPolicy,
-                    ::persistedPropertyQuery
-                )
-            } catch (e: BadGroupPolicyException) {
-                logger.warn("Failed to parse group policy. Returning null.", e)
-                null
+    /**
+     * Registers callback when MGM has finished its registration and has the final group policy persisted.
+     * This will make sure we have the trust stores and other important information in the group policy ready.
+     */
+    internal inner class FinishedRegistrationsProcessor(
+        private val callBack: (HoldingIdentity, GroupPolicy) -> Unit
+    ) : CompactedProcessor<String, PersistentMemberInfo> {
+        override fun onSnapshot(currentData: Map<String, PersistentMemberInfo>) {
+            currentData.values.forEach {
+                gotData(it)
             }
         }
 
-        /**
-         * Registers callback when MGM has finished its registration and has the final group policy persisted.
-         * This will make sure we have the trust stores and other important information in the group policy ready.
-         */
-        internal inner class FinishedRegistrationsProcessor(
-            private val callBack: (HoldingIdentity, GroupPolicy) -> Unit
-        ) : CompactedProcessor<String, PersistentMemberInfo> {
-            override fun onSnapshot(currentData: Map<String, PersistentMemberInfo>) {
-                currentData.values.forEach {
-                    gotData(it)
-                }
-            }
-
-            override fun onNext(
-                newRecord: Record<String, PersistentMemberInfo>,
-                oldValue: PersistentMemberInfo?,
-                currentData: Map<String, PersistentMemberInfo>
-            ) {
-                newRecord.value?.let {
-                    gotData(it)
-                }
-            }
-
-            private fun gotData(member: PersistentMemberInfo) {
-                try {
-                    val memberContext = member.memberContext.toMap()
-                    val mgmContext = member.mgmContext.toMap()
-                    // Only notify when an active MGM is added to itself
-                    if (
-                        (memberContext[PARTY_NAME] == member.viewOwningMember.x500Name) &&
-                        (mgmContext[IS_MGM] == "true") &&
-                        (mgmContext[STATUS] == MEMBER_STATUS_ACTIVE)
-                    ) {
-                        val holdingIdentity = member.viewOwningMember.toCorda()
-                        val gp = parseGroupPolicy(holdingIdentity)
-                        if (gp is MGMGroupPolicy) {
-                            groupPolicies[holdingIdentity] = gp
-                            callBack(holdingIdentity, gp)
-                        } else {
-                            groupPolicies.remove(holdingIdentity)
-                        }
-                    }
-                } catch (e: Exception) {
-                    logger.warn("Could not process events, caused by: $e")
-                }
-            }
-
-            override val keyClass = String::class.java
-            override val valueClass = PersistentMemberInfo::class.java
-        }
-
-        private inner class Listener(
-            private val name: String,
-            val callBack: (HoldingIdentity, GroupPolicy) -> Unit,
+        override fun onNext(
+            newRecord: Record<String, PersistentMemberInfo>,
+            oldValue: PersistentMemberInfo?,
+            currentData: Map<String, PersistentMemberInfo>
         ) {
-            private var subscription: CompactedSubscription<String, PersistentMemberInfo>? = null
-
-            fun start(messagingConfig: SmartConfig) {
-                subscription?.close()
-                subscription = subscriptionFactory.createCompactedSubscription(
-                    SubscriptionConfig("$CONSUMER_GROUP-$name", MEMBER_LIST_TOPIC),
-                    FinishedRegistrationsProcessor(callBack),
-                    messagingConfig,
-                ).also {
-                    it.start()
-                }
-            }
-
-            fun stop() {
-                subscription?.close()
-                subscription = null
+            newRecord.value?.let {
+                gotData(it)
             }
         }
+
+        private fun gotData(member: PersistentMemberInfo) {
+            try {
+                val memberContext = member.memberContext.toMap()
+                val mgmContext = member.mgmContext.toMap()
+                // Only notify when an active MGM is added to itself
+                if (
+                    (memberContext[PARTY_NAME] == member.viewOwningMember.x500Name) &&
+                    (mgmContext[IS_MGM] == "true") &&
+                    (mgmContext[STATUS] == MEMBER_STATUS_ACTIVE)
+                ) {
+                    val holdingIdentity = member.viewOwningMember.toCorda()
+                    val gp = parseGroupPolicy(holdingIdentity)
+                    if (gp is MGMGroupPolicy) {
+                        groupPolicies[holdingIdentity] = gp
+                        callBack(holdingIdentity, gp)
+                    } else {
+                        groupPolicies.remove(holdingIdentity)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn("Could not process events, caused by: $e")
+            }
+        }
+
+        override val keyClass = String::class.java
+        override val valueClass = PersistentMemberInfo::class.java
+    }
+    private inner class Listener(
+        private val name: String,
+        val callBack: (HoldingIdentity, GroupPolicy) -> Unit,
+    ) {
+        private var subscription: CompactedSubscription<String, PersistentMemberInfo>? = null
+
+        fun start(messagingConfig: SmartConfig) {
+            subscription?.close()
+            subscription = subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig("$CONSUMER_GROUP-$name", MEMBER_LIST_TOPIC),
+                FinishedRegistrationsProcessor(callBack),
+                messagingConfig,
+            ).also {
+                it.start()
+            }
+        }
+
+        fun stop() {
+            subscription?.close()
+            subscription = null
+        }
+    }
 }
