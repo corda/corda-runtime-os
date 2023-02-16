@@ -6,6 +6,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
+import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
@@ -81,7 +82,7 @@ class CheckpointInitializerImplTest {
         val nullCpiMetadata = null
         whenever(cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)).thenReturn(nullCpiMetadata)
 
-        assertThrows<IllegalStateException> {
+        assertThrows<FlowTransientException> {
             checkpointInitializer.initialize(
                 checkpoint,
                 waitingFor,
@@ -112,7 +113,7 @@ class CheckpointInitializerImplTest {
         val nullVirtualNodeInfo = null
         whenever(virtualNodeInfoReadService.get(startContext.identity.toCorda())).thenReturn(nullVirtualNodeInfo)
 
-        assertThrows<IllegalStateException> {
+        assertThrows<FlowTransientException> {
             checkpointInitializer.initialize(
                 checkpoint,
                 waitingFor,

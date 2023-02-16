@@ -35,7 +35,7 @@ class PipelineStateManager(
     }
 
     val cpk: Set<SecureHash>
-        get() = state.cpks.map { SecureHash(it.algorithm, it.serverHash.array()) }.toSet()
+        get() = state.cpks.map { SecureHash(it.algorithm, it.bytes.array()) }.toSet()
 
     val retryState: RetryState?
         get() = state.retryState

@@ -22,7 +22,12 @@ class CheckpointInitializerImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService
 
 ) : CheckpointInitializer {
-    override fun initialize(checkpoint: FlowCheckpoint, waitingFor: WaitingFor, holdingIdentity: HoldingIdentity, contextBuilder:(Set<SecureHash>) -> FlowStartContext) {
+    override fun initialize(
+        checkpoint: FlowCheckpoint,
+        waitingFor: WaitingFor,
+        holdingIdentity: HoldingIdentity,
+        contextBuilder:(Set<SecureHash>) -> FlowStartContext
+    ) {
         val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
             ?: throw FlowTransientException("Failed to find the virtual node info for holder '$holdingIdentity'")
 
