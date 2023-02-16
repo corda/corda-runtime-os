@@ -1,17 +1,14 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.data.p2p.AuthenticatedMessageAndKey
-import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.Queue
@@ -19,8 +16,7 @@ import java.util.Queue
 internal class PendingSessionMessageQueuesImpl(
     publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    messagingConfiguration: SmartConfig,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    messagingConfiguration: SmartConfig
 ) : PendingSessionMessageQueues {
 
     companion object {
@@ -37,19 +33,6 @@ internal class PendingSessionMessageQueuesImpl(
         messagingConfiguration
     )
     override val dominoTile = publisher.dominoTile
-
-    override fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionManager.SessionCounterparties? {
-        val peer = message.header.destination
-        val us = message.header.source
-        val status = message.header.statusFilter
-        val info = membershipGroupReaderProvider.getGroupReader(us.toCorda()).lookup(peer.toCorda().x500Name, status)
-        if (info == null) {
-            logger.warn("Could not get session information from message sent from ${us.toCorda().shortHash}" +
-                    " to ${peer.toCorda().shortHash} with ID `${message.header.messageId}`.")
-            return null
-        }
-        return SessionManager.SessionCounterparties(us.toCorda(), peer.toCorda(), status, info.serial)
-    }
 
     /**
      * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished

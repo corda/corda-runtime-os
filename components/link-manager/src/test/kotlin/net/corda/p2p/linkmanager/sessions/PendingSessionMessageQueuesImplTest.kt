@@ -10,7 +10,6 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
-import net.corda.p2p.linkmanager.utilities.mockMembers
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -57,9 +56,7 @@ class PendingSessionMessageQueuesImplTest {
         serial
     )
 
-    private val queue = PendingSessionMessageQueuesImpl(
-        mock(), mock(), mock(), mockMembers(listOf(sessionCounterparties.ourId, sessionCounterparties.counterpartyId))
-    )
+    private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
 
     @AfterEach
     fun cleanUp() {

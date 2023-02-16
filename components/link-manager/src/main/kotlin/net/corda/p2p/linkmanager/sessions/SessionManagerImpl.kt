@@ -8,6 +8,7 @@ import net.corda.data.p2p.HeartbeatMessage
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.SessionPartitions
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
@@ -62,7 +63,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindGroupInfo
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindSessionCounterpartiesWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindSessionInformation
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourHashNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourIdNotInMembersMapWarning
@@ -78,6 +79,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.trace
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.Base64
@@ -231,10 +233,22 @@ internal class SessionManagerImpl(
         )
     }
 
+    private fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties? {
+        val peer = message.header.destination
+        val us = message.header.source
+        val status = message.header.statusFilter
+        val info = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
+        if (info == null) {
+            logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, message.header.messageId)
+            return null
+        }
+        return SessionCounterparties(us.toCorda(), peer.toCorda(), status, info.serial)
+    }
+
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
         return dominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
-                val counterparties = pendingOutboundSessionMessageQueues.getSessionCounterpartiesFromMessage(message.message)
+                val counterparties = getSessionCounterpartiesFromMessage(message.message)
                     ?: return@read SessionState.CannotEstablishSession
 
                 return@read when (val status = outboundSessionPool.getNextSession(counterparties)) {
@@ -526,12 +540,6 @@ internal class SessionManagerImpl(
             }
         }
 
-        val sessionCounterparties = outboundSessionPool.getSessionCounterParties(message.header.sessionId)
-        if(sessionCounterparties == null) {
-            logger.couldNotFindSessionCounterpartiesWarning(message::class.java.simpleName, message.header.sessionId)
-            return null
-        }
-
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
 
@@ -580,7 +588,7 @@ internal class SessionManagerImpl(
             InMemorySessionReplayer.SessionMessageReplay(
                 payload,
                 message.header.sessionId,
-                sessionCounterparties,
+                sessionInfo,
                 heartbeatManager::sessionMessageSent
             ),
             sessionInfo
