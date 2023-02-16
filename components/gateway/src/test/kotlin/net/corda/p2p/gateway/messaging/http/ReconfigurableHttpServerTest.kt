@@ -11,6 +11,11 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.TlsType
+import net.corda.p2p.gateway.messaging.internal.CommonComponents
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -45,7 +50,12 @@ class ReconfigurableHttpServerTest {
         hostAddress = "www.r3.com",
         hostPort = 33,
         urlPath = "/",
-        sslConfig = mock(),
+        sslConfig = SslConfiguration(
+            revocationCheck = RevocationConfig(
+                RevocationConfigMode.OFF
+            ),
+            TlsType.ONE_WAY,
+        ),
         maxRequestSize = 1000
     )
     private val badConfigurationException = RuntimeException("Bad Config")
@@ -55,32 +65,31 @@ class ReconfigurableHttpServerTest {
 
     private lateinit var configHandler: ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
-        @Suppress("UNCHECKED_CAST")
         configHandler = (context.arguments()[6] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
-
-    private val dynamicKeyStore = mockConstruction(DynamicKeyStore::class.java) { mock, _ ->
-        val mockDominoTile = mock<ComplexDominoTile> {
-            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-        }
-        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    private val commonComponentsDominoTile = mock<ComplexDominoTile> {
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
+    private val dynamicKeyStore = mock<DynamicKeyStore>()
+    private val commonComponents = mock<CommonComponents> {
+        on { dominoTile } doReturn commonComponentsDominoTile
+        on { dynamicKeyStore } doReturn dynamicKeyStore
+        on { trustStoresMap } doReturn mock()
     }
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         listener,
+        commonComponents,
         mock(),
-        mock(),
-        mock()
     )
 
     @AfterEach
     fun cleanUp() {
         serverMock.close()
         dominoTile.close()
-        dynamicKeyStore.close()
     }
 
     @Test
@@ -151,6 +160,6 @@ class ReconfigurableHttpServerTest {
     fun `applyNewConfiguration creates new key store`() {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
-        verify(dynamicKeyStore.constructed().first()).serverKeyStore
+        verify(dynamicKeyStore).serverKeyStore
     }
 }

@@ -15,10 +15,10 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
+import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
-import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.types.MemberX500Name
@@ -43,6 +43,7 @@ internal class OutboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     private val avroSchemaRegistry: AvroSchemaRegistry,
+    private val commonComponents: CommonComponents,
     retryThreadPoolFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
 
@@ -51,17 +52,11 @@ internal class OutboundMessageHandler(
         private const val MAX_RETRIES = 1
     }
 
-    private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
+    private val gatewayConfigReader = GatewayConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
         configurationReaderService
-    )
-
-    private val trustStoresMap = TrustStoresMap(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        messagingConfiguration
     )
 
     private val subscriptionConfig = SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC)
@@ -76,16 +71,21 @@ internal class OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         outboundSubscription,
         subscriptionConfig,
-        setOf(connectionManager.dominoTile.coordinatorName, connectionConfigReader.dominoTile.coordinatorName),
-        setOf(connectionManager.dominoTile.toNamedLifecycle(), connectionConfigReader.dominoTile.toNamedLifecycle())
+        setOf(connectionManager.dominoTile.coordinatorName, gatewayConfigReader.dominoTile.coordinatorName),
+        setOf(connectionManager.dominoTile.toNamedLifecycle(), gatewayConfigReader.dominoTile.toNamedLifecycle())
     )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         onClose = { retryThreadPool.shutdown() },
-        dependentChildren = listOf(outboundSubscriptionTile.coordinatorName, trustStoresMap.dominoTile.coordinatorName),
-        managedChildren = listOf(outboundSubscriptionTile.toNamedLifecycle(), trustStoresMap.dominoTile.toNamedLifecycle()),
+        dependentChildren = listOf(
+            outboundSubscriptionTile.coordinatorName,
+            commonComponents.dominoTile.coordinatorName,
+        ),
+        managedChildren = listOf(
+            outboundSubscriptionTile.toNamedLifecycle(),
+        ),
     )
 
     private val retryThreadPool = retryThreadPoolFactory()
@@ -113,7 +113,7 @@ internal class OutboundMessageHandler(
         }
         val (uri, sni, trustStore) = try {
             val uri = URI.create(peerMessage.header.address)
-            val trustStore = trustStoresMap.getTrustStore(
+            val trustStore = commonComponents.trustStoresMap.getTrustStore(
                 MemberX500Name.parse(peerMessage.header.sourceIdentity.x500Name),
                 peerMessage.header.destinationIdentity.groupId
             )
@@ -146,11 +146,29 @@ internal class OutboundMessageHandler(
         } else {
             null
         }
+        val clientCertificateKeyStore = if (gatewayConfigReader.sslConfiguration?.tlsType == TlsType.MUTUAL) {
+            val keyStore = commonComponents.dynamicKeyStore.getClientKeyStore(
+                peerMessage.header.sourceIdentity
+            )
+            if (keyStore == null) {
+                logger.warn(
+                    "Can't send message to destination ${peerMessage.header.address}. " +
+                        "Can not find client certificates for ${peerMessage.header.sourceIdentity} " +
+                        "while Mutual TLS is enabled."
+                )
+                return CompletableFuture.completedFuture(Unit)
+            }
+            keyStore
+        } else {
+            null
+        }
+
         val destinationInfo = DestinationInfo(
             uri,
             sni,
             expectedX500Name,
             trustStore,
+            clientCertificateKeyStore,
         )
         val responseFuture = sendMessage(destinationInfo, gatewayMessage)
             .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
@@ -203,7 +221,7 @@ internal class OutboundMessageHandler(
         return connectionManager.acquire(destinationInfo).write(avroSchemaRegistry.serialize(gatewayMessage).array())
     }
 
-    private fun connectionConfig() = connectionConfigReader.connectionConfig
+    private fun connectionConfig() = gatewayConfigReader.connectionConfig
 
     override val keyClass: Class<String>
         get() = String::class.java

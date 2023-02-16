@@ -1,5 +1,7 @@
 package net.corda.session.manager.integration.helper
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -11,8 +13,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.test.flow.util.buildSessionEvent
-import java.nio.ByteBuffer
-import java.time.Instant
 
 fun generateMessage(
     messageType: SessionMessageType,
@@ -43,7 +43,7 @@ fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageD
 }
 
 fun generateData(instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return generateSessionEvent(SessionData(), instant, messageDirection)
+    return generateSessionEvent(SessionData(ByteBuffer.wrap("bytes".toByteArray())), instant, messageDirection)
 }
 
 fun generateAck(instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND): SessionEvent {

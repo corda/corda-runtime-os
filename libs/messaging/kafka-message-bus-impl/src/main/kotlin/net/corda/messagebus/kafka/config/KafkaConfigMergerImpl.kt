@@ -8,6 +8,7 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -20,8 +21,8 @@ class KafkaConfigMergerImpl : BusConfigMerger {
     }
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
-        logger.debug ("Merging boot config into messaging config")
-        var updatedMessagingConfig = (messagingConfig?: getBaseKafkaMessagingConfig())
+        logger.debug("Merging boot config into messaging config")
+        var updatedMessagingConfig = (messagingConfig ?: getBaseKafkaMessagingConfig(bootConfig))
             .withValue(BootConfig.INSTANCE_ID, ConfigValueFactory.fromAnyRef(bootConfig.getString(BootConfig.INSTANCE_ID)))
             .withValue(BootConfig.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(bootConfig.getString(BootConfig.TOPIC_PREFIX)))
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
@@ -29,7 +30,7 @@ class KafkaConfigMergerImpl : BusConfigMerger {
         val kafkaBootConfig = bootConfig.getConfig(BOOT_KAFKA_COMMON).entrySet()
         logger.debug("Looping through kafka boot config")
         kafkaBootConfig.forEach { entry ->
-            logger.debug {"Entry key: ${entry.key}" }
+            logger.debug { "Entry key: ${entry.key}" }
             updatedMessagingConfig = updatedMessagingConfig.withValue(
                 "$KAFKA_PROPERTIES_COMMON.${entry.key}",
                 ConfigValueFactory.fromAnyRef(bootConfig.getString("$BOOT_KAFKA_COMMON.${entry.key}"))
@@ -39,8 +40,15 @@ class KafkaConfigMergerImpl : BusConfigMerger {
         return updatedMessagingConfig
     }
 
-    private fun getBaseKafkaMessagingConfig(): SmartConfig {
-        return SmartConfigImpl.empty()
+    private fun getBaseKafkaMessagingConfig(bootConfig: SmartConfig): SmartConfig {
+        val hasMaxMsgSize = bootConfig.hasPath(BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE)
+        val baseKafkaConfig = SmartConfigImpl.empty()
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
+        return if (hasMaxMsgSize) {
+            baseKafkaConfig
+                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(bootConfig.getLong(BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE)))
+        } else {
+            baseKafkaConfig
+        }
     }
 }

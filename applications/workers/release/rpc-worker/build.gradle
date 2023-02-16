@@ -35,7 +35,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:platform-info')
     implementation project(':libs:configuration:configuration-validation')
-    implementation project(':processors:rpc-processor')
+    implementation project(':processors:rest-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -49,10 +49,12 @@ dependencies {
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")
 
+    e2eTestImplementation project(':libs:chunking:chunking-core')
     e2eTestImplementation project(':libs:configuration:configuration-endpoints')
     e2eTestImplementation project(':libs:crypto:certificate-generation')
     e2eTestImplementation project(':libs:crypto:cipher-suite')
-    e2eTestImplementation project(':libs:http-rpc:rest-client')
+    e2eTestImplementation project(':libs:crypto:cipher-suite-impl')
+    e2eTestImplementation project(':libs:rest:rest-client')
     e2eTestImplementation project(':libs:permissions:permission-endpoint')
     e2eTestImplementation project(':libs:permissions:permission-common')
     e2eTestImplementation project(':testing:test-utilities')
@@ -67,7 +69,7 @@ dependencies {
     e2eTestImplementation project(':libs:virtual-node:cpi-upload-endpoints')
     e2eTestImplementation project(':libs:virtual-node:virtual-node-endpoints')
     e2eTestImplementation project(':libs:lifecycle:lifecycle')
-    e2eTestImplementation project(':components:membership:membership-http-rpc')
+    e2eTestImplementation project(':components:membership:membership-rest')
     e2eTestImplementation project(':testing:packaging-test-utilities')
     e2eTestImplementation project(':tools:plugins:package')
     e2eTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"

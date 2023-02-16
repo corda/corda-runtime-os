@@ -8,8 +8,8 @@ description 'Endpoint API for management of cluster configuration.'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    api project(':libs:http-rpc:rest')
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api project(':libs:rest:rest')
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
 }

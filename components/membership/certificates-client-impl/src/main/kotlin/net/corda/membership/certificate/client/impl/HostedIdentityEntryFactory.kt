@@ -103,7 +103,6 @@ internal class HostedIdentityEntryFactory(
         tlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
         sessionCertificateChainAlias: String?,
-        useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,
     ): Record<String, HostedIdentityEntry> {
         val nodeInfo = getNode(holdingIdentityShortHash)
@@ -113,12 +112,7 @@ internal class HostedIdentityEntryFactory(
             logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
             null
         } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${nodeInfo.holdingIdentity.shortHash}].")
-        val (sessionKeyTenantId, sessionCertificateHoldingId) = if (useClusterLevelSessionCertificateAndKey) {
-            P2P to null
-        } else {
-            holdingIdentityShortHash.value to holdingIdentityShortHash
-        }
-        val sessionPublicKey = getKey(sessionKeyTenantId, sessionKeyId)
+        val sessionPublicKey = getKey(holdingIdentityShortHash.value, sessionKeyId)
         val (tlsKeyTenantId, tlsCertificateHoldingId) = if (useClusterLevelTlsCertificateAndKey) {
             P2P to null
         } else {
@@ -137,16 +131,14 @@ internal class HostedIdentityEntryFactory(
             tlsCertificates.first(),
         )
         val sessionCertificate = getAndValidateSessionCertificate(
-            sessionCertificateHoldingId,
+            holdingIdentityShortHash,
             sessionCertificateChainAlias,
-            sessionKeyTenantId,
             nodeInfo,
             policy
         )
 
         val hostedIdentityBuilder = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
-            .setSessionKeyTenantId(sessionKeyTenantId)
             .setSessionPublicKey(sessionPublicKey)
             .setTlsCertificates(tlsCertificates)
             .setTlsTenantId(tlsKeyTenantId)
@@ -160,9 +152,8 @@ internal class HostedIdentityEntryFactory(
     }
 
     private fun getAndValidateSessionCertificate(
-        sessionCertificateHoldingId: ShortHash?,
+        sessionCertificateHoldingId: ShortHash,
         sessionCertificateChainAlias: String?,
-        sessionKeyTenantId: String,
         nodeInfo: VirtualNodeInfo,
         policy: GroupPolicy,
     ): List<String>? {
@@ -179,7 +170,7 @@ internal class HostedIdentityEntryFactory(
                 sessionCertificateChainAlias
             )
             validateCertificates(
-                sessionKeyTenantId,
+                sessionCertificateHoldingId.value,
                 nodeInfo.holdingIdentity,
                 certificate,
                 CertificateType.SessionCertificate(policy.p2pParameters)

@@ -23,7 +23,7 @@ class HSMServiceLifecycleTests {
             factory.coordinatorFactory,
             factory.configurationReadService,
             factory.hsmStore,
-            factory.opsProxyClient
+            factory.signingServiceFactory
         )
     }
 

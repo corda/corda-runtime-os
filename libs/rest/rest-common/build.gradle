@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Corda Rest Common'
+
+dependencies {
+
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-application"
+
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+}

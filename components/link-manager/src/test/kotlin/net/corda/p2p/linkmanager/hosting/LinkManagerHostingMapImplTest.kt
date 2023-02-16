@@ -60,7 +60,6 @@ class LinkManagerHostingMapImplTest {
     private val entryOne = HostedIdentityEntry(
         createTestHoldingIdentity(bobX500Name, "group").toAvro(),
         "id1",
-        "id2",
         listOf("cert1", "cert2"),
         "pem",
         listOf("certificate")
@@ -199,7 +198,6 @@ class LinkManagerHostingMapImplTest {
                     holdingIdentity = entryOne.holdingIdentity.toCorda(),
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
-                    sessionKeyTenantId = "id2",
                     sessionPublicKey = publicKeyOne,
                     sessionCertificates = listOf("certificate")
                 )
@@ -222,7 +220,6 @@ class LinkManagerHostingMapImplTest {
                     holdingIdentity = entryOne.holdingIdentity.toCorda(),
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
-                    sessionKeyTenantId = "id2",
                     sessionPublicKey = publicKeyOne,
                     sessionCertificates = listOf("certificate")
                 )
@@ -251,7 +248,6 @@ class LinkManagerHostingMapImplTest {
                 entryOne.holdingIdentity.toCorda(),
                 entryOne.tlsCertificates,
                 entryOne.tlsTenantId,
-                entryOne.sessionKeyTenantId,
                 publicKeyOne,
                 entryOne.sessionCertificates
             )

@@ -17,6 +17,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
+import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublisher
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
@@ -89,6 +90,14 @@ internal class CommonComponents(
         linkManagerHostingMap.registerListener(it)
     }
 
+    private val mtlsClientCertificatePublisher = ClientCertificatePublisher(
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        messagingConfiguration,
+        groupPolicyProvider,
+    )
+
     private val externalDependencies = listOf(
         NamedLifecycle.of(groupPolicyProvider),
         NamedLifecycle.of(membershipGroupReaderProvider),
@@ -102,7 +111,6 @@ internal class CommonComponents(
         NamedLifecycle.of(groupParametersReaderService)
     ) + externalDependencies
 
-
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
@@ -112,6 +120,7 @@ internal class CommonComponents(
             sessionManager.dominoTile.coordinatorName,
             trustStoresPublisher.dominoTile.coordinatorName,
             tlsCertificatesPublisher.dominoTile.coordinatorName,
+            mtlsClientCertificatePublisher.dominoTile.coordinatorName,
         ) + externalDependencies.map {
             it.name
         },
@@ -121,6 +130,7 @@ internal class CommonComponents(
             sessionManager.dominoTile.toNamedLifecycle(),
             trustStoresPublisher.dominoTile.toNamedLifecycle(),
             tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
+            mtlsClientCertificatePublisher.dominoTile.toNamedLifecycle(),
         ) + externalManagedDependencies
     )
 }

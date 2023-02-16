@@ -18,7 +18,7 @@ class ConfigEncryptor {
 
         val encryptionService = EncryptionSecretsServiceImpl(passphrase, salt)
 
-        val configSection = encryptionService.createValue(passwordToEncrypt)
+        val configSection = encryptionService.createValue(passwordToEncrypt, "password")
 
         val secretsConfig = mapOf(
             EncryptionSecretsServiceFactory.SECRET_SALT_KEY to salt,

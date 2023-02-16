@@ -11,12 +11,10 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
@@ -29,20 +27,20 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
-import net.corda.virtualnode.write.db.impl.writer.DbConnection
+import net.corda.virtualnode.write.db.impl.writer.DbConnectionImpl
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
@@ -51,9 +49,7 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -62,16 +58,12 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.sql.Connection
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
-import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
-import org.assertj.core.api.Assertions.assertThat
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 
 /** Tests of [VirtualNodeWriterProcessor]. */
 class VirtualNodeWriterProcessorTests {
@@ -81,7 +73,6 @@ class VirtualNodeWriterProcessorTests {
         private const val dummyGroupPolicy = "{\"groupId\": \"efc27942-9d2a-4f72-ac39-320d38743173\"}"
         private const val dummyGroupPolicyWithMGMInfo = "{\"groupId\": \"da1623ea-e6d4-4314-84f8-6e3b84a869cd\"}"
         private const val mgmGroupPolicy = "{\"groupId\": \"$MGM_DEFAULT_GROUP_ID\"}"
-        private val HOLDING_ID_SHORT_HASH = ShortHash.of("1234567890ab")
     }
 
     private val groupId = "f3676687-ab69-4ca1-a17b-ab20b7bc6d03"
@@ -122,6 +113,7 @@ class VirtualNodeWriterProcessorTests {
             OperationalStatus.ACTIVE.name,
             OperationalStatus.ACTIVE.name,
             OperationalStatus.ACTIVE.name,
+            null,
             -1,
             clock.instant()
         )
@@ -139,52 +131,67 @@ class VirtualNodeWriterProcessorTests {
             "update_actor"
         )
 
-    private val em = mock<EntityManager>() {
-        on { transaction }.doReturn(mock<EntityTransaction>())
+    private val em = mock<EntityManager> {
+        on { transaction }.doReturn(mock())
     }
 
-    private val emf = mock<EntityManagerFactory>() {
+    private val emf = mock<EntityManagerFactory> {
         on { createEntityManager() }.doReturn(em)
     }
 
-    private val dataSource = mock<CloseableDataSource>() {
-        on { connection }.doReturn(mock<Connection>())
+    private val dataSource = mock<CloseableDataSource> {
+        on { connection }.doReturn(mock())
     }
 
-    private val connectionManager = mock<DbConnectionManager>() {
+    private val connectionManager = mock<DbConnectionManager> {
         on { getDataSource(any()) }.doReturn(dataSource)
         on { getClusterEntityManagerFactory() }.doReturn(emf)
         on { putConnection(any(), any(), any(), any(), any(), any()) }.doReturn(UUID.fromString(connectionId))
     }
 
-    private val dbConnection = mock<DbConnection>() {
+    private val dbConnection = mock<DbConnectionImpl> {
         on { name }.doReturn("connection")
         on { privilege }.doReturn(DbPrivilege.DDL)
-        on { config }.doReturn(mock<SmartConfig>())
+        on { config }.doReturn(mock())
         on { description }.doReturn("description")
         on { getUser() }.doReturn("user")
         on { getPassword() }.doReturn("password")
     }
 
-    private val dbConnections = mapOf(
+    private val dbConnectionMap = mapOf(
         DbPrivilege.DDL to dbConnection,
         DbPrivilege.DML to dbConnection,
     )
 
-    private val vaultDb = VirtualNodeDb(
-        VirtualNodeDbType.VAULT, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
-    private val cryptoDb = VirtualNodeDb(
-        VirtualNodeDbType.CRYPTO, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
-    private val uniquenessDb = VirtualNodeDb(
-        VirtualNodeDbType.UNIQUENESS, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
-    private val vNodeFactory = mock<VirtualNodeDbFactory>() {
-        on { createVNodeDbs(any(), any()) }.doReturn(mapOf(
-            VirtualNodeDbType.VAULT to vaultDb,
-            VirtualNodeDbType.CRYPTO to cryptoDb,
-            VirtualNodeDbType.UNIQUENESS to uniquenessDb))
+    private val vaultDb = mock<VirtualNodeDb>().apply {
+        whenever(isPlatformManagedDb).thenReturn(true)
+        whenever(dbConnections).thenReturn(dbConnectionMap)
+        whenever(dbType).thenReturn(VirtualNodeDbType.VAULT)
     }
 
-    private val vNodeRepo = mock<VirtualNodeEntityRepository>() {
+    private val cryptoDb = mock<VirtualNodeDb>().apply {
+        whenever(isPlatformManagedDb).thenReturn(true)
+        whenever(dbConnections).thenReturn(dbConnectionMap)
+        whenever(dbType).thenReturn(VirtualNodeDbType.CRYPTO)
+    }
+
+    private val uniquenessDb = mock<VirtualNodeDb>().apply {
+        whenever(isPlatformManagedDb).thenReturn(true)
+        whenever(dbConnections).thenReturn(dbConnectionMap)
+        whenever(dbType).thenReturn(VirtualNodeDbType.UNIQUENESS)
+    }
+
+    private val vNodeFactory = mock<VirtualNodeDbFactory> {
+        on { createVNodeDbs(any(), any()) }.doReturn(
+            mapOf(
+                VirtualNodeDbType.VAULT to vaultDb,
+                VirtualNodeDbType.CRYPTO to cryptoDb,
+                VirtualNodeDbType.UNIQUENESS to uniquenessDb
+            )
+        )
+    }
+
+    private val vNodeRepo = mock<VirtualNodeEntityRepository> {
         on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
     }
     private val mgmMemberContextKey = "member-context-key"
@@ -207,10 +214,6 @@ class VirtualNodeWriterProcessorTests {
         on { getMgmInfo(any(), eq(dummyGroupPolicy)) } doReturn null
         on { getMgmInfo(any(), eq(dummyGroupPolicyWithMGMInfo)) } doReturn mgmMemberInfo
         on { getMgmInfo(any(), eq(mgmGroupPolicy)) } doReturn mgmMemberInfo
-    }
-
-    private val defaultKey: PublicKey = mock {
-        on { encoded } doReturn "1234".toByteArray()
     }
 
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
@@ -238,8 +241,9 @@ class VirtualNodeWriterProcessorTests {
         return respFuture.get()
     }
 
-    private fun virtualNodeRepositoryMock(): VirtualNodeRepository = mock<VirtualNodeRepository>()
-    private fun holdingIdentityRepositoryMock(): HoldingIdentityRepository = mock<HoldingIdentityRepository>()
+    private fun virtualNodeRepositoryMock(): VirtualNodeRepository = mock()
+    private fun holdingIdentityRepositoryMock(): HoldingIdentityRepository = mock()
+    private fun migrationUtilityMock(): MigrationUtility = mock<MigrationUtility>()
 
     @Test
     fun `publishes correct virtual node info to Kafka`() {
@@ -255,7 +259,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -269,30 +274,32 @@ class VirtualNodeWriterProcessorTests {
             filePath("stuff.xml")
         }
 
-        Mockito.mockConstruction(LiquibaseSchemaMigratorImpl::class.java).use { liquibaseSchemaMigratorImpl ->
-            val processor = VirtualNodeWriterProcessor(
-                getPublisher(),
-                connectionManager,
-                vNodeRepo,
-                vNodeFactory,
-                groupPolicyParser,
-                clock,
-                getCurrentChangelogsForCpi = { _, _, _, _ -> listOf(changelog) },
-                holdingIdentityRepository = holdingIdentityRepositoryMock(),
-                virtualNodeRepository = virtualNodeRepositoryMock()
+        val vaultDb = mock<VirtualNodeDb>().apply { whenever(dbType).thenReturn(VirtualNodeDbType.VAULT) }
+        val cryptoDb = mock<VirtualNodeDb>().apply { whenever(dbType).thenReturn(VirtualNodeDbType.CRYPTO) }
+
+        whenever(vNodeFactory.createVNodeDbs(any(), any())).thenReturn(
+            mapOf(
+                VirtualNodeDbType.VAULT to vaultDb,
+                VirtualNodeDbType.CRYPTO to cryptoDb
             )
+        )
 
-            processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
+        val processor = VirtualNodeWriterProcessor(
+            getPublisher(),
+            connectionManager,
+            vNodeRepo,
+            vNodeFactory,
+            groupPolicyParser,
+            clock,
+            getCurrentChangelogsForCpi = { _, _, _, _ -> listOf(changelog) },
+            holdingIdentityRepository = holdingIdentityRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
+        )
 
-            assertThat(liquibaseSchemaMigratorImpl.constructed().size).isEqualTo(1)
-            verify(liquibaseSchemaMigratorImpl.constructed().first())
-                .updateDb(
-                    any(),
-                    argThat { dbChange -> dbChange.masterChangeLogFiles.isEmpty() },
-                    eq<String?>("alpha")
-                )
+        processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
-        }
+        verify(vaultDb).runCpiMigrations(any(), eq("alpha"))
     }
 
     @Test
@@ -310,7 +317,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -347,7 +355,7 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `skips MGM member info publishing to Kafka without error if MGM information is not present in group policy`() {
         val publisher = getPublisher()
-        val vNodeRepo = mock<VirtualNodeEntityRepository>() {
+        val vNodeRepo = mock<VirtualNodeEntityRepository> {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
         val processor = VirtualNodeWriterProcessor(
@@ -359,7 +367,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -411,7 +420,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
 
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), mgmVnodeCreationReq))
@@ -421,7 +431,7 @@ class VirtualNodeWriterProcessorTests {
         val publishedVirtualNodeList = capturedPublishedList.firstValue
         assertSoftly {
             val publishedVirtualNode = publishedVirtualNodeList.first()
-            with ((publishedVirtualNode.value as VirtualNodeInfo).holdingIdentity.toCorda()) {
+            with((publishedVirtualNode.value as VirtualNodeInfo).holdingIdentity.toCorda()) {
                 it.assertThat(x500Name).isEqualTo(mgmName)
                 it.assertThat(groupId).isNotEqualTo(MGM_DEFAULT_GROUP_ID)
             }
@@ -462,7 +472,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -471,7 +482,8 @@ class VirtualNodeWriterProcessorTests {
 
     @Test
     fun `sends RPC failure response if fails to publish virtual node info to Kafka`() {
-        // consider eliminating these 2 instances and just test expected values directrly in the asserts at the bottom of this function
+        // consider eliminating these 2 instances and just test expected values directrly in the asserts at
+        // the bottom of this function
         val expectedEnvelope = ExceptionEnvelope(
             VirtualNodeWriteServiceException::class.java.name,
             ""
@@ -486,7 +498,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(
             processor,
@@ -514,7 +527,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), request))
 
@@ -693,7 +707,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock()
+            virtualNodeRepository = virtualNodeRepositoryMock(),
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -717,7 +732,7 @@ class VirtualNodeWriterProcessorTests {
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getCpiMetadataByChecksum(any())).thenReturn(cpiMetaData)
         }
-        val vnodeRepo = mock<VirtualNodeRepository>() {
+        val vnodeRepo = mock<VirtualNodeRepository> {
             on { find(any(), any()) }.doReturn(mock())
         }
         val processor = VirtualNodeWriterProcessor(
@@ -729,7 +744,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = vnodeRepo
+            virtualNodeRepository = vnodeRepo,
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
@@ -743,14 +759,14 @@ class VirtualNodeWriterProcessorTests {
             ""
         )
 
-        val entityRepository = mock<VirtualNodeEntityRepository>() {
+        val entityRepository = mock<VirtualNodeEntityRepository> {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
 
-        val holdingIdentityRepository = mock<HoldingIdentityRepository>() {
-            on { find(any(), any()) }.doReturn(mock<HoldingIdentity>())
+        val holdingIdentityRepository = mock<HoldingIdentityRepository> {
+            on { find(any(), any()) }.doReturn(mock())
         }
-        val vnodeRepo = mock<VirtualNodeRepository>() {
+        val vnodeRepo = mock<VirtualNodeRepository> {
             on { find(any(), any()) }.doReturn(null)
         }
 
@@ -763,7 +779,8 @@ class VirtualNodeWriterProcessorTests {
             clock,
             getCurrentChangelogsForCpi = { _, _, _, _ -> listOf() },
             holdingIdentityRepository = holdingIdentityRepository,
-            virtualNodeRepository = vnodeRepo
+            virtualNodeRepository = vnodeRepo,
+            migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(
             processor,

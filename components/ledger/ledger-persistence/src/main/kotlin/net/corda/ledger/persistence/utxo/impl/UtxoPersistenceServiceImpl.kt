@@ -114,7 +114,7 @@ class UtxoPersistenceServiceImpl constructor(
                     transactionIdString,
                     UtxoComponentGroup.INPUTS.ordinal,
                     index,
-                    input.transactionHash.toString(),
+                    input.transactionId.toString(),
                     input.index,
                     false,
                     nowUtc

@@ -15,8 +15,8 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-management-sender')
 
     implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
-    implementation project(':libs:http-rpc:rest')
-    implementation project(':libs:http-rpc:rest-common')
+    implementation project(':libs:rest:rest')
+    implementation project(':libs:rest:rest-common')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(":libs:utilities")
@@ -25,7 +25,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

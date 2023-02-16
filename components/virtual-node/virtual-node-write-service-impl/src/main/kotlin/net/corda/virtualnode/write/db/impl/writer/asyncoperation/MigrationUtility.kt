@@ -1,0 +1,45 @@
+package net.corda.virtualnode.write.db.impl.writer.asyncoperation
+
+import java.util.UUID
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.virtualnode.ShortHash
+
+/**
+ * Utility for running migrations.
+ */
+internal interface MigrationUtility {
+    /**
+     * Runs migrations on the vault with the given virtual node connection information with the changesets contained in
+     * [migrationChangeLogs].
+     *
+     * Requires a [vaultDdlConnectionId].
+     *
+     * If [migrationChangeLogs] is empty, no migrations will run.
+     * If [migrationChangeLogs] contains migrations from CPKs that have already been executed, these migrations will not be run twice, thus
+     * this API supports being given the full list of migrations from all CPKs.
+     *
+     * @param virtualNodeShortHash the [ShortHash] of the virtual node on which to run vault migrations
+     * @param migrationChangeLogs the list of changelogs for all CPKs
+     * @param vaultDdlConnectionId the connection identifier of the vault DDL connection details
+     */
+    fun runVaultMigrations(
+        virtualNodeShortHash: ShortHash,
+        migrationChangeLogs: List<CpkDbChangeLogEntity>,
+        vaultDdlConnectionId: UUID
+    )
+
+    /**
+     * Checks if the vault for the given connection ID requires migrations to be run to be in sync with the given list of CPK change logs.
+     *
+     * @param virtualNodeShortHash the virtual node identifier of which to perform diff function
+     * @param cpkChangelogs the changelogs with which to compare
+     * @param vaultDmlConnectionId the DML connection ID of the vault to be compared
+     *
+     * @return Boolean indicating if the vault is in sync with the CPI
+     */
+    fun isVaultSchemaAndTargetCpiInSync(
+        virtualNodeShortHash: String,
+        cpkChangelogs: List<CpkDbChangeLogEntity>,
+        vaultDmlConnectionId: UUID
+    ): Boolean
+}

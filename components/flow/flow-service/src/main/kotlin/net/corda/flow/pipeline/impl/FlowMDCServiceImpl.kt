@@ -44,7 +44,7 @@ class FlowMDCServiceImpl : FlowMDCService {
                 mapOf(
                     MDC_VNODE_ID to holdingIdentityShortHash,
                     MDC_CLIENT_ID to startContext.requestId,
-                    MDC_FLOW_ID to startKey.id
+                    MDC_FLOW_ID to flowId
                 )
             }
             is SessionEvent -> {

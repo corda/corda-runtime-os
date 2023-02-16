@@ -15,9 +15,9 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class FlowSessionImpl(
-    override val counterparty: MemberX500Name,
+    private val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
     private val serializationService: SerializationServiceInternal,
@@ -29,7 +29,9 @@ class FlowSessionImpl(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override val contextProperties: FlowContextProperties = flowContext
+    override fun getCounterparty(): MemberX500Name = counterparty
+
+    override fun getContextProperties(): FlowContextProperties = flowContext
 
     enum class Direction {
         INITIATING_SIDE,

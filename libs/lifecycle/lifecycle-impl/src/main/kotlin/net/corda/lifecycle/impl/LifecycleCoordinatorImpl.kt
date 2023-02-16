@@ -220,8 +220,8 @@ class LifecycleCoordinatorImpl(
         return followStatusChanges(coordinators)
     }
 
-    override fun <T : Resource> createManagedResource(name: String, generator: () -> T) {
-        processor.addManagedResource(name, generator)
+    override fun <T : Resource> createManagedResource(name: String, generator: () -> T): T {
+        return processor.addManagedResource(name, generator)
     }
 
     override fun <T: Resource> getManagedResource(name: String) : T? {

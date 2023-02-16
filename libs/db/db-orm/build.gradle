@@ -6,7 +6,7 @@ plugins {
 description 'Database ORM API'
 
 dependencies {
-    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":libs:db:db-core")

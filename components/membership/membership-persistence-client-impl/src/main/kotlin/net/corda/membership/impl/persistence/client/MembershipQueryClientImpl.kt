@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
@@ -11,6 +12,7 @@ import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
+import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
@@ -19,8 +21,11 @@ import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -33,6 +38,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -40,6 +46,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -153,11 +160,14 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity):
-            MembershipQueryResult<List<RegistrationRequestStatus>> {
+    override fun queryRegistrationRequestsStatus(
+        viewOwningIdentity: HoldingIdentity,
+        requestSubjectX500Name: MemberX500Name?,
+        statuses: List<RegistrationStatus>
+    ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests()
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {
@@ -238,6 +248,35 @@ class MembershipQueryClientImpl(
             }
             else -> {
                 MembershipQueryResult.Failure("Failed to retrieve list of allowed certificates.")
+            }
+        }
+    }
+
+    override fun queryPreAuthTokens(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name?,
+        preAuthTokenId: UUID?,
+        viewInactive: Boolean
+    ): MembershipQueryResult<List<PreAuthToken>> {
+        val statuses = if (viewInactive) {
+            PreAuthTokenStatus.values().toList()
+        } else {
+            listOf(PreAuthTokenStatus.AVAILABLE)
+        }
+        val ownerX500NameString = ownerX500Name?.let { ownerX500Name.toString() }
+        val preAuthTokenIdString = preAuthTokenId?.let { preAuthTokenId.toString() }
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            QueryPreAuthToken(ownerX500NameString, preAuthTokenIdString, statuses)
+        ).execute()
+        return when (val payload = result.payload) {
+            is PreAuthTokenQueryResponse -> {
+                MembershipQueryResult.Success(
+                    payload.tokens,
+                )
+            }
+            else -> {
+                MembershipQueryResult.Failure("Failed to query for pre auth tokens.")
             }
         }
     }

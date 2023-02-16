@@ -756,7 +756,7 @@ class FlowCheckpointImplTest {
     }
 }
 
-@InitiatingFlow("valid-example")
+@InitiatingFlow(protocol = "valid-example")
 class InitiatingFlowExample : SubFlow<Unit> {
     override fun call() {
     }

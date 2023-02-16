@@ -6,6 +6,7 @@ import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.crypto.SecureHash
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -33,21 +34,21 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
+        val exception = assertThrows(IllegalStateException::class.java) {
             consensualTransactionBuilder.toSignedTransaction()
         }
-        assertEquals("At least one consensual state is required", exception.message)
+        assertEquals("At least one consensual state is required.", exception.message)
     }
 
     @Test
     fun `cannot build Transaction with Consensual States without participants`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
+        val exception = assertThrows(IllegalStateException::class.java) {
             consensualTransactionBuilder
                 .withStates(consensualStateExample)
                 .withStates(ConsensualStateClassExample("test", emptyList()))
                 .toSignedTransaction()
         }
-        assertEquals("All consensual states must have participants", exception.message)
+        assertEquals("All consensual states must have participants.", exception.message)
     }
 
     @Test
@@ -71,16 +72,25 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "1",
-                dummyCpkSignerSummaryHash.toHexString(),
-                "0101010101010101010101010101010101010101010101010101010101010101"
+                dummyCpkSignerSummaryHash.toString(),
+                "SHA-256:0101010101010101010101010101010101010101010101010101010101010101"
             ),
             CordaPackageSummaryImpl(
                 "MockCpk",
                 "3",
-                dummyCpkSignerSummaryHash.toHexString(),
-                "0303030303030303030303030303030303030303030303030303030303030303"
+                dummyCpkSignerSummaryHash.toString(),
+                "SHA-256:0303030303030303030303030303030303030303030303030303030303030303"
             )
         )
         assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())
+    }
+
+    @Test
+    fun `adding states mutates and returns the current builder`() {
+        val originalTransactionBuilder = consensualTransactionBuilder
+        val mutatedTransactionBuilder = consensualTransactionBuilder.withStates(consensualStateExample)
+        assertThat(mutatedTransactionBuilder.states).isEqualTo(listOf(consensualStateExample))
+        assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
+        assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(System.identityHashCode(originalTransactionBuilder))
     }
 }

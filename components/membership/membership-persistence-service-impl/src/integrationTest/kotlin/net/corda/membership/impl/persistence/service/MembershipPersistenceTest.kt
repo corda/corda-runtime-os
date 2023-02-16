@@ -36,6 +36,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.datamodel.ApprovalRulesEntity
+import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -105,6 +106,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.time.Instant
+import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
 
@@ -289,6 +291,36 @@ class MembershipPersistenceTest {
                 )
             }
 
+            override fun generatePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                preAuthTokenId: UUID,
+                ownerX500Name: MemberX500Name,
+                ttl: Instant?,
+                remarks: String?
+            )= safeCall {
+                membershipPersistenceClient.generatePreAuthToken(
+                    mgmHoldingIdentity, preAuthTokenId, ownerX500Name, ttl, remarks
+                )
+            }
+
+            override fun consumePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                ownerX500Name: MemberX500Name,
+                preAuthTokenId: UUID
+            )= safeCall {
+                membershipPersistenceClient.consumePreAuthToken(
+                    mgmHoldingIdentity, ownerX500Name, preAuthTokenId
+                )
+            }
+
+            override fun revokePreAuthToken(
+                mgmHoldingIdentity: HoldingIdentity,
+                preAuthTokenId: UUID,
+                remarks: String?
+            ) = safeCall {
+                membershipPersistenceClient.revokePreAuthToken(mgmHoldingIdentity, preAuthTokenId, remarks)
+            }
+
             override fun addApprovalRule(
                 viewOwningIdentity: HoldingIdentity,
                 ruleParams: ApprovalRuleParams
@@ -300,10 +332,11 @@ class MembershipPersistenceTest {
 
             override fun deleteApprovalRule(
                 viewOwningIdentity: HoldingIdentity,
-                ruleId: String
+                ruleId: String,
+                ruleType: ApprovalRuleType
             ) = safeCall {
                 membershipPersistenceClient.deleteApprovalRule(
-                    viewOwningIdentity, ruleId
+                    viewOwningIdentity, ruleId, ruleType
                 )
             }
 
@@ -447,12 +480,12 @@ class MembershipPersistenceTest {
     @Test
     fun `registration requests can persist over RPC topic`() {
         val registrationId = randomUUID().toString()
-        val status = RegistrationStatus.NEW
+        val status = RegistrationStatus.SENT_TO_MGM
 
         val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -914,7 +947,7 @@ class MembershipPersistenceTest {
         val requestEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
 
         val approveResult = membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
             viewOwningHoldingIdentity,
@@ -967,7 +1000,7 @@ class MembershipPersistenceTest {
         val requestEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
-        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
 
         membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsDeclined(
             viewOwningHoldingIdentity,
@@ -1015,7 +1048,7 @@ class MembershipPersistenceTest {
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
-                    RegistrationStatus.NEW,
+                    RegistrationStatus.SENT_TO_MGM,
                     registrationId,
                     holdingId,
                     ByteBuffer.wrap(
@@ -1050,7 +1083,7 @@ class MembershipPersistenceTest {
         val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -1078,7 +1111,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
         assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
-        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.NEW.name)
+        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.name)
 
         val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
             viewOwningHoldingIdentity,
@@ -1108,7 +1141,13 @@ class MembershipPersistenceTest {
         ).getOrThrow()
 
         val approvalRuleEntity = vnodeEmf.use {
-            it.find(ApprovalRulesEntity::class.java, ruleDetails.ruleId)
+            it.find(
+                ApprovalRulesEntity::class.java,
+                ApprovalRulesEntityPrimaryKey(
+                    ruleDetails.ruleId,
+                    ApprovalRuleType.STANDARD.name
+                )
+            )
         }
         with(approvalRuleEntity) {
             assertThat(ruleRegex).isEqualTo(RULE_REGEX)
@@ -1122,15 +1161,25 @@ class MembershipPersistenceTest {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM ApprovalRulesEntity").executeUpdate()
         }
-        val testRule = ApprovalRulesEntity(RULE_ID, RULE_REGEX, ApprovalRuleType.STANDARD.name, RULE_LABEL)
+        val testRule = ApprovalRulesEntity(RULE_ID, ApprovalRuleType.STANDARD.name, RULE_REGEX, RULE_LABEL)
         vnodeEmf.transaction {
             it.persist(testRule)
         }
 
-        membershipPersistenceClientWrapper.deleteApprovalRule(viewOwningHoldingIdentity, RULE_ID).getOrThrow()
+        membershipPersistenceClientWrapper.deleteApprovalRule(
+            viewOwningHoldingIdentity, RULE_ID, ApprovalRuleType.STANDARD
+        ).getOrThrow()
 
         vnodeEmf.use {
-            assertThat(it.find(ApprovalRulesEntity::class.java, RULE_ID)).isNull()
+            assertThat(
+                it.find(
+                    ApprovalRulesEntity::class.java,
+                    ApprovalRulesEntityPrimaryKey(
+                        RULE_ID,
+                        ApprovalRuleType.STANDARD.name
+                    )
+                )
+            ).isNull()
         }
     }
 
@@ -1146,8 +1195,8 @@ class MembershipPersistenceTest {
         val rule1 = ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL)
         val rule2 = ApprovalRuleDetails("rule-id-2", "rule-regex-2", "rule-label-2")
         val entities = listOf(
-            ApprovalRulesEntity(rule1.ruleId, rule1.ruleRegex, ApprovalRuleType.STANDARD.name, rule1.ruleLabel),
-            ApprovalRulesEntity(rule2.ruleId, rule2.ruleRegex, ApprovalRuleType.STANDARD.name, rule2.ruleLabel)
+            ApprovalRulesEntity(rule1.ruleId, ApprovalRuleType.STANDARD.name, rule1.ruleRegex, rule1.ruleLabel),
+            ApprovalRulesEntity(rule2.ruleId, ApprovalRuleType.STANDARD.name, rule2.ruleRegex, rule2.ruleLabel)
         )
         vnodeEmf.transaction { em ->
             entities.forEach { em.persist(it) }
@@ -1160,6 +1209,55 @@ class MembershipPersistenceTest {
 
         assertThat(result.size).isEqualTo(2)
         assertThat(result).containsAll(listOf(rule1, rule2))
+    }
+
+    @Test
+    fun `queryRegistrationRequests retrieves the expected registration requests`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId1 = randomUUID().toString()
+        val requestPersistentResult = persistRequest(registeringHoldingIdentity, registrationId1, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        // Persist a completed request
+        val registrationId2 = randomUUID().toString()
+        val requestPersistentResult2 = persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
+        assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        // Persist a new request
+        val registrationId3 = randomUUID().toString()
+        val requestPersistentResult3 = persistRequest(
+            HoldingIdentity(MemberX500Name.parse("O=Charlie, C=GB, L=London"), groupId), registrationId3
+        )
+        assertThat(requestPersistentResult3).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val result1 = membershipQueryClient.queryRegistrationRequestsStatus(
+            viewOwningHoldingIdentity,
+            null,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+        ).getOrThrow()
+        assertThat(result1.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2))
+
+        val result2 = membershipQueryClient.queryRegistrationRequestsStatus(
+            viewOwningHoldingIdentity,
+            viewOwningHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+        ).getOrThrow()
+        assertThat(result2.map { it.registrationId }).containsAll(listOf(registrationId2))
+
+        val result3 = membershipQueryClient.queryRegistrationRequestsStatus(
+            viewOwningHoldingIdentity,
+            null,
+            listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        ).getOrThrow()
+        assertThat(result3.map { it.registrationId }).containsAll(listOf(registrationId1))
+
+        val result4 = membershipQueryClient.queryRegistrationRequestsStatus(viewOwningHoldingIdentity).getOrThrow()
+        assertThat(result4.map { it.registrationId }).containsAll(listOf(registrationId1, registrationId2, registrationId3))
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
@@ -1197,11 +1295,15 @@ class MembershipPersistenceTest {
         )
     }
 
-    private fun persistRequest(member: HoldingIdentity, registrationId: String): MembershipPersistenceResult<Unit> {
+    private fun persistRequest(
+        member: HoldingIdentity,
+        registrationId: String,
+        status: RegistrationStatus = RegistrationStatus.SENT_TO_MGM,
+    ): MembershipPersistenceResult<Unit> {
         return membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.NEW,
+                status,
                 registrationId,
                 member,
                 ByteBuffer.wrap(

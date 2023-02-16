@@ -1,10 +1,11 @@
 package net.corda.chunking
 
-import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.DigestInputStream
 import java.security.MessageDigest
+import net.corda.chunking.Checksum.digestForPath
+import net.corda.v5.crypto.SecureHash
 
 /**
  * Stream that is chunked and written, is calculated via [DigestInputStream], but reconstructed
@@ -26,5 +27,14 @@ object Checksum {
             }
             return SecureHash(ALGORITHM, messageDigest.digest())
         }
+    }
+
+    /**
+     * Generate a checksum for some [bytes]
+     */
+    fun digestForBytes(bytes: ByteArray): SecureHash {
+        val digest = newMessageDigest()
+        digest.update(bytes)
+        return SecureHash(ALGORITHM, digest.digest())
     }
 }

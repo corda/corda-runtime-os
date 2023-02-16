@@ -6,10 +6,15 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import java.time.Instant
 
 data class UniquenessCheckResultSuccessImpl(
-    override val resultTimestamp: Instant
-) : UniquenessCheckResultSuccess
+    private val resultTimestamp: Instant
+) : UniquenessCheckResultSuccess {
+    override fun getResultTimestamp() = resultTimestamp
+}
 
 data class UniquenessCheckResultFailureImpl(
-    override val resultTimestamp: Instant,
-    override val error: UniquenessCheckError
-) : UniquenessCheckResultFailure
+    private val resultTimestamp: Instant,
+    private val error: UniquenessCheckError
+) : UniquenessCheckResultFailure {
+    override fun getResultTimestamp() = resultTimestamp
+    override fun getError() = error
+}

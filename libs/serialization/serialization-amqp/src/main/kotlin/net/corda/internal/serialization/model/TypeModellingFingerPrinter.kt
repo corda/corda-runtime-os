@@ -8,7 +8,7 @@ import net.corda.internal.serialization.model.TypeIdentifier.ArrayOf
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.model.TypeIdentifier.UnknownType
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.base.util.toBase64
+import net.corda.v5.base.util.EncodingUtils.toBase64
 import org.slf4j.LoggerFactory
 import java.lang.reflect.ParameterizedType
 
@@ -87,8 +87,8 @@ internal class FingerprintWriter(debugEnabled: Boolean = false) {
         hasher = hasher.putUnencodedChars(chars)
     }
 
-    val fingerprint: String by lazy {
-        val fingerprint = hasher.hash().asBytes().toBase64()
+    val fingerprint: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val fingerprint = toBase64(hasher.hash().asBytes())
         if (debugBuffer != null) logger.info("$fingerprint from $debugBuffer")
         fingerprint
     }

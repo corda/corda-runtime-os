@@ -1,9 +1,9 @@
 package net.corda.ledger.verification.processor.impl
 
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
-import net.corda.ledger.utxo.contract.verification.VerifyContractsRequest
-import net.corda.ledger.verification.processor.ResponseFactory
-import net.corda.ledger.verification.sanbox.VerificationSandboxService
+import net.corda.ledger.utxo.verification.TransactionVerificationRequest
+import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -19,14 +19,14 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = VerificationSandboxService::class)
     private val verificationSandboxService: VerificationSandboxService,
-    @Reference(service = ResponseFactory::class)
-    private val responseFactory: ResponseFactory
+    @Reference(service = ExternalEventResponseFactory::class)
+    private val responseFactory: ExternalEventResponseFactory
 ) : VerificationSubscriptionFactory {
     companion object {
         internal const val GROUP_NAME = "verification.ledger.processor"
     }
 
-    override fun create(config: SmartConfig): Subscription<String, VerifyContractsRequest> {
+    override fun create(config: SmartConfig): Subscription<String, TransactionVerificationRequest> {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC)
 
         val processor = VerificationRequestProcessor(

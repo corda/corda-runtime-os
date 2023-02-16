@@ -12,7 +12,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:virtual-node:cpi-info-read-service-impl')
-    implementation project(':libs:http-rpc:rest')
+    implementation project(':libs:rest:rest')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
@@ -22,7 +22,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-crypto'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-avro-schema"
     implementation 'net.corda:corda-topic-schema'
     implementation project(":libs:packaging:packaging")

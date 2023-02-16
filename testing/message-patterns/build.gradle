@@ -23,7 +23,7 @@ configurations {
 dependencies {
     integrationTestCompileOnly 'org.osgi:osgi.core'
     integrationTestCompileOnly 'org.osgi:org.osgi.service.component.annotations'
-    integrationTestImplementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    integrationTestImplementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     integrationTestImplementation project(":components:kafka-topic-admin")
 
@@ -59,6 +59,7 @@ dependencies {
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 
     //runtime implementation dependencies
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"

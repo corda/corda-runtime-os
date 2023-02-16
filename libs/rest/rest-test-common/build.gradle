@@ -1,0 +1,27 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda REST Test Common'
+
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-serialization"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
+    implementation "com.konghq:unirest-java:$unirestVersion"
+
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    implementation project(":libs:rest:rest")
+    implementation project(":libs:rest:rest-common")
+    implementation project(":libs:rest:rest-tools")
+    implementation project(":libs:rest:rest-security-read")
+    implementation project(":libs:serialization:serialization-amqp")
+    implementation project(":libs:lifecycle:lifecycle")
+}

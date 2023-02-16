@@ -1,13 +1,18 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.preauth.PreAuthTokenStatus
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import java.util.UUID
 
 interface MembershipQueryClient : Lifecycle {
     /**
@@ -51,11 +56,15 @@ interface MembershipQueryClient : Lifecycle {
      * Query for all the registration requests for a specific holding identity.
      *
      * @param viewOwningIdentity The holding identity whose view is being requested.
+     * @param requestSubjectX500Name Optional. X.500 name of the subject of the registration request.
+     * @param statuses Requests in the specified statuses will be included in the query result.
      *
      * @return a query result with a matching registration request if the query executed successfully.
      */
     fun queryRegistrationRequestsStatus(
-        viewOwningIdentity: HoldingIdentity
+        viewOwningIdentity: HoldingIdentity,
+        requestSubjectX500Name: MemberX500Name? = null,
+        statuses: List<RegistrationStatus> = RegistrationStatus.values().toList()
     ): MembershipQueryResult<List<RegistrationRequestStatus>>
 
     /**
@@ -90,6 +99,22 @@ interface MembershipQueryClient : Lifecycle {
      * @return a query result with the list of the client certificates subject.
      */
     fun mutualTlsListAllowedCertificates(mgmHoldingIdentity: HoldingIdentity): MembershipQueryResult<Collection<String>>
+
+    /**
+     * Query for PreAuthTokens
+     *
+     * @param mgmHoldingIdentity The holding identity of the MGM.
+     * @param ownerX500Name The X500 name of the member to query for.
+     * @param preAuthTokenId The token ID to query for.
+     * @param viewInactive Return tokens with status [PreAuthTokenStatus.REVOKED], [PreAuthTokenStatus.CONSUMED],
+     * [PreAuthTokenStatus.AUTO_INVALIDATED] as well as [PreAuthTokenStatus.AVAILABLE].
+     */
+    fun queryPreAuthTokens(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name?,
+        preAuthTokenId: UUID?,
+        viewInactive: Boolean
+    ): MembershipQueryResult<List<PreAuthToken>>
 
     /**
      * Retrieves all persisted rules of the specified [ruleType].

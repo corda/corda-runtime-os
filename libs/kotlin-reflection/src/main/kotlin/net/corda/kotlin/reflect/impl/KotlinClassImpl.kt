@@ -3,7 +3,6 @@ package net.corda.kotlin.reflect.impl
 
 import kotlinx.metadata.KmClass
 import kotlinx.metadata.KmPackage
-import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
 import net.corda.kotlin.reflect.KotlinClass
 import net.corda.kotlin.reflect.types.KFunctionInternal
@@ -13,6 +12,7 @@ import net.corda.kotlin.reflect.types.jvmSuperClasses
 import net.corda.kotlin.reflect.types.toSignature
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap
+import kotlin.LazyThreadSafetyMode.PUBLICATION
 import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -270,7 +270,7 @@ sealed class KotlinClassImpl<T : Any> constructor(
         klazz: KClass<T>,
         kClassPool: KClassPool
     ): KotlinClassImpl<T>(clazz, klazz, kClassPool) {
-        private val jMembers by lazy {
+        private val jMembers by lazy(PUBLICATION) {
             JavaMembers(clazz, allSuperKotlinClasses)
         }
 
@@ -376,16 +376,7 @@ private fun <T : Any> Metadata.forKotlinType(
     klazz: KClass<T>,
     pool: KClassPool
 ): KotlinClassImpl<T> {
-    val header = KotlinClassHeader(
-        kind,
-        metadataVersion,
-        data1,
-        data2,
-        extraString,
-        packageName,
-        extraInt
-    )
-    return when (val km = KotlinClassMetadata.read(header)) {
+    return when (val km = KotlinClassMetadata.read(this)) {
         is KotlinClassMetadata.Class -> KotlinClassImpl.KmClassType(clazz, klazz, pool, km.toKmClass())
         is KotlinClassMetadata.FileFacade -> KotlinClassImpl.KmPackageType(clazz, klazz, pool, km.toKmPackage())
         is KotlinClassMetadata.MultiFileClassPart -> KotlinClassImpl.KmPackageType(clazz, klazz, pool, km.toKmPackage())

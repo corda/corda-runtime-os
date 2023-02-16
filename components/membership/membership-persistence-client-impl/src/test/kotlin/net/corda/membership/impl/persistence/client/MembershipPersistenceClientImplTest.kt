@@ -9,9 +9,12 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.AddPreAuthToken
+import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
@@ -20,6 +23,7 @@ import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
+import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
@@ -27,8 +31,10 @@ import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
+import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
+import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -66,6 +72,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -76,6 +83,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class MembershipPersistenceClientImplTest {
@@ -117,6 +125,7 @@ class MembershipPersistenceClientImplTest {
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = "Group ID"
     private val ourHoldingIdentity = HoldingIdentity(ourX500Name, ourGroupId)
+    private val bobX500Name = MemberX500Name.parse("O=Bob,L=London,C=GB")
 
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()
@@ -126,7 +135,7 @@ class MembershipPersistenceClientImplTest {
     }
     private val registrationId = "Group ID 1"
     private val ourRegistrationRequest = RegistrationRequest(
-        RegistrationStatus.NEW,
+        RegistrationStatus.SENT_TO_MGM,
         registrationId,
         ourHoldingIdentity,
         ByteBuffer.wrap("123".toByteArray()),
@@ -373,7 +382,7 @@ class MembershipPersistenceClientImplTest {
 
             assertThat(firstValue.request).isInstanceOf(PersistRegistrationRequest::class.java)
             assertThat((firstValue.request as PersistRegistrationRequest).status)
-                .isEqualTo(RegistrationStatus.NEW)
+                .isEqualTo(RegistrationStatus.SENT_TO_MGM)
             with((firstValue.request as PersistRegistrationRequest).registrationRequest) {
                 assertThat(registrationId)
                     .isEqualTo(this@MembershipPersistenceClientImplTest.registrationId)
@@ -762,7 +771,8 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                RULE_ID
+                RULE_ID,
+                PREAUTH
             )
 
             assertThat(result).isEqualTo(MembershipPersistenceResult.success())
@@ -776,7 +786,8 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                RULE_ID
+                RULE_ID,
+                PREAUTH
             )
 
             assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
@@ -791,11 +802,13 @@ class MembershipPersistenceClientImplTest {
 
             membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
-                RULE_ID
+                RULE_ID,
+                PREAUTH
             )
 
             val sentRequest = (argument.firstValue.request as? DeleteApprovalRule)!!
             assertThat(sentRequest.ruleId).isEqualTo(RULE_ID)
+            assertThat(sentRequest.ruleType).isEqualTo(PREAUTH)
         }
     }
 
@@ -898,7 +911,7 @@ class MembershipPersistenceClientImplTest {
             val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
-            mockPersistenceResponse(false)
+            mockPersistenceResponse(PersistenceFailedResponse("error-msg"))
 
             val result = membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
                 ourHoldingIdentity,
@@ -1031,6 +1044,161 @@ class MembershipPersistenceClientImplTest {
             val response = membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
                 ourHoldingIdentity,
                 ourX500Name.toString(),
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+    }
+
+    @Nested
+    inner class PreAuthTokenTests {
+        private val uuid = UUID.randomUUID()
+        private val ttl = Instant.ofEpochSecond(100)
+        private val remarks = "a remark"
+        private val removalRemark = "another remark"
+
+        @BeforeEach
+        fun setUp() = postConfigChangedEvent()
+
+        @Test
+        fun `generatePreAuthToken sends the correct request`() {
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+
+            assertThat(argument.firstValue.request).isInstanceOf(AddPreAuthToken::class.java)
+            val request = (argument.firstValue.request as AddPreAuthToken)
+            assertThat(request.tokenId).isEqualTo(uuid.toString())
+            assertThat(request.remark).isEqualTo(remarks)
+            assertThat(request.ttl).isEqualTo(ttl)
+            assertThat(request.ownerX500Name).isEqualTo(ourX500Name.toString())
+        }
+
+        @Test
+        fun `generatePreAuthToken returns the token correctly`() {
+            mockPersistenceResponse()
+
+            val response = membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        }
+
+        @Test
+        fun `generatePreAuthToken return failure after failure`() {
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+
+            val response = membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `generatePreAuthToken return failure after unknown result`() {
+            mockPersistenceResponse("Placeholder error")
+
+            val response = membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `revokePreAuthToken sends the correct request`() {
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
+
+            assertThat(argument.firstValue.request).isInstanceOf(RevokePreAuthToken::class.java)
+            val request = (argument.firstValue.request as RevokePreAuthToken)
+            assertThat(request.tokenId).isEqualTo(uuid.toString())
+            assertThat(request.remark).isEqualTo(removalRemark)
+        }
+
+        @Test
+        fun `revokePreAuthToken returns the token correctly`() {
+            val mockToken = mock<PreAuthToken>()
+            mockPersistenceResponse(RevokePreAuthTokenResponse(mockToken))
+
+            val response = membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark).getOrThrow()
+
+            assertThat(response).isEqualTo(mockToken)
+        }
+
+        @Test
+        fun `revokePreAuthToken return failure after failure`() {
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+
+            val response = membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `revokePreAuthToken return failure after unknown result`() {
+            mockPersistenceResponse("Placeholder error")
+
+            val response = membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark)
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `consumePreAuthToken persistence request is built as expected`() {
+            mockPersistenceResponse()
+
+            membershipPersistenceClient.consumePreAuthToken(
+                ourHoldingIdentity,
+                bobX500Name,
+                uuid
+            )
+
+            verify(rpcSender).sendRequest(
+                argThat {
+                    request is ConsumePreAuthToken
+                            && (request as ConsumePreAuthToken).tokenId == uuid.toString()
+                            && (request as ConsumePreAuthToken).ownerX500Name == bobX500Name.toString()
+                            && context.holdingIdentity == ourHoldingIdentity.toAvro()
+                }
+            )
+        }
+
+        @Test
+        fun `consumePreAuthToken returns success if persistence operation was successful`() {
+            mockPersistenceResponse()
+
+            val response = membershipPersistenceClient.consumePreAuthToken(
+                ourHoldingIdentity,
+                bobX500Name,
+                uuid
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        }
+
+        @Test
+        fun `consumePreAuthToken returns failure after failure`() {
+            mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
+
+            val response = membershipPersistenceClient.consumePreAuthToken(
+                ourHoldingIdentity,
+                bobX500Name,
+                uuid
+            )
+
+            assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `consumePreAuthToken returns failure after unknown result`() {
+            mockPersistenceResponse("Placeholder error")
+
+            val response = membershipPersistenceClient.consumePreAuthToken(
+                ourHoldingIdentity,
+                bobX500Name,
+                uuid
             )
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)

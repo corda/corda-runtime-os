@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
  * TODO expand description
  */
 
-@InitiatingFlow("consensual-flow-protocol")
+@InitiatingFlow(protocol = "consensual-flow-protocol")
 class ConsensualDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
 
@@ -88,7 +88,7 @@ class ConsensualDemoFlow : ClientStartableFlow {
     }
 }
 
-@InitiatedBy("consensual-flow-protocol")
+@InitiatedBy(protocol = "consensual-flow-protocol")
 class ConsensualResponderFlow : ResponderFlow {
 
     private companion object {

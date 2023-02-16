@@ -1,29 +1,46 @@
 package net.corda.session.manager.impl
 
+import java.nio.ByteBuffer
 import java.time.Instant
+import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
+import net.corda.session.manager.impl.processor.helper.setErrorState
+import net.corda.v5.base.util.uncheckedCast
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component
-class SessionManagerImpl : SessionManager {
+class SessionManagerImpl @Activate constructor(
+    @Reference(service = SessionEventProcessorFactory::class)
+    private val sessionEventProcessorFactory: SessionEventProcessorFactory,
+    @Reference(service = MessagingChunkFactory::class)
+    private val messagingChunkFactory: MessagingChunkFactory,
+) : SessionManager {
 
     private companion object {
-        val sessionEventProcessorFactory = SessionEventProcessorFactory()
+        const val INITIAL_PART_NUMBER = 1
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    private val chunkDeserializerService = messagingChunkFactory.createChunkDeserializerService(ByteArray::class.java)
 
     override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
             SessionState {
@@ -35,9 +52,14 @@ class SessionManagerImpl : SessionManager {
         return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
     }
 
-    override fun processMessageToSend(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
-            SessionState {
-        return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant).execute()
+    override fun processMessageToSend(
+        key: Any,
+        sessionState: SessionState?,
+        event: SessionEvent,
+        instant: Instant,
+        maxMsgSize: Long,
+    ): SessionState {
+        return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
@@ -53,17 +75,24 @@ class SessionManagerImpl : SessionManager {
             //only allow client to see a close message after the session is closed on both sides
             status != SessionStateType.CLOSED && undeliveredMessages.first().payload is SessionClose -> null
             //return the next valid message
-            undeliveredMessages.first().sequenceNum <= receivedEvents.lastProcessedSequenceNum -> undeliveredMessages.first()
+            undeliveredMessages.first().sequenceNum <= receivedEvents.lastProcessedSequenceNum -> {
+                val nextMessage = undeliveredMessages.first()
+                val nextMessagePayload = nextMessage.payload
+                if (nextMessagePayload is SessionData && nextMessagePayload.payload is Chunk) {
+                    assembleAndReturnChunkIfPossible(sessionState, uncheckedCast(nextMessagePayload.payload))
+                } else {
+                    nextMessage
+                }
+            }
+
             else -> null
         }
     }
 
     override fun acknowledgeReceivedEvent(sessionState: SessionState, seqNum: Int): SessionState {
         return sessionState.apply {
-            val receivedEvent = receivedEventsState.undeliveredMessages.find {
-                it.sequenceNum == seqNum
-            }
-            receivedEventsState.undeliveredMessages = receivedEventsState.undeliveredMessages.minus(receivedEvent)
+            receivedEventsState.undeliveredMessages =
+                receivedEventsState.undeliveredMessages.filter { it.sequenceNum > seqNum }
         }
     }
 
@@ -71,7 +100,7 @@ class SessionManagerImpl : SessionManager {
         sessionState: SessionState,
         instant: Instant,
         config: SmartConfig,
-        identity: HoldingIdentity
+        identity: HoldingIdentity,
     ): Pair<SessionState,
             List<SessionEvent>> {
         var messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant, config)
@@ -151,7 +180,7 @@ class SessionManagerImpl : SessionManager {
     private fun getMessagesToSendAndUpdateSendState(
         sessionState: SessionState,
         instant: Instant,
-        config: SmartConfig
+        config: SmartConfig,
     ): List<SessionEvent> {
         //get all events with a timestamp in the past, as well as any acks or errors
         val sessionEvents = sessionState.sendEventsState.undeliveredMessages.filter {
@@ -182,7 +211,7 @@ class SessionManagerImpl : SessionManager {
     private fun updateSessionStateSendEvents(
         sessionState: SessionState,
         instant: Instant,
-        messageResendWindow: Long
+        messageResendWindow: Long,
     ) {
         sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
             it.payload !is SessionError
@@ -267,5 +296,89 @@ class SessionManagerImpl : SessionManager {
         } else {
             Pair(identity, sessionState.counterpartyIdentity)
         }
+    }
+
+    /**
+     * Take a chunk received. Get the chunks received for this chunk requestId
+     * If there are missing chunks return null
+     * Otherwise try to assemble the chunks into a complete data event.
+     * Remove chunked records from the receivedEventState and add the complete record.
+     * Use the sequenceNumber of the last chunked data message for the completed record.
+     * If chunks fail to reassemble set the session as errored.
+     * @param sessionState current sessions state
+     * @param chunk the chunk for the next message available in the received events state
+     * @return A data session event reassembled from chunks. null if chunks missing or an error occurred on deserialization
+     */
+    private fun assembleAndReturnChunkIfPossible(sessionState: SessionState, chunk: Chunk): SessionEvent? {
+        val requestId = chunk.requestId
+        val receivedEventState = sessionState.receivedEventsState
+        val chunkSessionEvents = receivedEventState.undeliveredMessages.filter {
+            val eventPayload = it.payload
+            if (eventPayload is SessionData) {
+                val dataPayload = eventPayload.payload
+                dataPayload is Chunk && dataPayload.requestId == requestId
+            } else {
+                false
+            }
+        }.sortedBy { it.sequenceNum }
+
+        val chunks = chunkSessionEvents.map {
+            (it.payload as SessionData).payload as Chunk
+        }
+
+        return if (!chunkMissing(chunks)) {
+            val dataPayload = chunkDeserializerService.assembleChunks(chunks)
+            if (dataPayload == null) {
+                val errorMessage = "Failed to deserialize chunks into a complete data message. First chunk seqNum is ${
+                    chunkSessionEvents
+                        .first().sequenceNum
+                }"
+                logger.warn(errorMessage)
+                setErrorState(
+                    sessionState,
+                    receivedEventState.undeliveredMessages.first(),
+                    Instant.now(),
+                    errorMessage,
+                    "SessionData-ChunkError"
+                )
+                null
+            } else {
+                val sessionEvent = chunkSessionEvents.last()
+                (sessionEvent.payload as SessionData).payload = ByteBuffer.wrap(dataPayload)
+                val undeliveredMessages =
+                    receivedEventState.undeliveredMessages.filterNot { chunkSessionEvents.contains(it) }.toMutableList()
+                receivedEventState.undeliveredMessages = undeliveredMessages.apply {
+                    add(sessionEvent)
+                }
+                sessionEvent
+            }
+        } else null
+    }
+
+    /**
+     * Check to see if any chunks are missing.
+     * Checks to see if the checksum is present or if the partNumbers are not contiguous starting at 1
+     * @param chunkList chunks received so far
+     * @return true if there is a chunk missing, false otherwise
+     */
+    private fun chunkMissing(chunkList: List<Chunk>): Boolean {
+        val sortedChunks = chunkList.sortedBy { it.partNumber }
+        return sortedChunks.last().checksum == null || missingPartNumber(sortedChunks)
+    }
+
+    /**
+     * Check to see if there are any missing parts in the chunks sorted already by partNumber
+     * @param sortedChunks sorted chunks by part number
+     * @return true if there is a chunk missing, false otherwise
+     */
+    private fun missingPartNumber(sortedChunks: List<Chunk>): Boolean {
+        var expected = INITIAL_PART_NUMBER
+        for (chunk in sortedChunks) {
+            if (chunk.partNumber != expected) {
+                return true
+            }
+            expected++
+        }
+        return false
     }
 }

@@ -1,6 +1,5 @@
 package net.corda.libs.virtualnode.datamodel.entities
 
-import net.corda.db.schema.DbSchema.CONFIG
 import net.corda.db.schema.DbSchema.VIRTUAL_NODE_DB_TABLE
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
@@ -15,7 +14,6 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Enumerated
 import javax.persistence.EnumType
-import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.MapsId
@@ -42,7 +40,7 @@ import javax.persistence.Version
  * @param operationInProgress Details of the current operation in progress.
  */
 @Entity
-@Table(name = VIRTUAL_NODE_DB_TABLE, schema = CONFIG)
+@Table(name = VIRTUAL_NODE_DB_TABLE)
 @Suppress("LongParameterList")
 internal class VirtualNodeEntity(
     @Id
@@ -97,7 +95,7 @@ internal class VirtualNodeEntity(
     @Column(name = "vault_db_operational_status", nullable = false)
     var vaultDbOperationalStatus: OperationalStatus = OperationalStatus.ACTIVE,
 
-    @OneToOne(cascade = [CascadeType.PERSIST, CascadeType.MERGE], fetch = FetchType.LAZY)
+    @OneToOne(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
     @JoinColumn(name = "operation_in_progress")
     var operationInProgress: VirtualNodeOperationEntity? = null,
 
@@ -140,6 +138,7 @@ internal class VirtualNodeEntity(
             flowStartOperationalStatus,
             flowOperationalStatus,
             vaultDbOperationalStatus,
+            operationInProgress?.requestId,
             entityVersion,
             insertTimestamp!!,
             isDeleted

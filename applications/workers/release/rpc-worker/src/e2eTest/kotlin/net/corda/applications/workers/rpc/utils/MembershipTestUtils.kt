@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.httprpc.v1.MemberLookupRestResource
-import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
+import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
@@ -79,7 +79,8 @@ fun createMgmRegistrationContext(
     sessionKeyId: String,
     ecdhKeyId: String,
     p2pUrl: String,
-    sessionPkiMode: String = "NoPKI"
+    sessionPkiMode: String = "NoPKI",
+    tlsType: String = "OneWay",
 ) = mapOf(
     "corda.session.key.id" to sessionKeyId,
     "corda.ecdh.key.id" to ecdhKeyId,
@@ -89,7 +90,7 @@ fun createMgmRegistrationContext(
             to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
     "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
     "corda.group.key.session.policy" to "Distinct",
-    "corda.group.tls.type" to "OneWay",
+    "corda.group.tls.type" to tlsType,
     "corda.group.pki.session" to sessionPkiMode,
     "corda.group.pki.tls" to "Standard",
     "corda.group.tls.version" to "1.3",
@@ -112,20 +113,22 @@ fun createMemberRegistrationContext(
     "corda.endpoints.0.protocolVersion" to "1"
 )
 
-val RpcMemberInfo.status get() = mgmContext["corda.status"] ?: fail("Could not find member status")
-val RpcMemberInfo.groupId get() = memberContext["corda.groupId"] ?: fail("Could not find member group ID")
-val RpcMemberInfo.name get() = memberContext["corda.name"] ?: fail("Could not find member name")
+val RestMemberInfo.status get() = mgmContext["corda.status"] ?: fail("Could not find member status")
+val RestMemberInfo.groupId get() = memberContext["corda.groupId"] ?: fail("Could not find member group ID")
+val RestMemberInfo.name get() = memberContext["corda.name"] ?: fail("Could not find member name")
 
 fun E2eCluster.assertOnlyMgmIsInMemberList(
     holdingId: String,
     mgmName: String
-) = lookupMembers(holdingId).also { result ->
-    assertThat(result)
-        .hasSize(1)
-        .allSatisfy {
-            assertThat(it.status).isEqualTo("ACTIVE")
-            assertThat(it.name).isEqualTo(mgmName)
-        }
+) = eventually(duration = 1.minutes) {
+    lookupMembers(holdingId).also { result ->
+        assertThat(result)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.status).isEqualTo("ACTIVE")
+                assertThat(it.name).isEqualTo(mgmName)
+            }
+    }
 }
 
 fun E2eCluster.getGroupId(
@@ -163,7 +166,7 @@ fun E2eCluster.assertMemberInMemberList(
 
 fun E2eCluster.lookupMembers(
     holdingId: String
-): List<RpcMemberInfo> {
+): List<RestMemberInfo> {
     return clusterHttpClientFor(MemberLookupRestResource::class.java)
         .use { client ->
             client.start().proxy.lookup(holdingId).members

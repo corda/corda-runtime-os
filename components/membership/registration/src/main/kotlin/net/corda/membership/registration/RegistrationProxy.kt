@@ -4,6 +4,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.virtualnode.HoldingIdentity
 import java.util.UUID
+import kotlin.jvm.Throws
 
 /**
  * Proxy for registering a holding identity with the appropriate instance of [MemberRegistrationService].
@@ -22,10 +23,18 @@ interface RegistrationProxy : Lifecycle {
      * NOT_SUBMITTED is returned if something goes wrong while creating the request.
      *
      * @throws [RegistrationProtocolSelectionException] when the registration protocol could not be selected.
+     * @throws [NotReadyMembershipRegistrationException] when the registration fail
+     *     because a service might not be ready.
+     * @throws [InvalidMembershipRegistrationException] when the registration fail because it is invalid.
      */
+    @Throws(
+        NotReadyMembershipRegistrationException::class,
+        InvalidMembershipRegistrationException::class,
+        RegistrationProtocolSelectionException::class,
+    )
     fun register(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>,
-    ): MembershipRequestRegistrationResult
+    )
 }

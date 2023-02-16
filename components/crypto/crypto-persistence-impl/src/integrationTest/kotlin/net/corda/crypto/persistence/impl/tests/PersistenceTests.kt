@@ -46,7 +46,7 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.BootConfig
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.X25519_CODE_NAME
@@ -192,7 +192,7 @@ class PersistenceTests {
                 hsmId = hsmId,
                 timestamp = Instant.now(),
                 masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
-                    UUID.randomUUID().toString().toByteArray().toHex().take(30)
+                    toHex(UUID.randomUUID().toString().toByteArray()).take(30)
                 } else {
                     null
                 }
@@ -399,7 +399,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
+            masterKeyAlias = toHex(UUID.randomUUID().toString().toByteArray()).take(30)
         )
         cryptoDbEmf().transaction { em ->
             em.persist(association)
@@ -437,7 +437,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
+            masterKeyAlias = toHex(UUID.randomUUID().toString().toByteArray()).take(30)
         )
         cryptoDbEmf().transaction { em ->
             em.persist(association1)
@@ -447,7 +447,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
+            masterKeyAlias = toHex(UUID.randomUUID().toString().toByteArray()).take(30)
         )
         assertThrows(PersistenceException::class.java) {
             cryptoDbEmf().transaction { em ->

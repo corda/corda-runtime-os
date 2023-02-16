@@ -21,7 +21,7 @@ class TestInitialConfigPluginUser {
 
         // can only compare the first bit as timestamp and salted hash will change.
         assertThat(outText).startsWith(
-            "insert into RBAC.rbac_user (enabled, full_name, hashed_password, id, login_name, " +
+            "insert into rbac_user (enabled, full_name, hashed_password, id, login_name, " +
                 "salt_value, update_ts, version) values (true, 'Default Admin',"
         ).contains(
             "'user1'"
@@ -53,7 +53,7 @@ class TestInitialConfigPluginUser {
         }
 
         assertThat(outText).startsWith(
-            "insert into RBAC.rbac_user (enabled, full_name, id, login_name, " +
+            "insert into rbac_user (enabled, full_name, id, login_name, " +
                 "update_ts, version) values (true, 'Default Admin',"
         ).contains(
             "'user1'"

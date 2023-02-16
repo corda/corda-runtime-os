@@ -57,10 +57,10 @@ import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.EncodingUtils.toBase64
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
-import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SignatureSpec
@@ -214,7 +214,6 @@ class SessionManagerTest {
         holdingIdentity = OUR_PARTY,
         tlsCertificates = emptyList(),
         tlsTenantId = "tlsId",
-        sessionKeyTenantId = "id",
         sessionPublicKey = OUR_KEY.public,
         sessionCertificates = null
     )
@@ -575,7 +574,7 @@ class SessionManagerTest {
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHelloMessage::class.java.simpleName} with sessionId ${sessionId}. " +
-                "The received public key hash (${initiatorKeyHash.toBase64()}) corresponding " +
+                "The received public key hash (${toBase64(initiatorKeyHash)}) corresponding " +
                 "to one of the sender's holding identities is not in the members map. The message was discarded.")
     }
 
@@ -947,7 +946,7 @@ class SessionManagerTest {
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
-                "${sessionId}. The received public key hash (${initiatorPublicKeyHash.toBase64()}) corresponding " +
+                "${sessionId}. The received public key hash (${toBase64(initiatorPublicKeyHash)}) corresponding " +
                 "to one of the sender's holding identities is not in the members map. The message was discarded.")
     }
 
@@ -1059,7 +1058,7 @@ class SessionManagerTest {
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarningContains("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
-                "${sessionId}. The received public key hash (${responderPublicKeyHash.toBase64()}) corresponding " +
+                "${sessionId}. The received public key hash (${toBase64(responderPublicKeyHash)}) corresponding " +
                 "to one of our holding identities is not in the members map. The message was discarded.")
     }
 

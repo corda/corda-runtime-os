@@ -398,6 +398,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             flowStartOperationalStatus,
             flowOperationalStatus,
             vaultDbOperationalStatus,
+            operationInProgress
         )
 
     private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =

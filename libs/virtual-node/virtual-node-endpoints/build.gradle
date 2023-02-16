@@ -8,12 +8,12 @@ description 'Endpoint API for management of virtual nodes.'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    api project(':libs:http-rpc:rest')
+    api project(':libs:rest:rest')
 
     api project(":libs:virtual-node:cpi-upload-endpoints")
     implementation project(":libs:virtual-node:virtual-node-info")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }

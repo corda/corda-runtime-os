@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Implementation of the Security Manager that integrates with Role Based Access Control Permission system.'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+
+    implementation project(":libs:rest:rest-security-read")
+    implementation project(":libs:permissions:permission-manager")
+    implementation project(":libs:permissions:permission-validation")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

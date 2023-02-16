@@ -51,6 +51,8 @@ interface FlowCheckpoint : NonSerializable {
 
     val flowContext: FlowContext
 
+    val maxMessageSize: Long
+
     fun initFlowState(flowStartContext: FlowStartContext, cpks: Set<SecureHash>)
 
     fun getSessionState(sessionId: String): SessionState?

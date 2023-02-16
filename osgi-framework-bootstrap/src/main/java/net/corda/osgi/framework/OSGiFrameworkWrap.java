@@ -383,7 +383,9 @@ class OSGiFrameworkWrap implements AutoCloseable {
                 logger.error("Bundle {} has no symbolic name so is not a valid OSGi bundle; skipping", resourceUrl);
                 bundle.uninstall();
             } else {
-                bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
+                if (!isFragment(bundle)) {
+                    bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
+                }
                 logger.debug("OSGi bundle {} installed.", resource);
             }
         }
@@ -433,7 +435,9 @@ class OSGiFrameworkWrap implements AutoCloseable {
                 logger.error("Bundle {} has no symbolic name so is not a valid OSGi bundle; uninstalling", fileUri);
                 bundle.uninstall();
             } else {
-                bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
+                if (!isFragment(bundle)) {
+                    bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
+                }
                 logger.info("OSGi bundle {} installed - {} {}", fileUri, bundle.getSymbolicName(), bundle.getVersion());
             }
         }
@@ -568,11 +572,10 @@ class OSGiFrameworkWrap implements AutoCloseable {
         for (OSGiBundleDescriptor bundleDescriptor: bundleDescriptorMap.values()) {
             if (!bundleDescriptor.getActive().await(timeout, MILLISECONDS)) {
                 final Bundle bundle = bundleDescriptor.getBundle();
-                final String symbolicName = bundle.getSymbolicName();
                 logger.warn("OSGi bundle {} ID = {} {} {} {} activation time-out after {} ms.",
                     bundle.getLocation(),
                     bundle.getBundleId(),
-                    symbolicName == null ? "-" : symbolicName,
+                    bundle.getSymbolicName(),
                     bundle.getVersion(),
                     bundleStateMap.get(bundle.getState()),
                     timeout

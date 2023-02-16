@@ -8,18 +8,20 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
 
+    implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:flows:session-manager")
-    implementation project(':libs:configuration:configuration-core')
+    implementation project(":libs:messaging:messaging")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:flow:flow-utilities")
     testImplementation project(":libs:flows:utils")
 }

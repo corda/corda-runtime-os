@@ -4,7 +4,7 @@ import kong.unirest.Unirest
 import kong.unirest.json.JSONArray
 import kong.unirest.json.JSONObject
 import net.corda.cli.plugins.packaging.CreateCpiV2
-import net.corda.v5.base.util.toBase64
+import net.corda.v5.base.util.EncodingUtils.toBase64
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -176,14 +176,16 @@ class OnBoardMember : Runnable, BaseOnboard() {
         }
         return digest
             .digest()
-            .toBase64()
+            .let(::toBase64)
             .replace('/', '.')
             .replace('+', '-')
             .replace('=', '_')
     }
     private fun createCpi(cpbFile: File, cpiFile: File) {
-        println("Using the cpb file is not recommended." +
-                " It is advised to create CPI using the package create-cpi command.")
+        println(
+            "Using the cpb file is not recommended." +
+                " It is advised to create CPI using the package create-cpi command."
+        )
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
         creator.cpbFileName = cpbFile.absolutePath
@@ -216,11 +218,20 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
         setupClient()
 
+        configureGateway()
+
         createTlsKeyIdNeeded()
+
+        if (mtls) {
+            println(
+                "Using $certificateSubject as client certificate. " +
+                    "The onboarding will fail until the the subject is added to the MGM's allow list. " +
+                    "You can do that using the allowClientCertificate command."
+            )
+        }
 
         setupNetwork()
 
-        disableClrChecks()
         println("Provided registration context: ")
         println(registrationContext)
 
@@ -229,8 +240,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (waitForFinalStatus) {
             println("Member $x500Name was onboarded.")
         } else {
-            println("Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                    "MGM may need to approve your request manually.")
+            println(
+                "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                    "MGM may need to approve your request manually."
+            )
         }
     }
 }

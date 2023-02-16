@@ -1,0 +1,21 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda Rest Stub Implementations'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation project(":libs:rest:rest")
+    api project(":libs:rest:ssl-cert-read")
+    implementation project(":libs:rest:rest-security-read")
+    implementation project(":libs:rest:rest-common")
+    implementation project(":libs:utilities")
+
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+}

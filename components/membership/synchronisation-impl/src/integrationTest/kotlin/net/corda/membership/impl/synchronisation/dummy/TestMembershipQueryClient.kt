@@ -5,6 +5,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -13,6 +14,7 @@ import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -22,6 +24,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.util.UUID
 
 /**
  * Created for mocking and simplifying membership query client functionalities used by the membership services.
@@ -73,7 +76,11 @@ class TestMembershipQueryClientImpl @Activate constructor(
         }
     }
 
-    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<List<RegistrationRequestStatus>> {
+    override fun queryRegistrationRequestsStatus(
+        viewOwningIdentity: HoldingIdentity,
+        requestSubjectX500Name: MemberX500Name?,
+        statuses: List<RegistrationStatus>,
+    ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -118,6 +125,13 @@ class TestMembershipQueryClientImpl @Activate constructor(
 
     override fun mutualTlsListAllowedCertificates(
         mgmHoldingIdentity: HoldingIdentity,
+    ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
+    override fun queryPreAuthTokens(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name?,
+        preAuthTokenId: UUID?,
+        viewInactive: Boolean
     ) = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
     override val isRunning: Boolean
