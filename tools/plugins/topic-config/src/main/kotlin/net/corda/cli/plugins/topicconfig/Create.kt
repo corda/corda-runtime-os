@@ -69,7 +69,8 @@ class Create(
         "gateway" to listOf("p2pGateway", "combined"),
         "link-manager" to listOf("p2pLinkManager", "combined"),
         "rpc" to listOf("rpc", "combined"),
-        "uniqueness" to listOf("db", "combined")
+        "uniqueness" to listOf("db", "combined"),
+        "interop" to listOf("interop", "combined")
     )
 
     fun getTopicConfigs(): List<TopicConfig> {
