@@ -94,4 +94,5 @@ class TransactionMetadataImpl (private val properties: Map<String, Any>) : Trans
                 "Transaction metadata representation error: Platform version should be an integer but could not be parsed: $version")
         }
     }
+
 }
