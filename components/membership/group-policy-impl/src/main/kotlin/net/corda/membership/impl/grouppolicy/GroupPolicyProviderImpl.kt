@@ -278,15 +278,11 @@ class GroupPolicyProviderImpl @Activate constructor(
                         "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
             )
         }
-        var groupPolicy: String? = metadata?.groupPolicy ?: interopGroupPolicyReader.getGroupPolicy(holdingIdentity)
-
-        if (interopGroupPolicyReader.getGroupPolicy(holdingIdentity) == null) {
-            logger.warn(
-                "Could not get interop group policy for holding identity [${holdingIdentity}]."
-            )
+        val groupPolicy: String? = metadata?.groupPolicy ?: interopGroupPolicyReader.getGroupPolicy(holdingIdentity)
+        if (groupPolicy == null) {
+            logger.warn("Could not get interop group policy for holding identity [${holdingIdentity}].")
             return null
         }
-
 
         fun persistedPropertyQuery(): LayeredPropertyMap? = try {
             membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
