@@ -2,7 +2,16 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
@@ -26,30 +35,29 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
+import net.corda.membership.lib.registration.RegistrationRequestStatus
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.data.membership.common.ApprovalRuleDetails
-import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.data.membership.preauth.PreAuthTokenStatus
-import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.membership.persistence.client.MembershipQueryClient
-import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
@@ -61,6 +69,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -80,20 +89,21 @@ import kotlin.test.assertTrue
 
 class MGMResourceClientTest {
     private companion object {
-        private val holdingIdentity = createTestHoldingIdentity(
-            "CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB",
-            "DEFAULT_MEMBER_GROUP_ID"
-        )
         const val HOLDING_IDENTITY_STRING = "1234567890AB"
-        val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         const val KNOWN_KEY = "12345"
-        private const val RULE_REGEX = "rule-regex"
-        private const val RULE_LABEL = "rule-label"
-        private const val RULE_ID = "rule-id"
-        private val RULE_TYPE = ApprovalRuleType.STANDARD
+        const val RULE_REGEX = "rule-regex"
+        const val RULE_LABEL = "rule-label"
+        const val RULE_ID = "rule-id"
+        const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
 
+        val RULE_TYPE = ApprovalRuleType.STANDARD
+        val memberName = MemberX500Name.parse("CN=Member,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
+        val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), "DEFAULT_MEMBER_GROUP_ID")
+        val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         val clock = TestClock(Instant.ofEpochSecond(100))
+
+        fun String.uuid(): UUID = UUID.fromString(this)
     }
 
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
@@ -204,6 +214,10 @@ class MGMResourceClientTest {
         on { start() } doAnswer { coordinatorIsRunning = true }
         on { stop() } doAnswer { coordinatorIsRunning = false }
         on { followStatusChangesByName(any()) } doReturn componentHandle
+        on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
+            val function: () -> Resource = it.getArgument(1)
+            function.invoke()
+        }
     }
 
     private var lifecycleHandler: LifecycleEventHandler? = null
@@ -218,6 +232,7 @@ class MGMResourceClientTest {
     private val rpcRequest = argumentCaptor<MembershipRpcRequest>()
 
     private val rpcSender = mock<RPCSender<MembershipRpcRequest, MembershipRpcResponse>>()
+    private val publisher = mock<Publisher>()
 
     private val publisherFactory = mock<PublisherFactory> {
         on {
@@ -226,6 +241,7 @@ class MGMResourceClientTest {
                 any()
             )
         } doReturn rpcSender
+        on { createPublisher(any(), any()) } doReturn publisher
     }
 
     private val configurationReadService: ConfigurationReadService = mock {
@@ -233,7 +249,7 @@ class MGMResourceClientTest {
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
     private val membershipQueryClient = mock<MembershipQueryClient>()
-    private val mgmOpsClient = MGMResourceClientImpl(
+    private val mgmResourceClient = MGMResourceClientImpl(
         lifecycleCoordinatorFactory,
         publisherFactory,
         configurationReadService,
@@ -281,23 +297,15 @@ class MGMResourceClientTest {
     }
 
     @Test
-    fun `starting and stopping the service succeeds`() {
-        mgmOpsClient.start()
-        assertTrue(mgmOpsClient.isRunning)
-        mgmOpsClient.stop()
-        assertFalse(mgmOpsClient.isRunning)
-    }
-
-    @Test
     fun `rpc sender sends the expected request - starting generate group policy process`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         setUpRpcSender(
             MGMGroupPolicyResponse(
                 "groupPolicy",
             )
         )
-        mgmOpsClient.generateGroupPolicy(shortHash)
-        mgmOpsClient.stop()
+        mgmResourceClient.generateGroupPolicy(shortHash)
+        mgmResourceClient.stop()
 
         val requestSent = rpcRequest.firstValue.request as? MGMGroupPolicyRequest
 
@@ -306,50 +314,50 @@ class MGMResourceClientTest {
 
     @Test
     fun `should fail when rpc sender is not ready`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         val ex = assertFailsWith<IllegalStateException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("incorrect state") }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Test
     fun `should fail when service is not running`() {
         val ex = assertFailsWith<IllegalStateException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("incorrect state") }
     }
 
     @Test
     fun `should fail when there is an RPC sender exception while sending the request`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         changeConfig()
         val message = "Sender exception."
         whenever(rpcSender.sendRequest(any())).doThrow(CordaRPCAPISenderException(message))
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains(message) }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Test
     fun `should fail when response is null`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         setUpRpcSender(null)
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("null") }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Test
     fun `should fail when request and response has different ids`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         changeConfig()
 
         whenever(rpcSender.sendRequest(rpcRequest.capture())).doAnswer {
@@ -369,15 +377,15 @@ class MGMResourceClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("ID") }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Test
     fun `should fail when request and response has different requestTimestamp`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         changeConfig()
         whenever(rpcSender.sendRequest(rpcRequest.capture())).doAnswer {
             val request = it.getArgument<MembershipRpcRequest>(0)
@@ -396,28 +404,28 @@ class MGMResourceClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("timestamp") }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Test
     fun `should fail when response type is not the expected type`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         setUpRpcSender("WRONG RESPONSE TYPE")
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
 
         assertTrue { ex.message!!.contains("Expected class") }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Test
     fun `generateGroupPolicy should fail if the member can not be found`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         setUpRpcSender(
             MGMGroupPolicyResponse(
                 "groupPolicy",
@@ -425,14 +433,14 @@ class MGMResourceClientTest {
         )
 
         assertThrows<CouldNotFindMemberException> {
-            mgmOpsClient.generateGroupPolicy(ShortHash.of("000000000000"))
+            mgmResourceClient.generateGroupPolicy(ShortHash.of("000000000000"))
         }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Test
     fun `generateGroupPolicy should fail if the member can not be read`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         setUpRpcSender(
             MGMGroupPolicyResponse(
                 "groupPolicy",
@@ -441,14 +449,14 @@ class MGMResourceClientTest {
         whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
         assertThrows<CouldNotFindMemberException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Test
     fun `generateGroupPolicy should fail if the member is not an mgm`() {
-        mgmOpsClient.start()
+        mgmResourceClient.start()
         setUpRpcSender(
             MGMGroupPolicyResponse(
                 "groupPolicy",
@@ -461,16 +469,16 @@ class MGMResourceClientTest {
         whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
         assertThrows<MemberNotAnMgmException> {
-            mgmOpsClient.generateGroupPolicy(shortHash)
+            mgmResourceClient.generateGroupPolicy(shortHash)
         }
-        mgmOpsClient.stop()
+        mgmResourceClient.stop()
     }
 
     @Nested
     inner class AddApprovalRuleTests {
         @Test
         fun `addApprovalRule should send the correct request`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val params = ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
             whenever(
@@ -482,7 +490,7 @@ class MGMResourceClientTest {
                 MembershipPersistenceResult.Success(ApprovalRuleDetails(RULE_ID, RULE_REGEX, RULE_LABEL))
             )
 
-            mgmOpsClient.addApprovalRule(
+            mgmResourceClient.addApprovalRule(
                 shortHash,
                 params
             )
@@ -491,40 +499,40 @@ class MGMResourceClientTest {
                 holdingIdentity,
                 params
             )
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `addApprovalRule should fail if the member cannot be found`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
 
             assertThrows<CouldNotFindMemberException> {
-                mgmOpsClient.addApprovalRule(
+                mgmResourceClient.addApprovalRule(
                     ShortHash.of("000000000000"),
                     ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `addApprovalRule should fail if the member cannot be read`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
             assertThrows<CouldNotFindMemberException> {
-                mgmOpsClient.addApprovalRule(
+                mgmResourceClient.addApprovalRule(
                     shortHash, ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `addApprovalRule should fail if the member is not the MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -533,11 +541,11 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.addApprovalRule(
+                mgmResourceClient.addApprovalRule(
                     shortHash, ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
     }
 
@@ -545,7 +553,7 @@ class MGMResourceClientTest {
     inner class DeleteApprovalRuleTests {
         @Test
         fun `deleteApprovalRule should send the correct request`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(
                 membershipPersistenceClient.deleteApprovalRule(
@@ -557,7 +565,7 @@ class MGMResourceClientTest {
                 MembershipPersistenceResult.success()
             )
 
-            mgmOpsClient.deleteApprovalRule(
+            mgmResourceClient.deleteApprovalRule(
                 shortHash,
                 RULE_ID,
                 RULE_TYPE
@@ -568,39 +576,39 @@ class MGMResourceClientTest {
                 RULE_ID,
                 RULE_TYPE
             )
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `deleteApprovalRule should fail if the member cannot be found`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
 
             assertThrows<CouldNotFindMemberException> {
-                mgmOpsClient.deleteApprovalRule(
+                mgmResourceClient.deleteApprovalRule(
                     ShortHash.of("000000000000"), RULE_ID, RULE_TYPE
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `deleteApprovalRule should fail if the member cannot be read`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
             assertThrows<CouldNotFindMemberException> {
-                mgmOpsClient.deleteApprovalRule(
+                mgmResourceClient.deleteApprovalRule(
                     shortHash, RULE_ID, RULE_TYPE
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `deleteApprovalRule should fail if the member is not the MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -609,11 +617,11 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.deleteApprovalRule(
+                mgmResourceClient.deleteApprovalRule(
                     shortHash, RULE_ID, RULE_TYPE
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
     }
 
@@ -621,7 +629,7 @@ class MGMResourceClientTest {
     inner class GetApprovalRulesTests {
         @Test
         fun `getApprovalRules should send the correct request`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(
                 membershipQueryClient.getApprovalRules(
@@ -632,7 +640,7 @@ class MGMResourceClientTest {
                 MembershipQueryResult.Success(emptyList())
             )
 
-            mgmOpsClient.getApprovalRules(
+            mgmResourceClient.getApprovalRules(
                 shortHash,
                 ApprovalRuleType.STANDARD,
             )
@@ -641,39 +649,39 @@ class MGMResourceClientTest {
                 holdingIdentity,
                 ApprovalRuleType.STANDARD,
             )
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `getApprovalRules should fail if the member cannot be found`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
 
             assertThrows<CouldNotFindMemberException> {
-                mgmOpsClient.getApprovalRules(
+                mgmResourceClient.getApprovalRules(
                     ShortHash.of("000000000000"), ApprovalRuleType.STANDARD
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `getApprovalRules should fail if the member cannot be read`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
             assertThrows<CouldNotFindMemberException> {
-                mgmOpsClient.getApprovalRules(
+                mgmResourceClient.getApprovalRules(
                     shortHash, ApprovalRuleType.STANDARD
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
 
         @Test
         fun `getApprovalRules should fail if the member is not the MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -682,136 +690,375 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.getApprovalRules(
+                mgmResourceClient.getApprovalRules(
                     shortHash, ApprovalRuleType.STANDARD
                 )
             }
-            mgmOpsClient.stop()
+            mgmResourceClient.stop()
         }
     }
 
-    @Test
-    fun `start event starts following the statuses of the required dependencies`() {
-        startComponent()
+    @Nested
+    inner class ViewRegistrationRequestsTests {
+        @Test
+        fun `viewRegistrationRequests should send the correct request`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            whenever(
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    holdingIdentity,
+                    memberName,
+                    listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+                )
+            ).doReturn(
+                MembershipQueryResult.Success(emptyList())
+            )
 
-        verify(coordinator).followStatusChangesByName(
-            eq(
-                setOf(
-                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                    LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
-                    LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+            mgmResourceClient.viewRegistrationRequests(
+                shortHash,
+                memberName,
+                false
+            )
+
+            verify(membershipQueryClient).queryRegistrationRequestsStatus(
+                holdingIdentity,
+                memberName,
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+            )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `viewRegistrationRequests should fail if the member cannot be found`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.viewRegistrationRequests(
+                    ShortHash.of("000000000000"), memberName, true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `viewRegistrationRequests should fail if the member cannot be read`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.viewRegistrationRequests(
+                    shortHash, memberName, true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `viewRegistrationRequests should fail if the member is not the MGM`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.viewRegistrationRequests(
+                    shortHash, memberName, true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+    }
+
+    @Nested
+    inner class ReviewRegistrationRequestTests {
+        @Test
+        fun `reviewRegistrationRequest should publish the correct command when approved`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockStatus = mock<RegistrationRequestStatus> {
+                on { status } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+            }
+            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            mgmResourceClient.reviewRegistrationRequest(
+                shortHash,
+                REQUEST_ID.uuid(),
+                true
+            )
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
+                        "$REQUEST_ID-$shortHash",
+                        RegistrationCommand(ApproveRegistration())
+                    )
                 )
             )
-        )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should publish the correct command when declined`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockStatus = mock<RegistrationRequestStatus> {
+                on { status } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+            }
+            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            val reason = "sample reason"
+
+            mgmResourceClient.reviewRegistrationRequest(
+                shortHash,
+                REQUEST_ID.uuid(),
+                false,
+                reason
+            )
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
+                        "$REQUEST_ID-$shortHash",
+                        RegistrationCommand(DeclineRegistration(reason))
+                    )
+                )
+            )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail if the member cannot be found`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.reviewRegistrationRequest(
+                    ShortHash.of("000000000000"),
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail if the member cannot be read`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.reviewRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail if the member is not the MGM`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.reviewRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail if request is not pending review`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            val mockStatus = mock<RegistrationRequestStatus> {
+                on { status } doReturn RegistrationStatus.SENT_TO_MGM
+            }
+            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.reviewRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail if request status cannot be determined`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
+                MembershipQueryResult.Success(null)
+            )
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.reviewRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            }
+            mgmResourceClient.stop()
+        }
     }
 
-    @Test
-    fun `start event closes dependency handle if it exists`() {
-        startComponent()
-        startComponent()
+    @Nested
+    inner class LifecycleTests {
+        @Test
+        fun `starting and stopping the service succeeds`() {
+            mgmResourceClient.start()
+            assertTrue(mgmResourceClient.isRunning)
+            mgmResourceClient.stop()
+            assertFalse(mgmResourceClient.isRunning)
+        }
 
-        verify(componentHandle).close()
-    }
+        @Test
+        fun `start event starts following the statuses of the required dependencies`() {
+            startComponent()
 
-    @Test
-    fun `stop event doesn't closes handles before they are created`() {
-        stopComponent()
+            verify(coordinator).followStatusChangesByName(
+                eq(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                    )
+                )
+            )
+        }
 
-        verify(componentHandle, never()).close()
-        verify(configHandle, never()).close()
-    }
+        @Test
+        fun `stop event will close managed resources and set status to down`() {
+            stopComponent()
 
-    @Test
-    fun `component handle is created after starting and closed when stopping`() {
-        startComponent()
-        stopComponent()
+            verify(coordinator).closeManagedResources(argThat {
+                size == 3
+            })
+            verify(coordinator).updateStatus(LifecycleStatus.DOWN, "Handling the stop event for component.")
+        }
 
-        verify(componentHandle).close()
-    }
+        @Test
+        fun `start will start the coordinator`() {
+            mgmResourceClient.start()
 
-    @Test
-    fun `config handle is created after registration status changes to UP and closed when stopping`() {
-        changeRegistrationStatus(LifecycleStatus.UP)
-        stopComponent()
+            verify(coordinator).start()
+        }
 
-        verify(configHandle).close()
-    }
+        @Test
+        fun `stop will stop the coordinator`() {
+            mgmResourceClient.stop()
 
-    @Test
-    fun `registration status UP registers for config updates`() {
-        changeRegistrationStatus(LifecycleStatus.UP)
+            verify(coordinator).stop()
+        }
 
-        verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
-        )
-        verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
-    }
+        @Test
+        fun `config changed event will create the publisher`() {
+            changeConfig()
 
-    @Test
-    fun `registration status DOWN sets component status to DOWN`() {
-        startComponent()
-        changeRegistrationStatus(LifecycleStatus.UP)
-        changeRegistrationStatus(LifecycleStatus.DOWN)
+            verify(publisherFactory).createPublisher(any(), eq(messagingConfig))
+        }
 
-        verify(configHandle).close()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-    }
+        @Test
+        fun `config changed event will start the publisher`() {
+            changeConfig()
 
-    @Test
-    fun `registration status ERROR sets component status to DOWN`() {
-        startComponent()
-        changeRegistrationStatus(LifecycleStatus.UP)
-        changeRegistrationStatus(LifecycleStatus.ERROR)
+            verify(publisher).start()
+        }
 
-        verify(configHandle).close()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-    }
+        @Test
+        fun `registration status UP registers for config updates`() {
+            changeRegistrationStatus(LifecycleStatus.UP)
 
-    @Test
-    fun `registration status DOWN closes config handle if status was previously UP`() {
-        startComponent()
-        changeRegistrationStatus(LifecycleStatus.UP)
+            verify(configurationReadService).registerComponentForUpdates(
+                any(), any()
+            )
+            verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
+        }
 
-        verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
-        )
+        @Test
+        fun `registration status DOWN sets component status to DOWN and closes resource`() {
+            startComponent()
+            changeRegistrationStatus(LifecycleStatus.UP)
+            changeRegistrationStatus(LifecycleStatus.DOWN)
 
-        changeRegistrationStatus(LifecycleStatus.DOWN)
+            verify(coordinator).closeManagedResources(argThat { size == 1 })
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        }
 
-        verify(configHandle).close()
-    }
+        @Test
+        fun `registration status ERROR sets component status to DOWN`() {
+            startComponent()
+            changeRegistrationStatus(LifecycleStatus.UP)
+            changeRegistrationStatus(LifecycleStatus.ERROR)
 
-    @Test
-    fun `registration status UP closes config handle if status was previously UP`() {
-        changeRegistrationStatus(LifecycleStatus.UP)
+            verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
+        }
 
-        verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
-        )
+        @Test
+        fun `registration status DOWN closes config handle if status was previously UP`() {
+            startComponent()
+            changeRegistrationStatus(LifecycleStatus.UP)
 
-        changeRegistrationStatus(LifecycleStatus.UP)
+            verify(configurationReadService).registerComponentForUpdates(
+                any(), any()
+            )
 
-        verify(configHandle).close()
-    }
+            changeRegistrationStatus(LifecycleStatus.DOWN)
 
-    @Test
-    fun `after receiving the messaging configuration the rpc sender is initialized`() {
-        changeConfig()
-        verify(publisherFactory).createRPCSender(any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(), any())
-        verify(rpcSender).start()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+            verify(coordinator).closeManagedResources(argThat { size == 1 })
+        }
+
+        @Test
+        fun `after receiving the messaging configuration the rpc sender is initialized`() {
+            changeConfig()
+            verify(publisherFactory).createRPCSender(
+                any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(),
+                any()
+            )
+            verify(rpcSender).start()
+            verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+        }
     }
 
     @Nested
     inner class MutualTlsAllowClientCertificateTests {
         @Test
         fun `it should fail when client is not ready`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
 
             assertThrows<IllegalStateException> {
-                mgmOpsClient.mutualTlsAllowClientCertificate(
+                mgmResourceClient.mutualTlsAllowClientCertificate(
                     shortHash,
                     mgmX500Name,
                 )
@@ -820,7 +1067,7 @@ class MGMResourceClientTest {
 
         @Test
         fun `it should fail when not an MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -829,7 +1076,7 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.mutualTlsAllowClientCertificate(
+                mgmResourceClient.mutualTlsAllowClientCertificate(
                     shortHash,
                     mgmX500Name,
                 )
@@ -838,7 +1085,7 @@ class MGMResourceClientTest {
 
         @Test
         fun `it should send the correct request`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(
                 membershipPersistenceClient.mutualTlsAddCertificateToAllowedList(
@@ -849,7 +1096,7 @@ class MGMResourceClientTest {
                 MembershipPersistenceResult.success()
             )
 
-            mgmOpsClient.mutualTlsAllowClientCertificate(
+            mgmResourceClient.mutualTlsAllowClientCertificate(
                 shortHash,
                 mgmX500Name,
             )
@@ -865,10 +1112,10 @@ class MGMResourceClientTest {
     inner class MutualTlsDisallowClientCertificateTest {
         @Test
         fun `it should fail when client is not ready`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
 
             assertThrows<IllegalStateException> {
-                mgmOpsClient.mutualTlsDisallowClientCertificate(
+                mgmResourceClient.mutualTlsDisallowClientCertificate(
                     shortHash,
                     mgmX500Name,
                 )
@@ -877,7 +1124,7 @@ class MGMResourceClientTest {
 
         @Test
         fun `it should fail when not an MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -886,7 +1133,7 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.mutualTlsDisallowClientCertificate(
+                mgmResourceClient.mutualTlsDisallowClientCertificate(
                     shortHash,
                     mgmX500Name,
                 )
@@ -895,7 +1142,7 @@ class MGMResourceClientTest {
 
         @Test
         fun `it should send the correct request`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(
                 membershipPersistenceClient.mutualTlsRemoveCertificateFromAllowedList(
@@ -906,7 +1153,7 @@ class MGMResourceClientTest {
                 MembershipPersistenceResult.success()
             )
 
-            mgmOpsClient.mutualTlsDisallowClientCertificate(
+            mgmResourceClient.mutualTlsDisallowClientCertificate(
                 shortHash,
                 mgmX500Name,
             )
@@ -922,10 +1169,10 @@ class MGMResourceClientTest {
     inner class MutualTlsListClientCertificateTest {
         @Test
         fun `it should fail when client is not ready`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
 
             assertThrows<IllegalStateException> {
-                mgmOpsClient.mutualTlsListClientCertificate(
+                mgmResourceClient.mutualTlsListClientCertificate(
                     shortHash,
                 )
             }
@@ -933,7 +1180,7 @@ class MGMResourceClientTest {
 
         @Test
         fun `it should fail when not an MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -942,7 +1189,7 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.mutualTlsListClientCertificate(
+                mgmResourceClient.mutualTlsListClientCertificate(
                     shortHash,
                 )
             }
@@ -950,7 +1197,7 @@ class MGMResourceClientTest {
 
         @Test
         fun `it return the correct value`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             whenever(
                 membershipQueryClient.mutualTlsListAllowedCertificates(holdingIdentity)
@@ -960,7 +1207,7 @@ class MGMResourceClientTest {
                 )
             )
 
-            val subjects = mgmOpsClient.mutualTlsListClientCertificate(
+            val subjects = mgmResourceClient.mutualTlsListClientCertificate(
                 shortHash,
             )
 
@@ -974,16 +1221,16 @@ class MGMResourceClientTest {
     inner class GeneratePreAuthTokenTest {
         @Test
         fun `it should fail when client is not ready`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
 
             assertThrows<IllegalStateException> {
-                mgmOpsClient.generatePreAuthToken(shortHash, mgmX500Name, null, null)
+                mgmResourceClient.generatePreAuthToken(shortHash, mgmX500Name, null, null)
             }
         }
 
         @Test
         fun `it should fail when not an MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -992,13 +1239,13 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.generatePreAuthToken(shortHash, mgmX500Name, null, null)
+                mgmResourceClient.generatePreAuthToken(shortHash, mgmX500Name, null, null)
             }
         }
 
         @Test
         fun `it return the correct value`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val ttl = Instant.ofEpochSecond(100)
             val ownerX500Name = MemberX500Name.parse("CN=Bob,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
@@ -1012,7 +1259,7 @@ class MGMResourceClientTest {
                 MembershipPersistenceResult.success()
             )
 
-            val token = mgmOpsClient.generatePreAuthToken(shortHash, ownerX500Name, ttl, remark)
+            val token = mgmResourceClient.generatePreAuthToken(shortHash, ownerX500Name, ttl, remark)
 
             assertThat(token).isEqualTo(
                 PreAuthToken(uuidCaptor.firstValue.toString(), ownerX500Name.toString(), ttl, PreAuthTokenStatus.AVAILABLE, remark, null)
@@ -1024,16 +1271,16 @@ class MGMResourceClientTest {
     inner class GetPreAuthTokensTest {
         @Test
         fun `it should fail when client is not ready`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
 
             assertThrows<IllegalStateException> {
-                mgmOpsClient.getPreAuthTokens(shortHash, null, null, false)
+                mgmResourceClient.getPreAuthTokens(shortHash, null, null, false)
             }
         }
 
         @Test
         fun `it should fail when not an MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -1042,13 +1289,13 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.getPreAuthTokens(shortHash, null, null, false)
+                mgmResourceClient.getPreAuthTokens(shortHash, null, null, false)
             }
         }
 
         @Test
         fun `it return the correct value`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val ownerX500Name = MemberX500Name.parse("CN=Bob,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
             val tokenId = UUID.randomUUID()
@@ -1061,7 +1308,7 @@ class MGMResourceClientTest {
                 MembershipQueryResult.Success(listOf(mockToken1, mockToken2))
             )
 
-            val queryResult = mgmOpsClient.getPreAuthTokens(shortHash, ownerX500Name, tokenId, viewInactive)
+            val queryResult = mgmResourceClient.getPreAuthTokens(shortHash, ownerX500Name, tokenId, viewInactive)
 
             assertThat(queryResult).containsExactly(mockToken1, mockToken2)
         }
@@ -1073,16 +1320,16 @@ class MGMResourceClientTest {
 
         @Test
         fun `it should fail when client is not ready`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
 
             assertThrows<IllegalStateException> {
-                mgmOpsClient.revokePreAuthToken(shortHash, tokenId, null)
+                mgmResourceClient.revokePreAuthToken(shortHash, tokenId, null)
             }
         }
 
         @Test
         fun `it should fail when not an MGM`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val mgmContext = mock<MGMContext>()
             val memberInfo = mock<MemberInfo> {
@@ -1091,13 +1338,13 @@ class MGMResourceClientTest {
             whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
 
             assertThrows<MemberNotAnMgmException> {
-                mgmOpsClient.revokePreAuthToken(shortHash, tokenId, null)
+                mgmResourceClient.revokePreAuthToken(shortHash, tokenId, null)
             }
         }
 
         @Test
         fun `it return the correct value`() {
-            mgmOpsClient.start()
+            mgmResourceClient.start()
             setUpRpcSender(null)
             val ownerX500Name = MemberX500Name.parse("CN=Bob,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
             val ttl = Instant.ofEpochSecond(100)
@@ -1108,7 +1355,7 @@ class MGMResourceClientTest {
                 MembershipPersistenceResult.Success(token)
             )
 
-            val revokedToken = mgmOpsClient.revokePreAuthToken(shortHash, tokenId, null)
+            val revokedToken = mgmResourceClient.revokePreAuthToken(shortHash, tokenId, null)
 
             assertThat(revokedToken).isEqualTo(token)
         }

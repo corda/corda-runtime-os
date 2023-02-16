@@ -2,10 +2,14 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.data.membership.preauth.PreAuthTokenStatus
+import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -26,13 +30,18 @@ import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.UTCClock
@@ -47,12 +56,12 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.time.Instant
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
 @Component(service = [MGMResourceClient::class])
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class MGMResourceClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -70,19 +79,20 @@ class MGMResourceClientImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
 ) : MGMResourceClient {
 
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
         const val ERROR_MSG = "Service is in an incorrect state for calling."
+        const val CLIENT_ID = "mgm-resource-client"
+        const val GROUP_NAME = "mgm-resource-client"
+        const val FOLLOW_CHANGES_RESOURCE_NAME = "MGMResourceClient.followStatusChangesByName"
+        const val WAIT_FOR_CONFIG_RESOURCE_NAME = "MGMResourceClient.registerComponentForUpdates"
+        const val PUBLISHER_RESOURCE_NAME = "MGMResourceClient.publisher"
 
-        const val CLIENT_ID = "mgm-ops-client"
-        const val GROUP_NAME = "mgm-ops-client"
-
-        private val clock = UTCClock()
-
-        private val TIMEOUT = 10.seconds
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val clock = UTCClock()
+        val TIMEOUT = 10.seconds
     }
 
-    private interface InnerMGMOpsClient : AutoCloseable {
+    private interface InnerMGMResourceClient : AutoCloseable {
         fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
         fun mutualTlsAllowClientCertificate(
             holdingIdentityShortHash: ShortHash,
@@ -120,15 +130,22 @@ class MGMResourceClientImpl @Activate constructor(
                 Collection<ApprovalRuleDetails>
 
         fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType)
+
+        fun viewRegistrationRequests(
+            holdingIdentityShortHash: ShortHash,
+            requestSubjectX500Name: MemberX500Name?,
+            viewHistoric: Boolean,
+        ): Collection<RegistrationRequestStatus>
+
+        fun reviewRegistrationRequest(
+            holdingIdentityShortHash: ShortHash,
+            requestId: UUID,
+            approve: Boolean,
+            reason: String?,
+        )
     }
 
-    private var impl: InnerMGMOpsClient = InactiveImpl
-
-    // for watching the config changes
-    private var configHandle: AutoCloseable? = null
-
-    // for checking the components' health
-    private var componentHandle: AutoCloseable? = null
+    private var impl: InnerMGMResourceClient = InactiveImpl
 
     private val coordinator = coordinatorFactory.createCoordinator<MGMResourceClient>(::processEvent)
 
@@ -195,36 +212,54 @@ class MGMResourceClientImpl @Activate constructor(
     override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
         impl.deleteApprovalRule(holdingIdentityShortHash, ruleId, ruleType)
 
+    override fun viewRegistrationRequests(
+        holdingIdentityShortHash: ShortHash, requestSubjectX500Name: MemberX500Name?, viewHistoric: Boolean
+    ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestSubjectX500Name, viewHistoric)
+
+    override fun reviewRegistrationRequest(
+        holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
+    ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, approve, reason)
+
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                componentHandle?.close()
-                componentHandle = coordinator.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
-                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                coordinator.createManagedResource(FOLLOW_CHANGES_RESOURCE_NAME) {
+                    coordinator.followStatusChangesByName(
+                        setOf(
+                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                            LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                            LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                        )
                     )
-                )
+                }
             }
             is StopEvent -> {
-                componentHandle?.close()
-                configHandle?.close()
+                coordinator.closeManagedResources(
+                    setOf(
+                        FOLLOW_CHANGES_RESOURCE_NAME,
+                        WAIT_FOR_CONFIG_RESOURCE_NAME,
+                        PUBLISHER_RESOURCE_NAME,
+                    )
+                )
                 deactivate("Handling the stop event for component.")
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        configHandle?.close()
-                        configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator,
-                            setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
-                        )
+                        coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
+                            configurationReadService.registerComponentForUpdates(
+                                coordinator, setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                            )
+                        }
                     }
                     else -> {
-                        configHandle?.close()
+                        coordinator.closeManagedResources(
+                            setOf(
+                                WAIT_FOR_CONFIG_RESOURCE_NAME,
+                            )
+                        )
                         deactivate("Service dependencies have changed status causing this component to deactivate.")
                     }
                 }
@@ -245,6 +280,14 @@ class MGMResourceClientImpl @Activate constructor(
                         it.start()
                     }
                 )
+                coordinator.createManagedResource(PUBLISHER_RESOURCE_NAME) {
+                    publisherFactory.createPublisher(
+                        messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
+                        publisherConfig = PublisherConfig(CLIENT_ID)
+                    ).also {
+                        it.start()
+                    }
+                }
                 coordinator.updateStatus(LifecycleStatus.UP, "Dependencies are UP and configuration received.")
             }
         }
@@ -257,7 +300,7 @@ class MGMResourceClientImpl @Activate constructor(
         current.close()
     }
 
-    private object InactiveImpl : InnerMGMOpsClient {
+    private object InactiveImpl : InnerMGMResourceClient {
         override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
             throw IllegalStateException(ERROR_MSG)
 
@@ -271,6 +314,14 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType) =
             throw IllegalStateException(ERROR_MSG)
+
+        override fun viewRegistrationRequests(
+            holdingIdentityShortHash: ShortHash, requestSubjectX500Name: MemberX500Name?, viewHistoric: Boolean
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun reviewRegistrationRequest(
+            holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
             holdingIdentityShortHash: ShortHash,
@@ -308,7 +359,7 @@ class MGMResourceClientImpl @Activate constructor(
 
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
-    ) : InnerMGMOpsClient {
+    ) : InnerMGMResourceClient {
         @Suppress("ThrowsCount")
         fun mgmHoldingIdentity(holdingIdentityShortHash: ShortHash): HoldingIdentity {
             val holdingIdentity =
@@ -424,6 +475,54 @@ class MGMResourceClientImpl @Activate constructor(
                 ruleId,
                 ruleType
             ).getOrThrow()
+
+        override fun viewRegistrationRequests(
+            holdingIdentityShortHash: ShortHash, requestSubjectX500Name: MemberX500Name?, viewHistoric: Boolean
+        ): Collection<RegistrationRequestStatus> {
+            val statuses = if (viewHistoric) {
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.DECLINED)
+            } else {
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+            }
+            return membershipQueryClient.queryRegistrationRequestsStatus(
+                mgmHoldingIdentity(holdingIdentityShortHash),
+                requestSubjectX500Name,
+                statuses,
+            ).getOrThrow()
+        }
+
+        override fun reviewRegistrationRequest(
+            holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
+        ) {
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
+            val requestStatus =
+                membershipQueryClient.queryRegistrationRequestStatus(mgm, requestId.toString()).getOrThrow()
+                    ?: throw IllegalArgumentException(
+                        "No request with registration request ID '$requestId' was found."
+                    )
+            require(requestStatus.status == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
+                "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
+            }
+            if (approve) {
+                publishApprovalDecision(ApproveRegistration(), holdingIdentityShortHash, requestId.toString())
+            } else {
+                publishApprovalDecision(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
+            }
+        }
+
+        private fun publishApprovalDecision(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {
+            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
+                listOf(
+                    Record(
+                        REGISTRATION_COMMAND_TOPIC,
+                        "$requestId-${holdingIdentityShortHash}",
+                        RegistrationCommand(command)
+                    )
+                )
+            )?.forEach {
+                it.join()
+            }
+        }
 
         override fun close() = rpcSender.close()
 

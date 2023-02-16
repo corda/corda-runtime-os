@@ -2,6 +2,8 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.io.InputStream
+import java.lang.management.ManagementFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -14,13 +16,12 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.InputStream
-import java.lang.management.ManagementFactory
 
 /** Associates a configuration key/value map with the path at which the configuration should be stored. */
 data class PathAndConfig(val path: String, val config: Map<String, String>)
@@ -96,6 +97,7 @@ class WorkerHelpers {
                 .parseMap(messagingParams + dirsConfig + extraParamsMap)
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
+                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(defaultParams.maxAllowedMessageSize))
 
             val secretsConfig =
                 ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys { (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
@@ -105,7 +107,7 @@ class WorkerHelpers {
             val bootConfig = smartConfigFactory.create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
-            validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
+            validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
 
             // we now know bootConfig has:
             //

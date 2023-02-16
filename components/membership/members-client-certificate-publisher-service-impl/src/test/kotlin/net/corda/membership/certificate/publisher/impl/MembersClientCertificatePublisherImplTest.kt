@@ -37,7 +37,6 @@ class MembersClientCertificatePublisherImplTest {
         on { createManagedResource<Resource>(any(), any()) } doAnswer {
             val generator: () -> Resource = it.getArgument(1)
             generator.invoke()
-            Unit
         }
     }
     private val handler = argumentCaptor<LifecycleEventHandler>()

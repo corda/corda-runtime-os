@@ -81,11 +81,23 @@ class MemberResourceClientTest {
     private val configHandle: Resource = mock()
 
     private var coordinatorIsRunning = false
+    private val resources = mutableMapOf<String, Resource>()
     private val coordinator: LifecycleCoordinator = mock {
         on { isRunning } doAnswer { coordinatorIsRunning }
         on { start() } doAnswer { coordinatorIsRunning = true }
         on { stop() } doAnswer { coordinatorIsRunning = false }
         on { followStatusChangesByName(any()) } doReturn componentHandle
+        on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
+            resources.compute(it.getArgument(0)) { _, r ->
+                r?.close()
+                it.getArgument<() -> Resource>(1).invoke()
+            }
+        }
+        on { closeManagedResources(any()) } doAnswer {
+            it.getArgument<Collection<String>>(0).forEach { name ->
+                resources.remove(name)?.close()
+            }
+        }
     }
 
     private var lifecycleHandler: LifecycleEventHandler? = null
@@ -170,7 +182,6 @@ class MemberResourceClientTest {
         memberOpsClient.stop()
         assertFalse(memberOpsClient.isRunning)
     }
-
 
     @Test
     fun `start event starts following the statuses of the required dependencies`() {
@@ -271,6 +282,16 @@ class MemberResourceClientTest {
     }
 
     @Test
+    fun `second config change will closes the publisher if status was previously UP`() {
+        changeRegistrationStatus(LifecycleStatus.UP)
+        changeConfig()
+
+        changeConfig()
+
+        verify(asyncPublisher).close()
+    }
+
+    @Test
     fun `after receiving the messaging configuration the REST sender is initialized`() {
         changeConfig()
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
@@ -305,7 +326,9 @@ class MemberResourceClientTest {
                     memberContext = KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
                 ),
             )
-        whenever(membershipQueryClient.queryRegistrationRequestsStatus(any())).doReturn(MembershipQueryResult.Success(response))
+        whenever(membershipQueryClient.queryRegistrationRequestsStatus(
+            any(), eq(null), eq(RegistrationStatus.values().toList()))
+        ).doReturn(MembershipQueryResult.Success(response))
 
         memberOpsClient.start()
         setUpConfig()
@@ -367,8 +390,9 @@ class MemberResourceClientTest {
 
     @Test
     fun `checkRegistrationProgress throw exception if the request fails`() {
-        whenever(membershipQueryClient.queryRegistrationRequestsStatus(any()))
-            .doReturn(MembershipQueryResult.Failure("oops"))
+        whenever(membershipQueryClient.queryRegistrationRequestsStatus(
+            any(), eq(null), eq(RegistrationStatus.values().toList()))
+        ).doReturn(MembershipQueryResult.Failure("oops"))
 
         memberOpsClient.start()
         setUpConfig()

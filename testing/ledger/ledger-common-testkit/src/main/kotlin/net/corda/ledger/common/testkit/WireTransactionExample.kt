@@ -12,9 +12,16 @@ import java.time.Instant
 fun WireTransactionFactory.createExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
-    componentGroups: List<List<ByteArray>> = defaultComponentGroups
+    componentGroups: List<List<ByteArray>> = defaultComponentGroups,
+    ledgerModel: String = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
+    transactionSubType: String? = null
 ): WireTransaction {
-    val metadata = transactionMetadataExample(numberOfComponentGroups = componentGroups.size + 1)
+    val metadata =
+        transactionMetadataExample(
+            numberOfComponentGroups = componentGroups.size + 1,
+            ledgerModel = ledgerModel,
+            transactionSubType = transactionSubType
+        )
     val metadataJson = jsonMarshallingService.format(metadata)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 

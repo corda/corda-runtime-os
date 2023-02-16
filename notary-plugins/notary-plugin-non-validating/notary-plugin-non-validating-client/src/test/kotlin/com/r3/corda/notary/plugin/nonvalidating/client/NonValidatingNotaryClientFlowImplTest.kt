@@ -145,7 +145,7 @@ class NonValidatingNotaryClientFlowImplTest {
                 on { myInfo() } doReturn mockMemberInfo
             },
             mock {
-                on { serialize(any()) } doReturn SerializedBytes("ABC".toByteArray())
+                on { serialize(any<Any>()) } doReturn SerializedBytes("ABC".toByteArray())
             },
             mock {
                 on { sign(any(), any(), any()) } doReturn mockRequestSignature

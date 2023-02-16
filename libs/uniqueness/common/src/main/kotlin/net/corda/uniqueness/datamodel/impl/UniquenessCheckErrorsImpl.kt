@@ -9,29 +9,44 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowO
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import java.time.Instant
+import java.util.Collections.unmodifiableList
 
 data class UniquenessCheckErrorInputStateConflictImpl(
-    override val conflictingStates: List<UniquenessCheckStateDetails>
-) : UniquenessCheckErrorInputStateConflict
+    private val conflictingStates: List<UniquenessCheckStateDetails>
+) : UniquenessCheckErrorInputStateConflict {
+    override fun getConflictingStates() = conflictingStates
+}
 
 data class UniquenessCheckErrorInputStateUnknownImpl(
-    override val unknownStates: List<UniquenessCheckStateRef>
-) : UniquenessCheckErrorInputStateUnknown
+    private val unknownStates: List<UniquenessCheckStateRef>
+) : UniquenessCheckErrorInputStateUnknown {
+    override fun getUnknownStates() = unknownStates
+}
 
 data class UniquenessCheckErrorReferenceStateConflictImpl(
-    override val conflictingStates: List<UniquenessCheckStateDetails>
-) : UniquenessCheckErrorReferenceStateConflict
+    private val conflictingStates: List<UniquenessCheckStateDetails>
+) : UniquenessCheckErrorReferenceStateConflict {
+    override fun getConflictingStates(): List<UniquenessCheckStateDetails> = unmodifiableList(conflictingStates)
+}
 
 data class UniquenessCheckErrorReferenceStateUnknownImpl(
-    override val unknownStates: List<UniquenessCheckStateRef>
-) : UniquenessCheckErrorReferenceStateUnknown
+    private val unknownStates: List<UniquenessCheckStateRef>
+) : UniquenessCheckErrorReferenceStateUnknown {
+    override fun getUnknownStates(): List<UniquenessCheckStateRef> = unmodifiableList(unknownStates)
+}
 
 data class UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
-    override val evaluationTimestamp: Instant,
-    override val timeWindowLowerBound: Instant?,
-    override val timeWindowUpperBound: Instant
-) : UniquenessCheckErrorTimeWindowOutOfBounds
+    private val evaluationTimestamp: Instant,
+    private val timeWindowLowerBound: Instant?,
+    private val timeWindowUpperBound: Instant
+) : UniquenessCheckErrorTimeWindowOutOfBounds {
+    override fun getEvaluationTimestamp() = evaluationTimestamp
+    override fun getTimeWindowLowerBound() = timeWindowLowerBound
+    override fun getTimeWindowUpperBound() = timeWindowUpperBound
+}
 
 data class UniquenessCheckErrorMalformedRequestImpl(
-    override val errorText: String
-) : UniquenessCheckErrorMalformedRequest
+    private val errorText: String
+) : UniquenessCheckErrorMalformedRequest {
+    override fun getErrorText() = errorText
+}

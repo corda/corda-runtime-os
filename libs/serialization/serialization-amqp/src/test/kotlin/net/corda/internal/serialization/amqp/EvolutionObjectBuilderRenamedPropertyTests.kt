@@ -76,7 +76,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
     @TestBelongsToContract(TemplateContract::class)
     @CordaSerializable
     data class TemplateState(val cordappVersion: Int, val data: String, val y: String?, override val participants: List<TestParty> = listOf()) : TestContractState {
-        @DeprecatedConstructorForDeserialization(1)
+        @DeprecatedConstructorForDeserialization(version = 1)
         constructor(
             cordappVersion: Int,
             data: String,
