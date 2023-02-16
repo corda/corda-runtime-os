@@ -45,10 +45,10 @@ class InteropWorker @Activate constructor(
 
     /** Parses the arguments, then initialises and starts the [interopProcessor]. */
     override fun startup(args: Array<String>) {
-        logger.info("InterOp worker starting.")
+        logger.info("Interop worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
 
-        applicationBanner.show("InterOp Worker", platformInfoProvider)
+        applicationBanner.show("Interop Worker", platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")
@@ -69,7 +69,7 @@ class InteropWorker @Activate constructor(
     }
 
     override fun shutdown() {
-        logger.info("InterOp worker stopping.")
+        logger.info("Interop worker stopping.")
         interopProcessor.stop()
         workerMonitor.stop()
     }
