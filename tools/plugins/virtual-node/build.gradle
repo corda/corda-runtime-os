@@ -17,6 +17,9 @@ dependencies {
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
 
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-db-schema'
+
     implementation project(":tools:plugins:plugins-http-rpc")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
@@ -24,6 +27,13 @@ dependencies {
 
     kapt "org.pf4j:pf4j:$pf4jVersion"
     kapt "info.picocli:picocli:$picocliVersion"
+
+    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+
+    // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
+    // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so
+    // the Postgres drivers are packaged within the tool itself.
+    runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

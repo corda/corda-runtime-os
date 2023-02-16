@@ -14,7 +14,7 @@ import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.httprpc.v1.MemberRegistrationRestResource
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
@@ -35,11 +35,11 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             memberRegistrationRequest: MemberRegistrationRequest,
         ): RegistrationRequestProgress
 
-        fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus>
+        fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RestRegistrationRequestStatus>
         fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String
-        ): RegistrationRequestStatus
+        ): RestRegistrationRequestStatus
     }
 
     override val protocolVersion = 1
@@ -104,7 +104,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 "${MemberRegistrationRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> =
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RestRegistrationRequestStatus> =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -134,7 +134,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             }
         }
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RestRegistrationRequestStatus> {
             return try {
                 memberResourceClient.checkRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash)
@@ -149,7 +149,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
         override fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String,
-        ): RegistrationRequestStatus {
+        ): RestRegistrationRequestStatus {
             return try {
                 memberResourceClient.checkSpecificRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),

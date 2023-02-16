@@ -6,6 +6,7 @@ import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
 import java.time.Instant
@@ -132,4 +133,46 @@ interface MGMResourceClient : Lifecycle {
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, MembershipPersistenceException::class)
     fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType)
+
+    /**
+     * Retrieves registration requests submitted to the MGM which are pending review, optionally filtered by the X.500
+     * name of the requesting member, and/or by the status of the request (historic or pending review).
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestSubjectX500Name Optional. X.500 name of the subject of the registration request.
+     * @param viewHistoric Optional. Set this to 'true' to view both pending review and completed (historic) requests.
+     * Defaults to 'false' (requests pending review only).
+     *
+     * @return Registration requests as a collection of [RegistrationRequestStatus].
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     */
+    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
+    fun viewRegistrationRequests(
+        holdingIdentityShortHash: ShortHash,
+        requestSubjectX500Name: MemberX500Name?,
+        viewHistoric: Boolean,
+    ): Collection<RegistrationRequestStatus>
+
+    /**
+     * Approve or decline registration requests which require manual approval. This method can only be used for
+     * requests that are in "PENDING_MANUAL_APPROVAL" status.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestId ID of the registration request.
+     * @param approve Set to 'true' if request is approved, 'false' if declined.
+     * @param reason Reason if registration request is declined.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     * @throws [IllegalArgumentException] If request is not found, or if request is not pending review.
+     */
+    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    fun reviewRegistrationRequest(
+        holdingIdentityShortHash: ShortHash,
+        requestId: UUID,
+        approve: Boolean,
+        reason: String? = null,
+    )
 }

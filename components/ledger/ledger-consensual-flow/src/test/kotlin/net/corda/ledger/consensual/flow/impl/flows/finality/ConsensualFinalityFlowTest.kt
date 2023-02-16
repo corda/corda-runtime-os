@@ -6,6 +6,7 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
@@ -93,6 +94,7 @@ class ConsensualFinalityFlowTest {
         whenever(updatedSignedTransaction.id).thenReturn(TX_ID)
         whenever(updatedSignedTransaction.addSignature(any())).thenReturn(updatedSignedTransaction)
         whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
+        whenever(transactionMetadata.getLedgerModel()).thenReturn(ConsensualLedgerTransactionImpl::class.java.name)
 
         whenever(ledgerTransaction.id).thenReturn(TX_ID)
         whenever(ledgerTransaction.states).thenReturn(listOf(consensualStateExample))
