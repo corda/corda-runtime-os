@@ -616,8 +616,9 @@ internal class SessionManagerImpl(
             }
         }
 
-        val memberInfo = membershipGroupReaderProvider
-            .lookup(sessionCounterparties.ourId, sessionCounterparties.counterpartyId)
+        val memberInfo = membershipGroupReaderProvider.lookup(
+            sessionCounterparties.ourId, sessionCounterparties.counterpartyId, sessionCounterparties.status
+        )
         if (memberInfo == null) {
             logger.peerNotInTheMembersMapWarning(
                 message::class.java.simpleName,
