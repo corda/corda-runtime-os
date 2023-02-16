@@ -31,6 +31,13 @@ interface CryptoOpsClient : Lifecycle {
     /**
      * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
      *
+     * Please note that if used with [usingFullIds] off it will filter keys by looking into short key ids of [candidateKeys].
+     * Using short key ids means that a key clash on short key id is more likely to happen. Effectively
+     * it means that a requested key not owned by the tenant, however having same short key id (clashing short key id)
+     * with a different key which is owned by the tenant, will lead to return the owned key while it should not.
+     * This api is added for convenience of using short hashes in cases like for e.g. REST interfaces. For more critical
+     * key operations where we need to avoid key id clashes [lookupKeysByFullIds] can be used.
+     *
      * @param tenantId The tenant owning the key.
      * @param candidateKeys The [PublicKey]s to filter.
      *
@@ -181,14 +188,20 @@ interface CryptoOpsClient : Lifecycle {
     ): List<CryptoSigningKey>
 
     /**
-     * Looks for keys owned by tenant of id [tenantId] from the list of [keyIds].
+     * Returns keys with key ids in [keyIds] which are owned by tenant of id [tenantId].
+     *
+     * Please note that this method uses short key ids which means that a key clash on short key id is more likely to happen.
+     * Effectively it means that a requested key not owned by the tenant, however having same short key id (clashing short key id)
+     * with a different key which is owned by the tenant, will lead to return the owned key while it should not.
+     * This api is added for convenience of using short hashes in cases like for e.g. REST interfaces. For more critical
+     * key operations where we need to avoid key id clashes [lookupKeysByFullIds] can be used.
      *
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
     fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey>
 
     /**
-     * Looks for keys owned by tenant of id [tenantId] from the list of [fullKeyIds].
+     * Returns keys with full key ids in [fullKeyIds] which are owned by tenant of id [tenantId].
      *
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
