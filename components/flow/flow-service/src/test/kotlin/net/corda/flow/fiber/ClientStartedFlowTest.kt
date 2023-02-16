@@ -24,7 +24,7 @@ class ClientStartedFlowTest {
             return REQUEST_BODY
         }
 
-        override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
+        override fun <T : Any> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
             TODO("Not yet implemented")
         }
 
@@ -35,7 +35,7 @@ class ClientStartedFlowTest {
 
     private class TestFlow : ClientStartableFlow {
         override fun call(requestBody: RestRequestBody): String {
-            return requestBody.getRequestBody()
+            return requestBody.requestBody
         }
     }
 }

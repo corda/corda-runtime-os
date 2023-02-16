@@ -17,44 +17,44 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.Objects
 
-@Suppress("TooManyFunctions")
-data class UtxoTransactionBuilderImpl(
+@Suppress("TooManyFunctions", "LongParameterList")
+class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    override val notary: Party? = null,
-    override val timeWindow: TimeWindow? = null,
-    override val attachments: List<SecureHash> = emptyList(),
-    override val commands: List<Command> = emptyList(),
-    override val signatories: List<PublicKey> = emptyList(),
-    override val inputStateRefs: List<StateRef> = emptyList(),
-    override val referenceStateRefs: List<StateRef> = emptyList(),
-    override val outputStates: List<ContractStateAndEncumbranceTag> = emptyList()
+    override var notary: Party? = null,
+    override var timeWindow: TimeWindow? = null,
+    override val attachments: MutableList<SecureHash> = mutableListOf(),
+    override val commands: MutableList<Command> = mutableListOf(),
+    override val signatories: MutableList<PublicKey> = mutableListOf(),
+    override val inputStateRefs: MutableList<StateRef> = mutableListOf(),
+    override val referenceStateRefs: MutableList<StateRef> = mutableListOf(),
+    override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
 ) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
-    // TODO : Review implementation...
-    // 1. Introduces mutability to what is effectively an immutable builder.
-    // 2. Calling toSignedTransaction is an idempotent call, but results in signed transactions with different privacy salt.
-    // 3. Probably won't be needed if we move to an implementation where the developer passes a transaction builder directly to finality.
-    // 4. Consider the same implementation for the consensual transaction builder.
     private var alreadySigned = false
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
-        return copy(attachments = attachments + attachmentId)
+        this.attachments += attachmentId
+        return this
     }
 
     override fun addCommand(command: Command): UtxoTransactionBuilder {
-        return copy(commands = commands + command)
+        this.commands += command
+        return this
     }
 
     override fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
-        return copy(signatories = this.signatories + signatories)
+        this.signatories += signatories
+        return this
     }
 
     override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
-        return copy(inputStateRefs = inputStateRefs + stateRef)
+        this.inputStateRefs += stateRef
+        return this
     }
 
     override fun addInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
-        return copy(inputStateRefs = inputStateRefs + stateRefs)
+        this.inputStateRefs += stateRefs
+        return this
     }
 
     override fun addInputStates(vararg stateRefs: StateRef): UtxoTransactionBuilder {
@@ -62,11 +62,13 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun addReferenceState(stateRef: StateRef): UtxoTransactionBuilder {
-        return copy(referenceStateRefs = referenceStateRefs + stateRef)
+        this.referenceStateRefs += stateRef
+        return this
     }
 
     override fun addReferenceStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
-        return copy(referenceStateRefs = referenceStateRefs + stateRefs)
+        this.referenceStateRefs += stateRefs
+        return this
     }
 
     override fun addReferenceStates(vararg stateRefs: StateRef): UtxoTransactionBuilder {
@@ -74,11 +76,13 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
-        return copy(outputStates = outputStates + contractState.withEncumbrance(null))
+        this.outputStates += contractState.withEncumbrance(null)
+        return this
     }
 
     override fun addOutputStates(contractStates: Iterable<ContractState>): UtxoTransactionBuilder {
-        return copy(outputStates = outputStates + contractStates.map { it.withEncumbrance(null) })
+        this.outputStates += contractStates.map { it.withEncumbrance(null) }
+        return this
     }
 
     override fun addOutputStates(vararg contractStates: ContractState): UtxoTransactionBuilder {
@@ -89,7 +93,8 @@ data class UtxoTransactionBuilderImpl(
         tag: String,
         contractStates: Iterable<ContractState>
     ): UtxoTransactionBuilder {
-        return copy(outputStates = outputStates + contractStates.map { it.withEncumbrance(tag) })
+        this.outputStates += contractStates.map { it.withEncumbrance(tag) }
+        return this
     }
 
     override fun addEncumberedOutputStates(tag: String, vararg contractStates: ContractState): UtxoTransactionBuilder {
@@ -111,23 +116,27 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
-        return copy(notary = notary)
+        this.notary = notary
+        return this
     }
 
     override fun setTimeWindowUntil(until: Instant): UtxoTransactionBuilder {
-        return copy(timeWindow = TimeWindowUntilImpl(until))
+        this.timeWindow = TimeWindowUntilImpl(until)
+        return this
     }
 
     override fun setTimeWindowBetween(from: Instant, until: Instant): UtxoTransactionBuilder {
-        return copy(timeWindow = TimeWindowBetweenImpl(from, until))
+        this.timeWindow = TimeWindowBetweenImpl(from, until)
+        return this
     }
 
     @Suspendable
-    override fun toSignedTransaction(): UtxoSignedTransaction =
-        sign()
+    override fun toSignedTransaction(): UtxoSignedTransaction {
+        return sign()
+    }
 
     @Suspendable
-    fun sign(): UtxoSignedTransaction {
+    private fun sign(): UtxoSignedTransaction {
         check(!alreadySigned) { "The transaction cannot be signed twice." }
         UtxoTransactionBuilderVerifier(this).verify()
         return utxoSignedTransactionFactory.create(this, signatories).also {
@@ -144,6 +153,7 @@ data class UtxoTransactionBuilderImpl(
         return this === other
                 || other is UtxoTransactionBuilderImpl
                 && other.notary == notary
+                && other.timeWindow == timeWindow
                 && other.attachments == attachments
                 && other.commands == commands
                 && other.inputStateRefs == inputStateRefs

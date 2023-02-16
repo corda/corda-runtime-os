@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
-import net.corda.v5.base.types.sequence
+import net.corda.v5.base.types.ByteArrays.sequence
 import net.corda.v5.base.util.exactAdd
 import net.corda.v5.crypto.COMPOSITE_KEY_CHILDREN_LIMIT
 import net.corda.v5.crypto.CompositeKey
@@ -37,7 +37,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         // will improve efficiency, because keys with bigger "weights" are the first to be checked and thus the
         // threshold requirement might be met earlier without requiring a full [children] scan.
         private val descWeightComparator =
-            compareBy<CompositeKeyNodeAndWeight>({ -it.weight }, { it.node.encoded.sequence() })
+            compareBy<CompositeKeyNodeAndWeight>({ -it.weight }, { sequence(it.node.encoded) })
 
         fun createFromKeys(keys: List<PublicKey>, threshold: Int?) =
             create(keys.map { CompositeKeyNodeAndWeight(it, 1) }, threshold)

@@ -18,7 +18,7 @@ class ClientRequestBodyImpl(private val fiberService: FlowFiberService) : Client
             ?: throw IllegalStateException("Failed to find the start args for Rest started flow")
     }
 
-    override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
+    override fun <T : Any> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
         return marshallingService.parse(requestBody, clazz)
     }
 

@@ -2,6 +2,7 @@ package net.corda.messaging.chunking
 
 import java.nio.ByteBuffer
 import net.corda.chunking.ChunkBuilderService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
@@ -21,14 +22,15 @@ import org.mockito.kotlin.whenever
 class ChunkSerializerServiceImplTest {
 
     private companion object {
-        const val chunkSize = 1024 * 20L
+        const val chunkSize = 1024 * 50L
         val someSmallBytes = ByteArray(1)
-        val someLargeBytes = ByteArray(20000)
+        val someLargeBytes = ByteArray(1024 * 120)
     }
 
     private lateinit var serializer: CordaAvroSerializer<Any>
     private lateinit var chunkBuilderService: ChunkBuilderService
     private lateinit var chunkSerializerService: ChunkSerializerServiceImpl
+    private lateinit var platformDigestService: PlatformDigestService
     private lateinit var producerRecord: CordaProducerRecord<*, *>
     private val value: String = "somevalue"
     private val key: String = "somekey"
@@ -38,7 +40,8 @@ class ChunkSerializerServiceImplTest {
         serializer = mock()
         chunkBuilderService = mock()
         producerRecord = mock()
-        chunkSerializerService = ChunkSerializerServiceImpl(chunkSize, serializer, chunkBuilderService)
+        platformDigestService = mock()
+        chunkSerializerService = ChunkSerializerServiceImpl(chunkSize, serializer, chunkBuilderService, platformDigestService)
 
         var partNumber = 0
         doAnswer {
@@ -64,6 +67,7 @@ class ChunkSerializerServiceImplTest {
                 .setProperties(KeyValuePairList()).build()
         }.whenever(chunkBuilderService).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
 
+        whenever(platformDigestService.hash(any<ByteArray>(), any())).thenReturn(net.corda.v5.crypto.SecureHash("", someSmallBytes))
         whenever(producerRecord.topic).thenReturn("topic")
         whenever(producerRecord.key).thenReturn(key)
         whenever(producerRecord.value).thenReturn(value)
@@ -79,12 +83,12 @@ class ChunkSerializerServiceImplTest {
     }
 
     @Test
-    fun `generateChunks from object success and returns 3 chunks`() {
+    fun `generateChunks from object success and returns 5 chunks`() {
         val result = chunkSerializerService.generateChunks(value)
         assertThat(result).isNotEmpty
-        assertThat(result).size().isEqualTo(3)
+        assertThat(result).size().isEqualTo(5)
 
-        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
         verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
 
@@ -103,12 +107,12 @@ class ChunkSerializerServiceImplTest {
     }
 
     @Test
-    fun `generateChunks from corda producer record success and returns 3 chunks`() {
+    fun `generateChunks from corda producer record success and returns 5 chunks`() {
         val result = chunkSerializerService.generateChunkedRecords(producerRecord)
         assertThat(result).isNotEmpty
-        assertThat(result.size).isEqualTo(3)
+        assertThat(result.size).isEqualTo(5)
 
-        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
         verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
 
@@ -122,9 +126,9 @@ class ChunkSerializerServiceImplTest {
     fun `generateChunks from bytes success and returns 3 chunks`() {
         val result = chunkSerializerService.generateChunksFromBytes(someLargeBytes)
         assertThat(result).isNotEmpty
-        assertThat(result.size).isEqualTo(3)
+        assertThat(result.size).isEqualTo(5)
 
-        verify(chunkBuilderService, times(2)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
         verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
 }

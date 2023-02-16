@@ -21,12 +21,7 @@ class BrokenProtocolFlow : ClientStartableFlow {
     @Suspendable
     override fun call(requestBody: RestRequestBody): String {
         val session = messaging.initiateFlow(
-            MemberX500Name(
-                commonName = "Alice",
-                organization = "Alice Corp",
-                locality = "LDN",
-                country = "GB"
-            )
+            MemberX500Name("Alice", "Alice Corp", "LDN", "GB")
         )
         session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1))
         return ""

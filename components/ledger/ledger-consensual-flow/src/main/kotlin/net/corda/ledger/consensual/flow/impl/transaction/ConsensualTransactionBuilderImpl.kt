@@ -11,17 +11,20 @@ import java.util.Objects
 class ConsensualTransactionBuilderImpl(
     private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    override val states: List<ConsensualState> = emptyList(),
+    override val states: MutableList<ConsensualState> = mutableListOf(),
 ) : ConsensualTransactionBuilder {
 
     private var alreadySigned = false
 
-    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
-        copy(states = this.states + states)
+     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder {
+        this.states += states
+        return this
+    }
 
     @Suspendable
-    override fun toSignedTransaction(): ConsensualSignedTransaction =
-        sign()
+    override fun toSignedTransaction(): ConsensualSignedTransaction {
+        return sign()
+    }
 
     @Suspendable
     fun sign(): ConsensualSignedTransaction {
@@ -30,13 +33,6 @@ class ConsensualTransactionBuilderImpl(
         return consensualSignedTransactionFactory.create(this).also {
             alreadySigned = true
         }
-    }
-
-    private fun copy(states: List<ConsensualState> = this.states): ConsensualTransactionBuilderImpl {
-        return ConsensualTransactionBuilderImpl(
-            consensualSignedTransactionFactory,
-            states,
-        )
     }
 
     override fun equals(other: Any?): Boolean {

@@ -75,4 +75,9 @@ interface DbConnectionsRepository {
      * @return The cluster DB [DataSource]
      */
     fun getClusterDataSource(): CloseableDataSource
+
+    /**
+     * Test all connections, returns true if all connections are working.
+     */
+    fun testAllConnections(): Boolean
 }

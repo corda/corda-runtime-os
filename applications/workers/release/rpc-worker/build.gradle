@@ -49,9 +49,11 @@ dependencies {
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")
 
+    e2eTestImplementation project(':libs:chunking:chunking-core')
     e2eTestImplementation project(':libs:configuration:configuration-endpoints')
     e2eTestImplementation project(':libs:crypto:certificate-generation')
     e2eTestImplementation project(':libs:crypto:cipher-suite')
+    e2eTestImplementation project(':libs:crypto:cipher-suite-impl')
     e2eTestImplementation project(':libs:rest:rest-client')
     e2eTestImplementation project(':libs:permissions:permission-endpoint')
     e2eTestImplementation project(':libs:permissions:permission-common')
