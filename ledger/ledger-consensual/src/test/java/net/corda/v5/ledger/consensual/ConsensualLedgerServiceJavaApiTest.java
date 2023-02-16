@@ -35,9 +35,9 @@ public class ConsensualLedgerServiceJavaApiTest {
         Assertions.assertThat(result).isEqualTo(consensualTransactionBuilder);
         verify(consensualLedgerService, times(1)).getTransactionBuilder();
 
-        SecureHash fakeTxId = new SecureHash("SHA256", "1234456".getBytes());
-        Assertions.assertThat(consensualLedgerService.findSignedTransaction(fakeTxId)).isNull();
-        Assertions.assertThat(consensualLedgerService.findLedgerTransaction(fakeTxId)).isNull();
+        SecureHash fakeTransactionId = new SecureHash("SHA256", "1234456".getBytes());
+        Assertions.assertThat(consensualLedgerService.findSignedTransaction(fakeTransactionId)).isNull();
+        Assertions.assertThat(consensualLedgerService.findLedgerTransaction(fakeTransactionId)).isNull();
     }
 
     @Test
