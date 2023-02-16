@@ -35,7 +35,8 @@ internal class ChunkWriterImpl(
     var chunkWriteCallback: ChunkWriteCallback? = null
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
-    val chunkSize = maxAllowedMessageSize - CORDA_MESSAGE_OVERHEAD
+    //add extra overhead to avoid message bus level chunking
+    val chunkSize = maxAllowedMessageSize - (CORDA_MESSAGE_OVERHEAD*2)
 
     override fun write(fileName: String, inputStream: InputStream): ChunkWriter.Request {
         if (chunkWriteCallback == null) {
