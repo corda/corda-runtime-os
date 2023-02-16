@@ -60,7 +60,7 @@ class DbConnectionManagerEventHandler(
         if (dbConnectionManager.testAllConnections()) {
             coordinator.updateStatus(LifecycleStatus.UP, "DB check passed")
         } else {
-            coordinator.updateStatus(LifecycleStatus.ERROR, "DB check failed")
+            coordinator.updateStatus(LifecycleStatus.DOWN, "DB check failed")
         }
         scheduleNextDbCheck(coordinator)
     }
