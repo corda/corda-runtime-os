@@ -166,7 +166,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with error if the uniqueness check fails`() {
-        createAndCallServer(mockErrorUniquenessClientService()) {
+        createAndCallServer(mockErrorUniquenessClientService(UniquenessCheckErrorReferenceStateUnknownImpl(emptyList()))) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -305,8 +305,6 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
             assertThat((responseError as NotaryErrorGeneral).errorText)
                 .contains("Unhandled error!")
-            assertThat((responseError).cause).isInstanceOf(IllegalArgumentException::class.java)
-            assertThat((responseError).cause as IllegalArgumentException).hasMessage("Unhandled error!")
         }
     }
 
@@ -462,7 +460,7 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     private fun mockErrorUniquenessClientService(
-        errorType: UniquenessCheckError = UniquenessCheckErrorReferenceStateUnknownImpl(emptyList())
+        errorType: UniquenessCheckError
     ): LedgerUniquenessCheckerClientService {
         return mockUniquenessClientService(
             UniquenessCheckResultFailureImpl(
