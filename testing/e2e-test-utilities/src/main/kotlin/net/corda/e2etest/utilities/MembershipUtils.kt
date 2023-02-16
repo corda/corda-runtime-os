@@ -127,7 +127,6 @@ fun configureNetworkParticipant(
 ) {
     return cluster(clusterConfig) {
         assertWithRetry {
-            timeout(10.seconds)
             command { configureNetworkParticipant(holdingId, sessionKeyId) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             failMessage("Failed to configure member '$holdingId' as a network participant")
@@ -188,7 +187,7 @@ fun waitForRegistrationStatus(
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the RPC worker, but for now this will have to suffice.
             timeout(60.seconds)
-            interval(1.seconds)
+            interval(3.seconds)
             command {
                 if (registrationId != null) {
                     getRegistrationStatus(holdingIdentityShortHash, registrationId)

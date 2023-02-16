@@ -41,8 +41,8 @@ fun onboardMgm(
         clusterConfig.p2pUri.toString()
     )
 
-    if (!keyExists(TENANT_P2P, CAT_TLS)) {
-        val tlsKeyId = createKeyFor(TENANT_P2P, CERT_ALIAS_P2P, CAT_TLS, DEFAULT_KEY_SCHEME)
+    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+        val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val mgmTlsCsr = generateCsr(clusterConfig, mgmName, tlsKeyId)
         val mgmTlsCert = File.createTempFile("${clusterConfig.hashCode()}$CAT_TLS", ".pem").also {
             it.deleteOnExit()
@@ -266,9 +266,9 @@ fun declineRegistration(
             timeout(10.seconds)
             command { post(
                 "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
-                "{\"reason\":\"Declined by automated test with runId $testRunUniqueId.\"}")
+                "{\"reason\": {\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}}")
             }
-            condition { it.code == ResponseCode.OK.statusCode }
+            condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
 }
