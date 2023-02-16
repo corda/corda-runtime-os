@@ -23,7 +23,6 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
-import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionVerificationException
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -135,7 +134,7 @@ class ConsensualReceiveFinalityFlowTest {
             publicKeyExample))))
 
         assertThatThrownBy { callReceiveFinalityFlow() }
-            .isInstanceOf(ConsensualTransactionVerificationException::class.java)
+            .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("State verification failed")
 
         verify(signedTransaction, never()).addMissingSignatures()
