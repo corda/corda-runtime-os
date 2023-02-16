@@ -1,11 +1,15 @@
 package net.corda.membership.lib.grouppolicy
 
-class InteropGroupPolicyReader {
+import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.LoggerFactory
 
-    fun getGroupPolicy(): String? {
+class InteropGroupPolicyReader {
+    val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    fun getGroupPolicy(holdingIdentity: HoldingIdentity): String? {
+        logger.info("Searching for interoperability group for $holdingIdentity")
         return """{
   "fileFormatVersion": 1,
-  "groupId": "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
+  "groupId": "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
   "registrationProtocol": "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
   "synchronisationProtocol": "net.corda.membership.impl.sync.staticnetwork.StaticMemberSyncService",
   "protocolParameters": {

@@ -215,7 +215,7 @@ class GroupPolicyProviderImplTest {
     }
 
     private val interopGroupPolicyReader: InteropGroupPolicyReader = mock {
-        on { getGroupPolicy() } doReturn groupPolicy6
+        on { getGroupPolicy(holdingIdentity6) } doReturn groupPolicy6
     }
 
     private val subscriptionFactory: SubscriptionFactory = mock {
