@@ -3,6 +3,7 @@ package net.corda.libs.cpi.datamodel.repository
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
 import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogAuditEntity
+import net.corda.v5.crypto.SecureHash
 import javax.persistence.EntityManager
 
 class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
@@ -11,13 +12,13 @@ class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
     }
 
     override fun findById(em: EntityManager, id: String): CpkDbChangeLogAudit {
-        val entity = em.find(CpkDbChangeLogAuditEntity::class.java, id);
+        val entity = em.find(CpkDbChangeLogAuditEntity::class.java, id.toString());
         return entity.toDto()
     }
 
-    override fun findByFileChecksums(em: EntityManager, cpkFileChecksums: List<String>): List<CpkDbChangeLogAudit> {
+    override fun findByFileChecksums(em: EntityManager, cpkFileChecksums: List<SecureHash>): List<CpkDbChangeLogAudit> {
         return em.createQuery("FROM ${CpkDbChangeLogAuditEntity::class.java.simpleName} where cpkFileChecksum IN :checksums")
-            .setParameter("checksums", cpkFileChecksums)
+            .setParameter("checksums", cpkFileChecksums.map { it.toString() })
             .resultList.map { entity ->
                 entity as CpkDbChangeLogAuditEntity
                 entity.toDto()
@@ -33,7 +34,7 @@ class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
             CpkDbChangeLog(
                 filePath,
                 content,
-                cpkFileChecksum
+                SecureHash.parse(cpkFileChecksum)
             )
         )
     }
@@ -45,7 +46,7 @@ class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
     private fun CpkDbChangeLogAudit.toEntity(): CpkDbChangeLogAuditEntity {
         return CpkDbChangeLogAuditEntity(
             id = id,
-            cpkFileChecksum = changeLog.fileChecksum,
+            cpkFileChecksum = changeLog.fileChecksum.toString(),
             filePath = changeLog.filePath,
             content = changeLog.content
         )

@@ -18,42 +18,10 @@ class DBCpkStorageTest {
 
     private lateinit var emFactory: EntityManagerFactory
 
-    companion object {
-        const val UN_PARSABLE_HASH = "BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FC"
-    }
-
     @BeforeEach
     fun setUp() {
         emFactory = mock()
         dbCpkStorage = DBCpkStorage(emFactory)
-    }
-
-    @Test
-    fun `on get cpk ids with empty string for checksum does not include it to the returned checksums`() {
-        val mockTypedQuery = mock<TypedQuery<String>>()
-        whenever(mockTypedQuery.setParameter(any<String>(), any())).thenReturn(mockTypedQuery)
-        whenever(mockTypedQuery.resultList).thenReturn(listOf(""))
-        val em = mock<EntityManager>()
-        whenever(em.createQuery(any(), any<Class<String>>())).thenReturn(mockTypedQuery)
-        whenever(em.transaction).thenReturn(mock())
-        whenever(emFactory.createEntityManager()).thenReturn(em)
-
-        val cpkIds = dbCpkStorage.getCpkIdsNotIn(listOf())
-        assertThat(cpkIds).isEmpty()
-    }
-
-    @Test
-    fun `on get cpk ids with invalid checksum format for checksum does not include it to the returned checksums`() {
-        val mockTypedQuery = mock<TypedQuery<String>>()
-        whenever(mockTypedQuery.setParameter(any<String>(), any())).thenReturn(mockTypedQuery)
-        whenever(mockTypedQuery.resultList).thenReturn(listOf(UN_PARSABLE_HASH))
-        val em = mock<EntityManager>()
-        whenever(em.createQuery(any(), any<Class<String>>())).thenReturn(mockTypedQuery)
-        whenever(em.transaction).thenReturn(mock())
-        whenever(emFactory.createEntityManager()).thenReturn(em)
-
-        val cpkIds = dbCpkStorage.getCpkIdsNotIn(listOf())
-        assertThat(cpkIds).isEmpty()
     }
 
     @Test
@@ -73,9 +41,9 @@ class DBCpkStorageTest {
         whenever(emFactory.createEntityManager()).thenReturn(em)
 
         val checksum = SecureHash.parse("SHA-256:1234567890")
-        val cpkChecksumToData = dbCpkStorage.getCpkDataByCpkId(checksum)
+        val cpkFile = dbCpkStorage.getCpkFileById(checksum)
 
-        assertThat(cpkChecksumToData.checksum).isEqualTo(checksum)
-        assertThat(cpkChecksumToData.data).isEqualTo(bytes)
+        assertThat(cpkFile.fileChecksum).isEqualTo(checksum)
+        assertThat(cpkFile.data).isEqualTo(bytes)
     }
 }

@@ -3,8 +3,6 @@ package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
-import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -55,12 +53,12 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val mockChangelog1 = mock<CpkDbChangeLog> { changelog ->
         whenever(changelog.filePath).thenReturn("cpk1")
         whenever(changelog.content).thenReturn( "dog.xml")
-        whenever(changelog.fileChecksum).thenReturn("")
+        whenever(changelog.fileChecksum).thenReturn(SecureHash("SHA1","abc".toByteArray()))
     }
     private val mockChangelog2 = mock<CpkDbChangeLog> { changelog ->
         whenever(changelog.filePath).thenReturn("cpk1")
         whenever(changelog.content).thenReturn( "cat.xml")
-        whenever(changelog.fileChecksum).thenReturn("")
+        whenever(changelog.fileChecksum).thenReturn(SecureHash("SHA1","abc".toByteArray()))
     }
     private val cpkDbChangelogs = listOf(mockChangelog1, mockChangelog2)
     private val mokcCpkDbChangeLogRepository = mock<CpkDbChangeLogRepository > {
@@ -266,7 +264,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     fun `upgrade handler can't find current CPI associated with target CPI throws`() {
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiName), eq("v1"), eq(ssh)))
             .thenReturn(null)
 
         withUpgradeValidationFailure("CPI with name ${targetCpiMetadata.id.name}, version v1 was not found") {
@@ -283,7 +281,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         val cpiInDifferentGroup = mock<CpiMetadataLite> { whenever(it.mgmGroupId).thenReturn("group-b") }
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiName), eq("v1"), eq(ssh)))
             .thenReturn(cpiInDifferentGroup)
 
         withUpgradeValidationFailure("Expected MGM GroupId group-b but was someGroup1 in CPI") {
@@ -299,7 +297,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
     fun `upgrade handler fails to upgrade, rolls back transaction`() {
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiName), eq("v1"), eq(ssh)))
             .thenReturn(currentCpiMetadata)
         whenever(virtualNodeRepository.upgradeVirtualNodeCpi(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenThrow(IllegalArgumentException("err"))
@@ -323,7 +321,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiName), eq("v1"), eq(ssh)))
             .thenReturn(currentCpiMetadata)
         whenever(
             virtualNodeRepository.upgradeVirtualNodeCpi(
@@ -359,7 +357,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiName), eq("v1"), eq(ssh)))
             .thenReturn(currentCpiMetadata)
         whenever(
             virtualNodeRepository.upgradeVirtualNodeCpi(
@@ -399,7 +397,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiName), eq("v1"), eq(ssh)))
             .thenReturn(currentCpiMetadata)
         whenever(
             virtualNodeRepository.upgradeVirtualNodeCpi(
@@ -432,7 +430,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(eq(em), eq(cpiName), eq("v1"), eq(sshString)))
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiName), eq("v1"), eq(ssh)))
             .thenReturn(currentCpiMetadata)
         whenever(
             virtualNodeRepository.upgradeVirtualNodeCpi(

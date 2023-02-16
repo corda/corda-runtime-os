@@ -5,12 +5,12 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
-import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.membership.lib.grouppolicy.GroupPolicyIdNotFoundException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
@@ -108,7 +108,7 @@ fun CpiPersistence.persistCpiToDatabase(
         val cpiExists = this.cpiExists(
             cpi.metadata.cpiId.name,
             cpi.metadata.cpiId.version,
-            cpi.metadata.cpiId.signerSummaryHashForDbQuery
+            cpi.metadata.cpiId.signerSummaryHash.toString()
         )
 
         return if (cpiExists && fileInfo.forceUpload) {
@@ -133,7 +133,7 @@ fun CpiPersistence.persistCpiToDatabase(
             )
         } else {
             throw UnsupportedOperationException(
-                "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} ${cpi.metadata.cpiId.signerSummaryHashForDbQuery} " +
+                "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} ${cpi.metadata.cpiId.signerSummaryHash} " +
                         "already exists and cannot be replaced."
             )
         }

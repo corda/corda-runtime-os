@@ -181,7 +181,7 @@ class CpiMetadataEntity(
 
 /** The composite primary key for a CpiEntity. */
 @Embeddable
-data class CpiMetadataEntityKey(
+class CpiMetadataEntityKey(
     private val name: String,
     private val version: String,
     private val signerSummaryHash: String,

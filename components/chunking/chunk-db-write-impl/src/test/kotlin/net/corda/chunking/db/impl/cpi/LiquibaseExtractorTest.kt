@@ -5,6 +5,7 @@ import net.corda.db.admin.LiquibaseXmlConstants
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -48,10 +49,10 @@ internal class LiquibaseExtractorTest {
         assertThat(entities.isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5
+        val fileChecksums = cpi.cpks.map { it.metadata.fileChecksum }
         assertThat(entities.size).isEqualTo(expectedLiquibaseFileCount)
-
         entities.forEach {
-            assertThat(it.fileChecksum.isNotEmpty()).isTrue
+            assertNotNull(fileChecksums.contains(it.fileChecksum))
             assertThat(it.filePath.isNotEmpty()).isTrue
             assertThat(it.content.isNotEmpty()).isTrue
 

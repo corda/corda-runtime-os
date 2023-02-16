@@ -5,20 +5,26 @@ import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import java.util.UUID
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
+import net.corda.libs.packaging.core.*
 import net.corda.v5.crypto.SecureHash
+import java.time.Instant
 
 object TestObject {
     fun randomChecksumString(): String {
         return "SHA-256:" + List(64) {
-            (('a'..'z') + ('A'..'Z') + ('0'..'9')).random()
+            (('a'..'f') + ('A'..'F') + ('0'..'9')).random()
         }.joinToString("")
+    }
+
+    fun randomChecksum(): SecureHash {
+        return SecureHash.parse(randomChecksumString())
     }
 
     fun createCpi(id: String, cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String, cpks: Set<CpiCpkEntity>) =
         CpiMetadataEntity.create(
             cpiName, cpiVersion, cpiSignerSummaryHash,
             "test-cpi-$id.cpi",
-            "test-cpi.cpi-$id-hash",
+            SecureHash("SHA1","test-cpi.cpi-$id-hash".toByteArray()).toString(),
             "{group-policy-json}",
             "group-id",
             "file-upload-request-id-$id",
@@ -29,9 +35,9 @@ object TestObject {
         CpiMetadataEntity.create(
             "test-cpi-$cpiId",
             "1.0",
-            "test-cpi-hash",
+            SecureHash("SHA1","test-cpi-hash".toByteArray()).toString(),
             "test-cpi-$cpiId.cpi",
-            "test-cpi.cpi-$cpiId-hash",
+            SecureHash("SHA1","test-cpi.cpi-$cpiId-hash".toByteArray()).toString(),
             "{group-policy-json}",
             "group-id",
             "file-upload-request-id-$cpiId",
@@ -43,7 +49,38 @@ object TestObject {
         name: String,
         version: String,
         signerSummaryHash: String,
-    ) = CpkMetadataEntity(cpkFileChecksum, name, version, signerSummaryHash, "1.0", "{}")
+    ) = CpkMetadataEntity(
+        cpkFileChecksum,
+        name,
+        version,
+        signerSummaryHash,
+        "1.0",
+        CpkMetadata(
+            CpkIdentifier(
+                name,
+                version,
+                SecureHash.parse(signerSummaryHash)
+                ),
+            CpkManifest(CpkFormatVersion(1,0)),
+            "mainBundle",
+            emptyList(),
+            CordappManifest(
+                "",
+                "",
+                0,
+                0,
+                CordappType.CONTRACT,
+                "",
+                "",
+                0,
+                "",
+                emptyMap()
+            ),
+            CpkType.UNKNOWN,
+            SecureHash.parse(cpkFileChecksum),
+            emptySet(),
+            Instant.now()
+        ).toJsonAvro())
 
     fun createCpiCpkEntity(
         cpiName: String = "test-cpi-${UUID.randomUUID()}.cpk", cpiVersion: String, cpiSignerSummaryHash: String,
@@ -61,13 +98,13 @@ object TestObject {
         val cpiVersion = "1.0"
         val cpiSignerSummaryHash = SecureHash("SHA1","test-cpi-hash".toByteArray()).toString()
         val cpkList: List<CpiCpkEntity> = (1..numberOfCpks).map {
-            val cpkFileChecksum = randomChecksumString()
+            val cpkFileChecksum = randomChecksum()
             val cpkName = UUID.randomUUID().toString()
             val cpkId = "test-cpk-$cpkName.cpk"
             createCpiCpkEntity(
                 cpiName, cpiVersion, cpiSignerSummaryHash,
                 cpkId, "1.0", SecureHash("SHA1", "test-cpk-hash".toByteArray()).toString(),
-                "test-cpi-$id.cpk", cpkFileChecksum
+                "test-cpi-$id.cpk", cpkFileChecksum.toString()
             )
         }
         val cpi = createCpi(id, cpiName, cpiVersion, cpiSignerSummaryHash, cpkList.toSet())

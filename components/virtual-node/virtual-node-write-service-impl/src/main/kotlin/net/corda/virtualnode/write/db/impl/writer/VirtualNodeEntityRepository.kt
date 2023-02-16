@@ -1,8 +1,8 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepositoryImpl
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.crypto.SecureHash
@@ -20,6 +20,7 @@ internal class VirtualNodeEntityRepository(
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val SHORT_HASH_LENGTH: Int = 12
+        private val cpiMetadataRepository = CpiMetadataRepositoryImpl()
     }
 
     /** Reads CPI metadata from the database. */
@@ -34,57 +35,26 @@ internal class VirtualNodeEntityRepository(
             return null
         }
 
-        val cpiMetadataEntity = entityManagerFactory.transaction {
-            val foundCpi = it.createQuery(
-                "SELECT cpi FROM CpiMetadataEntity cpi " +
-                    "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
-                CpiMetadataEntity::class.java
-            )
-                .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")
-                .resultList
-            if (foundCpi.isNotEmpty()) foundCpi[0] else null
-        } ?: return null
-
-        val signerSummaryHash = SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
-        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
-        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
+        return entityManagerFactory.transaction {
+            cpiMetadataRepository.findByChecksum(it, cpiFileChecksum)?.toLite()
+        }
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadataByNameAndVersion(name: String, version: String): CpiMetadataLite? {
-        val cpiMetadataEntity = entityManagerFactory.use {
-            it.transaction {
-                it.createQuery(
-                    "SELECT cpi FROM CpiMetadataEntity cpi " +
-                            "WHERE cpi.name = :cpiName "+
-                            "AND cpi.version = :cpiVersion ",
-                    CpiMetadataEntity::class.java
-                )
-                    .setParameter("cpiName", name)
-                    .setParameter("cpiVersion", version)
-                    .singleResult
-            }
+    internal fun getCPIMetadataById(name: String, version: String): CpiMetadataLite {
+        return entityManagerFactory.use {
+            cpiMetadataRepository.findByNameAndVersion(it, name, version).toLite()
         }
-
-        val signerSummaryHash = SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
-        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
-        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
-    internal fun getCPIMetadataByNameAndVersion(
-        em: EntityManager, name: String, version: String, signerSummaryHash: String
+    internal fun getCPIMetadataById(
+        em: EntityManager, name: String, version: String, signerSummaryHash: SecureHash
     ): CpiMetadataLite? {
-        return em.find(
-            CpiMetadataEntity::class.java,
-            CpiMetadataEntityKey(name, version, signerSummaryHash)
-        )?.toLite()
+        return cpiMetadataRepository.findById(em, CpiIdentifier(name, version, signerSummaryHash))?.toLite()
     }
 
-    private fun CpiMetadataEntity.toLite(): CpiMetadataLite {
-        val cpiId = CpiIdentifier(name, version, SecureHash.parse(signerSummaryHash))
-        val fileChecksum = SecureHash.parse(fileChecksum).toHexString()
-        return CpiMetadataLite(cpiId, fileChecksum, groupId, groupPolicy)
+    private fun CpiMetadata.toLite(): CpiMetadataLite {
+        val cpiId = CpiIdentifier(cpiId.name, cpiId.version, cpiId.signerSummaryHash)
+        return CpiMetadataLite(cpiId, fileChecksum.toHexString(), groupId, groupPolicy!!)
     }
 }

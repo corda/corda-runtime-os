@@ -1,13 +1,17 @@
 package net.corda.libs.cpi.datamodel.repository
 
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.LockModeType
 
 class CpiMetadataRepositoryImpl: CpiMetadataRepository {
     override fun findAll(em: EntityManager): Stream<CpiMetadata> {
@@ -21,6 +25,18 @@ class CpiMetadataRepositoryImpl: CpiMetadataRepository {
         ).resultStream.map { it.toDto() }
     }
 
+    /**
+     *  Get the metadata for a given CPI
+     *
+     *  @return null if not found
+     */
+    override fun findById(em: EntityManager, id: CpiIdentifier): CpiMetadata? {
+        return em.find(
+            CpiMetadataEntity::class.java,
+            CpiMetadataEntityKey(id.name, id.version, id.signerSummaryHash.toString())
+        ).toDto()
+    }
+
     override fun findByNameAndCpiSignerSummaryHash(em: EntityManager, cpiName: String, cpiSignerSummaryHash: String): List<CpiMetadata> {
         return em.createQuery(
             "FROM ${CpiMetadataEntity::class.simpleName} c " +
@@ -31,6 +47,29 @@ class CpiMetadataRepositoryImpl: CpiMetadataRepository {
             .setParameter("cpiName", cpiName)
             .setParameter("cpiSignerSummaryHash", cpiSignerSummaryHash)
             .resultList.map { it.toDto() }
+    }
+
+    override fun findByNameAndVersion(em: EntityManager, name: String, version: String): CpiMetadata {
+        return em.createQuery(
+            "SELECT cpi FROM CpiMetadataEntity cpi " +
+                    "WHERE cpi.name = :cpiName "+
+                    "AND cpi.version = :cpiVersion ",
+            CpiMetadataEntity::class.java
+        )
+            .setParameter("cpiName", name)
+            .setParameter("cpiVersion", version)
+            .singleResult.toDto()
+    }
+
+    override fun findByChecksum(em: EntityManager, cpiFileChecksum: String): CpiMetadata? {
+        val foundCpi = em.createQuery(
+            "SELECT cpi FROM CpiMetadataEntity cpi " +
+                    "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
+            CpiMetadataEntity::class.java
+        )
+            .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")
+            .resultList.map { it.toDto() }
+        return if (foundCpi.isNotEmpty()) foundCpi[0] else null
     }
 
     /**

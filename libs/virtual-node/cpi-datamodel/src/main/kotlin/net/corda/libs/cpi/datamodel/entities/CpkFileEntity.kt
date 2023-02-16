@@ -75,23 +75,3 @@ class CpkFileEntity(
         return result
     }
 }
-
-fun EntityManager.findCpkChecksumsNotIn(checksums: List<String>): List<String> {
-    return createQuery(
-        "SELECT cpk.fileChecksum FROM ${CpkFileEntity::class.simpleName} cpk " +
-                "WHERE cpk.fileChecksum NOT IN (:checksums)",
-        String::class.java
-    )
-        .setParameter(
-            "checksums",
-            checksums.ifEmpty { "null" })
-        .resultList
-}
-
-fun EntityManager.findCpkDataEntity(checksum: String): CpkFileEntity? = createQuery(
-    "FROM ${CpkFileEntity::class.java.simpleName} WHERE fileChecksum = :checksum",
-    CpkFileEntity::class.java
-)
-    .setParameter("checksum", checksum)
-    .resultList
-    .firstOrNull()

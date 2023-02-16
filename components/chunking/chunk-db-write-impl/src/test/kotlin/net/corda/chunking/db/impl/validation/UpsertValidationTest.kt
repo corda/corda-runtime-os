@@ -4,6 +4,7 @@ import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
+import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -53,8 +54,11 @@ class UpsertValidationTest {
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
+            on { name }.doReturn("")
             on { it.version }.doReturn(requiredVersion)
-            on { it.groupId }.doReturn(groupId)
+            on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
+            on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
+            on { this.groupId }.doReturn(groupId )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
@@ -72,8 +76,11 @@ class UpsertValidationTest {
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
+            on { name }.doReturn("")
             on { it.version }.doReturn(requiredVersion)
-            on { it.groupId }.doReturn("foo")
+            on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
+            on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
+            on { this.groupId }.doReturn("foo" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
@@ -91,7 +98,11 @@ class UpsertValidationTest {
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
+            on { name }.doReturn("")
             on { version }.doReturn("2.0")
+            on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
+            on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
+            on { this.groupId }.doReturn("" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
@@ -109,7 +120,11 @@ class UpsertValidationTest {
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
+            on { name }.doReturn("")
             on { version }.doReturn("2.0")
+            on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
+            on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
+            on { this.groupId }.doReturn("" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
@@ -123,11 +138,15 @@ class UpsertValidationTest {
     fun `fails upload when version is same`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = "DUMMY:1234567890"
+        val hash = SecureHash("SHA1", "DUMMY:1234567890".toByteArray()).toString()
         val groupId = "ABC"
 
         val meta = mock<CpiMetadataEntity> {
+            on { name }.doReturn("")
             on { version }.doReturn(requiredVersion)
+            on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
+            on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
+            on { this.groupId }.doReturn("" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))

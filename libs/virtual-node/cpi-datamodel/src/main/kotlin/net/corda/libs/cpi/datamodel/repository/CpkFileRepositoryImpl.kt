@@ -21,10 +21,10 @@ class CpkFileRepositoryImpl: CpkFileRepository {
     }
 
     override fun put(em: EntityManager, cpkFile: CpkFile) {
-        em.persist(CpkFileEntity(cpkFile.fileChecksum, cpkFile.data))
+        em.persist(CpkFileEntity(cpkFile.fileChecksum.toString(), cpkFile.data))
     }
 
-    override fun findById(em: EntityManager, fileChecksums: List<SecureHash>): List<CpkFile> {
+    override fun findById(em: EntityManager, fileChecksums: List<String>): List<CpkFile> {
         return em.createQuery(
             "FROM ${CpkFileEntity::class.java.simpleName} f WHERE f.fileChecksum IN :ids",
             CpkFileEntity::class.java
@@ -33,7 +33,28 @@ class CpkFileRepositoryImpl: CpkFileRepository {
             .resultList.map { it.toDto() }
     }
 
+    override fun findById(em: EntityManager, fileChecksum: SecureHash): CpkFile {
+        return em.createQuery(
+            "FROM ${CpkFileEntity::class.java.simpleName} WHERE fileChecksum = :checksum",
+            CpkFileEntity::class.java
+        )
+            .setParameter("checksum", fileChecksum.toString())
+            .singleResult.toDto()
+    }
+
+    override fun findByIdNotIn(em: EntityManager, fileChecksums: List<SecureHash>): List<CpkFile> {
+        return em.createQuery(
+            "FROM ${CpkFileEntity::class.java.simpleName} cpk " +
+                    "WHERE cpk.fileChecksum NOT IN (:checksums)",
+            CpkFileEntity::class.java
+        )
+            .setParameter(
+                "checksums",
+                fileChecksums.map { it.toString() }.ifEmpty { "null" })
+            .resultList.map { it.toDto() }
+    }
+
     private fun CpkFileEntity.toDto(): CpkFile {
-        return CpkFile(fileChecksum, data)
+        return CpkFile(SecureHash.parse(fileChecksum), data)
     }
 }

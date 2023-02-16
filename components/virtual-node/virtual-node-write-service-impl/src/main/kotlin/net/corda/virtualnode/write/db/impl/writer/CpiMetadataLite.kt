@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.v5.crypto.SecureHash
 
 /**
  *  The metadata associated with a CPI file.

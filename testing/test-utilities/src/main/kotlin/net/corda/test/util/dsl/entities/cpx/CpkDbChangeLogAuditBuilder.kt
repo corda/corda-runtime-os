@@ -2,6 +2,7 @@ package net.corda.test.util.dsl.entities.cpx
 
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
+import net.corda.v5.crypto.SecureHash
 import java.util.UUID
 
 fun cpkDbChangeLogAudit(init: CpkDbChangeLogAuditBuilder.() -> Unit): CpkDbChangeLogAudit {
@@ -11,7 +12,7 @@ fun cpkDbChangeLogAudit(init: CpkDbChangeLogAuditBuilder.() -> Unit): CpkDbChang
 }
 
 class CpkDbChangeLogAuditBuilder(
-    private var fileChecksumSupplier: () -> String? = { null },
+    private var fileChecksumSupplier: () -> SecureHash? = { null },
     private val randomUUID: UUID = UUID.randomUUID()
 ) {
 
@@ -25,7 +26,7 @@ class CpkDbChangeLogAuditBuilder(
         return this
     }
 
-    fun fileChecksum(value: String): CpkDbChangeLogAuditBuilder {
+    fun fileChecksum(value: SecureHash): CpkDbChangeLogAuditBuilder {
         fileChecksumSupplier = { value }
         return this
     }
@@ -46,7 +47,7 @@ class CpkDbChangeLogAuditBuilder(
             CpkDbChangeLog(
                 filePath ?: "file_path_$randomUUID",
                 content ?: "data_$randomUUID",
-                fileChecksumSupplier.invoke() ?: "file_checksum_$randomUUID"
+                fileChecksumSupplier.invoke() ?: SecureHash("SHA1","file_checksum_$randomUUID".toByteArray())
             )
         )
     }

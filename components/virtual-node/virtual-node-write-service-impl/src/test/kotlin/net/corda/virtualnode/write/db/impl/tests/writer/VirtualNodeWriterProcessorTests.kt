@@ -276,7 +276,7 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `runs empty CPI DB Migrations`() {
         val changelog = cpkDbChangeLog {
-            fileChecksum("alpha")
+            fileChecksum(net.corda.v5.crypto.SecureHash("SHA1","alpha".toByteArray()))
             filePath("stuff.xml")
         }
 
@@ -304,7 +304,7 @@ class VirtualNodeWriterProcessorTests {
 
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
-        verify(vaultDb).runCpiMigrations(any(), eq("alpha"))
+        verify(vaultDb).runCpiMigrations(any(), eq(changelog.fileChecksum.toString()))
     }
 
     @Test

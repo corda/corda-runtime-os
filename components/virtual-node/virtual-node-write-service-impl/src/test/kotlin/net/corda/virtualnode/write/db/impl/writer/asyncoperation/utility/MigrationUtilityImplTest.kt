@@ -8,6 +8,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
@@ -37,22 +38,22 @@ class MigrationUtilityImplTest {
     private val cpk1DogsChangelog = mock<CpkDbChangeLog> {
         whenever(it.filePath).thenReturn("dogs.xml")
         whenever(it.content).thenReturn("content-dogs")
-        whenever(it.fileChecksum).thenReturn("cpk1")
+        whenever(it.fileChecksum).thenReturn(SecureHash("SHA1", "cpk1".toByteArray()))
     }
     private val cpk1CatsChangelog = mock<CpkDbChangeLog> {
         whenever(it.filePath).thenReturn("cats.xml")
         whenever(it.content).thenReturn("content-cats")
-        whenever(it.fileChecksum).thenReturn("cpk1")
+        whenever(it.fileChecksum).thenReturn(SecureHash("SHA1","cpk1".toByteArray()))
     }
     private val cpk2RabbitsChangelog = mock<CpkDbChangeLog> {
         whenever(it.filePath).thenReturn("rabbits.xml")
         whenever(it.content).thenReturn("content-rabbits")
-        whenever(it.fileChecksum).thenReturn("cpk2")
+        whenever(it.fileChecksum).thenReturn(SecureHash("SHA1","cpk2".toByteArray()))
     }
     private val cpk2SnakesChangelog = mock<CpkDbChangeLog> {
         whenever(it.filePath).thenReturn("snakes.xml")
         whenever(it.content).thenReturn("content-snakes")
-        whenever(it.fileChecksum).thenReturn("cpk2")
+        whenever(it.fileChecksum).thenReturn(SecureHash("SHA1","cpk2".toByteArray()))
     }
 
     @Test
@@ -77,7 +78,7 @@ class MigrationUtilityImplTest {
             vaultDdlConnectionId
         )
 
-        verify(liquibaseSchemaMigrator).updateDb(eq(connection), changelogsCapture.capture(), tag = eq("cpk1"))
+        verify(liquibaseSchemaMigrator).updateDb(eq(connection), changelogsCapture.capture(), tag = eq(SecureHash("SHA1", "cpk1".toByteArray()).toString()))
 
         assertThat(changelogsCapture.firstValue).isNotNull
         val changelogs = changelogsCapture.firstValue
@@ -94,8 +95,8 @@ class MigrationUtilityImplTest {
             vaultDdlConnectionId
         )
 
-        verify(liquibaseSchemaMigrator).updateDb(eq(connection), changelogsCapture.capture(), tag = eq("cpk1"))
-        verify(liquibaseSchemaMigrator).updateDb(eq(connection), changelogsCapture.capture(), tag = eq("cpk2"))
+        verify(liquibaseSchemaMigrator).updateDb(eq(connection), changelogsCapture.capture(), tag = eq(SecureHash("SHA1", "cpk1".toByteArray()).toString()))
+        verify(liquibaseSchemaMigrator).updateDb(eq(connection), changelogsCapture.capture(), tag = eq(SecureHash("SHA1", "cpk2".toByteArray()).toString()))
 
         assertThat(changelogsCapture.firstValue).isNotNull
         val cpk1Changelogs = changelogsCapture.firstValue
@@ -109,7 +110,7 @@ class MigrationUtilityImplTest {
     fun `exception running migrations throws VirtualNodeWriteServiceException`() {
         val changelogsCapture = argumentCaptor<VirtualNodeDbChangeLog>()
 
-        whenever(liquibaseSchemaMigrator.updateDb(eq(connection), changelogsCapture.capture(), tag = eq("cpk1")))
+        whenever(liquibaseSchemaMigrator.updateDb(eq(connection), changelogsCapture.capture(), tag = eq(SecureHash("SHA1", "cpk1".toByteArray()).toString())))
             .thenThrow(PersistenceException("error running migrations"))
 
         assertThrows<VirtualNodeWriteServiceException> {
@@ -120,7 +121,7 @@ class MigrationUtilityImplTest {
             )
         }
 
-        verify(liquibaseSchemaMigrator, times(0)).updateDb(eq(connection), changelogsCapture.capture(), tag = eq("cpk2"))
+        verify(liquibaseSchemaMigrator, times(0)).updateDb(eq(connection), changelogsCapture.capture(), tag = eq(SecureHash("SHA1", "cpk2".toByteArray()).toString()))
     }
 
     @Test

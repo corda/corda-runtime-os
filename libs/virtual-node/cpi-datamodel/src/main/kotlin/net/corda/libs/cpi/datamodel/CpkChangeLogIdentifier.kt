@@ -1,3 +1,5 @@
 package net.corda.libs.cpi.datamodel
 
-data class CpkChangeLogIdentifier(val cpkFileChecksum: String, val filePath: String)
+import net.corda.v5.crypto.SecureHash
+
+data class CpkChangeLogIdentifier(val cpkFileChecksum: SecureHash, val filePath: String)

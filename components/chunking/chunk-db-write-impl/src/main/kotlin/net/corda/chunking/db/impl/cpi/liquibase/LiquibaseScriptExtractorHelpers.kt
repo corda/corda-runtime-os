@@ -68,7 +68,7 @@ class LiquibaseScriptExtractorHelpers {
 
             if(!isXmlValid(path, xmlContent)) return@walk
 
-            liquibaseScripts.add(CpkDbChangeLog(path, xmlContent, cpk.metadata.fileChecksum.toString()))
+            liquibaseScripts.add(CpkDbChangeLog(path, xmlContent, cpk.metadata.fileChecksum))
         }
         log.info("Processing ${cpk.metadata.cpkId} for Liquibase scripts finished")
         return liquibaseScripts

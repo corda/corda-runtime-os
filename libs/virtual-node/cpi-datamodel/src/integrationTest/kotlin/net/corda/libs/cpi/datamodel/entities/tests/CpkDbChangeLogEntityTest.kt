@@ -73,12 +73,12 @@ class CpkDbChangeLogEntityTest {
         val changeLog1 = CpkDbChangeLog(
             "master",
             "master-content",
-            cpk1.id.cpkFileChecksum
+            SecureHash.parse(cpk1.id.cpkFileChecksum)
         )
         val changeLog2 = CpkDbChangeLog(
             "other",
             "other-content",
-            cpk2.id.cpkFileChecksum
+            SecureHash.parse(cpk2.id.cpkFileChecksum)
         )
 
         transaction {
@@ -88,7 +88,7 @@ class CpkDbChangeLogEntityTest {
         }
 
         transaction {
-            val queriedChangelogs = cpkDbChangeLogRepository.findByFileChecksum(this, setOf(cpk1.id.cpkFileChecksum, cpk2.id.cpkFileChecksum)).groupBy { it.fileChecksum }
+            val queriedChangelogs = cpkDbChangeLogRepository.findByFileChecksum(this, setOf(cpk1.id.cpkFileChecksum, cpk2.id.cpkFileChecksum)).groupBy { it.fileChecksum.toString() }
 
             assertThat(queriedChangelogs.keys).isEqualTo(setOf(cpk1.id.cpkFileChecksum, cpk2.id.cpkFileChecksum))
             assertThat(queriedChangelogs[cpk1.id.cpkFileChecksum]!!.size).isEqualTo(1)
@@ -106,18 +106,18 @@ class CpkDbChangeLogEntityTest {
         val changeLog1 = CpkDbChangeLog(
             "master",
             "master-content",
-            cpk1.id.cpkFileChecksum
+            SecureHash.parse(cpk1.id.cpkFileChecksum)
         )
         val changeLog2 = CpkDbChangeLog(
             "other",
             "other-content",
-            cpk2.id.cpkFileChecksum
+            SecureHash.parse(cpk2.id.cpkFileChecksum)
         )
         val (unrelatedCpi, unrelatedCpks) = TestObject.createCpiWithCpks(1)
         val changeLog3 = CpkDbChangeLog(
             "unrelated-file-path",
             "unrelated-content",
-            unrelatedCpks[0].id.cpkFileChecksum
+            SecureHash.parse(unrelatedCpks[0].id.cpkFileChecksum)
         )
 
         transaction {
@@ -170,7 +170,7 @@ class CpkDbChangeLogEntityTest {
     fun `when CPI is merged with new CPKs, old orphaned CPK changesets are no longer associated with the CPI and shared CPK works`() {
         val cpiName = UUID.randomUUID().toString()
         val cpiVersion = UUID.randomUUID().toString()
-        val cpiSignerSummaryHash = UUID.randomUUID().toString()
+        val cpiSignerSummaryHash = SecureHash("SHA1",UUID.randomUUID().toString().toByteArray()).toString()
         val cpkRand = UUID.randomUUID()
 
         val cpk1 = cpk { }
@@ -198,19 +198,19 @@ class CpkDbChangeLogEntityTest {
         }
 
         val changelog1 = cpkDbChangeLog {
-            fileChecksum(cpk1.cpkFileChecksum)
+            fileChecksum(SecureHash.parse(cpk1.cpkFileChecksum))
             filePath("cpk1.xml")
         }
         val changelog2 = cpkDbChangeLog {
-            fileChecksum(cpk2.cpkFileChecksum)
+            fileChecksum(SecureHash.parse(cpk2.cpkFileChecksum))
             filePath("cpk2.xml")
         }
         val changelog3 = cpkDbChangeLog {
-            fileChecksum(cpk3.cpkFileChecksum)
+            fileChecksum(SecureHash.parse(cpk3.cpkFileChecksum))
             filePath("cpk3.xml")
         }
         val sharedChangelog = cpkDbChangeLog {
-            fileChecksum(sharedCpk.cpkFileChecksum)
+            fileChecksum(SecureHash.parse(sharedCpk.cpkFileChecksum))
             filePath("shared_$cpkRand.xml")
         }
 
@@ -255,22 +255,22 @@ class CpkDbChangeLogEntityTest {
         }
 
         val changelog5 = cpkDbChangeLog {
-            fileChecksum(cpk5.cpkFileChecksum)
+            fileChecksum(SecureHash.parse(cpk5.cpkFileChecksum))
             filePath("cpk5.xml")
         }
         val changelog6 = cpkDbChangeLog {
-            fileChecksum(cpk6.cpkFileChecksum)
+            fileChecksum(SecureHash.parse(cpk6.cpkFileChecksum))
             filePath("cpk6.xml")
         }
 
         transaction {
             merge(updatedCpi)
-            merge(changelog5)
+            cpkDbChangeLogRepository.update(this, changelog5)
             cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(changelog5))
-            merge(changelog6)
+            cpkDbChangeLogRepository.update(this, changelog6)
             cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(changelog6))
             // simulating persisting changelog for shared CPK again
-            merge(sharedChangelog)
+            cpkDbChangeLogRepository.update(this, sharedChangelog)
             cpkDbChangeLogAuditRepository.put(this, cpkDbChangeLogAudit(sharedChangelog))
         }
 

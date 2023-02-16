@@ -1,9 +1,8 @@
 package net.corda.cpk.write.impl.services.db.impl
 
-import net.corda.cpk.write.impl.services.db.CpkChecksumToData
 import net.corda.cpk.write.impl.services.db.CpkStorage
-import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
-import net.corda.libs.cpi.datamodel.entities.findCpkChecksumsNotIn
+import net.corda.libs.cpi.datamodel.CpkFile
+import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
@@ -14,38 +13,18 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
 
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val cpkFileRepository = CpkFileRepositoryImpl()
     }
 
-    override fun getCpkIdsNotIn(checksums: List<SecureHash>): List<SecureHash> {
+    override fun getCpkIdsNotIn(fileChecksums: List<SecureHash>): List<SecureHash> {
         return entityManagerFactory.createEntityManager().transaction { em ->
-            val cpkChecksumsStr = em.findCpkChecksumsNotIn(checksums.map { it.toString() })
-
-            cpkChecksumsStr.mapNotNull { checksumStr ->
-                if (checksumStr.isEmpty()) {
-                    logger.warn("Found empty value for CPK checksum")
-                    null
-                } else {
-                    try {
-                        SecureHash.parse(checksumStr)
-                    } catch (e: Exception) {
-                        logger.warn("Failed when tried to parse a CPK checksum with", e)
-                        null
-                    }
-                }
-            }
+            cpkFileRepository.findByIdNotIn(em, fileChecksums).map { it.fileChecksum }
         }
     }
 
-    override fun getCpkDataByCpkId(checksum: SecureHash): CpkChecksumToData {
+    override fun getCpkFileById(fileChecksum: SecureHash): CpkFile {
         return entityManagerFactory.createEntityManager().transaction {
-            val cpkDataEntity = it.createQuery(
-                "FROM ${CpkFileEntity::class.java.simpleName} WHERE fileChecksum = :checksum",
-                CpkFileEntity::class.java
-            )
-                .setParameter("checksum", checksum.toString())
-                .singleResult
-
-            CpkChecksumToData(SecureHash.parse(cpkDataEntity.fileChecksum), cpkDataEntity.data)
+            cpkFileRepository.findById(it, fileChecksum)
         }
     }
 }

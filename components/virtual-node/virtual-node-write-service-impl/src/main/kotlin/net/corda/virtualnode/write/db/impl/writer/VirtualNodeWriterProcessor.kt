@@ -46,6 +46,7 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -261,10 +262,10 @@ internal class VirtualNodeWriterProcessor(
                             return
                         }
 
-                    val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                    val cpiMetadata = oldVirtualNodeEntityRepository.getCPIMetadataById(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
-                    )!!
+                    )
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
@@ -302,7 +303,7 @@ internal class VirtualNodeWriterProcessor(
                         } catch (e: Exception) {
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI ${cpiMetadata.id.name} - changelogs: [" +
-                                        "${changelogsForThisCpk.joinToString { it.fileChecksum + ", " + it.filePath }}]", e)
+                                        "${changelogsForThisCpk.joinToString { it.fileChecksum.toString() + ", " + it.filePath }}]", e)
                             respFuture.complete(
                                 VirtualNodeManagementResponse(
                                     instant,
@@ -546,7 +547,7 @@ internal class VirtualNodeWriterProcessor(
                 logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
                 val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
                 try {
-                    vaultDb.runCpiMigrations(allChangeLogsForCpk, cpkFileChecksum)
+                    vaultDb.runCpiMigrations(allChangeLogsForCpk, cpkFileChecksum.toString())
                 } catch (e: Exception) {
                     val msg =
                         "CPI migrations failed for virtual node '$virtualNodeShortHash`. Failure occurred running CPI migrations on " +
@@ -559,7 +560,7 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
-    private fun runCpkResyncMigrations(dataSource: CloseableDataSource, cpkFileChecksum: String, changelogs: List<CpkDbChangeLog>) {
+    private fun runCpkResyncMigrations(dataSource: CloseableDataSource, cpkFileChecksum: SecureHash, changelogs: List<CpkDbChangeLog>) {
         if (changelogs.isEmpty()) return
 
         logger.info("Preparing to run ${changelogs.size} resync migrations for CPK '$cpkFileChecksum'.")
@@ -567,7 +568,7 @@ internal class VirtualNodeWriterProcessor(
         LiquibaseSchemaMigratorImpl().updateDb(
             dataSource.connection,
             VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.filePath, it.content, it.fileChecksum) }),
-            tag = cpkFileChecksum
+            tag = cpkFileChecksum.toString()
         )
         logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")
     }
