@@ -84,21 +84,10 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun finalize(
-        signedTransaction: UtxoSignedTransaction,
+        transactionBuilder: UtxoTransactionBuilder,
         sessions: List<FlowSession>
     ): UtxoSignedTransaction {
-        /*
-        Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
-        Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
-        */
-        val utxoFinalityFlow = try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
-                UtxoFinalityFlow(signedTransaction as UtxoSignedTransactionInternal, sessions)
-            })
-        } catch (e: PrivilegedActionException) {
-            throw e.exception
-        }
-        return flowEngine.subFlow(utxoFinalityFlow)
+        return flowEngine.subFlow(UtxoFinalityFlow(transactionBuilder, sessions))
     }
 
     @Suspendable
@@ -106,13 +95,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
         session: FlowSession,
         validator: UtxoTransactionValidator
     ): UtxoSignedTransaction {
-        val utxoReceiveFinalityFlow = try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
-                UtxoReceiveFinalityFlow(session, validator)
-            })
-        } catch (e: PrivilegedActionException) {
-            throw e.exception
-        }
-        return flowEngine.subFlow(utxoReceiveFinalityFlow)
+        return flowEngine.subFlow(UtxoReceiveFinalityFlow(session, validator))
     }
 }

@@ -41,6 +41,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .let { it as UtxoTransactionBuilderInternal }
             .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
         assertEquals(inputStateRef, tx.inputStateRefs.single())
@@ -59,6 +60,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addOutputState(utxoStateExample)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
+            .let { it as UtxoTransactionBuilderInternal }
             .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
         assertThat(tx.inputStateRefs).isEmpty()
@@ -78,6 +80,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .let { it as UtxoTransactionBuilderInternal }
             .toSignedTransaction() as UtxoSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
@@ -119,7 +122,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
                 .addCommand(UtxoCommandExample())
                 .addAttachment(SecureHash("SHA-256", ByteArray(12)))
 
-            builder.toSignedTransaction()
+            (builder as UtxoTransactionBuilderInternal).toSignedTransaction()
             builder.toSignedTransaction()
         }
     }
@@ -158,6 +161,7 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .let { it as UtxoTransactionBuilderInternal }
             .toSignedTransaction()
 
         assertThat(tx.outputStateAndRefs).hasSize(7)

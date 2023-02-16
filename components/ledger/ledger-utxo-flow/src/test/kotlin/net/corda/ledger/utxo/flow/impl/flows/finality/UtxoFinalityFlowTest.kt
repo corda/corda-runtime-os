@@ -4,13 +4,13 @@ import com.r3.corda.notary.plugin.common.NotaryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
@@ -33,6 +33,8 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.Contract
@@ -53,6 +55,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.time.Instant
@@ -102,6 +105,7 @@ class UtxoFinalityFlowTest {
 
     private val metadata = mock<TransactionMetadata>()
 
+    private val transactionBuilder = mock<UtxoTransactionBuilderInternal>()
     private val initialTx = mock<UtxoSignedTransactionInternal>()
     private val updatedTxSomeSigs = mock<UtxoSignedTransactionInternal>()
     private val updatedTxAllSigs = mock<UtxoSignedTransactionInternal>()
@@ -129,6 +133,8 @@ class UtxoFinalityFlowTest {
         whenever(memberInfoBob.toString()).thenReturn(BOB.toString())
 
         whenever(flowEngine.subFlow(any<TransactionBackchainSenderFlow>())).thenReturn(Unit)
+
+        whenever(transactionBuilder.toSignedTransaction()).thenReturn(initialTx)
 
         whenever(initialTx.id).thenReturn(TX_ID)
         whenever(initialTx.getMissingSignatories()).thenReturn(
@@ -179,9 +185,27 @@ class UtxoFinalityFlowTest {
     }
 
     @Test
+    fun `called with a transaction builder that does not pass transaction builder verification throws an exception and does not persist as invalid`() {
+        whenever(transactionBuilder.toSignedTransaction()).thenThrow(IllegalStateException())
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(IllegalStateException::class.java)
+
+        verifyNoInteractions(persistenceService)
+    }
+
+    @Test
+    fun `called with a transaction builder that cannot be signed due to missing keys throws an exception and does not persist as invalid`() {
+        whenever(transactionBuilder.toSignedTransaction()).thenThrow(TransactionNoAvailableKeysException("", null))
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
+            .isInstanceOf(TransactionNoAvailableKeysException::class.java)
+
+        verifyNoInteractions(persistenceService)
+    }
+
+    @Test
     fun `called with a transaction initially without signatures throws and persists as invalid`() {
         whenever(initialTx.signatures).thenReturn(listOf())
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Received initial transaction without signatures.")
 
@@ -194,7 +218,7 @@ class UtxoFinalityFlowTest {
         whenever(transactionSignatureService.verifySignature(any(), any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CryptoSignatureException::class.java)
             .hasMessageContaining("Verifying signature failed!!")
 
@@ -208,7 +232,7 @@ class UtxoFinalityFlowTest {
             TransactionVerificationException(
                 TX_ID, TransactionVerificationStatus.INVALID, null, "Verification error")
         )
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionVerificationException::class.java)
             .hasMessageContaining("Verification error")
 
@@ -246,7 +270,7 @@ class UtxoFinalityFlowTest {
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
-        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+        callFinalityFlow(listOf(sessionAlice, sessionBob))
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
@@ -307,7 +331,7 @@ class UtxoFinalityFlowTest {
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(NotaryException(TestNotaryError("notarisation error")))
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(NotaryException::class.java)
             .hasMessageContaining("notarisation error")
 
@@ -372,7 +396,7 @@ class UtxoFinalityFlowTest {
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(CordaRuntimeException("notarisation error"))
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("notarisation error")
 
@@ -436,7 +460,7 @@ class UtxoFinalityFlowTest {
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(invalidNotarySignature))
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Notary's signature has not been created by the transaction's notary")
 
@@ -498,7 +522,7 @@ class UtxoFinalityFlowTest {
 
         doNothing().whenever(flowMessaging).sendAll(payloadCaptor.capture(), eq(sessions))
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Notary")
             .hasMessageContaining("did not return any signatures after requesting notarization of transaction")
@@ -564,7 +588,7 @@ class UtxoFinalityFlowTest {
             IllegalArgumentException("Notary signature verification failed.")
         )
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage("Notary signature verification failed.")
 
@@ -624,7 +648,7 @@ class UtxoFinalityFlowTest {
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
         whenever(notaryService.owningKey).thenReturn(publicKeyAlice1)
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Notary's signature has not been created by the transaction's notary.")
 
@@ -678,7 +702,7 @@ class UtxoFinalityFlowTest {
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
 
-        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+        callFinalityFlow(listOf(sessionAlice, sessionBob))
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService, never()).verifySignature(any(), eq(signatureAlice2))
@@ -709,7 +733,7 @@ class UtxoFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java,)).thenThrow(CordaRuntimeException("session error"))
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("session error")
 
@@ -729,7 +753,7 @@ class UtxoFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Failure<DigitalSignatureAndMetadata>("message!", "reason"))
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessage("Failed to receive signatures from $BOB for transaction ${initialTx.id} with message: message!")
 
@@ -768,7 +792,7 @@ class UtxoFinalityFlowTest {
             CryptoSignatureException("")
         )
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CryptoSignatureException::class.java)
 
         verify(initialTx).addSignature(signatureAlice1)
@@ -795,7 +819,7 @@ class UtxoFinalityFlowTest {
             TransactionMissingSignaturesException(TX_ID, setOf(publicKeyBob), "missing")
         )
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionMissingSignaturesException::class.java)
             .hasMessageContainingAll(
                 "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}",
@@ -826,7 +850,7 @@ class UtxoFinalityFlowTest {
             )
         )
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
+        assertThatThrownBy { callFinalityFlow(listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionMissingSignaturesException::class.java)
             .hasMessageContaining("is missing signatures for signatories")
 
@@ -847,14 +871,14 @@ class UtxoFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+        callFinalityFlow(listOf(sessionAlice, sessionBob))
 
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(initialTx, sessionAlice))
         verify(flowEngine).subFlow(TransactionBackchainSenderFlow(initialTx, sessionBob))
     }
 
-    private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
-        val flow = UtxoFinalityFlow(signedTransaction, sessions)
+    private fun callFinalityFlow(sessions: List<FlowSession>) {
+        val flow = UtxoFinalityFlow(transactionBuilder, sessions)
         flow.memberLookup = memberLookup
         flow.transactionSignatureService = transactionSignatureService
         flow.flowEngine = flowEngine

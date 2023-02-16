@@ -48,6 +48,7 @@ internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
+            .let { it as UtxoTransactionBuilderInternal }
             .toSignedTransaction()
         ledgerTransaction = signedTransaction.toLedgerTransaction()
     }

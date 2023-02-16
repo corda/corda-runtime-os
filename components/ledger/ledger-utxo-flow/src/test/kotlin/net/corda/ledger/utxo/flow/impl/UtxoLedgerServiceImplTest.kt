@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
@@ -50,6 +51,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
             .addAttachment(attachment)
+            .let { it as UtxoTransactionBuilderInternal }
             .toSignedTransaction()
 
         assertIs<UtxoSignedTransaction>(signedTransaction)

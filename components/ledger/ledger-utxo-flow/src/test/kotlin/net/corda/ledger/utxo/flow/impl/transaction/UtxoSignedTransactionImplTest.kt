@@ -34,7 +34,8 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
             .addOutputState(utxoStateExample)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .toSignedTransaction() as UtxoSignedTransactionInternal
+            .let { it as UtxoTransactionBuilderInternal }
+            .toSignedTransaction()
 
     }
 

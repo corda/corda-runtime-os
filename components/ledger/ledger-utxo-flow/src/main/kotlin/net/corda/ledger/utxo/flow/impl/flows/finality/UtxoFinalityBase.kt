@@ -97,9 +97,10 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
             // If the notary service key (composite key) is provided we need to make sure it contains the key the
             // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
             if (!transaction.notary.owningKey.containsAny(listOf(signature.by))) {
-                throw CordaRuntimeException("Notary's signature has not been created by the transaction's notary. " +
-                    "Notary's public key: ${transaction.notary.owningKey} " +
-                    "Notary signature's key: ${signature.by}"
+                throw CordaRuntimeException(
+                    "Notary's signature has not been created by the transaction's notary. " +
+                            "Notary's public key: ${transaction.notary.owningKey} " +
+                            "Notary signature's key: ${signature.by}"
                 )
             }
             transactionSignatureService.verifySignature(transaction, signature)
@@ -107,7 +108,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
                 "Successfully verified signature($signature) by notary ${transaction.notary} for transaction ${transaction.id}"
             }
         } catch (e: Exception) {
-            val message ="Failed to verify transaction's signature($signature) by notary ${transaction.notary} for " +
+            val message = "Failed to verify transaction's signature($signature) by notary ${transaction.notary} for " +
                     "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
@@ -120,7 +121,8 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
     protected fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         try {
             transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
-        } catch(e: Exception){
+        } catch (e: Exception) {
+            log.warn("Failed to verify platform checks and contract code for transaction ${signedTransaction.id}")
             persistInvalidTransaction(signedTransaction)
             throw e
         }
@@ -137,7 +139,7 @@ abstract class UtxoFinalityBase : SubFlow<UtxoSignedTransaction> {
         initialTransaction: UtxoSignedTransactionInternal,
         sessionToNotify: FlowSession? = null
     ) {
-        if (initialTransaction.signatures.isEmpty()){
+        if (initialTransaction.signatures.isEmpty()) {
             val message = "Received initial transaction without signatures."
             log.warn(message)
             persistInvalidTransaction(initialTransaction)

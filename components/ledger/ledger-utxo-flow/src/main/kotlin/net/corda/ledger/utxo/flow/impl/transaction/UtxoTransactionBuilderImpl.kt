@@ -131,12 +131,7 @@ class UtxoTransactionBuilderImpl(
     }
 
     @Suspendable
-    override fun toSignedTransaction(): UtxoSignedTransaction {
-        return sign()
-    }
-
-    @Suspendable
-    private fun sign(): UtxoSignedTransaction {
+    override fun toSignedTransaction(): UtxoSignedTransactionInternal {
         check(!alreadySigned) { "The transaction cannot be signed twice." }
         UtxoTransactionBuilderVerifier(this).verify()
         return utxoSignedTransactionFactory.create(this, signatories).also {

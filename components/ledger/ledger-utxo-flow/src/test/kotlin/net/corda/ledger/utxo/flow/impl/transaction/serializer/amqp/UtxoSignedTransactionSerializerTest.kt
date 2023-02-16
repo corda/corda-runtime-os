@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
@@ -59,6 +60,7 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
             .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .let { it as UtxoTransactionBuilderInternal }
             .toSignedTransaction()
 
         val bytes = serializationService.serialize(signedTx)
@@ -67,15 +69,11 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
         assertThat(deserialized).isEqualTo(signedTx)
         assertThat(deserialized.outputStateAndRefs).hasSize(3)
 
-        assertThat(deserialized.outputStateAndRefs[0].state.encumbrance).isNotNull().extracting { it?.tag }
-            .isEqualTo("encumbrance 1")
-        assertThat(deserialized.outputStateAndRefs[0].state.encumbrance).isNotNull().extracting { it?.size }
-            .isEqualTo(2)
+        assertThat(deserialized.outputStateAndRefs[0].state.encumbrance).isNotNull.extracting { it?.tag }.isEqualTo("encumbrance 1")
+        assertThat(deserialized.outputStateAndRefs[0].state.encumbrance).isNotNull.extracting { it?.size }.isEqualTo(2)
 
-        assertThat(deserialized.outputStateAndRefs[1].state.encumbrance).isNotNull().extracting { it?.tag }
-            .isEqualTo("encumbrance 1")
-        assertThat(deserialized.outputStateAndRefs[1].state.encumbrance).isNotNull().extracting { it?.size }
-            .isEqualTo(2)
+        assertThat(deserialized.outputStateAndRefs[1].state.encumbrance).isNotNull.extracting { it?.tag }.isEqualTo("encumbrance 1")
+        assertThat(deserialized.outputStateAndRefs[1].state.encumbrance).isNotNull.extracting { it?.size }.isEqualTo(2)
 
         assertThat(deserialized.outputStateAndRefs[2].state.encumbrance).isNull()
     }

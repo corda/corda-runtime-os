@@ -7,6 +7,7 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -17,13 +18,15 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class UtxoFinalityFlow(
-    private val initialTransaction: UtxoSignedTransactionInternal,
+    private val transactionBuilder: UtxoTransactionBuilder,
     private val sessions: List<FlowSession>
 ) : UtxoFinalityBase() {
 
@@ -33,7 +36,6 @@ class UtxoFinalityFlow(
 
     override val log: Logger = UtxoFinalityFlow.log
 
-    private val transactionId = initialTransaction.id
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -43,33 +45,53 @@ class UtxoFinalityFlow(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        log.trace("Starting finality flow for transaction: $transactionId")
+
+        val initialTransaction = verifyAndSignTransactionBuilder()
+
+        log.trace("Beginning finalization for transaction: ${initialTransaction.id}")
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
         // Initial verifications passed, the transaction can be saved in the database.
-        persistUnverifiedTransaction()
+        persistUnverifiedTransaction(initialTransaction)
 
-        sendTransactionAndBackchainToCounterparties()
-        val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
+        sendTransactionAndBackchainToCounterparties(initialTransaction)
+        val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction(initialTransaction)
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
-        sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
+        sendUnseenSignaturesToCounterparties(initialTransaction, transaction, signaturesReceivedFromSessions)
         val (notarizedTransaction, notarySignatures) = notarize(transaction)
         persistNotarizedTransaction(notarizedTransaction)
         sendNotarySignaturesToCounterparties(notarySignatures)
-        log.trace { "Finalisation of transaction $transactionId has been finished." }
+        log.trace { "Finalisation of transaction ${initialTransaction.id} has been finished." }
         return notarizedTransaction
     }
 
     @Suspendable
-    private fun persistUnverifiedTransaction() {
-        persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
-        log.debug { "Recorded transaction with initial signatures $transactionId" }
+    private fun verifyAndSignTransactionBuilder(): UtxoSignedTransactionInternal {
+        return try {
+            (transactionBuilder as UtxoTransactionBuilderInternal).toSignedTransaction()
+        } catch (e: Exception) {
+            when (e) {
+                is IllegalStateException -> log.warn(
+                    "Failed to verify platform checks and initially sign transaction with content $transactionBuilder"
+                )
+                is TransactionNoAvailableKeysException -> log.warn(
+                    "No keys available to initially sign transaction with content $transactionBuilder"
+                )
+            }
+            throw e
+        }
     }
 
     @Suspendable
-    private fun sendTransactionAndBackchainToCounterparties() {
+    private fun persistUnverifiedTransaction(initialTransaction: UtxoSignedTransactionInternal) {
+        persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
+        log.debug { "Recorded transaction with initial signatures ${initialTransaction.id}" }
+    }
+
+    @Suspendable
+    private fun sendTransactionAndBackchainToCounterparties(initialTransaction: UtxoSignedTransactionInternal) {
         sessions.forEach {
             it.send(initialTransaction)
             flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction, it))
@@ -78,7 +100,8 @@ class UtxoFinalityFlow(
 
     @Suppress("MaxLineLength")
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
+    private fun receiveSignaturesAndAddToTransaction(initialTransaction: UtxoSignedTransactionInternal): Pair<UtxoSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
+        val transactionId = initialTransaction.id
         val signaturesPayloads = sessions.associateWith { session ->
             try {
                 log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
@@ -124,6 +147,7 @@ class UtxoFinalityFlow(
         transaction: UtxoSignedTransactionInternal,
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
     ) {
+        val transactionId = transaction.id
         log.debug { "Verifying all signatures for transaction $transactionId." }
 
         try {
@@ -150,23 +174,24 @@ class UtxoFinalityFlow(
     @Suspendable
     private fun persistTransactionWithCounterpartySignatures(transaction: UtxoSignedTransactionInternal) {
         persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-        log.debug { "Recorded transaction with all parties' signatures $transactionId" }
+        log.debug { "Recorded transaction with all parties' signatures ${transaction.id}" }
     }
 
     @Suspendable
     private fun sendUnseenSignaturesToCounterparties(
+        initialTransaction: UtxoSignedTransactionInternal,
         transaction: UtxoSignedTransactionInternal,
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
     ) {
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
                 it !in initialTransaction.signatures &&             // These have already been distributed with the first go
-                it !in signatures                                   // These came from that party
+                        it !in signatures                                   // These came from that party
             }
         }.toMap()
-        log.trace { "Sending updated signatures to counterparties for transaction $transactionId" }
+        log.trace { "Sending updated signatures to counterparties for transaction ${transaction.id}" }
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)
-        log.debug { "Sent updated signatures to counterparties for transaction $transactionId" }
+        log.debug { "Sent updated signatures to counterparties for transaction ${transaction.id}" }
     }
 
     @Suppress("ThrowsCount")
@@ -174,6 +199,7 @@ class UtxoFinalityFlow(
     private fun notarize(
         transaction: UtxoSignedTransactionInternal
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
+        val transactionId = transaction.id
         val notary = transaction.notary
         val notarizationFlow = pluggableNotaryClientFlowFactory.create(notary, transaction)
 
@@ -252,7 +278,7 @@ class UtxoFinalityFlow(
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
         val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
         persistenceService.persist(transaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
-        log.debug { "Recorded notarised transaction $transactionId" }
+        log.debug { "Recorded notarised transaction ${transaction.id}" }
     }
 
     @Suspendable
