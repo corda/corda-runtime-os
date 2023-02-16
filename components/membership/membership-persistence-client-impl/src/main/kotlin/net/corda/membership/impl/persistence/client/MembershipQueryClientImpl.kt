@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
@@ -159,11 +160,14 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity):
-            MembershipQueryResult<List<RegistrationRequestStatus>> {
+    override fun queryRegistrationRequestsStatus(
+        viewOwningIdentity: HoldingIdentity,
+        requestSubjectX500Name: MemberX500Name?,
+        statuses: List<RegistrationStatus>
+    ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests()
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {

@@ -4,8 +4,6 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
-import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
-import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -17,6 +15,7 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
@@ -51,6 +50,8 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
+import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
 class MGMRestResourceTest {
     companion object {
@@ -60,8 +61,10 @@ class MGMRestResourceTest {
         private const val INVALID_RULE_REGEX = "*"
         private const val RULE_LABEL = "rule-label"
         private const val RULE_ID = "rule-id"
+        private const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
 
         fun String.shortHash() = ShortHash.of(this)
+        fun String.uuid(): UUID = UUID.fromString(this)
     }
 
     private var coordinatorIsRunning = false
@@ -89,6 +92,8 @@ class MGMRestResourceTest {
         on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val initialTime = Instant.parse("2007-12-03T00:00:00.00Z")
+    private val manualDeclinationReason = ManualDeclinationReason("test")
+
     private val mgmRestResource = MGMRestResourceImpl(
         lifecycleCoordinatorFactory,
         mgmResourceClient,
@@ -346,6 +351,163 @@ class MGMRestResourceTest {
             }
 
             stopService()
+        }
+    }
+
+    @Nested
+    inner class ViewRegistrationRequestsTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `viewRegistrationRequests delegates correctly to mgm ops client`() {
+            mgmRestResource.viewRegistrationRequests(HOLDING_IDENTITY_ID)
+
+            verify(mgmResourceClient).viewRegistrationRequests(eq((ShortHash.of(HOLDING_IDENTITY_ID))), eq(null), eq(false))
+        }
+
+        @Test
+        fun `viewRegistrationRequests throws resource not found for invalid member`() {
+            whenever(mgmResourceClient.viewRegistrationRequests(any(), eq(null), eq(false))).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRestResource.viewRegistrationRequests(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `viewRegistrationRequests throws invalid input for non MGM member`() {
+            whenever(mgmResourceClient.viewRegistrationRequests(any(), eq(null), eq(false))).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRestResource.viewRegistrationRequests(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `viewRegistrationRequests throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.viewRegistrationRequests(INVALID_SHORT_HASH)
+            }
+        }
+    }
+
+    @Nested
+    inner class ApproveRegistrationRequestTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `approveRegistrationRequest delegates correctly to mgm ops client`() {
+            mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
+
+            verify(mgmResourceClient).reviewRegistrationRequest(
+                (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), true
+            )
+        }
+
+        @Test
+        fun `approveRegistrationRequest throws resource not found for invalid member`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
+            )).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
+            }
+        }
+
+        @Test
+        fun `approveRegistrationRequest throws invalid input for non MGM member`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
+            )).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
+            }
+        }
+
+        @Test
+        fun `approveRegistrationRequest throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.approveRegistrationRequest(INVALID_SHORT_HASH, REQUEST_ID)
+            }
+        }
+
+        @Test
+        fun `approveRegistrationRequest throws bad request if request is not found or is not pending review`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
+            }
+        }
+    }
+
+    @Nested
+    inner class DeclineRegistrationRequestTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `declineRegistrationRequest delegates correctly to mgm ops client`() {
+            mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
+
+            verify(mgmResourceClient).reviewRegistrationRequest(
+                (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+            )
+        }
+
+        @Test
+        fun `declineRegistrationRequest throws resource not found for invalid member`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+            )).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
+            }
+        }
+
+        @Test
+        fun `declineRegistrationRequest throws invalid input for non MGM member`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+            )).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
+            }
+        }
+
+        @Test
+        fun `declineRegistrationRequest throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.declineRegistrationRequest(INVALID_SHORT_HASH, REQUEST_ID, manualDeclinationReason)
+            }
+        }
+
+        @Test
+        fun `declineRegistrationRequest throws bad request if request is not found or is not pending review`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+            )).doThrow(mock<IllegalArgumentException>())
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
+            }
         }
     }
 
