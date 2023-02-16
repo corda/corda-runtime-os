@@ -284,7 +284,7 @@ class ClusterBuilder {
             "/api/v1/network/setup/$holdingIdentityShortHash",
             body = """
                 {
-                    "p2pTlsCertificateChainAlias": "p2p-tls-cert",
+                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
                     "useClusterLevelTlsCertificateAndKey": true,
                     "sessionKeyId": "$sessionKeyId"
                 }

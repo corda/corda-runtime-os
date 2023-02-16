@@ -64,7 +64,6 @@ fun exportGroupPolicy(
     mgmHoldingId: String
 ) = cluster(clusterConfig) {
     assertWithRetry {
-        timeout(10.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/info") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
@@ -105,7 +104,6 @@ private fun createApprovalRuleCommon(
     )
 
     assertWithRetry {
-        timeout(10.seconds)
         command { post(url, ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["ruleId"].textValue()
@@ -137,7 +135,6 @@ private fun delete(
     url: String
 ) = cluster(clusterConfig) {
     assertWithRetry {
-        timeout(10.seconds)
         command { delete(url) }
         condition { it.code == ResponseCode.NO_CONTENT.statusCode }
     }
@@ -161,7 +158,6 @@ fun createPreAuthToken(
     }
 
     assertWithRetry {
-        timeout(10.seconds)
         command { post("/api/v1/mgm/$mgmHoldingId/preauthtoken", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["id"].textValue()
@@ -178,7 +174,6 @@ fun revokePreAuthToken(
 ) {
     cluster(clusterConfig) {
         assertWithRetry {
-            timeout(10.seconds)
             command { put("/api/v1/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId", "{\"remarks\": \"$remark\"}") }
             condition { it.code == ResponseCode.OK.statusCode }
         }
@@ -203,7 +198,6 @@ fun getPreAuthTokens(
     }
     val query = queries.joinToString(prefix = "?", separator = "&")
     assertWithRetry {
-        timeout(10.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/preauthtoken$query") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
@@ -246,7 +240,6 @@ fun approveRegistration(
 ) {
     cluster(clusterConfig) {
         assertWithRetry {
-            timeout(10.seconds)
             command { post("/api/v1/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
@@ -263,7 +256,6 @@ fun declineRegistration(
 ) {
     cluster(clusterConfig) {
         assertWithRetry {
-            timeout(10.seconds)
             command { post(
                 "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
                 "{\"reason\": {\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}}")

@@ -61,7 +61,7 @@ fun onboardMember(
     addSoftHsmFor(holdingId, CAT_LEDGER)
     val ledgerKeyId = createKeyFor(holdingId, "$holdingId$CAT_LEDGER", CAT_LEDGER, DEFAULT_KEY_SCHEME)
 
-    if (!keyExists(TENANT_P2P, category = CAT_TLS)) {
+    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(clusterConfig, x500Name, tlsKeyId)
         val tlsCert = File.createTempFile("${clusterConfig.hashCode()}$CAT_TLS", ".pem").also {

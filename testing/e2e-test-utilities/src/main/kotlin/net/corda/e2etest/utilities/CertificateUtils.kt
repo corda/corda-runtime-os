@@ -8,7 +8,6 @@ import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.ResponseCode
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -58,7 +57,6 @@ fun generateCsr(
     }
 
     assertWithRetry {
-        timeout(10.seconds)
         command { post("/api/v1/certificates/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
@@ -75,7 +73,6 @@ fun importCertificate(
 ) {
     cluster(clusterConfig) {
         assertWithRetry {
-            timeout(10.seconds)
             command { importCertificate(file, usage, alias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
