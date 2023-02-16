@@ -2,6 +2,7 @@ package net.corda.applications.workers.db.test
 
 internal const val FLAG_INSTANCE_ID = "-i"
 internal const val FLAG_TOPIC_PREFIX = "-t"
+internal const val FLAG_MAX_SIZE = "-M"
 internal const val FLAG_DISABLE_MONITOR = "-n"
 internal const val FLAG_MONITOR_PORT = "-p"
 internal const val FLAG_MSG_PARAM = "-m"
@@ -11,6 +12,7 @@ internal const val FLAG_RECONCILIATION_TASKS_PARAM = "-r"
 
 internal const val VAL_INSTANCE_ID = "123"
 internal const val VALUE_TOPIC_PREFIX = "abc"
+internal const val VALUE_MAX_SIZE = "1000000"
 internal const val MSG_KEY_ONE = "msgKeyOne"
 internal const val MSG_VAL_ONE = "msgValOne"
 internal const val MSG_KEY_TWO = "msgKeyTwo"

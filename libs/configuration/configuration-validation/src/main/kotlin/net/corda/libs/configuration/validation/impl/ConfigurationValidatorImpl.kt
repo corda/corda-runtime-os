@@ -11,6 +11,7 @@ import com.networknt.schema.ValidationMessage
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
+import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
@@ -20,7 +21,6 @@ import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
 import org.slf4j.LoggerFactory
-import java.io.InputStream
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
@@ -45,8 +45,9 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         return config.factory.create(ConfigFactory.parseString(configAsJSONNode.toString()))
     }
 
-    override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) {
-        validateConfigAndGetJSONNode(key, config, schemaInput, null, applyDefaults)
+    override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) : SmartConfig {
+        val configAsJSONNode = validateConfigAndGetJSONNode(key, config, schemaInput, null, applyDefaults)
+        return config.factory.create(ConfigFactory.parseString(configAsJSONNode.toString()))
     }
 
     override fun getDefaults(key: String, version: Version) : Config {

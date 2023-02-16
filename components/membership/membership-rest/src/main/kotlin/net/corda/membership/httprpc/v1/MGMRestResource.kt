@@ -11,9 +11,11 @@ import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.annotations.RestRequestBodyParameter
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
+import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -28,6 +30,7 @@ import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
             " required for new members to join the group.",
     path = "mgm"
 )
+@Suppress("TooManyFunctions")
 interface MGMRestResource : RestResource {
     /**
      * The [generateGroupPolicy] method enables you to retrieve the group policy from the MGM represented by
@@ -317,5 +320,104 @@ interface MGMRestResource : RestResource {
         holdingIdentityShortHash: String,
         @RestPathParameter(description = "The ID of the group approval rule to be deleted.")
         ruleId: String
+    )
+
+    /**
+     * The [viewRegistrationRequests] method enables you to view registration requests submitted for joining the
+     * membership group which require a manual review. The requests may be optionally filtered by the X.500 name of the
+     * requesting member, and/or by the status of the request (historic or pending review).
+     *
+     * Example usage:
+     * ```
+     * mgmOps.viewRegistrationRequests("58B6030FABDD")
+     * mgmOps.viewRegistrationRequests("58B6030FABDD", "O=Alice, L=London, C=GB")
+     * mgmOps.viewRegistrationRequests("58B6030FABDD", "O=Alice, L=London, C=GB", true)
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestSubjectX500Name Optional. X.500 name of the subject of the registration request.
+     * @param viewHistoric Optional. Set this to 'true' to view both pending review and completed (historic) requests.
+     * Defaults to 'false' (requests pending review only).
+     *
+     * @return Registration requests as a collection of [RestRegistrationRequestStatus].
+     */
+    @HttpGET(
+        path = "{holdingIdentityShortHash}/registrations",
+    )
+    fun viewRegistrationRequests(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+        @RestQueryParameter(
+            description = "X.500 name of the requesting member",
+            required = false
+        )
+        requestSubjectX500Name: String? = null,
+        @RestQueryParameter(
+            description = "Include completed (historic) requests if set to 'true'",
+            required = false,
+            default = "false"
+        )
+        viewHistoric: Boolean = false
+    ): Collection<RestRegistrationRequestStatus>
+
+    /**
+     * The [approveRegistrationRequest] method enables you to approve registration requests which require
+     * manual approval. This method can only be used for requests that are in "PENDING_MANUAL_APPROVAL" status.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.reviewRegistrationRequest("58B6030FABDD", "3B9A266F96E2")
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestId ID of the registration request.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/approve/{requestId}"
+    )
+    fun approveRegistrationRequest(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+        @RestPathParameter(
+            description = "ID of the registration request"
+        )
+        requestId: String
+    )
+
+    /**
+     * The [declineRegistrationRequest] method enables you to decline registration requests which require
+     * manual approval. This method can only be used for requests that are in "PENDING_MANUAL_APPROVAL" status.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.reviewRegistrationRequest(
+     * "58B6030FABDD", "3B9A266F96E2", ManualDeclinationReason("Sample reason")
+     * )
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestId ID of the registration request.
+     * @param reason Reason [ManualDeclinationReason] for declining the specified registration request.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/decline/{requestId}"
+    )
+    fun declineRegistrationRequest(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+        @RestPathParameter(
+            description = "ID of the registration request"
+        )
+        requestId: String,
+        @RestRequestBodyParameter(
+            description = "Reason for declining the specified registration request"
+        )
+        reason: ManualDeclinationReason
     )
 }
