@@ -8,7 +8,7 @@ import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,7 +41,7 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
     @Test
     fun `verifyNotarySignatureAttached throws on unnotarised transaction`() {
         Assertions.assertThatThrownBy { signedTransaction.verifyNotarySignatureAttached() }.isInstanceOf(
-            TransactionVerificationException::class.java)
+            TransactionSignatureException::class.java)
             .hasMessageContainingAll("There are no notary signatures attached to the transaction.")
 
     }
