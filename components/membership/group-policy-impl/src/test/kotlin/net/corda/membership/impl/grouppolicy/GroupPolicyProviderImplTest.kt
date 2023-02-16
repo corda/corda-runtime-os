@@ -1081,7 +1081,7 @@ class GroupPolicyProviderImplTest {
     }
 
     @Test
-    fun `Correct group policy is returned when CPI metadata is null interop group policy string is provided by interop group policy reader`() {
+    fun `Interop groupPolicy is returned when CPI metadata is null `() {
         startComponentAndDependencies()
         postConfigChangedEvent()
         assertExpectedGroupPolicy(
