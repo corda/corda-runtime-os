@@ -98,9 +98,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         val recordsToReturn = mutableListOf<CordaConsumerRecord<K, V>>()
         polledRecords.groupBy { it.partition() }.forEach { (partition, records) ->
             val bufferedRecords = bufferedRecords[partition] ?: emptyList()
-            log.trace {
-                "Taking  ${bufferedRecords.size} buffered records from partition $partition and adding them to the polled records" +
-                        " of size ${records.size}"
+            if (bufferedRecords.isNotEmpty()) {
+                log.trace {
+                    "Taking  ${bufferedRecords.size} buffered records from partition $partition and adding them to the polled records" +
+                            " of size ${records.size}"
+                }
             }
             recordsToReturn.addAll(parseRecords(partition, bufferedRecords.plus(records)))
         }
@@ -141,13 +143,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             val key = consumerRecord.key()
             if (key is ChunkKey && vClazz != Chunk::class.java && value is Chunk) {
                 log.trace {
-                    "read chunk offset ${consumerRecord.offset()} and chunkid ${value.requestId} and partNumber ${
-                        value
-                            .partNumber
-                    }"
+                    "Read chunk offset ${consumerRecord.offset()} and chunkId ${value.requestId} and partNumber ${value.partNumber}"
                 }
                 getCompleteRecord(key, value, consumerRecord, currentChunks)?.let {
-                    log.trace { "adding complete record with offset ${consumerRecord.offset()} and chunkid ${value.requestId}" }
+                    log.trace { "Adding complete record with offset ${consumerRecord.offset()} and chunkId ${value.requestId}" }
                     completeRecords.add(it)
                 }
             } else {
@@ -165,7 +164,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
 
         val readUpToOffset = bufferIncompleteAndGetReadToOffset(currentChunks, polledRecords, partition)
-        log.trace { "readUpToOffset: $readUpToOffset for partition $partition" }
+        log.trace { "ReadUpToOffset: $readUpToOffset for partition $partition" }
         return completeRecords.filter { it.offset < readUpToOffset }
     }
 
@@ -187,6 +186,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
         //chunk ordering is guaranteed as chunks are always committed via transactions
         return if (chunk.checksum != null) {
+            log.trace { "Found checksum for chunkId ${chunk.requestId} " }
             currentChunks.remove(chunk.requestId)
             chunkDeserializerService.assembleChunks(chunksRead.chunks)?.let {
                 CordaConsumerRecord(

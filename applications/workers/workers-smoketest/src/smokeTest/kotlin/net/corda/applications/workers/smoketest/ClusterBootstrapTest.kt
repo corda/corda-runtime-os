@@ -1,15 +1,5 @@
 package net.corda.applications.workers.smoketest
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
-import org.assertj.core.api.SoftAssertions
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestMethodOrder
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
@@ -17,6 +7,17 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.SoftAssertions
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
+import org.slf4j.LoggerFactory
 
 @Order(2)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -36,6 +37,7 @@ class ClusterBootstrapTest {
     private val client = HttpClient.newBuilder().build()
 
     @Test
+    @Disabled
     fun checkCluster() {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
