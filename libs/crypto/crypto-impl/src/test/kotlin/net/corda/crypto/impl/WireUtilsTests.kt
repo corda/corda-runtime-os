@@ -7,7 +7,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.v5.base.util.toHex
+import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
@@ -84,7 +84,7 @@ class WireUtilsTests {
 
     @Test
     fun `Should create wire request context for a given caller`() {
-        val tenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
+        val tenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
         val other = KeyValuePairList(
             listOf(
                 KeyValuePair("key1", "value1")

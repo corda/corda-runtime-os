@@ -16,6 +16,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
@@ -263,7 +264,9 @@ class VerificationRequestProcessorTest {
                 emptyList(),
                 listOf(outputState),
                 listOf(command)
-            )
+            ),
+            ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
+            transactionSubType = "GENERAL"
         )
         val inputStateAndRefs: List<StateAndRef<*>> = listOf()
         val referenceStateAndRefs: List<StateAndRef<*>> = listOf()
