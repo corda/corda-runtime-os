@@ -7,7 +7,22 @@ import org.jetbrains.annotations.NotNull;
 import java.security.PublicKey;
 
 /**
- * Stores information about a notary service available in the network.
+ * <p>Stores information about a notary service available in the network.</p>
+ *
+ * <p>Example usages:</p>
+ *
+ * <ul>
+ * <li>Java:<pre>{@code
+ * MemberX500Name name = notaryInfo.getName();
+ * String pluginClass = notaryInfo.getPluginClass();
+ * PublicKey publicKey = notaryInfo.getPublicKey();
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
+ * val name = notaryInfo.name
+ * val pluginClass = notaryInfo.pluginClass
+ * val publicKey = notaryInfo.publicKey
+ * }</pre></li>
+ * </ul>
  */
 @CordaSerializable
 public interface NotaryInfo {
