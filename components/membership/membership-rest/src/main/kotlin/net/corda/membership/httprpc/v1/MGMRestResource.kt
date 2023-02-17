@@ -148,7 +148,7 @@ interface MGMRestResource : RestResource {
         ownerX500Name: String? = null,
         @RestQueryParameter(required = false)
         preAuthTokenId: String? = null,
-        @RestQueryParameter(required = false)
+        @RestQueryParameter(required = false, default = "false")
         viewInactive: Boolean = false
     ): Collection<PreAuthToken>
 

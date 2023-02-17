@@ -8,12 +8,14 @@ import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPay
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
@@ -164,7 +166,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with error if the uniqueness check fails`() {
-        createAndCallServer(mockErrorUniquenessClientService()) {
+        createAndCallServer(mockErrorUniquenessClientService(UniquenessCheckErrorReferenceStateUnknownImpl(emptyList()))) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -285,6 +287,25 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat((responseError as NotaryErrorGeneral).errorText)
                 .contains("Error while processing request from client")
             assertThat((responseError).cause).hasStackTraceContaining("DUMMY ERROR")
+        }
+    }
+
+    @Test
+    fun `Non-validating notary plugin server should respond with general error if unhandled exception occurred in uniqueness checker`() {
+        createAndCallServer(mockErrorUniquenessClientService(
+            UniquenessCheckErrorUnhandledExceptionImpl(
+                IllegalArgumentException::class.java.name,
+                "Unhandled error!"
+            )
+        )) {
+            assertThat(responseFromServer).hasSize(1)
+
+            val responseError = responseFromServer.first().error
+            assertThat(responseError).isNotNull
+            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
+            assertThat((responseError as NotaryErrorGeneral).errorText)
+                .contains("Unhandled exception of type java.lang.IllegalArgumentException encountered during " +
+                        "uniqueness checking with message: Unhandled error!")
         }
     }
 
@@ -439,11 +460,13 @@ class NonValidatingNotaryServerFlowImplTest {
         return mockUniquenessClientService(UniquenessCheckResultSuccessImpl(Instant.now()))
     }
 
-    private fun mockErrorUniquenessClientService(): LedgerUniquenessCheckerClientService {
+    private fun mockErrorUniquenessClientService(
+        errorType: UniquenessCheckError
+    ): LedgerUniquenessCheckerClientService {
         return mockUniquenessClientService(
             UniquenessCheckResultFailureImpl(
                 Instant.now(),
-                UniquenessCheckErrorReferenceStateUnknownImpl(emptyList())
+                errorType
             )
         )
     }

@@ -10,7 +10,7 @@ import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionI
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
-import net.corda.ledger.consensual.flow.impl.transaction.verifier.verifyMetadata
+import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
