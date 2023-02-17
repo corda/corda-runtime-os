@@ -40,48 +40,6 @@ class StartFlowEventHandlerTest {
         assertThat(actualContext).isEqualTo(contextExpected)
     }
 
-    @Test
-    fun `null holdingID race condition leads to null vnodeinfo and throws transient exception`() {
-        //var nullHoldingID: HoldingIdentity
-        //nullHoldingID = null
-        val waitingForExpected = WaitingFor(WaitingForStartFlow)
-        val contextExpected = buildFlowEventContext(mock(), inputEventPayload = startFlow, flowId = flowId)
-        val fakeCheckpointInitializer = FakeCheckpointInitializerService(
-            startFlow.startContext,
-            waitingForExpected,
-            holdingIdentity.toCorda(),
-            contextExpected.checkpoint
-        )
-        val handler = StartFlowEventHandler(fakeCheckpointInitializer)
-        val actualContext = handler.preProcess(contextExpected)
-        assertThat(actualContext).isEqualTo(contextExpected)
-    }
-
-
-
-    private class ExceptionThrowingCheckpointInitializerService(
-        val startContextExpected: FlowStartContext,
-        val waitingForExpected: WaitingFor,
-        val holdingIdentityExpected: HoldingIdentity,
-        val checkpointExpected: FlowCheckpoint
-    )
-        : CheckpointInitializer {
-
-        override fun initialize(
-            checkpoint: FlowCheckpoint,
-            waitingFor: WaitingFor,
-            holdingIdentity: HoldingIdentity,
-            contextBuilder: (Set<SecureHash>) -> FlowStartContext
-        ) {
-            val startContext = contextBuilder(emptySet())
-            assertThat(checkpoint).isEqualTo(checkpointExpected)
-            assertThat(waitingFor).isEqualTo(waitingForExpected)
-            assertThat(holdingIdentity).isEqualTo(holdingIdentityExpected)
-            assertThat(startContext).isEqualTo(startContextExpected)
-
-        }
-    }
-
     private class FakeCheckpointInitializerService(
         val startContextExpected: FlowStartContext,
         val waitingForExpected: WaitingFor,

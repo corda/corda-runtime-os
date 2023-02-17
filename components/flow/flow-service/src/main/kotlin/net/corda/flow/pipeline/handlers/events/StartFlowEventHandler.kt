@@ -4,7 +4,6 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -25,15 +24,7 @@ class StartFlowEventHandler @Activate constructor(
             WaitingFor(WaitingForStartFlow),
             context.inputEventPayload.startContext.identity.toCorda(),
             ) {
-            try {
-                context.inputEventPayload.startContext
-            } catch (e: Exception) {
-                throw FlowTransientException(
-                    "Failed to create the flow event context: ${e.message}",
-                    e
-                )
-            }
-
+            context.inputEventPayload.startContext
         }
         return context
     }
