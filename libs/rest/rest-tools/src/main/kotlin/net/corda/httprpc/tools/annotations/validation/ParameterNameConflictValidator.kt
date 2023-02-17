@@ -3,7 +3,7 @@ package net.corda.httprpc.tools.annotations.validation
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
 import net.corda.httprpc.tools.annotations.validation.utils.endpoints
 import net.corda.httprpc.tools.annotations.validation.utils.getParameterName
@@ -46,7 +46,7 @@ internal class ParameterNameConflictValidator(private val clazz: Class<out RestR
             when (it) {
                 is RestPathParameter -> "PATH"
                 is RestQueryParameter -> "QUERY"
-                is RestRequestBodyParameter -> "BODY"
+                is ClientRequestBodyParameter -> "BODY"
                 else -> throw IllegalArgumentException("Unknown parameter type")
             }
         } ?: "BODY"

@@ -7,7 +7,7 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.annotations.HttpWS
 import net.corda.httprpc.response.ResponseEntity
@@ -52,7 +52,7 @@ interface FlowRestResource : RestResource {
     fun startFlow(
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = """
                 Information required to start a flow for this holdingId, including:
                 clientRequestId: a client provided flow identifier

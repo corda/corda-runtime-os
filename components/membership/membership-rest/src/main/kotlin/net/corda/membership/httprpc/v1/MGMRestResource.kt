@@ -8,7 +8,7 @@ import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
@@ -123,7 +123,7 @@ interface MGMRestResource : RestResource {
     fun generatePreAuthToken(
         @RestPathParameter
         holdingIdentityShortHash: String,
-        @RestRequestBodyParameter
+        @ClientRequestBodyParameter
         request: PreAuthTokenRequest
     ): PreAuthToken
 
@@ -169,7 +169,7 @@ interface MGMRestResource : RestResource {
         holdingIdentityShortHash: String,
         @RestPathParameter
         preAuthTokenId: String,
-        @RestRequestBodyParameter(required = false)
+        @ClientRequestBodyParameter(required = false)
         remarks: String? = null
     ): PreAuthToken
 
@@ -199,7 +199,7 @@ interface MGMRestResource : RestResource {
     fun addGroupApprovalRule(
         @RestPathParameter(description = "The holding identity ID of the MGM of the membership group")
         holdingIdentityShortHash: String,
-        @RestRequestBodyParameter(description = "The approval rule information including the regular expression " +
+        @ClientRequestBodyParameter(description = "The approval rule information including the regular expression " +
                 "associated with the rule, and an optional label describing the rule")
         ruleParams: ApprovalRuleRequestParams,
     ): ApprovalRuleInfo
@@ -276,7 +276,7 @@ interface MGMRestResource : RestResource {
     fun addPreAuthGroupApprovalRule(
         @RestPathParameter(description = "The holding identity ID of the MGM.")
         holdingIdentityShortHash: String,
-        @RestRequestBodyParameter(description = "The definition of the approval rule to create.")
+        @ClientRequestBodyParameter(description = "The definition of the approval rule to create.")
         ruleParams: ApprovalRuleRequestParams,
     ): ApprovalRuleInfo
 
@@ -415,7 +415,7 @@ interface MGMRestResource : RestResource {
             description = "ID of the registration request"
         )
         requestId: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "Reason for declining the specified registration request"
         )
         reason: ManualDeclinationReason

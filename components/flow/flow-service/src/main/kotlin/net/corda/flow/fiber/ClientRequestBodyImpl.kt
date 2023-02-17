@@ -28,6 +28,6 @@ class ClientRequestBodyImpl(private val fiberService: FlowFiberService) : Client
 
     override fun toString(): String {
         // Truncate the JSON object to ensure that we don't try and write too much data into logs.
-        return "RestRequestBody(input=${requestBody.take(MAX_STRING_LENGTH)})"
+        return "ClientRequestBody(input=${requestBody.take(MAX_STRING_LENGTH)})"
     }
 }

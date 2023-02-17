@@ -17,7 +17,7 @@ import net.corda.flow.pipeline.factory.sample.flows.NoDefaultConstructorJavaFlow
 import net.corda.flow.pipeline.factory.sample.flows.PrivateConstructorJavaFlow
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
@@ -183,7 +183,7 @@ class FlowFactoryImplTest {
         override fun call(session: FlowSession) {
         }
 
-        override fun call(requestBody: RestRequestBody): String {
+        override fun call(requestBody: ClientRequestBody): String {
             return ExampleFlow::class.java.simpleName
         }
     }
@@ -194,7 +194,7 @@ class FlowFactoryImplTest {
         }
 
         @Suspendable
-        override fun call(requestBody: RestRequestBody): String {
+        override fun call(requestBody: ClientRequestBody): String {
             throw IllegalStateException("Should not reach this point")
         }
     }
@@ -205,7 +205,7 @@ class FlowFactoryImplTest {
         }
 
         @Suspendable
-        override fun call(requestBody: RestRequestBody): String {
+        override fun call(requestBody: ClientRequestBody): String {
             throw IllegalStateException(message)
         }
     }

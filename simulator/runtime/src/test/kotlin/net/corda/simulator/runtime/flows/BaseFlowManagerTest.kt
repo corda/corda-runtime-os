@@ -3,7 +3,7 @@ package net.corda.simulator.runtime.flows
 import net.corda.simulator.runtime.messaging.CloseableFlowMessaging
 import net.corda.simulator.runtime.utils.accessField
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
@@ -26,11 +26,11 @@ class BaseFlowManagerTest {
             @CordaInject
             private val flowMessaging: FlowMessaging = mock<CloseableFlowMessaging>()
 
-            override fun call(requestBody: RestRequestBody): String { return "result" }
+            override fun call(requestBody: ClientRequestBody): String { return "result" }
         }
 
         private class MyStandaloneFlow : ClientStartableFlow {
-            override fun call(requestBody: RestRequestBody): String { return "result" }
+            override fun call(requestBody: ClientRequestBody): String { return "result" }
         }
 
         private class MyCloseableSubFlow : SubFlow<String> {
