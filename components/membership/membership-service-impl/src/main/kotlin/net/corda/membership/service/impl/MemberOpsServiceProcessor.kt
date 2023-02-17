@@ -181,7 +181,8 @@ class MemberOpsServiceProcessor(
                     SESSION_KEY_POLICY to sessionKeyPolicy
                 ),
                 P2P_PARAMETERS to p2pParameters,
-                MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value }.plus(SERIAL to mgm.serial),
+                MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value }
+                    .plus(SERIAL to mgm.serial.toString()),
                 CIPHER_SUITE to emptyMap<String, String>()
             )
             return MGMGroupPolicyResponse(ObjectMapper().writeValueAsString(groupPolicy))
