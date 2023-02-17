@@ -54,7 +54,7 @@ Requests which are pending manual approval are assigned `PENDING_MANUAL_APPROVAL
 <summary>Bash</summary>
 
 ```bash
-curl --insecure -u admin:admin https://localhost:8888/api/v1/mgm/$MGM_HOLDING_ID/registrations
+curl --insecure -u admin:admin $API_URL/mgm/$MGM_HOLDING_ID/registrations
 ```
 
 </details>
@@ -65,7 +65,7 @@ To optionally view requests from a specific member (e.g. C=GB, L=London, O=Alice
 <summary>Bash</summary>
 
 ```bash
-curl --insecure -u admin:admin 'https://localhost:8888/api/v1/mgm/$MGM_HOLDING_ID/registrations?requestsubjectx500name=C%3DGB%2C%20L%3DLondon%2C%20O%3DAlice&viewhistoric=true'
+curl --insecure -u admin:admin $API_URL'/mgm/'$MGM_HOLDING_ID'/registrations?requestsubjectx500name=C%3DGB%2C%20L%3DLondon%2C%20O%3DAlice&viewhistoric=true'
 ```
 
 </details>
@@ -101,7 +101,6 @@ curl --insecure -u admin:admin -d "$REASON" $API_URL/mgm/$MGM_HOLDING_ID/decline
 
 </details>
 
-
 # Pre-authentication of registration requests
 
 The network operator can decide to pre-authenticate registering members, which will allow the registering member to by-pass any approval rules that have been defined for the group as described previously. Authentication is done outside of Corda using any criteria the network operator chooses. Once the network operator is finished their authentication process, they can generate a one-time-use pre-authentication token, also known as a pre-auth token, specific to the member that has been authenticated. 
@@ -124,28 +123,33 @@ This REST API allows for additional optional properties to be submitted also whe
 <details>
 <summary>Bash</summary>
 ```bash
-curl --insecure -u admin:admin -X POST -d '{"ownerX500Name": "O=Alice, L=London, C=GB", "ttl": "P7D", "remarks": "Member was verified offline on 01/02/2023 and doesn't need additional verification when joining the network."}' $API_URL/mgm/$MGM_HOLDING_ID/preauthtoken
+curl --insecure -u admin:admin -X POST -d '{"ownerX500Name": "O=Alice, L=London, C=GB", "ttl": "P7D", "remarks": "Member was verified offline on 01/02/2023 and does not need additional verification when joining the network."}' $API_URL/mgm/$MGM_HOLDING_ID/preauthtoken
 ```
 </details>
 
 ## Viewing tokens
 
 To view tokens that have been created, you need to use the pre-auth token GET API. This returns a list of all tokens that the MGM has created which have not been consumed, revoked, or automatically invalidated by Corda (for example, due to an expired TTL).
+
+If you wish to view tokens which are inactive (i.e. consumed, revoked, or auto-invalidated), you can set the query parameter `viewInactive` equal to true and pre-auth tokens which are available will be returned along with tokens with are consumed, revoked, or auto-invalidated. If this is set to false, only tokens with are active and ready to use are returned.
+
 <details>
 <summary>Bash</summary>
 ```bash
-curl --insecure -u admin:admin $API_URL/mgm/$MGM_HOLDING_ID/preauthtoken
+curl --insecure -u admin:admin $API_URL'/mgm/'$MGM_HOLDING_ID'/preauthtoken?viewinactive=false'
 ```
 </details>
 
-This endpoint accepts optional parameters to filter or expand the search results. The first filter is the X.500 name of the member who the token was issued for. This is passed in as a URL query parameters called `ownerX500Name`. The full URL encoded X.500 name should be passed in here to filter correctly. The second filter is token ID. If you know the ID of a specific token you want to look up then you can provide that to the API as the query parameters `preAuthTokenId`. And finally, if you wish to view tokens which are inactive (i.e. consumed, revoked, or auto-invalidated), you can add the query parameters `viewInactive`. By default, Corda treats this property as `false` if not specified. If you pass this in as `true`, pre-auth tokens which are available will be returned along with tokens with are consumed, revoked, or auto-invalidated. 
+This endpoint accepts optional parameters to filter or expand the search results. The first filter is the X.500 name of the member who the token was issued for. This is passed in as a URL query parameters called `ownerX500Name`. The full URL encoded X.500 name should be passed in here to filter correctly. The second filter is token ID. If you know the ID of a specific token you want to look up then you can provide that to the API as the query parameters `preAuthTokenId`.  
 
-These three optional parameters can be used in any combination. Here is a sample of all three used together:
+These optional parameters can be used in any combination. Here is a sample of all used together:
 
 <details>
 <summary>Bash</summary>
 ```bash
-curl --insecure -u admin:admin $API_URL/mgm/$MGM_HOLDING_ID/preauthtoken?viewInactive=true&preAuthTokenId=f6bea747-b755-403e-8602-d5d694514ade&ownerX500Name=O%3DAlice%2C%20%20L%3DLondon%2C%20C%3DGB
+TOKEN_ID=<token id>
+OWNER_X500=<URL encoded X.500 name>
+curl --insecure -u admin:admin $API_URL'/mgm/'$MGM_HOLDING_ID'/preauthtoken?viewInactive=true&preAuthTokenId='$TOKEN_ID'&ownerX500Name='$OWNER_X500
 ```
 </details>
 
@@ -232,7 +236,7 @@ This API will add a group approval rule used specifically for the registrations 
 
 ```bash
 RULE_PARAMS='{"ruleParams":{"ruleRegex": "^corda.endpoints.*$", "ruleLabel": "Any change to P2P endpoints requires manual review."}}'
-curl --insecure -u admin:admin -d "$RULE_PARAMS" $API_URL/mgm/$MGM_HOLDING_ID/approval/rules/preauth
+curl --insecure -u admin:admin -d $RULE_PARAMS $API_URL/mgm/$MGM_HOLDING_ID/approval/rules/preauth
 ```
 </details>
 
