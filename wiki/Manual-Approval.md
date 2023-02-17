@@ -113,18 +113,22 @@ Token creation is done through a REST API using the POST method. At a minimum, t
 
 <details>
 <summary>Bash</summary>
+
 ```bash
 curl --insecure -u admin:admin -X POST -d '{"ownerX500Name": "O=Alice, L=London, C=GB"}' $API_URL/mgm/$MGM_HOLDING_ID/preauthtoken
 ```
+
 </details>
 
 This REST API allows for additional optional properties to be submitted also when creating a token. The first is a time-to-live, which allows a duration to be submitted, after which the token will no longer be valid for use. This duration is submitted in the `ISO-8601` duration format (i.e. `PnDTnHnMn.nS`). For example, PT15M (15 minutes), P4D (4 days), P1DT2H2M (1 day 2 hours and 2 minutes). The duration submitted is added to the current time when the request to create the token is submitted to calculate the time at which the token is no longer valid. If no time-to-live value is submitted, the token will only expire after it is consumed or revoked. The second optional property that can be submitted is a remark. This is simply a user defined string which will be stored along with the token as additional information which can provide information about the token creation when the token is viewed. 
 
 <details>
 <summary>Bash</summary>
+
 ```bash
 curl --insecure -u admin:admin -X POST -d '{"ownerX500Name": "O=Alice, L=London, C=GB", "ttl": "P7D", "remarks": "Member was verified offline on 01/02/2023 and does not need additional verification when joining the network."}' $API_URL/mgm/$MGM_HOLDING_ID/preauthtoken
 ```
+
 </details>
 
 ## Viewing tokens
@@ -135,9 +139,11 @@ If you wish to view tokens which are inactive (i.e. consumed, revoked, or auto-i
 
 <details>
 <summary>Bash</summary>
+
 ```bash
 curl --insecure -u admin:admin $API_URL'/mgm/'$MGM_HOLDING_ID'/preauthtoken?viewinactive=false'
 ```
+
 </details>
 
 This endpoint accepts optional parameters to filter or expand the search results. The first filter is the X.500 name of the member who the token was issued for. This is passed in as a URL query parameters called `ownerX500Name`. The full URL encoded X.500 name should be passed in here to filter correctly. The second filter is token ID. If you know the ID of a specific token you want to look up then you can provide that to the API as the query parameters `preAuthTokenId`.  
@@ -146,11 +152,13 @@ These optional parameters can be used in any combination. Here is a sample of al
 
 <details>
 <summary>Bash</summary>
+
 ```bash
 TOKEN_ID=<token id>
 OWNER_X500=<URL encoded X.500 name>
 curl --insecure -u admin:admin $API_URL'/mgm/'$MGM_HOLDING_ID'/preauthtoken?viewInactive=true&preAuthTokenId='$TOKEN_ID'&ownerX500Name='$OWNER_X500
 ```
+
 </details>
 
 ## Revoking tokens
@@ -161,20 +169,24 @@ To revoke a token, the network operator needs to submit the token ID to a `PUT` 
 
 <details>
 <summary>Bash</summary>
+
 ``` bash 
 TOKEN_ID=<token id>
 curl --insecure -u admin:admin -X PUT $API_URL/mgm/$MGM_HOLDING_ID/preauthtoken/revoke/$TOKEN_ID
 ```
+
 </details>
 
 Optionally, the network operator can submit a remark with the action to revoke the token which will be stored with the token and visible when viewing tokens for future reference. To do this, a body should be included in the request.
 
 <details>
 <summary>Bash</summary>
+
 ``` bash 
 TOKEN_ID=<token id>
 curl --insecure -u admin:admin -X PUT -d '{"remarks":"Additional authentication required."}' $API_URL/mgm/$MGM_HOLDING_ID/preauthtoken/revoke/$TOKEN_ID
 ```
+
 </details>
 
 # Submitting a pre-auth token in a registration request
@@ -238,6 +250,7 @@ This API will add a group approval rule used specifically for the registrations 
 RULE_PARAMS='{"ruleParams":{"ruleRegex": "^corda.endpoints.*$", "ruleLabel": "Any change to P2P endpoints requires manual review."}}'
 curl --insecure -u admin:admin -d $RULE_PARAMS $API_URL/mgm/$MGM_HOLDING_ID/approval/rules/preauth
 ```
+
 </details>
 
 ## View current pre-auth group approval rules
