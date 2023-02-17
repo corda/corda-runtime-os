@@ -103,7 +103,7 @@ curl --insecure -u admin:admin -d "$REASON" $API_URL/mgm/$MGM_HOLDING_ID/decline
 
 # Pre-authentication of registration requests
 
-The network operator can decide to pre-authenticate registering members, which will allow the registering member to by-pass any approval rules that have been defined for the group as described previously. Authentication is done outside of Corda using any criteria the network operator chooses. Once the network operator is finished their authentication process, they can generate a one-time-use pre-authentication token, also known as a pre-auth token, specific to the member that has been authenticated. 
+The network operator can decide to pre-authenticate registering members, which will allow the registering member to by-pass any approval rules that have been defined for the group as described previously. Authentication is done outside of Corda using any criteria the network operator chooses. Once the network operator has finished their authentication process, they can generate a one-time-use pre-authentication token, also known as a pre-auth token, specific to the member that has been authenticated. 
 
 Corda has a set of REST APIs available for managing these pre-auth tokens. Through these APIs, tokens can be created, revoked, and viewed. When viewing a token, it is possible to see the token ID, the X.500 name of the member the token is assigned to, optionally a time and date when the token expires, the token status, and additional information provided by the MGM when creating or revoking the token.
 
