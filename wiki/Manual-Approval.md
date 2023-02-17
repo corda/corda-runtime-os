@@ -131,7 +131,7 @@ curl --insecure -u admin:admin -X POST -d '{"ownerX500Name": "O=Alice, L=London,
 
 To view tokens that have been created, you need to use the pre-auth token GET API. This returns a list of all tokens that the MGM has created which have not been consumed, revoked, or automatically invalidated by Corda (for example, due to an expired TTL).
 
-If you wish to view tokens which are inactive (i.e. consumed, revoked, or auto-invalidated), you can set the query parameter `viewInactive` equal to true and pre-auth tokens which are available will be returned along with tokens with are consumed, revoked, or auto-invalidated. If this is set to false, only tokens with are active and ready to use are returned.
+If you wish to view tokens which are inactive (i.e. consumed, revoked, or auto-invalidated), you can set the query parameter `viewInactive` equal to true and pre-auth tokens which are available will be returned along with tokens with are consumed, revoked, or auto-invalidated. If this is set to false, only tokens which are active and ready to use are returned.
 
 <details>
 <summary>Bash</summary>
