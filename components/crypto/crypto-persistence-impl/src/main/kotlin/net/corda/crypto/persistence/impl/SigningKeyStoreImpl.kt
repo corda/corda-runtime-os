@@ -298,8 +298,9 @@ class SigningKeyStoreImpl @Activate constructor(
                         it.value
                     }
                     .filterTo(mutableSetOf()) {
-                        // TODO Clashed keys on short ids should be identified and removed from `requestedFullKeyIds` so we don't look them up in DB
-                        //  since short key ids can't clash per tenant, i.e. there can't be a different key with same short key id
+                        // TODO Clashed keys on short ids should be identified and removed from `requestedFullKeyIds` so we
+                        //  don't look them up in DB since short key ids can't clash per tenant,
+                        //  i.e. there can't be a different key with same short key id
                         SecureHash.parse(it.fullId) in requestedFullKeyIds
                     }
 
