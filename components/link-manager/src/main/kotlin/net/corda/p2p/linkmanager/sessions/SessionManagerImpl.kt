@@ -242,7 +242,7 @@ internal class SessionManagerImpl(
             logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, message.header.messageId)
             return null
         }
-        logger.info("peer: ${peer.x500Name}, us: ${us.x500Name}, serial: ${info.serial}, " +
+        logger.info("peer: ${peer.x500Name}, us: ${us.x500Name}, memberContext: ${info.memberProvidedContext}, " +
                 "mgmContext: ${info.mgmProvidedContext}")
         return SessionCounterparties(us.toCorda(), peer.toCorda(), status, info.serial)
     }
