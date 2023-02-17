@@ -11,9 +11,15 @@ class InteropGroupPolicyReaderImpl @Activate constructor(): InteropGroupPolicyRe
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+    // Temporary service returns the same group policy file.
+    // In order to avoid breaking other tests like
+    // "MemberProcessorIntegrationTest Get group policy fails for unknown holding identity"
+    // which expect to receive a null, this method  returns the group policy
+    // only if HoldingIdentity's group contains "interop" (case-insensitive) in its name.
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity): String? {
         logger.info("Searching for interoperability group for $holdingIdentity")
-        return """{
+        return if(holdingIdentity.groupId.contains("interop", true))
+         """{
   "fileFormatVersion": 1,
   "groupId": "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
   "registrationProtocol": "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
@@ -50,5 +56,6 @@ class InteropGroupPolicyReaderImpl @Activate constructor(): InteropGroupPolicyRe
     "corda.cryptoservice.provider": "default"
   }
 }"""
+        else null
     }
 }
