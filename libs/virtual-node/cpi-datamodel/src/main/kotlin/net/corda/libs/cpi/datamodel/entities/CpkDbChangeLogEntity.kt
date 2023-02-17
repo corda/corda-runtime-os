@@ -15,7 +15,7 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = "cpk_db_change_log")
-class CpkDbChangeLogEntity(
+internal class CpkDbChangeLogEntity(
     @EmbeddedId
     var id: CpkDbChangeLogKey,
     @Column(name = "content", nullable = false)
@@ -55,7 +55,7 @@ class CpkDbChangeLogEntity(
  * Composite primary key for a Cpk Change Log Entry.
  */
 @Embeddable
-class CpkDbChangeLogKey(
+internal class CpkDbChangeLogKey(
     @Column(name = "cpk_file_checksum", nullable = false)
     var cpkFileChecksum: String,
     @Column(name = "file_path", nullable = false)
