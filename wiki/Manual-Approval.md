@@ -140,7 +140,7 @@ curl --insecure -u admin:admin $API_URL'/mgm/'$MGM_HOLDING_ID'/preauthtoken?view
 ```
 </details>
 
-This endpoint accepts optional parameters to filter or expand the search results. The first filter is the X.500 name of the member who the token was issued for. This is passed in as a URL query parameters called `ownerX500Name`. The full URL encoded X.500 name should be passed in here to filter correctly. The second filter is token ID. If you know the ID of a specific token you want to look up then you can provide that to the API as the query parameters `preAuthTokenId`.  
+This endpoint accepts optional parameters to filter or expand the search results. The first filter is the X.500 name of the member who the token was issued for. This is passed in as a URL query parameter called `ownerX500Name`. The full URL encoded X.500 name should be passed in here to filter correctly. The second filter is token ID. If you know the ID of a specific token you want to look up then you can provide that to the API as the query parameter `preAuthTokenId`.  
 
 These optional parameters can be used in any combination. Here is a sample of all used together:
 
