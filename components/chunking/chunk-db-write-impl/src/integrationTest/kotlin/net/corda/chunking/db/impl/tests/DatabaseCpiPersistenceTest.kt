@@ -263,14 +263,12 @@ internal class DatabaseCpiPersistenceTest {
             groupId,
             listOf(
                 cpkDbChangeLog {
-                    cpk1.metadata.fileChecksum
+                    fileChecksum(cpk1.metadata.fileChecksum)
                     filePath(cpk1.path.toString())
                 }
             )
         )
-        println("hello4")
         val persistedCpi = loadCpiDirectFromDatabase(cpi)
-        println("hello5")
         // We have persisted a CPK with this CPI, this counts as a version increment on the owning entity, therefore entity version = 1.
         assertThat(persistedCpi.entityVersion).isEqualTo(1)
         assertThat(persistedCpi.cpks.size).isEqualTo(1)
@@ -599,8 +597,9 @@ internal class DatabaseCpiPersistenceTest {
         )
 
         val changelogs = findChangelogs(cpiEntity)
-        val changelogAudits = findAuditLogs(listOf(cpk.metadata.fileChecksum))
         assertThat(changelogs.size).isEqualTo(1)
+
+        val changelogAudits = findAuditLogs(listOf(cpk.metadata.fileChecksum))
         assertThat(changelogAudits.size).isEqualTo(1)
 
         val cpk2 = mockCpk()
@@ -655,11 +654,6 @@ internal class DatabaseCpiPersistenceTest {
                 .setParameter("value", value)
                 .resultList
         }!!
-    }
-
-    private fun newRandomSecureHash(): SecureHash {
-        val random = Random()
-        return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
     }
 
     private fun genChangeLogs(

@@ -68,7 +68,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             persistNewCpkFileEntities(em, cpi.metadata.fileChecksum, cpi.cpks)
 
-            //persistNewChangelogs(em, changelogsExtractedFromCpi)
+            persistNewChangelogs(em, changelogsExtractedFromCpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
