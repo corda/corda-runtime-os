@@ -129,6 +129,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val flowSandboxGroupContext = mock<FlowSandboxGroupContext>().apply {
+            whenever(this.get<FlowProtocolStore>(any(), any())).thenReturn(protocolStore)
             whenever(this.sandboxGroup).thenReturn(sandboxGroup)
             whenever(this.virtualNodeContext).thenReturn(virtualNodeContext)
             whenever(this.protocolStore).thenReturn(protocolStore)
@@ -172,6 +173,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val flowSandboxGroupContext = mock<FlowSandboxGroupContext>().apply {
+            whenever(this.get<FlowProtocolStore>(any(), any())).thenReturn(protocolStore)
             whenever(this.sandboxGroup).thenReturn(sandboxGroup)
             whenever(this.virtualNodeContext).thenReturn(virtualNodeContext)
             whenever(this.protocolStore).thenReturn(protocolStore)

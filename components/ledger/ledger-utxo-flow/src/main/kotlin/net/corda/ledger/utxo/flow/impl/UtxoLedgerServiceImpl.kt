@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
@@ -14,6 +15,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransact
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
@@ -151,11 +153,14 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
         val sandboxGroupContext = currentSandboxGroupContext.get()
 
-        val flowName = flowSandboxService
-            .get(sandboxGroupContext.virtualNodeContext.holdingIdentity)
-            .protocolStore
-            // Hard-code supportedVersions to 1 for now, need MGM change to
-            // supply this, at which point we can pass in (see CORE-9740)
+        val protocolStore = sandboxGroupContext
+            .getObjectByKey<FlowProtocolStore>("FLOW_PROTOCOL_STORE") ?:
+            throw FlowFatalException(
+                "Cannot get flow protocol store for current sandbox group context")
+
+        // Hard-code supportedVersions to 1 for now, need MGM change to supply this, at which point
+        // we can pass in (see CORE-9740)
+        val flowName = protocolStore
             .initiatorForProtocol(protocolName, supportedVersions = listOf(1))
 
         val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(flowName)
