@@ -41,6 +41,9 @@ class MemberInfoEntity(
 
     @Column(name = "serial_number", nullable = false)
     val serialNumber: Long,
+
+    @Column(name = "timestamp", nullable = false)
+    val timestamp: Instant
 ) {
 
     override fun equals(other: Any?): Boolean {

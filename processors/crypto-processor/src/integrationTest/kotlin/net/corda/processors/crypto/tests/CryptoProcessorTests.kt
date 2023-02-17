@@ -307,7 +307,8 @@ class CryptoProcessorTests {
                             Instant.now(),
                             "sa",
                             "Test ${db.name}",
-                            configAsString
+                            configAsString,
+                            Instant.ofEpochSecond(0L)
                         )
                         it.persist(record)
                         record.id

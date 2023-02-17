@@ -98,6 +98,7 @@ class DbConnectionsRepositoryImpl(
 
             val config = ConfigFactory.parseString(dbConfig.config)
             logger.debug("Creating DB (${dbConfig.description}) from config: $config")
+            logger.info("@@@ timestamp read from dbconfig: ${dbConfig.timestamp}")
             return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
         }
     }

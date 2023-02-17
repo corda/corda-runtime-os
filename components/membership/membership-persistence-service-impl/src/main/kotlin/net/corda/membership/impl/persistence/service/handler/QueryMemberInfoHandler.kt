@@ -42,13 +42,15 @@ internal class QueryMemberInfoHandler(
             MemberInfoQueryResponse(
                 transaction(context.holdingIdentity.toCorda().shortHash) { em ->
                     request.queryIdentities.mapNotNull { holdingIdentity ->
-                        em.find(
+                        val entity = em.find(
                             MemberInfoEntity::class.java,
                             MemberInfoEntityPrimaryKey(
                                 holdingIdentity.groupId,
                                 holdingIdentity.x500Name
                             )
                         )
+                        logger.info("@@@ timestamp read from MemberInfoEntity: ${entity.timestamp}")
+                        entity
                     }.map {
                         it.toPersistentMemberInfo(context.holdingIdentity)
                     }

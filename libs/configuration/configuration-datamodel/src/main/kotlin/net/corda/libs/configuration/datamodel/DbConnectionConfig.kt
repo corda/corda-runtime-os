@@ -53,6 +53,8 @@ data class DbConnectionConfig (
     var description: String?,
     @Column(name = "config", nullable = false)
     var config: String,
+    @Column(name = "timestamp", nullable = false)
+    var timestamp: Instant
 ) {
     fun update(config: String, description: String?, updateActor: String) {
         this.config = config

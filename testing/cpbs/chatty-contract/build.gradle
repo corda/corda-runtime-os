@@ -1,0 +1,23 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb2'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    contract {
+        name "chatty test contract"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+}
