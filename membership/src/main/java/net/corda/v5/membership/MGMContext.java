@@ -1,36 +1,35 @@
-package net.corda.v5.membership
+package net.corda.v5.membership;
 
-import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.LayeredPropertyMap;
 
 /**
- * Part of [MemberInfo], information is provided and added by MGM as part of member acceptance and upon updates
- * (eg. membership group status updates).
+ * <p>Part of [MemberInfo], information is provided and added by MGM as part of member acceptance and upon updates
+ * (eg. membership group status updates).</p>
  *
- * Contains information such as the membership status, modification time, etc.
+ * <p>Contains information such as the membership status, modification time, etc.</p>
  *
- * Example usages:
+ * <p>Example usages:</p>
  *
- * ```java
+ * <ul>
+ * <li>Java:<pre>{@code
  * Set<Map.Entry<String, String>> mgmContextEntries = mgmContext.getEntries();
  * String status = mgmContext.parse("corda.status", String.class);
  * Boolean isMgm = mgmContext.parseOrNull("corda.mgm", Boolean.class);
  * Set<String> additionalInformationSet = mgmContext.parseSet("additional.names", String.class);
  * List<Long> additionalInformationList = mgmContext.parseList("additional.numbers", Long.class);
- * ```
- *
- * ```kotlin
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
  * val mgmContextEntries = mgmContext.entries
  * val status = mgmContext.parse("corda.status", String::class.java)
  * val isMgm = mgmContext.parseOrNull("corda.mgm", Boolean::class.java)
  * val additionalInformationSet = mgmContext.parseSet("additional.names", String::class.java)
  * val additionalInformationList = mgmContext.parseList("additional.numbers", Long::class.java)
- * ```
+ * }</pre></li>
+ * </ul>
  *
- * Properties are exposed either through properties on interfaces in the public APIs, or internally through extension
- * properties.
+ * <p>Properties are exposed either through properties on interfaces in the public APIs, or internally through extension
+ * properties.</p>
  *
- * @property entries Returns [Set] of all entries in the underlying map.
- *
- * @see [LayeredPropertyMap] For further information on the properties and functions.
+ * @see LayeredPropertyMap For further information on the properties and functions.
  */
-interface MGMContext: LayeredPropertyMap
+public interface MGMContext extends LayeredPropertyMap {}
