@@ -43,7 +43,7 @@ internal class MigrationUtilityImpl(
 
         val missingCpks = mutableListOf<String>()
         cpkChangelogs.groupBy { it.fileChecksum }.map { (_, changelogs) ->
-            val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.filePath, it.content) })
+            val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs)
             dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
                 missingCpks.addAll(
                     liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk)

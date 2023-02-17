@@ -52,10 +52,11 @@ import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import org.slf4j.LoggerFactory
 import java.lang.System.currentTimeMillis
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
@@ -328,7 +329,7 @@ internal class VirtualNodeWriterProcessor(
                         } catch (e: Exception) {
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI ${cpiMetadata.id.name} - changelogs: [" +
-                                        "${changelogsForThisCpk.joinToString { it.fileChecksum + ", " + it.filePath }}]", e
+                                        "${changelogsForThisCpk.joinToString { it.fileChecksum.toString() + ", " + it.filePath }}]", e
                             )
                             respFuture.complete(
                                 VirtualNodeManagementResponse(
@@ -384,12 +385,7 @@ internal class VirtualNodeWriterProcessor(
                 val nodeInfo = virtualNodeRepository.find(entityManager, shortHash)
 
                 if (nodeInfo != null) {
-                    val changelogsPerCpk = getCurrentChangelogsForCpi(
-                        em,
-                        nodeInfo.cpiIdentifier.name,
-                        nodeInfo.cpiIdentifier.version,
-                        nodeInfo.cpiIdentifier.signerSummaryHash.toString()
-                    )
+                    val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
                     if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
                         if (!migrationUtility.isVaultSchemaAndTargetCpiInSync(
                                 stateChangeRequest.holdingIdentityShortHash,
