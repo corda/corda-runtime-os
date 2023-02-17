@@ -22,6 +22,7 @@ import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
@@ -186,7 +187,9 @@ class UtxoLedgerMessageProcessorTests {
                 listOf("7".toByteArray()),
                 listOf(outputState),
                 listOf("9".toByteArray())
-            )
+            ),
+            ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
+            transactionSubType = "GENERAL"
         )
         return SignedTransactionContainer(
             wireTransaction,

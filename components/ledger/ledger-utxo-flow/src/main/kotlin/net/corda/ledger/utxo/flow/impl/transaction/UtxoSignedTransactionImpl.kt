@@ -5,7 +5,7 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
-import net.corda.ledger.utxo.transaction.verifier.verifyMetadata
+import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -14,7 +14,7 @@ import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -100,7 +100,7 @@ data class UtxoSignedTransactionImpl(
                 transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
-                throw TransactionVerificationException(
+                throw TransactionSignatureException(
                     id,
                     "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
                     e
@@ -122,7 +122,7 @@ data class UtxoSignedTransactionImpl(
     @Suspendable
     override fun verifyNotarySignatureAttached() {
         if (!notary.owningKey.isFulfilledBy(signatures.map { it.by })) {
-            throw TransactionVerificationException(
+            throw TransactionSignatureException(
                 id,
                 "There are no notary signatures attached to the transaction.",
                 null
