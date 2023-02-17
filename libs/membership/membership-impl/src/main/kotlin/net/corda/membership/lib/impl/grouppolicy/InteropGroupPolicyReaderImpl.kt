@@ -2,11 +2,12 @@ package net.corda.membership.lib.impl.grouppolicy
 
 import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.virtualnode.HoldingIdentity
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 
 @Component(service = [InteropGroupPolicyReader::class])
-class InteropGroupPolicyReaderImpl: InteropGroupPolicyReader {
+class InteropGroupPolicyReaderImpl @Activate constructor(): InteropGroupPolicyReader {
     val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity): String? {
         logger.info("Searching for interoperability group for $holdingIdentity")
