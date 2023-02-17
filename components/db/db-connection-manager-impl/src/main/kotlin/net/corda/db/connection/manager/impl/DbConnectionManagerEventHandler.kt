@@ -51,7 +51,7 @@ class DbConnectionManagerEventHandler(
         }
     }
 
-    fun scheduleNextDbCheck(coordinator: LifecycleCoordinator) {
+    fun scheduleNextDbCheck(@Suppress("UNUSED_PARAMETER") coordinator: LifecycleCoordinator) {
         // Turned off while we investigate a failing test
         // coordinator.setTimer(dbCheckTimerKey, timeBetweenDbChecks.toMillis()) { key -> CheckDbEvent(key) }
     }
