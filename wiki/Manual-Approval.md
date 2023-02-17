@@ -270,5 +270,5 @@ curl --insecure -u admin:admin -X DELETE $API_URL/mgm/$MGM_HOLDING_ID/approval/r
 
 # Manual approval of pre-authenticated registrations
 
-Viewing, approving or declining paused registration requests with pre-auth tokens included is done using the same API as registrations without pre-auth tokens. Refer to the section "How to manually approve/decline requests" above to see how this is done.
+Viewing, approving or declining paused registration requests with pre-auth tokens included is done using the same API as registrations without pre-auth tokens. Refer to the section [How to manually approve/decline requests](#how-to-manually-approvedecline-requests) above to see how this is done.
 
