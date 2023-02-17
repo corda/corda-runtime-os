@@ -45,7 +45,6 @@ class SigningKeyStoreUnitTest {
                                 whenever(it.getLong("expireAfterAccessMins")).thenReturn(5L)
                                 whenever(it.getLong("maximumSize")).thenReturn(3)
                             }
-//                            whenever(it.getConfig("cache")).thenReturn(cacheConfig)
 
                             val signingServiceConfig = mock<SmartConfig>().also {
                                 whenever(it.getConfig("cache")).thenReturn(cacheConfig)
@@ -138,10 +137,6 @@ class SigningKeyStoreUnitTest {
 
         val fullKeyId1 = SecureHash.parse("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
-        val cachedKey1 = mock<SigningCachedKey>().also {
-            whenever(it.fullId).thenReturn(fullKeyId1.toString())
-        }
-        println(cachedKey1)
 
         val signingKeyIds = setOf(fullKeyId0, fullKeyId1).mapTo(mutableSetOf()) { ShortHash.of(it) }
         val cachedKeys = mapOf(
