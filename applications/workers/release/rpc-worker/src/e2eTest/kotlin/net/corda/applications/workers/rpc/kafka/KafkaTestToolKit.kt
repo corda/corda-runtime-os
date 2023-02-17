@@ -6,6 +6,8 @@ import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import net.corda.applications.workers.rpc.http.TestToolkit
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
@@ -43,15 +45,23 @@ class KafkaTestToolKit(
         CordaAvroSerializationFactoryImpl(registry)
     }
 
-    private val messageChunkFactory by lazy {
-        MessagingChunkFactoryImpl(ChunkBuilderServiceImpl(), serializationFactory)
+    private val cipherSchemeMetadataImpl by lazy {
+        CipherSchemeMetadataImpl()
+    }
+
+    private val platformDigestService by lazy {
+        PlatformDigestServiceImpl(cipherSchemeMetadataImpl)
+    }
+
+    private val messagingChunkFactory by lazy {
+        MessagingChunkFactoryImpl(ChunkBuilderServiceImpl(), serializationFactory, platformDigestService)
     }
 
     private val consumerBuilder by lazy {
-        CordaKafkaConsumerBuilderImpl(registry)
+        CordaKafkaConsumerBuilderImpl(registry, messagingChunkFactory)
     }
     private val producerBuilder by lazy {
-        KafkaCordaProducerBuilderImpl(registry, messageChunkFactory)
+        KafkaCordaProducerBuilderImpl(registry, messagingChunkFactory)
     }
     private val coordinatorFactory by lazy {
         LifecycleCoordinatorFactoryImpl(

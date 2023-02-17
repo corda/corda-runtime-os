@@ -10,6 +10,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation project(":libs:chunking:chunking-core")
+    implementation project(":libs:crypto:cipher-suite")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
