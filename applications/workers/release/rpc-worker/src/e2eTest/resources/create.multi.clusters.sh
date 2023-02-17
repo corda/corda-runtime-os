@@ -17,7 +17,10 @@ create_cluster() {
     oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
     -f .ci/e2eTests/prereqs.yaml \
     -f .ci/e2eTests/prereqs-eks.yaml \
-    --set 'kafka.replicaCount=1,kafka.zookeeper.replicaCount=1,kafka.offsetsTopicReplicationFactor=1,kafka.transactionStateLogReplicationFactor=1' \
+    --set 'kafka.replicaCount=1' \
+    --set 'kafka.zookeeper.replicaCount=1' \
+    --set 'kafka.offsetsTopicReplicationFactor=1' \
+    --set 'kafka.transactionStateLogReplicationFactor=1' \
     --version 0.1.0 \
     -n $NAMESPACE \
     --wait --timeout 600s
@@ -34,20 +37,49 @@ create_cluster() {
     --from-literal=p2pLinkManager="${KAFKA_PASSWORDS_ARRAY[6]}" \
     --from-literal=rpc="${KAFKA_PASSWORDS_ARRAY[7]}"
 
-  ./gradlew clean publishOSGiImage -PcompositeBuild=true
   helm install corda \
     ./charts/corda \
     -f .ci/e2eTests/corda.yaml \
     -f .ci/e2eTests/corda-eks.yaml \
-    --set "image.tag=$BASE_IMAGE,bootstrap.kafka.replicas=1" \
+    --set "bootstrap.kafka.replicas=1" \
+    --set "bootstrap.db.cluster.password.valuefrom.secretKeyRef.name=prereqs-postgresql" \
+    --set "db.cluster.host=prereqs-postgresql" \
+    --set "db.cluster.password.valuefrom.secretKeyRef.name=prereqs-postgresql" \
     -n $NAMESPACE \
     --wait --timeout 600s
 
 }
 
+clusterA="cluster-a"
+clusterB="cluster-b"
+clusterC="cluster-mgm"
 
-create_cluster cluster-a
-create_cluster cluster-b
-create_cluster cluster-mgm
+create_cluster $clusterA
+create_cluster $clusterB
+create_cluster $clusterC
 
 telepresence connect
+
+E2E_CLUSTER_A_RPC_PASSWORD=$(kubectl get secret corda-initial-admin-user -n "$USER-$clusterA" -o go-template='{{ .data.password | base64decode }}')
+E2E_CLUSTER_B_RPC_PASSWORD=$(kubectl get secret corda-initial-admin-user -n "$USER-$clusterB" -o go-template='{{ .data.password | base64decode }}')
+E2E_CLUSTER_C_RPC_PASSWORD=$(kubectl get secret corda-initial-admin-user -n "$USER-$clusterC" -o go-template='{{ .data.password | base64decode }}')
+INITIAL_ADMIN_USER_PASSWORD=$E2E_CLUSTER_B_RPC_PASSWORD
+
+export E2E_CLUSTER_A_RPC_HOST=corda-rpc-worker.$USER-$clusterA
+export E2E_CLUSTER_A_RPC_PORT=443
+export E2E_CLUSTER_B_RPC_HOST=corda-rpc-worker.$USER-$clusterB
+export E2E_CLUSTER_B_RPC_PORT=443
+export E2E_CLUSTER_C_RPC_HOST=corda-rpc-worker.$USER-$clusterC
+export E2E_CLUSTER_C_RPC_PORT=443
+
+export E2E_CLUSTER_A_P2P_HOST=corda-p2p-gateway-worker.$USER-$clusterA
+export E2E_CLUSTER_A_P2P_PORT=8080
+export E2E_CLUSTER_B_P2P_HOST=corda-p2p-gateway-worker.$USER-$clusterB
+export E2E_CLUSTER_B_P2P_PORT=8080
+export E2E_CLUSTER_C_P2P_HOST=corda-p2p-gateway-worker.$USER-$clusterC
+export E2E_CLUSTER_C_P2P_PORT=8080
+
+export E2E_CLUSTER_A_RPC_PASSWORD
+export E2E_CLUSTER_B_RPC_PASSWORD
+export E2E_CLUSTER_C_RPC_PASSWORD
+export INITIAL_ADMIN_USER_PASSWORD
