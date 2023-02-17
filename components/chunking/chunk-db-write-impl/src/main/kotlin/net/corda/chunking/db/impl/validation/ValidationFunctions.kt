@@ -6,7 +6,6 @@ import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
@@ -99,7 +98,7 @@ fun CpiPersistence.persistCpiToDatabase(
     requestId: RequestId,
     changelogsExtractedFromCpi: List<CpkDbChangeLog>,
     log: Logger
-): CpiMetadataEntity {
+): CpiMetadata {
     // Cannot compare the CPI.metadata.hash to our checksum above
     // because two different digest algorithms might have been used to create them.
     // We'll publish to the database using the de-chunking checksum.

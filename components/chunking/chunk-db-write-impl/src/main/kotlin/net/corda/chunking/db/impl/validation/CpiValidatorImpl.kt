@@ -101,18 +101,11 @@ class CpiValidatorImpl(
         val liquibaseScripts = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Persisting CPI")
-        val cpiMetadataEntity =
+        val cpiMetadata =
             cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, liquibaseScripts, log)
 
         publisher.update(requestId, "Notifying flow workers")
-        val cpiMetadata = CpiMetadata(
-            cpi.metadata.cpiId,
-            fileInfo.checksum,
-            cpi.cpks.map { it.metadata },
-            cpi.metadata.groupPolicy,
-            version = cpiMetadataEntity.entityVersion,
-            timestamp = clock.instant()
-        )
+
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
         return fileInfo.checksum

@@ -11,6 +11,7 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.*
 import net.corda.orm.utils.transaction
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
@@ -52,7 +53,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         requestId: RequestId,
         groupId: String,
         changelogsExtractedFromCpi: List<CpkDbChangeLog>
-    ): CpiMetadataEntity {
+    ): CpiMetadata {
         entityManagerFactory.createEntityManager().transaction { em ->
 
             val cpiMetadataEntity = createCpiMetadataEntity(
@@ -70,7 +71,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             persistNewChangelogs(em, changelogsExtractedFromCpi)
 
-            return@persistMetadataAndCpks managedCpiMetadataEntity
+            return@persistMetadataAndCpks convertToDto(cpi, cpiFileChecksum, managedCpiMetadataEntity)
         }
     }
 
@@ -169,7 +170,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         requestId: RequestId,
         groupId: String,
         changelogsExtractedFromCpi: List<CpkDbChangeLog>
-    ): CpiMetadataEntity {
+    ): CpiMetadata {
         val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
 
@@ -200,9 +201,19 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             persistNewChangelogs(em, changelogsExtractedFromCpi)
 
-            return cpiMetadataEntity
+            return convertToDto(cpi, cpiFileChecksum, cpiMetadataEntity)
         }
     }
+
+    private fun convertToDto(cpi: Cpi, cpiFileChecksum: SecureHash, cpiMetadataEntity: CpiMetadataEntity): CpiMetadata =
+        CpiMetadata(
+            cpi.metadata.cpiId,
+            cpiFileChecksum,
+            cpi.cpks.map { it.metadata },
+            cpi.metadata.groupPolicy,
+            version = cpiMetadataEntity.entityVersion,
+            timestamp = UTCClock().instant()
+        )
 
     /**
      * @return null if not found

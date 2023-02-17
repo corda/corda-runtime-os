@@ -27,7 +27,6 @@ import net.corda.libs.packaging.core.CpkType
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -43,7 +42,6 @@ import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
-import java.util.Random
 import java.util.UUID
 import javax.persistence.PersistenceException
 
@@ -524,14 +522,14 @@ internal class DatabaseCpiPersistenceTest {
         val name = UUID.randomUUID().toString()
         val cpiV1 = mockCpi(mockCpk(), name = name, version = "v1")
         val cpiV2 = mockCpi(mockCpk(), name = name, version = "v2")
-        val cpiEntityV1 = cpiPersistence.persistMetadataAndCpksWithDefaults(cpiV1)
-        val cpiEntityV2 = cpiPersistence.persistMetadataAndCpksWithDefaults(cpiV2)
-        assertThat(cpiEntityV1.name).isEqualTo(name)
-        assertThat(cpiEntityV1.version).isEqualTo("v1")
-        assertThat(cpiEntityV1.cpks).hasSize(1)
-        assertThat(cpiEntityV2.name).isEqualTo(name)
-        assertThat(cpiEntityV2.version).isEqualTo("v2")
-        assertThat(cpiEntityV2.cpks).hasSize(1)
+        val cpiMetadataV1 = cpiPersistence.persistMetadataAndCpksWithDefaults(cpiV1)
+        val cpimetadataV2 = cpiPersistence.persistMetadataAndCpksWithDefaults(cpiV2)
+        assertThat(cpiMetadataV1.cpiId.name).isEqualTo(name)
+        assertThat(cpiMetadataV1.cpiId.version).isEqualTo("v1")
+        assertThat(cpiMetadataV1.cpksMetadata).hasSize(1)
+        assertThat(cpimetadataV2.cpiId.name).isEqualTo(name)
+        assertThat(cpimetadataV2.cpiId.version).isEqualTo("v2")
+        assertThat(cpimetadataV2.cpksMetadata).hasSize(1)
     }
 
     @Test
@@ -626,8 +624,8 @@ internal class DatabaseCpiPersistenceTest {
         assertThat(updatedChangelogAudits.size).isEqualTo(3)
     }
 
-    private fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
-        cpkDbChangeLogRepository.findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, SecureHash.parse(cpiEntity.signerSummaryHash)))
+    private fun findChangelogs(cpiEntity: CpiMetadata) = entityManagerFactory.createEntityManager().transaction {
+        cpkDbChangeLogRepository.findByCpiId(it, cpiEntity.cpiId)
     }
 
     private fun findAuditLogs(cpkFileChecksums: List<SecureHash>) = entityManagerFactory.createEntityManager().transaction {
