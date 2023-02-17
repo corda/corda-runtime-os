@@ -6,12 +6,9 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
-import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.stream.Stream
 import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.LockModeType
 
 class CpiMetadataRepositoryImpl: CpiMetadataRepository {
     override fun findAll(em: EntityManager): Stream<CpiMetadata> {

@@ -8,8 +8,6 @@ import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
-import net.corda.libs.packaging.core.CpkManifest
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
 import javax.persistence.EntityManager
 
