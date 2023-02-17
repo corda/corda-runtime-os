@@ -7,7 +7,7 @@ Membership groups in Corda 5 may be configured to approve (or decline) member re
 
 Registration requests are evaluated according to regular expression-based rules submitted by the MGM operator. The proposed `MemberInfo` is compared with the previous (if any) `MemberInfo` to calculate the difference in their member contexts. This difference will be 100% in case of a first-time registration, since there will be no previous `MemberInfo` for that member known to the MGM. If any of the keys present in this `MemberInfo` difference match the regular expressions set by the MGM operator, the request will require manual approval. If there are no matches, the request is auto-approved.
 
-**Add a group approval rule**
+## Add a group approval rule
 
 <details>
 <summary>Bash</summary>
@@ -19,7 +19,7 @@ curl --insecure -u admin:admin -d "$RULE_PARAMS" $API_URL/mgm/$MGM_HOLDING_ID/ap
 
 </details>
 
-**View current group approval rules**
+## View current group approval rules
 
 <details>
 <summary>Bash</summary>
@@ -30,7 +30,7 @@ curl --insecure -u admin:admin $API_URL/mgm/$MGM_HOLDING_ID/approval/rules
 
 </details>
 
-**Delete a group approval rule**
+## Delete a group approval rule
 
 Replace `<RULE ID>` with the ID of the rule to be deleted. The rule ID can be retrieved from the response of creating a rule, or from the response of the GET endpoint described previously.
 
@@ -48,7 +48,7 @@ curl --insecure -u admin:admin -X DELETE $API_URL/mgm/$MGM_HOLDING_ID/approval/r
 
 Requests which are pending manual approval are assigned `PENDING_MANUAL_APPROVAL` status.
 
-**View requests pending manual approval**
+## View requests pending manual approval
 
 <details>
 <summary>Bash</summary>
@@ -70,7 +70,7 @@ curl --insecure -u admin:admin 'https://localhost:8888/api/v1/mgm/$MGM_HOLDING_I
 
 </details>
 
-**Approve a request**
+## Approve a request
 > Note: This only works with requests that are in `PENDING_MANUAL_APPROVAL` status.
 
 Replace `<REQUEST ID>` with the ID of the registration request.
@@ -85,7 +85,7 @@ curl --insecure -u admin:admin -X POST $API_URL/mgm/$MGM_HOLDING_ID/approve/$REQ
 
 </details>
 
-**Decline a request**
+## Decline a request
 > Note: This only works with requests that are in `PENDING_MANUAL_APPROVAL` status.
 
 Replace `<REQUEST ID>` with the ID of the registration request.
