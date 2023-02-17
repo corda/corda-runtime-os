@@ -184,6 +184,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     registrationProxy,
                     virtualNodeInfoReadService,
                     membershipPersistenceClient,
+                    membershipQueryClient,
                 ),
                 messagingConfig,
                 null,

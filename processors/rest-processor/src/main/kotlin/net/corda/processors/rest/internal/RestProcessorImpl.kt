@@ -18,8 +18,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
-import net.corda.membership.client.MGMOpsClient
-import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.client.MGMResourceClient
+import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -52,10 +52,10 @@ class RestProcessorImpl @Activate constructor(
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
-    @Reference(service = MemberOpsClient::class)
-    private val memberOpsClient: MemberOpsClient,
-    @Reference(service = MGMOpsClient::class)
-    private val mgmOpsClient: MGMOpsClient,
+    @Reference(service = MemberResourceClient::class)
+    private val memberResourceClient: MemberResourceClient,
+    @Reference(service = MGMResourceClient::class)
+    private val mgmResourceClient: MGMResourceClient,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -90,8 +90,8 @@ class RestProcessorImpl @Activate constructor(
         ::flowRPCOpsService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
-        ::memberOpsClient,
-        ::mgmOpsClient,
+        ::memberResourceClient,
+        ::mgmResourceClient,
         ::membershipGroupReaderProvider,
         ::virtualNodeInfoReadService,
         ::cryptoOpsClient,

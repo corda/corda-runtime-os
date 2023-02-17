@@ -1,15 +1,26 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
-class UtxoLedgerTransactionVerifier(private val transaction: UtxoLedgerTransaction) : UtxoTransactionVerifier() {
+/**
+ * Verifies ledger transaction. For security reasons, some verifications (e.g. contracts) need to be run with a new
+ * instance of transaction.
+ *
+ * @param transactionFactory factory used for checks that require a new instance of [UtxoLedgerTransaction]
+ * @param transaction transaction used for checks that can reuse the same instance of [UtxoLedgerTransaction]
+ */
+class UtxoLedgerTransactionVerifier(
+    private val transactionFactory: () -> UtxoLedgerTransaction,
+    private val transaction: UtxoLedgerTransaction = transactionFactory.invoke()
+) : UtxoTransactionVerifier() {
 
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
 
     fun verify() {
         verifyMetadata(transaction.metadata)
         verifyPlatformChecks()
-        verifyContracts(transaction)
+        verifyContracts(transactionFactory, transaction)
     }
 
     private fun verifyPlatformChecks() {

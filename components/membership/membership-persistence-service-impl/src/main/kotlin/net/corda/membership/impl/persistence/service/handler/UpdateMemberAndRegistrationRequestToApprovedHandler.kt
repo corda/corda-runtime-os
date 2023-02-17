@@ -12,10 +12,13 @@ import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRe
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
+import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.virtualnode.toCorda
+import javax.persistence.LockModeType
 
 internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -47,7 +50,8 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             val now = clock.instant()
             val member = em.find(
                 MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name)
+                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name),
+                LockModeType.PESSIMISTIC_WRITE,
             ) ?: throw MembershipPersistenceException("Could not find member: ${request.member}")
 
             member.status = MEMBER_STATUS_ACTIVE
@@ -70,7 +74,13 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             val registrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
                 request.registrationId,
+                LockModeType.PESSIMISTIC_WRITE,
             ) ?: throw MembershipPersistenceException("Could not find registration request: ${request.registrationId}")
+            if(!registrationRequest.status.toStatus().canMoveToStatus(RegistrationStatus.APPROVED)) {
+                throw MembershipPersistenceException(
+                    "Registration request ${request.registrationId} has status ${registrationRequest.status} and can not be approved"
+                )
+            }
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
 

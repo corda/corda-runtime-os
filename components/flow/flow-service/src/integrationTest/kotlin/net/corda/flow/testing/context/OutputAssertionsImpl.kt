@@ -1,5 +1,6 @@
 package net.corda.flow.testing.context
 
+import java.nio.ByteBuffer
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
@@ -70,7 +71,7 @@ class OutputAssertionsImpl(
                 sessionToPayload.map { it.first },
                 initiatingIdentity,
                 initiatedIdentity
-            ).associate { it.sessionId to (it.payload as SessionData).payload.array() }
+            ).associate { it.sessionId to ((it.payload as SessionData).payload as ByteBuffer).array() }
 
             assertEquals(
                 sessionToPayload.toMap(),

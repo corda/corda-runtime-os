@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
+import java.time.Instant
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
@@ -14,7 +15,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionEventExecutor(
@@ -46,8 +46,8 @@ class SessionEventExecutor(
         val eventPayload = sessionEvent.payload
 
         return if (eventPayload !is SessionError) {
-            log.error("Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
-                    "counterparty. Key: $eventKey, Event: $sessionEvent")
+            log.warn("Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
+                    "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent")
             val sessionId = sessionEvent.sessionId
             FlowMapperResult(
                 null, listOf(

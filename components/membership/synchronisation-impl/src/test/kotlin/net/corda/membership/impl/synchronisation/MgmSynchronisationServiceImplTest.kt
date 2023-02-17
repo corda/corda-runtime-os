@@ -263,17 +263,20 @@ class MgmSynchronisationServiceImplTest {
             )
         } doReturn record2
     }
+    private val services = mock<MgmSynchronisationServiceImpl.InjectedServices> {
+        on { publisherFactory } doReturn publisherFactory
+        on { coordinatorFactory } doReturn coordinatorFactory
+        on { configurationReadService } doReturn configurationReadService
+        on { membershipGroupReaderProvider } doReturn groupReaderProvider
+        on { membershipQueryClient } doReturn membershipQueryClient
+        on { merkleTreeGenerator } doReturn merkleTreeGenerator
+        on { membershipPackageFactory } doReturn membershipPackageFactory
+        on { signerFactory } doReturn signerFactory
+        on { p2pRecordsFactory } doReturn p2pRecordsFactory
+    }
 
     private val synchronisationService = MgmSynchronisationServiceImpl(
-        publisherFactory,
-        coordinatorFactory,
-        configurationReadService,
-        groupReaderProvider,
-        membershipQueryClient,
-        merkleTreeGenerator,
-        membershipPackageFactory,
-        signerFactory,
-        p2pRecordsFactory
+        services,
     )
 
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())

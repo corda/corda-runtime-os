@@ -114,7 +114,12 @@ internal class VirtualNodeUpgradeOperationHandler(
 
         publishVirtualNodeInfo(upgradedVNodeInfo)
 
-        if (migrationUtility.isVaultSchemaAndTargetCpiInSync(cpkChangelogs, upgradedVNodeInfo.vaultDmlConnectionId)) {
+        if (migrationUtility.isVaultSchemaAndTargetCpiInSync(
+                request.virtualNodeShortHash,
+                cpkChangelogs,
+                upgradedVNodeInfo.vaultDmlConnectionId
+            )
+        ) {
             logger.info(
                 "Virtual node upgrade complete, vault schema in sync with CPI, no migrations were necessary - Virtual node " +
                         "${upgradedVNodeInfo.holdingIdentity.shortHash} successfully upgraded to CPI " +

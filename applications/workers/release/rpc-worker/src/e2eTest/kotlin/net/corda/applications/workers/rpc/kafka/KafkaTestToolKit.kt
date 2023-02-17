@@ -2,7 +2,12 @@ package net.corda.applications.workers.rpc.kafka
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 import net.corda.applications.workers.rpc.http.TestToolkit
+import net.corda.chunking.impl.ChunkBuilderServiceImpl
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
@@ -16,6 +21,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.chunking.MessagingChunkFactoryImpl
 import net.corda.messaging.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilderImpl
 import net.corda.messaging.subscription.factory.CordaSubscriptionFactory
@@ -23,8 +29,6 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 class KafkaTestToolKit(
     private val toolkit: TestToolkit,
@@ -36,14 +40,28 @@ class KafkaTestToolKit(
     private val registry by lazy {
         AvroSchemaRegistryImpl()
     }
+
     private val serializationFactory by lazy {
         CordaAvroSerializationFactoryImpl(registry)
     }
+
+    private val cipherSchemeMetadataImpl by lazy {
+        CipherSchemeMetadataImpl()
+    }
+
+    private val platformDigestService by lazy {
+        PlatformDigestServiceImpl(cipherSchemeMetadataImpl)
+    }
+
+    private val messagingChunkFactory by lazy {
+        MessagingChunkFactoryImpl(ChunkBuilderServiceImpl(), serializationFactory, platformDigestService)
+    }
+
     private val consumerBuilder by lazy {
-        CordaKafkaConsumerBuilderImpl(registry)
+        CordaKafkaConsumerBuilderImpl(registry, messagingChunkFactory)
     }
     private val producerBuilder by lazy {
-        KafkaCordaProducerBuilderImpl(registry)
+        KafkaCordaProducerBuilderImpl(registry, messagingChunkFactory)
     }
     private val coordinatorFactory by lazy {
         LifecycleCoordinatorFactoryImpl(

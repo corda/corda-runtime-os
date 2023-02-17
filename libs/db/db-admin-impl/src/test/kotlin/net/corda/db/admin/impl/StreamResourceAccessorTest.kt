@@ -71,4 +71,10 @@ class StreamResourceAccessorTest {
             "[$dbChangeClassType]another.xml"
         )
     }
+
+    @Test
+    fun `resolveSibling test`(){
+        val sibling = sra.getAll("jon.xml").single().resolveSibling("another.xml")
+        assertThat(sibling.path).isEqualTo("another.xml")
+    }
 }
