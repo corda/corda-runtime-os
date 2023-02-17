@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.data.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
+import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
@@ -86,6 +87,10 @@ class UtxoLedgerTransactionImpl(
 
     override fun <T : ContractState> getOutputStates(type: Class<T>): List<T> {
         return outputContractStates.filterIsInstance(type)
+    }
+
+    init {
+        verifyMetadata(wireTransaction.metadata)
     }
 
     override fun equals(other: Any?): Boolean {
