@@ -26,6 +26,9 @@ fun fullPublicKeyIdFromBytes(publicKey: ByteArray, digestService: PlatformDigest
 fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: PlatformDigestService): String =
     fullPublicKeyIdFromBytes(keyEncodingService.encodeAsByteArray(this), digestService)
 
+fun PublicKey.fullIdHash(keyEncodingService: KeyEncodingService, digestService: PlatformDigestService): SecureHash =
+    digestService.hash(keyEncodingService.encodeAsByteArray(this), DigestAlgorithmName.SHA2_256)
+
 // TODO Remove the followings, only adding now for convenience
 fun fullPublicKeyIdFromBytes(publicKey: ByteArray): String =
     SecureHash(DigestAlgorithmName.SHA2_256.name, publicKey.sha256Bytes()).toString()

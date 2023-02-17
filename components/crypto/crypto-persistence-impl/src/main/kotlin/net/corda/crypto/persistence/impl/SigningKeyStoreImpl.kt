@@ -13,6 +13,7 @@ import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.fullId
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
@@ -20,7 +21,6 @@ import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeySaveContext
-import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
@@ -40,6 +40,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.ShortHash
@@ -79,11 +80,12 @@ class SigningKeyStoreImpl @Activate constructor(
 ), SigningKeyStore {
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        event,
+        event.config.toCryptoConfig().signingService(),
         layeredPropertyMapFactory,
         keyEncodingService,
         connectionsFactory,
-        digestService
+        digestService,
+        SigningKeysRepositoryImpl
     )
 
     override fun save(tenantId: String, context: SigningKeySaveContext) =
@@ -93,7 +95,7 @@ class SigningKeyStoreImpl @Activate constructor(
         impl.find(tenantId, alias)
 
     override fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? =
-        impl.find(tenantId, publicKey)
+        impl.lookupByKey(tenantId, publicKey)
 
     override fun lookup(
         tenantId: String,
@@ -105,29 +107,37 @@ class SigningKeyStoreImpl @Activate constructor(
         impl.lookup(tenantId, skip, take, orderBy, filter)
 
     override fun lookupByIds(tenantId: String, keyIds: List<ShortHash>): Collection<SigningCachedKey> =
-        impl.lookupByKeyIds(tenantId, keyIds)
+        impl.lookupByKeyIds(tenantId, keyIds.toSet())
 
     override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> =
-        impl.lookupByFullKeyIds(tenantId, fullKeyIds)
+        impl.lookupByFullKeyIds(tenantId, fullKeyIds.toSet())
 
     class Impl(
-        event: ConfigChangedEvent,
+        private val config: CryptoSigningServiceConfig,
         private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
         private val keyEncodingService: KeyEncodingService,
         private val connectionsFactory: CryptoConnectionsFactory,
-        private val digestService: PlatformDigestService
+        private val digestService: PlatformDigestService,
+        private val signingKeysRepository: SigningKeysRepository,
+        private val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = { createCache(it) }
     ) : DownstreamAlwaysUpAbstractImpl() {
 
-        private data class CacheKey(val tenantId: String, val publicKeyId: String)
+        companion object {
+            fun createCache(config: CryptoSigningServiceConfig): Cache<CacheKey, SigningCachedKey> = CacheFactoryImpl().build(
+                "Signing-Key-Cache",
+                Caffeine.newBuilder()
+                    .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(config.cache.maximumSize))
+        }
 
-        private val config: CryptoSigningServiceConfig = event.config.toCryptoConfig().signingService()
+        data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
         @Volatile
-        private var cache: Cache<CacheKey, SigningCachedKey> = createCache()
+        private var cache: Cache<CacheKey, SigningCachedKey> = cacheFactory.invoke(config)
 
         override fun onUpstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) {
             if (!isUpstreamUp) {
-                cache = createCache()
+                cache = createCache(config)
             }
         }
 
@@ -188,23 +198,41 @@ class SigningKeyStoreImpl @Activate constructor(
             entityManagerFactory(tenantId).transaction {
                 it.persist(entity)
             }
-            cache.put(CacheKey(tenantId, keyId), entity.toSigningCachedKey())
+            cache.put(CacheKey(tenantId, ShortHash.of(keyId)), entity.toSigningCachedKey())
         }
 
         fun find(tenantId: String, alias: String): SigningCachedKey? {
-            val result = findByAliases(tenantId, listOf(alias))
+            val result = entityManagerFactory(tenantId).use { em ->
+                signingKeysRepository.findByAliases(em, tenantId, listOf(alias))
+            }
+
             if (result.size > 1) {
                 throw IllegalStateException("There are more than one key with alias=$alias for tenant=$tenantId")
             }
             return result.firstOrNull()?.toSigningCachedKey()
         }
 
-        // TODO Add caching
-        fun find(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
-            val fullKeyId = publicKey.fullId(keyEncodingService, digestService)
-//            return cache.get(CacheKey(tenantId, publicKey.publicKeyId())) { cacheKey ->
-            return findKeyByFullId(tenantId, fullKeyId)?.toSigningCachedKey()
-//            }
+        fun lookupByKey(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
+            val requestedFullKeyId = publicKey.fullIdHash(keyEncodingService, digestService)
+            return lookupByFullKeyId(tenantId, requestedFullKeyId)
+        }
+
+        @VisibleForTesting
+        fun lookupByFullKeyId(tenantId: String, requestedFullKeyId: SecureHash): SigningCachedKey? {
+            val keyId = ShortHash.of(requestedFullKeyId)
+            return cache.get(CacheKey(tenantId, keyId)) {
+                entityManagerFactory(tenantId).use { em ->
+                    signingKeysRepository.findKeyByFullId(em, tenantId, requestedFullKeyId)
+                }
+            }?.let {
+                // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
+                // requested key and not a different one that clashed on key id (short key id).
+                if (SecureHash.parse(it.fullId) == requestedFullKeyId) {
+                    it
+                } else {
+                    null
+                }
+            }
         }
 
         fun lookup(
@@ -229,114 +257,75 @@ class SigningKeyStoreImpl @Activate constructor(
             }
         }
 
-        fun lookupByKeyIds(tenantId: String, _keyIds: List<ShortHash>): Collection<SigningCachedKey> {
-            require(_keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+        fun lookupByKeyIds(tenantId: String, requestedKeyIds: Set<ShortHash>): Collection<SigningCachedKey> {
+            require(requestedKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
                 "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
             }
 
-            val keyIds = _keyIds.map { it.value }
-            val cached = cache.getAllPresent(keyIds.map { CacheKey(tenantId, it) })
-            if (cached.size == keyIds.size) {
-                return cached.values
+            val cachedKeys =
+                cache.getAllPresent(requestedKeyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
+                    .mapTo(mutableSetOf()) { it.value }
+
+            return if (cachedKeys.size == requestedKeyIds.size) {
+                cachedKeys
+            } else {
+                val notFound = requestedKeyIds - cachedKeys.mapTo(mutableSetOf()) { ShortHash.of(it.id) }
+                val fetchedKeys =
+                    entityManagerFactory(tenantId).use { em ->
+                        signingKeysRepository.findKeysByIds(em, tenantId, notFound)
+                    }
+                    // TODO below distinct is not needed. We are guarded by PK
+                    .distinctBy {
+                    it.id
+                }
+                fetchedKeys.forEach {
+                    cache.put(CacheKey(tenantId, ShortHash.of(it.id)), it)
+                }
+                cachedKeys + fetchedKeys
             }
-            val notFound = keyIds.filter { id -> !cached.containsKey(CacheKey(tenantId, id)) }
-            val fetched = findKeyByIds(tenantId, notFound).map {
-                it.toSigningCachedKey()
-            }.distinctBy {
-                it.id
-            }
-            fetched.forEach {
-                cache.put(CacheKey(tenantId, it.id), it)
-            }
-            return cached.values + fetched
         }
 
-        // TODO Add caching
-        fun lookupByFullKeyIds(tenantId: String, _fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
-            require(_fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+        fun lookupByFullKeyIds(tenantId: String, requestedFullKeyIds: Set<SecureHash>): Collection<SigningCachedKey> {
+            require(requestedFullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
                 "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
             }
 
-            val keyIds = _fullKeyIds.map { it.toString() }
-            val fetched = findKeysByFullIds(tenantId, keyIds).map {
-                it.toSigningCachedKey()
-            }.distinctBy {
-                it.id
+            // cache is using short key ids so convert to find cached keys
+            val keyIds = requestedFullKeyIds.map { ShortHash.of(it) }
+            val cached =
+                cache.getAllPresent(keyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) })
+            // check requested full key ids actually match cached full key ids
+            val cachedKeysByFullId =
+                cached
+                    .map {
+                        it.value
+                    }
+                    .filterTo(mutableSetOf()) {
+                        // TODO Clashed keys on short ids should be identified and removed from `requestedFullKeyIds` so we don't look them up in DB
+                        //  since short key ids can't clash per tenant, i.e. there can't be a different key with same short key id
+                        SecureHash.parse(it.fullId) in requestedFullKeyIds
+                    }
+
+            return if (cachedKeysByFullId.size == requestedFullKeyIds.size) {
+                cachedKeysByFullId
+            } else {
+                val notFound =
+                    requestedFullKeyIds - cachedKeysByFullId.mapTo(mutableSetOf()) { SecureHash.parse(it.fullId) }
+                // We look for keys by their full key ids so not risking a clash here
+                val fetchedKeys =
+                    entityManagerFactory(tenantId).use { em ->
+                        signingKeysRepository.findKeysByFullIds(em, tenantId, notFound)
+                    }
+                fetchedKeys.forEach {
+                    cache.put(CacheKey(tenantId, ShortHash.of(it.id)), it)
+                }
+                cachedKeysByFullId + fetchedKeys
             }
-            return fetched
         }
-
-        private fun findKeyByIds(tenantId: String, keyIds: Collection<String>): Collection<SigningKeyEntity> =
-            entityManagerFactory(tenantId).use { em ->
-                em.createQuery(
-                    "FROM SigningKeyEntity WHERE tenantId=:tenantId AND keyId IN(:keyIds)",
-                    SigningKeyEntity::class.java
-                ).setParameter("tenantId", tenantId)
-                    .setParameter("keyIds", keyIds)
-                    .resultList
-            }
-
-        private fun findKeyByFullId(tenantId: String, fullKeyId: String): SigningKeyEntity? =
-            entityManagerFactory(tenantId).use { em ->
-                em.createQuery(
-                    "FROM ${SigningKeyEntity::class.java.simpleName} " +
-                            "WHERE tenantId=:tenantId " +
-                            "AND fullKeyId=:fullKeyId",
-                    SigningKeyEntity::class.java
-                ).setParameter("tenantId", tenantId)
-                    .setParameter("fullKeyId", fullKeyId)
-                    .resultList.singleOrNull()
-            }
-
-        private fun findKeysByFullIds(tenantId: String, fullKeyIds: List<String>): Collection<SigningKeyEntity> =
-            entityManagerFactory(tenantId).use { em ->
-                em.createQuery(
-                    "FROM ${SigningKeyEntity::class.java.simpleName} " +
-                            "WHERE tenantId=:tenantId " +
-                            "AND fullKeyId IN(:fullKeyIds) " +
-                            "ORDER BY timestamp",
-                    SigningKeyEntity::class.java
-                ).setParameter("tenantId", tenantId)
-                    .setParameter("fullKeyIds", fullKeyIds)
-                    .resultList
-            }
-
-        private fun findByAliases(tenantId: String, aliases: Collection<String>): Collection<SigningKeyEntity> =
-            entityManagerFactory(tenantId).use { em ->
-                em.createQuery(
-                    "FROM SigningKeyEntity WHERE tenantId=:tenantId AND alias IN(:aliases)",
-                    SigningKeyEntity::class.java
-                ).also { q ->
-                    q.setParameter("tenantId", tenantId)
-                    q.setParameter("aliases", aliases)
-                }.resultList
-            }
-
-        private fun SigningKeyEntity.toSigningCachedKey(): SigningCachedKey =
-            SigningCachedKey(
-                id = keyId,
-                fullId = fullKeyId,
-                tenantId = tenantId,
-                category = category,
-                alias = alias,
-                hsmAlias = hsmAlias,
-                publicKey = publicKey,
-                keyMaterial = keyMaterial,
-                schemeCodeName = schemeCodeName,
-                masterKeyAlias = masterKeyAlias,
-                externalId = externalId,
-                encodingVersion = encodingVersion,
-                timestamp = timestamp,
-                hsmId = hsmId,
-                status = SigningKeyStatus.valueOf(status.name)
-            )
 
         private fun entityManagerFactory(tenantId: String) = connectionsFactory.getEntityManagerFactory(tenantId)
-
-        private fun createCache(): Cache<CacheKey, SigningCachedKey> = CacheFactoryImpl().build(
-            "Signing-Key-Cache",
-            Caffeine.newBuilder()
-                .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.cache.maximumSize))
     }
 }
+
+fun PublicKey.id(keyEncodingService: KeyEncodingService, digestService: PlatformDigestService): ShortHash =
+    ShortHash.of(this.fullId(keyEncodingService, digestService))
