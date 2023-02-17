@@ -1,6 +1,5 @@
 package net.corda.ledger.consensual.testkit
 
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
@@ -12,7 +11,7 @@ class ConsensualStateClassExample(
 ) : ConsensualState {
     override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {
         if (testField == "throw") {
-            throw TransactionVerificationException(ledgerTransaction.id, "State verification failed", null)
+            throw IllegalStateException("State verification failed")
         }
     }
 

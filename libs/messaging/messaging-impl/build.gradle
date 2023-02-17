@@ -8,7 +8,6 @@ description 'Message Patterns Impl'
 dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation project(":libs:chunking:chunking-core")
     implementation project(":libs:crypto:cipher-suite")

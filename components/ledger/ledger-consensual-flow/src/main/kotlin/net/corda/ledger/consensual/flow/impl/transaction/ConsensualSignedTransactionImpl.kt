@@ -12,7 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
 import java.util.Objects
@@ -84,7 +84,7 @@ class ConsensualSignedTransactionImpl(
                 transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
-                throw TransactionVerificationException(
+                throw TransactionSignatureException(
                     id,
                     "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
                     e
