@@ -29,6 +29,7 @@ topics:
       - membership
     producers:
       - membership
+      - rpc
     config:
   MembershipRegistrationStateTopic:
     name: membership.registration.state
