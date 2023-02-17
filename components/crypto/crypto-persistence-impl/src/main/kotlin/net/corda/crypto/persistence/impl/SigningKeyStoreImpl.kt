@@ -274,10 +274,7 @@ class SigningKeyStoreImpl @Activate constructor(
                     entityManagerFactory(tenantId).use { em ->
                         signingKeysRepository.findKeysByIds(em, tenantId, notFound)
                     }
-                    // TODO below distinct is not needed. We are guarded by PK
-                    .distinctBy {
-                    it.id
-                }
+
                 fetchedKeys.forEach {
                     cache.put(CacheKey(tenantId, ShortHash.of(it.id)), it)
                 }
