@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test
 class ChunkReadingTest {
     private lateinit var fs: FileSystem
 
-    private val extraSpace = CORDA_MESSAGE_OVERHEAD * 2
     private val chunkReaderFactory = ChunkReaderFactoryImpl
     private val chunkBuilderService = ChunkBuilderServiceImpl()
 
@@ -82,7 +81,7 @@ class ChunkReadingTest {
 
         val chunkCount = 5
 
-        val writer = ChunkWriterImpl(32 + extraSpace, chunkBuilderService).apply {
+        val writer = ChunkWriterImpl(32 + CORDA_MESSAGE_OVERHEAD, chunkBuilderService).apply {
             // guaranteed to be in order in this test
             onChunk(chunks::add)
         }
@@ -104,7 +103,7 @@ class ChunkReadingTest {
     @Test
     fun `can read out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(32 + extraSpace, chunkBuilderService).apply {
+        val writer = ChunkWriterImpl(32 + CORDA_MESSAGE_OVERHEAD, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
 
@@ -147,7 +146,7 @@ class ChunkReadingTest {
     @Test
     fun `can read overlapping files with out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
-        val chunkSize = 32 + extraSpace //bytes
+        val chunkSize = 32 + CORDA_MESSAGE_OVERHEAD //bytes
         val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
@@ -198,7 +197,7 @@ class ChunkReadingTest {
         }
 
         val divisor = 10
-        val chunkSize = (loremIpsum.length / divisor) + extraSpace
+        val chunkSize = (loremIpsum.length / divisor) + CORDA_MESSAGE_OVERHEAD
         assertThat(chunkSize * 10)
             .withFailMessage("The test string should not be a multiple of $divisor so that we have a final odd sized chunk ")
             .isNotEqualTo(loremIpsum.length)
@@ -246,7 +245,7 @@ class ChunkReadingTest {
         val path = createEmptyFile(0)
         val ourFileName = randomFileName()
         val chunks = mutableListOf<Chunk>()
-        val chunkSize = 32 + extraSpace * 2 //bytes
+        val chunkSize = 32 + CORDA_MESSAGE_OVERHEAD //bytes
         val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
