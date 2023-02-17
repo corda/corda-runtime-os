@@ -4,10 +4,12 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.utxoInvalidStateAndRefExample
@@ -26,7 +28,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -162,7 +164,14 @@ class UtxoReceiveFinalityFlowTest {
 
     @Test
     fun `receiving an invalid transaction initially throws and persists as invalid`() {
-        whenever(transactionVerificationService.verify(any())).thenThrow(TransactionVerificationException(ID, "Verification error", null))
+        whenever(transactionVerificationService.verify(any())).thenThrow(
+            TransactionVerificationException(
+                ID,
+                TransactionVerificationStatus.INVALID,
+                null,
+                "Verification error"
+            )
+        )
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(TransactionVerificationException::class.java)
             .hasMessageContaining("Verification error")
@@ -377,11 +386,11 @@ class UtxoReceiveFinalityFlowTest {
     @Test
     fun `receiving a transaction to record that is not fully signed throws an exception`() {
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf())
-        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(TransactionVerificationException(ID, "There are missing signatures", null))
+        whenever(signedTransactionWithOwnKeys.verifySignatures()).thenThrow(TransactionSignatureException(ID, "There are missing signatures", null))
         whenever(session.receive(List::class.java)).thenReturn(emptyList<DigitalSignatureAndMetadata>())
 
         assertThatThrownBy { callReceiveFinalityFlow() }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(TransactionSignatureException::class.java)
             .hasMessageContaining("There are missing signatures")
 
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
@@ -403,7 +412,14 @@ class UtxoReceiveFinalityFlowTest {
     @Test
     fun `receiving a transaction resolves the transaction's backchain even when it fails verification`() {
         whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(utxoInvalidStateAndRefExample))
-        whenever(transactionVerificationService.verify(any())).thenThrow(TransactionVerificationException(ID, "Verification error", null))
+        whenever(transactionVerificationService.verify(any())).thenThrow(
+            TransactionVerificationException(
+                ID,
+                TransactionVerificationStatus.INVALID,
+                null,
+                "Verification error"
+            )
+        )
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(TransactionVerificationException::class.java)
             .hasMessageContaining("Verification error")

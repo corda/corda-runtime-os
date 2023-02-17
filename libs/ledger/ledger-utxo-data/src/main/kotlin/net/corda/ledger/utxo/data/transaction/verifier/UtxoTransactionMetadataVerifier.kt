@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.transaction.verifier
+package net.corda.ledger.utxo.data.transaction.verifier
 
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
