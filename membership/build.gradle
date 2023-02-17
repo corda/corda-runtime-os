@@ -1,6 +1,7 @@
 plugins {
     id 'corda-api.common-library'
     id 'corda.common-publishing'
+    id 'corda.java-only'
 }
 
 description 'Corda Membership'
