@@ -31,7 +31,7 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  * By default, this function will wait until the registration is approved, but this can be disabled so that after
  * registration is submitted, the status is not verified.
  *
- * @param clusterConfig Information about the target cluster including API endpoint and P2P host.
+ * @param clusterInfo Information about the target cluster including API endpoint and P2P host.
  * @param cpb The path to the CPB to use when creating the CPI.
  * @param cpiName The name to be used for the CPI.
  * @param groupPolicy The group policy file to be bundled with the CPB in the CPI.
@@ -44,7 +44,7 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  */
 @Suppress("LongParameterList")
 fun onboardMember(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     cpb: String,
     cpiName: String,
     groupPolicy: String,
@@ -63,23 +63,23 @@ fun onboardMember(
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
-        val tlsCsr = generateCsr(clusterConfig, x500Name, tlsKeyId)
-        val tlsCert = File.createTempFile("${clusterConfig.hashCode()}$CAT_TLS", ".pem").also {
+        val tlsCsr = generateCsr(clusterInfo, x500Name, tlsKeyId)
+        val tlsCert = File.createTempFile("${clusterInfo.hashCode()}$CAT_TLS", ".pem").also {
             it.deleteOnExit()
             it.writeBytes(getCa().generateCert(tlsCsr).toByteArray())
         }
-        importCertificate(clusterConfig, tlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
+        importCertificate(clusterInfo, tlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
     }
 
     val registrationContext = createRegistrationContext(
-        clusterConfig,
+        clusterInfo,
         sessionKeyId,
         ledgerKeyId
     ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
 
-    configureNetworkParticipant(clusterConfig, holdingId, sessionKeyId)
+    configureNetworkParticipant(clusterInfo, holdingId, sessionKeyId)
 
-    val registrationId = register(clusterConfig, holdingId, registrationContext, waitForApproval)
+    val registrationId = register(clusterInfo, holdingId, registrationContext, waitForApproval)
 
     return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext)
 }
@@ -90,7 +90,7 @@ fun onboardMember(
  */
 @Suppress("LongParameterList")
 fun onboardNotaryMember(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     resourceName: String,
     cpiName: String,
     groupPolicy: String,
@@ -98,7 +98,7 @@ fun onboardNotaryMember(
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
 ) = onboardMember(
-    clusterConfig,
+    clusterInfo,
     resourceName,
     cpiName,
     groupPolicy,
@@ -121,11 +121,11 @@ fun onboardNotaryMember(
  * Configure a member to be a network participant.
  */
 fun configureNetworkParticipant(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     holdingId: String,
     sessionKeyId: String
 ) {
-    return cluster(clusterConfig) {
+    return cluster(clusterInfo) {
         assertWithRetry {
             command { configureNetworkParticipant(holdingId, sessionKeyId) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -140,11 +140,11 @@ fun configureNetworkParticipant(
  * submitting.
  */
 fun register(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     holdingIdentityShortHash: String,
     registrationContext: Map<String, String>,
     waitForApproval: Boolean
-) = cluster(clusterConfig) {
+) = cluster(clusterInfo) {
 
     val payload = mapOf(
         "action" to "requestJoin",
@@ -162,7 +162,7 @@ fun register(
 }.also {
     if (waitForApproval) {
         waitForRegistrationStatus(
-            clusterConfig,
+            clusterInfo,
             holdingIdentityShortHash,
             it,
             registrationStatus = REGISTRATION_APPROVED
@@ -176,12 +176,12 @@ fun register(
  * Optionally, this can look for a registration by ID.
  */
 fun waitForRegistrationStatus(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     holdingIdentityShortHash: String,
     registrationId: String? = null,
     registrationStatus: String
 ) {
-    cluster(clusterConfig) {
+    cluster(clusterInfo) {
         assertWithRetry {
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
@@ -245,7 +245,7 @@ fun registerStaticMember(
  * Create the member context for a member's registration.
  */
 fun createRegistrationContext(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     sessionKeyId: String,
     ledgerKeyId: String
 ) = mapOf(
@@ -253,8 +253,8 @@ fun createRegistrationContext(
     "corda.session.key.signature.spec" to DEFAULT_SIGNATURE_SPEC,
     "corda.ledger.keys.0.id" to ledgerKeyId,
     "corda.ledger.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
-    "corda.endpoints.0.connectionURL" to clusterConfig.p2pUri.toString(),
-    "corda.endpoints.0.protocolVersion" to clusterConfig.p2pProtocolVersion
+    "corda.endpoints.0.connectionURL" to clusterInfo.p2p.uri.toString(),
+    "corda.endpoints.0.protocolVersion" to clusterInfo.p2p.protocol
 )
 
 /**

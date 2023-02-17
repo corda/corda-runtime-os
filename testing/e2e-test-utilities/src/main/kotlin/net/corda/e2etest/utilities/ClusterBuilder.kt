@@ -20,8 +20,10 @@ class ClusterBuilder {
         client = UnirestHttpsClient(uri, username, password)
     }
 
-    fun configure(config: ClusterConfig) {
-        endpoint(config.restUri, config.restUser, config.restPassword)
+    fun init(clusterInfo: ClusterInfo) {
+        with(clusterInfo.rest) {
+            endpoint(uri, user, password)
+        }
     }
 
     /** POST, but most useful for running flows */
@@ -297,6 +299,6 @@ class ClusterBuilder {
 fun <T> cluster(initialize: ClusterBuilder.() -> T): T = ClusterBuilder().let(initialize)
 
 fun <T> cluster(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     initialize: ClusterBuilder.() -> T
-): T = ClusterBuilder().apply { configure(clusterConfig) }.let(initialize)
+): T = ClusterBuilder().apply { init(clusterInfo) }.let(initialize)

@@ -21,6 +21,7 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRestResource
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
@@ -143,7 +144,7 @@ class MGMRestResourceImpl internal constructor(
 
         fun approveRegistrationRequest(holdingIdentityShortHash: String, requestId: String)
 
-        fun declineRegistrationRequest(holdingIdentityShortHash: String, requestId: String, reason: String)
+        fun declineRegistrationRequest(holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason)
     }
 
     override val protocolVersion = 1
@@ -230,7 +231,7 @@ class MGMRestResourceImpl internal constructor(
     ) = impl.approveRegistrationRequest(holdingIdentityShortHash, requestId)
 
     override fun declineRegistrationRequest(
-        holdingIdentityShortHash: String, requestId: String, reason: String
+        holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
     ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
 
     fun activate(reason: String) {
@@ -322,7 +323,7 @@ class MGMRestResourceImpl internal constructor(
             throwNotRunningException()
 
         override fun declineRegistrationRequest(
-            holdingIdentityShortHash: String, requestId: String, reason: String
+            holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
         ): Unit = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
@@ -512,7 +513,7 @@ class MGMRestResourceImpl internal constructor(
         override fun declineRegistrationRequest(
             holdingIdentityShortHash: String,
             requestId: String,
-            reason: String
+            reason: ManualDeclinationReason
         ) {
             val registrationId = parseRegistrationRequestId(requestId)
             try {

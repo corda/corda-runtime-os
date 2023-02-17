@@ -16,7 +16,7 @@ import java.time.Duration
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
  */
 fun onboardMgm(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     resourceName: String,
     mgmName: MemberX500Name = MemberX500Name.parse("O=Mgm, L=London, C=GB, OU=$testRunUniqueId"),
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
@@ -39,21 +39,21 @@ fun onboardMgm(
         getCa().caCertificate.toPem(),
         sessionKeyId,
         ecdhKeyId,
-        clusterConfig,
+        clusterInfo,
         groupPolicyConfig
     )
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
-        val mgmTlsCsr = generateCsr(clusterConfig, mgmName, tlsKeyId)
-        val mgmTlsCert = File.createTempFile("${clusterConfig.hashCode()}$CAT_TLS", ".pem").also {
+        val mgmTlsCsr = generateCsr(clusterInfo, mgmName, tlsKeyId)
+        val mgmTlsCert = File.createTempFile("${clusterInfo.hashCode()}$CAT_TLS", ".pem").also {
             it.deleteOnExit()
             it.writeBytes(getCa().generateCert(mgmTlsCsr).toByteArray())
         }
-        importCertificate(clusterConfig, mgmTlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
+        importCertificate(clusterInfo, mgmTlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
     }
-    val registrationId = register(clusterConfig, mgmHoldingId, registrationContext, waitForApproval = true)
-    configureNetworkParticipant(clusterConfig, mgmHoldingId, sessionKeyId)
+    val registrationId = register(clusterInfo, mgmHoldingId, registrationContext, waitForApproval = true)
+    configureNetworkParticipant(clusterInfo, mgmHoldingId, sessionKeyId)
 
     return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext)
 }
@@ -62,9 +62,9 @@ fun onboardMgm(
  * Returns the MGM's group policy file.
  */
 fun exportGroupPolicy(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String
-) = cluster(clusterConfig) {
+) = cluster(clusterInfo) {
     assertWithRetry {
         command { get("/api/v1/mgm/$mgmHoldingId/info") }
         condition { it.code == ResponseCode.OK.statusCode }
@@ -75,31 +75,31 @@ fun exportGroupPolicy(
  * Attempt to create a standard approval rule.
  */
 fun createApprovalRule(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     regex: String,
     label: String
-) = createApprovalRuleCommon(clusterConfig, "/api/v1/mgm/$mgmHoldingId/approval/rules", regex, label)
+) = createApprovalRuleCommon(clusterInfo, "/api/v1/mgm/$mgmHoldingId/approval/rules", regex, label)
 
 /**
  * Attempt to create a pre-auth approval rule.
  */
 fun createPreAuthApprovalRule(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     regex: String,
     label: String
-) = createApprovalRuleCommon(clusterConfig, "/api/v1/mgm/$mgmHoldingId/approval/rules/preauth", regex, label)
+) = createApprovalRuleCommon(clusterInfo, "/api/v1/mgm/$mgmHoldingId/approval/rules/preauth", regex, label)
 
 /**
  * Attempt to create an approval rule at a given resource URL.
  */
 private fun createApprovalRuleCommon(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     url: String,
     regex: String,
     label: String
-) = cluster(clusterConfig) {
+) = cluster(clusterInfo) {
     val payload = mapOf(
         "ruleLabel" to label,
         "ruleRegex" to regex
@@ -115,27 +115,27 @@ private fun createApprovalRuleCommon(
  * Attempt to delete a standard approval rule.
  */
 fun deleteApprovalRule(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     ruleId: String
-) = delete(clusterConfig, "/api/v1/mgm/$mgmHoldingId/approval/rules/$ruleId")
+) = delete(clusterInfo, "/api/v1/mgm/$mgmHoldingId/approval/rules/$ruleId")
 
 /**
  * Attempt to delete a pre-auth approval rule.
  */
 fun deletePreAuthApprovalRule(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     ruleId: String
-) = delete(clusterConfig, "/api/v1/mgm/$mgmHoldingId/approval/rules/preauth/$ruleId")
+) = delete(clusterInfo, "/api/v1/mgm/$mgmHoldingId/approval/rules/preauth/$ruleId")
 
 /**
  * Attempt to delete a resource at a given URL with retries.
  */
 private fun delete(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     url: String
-) = cluster(clusterConfig) {
+) = cluster(clusterInfo) {
     assertWithRetry {
         command { delete(url) }
         condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -146,12 +146,12 @@ private fun delete(
  * Attempt to create a pre-auth token.
  */
 fun createPreAuthToken(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     ownerX500Name: MemberX500Name,
     remark: String? = "Token created for automated test run $testRunUniqueId with default remark.",
     ttl: Duration? = null
-) = cluster(clusterConfig) {
+) = cluster(clusterInfo) {
     val payload = mutableMapOf(
         "ownerX500Name" to ownerX500Name.toString()
     ).apply {
@@ -169,12 +169,12 @@ fun createPreAuthToken(
  * Attempt to revoke a pre-auth token.
  */
 fun revokePreAuthToken(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     tokenId: String,
     remark: String = "Token revoked for automated test run $testRunUniqueId with default remark."
 ) {
-    cluster(clusterConfig) {
+    cluster(clusterInfo) {
         assertWithRetry {
             command { put("/api/v1/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId", "{\"remarks\": \"$remark\"}") }
             condition { it.code == ResponseCode.OK.statusCode }
@@ -186,12 +186,12 @@ fun revokePreAuthToken(
  * Get the visible pre-auth tokens for an MGM and return the whole response payload.
  */
 fun getPreAuthTokens(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     tokenId: String? = null,
     ownerX500name: String? = null,
     viewInactive: Boolean = false
-) = cluster(clusterConfig) {
+) = cluster(clusterInfo) {
     val queries = mutableListOf(
         "viewinactive=$viewInactive"
     ).apply {
@@ -210,12 +210,12 @@ fun getPreAuthTokens(
  * review.
  */
 fun waitForPendingRegistrationReviews(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     memberX500Name: MemberX500Name? = null,
     registrationId: String?
 ) {
-    cluster(clusterConfig) {
+    cluster(clusterInfo) {
         val query = memberX500Name?.let {
             "?requestsubjectx500name=${encode(memberX500Name.toString(), defaultCharset())}"
         } ?: ""
@@ -236,11 +236,11 @@ fun waitForPendingRegistrationReviews(
  * Attempt to approve a registration.
  */
 fun approveRegistration(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     registrationId: String
 ) {
-    cluster(clusterConfig) {
+    cluster(clusterInfo) {
         assertWithRetry {
             command { post("/api/v1/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -252,11 +252,11 @@ fun approveRegistration(
  * Attempt to decline a registration.
  */
 fun declineRegistration(
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     mgmHoldingId: String,
     registrationId: String
 ) {
-    cluster(clusterConfig) {
+    cluster(clusterInfo) {
         assertWithRetry {
             command { post(
                 "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
@@ -286,7 +286,7 @@ private fun createMgmRegistrationContext(
     caTrustRoot: String,
     sessionKeyId: String,
     ecdhKeyId: String,
-    clusterConfig: ClusterConfig,
+    clusterInfo: ClusterInfo,
     groupPolicyConfig: GroupPolicyConfig
 ) = mapOf(
     "corda.session.key.id" to sessionKeyId,
@@ -301,8 +301,8 @@ private fun createMgmRegistrationContext(
     "corda.group.pki.session" to groupPolicyConfig.sessionPkiMode,
     "corda.group.pki.tls" to groupPolicyConfig.tlsPkiMode,
     "corda.group.tls.version" to groupPolicyConfig.tlsVersion,
-    "corda.endpoints.0.connectionURL" to clusterConfig.p2pUri.toString(),
-    "corda.endpoints.0.protocolVersion" to clusterConfig.p2pProtocolVersion,
+    "corda.endpoints.0.connectionURL" to clusterInfo.p2p.uri.toString(),
+    "corda.endpoints.0.protocolVersion" to clusterInfo.p2p.protocol,
     "corda.group.truststore.tls.0" to caTrustRoot,
     "corda.group.truststore.session.0" to caTrustRoot,
 )
