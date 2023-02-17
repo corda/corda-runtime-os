@@ -689,6 +689,9 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 ```
 </details>
 
+## Optional: Configure group for manual approval
+To configure the group for manual approval of registration requests, see [Manual Approval](https://github.com/corda/corda-runtime-os/wiki/Manual-Approval).
+
 From here, you can continue to the [Member onboarding](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) to see how to use that group policy file to set up members in your network.
 
 
