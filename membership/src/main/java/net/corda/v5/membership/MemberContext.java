@@ -10,23 +10,22 @@ import net.corda.v5.base.types.LayeredPropertyMap;
  *
  * <p>Example usages:</p>
  *
- * <p>Java:</p>
- * <pre>{@code
+ * <ul>
+ * <li>Java:<pre>{@code
  * Set<Map.Entry<String, String>> memberContextEntries = memberContext.getEntries();
  * String groupId = memberContext.parse("corda.groupId", String.class);
  * Instant modifiedTime = memberContext.parseOrNull("corda.modifiedTime", Instant.class);
  * Set<String> additionalInformation = memberContext.parseSet("additional.names", String.class);
  * List<EndpointInfo> endpoints = memberContext.parseList("corda.endpoints", EndpointInfo.class);
- * }</pre>
- *
- * <p>Kotlin:</p>
- * <pre>{@code
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
  * val entries = memberContext.entries
  * val groupId = memberContext.parse("corda.groupId", String::class.java)
  * val modifiedTime = memberContext.parseOrNull("corda.modifiedTime", Instant::class.java)
  * val additionalInformation = memberContext.parseSet("additional.names", String::class.java)
  * val endpoints = memberContext.parseList("corda.endpoints", EndpointInfo::class.java)
- * }</pre>
+ * }</pre></li>
+ * </ul>
  *
  * <p>Properties are exposed either through methods on interfaces in the public APIs, or internally through extension
  * properties.</p>

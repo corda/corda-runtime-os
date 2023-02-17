@@ -8,21 +8,20 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Example usages:</p>
  *
- * <p>Java:</p>
- * <pre>{@code
+ * <ul>
+ * <li>Java:<pre>{@code
  * MemberInfo memberInfo = memberLookup.myInfo();
  * List<EndpointInfo> endpoints = memberInfo.getMemberProvidedContext().parseList("corda.endpoints", EndpointInfo.class);
  * String url = endpoints.get(0).getUrl();
  * int protocolVersion = endpoints.get(0).getProtocolVersion();
- * }</pre>
- *
- * <p>Kotlin:</p>
- * <pre>{@code
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
  * val memberInfo = memberLookup.myInfo()
  * val endpoints = memberInfo.memberProvidedContext.parseList("corda.endpoints", EndpointInfo::class.java)
  * val url = endpoints.first().url
  * val protocolVersion = endpoints.first().protocolVersion
- * }</pre>>
+ * }</pre></li>
+ * </ul>
  */
 @CordaSerializable
 public interface EndpointInfo {

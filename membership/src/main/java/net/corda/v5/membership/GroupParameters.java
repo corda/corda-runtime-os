@@ -17,23 +17,22 @@ import java.util.Collection;
  *
  * <p>Example usages:</p>
  *
- * <p>Java:</p>
- * <pre>{@code
+ * <ul>
+ * <li>Java:<pre>{@code
  * GroupParameters groupParameters = fullTransaction.getMembershipParameters();
  * int minimumPlatformVersion = groupParameters.getMinimumPlatformVersion();
  * Instant modifiedTime = groupParameters.getModifiedTime();
  * int epoch = groupParameters.getEpoch();
  * Collection<NotaryInfo> notaries = groupParameters.getNotaries();
- * }</pre>
- *
- * <p>Kotlin:</p>
- * <pre>{@code
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
  * val groupParameters = fullTransaction.membershipParameters
  * val minimumPlatformVersion = groupParameters?.minimumPlatformVersion
  * val modifiedTime = groupParameters?.modifiedTime
  * val epoch = groupParameters?.epoch
  * val notaries = groupParameters?.notaries
- * }</pre>
+ * }</pre></li>
+ * </ul>
  */
 @CordaSerializable
 public interface GroupParameters extends LayeredPropertyMap {

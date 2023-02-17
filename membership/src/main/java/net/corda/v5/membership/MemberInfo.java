@@ -16,8 +16,8 @@ import java.util.List;
  *
  * <p>Example usages:</p>
  *
- * <p>Java:</p>
- * <pre>{@code
+ * <ul>
+ * <li>Java:<pre>{@code
  * MGMContext mgmContext = memberInfo.getMgmProvidedContext();
  * MemberContext memberContext = memberInfo.getMemberProvidedContext();
  * MemberX500Name x500Name = memberInfo.getName();
@@ -26,10 +26,8 @@ import java.util.List;
  * int platformVersion = memberInfo.getPlatformVersion();
  * PublicKey sessionKey = memberInfo.getSessionInitiationKey();
  * Boolean isActive = memberInfo.isActive();
- * }</pre>
- *
- * <p>Kotlin:</p>
- * <pre>{@code
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
  * val mgmContext: MGMContext = memberInfo.mgmProvidedContext
  * val memberContext: MemberContext = memberInfo.memberProvidedContext
  * val x500Name: MemberX500Name = memberInfo.name
@@ -38,7 +36,8 @@ import java.util.List;
  * val platformVersion: Int = memberInfo.platformVersion
  * val sessionKey: PublicKey = memberInfo.sessionInitiationKey
  * val isActive: Boolean = memberInfo.isActive
- * }</pre>
+ * }</pre></li>
+ * </ul>
  */
 @CordaSerializable
 public interface MemberInfo {

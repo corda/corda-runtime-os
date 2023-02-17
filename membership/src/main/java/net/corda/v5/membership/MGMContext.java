@@ -10,23 +10,22 @@ import net.corda.v5.base.types.LayeredPropertyMap;
  *
  * <p>Example usages:</p>
  *
- * <p>Java:</p>
- * <pre>{@code
+ * <ul>
+ * <li>Java:<pre>{@code
  * Set<Map.Entry<String, String>> mgmContextEntries = mgmContext.getEntries();
  * String status = mgmContext.parse("corda.status", String.class);
  * Boolean isMgm = mgmContext.parseOrNull("corda.mgm", Boolean.class);
  * Set<String> additionalInformationSet = mgmContext.parseSet("additional.names", String.class);
  * List<Long> additionalInformationList = mgmContext.parseList("additional.numbers", Long.class);
- * }</pre>
- *
- * <p>Kotlin:</p>
- * <pre>{@code
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
  * val mgmContextEntries = mgmContext.entries
  * val status = mgmContext.parse("corda.status", String::class.java)
  * val isMgm = mgmContext.parseOrNull("corda.mgm", Boolean::class.java)
  * val additionalInformationSet = mgmContext.parseSet("additional.names", String::class.java)
  * val additionalInformationList = mgmContext.parseList("additional.numbers", Long::class.java)
- * }</pre>
+ * }</pre></li>
+ * </ul>
  *
  * <p>Properties are exposed either through properties on interfaces in the public APIs, or internally through extension
  * properties.</p>
