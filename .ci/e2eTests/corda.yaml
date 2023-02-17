@@ -6,7 +6,6 @@ bootstrap:
       password:
         valueFrom:
           secretKeyRef:
-            name: "prereqs-postgresql"
             key: "postgres-password"
   kafka:
     sasl:
@@ -24,11 +23,9 @@ logging:
 
 db:
   cluster:
-    host: "prereqs-postgresql"
     password:
       valueFrom:
         secretKeyRef:
-          name: "prereqs-postgresql"
           key: "password"
     username:
       value: "user"
