@@ -6,7 +6,6 @@ plugins {
 description 'Membership Internal API'
 
 dependencies {
-    compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

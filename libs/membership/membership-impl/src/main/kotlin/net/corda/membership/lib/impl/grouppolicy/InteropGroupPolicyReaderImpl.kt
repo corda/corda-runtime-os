@@ -1,5 +1,6 @@
-package net.corda.membership.lib.grouppolicy
+package net.corda.membership.lib.impl.grouppolicy
 
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
