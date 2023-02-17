@@ -42,9 +42,9 @@ create_cluster() {
     -f .ci/e2eTests/corda.yaml \
     -f .ci/e2eTests/corda-eks.yaml \
     --set "bootstrap.kafka.replicas=1" \
-    --set "bootstrap.db.cluster.password.valuefrom.secretKeyRef.name=prereqs-postgresql" \
+    --set "bootstrap.db.cluster.password.valueFrom.secretKeyRef.name=prereqs-postgresql" \
     --set "db.cluster.host=prereqs-postgresql" \
-    --set "db.cluster.password.valuefrom.secretKeyRef.name=prereqs-postgresql" \
+    --set "db.cluster.password.valueFrom.secretKeyRef.name=prereqs-postgresql" \
     -n $NAMESPACE \
     --wait --timeout 600s
 
