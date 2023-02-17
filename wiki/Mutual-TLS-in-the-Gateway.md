@@ -10,7 +10,7 @@ Mutual TLS is relevant only for dynamic networks, as static networks can only sp
 Mutual TLS will only work with a Corda-5 network.
 
 ## How to onboard an MGM and a member with mutual TLS
-There are a few steps in the [MGM-Onboarding](MGM-Onboarding) and [Member-Onboarding](Member-Onboarding-(Dynamic-Networks)) guide that need to changed in order to onboard an MGM and a member to a mutual TLS cluster.
+There are a few steps in the [MGM-Onboarding](MGM-Onboarding) and [Member-Onboarding](Member-Onboarding-(Dynamic-Networks)) guide that need to be changed in order to onboard an MGM and a member to a mutual TLS cluster.
 
 ### Change the cluster configuration
 _Note: Mutual TLS is set per cluster. It has to apply to all the groups that the cluster will host and all the clusters that those groups will be hosted on. One can not onboard a member unless the TLS type of the MGM cluster is aligned with the TLS type of the member cluster_
