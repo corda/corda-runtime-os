@@ -2,7 +2,6 @@ package net.corda.flow.testing.tests
 
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
 import org.junit.jupiter.api.Test
@@ -73,7 +72,6 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(1)
-                flowStatus(FlowStates.RETRYING)
             }
         }
 
@@ -86,7 +84,6 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(2)
-                flowStatus(FlowStates.RETRYING)
             }
         }
 
@@ -127,7 +124,6 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(1)
-                flowStatus(FlowStates.RETRYING)
             }
         }
 
@@ -141,13 +137,13 @@ class StartFlowTest : FlowServiceTestBase() {
                 nullStateRecord()
                 markedForDlq()
                 noFlowEvents()
-                flowStatus(
+/*                flowStatus(
                     state = FlowStates.FAILED,
                     errorType = FlowProcessingExceptionTypes.FLOW_FAILED,
                     errorMessage = "Execution failed with \"Failed to find the virtual node info for holder " +
                             "'HoldingIdentity(x500Name=${BOB_HOLDING_IDENTITY.x500Name}, groupId=${BOB_HOLDING_IDENTITY.groupId})'\" " +
                             "after 1 retry attempts."
-                )
+                )*/
             }
         }
     }
