@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.flow.impl.transaction.verifier
+package net.corda.ledger.consensual.data.transaction.verifier
 
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
