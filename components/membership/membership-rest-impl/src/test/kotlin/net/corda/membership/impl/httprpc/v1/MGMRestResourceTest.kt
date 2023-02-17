@@ -15,7 +15,6 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
-import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
@@ -92,7 +91,7 @@ class MGMRestResourceTest {
         on { getSmartConfig(P2P_GATEWAY_CONFIG) } doReturn gatewayConfiguration
     }
     private val initialTime = Instant.parse("2007-12-03T00:00:00.00Z")
-    private val manualDeclinationReason = ManualDeclinationReason("test")
+    private val manualDeclinationReason = "test"
 
     private val mgmRestResource = MGMRestResourceImpl(
         lifecycleCoordinatorFactory,
@@ -466,14 +465,14 @@ class MGMRestResourceTest {
             mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
 
             verify(mgmResourceClient).reviewRegistrationRequest(
-                (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+                (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), false, manualDeclinationReason
             )
         }
 
         @Test
         fun `declineRegistrationRequest throws resource not found for invalid member`() {
             whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason
             )).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
@@ -484,7 +483,7 @@ class MGMRestResourceTest {
         @Test
         fun `declineRegistrationRequest throws invalid input for non MGM member`() {
             whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason
             )).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
@@ -502,7 +501,7 @@ class MGMRestResourceTest {
         @Test
         fun `declineRegistrationRequest throws bad request if request is not found or is not pending review`() {
             whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason.reason
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason
             )).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
