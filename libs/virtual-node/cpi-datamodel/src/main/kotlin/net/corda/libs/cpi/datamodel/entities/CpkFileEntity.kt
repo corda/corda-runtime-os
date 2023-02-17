@@ -39,7 +39,7 @@ const val QUERY_PARAM_ID = "id"
             " WHERE f.entityVersion = :$QUERY_PARAM_ENTITY_VERSION" +
             " AND f.id = :$QUERY_PARAM_ID"
 )
-class CpkFileEntity(
+internal class CpkFileEntity(
     @Id
     @Column(name = "file_checksum", nullable = false, unique = true)
     var fileChecksum: String,

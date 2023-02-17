@@ -1,4 +1,4 @@
-package net.corda.cpk.write.impl.services.db.impl
+package net.corda.libs.cpi.datamodel
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -10,18 +10,18 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.TypedQuery
 import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
+import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.eq
 
-class DBCpkStorageTest {
-    private lateinit var dbCpkStorage: DBCpkStorage
+class CpkFileRepositoryTest {
+    private val cpkFileRepository = CpkFileRepositoryImpl()
 
     private lateinit var emFactory: EntityManagerFactory
 
     @BeforeEach
     fun setUp() {
         emFactory = mock()
-        dbCpkStorage = DBCpkStorage(emFactory)
     }
 
     @Test
@@ -41,7 +41,7 @@ class DBCpkStorageTest {
         whenever(emFactory.createEntityManager()).thenReturn(em)
 
         val checksum = SecureHash.parse("SHA-256:1234567890")
-        val cpkFile = dbCpkStorage.getCpkFileById(checksum)
+        val cpkFile = cpkFileRepository.findById(em, checksum)
 
         assertThat(cpkFile.fileChecksum).isEqualTo(checksum)
         assertThat(cpkFile.data).isEqualTo(bytes)
