@@ -695,6 +695,7 @@ internal class VirtualNodeWriterProcessor(
             logger.info("No MGM information found in group policy. MGM member info not published.")
             return
         }
+        logger.info("Mgm info's serial is: ${mgmInfo.serial}")
         val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name, mgmInfo.groupId)
         val mgmRecord = Record(
             MEMBER_LIST_TOPIC,
