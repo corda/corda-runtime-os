@@ -89,10 +89,29 @@ class SimUtxoLedgerService(
     }
 
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {
-        TODO("Not yet implemented")
+        val serializer = BaseSerializationService()
+        val notaryInfo = fiber.getNotary()
+        val notary = Party(notaryInfo.name, notaryInfo.publicKey)
+        return stateRefs.map { getStateAndRef(it, notary, serializer)}
     }
 
     override fun <T : ContractState> resolve(stateRef: StateRef): StateAndRef<T> {
-        TODO("Not yet implemented")
+        val serializer = BaseSerializationService()
+        val notaryInfo = fiber.getNotary()
+        val notary = Party(notaryInfo.name, notaryInfo.publicKey)
+        return getStateAndRef(stateRef, notary, serializer)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T : ContractState> getStateAndRef(
+        stateRef: StateRef, notary: Party, serializer: BaseSerializationService): StateAndRef<T> {
+        val entity = persistenceService.find(UtxoTransactionEntity::class.java, String(stateRef.transactionHash.bytes))
+            ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
+                    String(stateRef.transactionHash.bytes))
+        val tx =
+            UtxoSignedTransactionBase.fromEntity(entity, signingService, serializer, persistenceService, configuration)
+        val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[stateRef.index] as T,
+            notary, null)
+        return StateAndRefImpl(ts, stateRef)
     }
 }

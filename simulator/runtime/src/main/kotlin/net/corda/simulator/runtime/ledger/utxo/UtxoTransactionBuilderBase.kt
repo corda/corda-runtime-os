@@ -7,10 +7,10 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
@@ -94,7 +94,9 @@ data class UtxoTransactionBuilderBase(
     }
 
     override fun getEncumbranceGroup(tag: String): List<ContractState> {
-        TODO("Not yet implemented")
+        return requireNotNull(getEncumbranceGroups()[tag]) {
+            "Encumbrance group with the specified tag does not exist: $tag."
+        }
     }
 
     override fun getEncumbranceGroups(): Map<String, List<ContractState>> {

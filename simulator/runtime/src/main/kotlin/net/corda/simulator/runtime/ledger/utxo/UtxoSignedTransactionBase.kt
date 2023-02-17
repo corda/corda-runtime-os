@@ -6,6 +6,7 @@ import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
 import net.corda.simulator.entities.UtxoTransactionSignatureEntity
+import net.corda.simulator.runtime.ledger.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -117,18 +118,16 @@ class UtxoSignedTransactionBase(
     }
 
     override val metadata: TransactionMetadata
-        get() {
-            TODO()
-        }
+        get() = SimTransactionMetadata()
+
     override val notary: Party
         get() = ledgerInfo.notary
 
-    // TODO referenceState
     private val ledgerTransaction =
         UtxoLedgerTransactionBase(
             ledgerInfo,
-            toInputStateAndRef(),
-            listOf()
+            getStateAndRef(ledgerInfo.inputStateRefs),
+            getStateAndRef(ledgerInfo.referenceStateRefs)
         )
 
     override val id: SecureHash = ledgerTransaction.id
@@ -153,12 +152,11 @@ class UtxoSignedTransactionBase(
         return ledgerTransaction
     }
 
-    // TODO refactor
-    private fun toInputStateAndRef(): List<StateAndRef<*>> {
-        return ledgerInfo.inputStateRefs.map {
+    private fun getStateAndRef(stateRefs: List<StateRef>): List<StateAndRef<*>>{
+        return stateRefs.map {
             val entity = persistenceService.find(UtxoTransactionEntity::class.java, String(it.transactionHash.bytes))
                 ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
-                    String(it.transactionHash.bytes))
+                        String(it.transactionHash.bytes))
             val tx = fromEntity(entity, signingService, serializer, persistenceService, config)
             val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[it.index],
                 notary, null)
@@ -191,7 +189,6 @@ class UtxoSignedTransactionBase(
         return DigitalSignatureAndMetadata(signature,
             DigitalSignatureMetadata(timestamp, SignatureSpec.ECDSA_SHA256, mapOf()))
     }
-
 
     override fun equals(other: Any?): Boolean {
         if(this === other) return true
