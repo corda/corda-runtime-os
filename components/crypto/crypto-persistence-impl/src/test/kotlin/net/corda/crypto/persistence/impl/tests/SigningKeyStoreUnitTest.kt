@@ -11,6 +11,7 @@ import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl.Impl.CacheKey
+import net.corda.crypto.persistence.impl.SigningKeyStoreImpl.Impl.Companion.createCache
 import net.corda.crypto.persistence.impl.SigningKeysRepository
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.ConfigKeys
@@ -95,26 +96,15 @@ class SigningKeyStoreUnitTest {
         // Remember key ids cannot clash for same tenant so short keys of testing keys need to be different
         val fullKeyId0 = SecureHash.parse("SHA-256:ABC12345678911111111111111")
         val shortKeyId0 = ShortHash.of(fullKeyId0)
-        val cachedKey0 = mock<SigningCachedKey>().also {
-            whenever(it.fullId).thenReturn(fullKeyId0.toString())
-        }
-
         val fullKeyId1 = SecureHash.parse("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
-        val cachedKey1 = mock<SigningCachedKey>().also {
-            whenever(it.fullId).thenReturn(fullKeyId1.toString())
-        }
-
-        val signingKeyIds = setOf(fullKeyId0, fullKeyId1).mapTo(mutableSetOf()) { ShortHash.of(it) }
-        val cachedKeys = mapOf(
-            CacheKey(tenantId, shortKeyId0) to cachedKey0,
-            CacheKey(tenantId, shortKeyId1) to cachedKey1
-        )
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
-            mock<Cache<CacheKey, SigningCachedKey>>().also {
-                whenever(
-                    it.getAllPresent(eq(signingKeyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) }))).thenReturn(cachedKeys)
+            val cachedKey0 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId0.toString()) }
+            val cachedKey1 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId1.toString()) }
+            createCache(config = signingServiceConfig).also {
+                it.put(CacheKey(tenantId, shortKeyId0), cachedKey0)
+                it.put(CacheKey(tenantId, shortKeyId1), cachedKey1)
             }
         }
         setUpSigningKeyStore(cacheFactory)
@@ -130,23 +120,16 @@ class SigningKeyStoreUnitTest {
     fun `lookupByKeyIds returns requested keys from cache and from database if they are not cached`() {
         val fullKeyId0 = SecureHash.parse("SHA-256:ABC12345678911111111111111")
         val shortKeyId0 = ShortHash.of(fullKeyId0)
-        val cachedKey0 = mock<SigningCachedKey>().also {
-            whenever(it.id).thenReturn(shortKeyId0.toString())
-            whenever(it.fullId).thenReturn(fullKeyId0.toString())
-        }
-
         val fullKeyId1 = SecureHash.parse("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
-        val signingKeyIds = setOf(fullKeyId0, fullKeyId1).mapTo(mutableSetOf()) { ShortHash.of(it) }
-        val cachedKeys = mapOf(
-            CacheKey(tenantId, shortKeyId0) to cachedKey0
-        )
-
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
-            mock<Cache<CacheKey, SigningCachedKey>>().also {
-                whenever(
-                    it.getAllPresent(eq(signingKeyIds.mapTo(mutableSetOf()) { CacheKey(tenantId, it) }))).thenReturn(cachedKeys)
+            val cachedKey0 = mock<SigningCachedKey>().also {
+                whenever(it.id).thenReturn(shortKeyId0.toString())
+                whenever(it.fullId).thenReturn(fullKeyId0.toString())
+            }
+            createCache(config = signingServiceConfig).also {
+                it.put(CacheKey(tenantId, shortKeyId0), cachedKey0)
             }
         }
 
@@ -170,20 +153,16 @@ class SigningKeyStoreUnitTest {
         // Remember key ids cannot clash for same tenant so short keys of testing keys need to be different
         val fullKeyId0 = SecureHash.parse("SHA-256:ABC12345678911111111111111")
         val shortKeyId0 = ShortHash.of(fullKeyId0)
-
         val fullKeyId1 = SecureHash.parse("SHA-256:BBC12345678911111111111111")
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
             val cachedKey0 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId0.toString()) }
             val cachedKey1 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId1.toString()) }
-            val cachedKeys = mapOf(
-                CacheKey(tenantId, shortKeyId0) to cachedKey0,
-                CacheKey(tenantId, shortKeyId1) to cachedKey1
-            )
-            mock<Cache<CacheKey, SigningCachedKey>>().also {
-                val cacheKeyIds = setOf(shortKeyId0, shortKeyId1).mapTo(mutableSetOf()) { CacheKey(tenantId, it) }
-                whenever(it.getAllPresent(eq(cacheKeyIds))).thenReturn(cachedKeys)
+
+            createCache(config = signingServiceConfig).also {
+                it.put(CacheKey(tenantId, shortKeyId0), cachedKey0)
+                it.put(CacheKey(tenantId, shortKeyId1), cachedKey1)
             }
         }
 
@@ -204,18 +183,13 @@ class SigningKeyStoreUnitTest {
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
-            mock<Cache<CacheKey, SigningCachedKey>>().also {
-                val cachedKey0 = mock<SigningCachedKey>().also {
-                    whenever(it.id).thenReturn(shortKeyId0.toString())
-                    whenever(it.fullId).thenReturn(fullKeyId0.toString())
-                }
-                val cachedKeys = mapOf(
-                    CacheKey(tenantId, shortKeyId0) to cachedKey0
-                )
+            val cachedKey0 = mock<SigningCachedKey>().also {
+                whenever(it.id).thenReturn(shortKeyId0.toString())
+                whenever(it.fullId).thenReturn(fullKeyId0.toString())
+            }
 
-                val cacheKeyIds = setOf(shortKeyId0, shortKeyId1).mapTo(mutableSetOf()) { CacheKey(tenantId, it) }
-                whenever(
-                    it.getAllPresent(eq(cacheKeyIds))).thenReturn(cachedKeys)
+            createCache(config = signingServiceConfig).also {
+                it.put(CacheKey(tenantId, shortKeyId0), cachedKey0)
             }
         }
 
@@ -242,20 +216,15 @@ class SigningKeyStoreUnitTest {
         val fullKeyId = SecureHash.parse("SHA-256:ABC12345678911111111111111")
         val shortKeyId = ShortHash.of(fullKeyId)
         val requestedFullKeyId = SecureHash.parse("SHA-256:ABC12345678911111111111112")
-        val requestedShortKeyId = ShortHash.of(requestedFullKeyId)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
-            mock<Cache<CacheKey, SigningCachedKey>>().also {
-                val cachedKey = mock<SigningCachedKey>().also {
-                    whenever(it.id).thenReturn(shortKeyId.toString())
-                    whenever(it.fullId).thenReturn(fullKeyId.toString())
-                }
-                val cachedKeys = mapOf(
-                    CacheKey(tenantId, shortKeyId) to cachedKey
-                )
+            val cachedKey = mock<SigningCachedKey>().also {
+                whenever(it.id).thenReturn(shortKeyId.toString())
+                whenever(it.fullId).thenReturn(fullKeyId.toString())
+            }
 
-                val cacheKeyIds = setOf(shortKeyId, requestedShortKeyId).mapTo(mutableSetOf()) { CacheKey(tenantId, it) }
-                whenever(it.getAllPresent(eq(cacheKeyIds))).thenReturn(cachedKeys)
+            createCache(config = signingServiceConfig).also {
+                it.put(CacheKey(tenantId, shortKeyId), cachedKey)
             }
         }
 
@@ -281,12 +250,13 @@ class SigningKeyStoreUnitTest {
         val shortKeyId = ShortHash.of(fullKeyId)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
-            mock<Cache<CacheKey, SigningCachedKey>>().also {
-                val cachedKey = mock<SigningCachedKey>().also {
-                    whenever(it.id).thenReturn(shortKeyId.toString())
-                    whenever(it.fullId).thenReturn(fullKeyId.toString())
-                }
-                whenever(it.get(eq(CacheKey(tenantId, shortKeyId)), any())).thenReturn(cachedKey)
+            val cachedKey = mock<SigningCachedKey>().also {
+                whenever(it.id).thenReturn(shortKeyId.toString())
+                whenever(it.fullId).thenReturn(fullKeyId.toString())
+            }
+
+            createCache(config = signingServiceConfig).also {
+                it.put(CacheKey(tenantId, shortKeyId), cachedKey)
             }
         }
 
@@ -305,12 +275,13 @@ class SigningKeyStoreUnitTest {
         val requestedFullKeyId = SecureHash.parse("SHA-256:ABC12345678911111111111112")
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
-            mock<Cache<CacheKey, SigningCachedKey>>().also {
-                val cachedKey = mock<SigningCachedKey>().also {
-                    whenever(it.id).thenReturn(shortKeyId.toString())
-                    whenever(it.fullId).thenReturn(fullKeyId.toString())
-                }
-                whenever(it.get(eq(CacheKey(tenantId, shortKeyId)), any())).thenReturn(cachedKey)
+            val cachedKey = mock<SigningCachedKey>().also {
+                whenever(it.id).thenReturn(shortKeyId.toString())
+                whenever(it.fullId).thenReturn(fullKeyId.toString())
+            }
+
+            createCache(config = signingServiceConfig).also {
+                it.put(CacheKey(tenantId, shortKeyId), cachedKey)
             }
         }
 
