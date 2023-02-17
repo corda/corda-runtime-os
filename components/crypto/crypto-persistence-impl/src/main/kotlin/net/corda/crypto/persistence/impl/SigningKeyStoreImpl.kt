@@ -311,7 +311,7 @@ class SigningKeyStoreImpl @Activate constructor(
             } else {
                 val notFound =
                     requestedFullKeyIds - cachedKeysByFullId.mapTo(mutableSetOf()) { SecureHash.parse(it.fullId) }
-                // We look for keys by their full key ids so not risking a clash here
+                // We look for keys in DB by their full key ids so not risking a clash here
                 val fetchedKeys =
                     entityManagerFactory(tenantId).use { em ->
                         signingKeysRepository.findKeysByFullIds(em, tenantId, notFound)
