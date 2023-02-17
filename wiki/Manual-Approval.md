@@ -242,7 +242,7 @@ curl --insecure -u admin:admin -d $RULE_PARAMS $API_URL/mgm/$MGM_HOLDING_ID/appr
 
 ## View current pre-auth group approval rules
 
-Viewing the current pre-auth approval rules is also similar to the method of viewing standard group approval rules. This is a GET endpoint which shows how the group is currently configured in terms of automatically approving registrations requests with a valid pre-auth token.
+Viewing the current pre-auth approval rules is also similar to the method of viewing standard group approval rules. This is a GET endpoint which shows how the group is currently configured in terms of automatically approving registration requests with a valid pre-auth token.
 
 <details>
 <summary>Bash</summary>
