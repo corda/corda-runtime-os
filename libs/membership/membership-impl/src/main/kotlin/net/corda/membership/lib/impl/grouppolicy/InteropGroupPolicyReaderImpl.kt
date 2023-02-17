@@ -8,7 +8,9 @@ import org.slf4j.LoggerFactory
 
 @Component(service = [InteropGroupPolicyReader::class])
 class InteropGroupPolicyReaderImpl @Activate constructor(): InteropGroupPolicyReader {
-    val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity): String? {
         logger.info("Searching for interoperability group for $holdingIdentity")
         return """{
