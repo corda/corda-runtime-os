@@ -229,7 +229,7 @@ These pre-auth approval rules are applied to the registration requests containin
 
 ## Add a pre-auth group approval rule
 
-This API will add a group approval rule used specifically for the registrations containing a valid pre-auth token. The body of the request is the same as for standard approval rules. It contains the regular expression which is applies to all changed keys in the member context, and a label to describe the rule for informational purposes.
+This API will add a group approval rule used specifically for the registrations containing a valid pre-auth token. The body of the request is the same as for standard approval rules. It contains the regular expression which is applied to all changed keys in the member context, and a label to describe the rule for informational purposes.
 
 <details>
 <summary>Bash</summary>
