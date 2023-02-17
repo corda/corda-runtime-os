@@ -23,7 +23,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -167,7 +166,7 @@ class ConsensualFinalityFlowTest {
         )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(TransactionVerificationException::class.java)
+            .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("State verification failed")
 
         verify(signedTransaction, never()).addMissingSignatures()
@@ -271,7 +270,13 @@ class ConsensualFinalityFlowTest {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureAlice1, signatureAlice2)))
         whenever(sessionBob.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureBob)))
 
-        whenever(updatedSignedTransaction.verifySignatures()).thenThrow(TransactionMissingSignaturesException(TX_ID, setOf(), "failed"))
+        whenever(updatedSignedTransaction.verifySignatures()).thenThrow(
+            TransactionMissingSignaturesException(
+                TX_ID,
+                setOf(),
+                "failed"
+            )
+        )
 
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionMissingSignaturesException::class.java)
