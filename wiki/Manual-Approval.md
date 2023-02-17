@@ -103,7 +103,7 @@ curl --insecure -u admin:admin -d "$REASON" $API_URL/mgm/$MGM_HOLDING_ID/decline
 
 # Pre-authentication of registration requests
 
-The network operator can decide to pre-authenticate registering members, which will allow the registering member to by-pass any approval rules that have been defined for the group as described previously. Authentication is done outside of Corda using any criteria the network operator chooses. Once the network operator is finished their authentication process, they can generate a one-time-use pre-authentication token, also known as a pre-auth token, specific to the member that has been authenticated. 
+The network operator can decide to pre-authenticate registering members, which will allow the registering member to by-pass any approval rules that have been defined for the group as described previously. Authentication is done outside of Corda using any criteria the network operator chooses. Once the network operator has finished their authentication process, they can generate a one-time-use pre-authentication token, also known as a pre-auth token, specific to the member that has been authenticated. 
 
 Corda has a set of REST APIs available for managing these pre-auth tokens. Through these APIs, tokens can be created, revoked, and viewed. When viewing a token, it is possible to see the token ID, the X.500 name of the member the token is assigned to, optionally a time and date when the token expires, the token status, and additional information provided by the MGM when creating or revoking the token.
 
@@ -120,7 +120,7 @@ curl --insecure -u admin:admin -X POST -d '{"ownerX500Name": "O=Alice, L=London,
 
 </details>
 
-This REST API allows for additional optional properties to be submitted also when creating a token. The first is a time-to-live, which allows a duration to be submitted, after which the token will no longer be valid for use. This duration is submitted in the `ISO-8601` duration format (i.e. `PnDTnHnMn.nS`). For example, PT15M (15 minutes), P4D (4 days), P1DT2H2M (1 day 2 hours and 2 minutes). The duration submitted is added to the current time when the request to create the token is submitted to calculate the time at which the token is no longer valid. If no time-to-live value is submitted, the token will only expire after it is consumed or revoked. The second optional property that can be submitted is a remark. This is simply a user defined string which will be stored along with the token as additional information which can provide information about the token creation when the token is viewed. 
+This REST API allows for additional optional properties to be submitted also when creating a token. The first is a time-to-live, which allows a duration to be submitted, after which the token will no longer be valid for use. This duration is submitted in the `ISO-8601` duration format (i.e. `PnDTnHnMn.nS`). For example, PT15M (15 minutes), P4D (4 days), P1DT2H2M (1 day 2 hours and 2 minutes). The duration submitted is added to the current time when the request to create the token is submitted to calculate the time after which the token is no longer valid. If no time-to-live value is submitted, the token will only expire after it is consumed or revoked. The second optional property that can be submitted is a remark. This is simply a user defined string which will be stored along with the token as additional information which can provide information about the token creation when the token is viewed. 
 
 <details>
 <summary>Bash</summary>
@@ -135,7 +135,7 @@ curl --insecure -u admin:admin -X POST -d '{"ownerX500Name": "O=Alice, L=London,
 
 To view tokens that have been created, you need to use the pre-auth token GET API. This returns a list of all tokens that the MGM has created which have not been consumed, revoked, or automatically invalidated by Corda (for example, due to an expired TTL).
 
-If you wish to view tokens which are inactive (i.e. consumed, revoked, or auto-invalidated), you can set the query parameter `viewInactive` equal to true and pre-auth tokens which are available will be returned along with tokens with are consumed, revoked, or auto-invalidated. If this is set to false, only tokens with are active and ready to use are returned.
+If you wish to view tokens which are inactive (i.e. consumed, revoked, or auto-invalidated), you can set the query parameter `viewInactive` equal to true and pre-auth tokens which are available will be returned along with tokens with are consumed, revoked, or auto-invalidated. If this is set to false, only tokens which are active and ready to use are returned.
 
 <details>
 <summary>Bash</summary>
@@ -146,7 +146,7 @@ curl --insecure -u admin:admin $API_URL'/mgm/'$MGM_HOLDING_ID'/preauthtoken?view
 
 </details>
 
-This endpoint accepts optional parameters to filter or expand the search results. The first filter is the X.500 name of the member who the token was issued for. This is passed in as a URL query parameters called `ownerX500Name`. The full URL encoded X.500 name should be passed in here to filter correctly. The second filter is token ID. If you know the ID of a specific token you want to look up then you can provide that to the API as the query parameters `preAuthTokenId`.  
+This endpoint accepts optional parameters to filter or expand the search results. The first filter is the X.500 name of the member who the token was issued for. This is passed in as a URL query parameter called `ownerX500Name`. The full URL encoded X.500 name should be passed in here to filter correctly. The second filter is token ID. If you know the ID of a specific token you want to look up then you can provide that to the API as the query parameter `preAuthTokenId`.  
 
 These optional parameters can be used in any combination. Here is a sample of all used together:
 
@@ -241,7 +241,7 @@ These pre-auth approval rules are applied to the registration requests containin
 
 ## Add a pre-auth group approval rule
 
-This API will add a group approval rule used specifically for the registrations containing a valid pre-auth token. The body of the request is the same as for standard approval rules. It contains the regular expression which is applies to all changed keys in the member context, and a label to describe the rule for informational purposes.
+This API will add a group approval rule used specifically for the registrations containing a valid pre-auth token. The body of the request is the same as for standard approval rules. It contains the regular expression which is applied to all changed keys in the member context, and a label to describe the rule for informational purposes.
 
 <details>
 <summary>Bash</summary>
@@ -255,7 +255,7 @@ curl --insecure -u admin:admin -d $RULE_PARAMS $API_URL/mgm/$MGM_HOLDING_ID/appr
 
 ## View current pre-auth group approval rules
 
-Viewing the current pre-auth approval rules is also similar to the method of viewing standard group approval rules. This is a GET endpoint which shows how the group is currently configured in terms of automatically approving registrations requests with a valid pre-auth token.
+Viewing the current pre-auth approval rules is also similar to the method of viewing standard group approval rules. This is a GET endpoint which shows how the group is currently configured in terms of automatically approving registration requests with a valid pre-auth token.
 
 <details>
 <summary>Bash</summary>
@@ -283,5 +283,5 @@ curl --insecure -u admin:admin -X DELETE $API_URL/mgm/$MGM_HOLDING_ID/approval/r
 
 # Manual approval of pre-authenticated registrations
 
-Viewing, approving or declining paused registration requests with pre-auth tokens included is done using the same API as registrations without pre-auth tokens. Refer to the section "How to manually approve/decline requests" above to see how this is done.
+Viewing, approving or declining paused registration requests with pre-auth tokens included is done using the same API as registrations without pre-auth tokens. Refer to the section [How to manually approve/decline requests](#how-to-manually-approvedecline-requests) above to see how this is done.
 
