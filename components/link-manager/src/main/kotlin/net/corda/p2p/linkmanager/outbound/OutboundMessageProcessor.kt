@@ -241,7 +241,8 @@ internal class OutboundMessageProcessor(
             return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
         } else {
             logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
-                    "but the destination is not part of the network. Message will be retried later.")
+                    "but the destination is not part of the network. Filter was " +
+                    "${messageAndKey.message.header.statusFilter} Message will be retried later.")
             return if (isReplay) {
                 emptyList()
             } else {

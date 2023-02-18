@@ -499,7 +499,7 @@ internal class SessionManagerImpl(
         )
         if (responderMemberInfo == null) {
             logger.warn("Attempted to start session negotiation with peer ${sessionCounterparties.counterpartyId} which is not in " +
-                "${sessionCounterparties.ourId}'s members map. The sessionInit message was not sent.")
+                "${sessionCounterparties.ourId}'s members map. Filter was $filter. The sessionInit message was not sent.")
             return null
         }
 
