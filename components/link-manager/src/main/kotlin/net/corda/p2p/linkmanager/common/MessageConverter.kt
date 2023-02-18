@@ -108,6 +108,7 @@ class MessageConverter {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null
             }
+            logger.info("Sending ack message.")
             return createLinkOutMessageFromPayload(
                 serializedMessage,
                 source,
@@ -224,7 +225,7 @@ class MessageConverter {
 
             val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination, filter)
             if (destMemberInfo == null) {
-                logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+                logger.warn("Attempted to send message to peer $destination with ${filter} which is not in the network map. The message was discarded.")
                 return null
             }
             if(serial != null && destMemberInfo.serial != serial) {
