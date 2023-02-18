@@ -55,6 +55,8 @@ class MembershipGroupReaderImpl(
             return this.filter { it.status == MEMBER_STATUS_PENDING }
         } else if (filter == MembershipStatusFilter.ACTIVE) {
             return this.filter { it.status == MEMBER_STATUS_ACTIVE }
+        } else if ( filter == MembershipStatusFilter.ACTIVE_OR_SUSPENDED ) {
+            return this.groupBy { it.name }.values.map { it.maxBy { it.serial } }
         }
         return this.filter { it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED }
     }

@@ -698,7 +698,7 @@ internal class SessionManagerImpl(
                     .lookupByKey(
                         hostedIdentityInSameGroup,
                         message.source.initiatorPublicKeyHash.array(),
-                        MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+                        MembershipStatusFilter.LATEST,
                     )
                 if (member == null) {
                     null
@@ -760,7 +760,7 @@ internal class SessionManagerImpl(
                     .lookupByKey(
                         hostedIdentityInSameGroup,
                         initiatorIdentityData.initiatorPublicKeyHash.array(),
-                        MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+                        MembershipStatusFilter.LATEST,
                     )
             }
         if (peer == null) {
