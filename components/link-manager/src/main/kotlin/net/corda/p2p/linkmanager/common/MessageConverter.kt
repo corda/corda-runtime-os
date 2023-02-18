@@ -116,7 +116,7 @@ class MessageConverter {
                 session,
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
-                MembershipStatusFilter.ACTIVE,
+                MembershipStatusFilter.LATEST,
             )
         }
 
