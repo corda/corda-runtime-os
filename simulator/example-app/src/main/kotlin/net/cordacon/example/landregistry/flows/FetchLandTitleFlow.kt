@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter
 /**
  * A flow to fetch unconsumed land titles. To fetch a specific land title use the title number as a filter
  */
-@InitiatingFlow("fetch-land-title")
+@InitiatingFlow(protocol = "fetch-land-title")
 class FetchLandTitleFlow : ClientStartableFlow {
 
     private companion object {

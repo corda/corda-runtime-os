@@ -78,7 +78,7 @@ class UtxoTransactionFinalityHandler(
         val updatedEntities = signedTransaction.inputStateRefs.map {
             val entity = persistenceService.find(UtxoTransactionOutputEntity::class.java,
                 UtxoTransactionOutputEntityId(
-                    it.transactionHash.toString(),
+                    it.transactionId.toString(),
                     it.index
                 ))
             if(entity == null){
@@ -164,7 +164,7 @@ class UtxoTransactionFinalityHandler(
     private fun verifyEncumberedInput(inputStateAndRefs: List<StateAndRef<*>>): List<String> {
         val failureReasons = ArrayList<String>()
         // group input by transaction id (encumbrance is only unique within one transaction output)
-        inputStateAndRefs.groupBy { it.ref.transactionHash }.forEach { statesByTx ->
+        inputStateAndRefs.groupBy { it.ref.transactionId }.forEach { statesByTx ->
 
 
             // Filter out unencumbered states

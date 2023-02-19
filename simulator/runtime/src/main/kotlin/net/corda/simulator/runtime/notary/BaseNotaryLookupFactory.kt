@@ -28,7 +28,13 @@ class BaseNotaryLookupFactory: NotaryLookupFactory {
 }
 
 data class BaseNotaryInfo(
-    override val name: MemberX500Name,
-    override val pluginClass: String,
-    override val publicKey: PublicKey
-):NotaryInfo
+    private val name: MemberX500Name,
+    private val pluginClass: String,
+    private val publicKey: PublicKey
+):NotaryInfo {
+    override fun getName(): MemberX500Name = name
+
+    override fun getPluginClass(): String = pluginClass
+
+    override fun getPublicKey(): PublicKey = publicKey
+}

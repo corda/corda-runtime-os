@@ -24,7 +24,7 @@ import java.time.LocalDateTime
 /**
  * A flow to transfer land title from one owner to another.
  */
-@InitiatingFlow("transfer-title")
+@InitiatingFlow(protocol = "transfer-title")
 class TransferLandTitleFlow : ClientStartableFlow {
 
     private companion object {
@@ -93,7 +93,7 @@ class TransferLandTitleFlow : ClientStartableFlow {
     }
 }
 
-@InitiatedBy("transfer-title")
+@InitiatedBy(protocol = "transfer-title")
 class TransferLandTitleResponderFlow: ResponderFlow {
 
     private companion object {

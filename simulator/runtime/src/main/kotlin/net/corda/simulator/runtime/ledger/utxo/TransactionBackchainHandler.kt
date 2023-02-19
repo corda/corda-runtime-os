@@ -86,7 +86,7 @@ class TransactionBackchainHandlerBase(
 
     private fun getTxDependencies(transaction: UtxoSignedTransaction) : Set<SecureHash> {
         return transaction.let { it.inputStateRefs.asSequence() + it.referenceStateRefs.asSequence() }
-            .map { it.transactionHash }
+            .map { it.transactionId }
             .toSet()
     }
 }

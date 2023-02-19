@@ -164,7 +164,7 @@ class SimUtxoLedgerServiceTest {
         assertThat(stateAndRefs[0].state.contractState.name, `is`(testState.name))
         assertThat(stateAndRefs[0].state.contractState.participants, `is`(testState.participants))
         assertThat(stateAndRefs[0].state.notary, `is`(notary))
-        assertThat(stateAndRefs[0].ref.transactionHash, `is`(SecureHash.parse(utxoTxOutputEntity.transactionId)))
+        assertThat(stateAndRefs[0].ref.transactionId, `is`(SecureHash.parse(utxoTxOutputEntity.transactionId)))
         assertThat(stateAndRefs[0].ref.index, `is`(utxoTxOutputEntity.index))
 
     }

@@ -165,9 +165,9 @@ class UtxoSignedTransactionBase(
         return stateRefs.map {
             val entity = persistenceService.find(
                 UtxoTransactionOutputEntity::class.java,
-                UtxoTransactionOutputEntityId(it.transactionHash.toString(), it.index)
+                UtxoTransactionOutputEntityId(it.transactionId.toString(), it.index)
             ) ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
-                        String(it.transactionHash.bytes))
+                        String(it.transactionId.bytes))
             val contractState = serializer.deserialize<ContractState>(entity.stateData)
             val encumbrance = serializer
                 .deserialize<List<EncumbranceGroupImpl>>(entity.encumbranceData).firstOrNull()

@@ -26,7 +26,7 @@ import java.time.LocalDateTime
 /**
  * A flow to issue land title
  */
-@InitiatingFlow("issue-title")
+@InitiatingFlow(protocol = "issue-title")
 class IssueLandTitleFlow: ClientStartableFlow {
 
     private companion object {
@@ -96,7 +96,7 @@ class IssueLandTitleFlow: ClientStartableFlow {
     }
 }
 
-@InitiatedBy("issue-title")
+@InitiatedBy(protocol = "issue-title")
 class IssueLandTitleResponderFlow: ResponderFlow {
 
     private companion object {

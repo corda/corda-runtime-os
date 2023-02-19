@@ -114,9 +114,9 @@ class SimUtxoLedgerService(
     ): StateAndRef<T> {
         val entity = persistenceService.find(
             UtxoTransactionOutputEntity::class.java,
-            UtxoTransactionOutputEntityId(stateRef.transactionHash.toString(), stateRef.index)
+            UtxoTransactionOutputEntityId(stateRef.transactionId.toString(), stateRef.index)
         ) ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
-                    String(stateRef.transactionHash.bytes))
+                    String(stateRef.transactionId.bytes))
 
         val contractState = serializer.deserialize<ContractState>(entity.stateData)
         val encumbrance = serializer

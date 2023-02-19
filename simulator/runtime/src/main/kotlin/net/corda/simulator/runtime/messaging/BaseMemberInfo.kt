@@ -16,25 +16,37 @@ import java.security.PublicKey
  * @param ledgerKeys Ledger keys generated for this member.
  */
 data class BaseMemberInfo(
-    override val name: MemberX500Name,
-    override val ledgerKeys: List<PublicKey> = listOf(),
+    private val name: MemberX500Name,
+    private val ledgerKeys: List<PublicKey> = listOf(),
     private val memberContext: Map<String, String> = mapOf()
 ) : MemberInfo {
 
-    override val isActive: Boolean = true
-    override val memberProvidedContext: MemberContext
-        get() {
-            val layeredPropertyMap = SimLayeredPropertyMap(memberContext)
-            return SimMemberContext(layeredPropertyMap)
-        }
-    override val mgmProvidedContext: MGMContext
-        get() { TODO("Not yet implemented") }
-    override val platformVersion: Int
-        get() { TODO("Not yet implemented") }
-    override val serial: Long
-        get() { TODO("Not yet implemented") }
-    override val sessionInitiationKey: PublicKey
-        get() { TODO("Not yet implemented") }
+    override fun getMemberProvidedContext(): MemberContext {
+        val layeredPropertyMap = SimLayeredPropertyMap(memberContext)
+        return SimMemberContext(layeredPropertyMap)
+    }
+
+    override fun getMgmProvidedContext(): MGMContext {
+        TODO("Not yet implemented")
+    }
+
+    override fun getName(): MemberX500Name = name
+
+    override fun getSessionInitiationKey(): PublicKey {
+        TODO("Not yet implemented")
+    }
+
+    override fun getLedgerKeys(): MutableList<PublicKey> = ledgerKeys.toMutableList()
+
+    override fun getPlatformVersion(): Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun getSerial(): Long {
+        TODO("Not yet implemented")
+    }
+
+    override fun isActive(): Boolean = true
 }
 
 class SimMemberContext(
@@ -44,15 +56,18 @@ class SimMemberContext(
 class SimLayeredPropertyMap(
     private val properties: Map<String, String?>,
 ): LayeredPropertyMap {
-    override val entries: Set<Map.Entry<String, String?>>
-        get() = TODO("Not yet implemented")
+    override fun getEntries(): MutableSet<MutableMap.MutableEntry<String, String>> {
+        TODO("Not yet implemented")
+    }
 
     override fun get(key: String): String? {
         return properties[key]
     }
-    override fun <T> parse(key: String, clazz: Class<out T>): T {
+
+    override fun <T : Any?> parse(key: String, clazz: Class<out T>): T & Any {
         TODO("Not yet implemented")
     }
+
     override fun <T> parseList(itemKeyPrefix: String, clazz: Class<out T>): List<T> {
         TODO("Not yet implemented")
     }
