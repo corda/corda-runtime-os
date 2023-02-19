@@ -16,6 +16,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.isFulfilledBy
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
@@ -137,6 +138,7 @@ class UtxoTransactionFinalityHandler(
 
     private fun runContractVerification(ledgerTransaction: UtxoLedgerTransaction){
         val failureReasons = ArrayList<String>()
+        failureReasons.addAll(verifyEncumberedInput(ledgerTransaction.inputStateAndRefs))
 
         val allTransactionStateAndRefs = ledgerTransaction.inputStateAndRefs + ledgerTransaction.outputStateAndRefs
         val contractClassMap = allTransactionStateAndRefs.groupBy { it.state.contractType }
@@ -158,6 +160,54 @@ class UtxoTransactionFinalityHandler(
             })
         }
     }
+
+    private fun verifyEncumberedInput(inputStateAndRefs: List<StateAndRef<*>>): List<String> {
+        val failureReasons = ArrayList<String>()
+        // group input by transaction id (encumbrance is only unique within one transaction output)
+        inputStateAndRefs.groupBy { it.ref.transactionHash }.forEach { statesByTx ->
+
+
+            // Filter out unencumbered states
+            val encumbranceGroups = statesByTx.value.filter { it.state.encumbrance != null }
+                // within each tx, group by encumbrance tag, store the output index and the encumbrance group size
+                .groupBy({ it.state.encumbrance!!.tag }, { EncumbranceInfo(it.ref.index, it.state.encumbrance!!.size) })
+
+            // for each encumbrance group (identified by tx id/tag), run the checks
+            encumbranceGroups.forEach { encumbranceGroup ->
+                failureReasons.addAll(checkEncumbranceGroup(statesByTx.key, encumbranceGroup.key, encumbranceGroup.value))
+            }
+        }
+        return failureReasons
+    }
+
+    private fun checkEncumbranceGroup(txId: SecureHash, encumbranceTag: String, stateInfos: List<EncumbranceInfo>)
+            : List<String> {
+        // Check that no input states have been duplicated to fool our counting
+        val duplicationFailures = stateInfos.groupBy { it.stateIndex }.filter { it.value.size > 1 }.map { (index, infos) ->
+                "Encumbrance check failed: State $txId, $index " +
+                        "is used ${infos.size} times as input!"
+        }
+
+        if (duplicationFailures.isNotEmpty()){
+            return duplicationFailures
+        }
+
+        val numberOfStatesPresent = stateInfos.size
+        // if the size of the encumbrance group does not match the number of input states,
+        // then add a failure reason.
+        return stateInfos.mapNotNull { encumbranceInfo ->
+            if (encumbranceInfo.encumbranceGroupSize != numberOfStatesPresent) {
+                "Encumbrance check failed: State $txId, " +
+                            "${encumbranceInfo.stateIndex} is part " +
+                            "of encumbrance group $encumbranceTag, but only " +
+                            "$numberOfStatesPresent states out of " +
+                            "${encumbranceInfo.encumbranceGroupSize} encumbered states are present as inputs."
+
+            }
+            else
+                null
+        }
+    }
 }
 
 @CordaSerializable
@@ -165,3 +215,5 @@ sealed interface TransactionBackchainRequest {
     data class Get(val transactionIds: Set<SecureHash>): TransactionBackchainRequest
     object Stop: TransactionBackchainRequest
 }
+
+private data class EncumbranceInfo(val stateIndex: Int, val encumbranceGroupSize: Int)

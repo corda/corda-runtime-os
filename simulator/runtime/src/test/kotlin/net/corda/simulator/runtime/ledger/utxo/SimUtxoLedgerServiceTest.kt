@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
@@ -95,7 +96,7 @@ class SimUtxoLedgerServiceTest {
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
-                listOf(TestUtxoState("StateData", publicKeys)),
+                listOf(ContractStateAndEncumbranceTag(TestUtxoState("StateData", publicKeys), null)),
                 emptyList()
             ),
             signingService,
@@ -132,6 +133,7 @@ class SimUtxoLedgerServiceTest {
         val utxoTxOutputEntity = UtxoTransactionOutputEntity(
             "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
             TestUtxoState::class.java.canonicalName,
+            serializationService.serialize(listOf(EncumbranceGroupImpl(1, "tag"))).bytes,
             serializationService.serialize(testState).bytes,
             2,
             false

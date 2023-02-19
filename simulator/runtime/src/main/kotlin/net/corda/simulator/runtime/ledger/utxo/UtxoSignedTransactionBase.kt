@@ -1,10 +1,12 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
+import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.entities.UtxoTransactionSignatureEntity
 import net.corda.simulator.runtime.ledger.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
@@ -22,6 +24,7 @@ import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
@@ -99,11 +102,17 @@ class UtxoSignedTransactionBase(
 
     internal fun toOutputsEntity(keys: Set<PublicKey>) : List<UtxoTransactionOutputEntity> {
         val serializer = BaseSerializationService()
-        val outputEntities = ledgerInfo.outputStates.mapIndexed{ index, contractState ->
-            val stateData = serializer.serialize(contractState).bytes
+        val encumbranceGroupSizes =
+            ledgerInfo.outputStates.mapNotNull { it.encumbranceTag }.groupingBy { it }.eachCount()
+        val outputEntities = ledgerInfo.outputStates.mapIndexed{ index, contractStateAndTag ->
+            val stateData = serializer.serialize(contractStateAndTag.contractState).bytes
+            val encumbrance = contractStateAndTag.toTransactionState(notary,
+                contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]}).encumbrance
+            val encumbranceData = serializer.serialize(listOf(encumbrance)).bytes
             UtxoTransactionOutputEntity(
                 id.toString(),
-                contractState::class.java.name,
+                contractStateAndTag.contractState::class.java.name,
+                encumbranceData,
                 stateData,
                 index,
                 false
@@ -154,13 +163,16 @@ class UtxoSignedTransactionBase(
 
     private fun getStateAndRef(stateRefs: List<StateRef>): List<StateAndRef<*>>{
         return stateRefs.map {
-            val entity = persistenceService.find(UtxoTransactionEntity::class.java, String(it.transactionHash.bytes))
-                ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
+            val entity = persistenceService.find(
+                UtxoTransactionOutputEntity::class.java,
+                UtxoTransactionOutputEntityId(it.transactionHash.toString(), it.index)
+            ) ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
                         String(it.transactionHash.bytes))
-            val tx = fromEntity(entity, signingService, serializer, persistenceService, config)
-            val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[it.index],
-                notary, null)
-            StateAndRefImpl(ts, it)
+            val contractState = serializer.deserialize<ContractState>(entity.stateData)
+            val encumbrance = serializer
+                .deserialize<List<EncumbranceGroupImpl>>(entity.encumbranceData).firstOrNull()
+            val transactionState = TransactionStateImpl(contractState, notary, encumbrance)
+            StateAndRefImpl(transactionState, it)
         }
     }
 

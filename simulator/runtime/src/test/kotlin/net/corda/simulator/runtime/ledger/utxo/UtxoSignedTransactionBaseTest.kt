@@ -49,7 +49,10 @@ class UtxoSignedTransactionBaseTest {
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
-                listOf(TestUtxoState("State1", publicKeys), TestUtxoState("State2", publicKeys)),
+                listOf(
+                    ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
+                    ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
+                ),
                 emptyList()
             ),
             signingService,
@@ -81,7 +84,10 @@ class UtxoSignedTransactionBaseTest {
             emptyList(),
             publicKeys,
             timeWindow,
-            listOf(TestUtxoState("State1", publicKeys), TestUtxoState("State2", publicKeys)),
+            listOf(
+                ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
+                ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
+            ),
             emptyList()
         )
         val ledgerInfo2 = UtxoStateLedgerInfo(
@@ -91,7 +97,10 @@ class UtxoSignedTransactionBaseTest {
             emptyList(),
             publicKeys,
             timeWindow,
-            listOf(TestUtxoState("State1", publicKeys), TestUtxoState("State2", publicKeys)),
+            listOf(
+                ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
+                ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
+            ),
             emptyList()
         )
 
@@ -135,7 +144,10 @@ class UtxoSignedTransactionBaseTest {
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
-                listOf(TestUtxoState("State1", publicKeys), TestUtxoState("State2", publicKeys)),
+                listOf(
+                    ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
+                    ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
+                ),
                 emptyList()
             ),
             signingService,
@@ -175,7 +187,10 @@ class UtxoSignedTransactionBaseTest {
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
-                listOf(TestUtxoState("State1", publicKeys), TestUtxoState("State2", publicKeys)),
+                listOf(
+                    ContractStateAndEncumbranceTag(TestUtxoState("State1", publicKeys), ""),
+                    ContractStateAndEncumbranceTag(TestUtxoState("State2", publicKeys), "")
+                ),
                 emptyList()
             ),
             signingService,

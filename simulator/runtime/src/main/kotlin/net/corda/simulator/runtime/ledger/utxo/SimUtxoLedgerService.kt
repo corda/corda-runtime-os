@@ -1,10 +1,12 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
+import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.messaging.FlowSession
@@ -78,7 +80,9 @@ class SimUtxoLedgerService(
             val stateRef = StateRef(SecureHash.parse(utxoTransactionOutputEntity.transactionId),
                 utxoTransactionOutputEntity.index)
             val contractState = serializationService.deserialize<ContractState>(utxoTransactionOutputEntity.stateData)
-            val transactionState = TransactionStateImpl(contractState as T, notary, null)
+            val encumbrance = serializationService
+                .deserialize<List<EncumbranceGroupImpl>>(utxoTransactionOutputEntity.encumbranceData).firstOrNull()
+            val transactionState = TransactionStateImpl(contractState as T, notary, encumbrance)
             StateAndRefImpl(transactionState, stateRef)
         }
         return stateAndRefs
@@ -104,14 +108,20 @@ class SimUtxoLedgerService(
 
     @Suppress("UNCHECKED_CAST")
     private fun <T : ContractState> getStateAndRef(
-        stateRef: StateRef, notary: Party, serializer: BaseSerializationService): StateAndRef<T> {
-        val entity = persistenceService.find(UtxoTransactionEntity::class.java, String(stateRef.transactionHash.bytes))
-            ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
+        stateRef: StateRef,
+        notary: Party,
+        serializer: BaseSerializationService
+    ): StateAndRef<T> {
+        val entity = persistenceService.find(
+            UtxoTransactionOutputEntity::class.java,
+            UtxoTransactionOutputEntityId(stateRef.transactionHash.toString(), stateRef.index)
+        ) ?: throw IllegalArgumentException("Cannot find transaction with transaction id: " +
                     String(stateRef.transactionHash.bytes))
-        val tx =
-            UtxoSignedTransactionBase.fromEntity(entity, signingService, serializer, persistenceService, configuration)
-        val ts = TransactionStateImpl(tx.toLedgerTransaction().outputContractStates[stateRef.index] as T,
-            notary, null)
-        return StateAndRefImpl(ts, stateRef)
+
+        val contractState = serializer.deserialize<ContractState>(entity.stateData)
+        val encumbrance = serializer
+            .deserialize<List<EncumbranceGroupImpl>>(entity.encumbranceData).firstOrNull()
+        val transactionState = TransactionStateImpl(contractState as T, notary, encumbrance)
+        return StateAndRefImpl(transactionState, stateRef)
     }
 }

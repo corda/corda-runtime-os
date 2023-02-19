@@ -1,16 +1,20 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
+import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.runtime.notary.SimTimeWindow
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
@@ -25,7 +29,7 @@ data class UtxoTransactionBuilderBase(
     val signatories: List<PublicKey> = emptyList(),
     val inputStateRefs: List<StateRef> = emptyList(),
     val referenceStateRefs: List<StateRef> = emptyList(),
-    val outputStates: List<ContractState> = emptyList(),
+    val outputStates: List<ContractStateAndEncumbranceTag> = emptyList(),
     private val signingService: SigningService,
     private val configuration: SimulatorConfiguration,
     private val persistenceService: PersistenceService,
@@ -66,11 +70,11 @@ data class UtxoTransactionBuilderBase(
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
-        return copy(outputStates = outputStates + contractState)
+        return copy(outputStates = outputStates + contractState.withEncumbrance(null))
     }
 
     override fun addOutputStates(vararg contractStates: ContractState): UtxoTransactionBuilder {
-        return copy(outputStates = outputStates + contractStates)
+        return copy(outputStates = outputStates + contractStates.map { it.withEncumbrance(null) })
     }
 
     override fun addOutputStates(contractStates: Iterable<ContractState>): UtxoTransactionBuilder {
@@ -100,7 +104,11 @@ data class UtxoTransactionBuilderBase(
     }
 
     override fun getEncumbranceGroups(): Map<String, List<ContractState>> {
-        TODO("Not yet implemented")
+        return outputStates
+            .filter { outputState -> outputState.encumbranceTag != null }
+            .groupBy { outputState -> outputState.encumbranceTag }
+            .map { entry -> entry.key!! to entry.value.map { items -> items.contractState } }
+            .toMap()
     }
 
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
@@ -152,6 +160,10 @@ data class UtxoTransactionBuilderBase(
             "The time window of UtxoTransactionBuilder must not be null."
         }
 
+        check(getEncumbranceGroups().all { it.value.size > 1 }) {
+            "Every encumbrance group of the current UtxoTransactionBuilder must contain more than one output state."
+        }
+
         check(signatories.isNotEmpty()) {
             "At least one signatory signing key must be applied to the current transaction."
         }
@@ -164,4 +176,19 @@ data class UtxoTransactionBuilderBase(
         }
     }
 
+    private fun ContractState.withEncumbrance(tag: String?): ContractStateAndEncumbranceTag {
+        return ContractStateAndEncumbranceTag(this, tag)
+    }
+
+}
+
+@CordaSerializable
+data class ContractStateAndEncumbranceTag(val contractState: ContractState, val encumbranceTag: String?) {
+
+    fun toTransactionState(notary: Party, encumbranceGroupSize: Int?): TransactionState<*> {
+        return TransactionStateImpl(contractState, notary, encumbranceTag?.let{
+            requireNotNull(encumbranceGroupSize)
+            EncumbranceGroupImpl(encumbranceGroupSize, it)
+        })
+    }
 }

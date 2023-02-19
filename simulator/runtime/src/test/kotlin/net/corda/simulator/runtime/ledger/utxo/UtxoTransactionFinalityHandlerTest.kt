@@ -57,7 +57,9 @@ class UtxoTransactionFinalityHandlerTest {
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
-                listOf(TestUtxoState("StateData", publicKeys)),
+                listOf(
+                    ContractStateAndEncumbranceTag(TestUtxoState("StateData", publicKeys), ""),
+                ),
                 emptyList()
             ),
             signingService,
@@ -120,7 +122,9 @@ class UtxoTransactionFinalityHandlerTest {
                 emptyList(),
                 publicKeys,
                 SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
-                listOf(TestUtxoState("StateData", publicKeys)),
+                listOf(
+                    ContractStateAndEncumbranceTag(TestUtxoState("StateData", publicKeys), ""),
+                ),
                 emptyList()
             ),
             signingService,

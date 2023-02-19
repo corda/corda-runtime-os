@@ -94,6 +94,9 @@
             <column name="type" type="TEXT">
                 <constraints nullable="false"/>
             </column>
+            <column name="encumbrance_data" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
             <column name="state_data" type="VARBINARY(1048576)">
                 <constraints nullable="false"/>
             </column>

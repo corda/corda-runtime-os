@@ -1,7 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
 import net.corda.simulator.runtime.ledger.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
@@ -42,12 +41,14 @@ data class UtxoLedgerTransactionBase(
         SecureHash(digest.algorithm, digest.digest(bytes))
     }
 
-    //TODO Implement encumbrance
     override val outputStateAndRefs: List<StateAndRef<*>>
         get() {
-            return ledgerInfo.outputStates.mapIndexed { index, contractState ->
+            val encumbranceGroupSizes =
+                ledgerInfo.outputStates.mapNotNull { it.encumbranceTag }.groupingBy { it }.eachCount()
+            return ledgerInfo.outputStates.mapIndexed { index, contractStateAndTag ->
                 val stateRef = StateRef(id, index)
-                val transactionState = TransactionStateImpl(contractState, ledgerInfo.notary, null)
+                val transactionState = contractStateAndTag.toTransactionState(notary,
+                    contractStateAndTag.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]})
                 StateAndRefImpl(transactionState, stateRef)
             }
         }

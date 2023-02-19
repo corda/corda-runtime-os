@@ -59,7 +59,8 @@ class UtxoTransactionEntityTest {
         // Given Simulator's persistence service
         DbPersistenceService(member).use {
             val txOutputEntity = UtxoTransactionOutputEntity(
-                "myId", "someType", "some state data".toByteArray(), 2, false
+                "myId", "someType", "encumbrance".toByteArray(), "some state data".toByteArray(),
+                2, false
             )
 
             // When we persist it
@@ -83,16 +84,20 @@ class UtxoTransactionEntityTest {
         // Given Simulator's persistence service
         DbPersistenceService(member).use {
             val unconsumedOutput1 = UtxoTransactionOutputEntity(
-                "myId", "someType", "some state data".toByteArray(), 1, false
+                "myId", "someType", "encumbrance".toByteArray(), "some state data".toByteArray(),
+                1, false
             )
             val unconsumedOutput2 = UtxoTransactionOutputEntity(
-                "myId", "someType", "some state data".toByteArray(), 2, false
+                "myId", "someType", "encumbrance".toByteArray(), "some state data".toByteArray(),
+                2, false
             )
             val unconsumedOutput3 = UtxoTransactionOutputEntity(
-                "myId1", "someOtherType", "some state data".toByteArray(), 1, false
+                "myId1", "someOtherType", "encumbrance".toByteArray(), "some state data".toByteArray(),
+                1, false
             )
             val consumedOutput = UtxoTransactionOutputEntity(
-                "myId1", "someOtherType", "some state data".toByteArray(), 2, true
+                "myId1", "someOtherType", "encumbrance".toByteArray(), "some state data".toByteArray(),
+                2, true
             )
 
             // When we persist it

@@ -111,6 +111,7 @@ class UtxoTransactionSignatureEntity(
     }
 }
 
+@Suppress("LongParameterList")
 @Entity
 @Table(name = "utxo_transaction_output")
 @IdClass(UtxoTransactionOutputEntityId::class)
@@ -125,6 +126,9 @@ class UtxoTransactionOutputEntity(
 
     @Column(name = "type", nullable = true)
     val type: String?,
+
+    @Column(name="encumbrance_data")
+    val encumbranceData: ByteArray,
 
     @Column(name="state_data")
     val stateData: ByteArray,
