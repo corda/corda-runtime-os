@@ -100,10 +100,7 @@ class SimUtxoLedgerService(
     }
 
     override fun <T : ContractState> resolve(stateRef: StateRef): StateAndRef<T> {
-        val serializer = BaseSerializationService()
-        val notaryInfo = fiber.getNotary()
-        val notary = Party(notaryInfo.name, notaryInfo.publicKey)
-        return getStateAndRef(stateRef, notary, serializer)
+        return resolve<T>(listOf(stateRef)).first()
     }
 
     @Suppress("UNCHECKED_CAST")

@@ -34,7 +34,6 @@ class UtxoTransactionFinalityHandler(
     fun finalizeTransaction(signedTransaction: UtxoSignedTransaction,
                             sessions: List<FlowSession>): UtxoSignedTransaction {
         val ledgerTx = signedTransaction.toLedgerTransaction()
-        runTransactionVerifications(ledgerTx)
         runContractVerification(ledgerTx)
 
         val finalSignedTransaction = sessions.fold(signedTransaction) {
@@ -123,19 +122,6 @@ class UtxoTransactionFinalityHandler(
         return signatures
     }
 
-    private fun runTransactionVerifications(ledgerTransaction: UtxoLedgerTransaction){
-        check(ledgerTransaction.signatories.isNotEmpty()) {
-            "At least one signatory signing key must be applied to the current transaction."
-        }
-        check(ledgerTransaction.inputStateRefs.isNotEmpty() ||
-                ledgerTransaction.outputContractStates.isNotEmpty()) {
-            "At least one input state, or one output state must be applied to the current transaction."
-        }
-        check(ledgerTransaction.commands.isNotEmpty()) {
-            "At least one command must be applied to the current transaction."
-        }
-    }
-
     private fun runContractVerification(ledgerTransaction: UtxoLedgerTransaction){
         val failureReasons = ArrayList<String>()
         failureReasons.addAll(verifyEncumberedInput(ledgerTransaction.inputStateAndRefs))
@@ -202,7 +188,6 @@ class UtxoTransactionFinalityHandler(
                             "of encumbrance group $encumbranceTag, but only " +
                             "$numberOfStatesPresent states out of " +
                             "${encumbranceInfo.encumbranceGroupSize} encumbered states are present as inputs."
-
             }
             else
                 null

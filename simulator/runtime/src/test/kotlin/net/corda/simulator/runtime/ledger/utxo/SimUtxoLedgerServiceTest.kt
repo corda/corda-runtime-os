@@ -4,8 +4,10 @@ import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.entities.UtxoTransactionEntity
 import net.corda.simulator.entities.UtxoTransactionOutputEntity
+import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.SimFiber
+import net.corda.simulator.runtime.notary.BaseNotaryInfo
 import net.corda.simulator.runtime.notary.SimTimeWindow
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
@@ -23,10 +25,12 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.membership.NotaryInfo
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.mockito.kotlin.mock
@@ -43,18 +47,22 @@ class SimUtxoLedgerServiceTest {
     private val config = SimulatorConfigurationBuilder.create().build()
     private val publicKeys = generateKeys(2)
     private val notary = Party(notaryX500, generateKey())
+    private val fiber = mock<SimFiber>()
+    private val persistenceService = mock<PersistenceService>()
+    private val signingService = mock<SigningService>()
+
+    @BeforeEach
+    fun `setup ledgerService`(){
+        whenever(fiber.createSigningService(any())).thenReturn(signingService)
+        whenever(fiber.getOrCreatePersistenceService(any())).thenReturn(persistenceService)
+        whenever(fiber.createMemberLookup(alice)).thenReturn(mock())
+        whenever(fiber.createNotarySigningService()).thenReturn(mock())
+    }
 
     @Test
     fun `should be able to build a UtxoTransactionBuilder using the given factory`() {
         // Given a factory for building UTBs that and something to capture what we build it with
         val builder = mock<UtxoTransactionBuilder>()
-        val fiber = mock<SimFiber>()
-        val signingService = mock<SigningService>()
-        val persistenceService = mock<PersistenceService>()
-        whenever(fiber.createSigningService(any())).thenReturn(signingService)
-        whenever(fiber.getOrCreatePersistenceService(any())).thenReturn(persistenceService)
-        whenever(fiber.createMemberLookup(any())).thenReturn(mock())
-        whenever(fiber.createNotarySigningService()).thenReturn(mock())
 
         lateinit var capture : Triple<SigningService, PersistenceService, SimulatorConfiguration>
         val builderFactory = UtxoTransactionBuilderFactory { ss, per, c->
@@ -83,10 +91,7 @@ class SimUtxoLedgerServiceTest {
     @Test
     fun `should be able to retrieve stored transaction`(){
         // Given a persistence service in which we stored a transaction entity
-        val fiber = mock<SimFiber>()
-        val persistenceService = mock<PersistenceService>()
         val serializationService = BaseSerializationService()
-        val signingService = mock<SigningService>()
         val transaction = UtxoSignedTransactionBase(
             publicKeys.map { toSignature(it) },
             UtxoStateLedgerInfo(
@@ -107,10 +112,6 @@ class SimUtxoLedgerServiceTest {
 
         whenever(persistenceService.find(eq(UtxoTransactionEntity::class.java), eq(String(transaction.id.bytes))))
             .thenReturn(transaction.toEntity())
-        whenever(fiber.createMemberLookup(alice)).thenReturn(mock())
-        whenever(fiber.createNotarySigningService()).thenReturn(mock())
-        whenever(fiber.createSigningService(alice)).thenReturn(signingService)
-        whenever(fiber.getOrCreatePersistenceService(alice)).thenReturn(persistenceService)
 
         // When we retrieve it or the ledger transaction from the ledger service
         val utxoLedgerService = SimUtxoLedgerService(alice, fiber, config)
@@ -126,9 +127,7 @@ class SimUtxoLedgerServiceTest {
     @Test
     fun `should be able to retrieve unconsumed states`(){
         // Given a persistence service in which we stored a transaction output entity
-        val fiber = mock<SimFiber>()
         val serializationService = BaseSerializationService()
-        val persistenceService = mock<PersistenceService>()
         val testState = TestUtxoState("StateData", publicKeys)
         val utxoTxOutputEntity = UtxoTransactionOutputEntity(
             "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
@@ -145,10 +144,6 @@ class SimUtxoLedgerServiceTest {
             eq(UtxoTransactionOutputEntity::class.java))).thenReturn(utxoOutputQuery)
         whenever(utxoOutputQuery.setParameter(eq("type"), any())).thenReturn(utxoOutputQuery)
         whenever(utxoOutputQuery.execute()).thenReturn(utxoOutputQueryResult)
-        whenever(fiber.createMemberLookup(any())).thenReturn(mock())
-        whenever(fiber.createSigningService(any())).thenReturn(mock())
-        whenever(fiber.createNotarySigningService()).thenReturn(mock())
-        whenever(fiber.getOrCreatePersistenceService(any())).thenReturn(persistenceService)
 
         val notaryInfo = mock<NotaryInfo>()
         whenever(fiber.getNotary()).thenReturn(notaryInfo)
@@ -161,11 +156,45 @@ class SimUtxoLedgerServiceTest {
 
         // Then it should be converted into StateAndRef
         assertThat(stateAndRefs.size, `is`(1))
-        assertThat(stateAndRefs[0].state.contractState.name, `is`(testState.name))
-        assertThat(stateAndRefs[0].state.contractState.participants, `is`(testState.participants))
+        assertThat(stateAndRefs[0].state.contractState, `is`(testState))
         assertThat(stateAndRefs[0].state.notary, `is`(notary))
         assertThat(stateAndRefs[0].ref.transactionId, `is`(SecureHash.parse(utxoTxOutputEntity.transactionId)))
         assertThat(stateAndRefs[0].ref.index, `is`(utxoTxOutputEntity.index))
+
+    }
+
+    @Test
+    fun `should be able to resolve stateRef to stateAndRef`(){
+        val serializationService = BaseSerializationService()
+        whenever(fiber.getNotary()).thenReturn(BaseNotaryInfo(notaryX500, "", notary.owningKey))
+        val entityId = UtxoTransactionOutputEntityId(
+            "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
+            0
+        )
+        val testState = TestUtxoState("TestState", publicKeys)
+        val encumbrance = EncumbranceGroupImpl(1, "tag")
+        val utxoOutputEntity = UtxoTransactionOutputEntity(
+            "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
+            TestUtxoState::class.java.canonicalName,
+            serializationService.serialize(listOf(encumbrance)).bytes,
+            serializationService.serialize(testState).bytes,
+            0,
+            false
+        )
+        whenever(persistenceService.find(
+            eq(UtxoTransactionOutputEntity::class.java),
+            eq(entityId))).thenReturn(utxoOutputEntity)
+        val stateRef = StateRef(
+            SecureHash.parse("SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D"),
+            0
+        )
+        val utxoLedgerService = SimUtxoLedgerService(alice, fiber, config)
+        val returnedStateAndRef = utxoLedgerService.resolve<TestUtxoState>(stateRef)
+
+        assertThat(returnedStateAndRef.ref, `is`(stateRef))
+        assertThat(returnedStateAndRef.state.contractState, `is`(testState))
+        assertThat(returnedStateAndRef.state.notary, `is`(notary))
+        assertThat(returnedStateAndRef.state.encumbrance, `is`(encumbrance))
 
     }
 
@@ -177,7 +206,16 @@ class SimUtxoLedgerServiceTest {
     class TestUtxoState(
         val name: String,
         override val participants: List<PublicKey>
-    ) : ContractState
+    ) : ContractState {
+        override fun equals(other: Any?): Boolean {
+            if(other !is TestUtxoState) return false
+            return name == other.name && participants == other.participants
+        }
+
+        override fun hashCode(): Int {
+            return name.hashCode()
+        }
+    }
 
     class TestUtxoCommand: Command
 }

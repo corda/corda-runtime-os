@@ -12,6 +12,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
 import net.corda.v5.crypto.DigitalSignature
@@ -23,9 +24,11 @@ import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
+import net.corda.v5.ledger.utxo.transaction.getOutputStates
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.kotlin.any
@@ -168,6 +171,44 @@ class UtxoTransactionFinalityHandlerTest {
         )
     }
 
+    @Test
+    fun `should fail on contract verification failure`(){
+        val persistenceService = mock<PersistenceService>()
+        val serializationService = BaseSerializationService()
+        val signingService = mock<SigningService>()
+        publicKeys.forEach {
+            whenever(signingService.sign(any(), eq(it), any())).thenReturn(toSignature(it).signature)
+        }
+
+        val faultyState = TestUtxoState("Faulty State", publicKeys)
+        val signedTransaction = UtxoSignedTransactionBase(
+            listOf(toSignature(publicKeys[0])),
+            UtxoStateLedgerInfo(
+                listOf(TestUtxoCommand()),
+                emptyList(),
+                notary,
+                emptyList(),
+                publicKeys,
+                SimTimeWindow(Instant.now(), Instant.now().plusMillis(1.days.toMillis())),
+                listOf(
+                    ContractStateAndEncumbranceTag(faultyState, null),
+                ),
+                emptyList()
+            ),
+            signingService,
+            serializationService,
+            persistenceService,
+            config
+        )
+        val finalizer = UtxoTransactionFinalityHandler(
+            mock(), signingService, signingService, persistenceService, mock())
+
+        assertThrows<CordaRuntimeException> {
+            finalizer.finalizeTransaction(signedTransaction, mock())
+        }
+
+    }
+
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
         DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
         DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
@@ -182,6 +223,9 @@ class UtxoTransactionFinalityHandlerTest {
     class TestUtxoCommand: Command
 
     class TestUtxoContract: Contract {
-        override fun verify(transaction: UtxoLedgerTransaction) { }
+        override fun verify(transaction: UtxoLedgerTransaction) {
+            if(transaction.getOutputStates<TestUtxoState>().first().name == "Faulty State")
+                throw IllegalArgumentException("Faulty State Detected")
+        }
     }
 }

@@ -19,4 +19,5 @@ fun utxoTransactionBuilderFactoryBase(): UtxoTransactionBuilderFactory =
             signingService = ss,
             persistenceService = per,
             configuration = c
-        ) }
+        )
+    }
