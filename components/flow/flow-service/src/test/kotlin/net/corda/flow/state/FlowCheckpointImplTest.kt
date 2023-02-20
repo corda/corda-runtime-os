@@ -27,6 +27,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -251,7 +252,8 @@ class FlowCheckpointImplTest {
 
         val cpk = mock<SecureHash>()
         val cpks = setOf(cpk)
-        whenever(cpk.bytes).thenReturn(byteArrayOf())
+        whenever(cpk.bytes).thenReturn("abc".toByteArray())
+        whenever(cpk.algorithm).thenReturn(DigestAlgorithmName.SHA2_256.name)
 
         val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false))
         flowCheckpoint.initFlowState(flowStartContext, cpks)

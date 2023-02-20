@@ -36,6 +36,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
@@ -136,7 +137,9 @@ class SessionEventHandlerTest {
             sessionEventHandler.preProcess(inputContext)
         }
 
-        verify(fakeCheckpointInitializerService, never()).initialize(any(), any(), any(), any())
+        val spyFakeCheckpointInitializerService = Mockito.spy(fakeCheckpointInitializerService)
+
+        verify(spyFakeCheckpointInitializerService, never()).initialize(any(), any(), any(), any())
     }
 
     @Test
