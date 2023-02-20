@@ -30,20 +30,30 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.membership.impl.rest.v1.MemberLookupRestResourceImpl
+import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MPV_KEY
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
@@ -165,8 +175,17 @@ class MemberLookupRestResourceTest {
         return result
     }
 
+    private val testEntries = mapOf(
+        MPV_KEY to "1",
+        EPOCH_KEY to "1",
+        MODIFIED_TIME_KEY to clock.instant().toString(),
+    )
+    private val mockGroupParameters = mock<GroupParameters> {
+        on { entries } doReturn testEntries.entries
+    }
     private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn memberInfoList
+        on { groupParameters } doReturn mockGroupParameters
     }
 
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -193,6 +212,16 @@ class MemberLookupRestResourceTest {
         virtualNodeInfoReadService
     )
 
+    private fun startService() {
+        memberLookupRestResource.start()
+        memberLookupRestResource.activate("")
+    }
+
+    private fun stopService() {
+        memberLookupRestResource.deactivate("")
+        memberLookupRestResource.stop()
+    }
+
     @Test
     fun `starting and stopping the service succeeds`() {
         memberLookupRestResource.start()
@@ -202,139 +231,165 @@ class MemberLookupRestResourceTest {
     }
 
     @Test
-    fun `unfiltered lookup returns a list of all active members and their contexts`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val result = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING)
-        assertEquals(2, result.members.size)
-        assertEquals(
-            RestMemberInfoList(
-                memberInfoList.map {
-                    RestMemberInfo(
-                        it.memberProvidedContext.entries.associate { it.key to it.value },
-                        it.mgmProvidedContext.entries.associate { it.key to it.value }
-                    )
-                }
-            ),
-            result
-        )
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
-    fun `lookup filtered by common name (CN) is case-insensitive and returns a list of members and their contexts`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, commonName = "bob")
-        assertEquals(1, result1.members.size)
-        assertEquals(bobRestResult, result1)
-        val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, commonName = "BOB")
-        assertEquals(1, result2.members.size)
-        assertEquals(bobRestResult, result2)
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
-    fun `lookup filtered by organization (O) is case-insensitive and returns a list of members and their contexts`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organization = "ALICE")
-        assertEquals(1, result1.members.size)
-        assertEquals(aliceRestResult, result1)
-        val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organization = "alice")
-        assertEquals(1, result2.members.size)
-        assertEquals(aliceRestResult, result2)
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
-    fun `lookup filtered by organization unit (OU) is case-insensitive and returns a list of members and their contexts`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "unit2")
-        assertEquals(1, result1.members.size)
-        assertEquals(bobRestResult, result1)
-        val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "UNIT2")
-        assertEquals(1, result2.members.size)
-        assertEquals(bobRestResult, result2)
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
-    fun `lookup filtered by locality (L) is case-insensitive and returns a list of members and their contexts`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, locality = "london")
-        assertEquals(1, result1.members.size)
-        assertEquals(aliceRestResult, result1)
-        val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, locality = "LONDON")
-        assertEquals(1, result2.members.size)
-        assertEquals(aliceRestResult, result2)
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
-    fun `lookup filtered by state (ST) is case-insensitive and returns a list of members and their contexts`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, state = "state2")
-        assertEquals(1, result1.members.size)
-        assertEquals(bobRestResult, result1)
-        val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, state = "state2")
-        assertEquals(1, result2.members.size)
-        assertEquals(bobRestResult, result2)
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
-    fun `lookup filtered by country (C) is case-insensitive and returns a list of members and their contexts`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, country = "gb")
-        assertEquals(1, result1.members.size)
-        assertEquals(aliceRestResult, result1)
-        val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, country = "GB")
-        assertEquals(1, result2.members.size)
-        assertEquals(aliceRestResult, result2)
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
-    fun `lookup filtered by all attributes is case-insensitive and returns a list of members and their contexts`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val result1 =
-            memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, "bob", "bob", "unit2", "dublin", "state2", "ie")
-        assertEquals(1, result1.members.size)
-        assertEquals(bobRestResult, result1)
-        val result2 =
-            memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, "BOB", "BOB", "UNIT2", "DUBLIN", "STATE2", "IE")
-        assertEquals(1, result2.members.size)
-        assertEquals(bobRestResult, result2)
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
-    fun `lookup should fail when non-existent holding identity is used`() {
-        memberLookupRestResource.start()
-        memberLookupRestResource.activate("")
-        val ex = assertFailsWith<ResourceNotFoundException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
-        assertTrue(ex.message.contains("holding identity"))
-        memberLookupRestResource.deactivate("")
-        memberLookupRestResource.stop()
-    }
-
-    @Test
     fun `exception should be thrown when service is not running`() {
-        val ex = assertFailsWith<ServiceUnavailableException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
+        val ex =
+            assertFailsWith<ServiceUnavailableException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
         assertTrue(ex.message.contains("MemberLookupRestResourceImpl"))
+    }
+
+    @Nested
+    inner class LookupTests {
+
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `unfiltered lookup returns a list of all active members and their contexts`() {
+            val result = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING)
+            assertEquals(2, result.members.size)
+            assertEquals(RestMemberInfoList(memberInfoList.map {
+                RestMemberInfo(it.memberProvidedContext.entries.associate { it.key to it.value },
+                    it.mgmProvidedContext.entries.associate { it.key to it.value })
+            }), result)
+        }
+
+        @Test
+        fun `lookup filtered by common name (CN) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, commonName = "bob")
+            assertEquals(1, result1.members.size)
+            assertEquals(bobRestResult, result1)
+            val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, commonName = "BOB")
+            assertEquals(1, result2.members.size)
+            assertEquals(bobRestResult, result2)
+        }
+
+        @Test
+        fun `lookup filtered by organization (O) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organization = "ALICE")
+            assertEquals(1, result1.members.size)
+            assertEquals(aliceRestResult, result1)
+            val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organization = "alice")
+            assertEquals(1, result2.members.size)
+            assertEquals(aliceRestResult, result2)
+        }
+
+        @Test
+        fun `lookup filtered by organization unit (OU) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "unit2")
+            assertEquals(1, result1.members.size)
+            assertEquals(bobRestResult, result1)
+            val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "UNIT2")
+            assertEquals(1, result2.members.size)
+            assertEquals(bobRestResult, result2)
+        }
+
+        @Test
+        fun `lookup filtered by locality (L) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, locality = "london")
+            assertEquals(1, result1.members.size)
+            assertEquals(aliceRestResult, result1)
+            val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, locality = "LONDON")
+            assertEquals(1, result2.members.size)
+            assertEquals(aliceRestResult, result2)
+        }
+
+        @Test
+        fun `lookup filtered by state (ST) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, state = "state2")
+            assertEquals(1, result1.members.size)
+            assertEquals(bobRestResult, result1)
+            val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, state = "state2")
+            assertEquals(1, result2.members.size)
+            assertEquals(bobRestResult, result2)
+        }
+
+        @Test
+        fun `lookup filtered by country (C) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, country = "gb")
+            assertEquals(1, result1.members.size)
+            assertEquals(aliceRestResult, result1)
+            val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, country = "GB")
+            assertEquals(1, result2.members.size)
+            assertEquals(aliceRestResult, result2)
+        }
+
+        @Test
+        fun `lookup filtered by all attributes is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookup(
+                HOLDING_IDENTITY_STRING,
+                "bob",
+                "bob",
+                "unit2",
+                "dublin",
+                "state2",
+                "ie"
+            )
+            assertEquals(1, result1.members.size)
+            assertEquals(bobRestResult, result1)
+            val result2 = memberLookupRestResource.lookup(
+                HOLDING_IDENTITY_STRING,
+                "BOB",
+                "BOB",
+                "UNIT2",
+                "DUBLIN",
+                "STATE2",
+                "IE"
+            )
+            assertEquals(1, result2.members.size)
+            assertEquals(bobRestResult, result2)
+        }
+
+        @Test
+        fun `lookup should fail when non-existent holding identity is used`() {
+            val ex =
+                assertFailsWith<ResourceNotFoundException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
+            assertTrue(ex.message.contains("holding identity"))
+        }
+    }
+
+    @Nested
+    inner class ViewGroupParametersTests {
+
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `viewGroupParameters should fail when non-existent holding identity is used`() {
+            val ex = assertFailsWith<ResourceNotFoundException> {
+                memberLookupRestResource.viewGroupParameters(BAD_HOLDING_IDENTITY.value)
+            }
+            assertTrue(ex.message.contains("Could not find holding identity"))
+        }
+
+        @Test
+        fun `viewGroupParameters fails with bad request if short hash is invalid`() {
+            assertFailsWith<BadRequestException> {
+                memberLookupRestResource.viewGroupParameters("INVALID_SHORT_HASH")
+            }
+        }
+
+        @Test
+        fun `viewGroupParameters fails when reader returns null`() {
+            whenever(groupReader.groupParameters).doReturn(null)
+            val ex = assertFailsWith<ResourceNotFoundException> {
+                memberLookupRestResource.viewGroupParameters(HOLDING_IDENTITY_STRING)
+            }
+            assertTrue(ex.message.contains("Could not find group parameters"))
+        }
+
+        @Test
+        fun `viewGroupParameters correctly returns group parameters as JSON string`() {
+            val result = memberLookupRestResource.viewGroupParameters(HOLDING_IDENTITY_STRING)
+            assertThat(result)
+                .contains("\"${MPV_KEY}\":\"1\"")
+                .contains("\"${EPOCH_KEY}\":\"1\"")
+                .contains("\"${MODIFIED_TIME_KEY}\":\"${clock.instant()}\"")
+        }
     }
 }

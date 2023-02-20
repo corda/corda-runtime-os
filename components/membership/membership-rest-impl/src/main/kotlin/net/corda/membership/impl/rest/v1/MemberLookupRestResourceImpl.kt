@@ -1,6 +1,8 @@
 package net.corda.membership.impl.rest.v1
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.httprpc.PluggableRestResource
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -11,6 +13,7 @@ import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
 import net.corda.membership.httprpc.v1.types.response.RestMemberInfoList
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
@@ -45,6 +48,8 @@ class MemberLookupRestResourceImpl @Activate constructor(
             state: String?,
             country: String?
         ): RestMemberInfoList
+
+        fun viewGroupParameters(holdingIdentityShortHash: ShortHash): String
     }
 
     override val protocolVersion = 1
@@ -99,6 +104,9 @@ class MemberLookupRestResourceImpl @Activate constructor(
         country
     )
 
+    override fun viewGroupParameters(holdingIdentityShortHash: String): String =
+        impl.viewGroupParameters(ShortHash.parseOrThrow(holdingIdentityShortHash))
+
     fun activate(reason: String) {
         impl = ActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP, reason)
@@ -121,6 +129,11 @@ class MemberLookupRestResourceImpl @Activate constructor(
         ) = throw ServiceUnavailableException(
             "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
         )
+
+        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): String =
+            throw ServiceUnavailableException(
+                "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
     }
 
     private inner class ActiveImpl : InnerMemberLookupRestResource {
@@ -158,5 +171,20 @@ class MemberLookupRestResourceImpl @Activate constructor(
                 }
             )
         }
+
+        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): String {
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
+                holdingIdentityShortHash
+            ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
+
+            val groupParametersMap = with(membershipGroupReaderProvider.getGroupReader(holdingIdentity)) {
+                groupParameters?.toMap()
+            } ?: throw ResourceNotFoundException("Could not find group parameters for holding identity " +
+                        "'$holdingIdentityShortHash'.")
+
+            return ObjectMapper().writeValueAsString(groupParametersMap)
+        }
+
+        private fun GroupParameters.toMap() = entries.associate { it.key to it.value }
     }
 }
