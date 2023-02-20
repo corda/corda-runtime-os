@@ -519,7 +519,7 @@ class MGMRestResourceImpl internal constructor(
             try {
                 handleCommonErrors(holdingIdentityShortHash) {
                     mgmResourceClient.reviewRegistrationRequest(
-                        it, registrationId, false, reason.reason
+                        it, registrationId, false, reason
                     )
                 }
             } catch (e: IllegalArgumentException) {

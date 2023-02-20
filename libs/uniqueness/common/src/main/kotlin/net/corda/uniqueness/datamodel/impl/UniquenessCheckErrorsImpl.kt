@@ -6,6 +6,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRe
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import java.time.Instant
@@ -49,4 +50,12 @@ data class UniquenessCheckErrorMalformedRequestImpl(
     private val errorText: String
 ) : UniquenessCheckErrorMalformedRequest {
     override fun getErrorText() = errorText
+}
+
+data class UniquenessCheckErrorUnhandledExceptionImpl(
+    private val unhandledExceptionType: String,
+    private val unhandledExceptionMessage: String
+) : UniquenessCheckErrorUnhandledException {
+    override fun getUnhandledExceptionType(): String = unhandledExceptionType
+    override fun getUnhandledExceptionMessage(): String = unhandledExceptionMessage
 }

@@ -148,7 +148,7 @@ interface MGMRestResource : RestResource {
         ownerX500Name: String? = null,
         @RestQueryParameter(required = false)
         preAuthTokenId: String? = null,
-        @RestQueryParameter(required = false)
+        @RestQueryParameter(required = false, default = "false")
         viewInactive: Boolean = false
     ): Collection<PreAuthToken>
 
@@ -395,7 +395,7 @@ interface MGMRestResource : RestResource {
      * Example usage:
      * ```
      * mgmOps.reviewRegistrationRequest(
-     * "58B6030FABDD", "3B9A266F96E2", ManualDeclinationReason("Sample reason")
+     * "58B6030FABDD", "3B9A266F96E2", "Sample reason"
      * )
      * ```
      *

@@ -19,7 +19,7 @@ import net.corda.e2etest.utilities.getFlowClasses
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.getRpcFlowResult
-import net.corda.e2etest.utilities.registerMember
+import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJsonString
 import net.corda.e2etest.utilities.updateConfig
@@ -126,9 +126,9 @@ class FlowTests {
             assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
             assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
-            registerMember(bobHoldingId)
-            registerMember(charlieHoldingId)
-            registerMember(notaryHoldingId, isNotary = true)
+            registerStaticMember(bobHoldingId)
+            registerStaticMember(charlieHoldingId)
+            registerStaticMember(notaryHoldingId, isNotary = true)
         }
     }
 

@@ -9,20 +9,12 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 interface ChunkSerializerService {
 
     /**
-     * Take a byte array and divide it into [Chunk]s
-     * @param bytes Any byte array
+     * Take any Avro object, String or ByteArray and divide it into [Chunk]s
+     * @param anyObject Object to chunk.
      * @return Returns the object broken up into chunks. Returns an empty list if the object was too small to be chunked or failed to be
      * serialized.
      */
-    fun generateChunksFromBytes(bytes: ByteArray): List<Chunk>
-
-    /**
-     * Take an Avro object and divide it into [Chunk]s
-     * @param avroObject Avro object to chunk.
-     * @return Returns the object broken up into chunks. Returns an empty list if the object was too small to be chunked or failed to be
-     * serialized.
-     */
-    fun generateChunks(avroObject: Any) : List<Chunk>
+    fun generateChunks(anyObject: Any) : List<Chunk>
 
     /**
      * Take a messaging [CordaProducerRecord] and divide it into chunks.

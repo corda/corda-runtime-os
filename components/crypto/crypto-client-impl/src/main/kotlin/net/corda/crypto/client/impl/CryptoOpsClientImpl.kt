@@ -1,6 +1,8 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
@@ -9,6 +11,8 @@ import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -33,12 +37,15 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.EncodingUtils.toBase58
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
+import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -48,10 +55,19 @@ import java.util.UUID
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
     private val schemeMetadata: CipherSchemeMetadata,
-    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
+    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
+    private val digestService: PlatformDigestService
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private fun SecureHashes.toDto(): List<SecureHash> =
+            this.hashes.map {
+                SecureHash(it.algorithm, it.bytes.array())
+            }
+
+        private fun SecureHash.toAvro(): net.corda.data.crypto.SecureHash =
+            net.corda.data.crypto.SecureHash(this.algorithm, ByteBuffer.wrap(bytes))
     }
 
     fun getSupportedSchemes(tenantId: String, category: String): List<String> {
@@ -69,20 +85,41 @@ class CryptoOpsClientImpl(
         return response!!.codes
     }
 
-    fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
+    // TODO Users who are using this API need to revisit to determine if they need to migrate to search by full Id
+    fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingFullIds: Boolean
+    ): Collection<PublicKey> {
+        val keyIdsForLogging = mutableListOf<String>()
+        val candidateKeyIds =
+            if (usingFullIds) {
+                SecureHashes(
+                    candidateKeys.map {
+                        val secureHash = it.fullId(schemeMetadata, digestService)
+                            .also { secureHash -> keyIdsForLogging.add(secureHash.toString()) }
+                        secureHash.toAvro()
+                    }
+                )
+            } else {
+                ShortHashes(
+                    candidateKeys.map {
+                        publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
+                            .also { shortHash -> keyIdsForLogging.add(shortHash) }
+                    }
+                )
+            }
+
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            candidateKeys.joinToString { it.toStringShort().take(12) + ".." }
+            keyIdsForLogging.joinToString { it }
         )
+
         val request = createRequest(
             tenantId = tenantId,
-            request = ByIdsRpcQuery(
-                candidateKeys.map {
-                    publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
-                }
-            )
+            request = ByIdsRpcQuery(candidateKeyIds)
         )
         val response = request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)
         return response!!.keys.map {
@@ -90,27 +127,37 @@ class CryptoOpsClientImpl(
         }
     }
 
+    // This path is not being currently used - consider removing it
     fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys {
         val publicKeyIds = candidateKeys.map {
             publicKeyIdFromBytes(it.array())
         }
-        return lookUpForKeysByIdsProxy(tenantId, publicKeyIds)
+        return lookupKeysByIdsProxy(tenantId, ShortHashes(publicKeyIds))
     }
 
-    fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys {
+    // This method is only used by `filterMyKeysProxy` which is not used - consider removing it
+    private fun lookupKeysByIdsProxy(tenantId: String, keyIds: ShortHashes): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             ByIdsRpcQuery::class.java.simpleName,
             tenantId,
-            candidateKeys.joinToString { "$it.." }
+            keyIds.hashes.joinToString { it }
         )
 
         val request = createRequest(
             tenantId = tenantId,
-            request = ByIdsRpcQuery(
-                candidateKeys
-            )
+            request = ByIdsRpcQuery(keyIds)
         )
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
+    }
+
+    @Suppress("MaxLineLength")
+    fun lookupKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys {
+        logger.info(
+            "Sending '{}'(tenant={},candidateKeys={})", ByIdsRpcQuery::class.java.simpleName, tenantId, fullKeyIds.toDto().joinToString()
+        )
+
+        val request = createRequest(tenantId, request = ByIdsRpcQuery(fullKeyIds))
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
 
@@ -208,7 +255,7 @@ class CryptoOpsClientImpl(
         context: Map<String, String>
     ): DigitalSignature.WithKey {
         logger.info(
-            "Sending '{}'(tenant={},publicKey={}..,signatureSpec={})",
+            "Sending '{}'(tenant={}, publicKey={}, signatureSpec={})",
             SignRpcCommand::class.java.simpleName,
             tenantId,
             publicKey.toStringShort().take(12),
@@ -328,17 +375,32 @@ class CryptoOpsClientImpl(
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
-    fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
-        logger.debug {
-            "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${ids.joinToString()}])"
-        }
-        require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
-            "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
-        }
+    // TODO Users who are using this API need to revisit to determine if they need to migrate to search ByFullIds
+    fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
+        logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${keyIds.joinToString()}])" }
+        require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
+
         val request = createRequest(
             tenantId,
-            ByIdsRpcQuery(ids)
+            ByIdsRpcQuery(ShortHashes(keyIds.map { it.value }))
         )
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
+    }
+
+    @Suppress("MaxLineLength")
+    fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
+        logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${fullKeyIds.joinToString { it.toString() }}])" }
+        require(fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
+
+        val request = createRequest(
+            tenantId,
+            ByIdsRpcQuery(
+                SecureHashes(
+                    fullKeyIds.map {
+                        it.toAvro()
+                    }
+                )
+            ))
         return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
@@ -388,3 +450,9 @@ class CryptoOpsClientImpl(
         throw e
     }
 }
+
+private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: PlatformDigestService): SecureHash =
+    digestService.hash(
+        keyEncodingService.encodeAsByteArray(this),
+        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
+    )

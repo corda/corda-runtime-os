@@ -15,20 +15,31 @@ import java.security.PublicKey
  * @param ledgerKeys Ledger keys generated for this member.
  */
 data class BaseMemberInfo(
-    override val name: MemberX500Name,
-    override val ledgerKeys: List<PublicKey> = listOf()
+    private val name: MemberX500Name,
+    private val ledgerKeys: List<PublicKey> = listOf()
 ) : MemberInfo {
 
-    override val isActive: Boolean = true
-    override val memberProvidedContext: MemberContext
-        get() { TODO("Not yet implemented") }
-    override val mgmProvidedContext: MGMContext
-        get() { TODO("Not yet implemented") }
-    override val platformVersion: Int
-        get() { TODO("Not yet implemented") }
-    override val serial: Long
-        get() { TODO("Not yet implemented") }
-    override val sessionInitiationKey: PublicKey
-        get() { TODO("Not yet implemented") }
+    override fun getName() = name
+    override fun getLedgerKeys() = ledgerKeys
+    override fun isActive() = true
 
+    override fun getMemberProvidedContext(): MemberContext {
+        TODO("Not yet implemented")
+    }
+
+    override fun getMgmProvidedContext(): MGMContext {
+        TODO("Not yet implemented")
+    }
+
+    override fun getPlatformVersion(): Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun getSerial(): Long {
+        TODO("Not yet implemented")
+    }
+
+    override fun getSessionInitiationKey(): PublicKey {
+        TODO("Not yet implemented")
+    }
 }

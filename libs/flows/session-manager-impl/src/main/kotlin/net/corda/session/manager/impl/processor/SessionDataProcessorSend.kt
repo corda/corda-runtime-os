@@ -52,7 +52,7 @@ class SessionDataProcessorSend(
             }
             SessionStateType.CREATED, SessionStateType.CONFIRMED  -> {
                 val bytes = (payload.payload as ByteBuffer).array()
-                val chunks = chunkSerializer.generateChunksFromBytes(bytes)
+                val chunks = chunkSerializer.generateChunks(bytes)
                 val sendEventsState = sessionState.sendEventsState
                 if (chunks.isNotEmpty()) {
                     chunks.forEach {

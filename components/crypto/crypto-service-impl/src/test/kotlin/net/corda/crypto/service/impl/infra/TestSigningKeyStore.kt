@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl.infra
 
+import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyStore
@@ -21,7 +22,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
@@ -44,6 +47,7 @@ class TestSigningKeyStore(
                 val encodedKey = context.key.publicKey.encoded
                 SigningCachedKey(
                     id = publicKeyIdFromBytes(encodedKey),
+                    fullId = fullPublicKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -63,6 +67,7 @@ class TestSigningKeyStore(
                 val encodedKey = context.key.publicKey.encoded
                 SigningCachedKey(
                     id = publicKeyIdFromBytes(encodedKey),
+                    fullId = fullPublicKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -136,15 +141,22 @@ class TestSigningKeyStore(
         }.drop(skip).take(take)
     }
 
-    override fun lookup(tenantId: String, ids: List<String>): Collection<SigningCachedKey> = lock.withLock {
+    override fun lookupByIds(tenantId: String, keyIds: List<ShortHash>): Collection<SigningCachedKey> {
         val result = mutableListOf<SigningCachedKey>()
-        ids.forEach {
-            val found = keys[Pair(tenantId, it)]
+        keyIds.forEach {
+            val found = keys[Pair(tenantId, it.value)]
             if(found != null) {
                 result.add(found)
             }
         }
         return result
+    }
+
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningCachedKey> {
+        val keyIds = fullKeyIds.map {
+            ShortHash.of(it)
+        }
+        return lookupByIds(tenantId, keyIds)
     }
 
     override val isRunning: Boolean

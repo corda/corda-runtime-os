@@ -13,6 +13,8 @@ import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
+import net.corda.data.crypto.SecureHashes
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -34,6 +36,8 @@ import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.ShortHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -61,6 +65,16 @@ class CryptoOpsBusProcessor(
                 this.externalId,
                 this.created
             )
+
+        private fun avroShortHashesToDto(shortHashes: ShortHashes): List<ShortHash> =
+            shortHashes.hashes.map {
+                ShortHash.of(it)
+            }
+
+        private fun avroSecureHashesToDto(secureHashes: SecureHashes): List<SecureHash> =
+            secureHashes.hashes.map {
+                SecureHash(it.algorithm, it.bytes.array())
+            }
     }
 
     private val config = event.config.toCryptoConfig().opsBusProcessor()
@@ -105,8 +119,24 @@ class CryptoOpsBusProcessor(
         }
 
         fun handleByIdsRpcQuery(request: ByIdsRpcQuery): CryptoSigningKeys {
-            val found = signingService.lookup(context.tenantId, request.keys)
-            return CryptoSigningKeys(found.map { it.toAvro() })
+            val foundKeys =
+                when (val avroKeyIds = request.keyIds) {
+                    is ShortHashes -> {
+                        signingService.lookupByIds(
+                            context.tenantId,
+                            avroShortHashesToDto(avroKeyIds)
+                        )
+                    }
+                    is SecureHashes -> {
+                        signingService.lookupByFullIds(
+                            context.tenantId,
+                            avroSecureHashesToDto(avroKeyIds)
+                        )
+                    }
+                    else -> throw IllegalArgumentException("Unexpected type for ${avroKeyIds::class.java.name}")
+                }
+
+            return CryptoSigningKeys(foundKeys.map { it.toAvro() })
         }
 
         fun handleKeysRpcQuery(request: KeysRpcQuery): CryptoSigningKeys {

@@ -10,7 +10,7 @@ import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
-import net.corda.e2etest.utilities.registerMember
+import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -79,11 +79,11 @@ class UtxoLedgerTests {
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
         assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
-        registerMember(aliceHoldingId)
-        registerMember(bobHoldingId)
-        registerMember(charlieHoldingId)
+        registerStaticMember(aliceHoldingId)
+        registerStaticMember(bobHoldingId)
+        registerStaticMember(charlieHoldingId)
 
-        registerMember(notaryHoldingId, true)
+        registerStaticMember(notaryHoldingId, true)
     }
 
     @Test

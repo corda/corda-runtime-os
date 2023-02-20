@@ -8,7 +8,7 @@ import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.ChunkWriteCallback
 import net.corda.chunking.ChunkWriter
-import net.corda.chunking.Constants.Companion.CORDA_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -35,7 +35,8 @@ internal class ChunkWriterImpl(
     var chunkWriteCallback: ChunkWriteCallback? = null
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
-    val chunkSize = maxAllowedMessageSize - CORDA_MESSAGE_OVERHEAD
+    //add extra overhead to avoid message bus level chunking
+    val chunkSize = maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 
     override fun write(fileName: String, inputStream: InputStream): ChunkWriter.Request {
         if (chunkWriteCallback == null) {
