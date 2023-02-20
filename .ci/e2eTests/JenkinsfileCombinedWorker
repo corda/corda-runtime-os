@@ -58,6 +58,7 @@ pipeline {
     }
 
     parameters {
+        string(name: 'BUS_TYPE', defaultValue: 'db', description: 'Bus Implementation')
         string(name: 'COMMIT_TO_CHECKOUT', defaultValue: '', description: 'Commit ID to check out of SCM - leave blank to take head of current branch')
     }
 
@@ -119,26 +120,40 @@ pipeline {
                 }
             }
         }
+        stage('setup Kafka') {
+            when {
+                expression { return params.BUS_TYPE == "kafka" }
+            }
+            steps {
+                sh '''
+                    docker compose -p kafka-cluster -f "${env.WORKSPACE}/.ci/e2eTests/kafka-cluster.yaml" up -d
+                    # TODO: Download, or build from source, the 'corda-cli' here
+                    # TODO: Set up required kafka configuration, like topics, using the `corda-cli`
+                    corda-cli topic -b=localhost:9092 create connect
+                '''
+            }
+        }
         stage('build') {
             steps {
-                gradlew (':applications:workers:release:combined-worker:assemble')
+                gradlew (":applications:workers:release:combined-worker:assemble", "-PbusImpl=${BUS_TYPE}")
             }
-        } 			
-        stage('start combined worker') {       
+        }
+        stage('start combined worker') {
             environment {
-                JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-*.jar"
                 JDBC_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/drivers"
-                VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
+                JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-*.jar"
                 LOG4J_PARAMETERS = "-Dlog4j.configurationFile=log4j2-console.xml"
-                PROGRAM_PARAMETERS = "--instance-id=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb} -ddatabase.jdbc.directory=${JDBC_PATH}"
+                VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
+                EXTRA_PARAMETERS = getWorkerParameters("${params.BUS_TYPE}")
+                COMMON_PARAMETERS = "--instance-id=0 -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb} -ddatabase.jdbc.directory=${JDBC_PATH}"
                 WORKING_DIRECTORY = "${env.WORKSPACE}"
             }
             steps {
                 sh '''
-                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.txt &
+                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${COMMON_PARAMETERS} ${EXTRA_PARAMETERS} 2<&1 > workerLogs.txt &
                     export PROCNO=$!
                 '''        
-            }            
+            }
         }
         stage('connect to worker') {
             steps {
@@ -169,9 +184,9 @@ pipeline {
                 }
         } 	        
     }
+
     post {
         always {
-            
             script {      
                     findBuildScans()
                     splunkLogGenerator()
@@ -183,13 +198,20 @@ pipeline {
                             usernameVariable: 'PGUSER')]) {
 
                         sh 'dropdb -w "${postgresDb}" || true'
-                        
+                    }
+
+                    if ("${params.BUS_TYPE}" == "kafka") {
+                        sh '''
+                            docker compose -p kafka-cluster logs > kafkaLogs.txt
+                            docker compose -p kafka-cluster rm --stop --force
+                        '''
                     }
             }
 
-            archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
-            sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
+            archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt, kafkaLogs.txt', allowEmptyArchive: true
+            sh 'rm -f forward.txt workerLogs.txt podLogs.txt kafkaLogs.txt'
         }
+
         failure {
             sendSlackNotifications("danger", "BUILD FAILURE - Combined Worker E2E Tests", true, "#corda-corda5-build-notifications")
         }
@@ -204,4 +226,12 @@ def gradleCmd() {
 def gradlew(String... args) {
     def allArgs = args.join(' ')
     sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
+}
+
+def getWorkerParameters(def busType) {
+    if (busType == "kafka") {
+        return "-mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 --secrets-params=salt=salt --secrets-params=passphrase=password"
+    } else {
+        return "-mbus.busType=DATABASE -spassphrase=password" -ssalt=salt"
+    }
 }
