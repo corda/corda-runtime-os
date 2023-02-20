@@ -8,7 +8,9 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.ShortHash
 import java.security.KeyPair
 import java.security.PublicKey
 import kotlin.jvm.Throws
@@ -29,12 +31,23 @@ interface CryptoOpsClient : Lifecycle {
     /**
      * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
      *
+     * Please note that if used with [usingFullIds] off it will filter keys by looking into short key ids of [candidateKeys].
+     * Using short key ids means that a key clash on short key id is more likely to happen. Effectively
+     * it means that a requested key not owned by the tenant, however having same short key id (clashing short key id)
+     * with a different key which is owned by the tenant, will lead to return the owned key while it should not.
+     * This api is added for convenience of using short hashes in cases like for e.g. REST interfaces. For more critical
+     * key operations where we need to avoid key id clashes [lookupKeysByFullIds] can be used.
+     *
      * @param tenantId The tenant owning the key.
      * @param candidateKeys The [PublicKey]s to filter.
      *
      * @return A collection of [PublicKey]s that this node owns.
      */
-    fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey>
+    fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingFullIds: Boolean = false
+    ): Collection<PublicKey>
 
     /**
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
@@ -175,14 +188,24 @@ interface CryptoOpsClient : Lifecycle {
     ): List<CryptoSigningKey>
 
     /**
-     * Returns list of keys for provided key ids.
+     * Returns keys with key ids in [keyIds] which are owned by tenant of id [tenantId].
      *
-     * @param tenantId the tenant's id which the keys belong to.
-     * @param ids The list of the key ids to look up for, the maximum number of items is 20.
+     * Please note that this method uses short key ids which means that a key clash on short key id is more likely to happen.
+     * Effectively it means that a requested key not owned by the tenant, however having same short key id (clashing short key id)
+     * with a different key which is owned by the tenant, will lead to return the owned key while it should not.
+     * This api is added for convenience of using short hashes in cases like for e.g. REST interfaces. For more critical
+     * key operations where we need to avoid key id clashes [lookupKeysByFullIds] can be used.
      *
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
-    fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey>
+    fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey>
+
+    /**
+     * Returns keys with full key ids in [fullKeyIds] which are owned by tenant of id [tenantId].
+     *
+     * @throws IllegalArgumentException if the number of ids exceeds 20.
+     */
+    fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey>
 
     /**
      * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of

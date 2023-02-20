@@ -30,6 +30,7 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -350,9 +351,9 @@ class CryptoOperationsTests {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
         val key2 = signingFreshKeys.values.first().publicKey
-        val ourKeys = signingFreshKeys.values.first().signingService.lookup(
+        val ourKeys = signingFreshKeys.values.first().signingService.lookupByIds(
             tenantId,
-            listOf(key1.publicKeyId(), key2.publicKeyId())
+            listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
         assertThat(ourKeys).hasSize(1)
         assertTrue(ourKeys.any { it.publicKey.contentEquals(key2.encoded) })
@@ -366,9 +367,9 @@ class CryptoOperationsTests {
         val key2 = mock<PublicKey> {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
-        val ourKeys = signingFreshKeys.values.first().signingService.lookup(
+        val ourKeys = signingFreshKeys.values.first().signingService.lookupByIds(
             tenantId,
-            listOf(key1.publicKeyId(), key2.publicKeyId())
+            listOf(ShortHash.of(key1.publicKeyId()), ShortHash.of(key2.publicKeyId()))
         ).toList()
         assertThat(ourKeys).isEmpty()
     }
@@ -379,7 +380,8 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookup(tenantId, listOf(info.publicKey.publicKeyId()))
+        val returned =
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, info.alias, null, scheme)
@@ -391,7 +393,8 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingFreshKeys.getValue(scheme)
-        val returned = info.signingService.lookup(tenantId, listOf(info.publicKey.publicKeyId()))
+        val returned =
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(info.publicKey.publicKeyId())))
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, null, scheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, null, info.externalId, scheme)
@@ -403,8 +406,9 @@ class CryptoOperationsTests {
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val returned = info.signingService.lookup(
-            tenantId, listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))
+        val returned = info.signingService.lookupByIds(
+            tenantId,
+            listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
         assertEquals(0, returned.size)
     }
@@ -455,7 +459,8 @@ class CryptoOperationsTests {
     ) {
         val unknownPublicKey = unknownKeyPairs.getValue(scheme).public
         val info = signingFreshKeys.getValue(scheme)
-        val returned = info.signingService.lookup(tenantId, listOf(unknownPublicKey.publicKeyId()))
+        val returned =
+            info.signingService.lookupByIds(tenantId, listOf(ShortHash.of(unknownPublicKey.publicKeyId())))
         assertEquals(0, returned.size)
     }
 

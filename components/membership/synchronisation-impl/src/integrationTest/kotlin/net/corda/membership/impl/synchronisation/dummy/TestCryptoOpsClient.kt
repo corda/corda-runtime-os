@@ -11,8 +11,10 @@ import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -41,7 +43,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
-        private val keys: ConcurrentHashMap<String, CryptoSigningKey> = ConcurrentHashMap()
+        private val keys: ConcurrentHashMap<ShortHash, CryptoSigningKey> = ConcurrentHashMap()
     }
 
     private val coordinator =
@@ -60,7 +62,11 @@ class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
+    override fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingFullIds: Boolean
+    ): Collection<PublicKey> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -84,7 +90,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         val publicKey = keyPair.public
         generatedKeys[publicKey] = keyPair
         val keyId = publicKey.publicKeyId()
-        keys[keyId] = CryptoSigningKey(
+        keys[ShortHash.of(keyId)] = CryptoSigningKey(
             keyId,
             tenantId,
             category,
@@ -176,12 +182,16 @@ class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
-    override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
+    override fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
         val result = mutableListOf<CryptoSigningKey>()
-        ids.forEach {
+        keyIds.forEach {
             result.add(keys[it] ?: throw IllegalArgumentException("No key found under ID: $it."))
         }
         return result
+    }
+
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
+        throw UnsupportedOperationException()
     }
 
     override fun createWrappingKey(

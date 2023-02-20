@@ -20,6 +20,7 @@ import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -169,7 +170,7 @@ class CryptoOpsBusProcessorTests {
     @Test
     fun `Should return empty list for unknown key id`() {
         val keyEnc = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
-        val response = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(keyEnc)))
+        val response = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(keyEnc))))
         assertEquals(0, response.keys.size)
     }
 
@@ -193,7 +194,7 @@ class CryptoOpsBusProcessorTests {
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val keys = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
+        val keys = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(publicKeyIdFromBytes(info.publicKey)))))
         assertEquals(1, keys.keys.size)
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(keys.keys[0].publicKey.array()))
         // lookup
@@ -230,7 +231,7 @@ class CryptoOpsBusProcessorTests {
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val findResult1 = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
+        val findResult1 = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(publicKeyIdFromBytes(info.publicKey)))))
         assertEquals(1, findResult1.keys.size)
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(findResult1.keys[0].publicKey.array()))
         // lookup
