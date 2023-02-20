@@ -2,9 +2,9 @@ package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.runtime.messaging.CloseableFlowMessaging
 import net.corda.simulator.runtime.utils.accessField
-import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import org.hamcrest.MatcherAssert.assertThat

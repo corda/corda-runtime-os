@@ -16,6 +16,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-serialization'
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     // Concluded this is the one acceptable dependency in addition to kotlin.

@@ -100,7 +100,7 @@ class FlowRunnerImplTest {
             flowStartArgs = startArgs
         }
         val clientRequestBody = mock<ClientRequestBody>()
-        whenever(clientRequestBody.getRequestBody()).thenReturn(startArgs)
+        whenever(clientRequestBody.requestBody).thenReturn(startArgs)
         val logicAndArgs = ClientStartedFlow(clientFlow, clientRequestBody)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)

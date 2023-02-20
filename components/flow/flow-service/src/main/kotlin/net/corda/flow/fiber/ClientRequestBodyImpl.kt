@@ -26,6 +26,12 @@ class ClientRequestBodyImpl(private val fiberService: FlowFiberService) : Client
         return marshallingService.parseList(requestBody, clazz)
     }
 
+    override fun <K, V> getRequestBodyAsMap(marshallingService: MarshallingService,
+                                            keyClass: Class<K>,
+                                            valueClass: Class<V>): Map<K, V> {
+        return marshallingService.parseMap(requestBody, keyClass, valueClass)
+    }
+
     override fun toString(): String {
         // Truncate the JSON object to ensure that we don't try and write too much data into logs.
         return "ClientRequestBody(input=${requestBody.take(MAX_STRING_LENGTH)})"

@@ -2,9 +2,7 @@ package net.cordapp.demo.consensual
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.marshalling.parse
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -32,10 +30,10 @@ class TestFindTransactionFlow {
 
         val badRequest = mock<ClientRequestBody>()
         val body = FindTransactionParameters(txIdBad.toString())
-        whenever(badRequest.getRequestBodyAs<FindTransactionParameters>(marshallingService)).thenReturn(body)
+        whenever(badRequest.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java)).thenReturn(body)
 
         val result = flow.call(badRequest)
-        val resObj = marshallingService.parse<FindTransactionResponse>(result)
+        val resObj = marshallingService.parse(result, FindTransactionResponse::class.java)
         Assertions.assertThat(resObj.transaction).isNull()
         Assertions.assertThat(resObj.errorMessage).isEqualTo("Failed to find transaction with id SHA256:4661696C21.")
     }
@@ -66,11 +64,11 @@ class TestFindTransactionFlow {
 
         val goodRequest = mock<ClientRequestBody>()
         val body = FindTransactionParameters(txIdGood.toString())
-        whenever(goodRequest.getRequestBodyAs<FindTransactionParameters>(marshallingService)).thenReturn(body)
+        whenever(goodRequest.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java)).thenReturn(body)
 
         val result = flow.call(goodRequest)
         println(result)
-        val resObj = marshallingService.parse<FindTransactionResponse>(result)
+        val resObj = marshallingService.parse(result, FindTransactionResponse::class.java)
         Assertions.assertThat(resObj.transaction).isNotNull
         Assertions.assertThat(resObj.transaction!!.id).isEqualTo(txIdGood)
     }

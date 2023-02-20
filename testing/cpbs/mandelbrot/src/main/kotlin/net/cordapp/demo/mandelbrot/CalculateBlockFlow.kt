@@ -1,9 +1,8 @@
 package net.cordapp.demo.mandelbrot
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
@@ -11,7 +10,7 @@ import org.slf4j.LoggerFactory
 class CalculateBlockFlow : ClientStartableFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         val colourPalette = Array(255) { IntArray(3) { 0 } }.apply {
             this[0] = intArrayOf(0, 0, 0)
@@ -281,7 +280,7 @@ class CalculateBlockFlow : ClientStartableFlow {
         log.info("Starting mandelbrot calc...")
 
         try {
-            val requestMessage = requestBody.getRequestBodyAs<RequestMessage>(jsonMarshallingService)
+            val requestMessage = requestBody.getRequestBodyAs(jsonMarshallingService, RequestMessage::class.java)
 
             val response = Array(requestMessage.pixelWidth * requestMessage.pixelHeight) { IntArray(3) { 0 } }
 
