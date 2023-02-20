@@ -47,7 +47,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val consumer: Consumer<Any, Any>,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
     private val chunkDeserializerService: ConsumerChunkDeserializerService<K, V>,
-    private val vClazz: Class<V>,
 ) : CordaConsumer<K, V> {
 
     private var currentAssignment = mutableSetOf<Int>()
@@ -141,7 +140,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         polledRecords.forEach { consumerRecord ->
             val value = consumerRecord.value()
             val key = consumerRecord.key()
-            if (key is ChunkKey && vClazz != Chunk::class.java && value is Chunk) {
+            if (key is ChunkKey && value is Chunk) {
                 log.trace {
                     "Read chunk offset ${consumerRecord.offset()} and chunkId ${value.requestId} and partNumber ${value.partNumber}"
                 }
