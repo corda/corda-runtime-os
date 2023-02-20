@@ -26,13 +26,13 @@ import java.security.InvalidParameterException
  * transaction can be updated to INVALID.
  */
 enum class FinalityNotarizationFailureType(val value: String) {
-    UNRECOVERABLE("U"),
-    OTHER("O");
+    FATAL("F"),
+    UNKNOWN("U");
 
     companion object {
         fun String.toFinalityNotarizationFailureType() = when {
-            this.equals(UNRECOVERABLE.value, ignoreCase = true) -> UNRECOVERABLE
-            this.equals(OTHER.value, ignoreCase = true) -> OTHER
+            this.equals(FATAL.value, ignoreCase = true) -> FATAL
+            this.equals(UNKNOWN.value, ignoreCase = true) -> UNKNOWN
             else -> throw InvalidParameterException("FinalityNotarizationFailureType '$this' is not supported")
         }
     }
