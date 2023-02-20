@@ -102,8 +102,13 @@ class InteropService @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         publisher?.start()
-        publisher?.publish(InteropMemberRegistrationService().createDummyMemberInfo())
-        publisher?.publish(InteropMemberRegistrationService().createDummyHostedIdentity())
+        val registrationService = InteropMemberRegistrationService(cordaAvroSerializationFactory)
+        logger.info("Publishing member infos")
+        publisher?.publish(registrationService.createDummyMemberInfo())
+        logger.info("Publishing hosted identities")
+        publisher?.publish(registrationService.createDummyHostedIdentity())
+        logger.info("Publishing seed message")
+        publisher?.publish(registrationService.seedMessage()) //TODO
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
