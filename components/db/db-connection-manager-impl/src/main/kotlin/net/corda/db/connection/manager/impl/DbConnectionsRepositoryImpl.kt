@@ -65,7 +65,8 @@ class DbConnectionsRepositoryImpl(
             Instant.now(),
             updateActor,
             description,
-            configAsString
+            configAsString,
+            Instant.ofEpochSecond(0L)
         )
         val newDbConnectionAudit = DbConnectionAudit(newDbConnection)
         val existingConfig = entityManager.findDbConnectionByNameAndPrivilege(name, privilege)?.apply {

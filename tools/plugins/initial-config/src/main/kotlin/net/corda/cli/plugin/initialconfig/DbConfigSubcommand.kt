@@ -94,7 +94,8 @@ class DbConfigSubcommand : Runnable {
             updateTimestamp = Instant.now(),
             updateActor = "Setup Script",
             description = description,
-            config = createConfigDbConfig(jdbcUrl!!, username!!, password!!, jdbcPoolMaxSize, secretsService)
+            config = createConfigDbConfig(jdbcUrl!!, username!!, password!!, jdbcPoolMaxSize, secretsService),
+            Instant.ofEpochSecond(0L)
         ).also { it.version = 0 }
 
 

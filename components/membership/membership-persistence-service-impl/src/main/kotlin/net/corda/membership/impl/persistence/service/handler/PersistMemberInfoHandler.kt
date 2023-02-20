@@ -9,6 +9,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
+import java.time.Instant
 
 internal class PersistMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -38,7 +39,8 @@ internal class PersistMemberInfoHandler(
                         clock.instant(),
                         serializeContext(it.memberContext),
                         serializeContext(it.mgmContext),
-                        memberInfo.serial
+                        memberInfo.serial,
+                        Instant.ofEpochSecond(0L)
                     )
                     em.merge(entity)
                 }
