@@ -3,11 +3,13 @@ package net.corda.crypto.client.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -26,8 +28,10 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -44,7 +48,9 @@ class CryptoOpsClientComponent @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = ConfigurationReadService::class)
-    configurationReadService: ConfigurationReadService
+    configurationReadService: ConfigurationReadService,
+    @Reference(service = PlatformDigestService::class)
+    private val digestService: PlatformDigestService
 ) : AbstractConfigurableComponent<CryptoOpsClientComponent.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
@@ -62,13 +68,17 @@ class CryptoOpsClientComponent @Activate constructor(
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        Impl(publisherFactory, schemeMetadata, event)
+        Impl(publisherFactory, schemeMetadata, digestService, event)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         impl.ops.getSupportedSchemes(tenantId, category)
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
-        impl.ops.filterMyKeys(tenantId, candidateKeys)
+    override fun filterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        usingFullIds: Boolean
+    ): Collection<PublicKey> =
+        impl.ops.filterMyKeys(tenantId, candidateKeys, usingFullIds)
 
     override fun generateKeyPair(
         tenantId: String,
@@ -145,17 +155,18 @@ class CryptoOpsClientComponent @Activate constructor(
             filter = filter
         )
 
-    override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> =
-        impl.ops.lookup(
-            tenantId = tenantId,
-            ids = ids
-        )
+    override fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> =
+        impl.ops.lookupKeysByIds(tenantId, keyIds)
 
+    override fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> =
+        impl.ops.lookupKeysByFullIds(tenantId, fullKeyIds)
+
+    // This path is not being currently used - consider removing it
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
 
-    override fun lookUpForKeysByIdsProxy(tenantId: String, candidateKeys: List<String>): CryptoSigningKeys =
-        impl.ops.lookUpForKeysByIdsProxy(tenantId, candidateKeys)
+    override fun lookupKeysByFullIdsProxy(tenantId: String, fullKeyIds: SecureHashes): CryptoSigningKeys =
+        impl.ops.lookupKeysByFullIdsProxy(tenantId, fullKeyIds)
 
     override fun signProxy(
         tenantId: String,
@@ -182,6 +193,7 @@ class CryptoOpsClientComponent @Activate constructor(
     class Impl(
         publisherFactory: PublisherFactory,
         schemeMetadata: CipherSchemeMetadata,
+        digestService: PlatformDigestService,
         event: ConfigChangedEvent
     ) : AbstractImpl {
         private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse> = publisherFactory.createRPCSender(
@@ -196,8 +208,9 @@ class CryptoOpsClientComponent @Activate constructor(
         ).also { it.start() }
 
         val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
-            schemeMetadata = schemeMetadata,
-            sender = sender
+            schemeMetadata,
+            sender,
+            digestService
         )
 
         override val downstream: DependenciesTracker = DependenciesTracker.Default(setOf(sender.subscriptionName))

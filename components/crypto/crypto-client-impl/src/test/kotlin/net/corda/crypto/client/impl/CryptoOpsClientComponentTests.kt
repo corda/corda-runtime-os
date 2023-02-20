@@ -23,6 +23,7 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -56,6 +57,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -128,7 +130,8 @@ class CryptoOpsClientComponentTests {
             coordinatorFactory = coordinatorFactory,
             publisherFactory = publisherFactory,
             schemeMetadata = schemeMetadata,
-            configurationReadService = configurationReadService
+            configurationReadService = configurationReadService,
+            digestService = mock()
         )
     }
 
@@ -343,9 +346,10 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.lookup(
-                knownTenantId, listOf(
-                    keyPair.public.publicKeyId()
+            component.lookupKeysByIds(
+                knownTenantId,
+                listOf(
+                    ShortHash.of(keyPair.public.publicKeyId())
                 )
             )
         }
@@ -362,8 +366,8 @@ class CryptoOpsClientComponentTests {
         assertEquals(1, result.value[0].encodingVersion)
         assertEquals(now.epochSecond, result.value[0].created.epochSecond)
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(1, query.keys.size)
-        assertEquals(keyPair.public.publicKeyId(), query.keys[0])
+        assertEquals(1, (query.keyIds as ShortHashes).hashes.size)
+        assertEquals(keyPair.public.publicKeyId(), (query.keyIds as ShortHashes).hashes[0])
         assertRequestContext(result)
     }
 
@@ -395,10 +399,10 @@ class CryptoOpsClientComponentTests {
             )
         }
         val ids = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map {
-            keyPair.public.publicKeyId()
+            ShortHash.of(keyPair.public.publicKeyId())
         }
         assertThrows(IllegalArgumentException::class.java) {
-            component.lookup(knownTenantId, ids)
+            component.lookupKeysByIds(knownTenantId, ids)
         }
     }
 
@@ -413,12 +417,12 @@ class CryptoOpsClientComponentTests {
         }
         val id = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
         val result = sender.act {
-            component.lookup(knownTenantId, listOf(id))
+            component.lookupKeysByIds(knownTenantId, listOf(ShortHash.of(id)))
         }
         assertEquals(0, result.value.size)
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(1, query.keys.size)
-        assertEquals(id, query.keys[0])
+        assertEquals(1, (query.keyIds as ShortHashes).hashes.size)
+        assertEquals(id, (query.keyIds as ShortHashes).hashes[0])
         assertRequestContext(result)
     }
 
@@ -460,10 +464,11 @@ class CryptoOpsClientComponentTests {
         assertTrue(result.value.any { it == myPublicKeys[0] })
         assertTrue(result.value.any { it == myPublicKeys[1] })
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
+        val keyIds = (query.keyIds as ShortHashes).hashes
+        assertEquals(3, keyIds.size)
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
         assertRequestContext(result)
     }
 
@@ -511,10 +516,11 @@ class CryptoOpsClientComponentTests {
         assertTrue(result.value.keys.any { it.publicKey.array().contentEquals(myPublicKeys[0].array()) })
         assertTrue(result.value.keys.any { it.publicKey.array().contentEquals(myPublicKeys[1].array()) })
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(notMyKey.array()) })
+        val keyIds = (query.keyIds as ShortHashes).hashes
+        assertEquals(3, keyIds.size)
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(notMyKey.array()) })
         assertRequestContext(result)
     }
 
@@ -538,10 +544,11 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(0, result.value.count())
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
+        val keyIds = (query.keyIds as ShortHashes).hashes
+        assertEquals(3, keyIds.size)
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(notMyKey)) })
         assertRequestContext(result)
     }
 
@@ -571,10 +578,11 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(0, result.value.keys.size)
         val query = assertOperationType<ByIdsRpcQuery>()
-        assertEquals(3, query.keys.size)
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
-        assertTrue(query.keys.any { it == publicKeyIdFromBytes(notMyKey.array()) })
+        val keyIds = (query.keyIds as ShortHashes).hashes
+        assertEquals(3, keyIds.size)
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
+        assertTrue(keyIds.any { it == publicKeyIdFromBytes(notMyKey.array()) })
         assertRequestContext(result)
     }
 
@@ -916,7 +924,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
     }
 
@@ -939,7 +947,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
     }
 
@@ -962,7 +970,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertThrows(IllegalStateException::class.java) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
     }
 
@@ -982,7 +990,7 @@ class CryptoOpsClientComponentTests {
         )
         setupCompletedResponse { throw error }
         val exception = assertThrows(expected) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
         assertEquals(error.message, exception.message)
     }
@@ -999,7 +1007,7 @@ class CryptoOpsClientComponentTests {
         )
         setupCompletedResponse { throw error }
         val exception = assertThrows(CryptoException::class.java) {
-            component.lookup(knownTenantId, emptyList())
+            component.lookupKeysByIds(knownTenantId, emptyList())
         }
         assertSame(error, exception.cause)
     }
