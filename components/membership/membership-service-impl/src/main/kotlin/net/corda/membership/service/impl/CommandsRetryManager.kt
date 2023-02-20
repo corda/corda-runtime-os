@@ -89,8 +89,8 @@ internal class CommandsRetryManager(
     private fun addTimer(key: String, state: MembershipAsyncRequestState) {
         val durationInMillis = max(
             0,
-            TimeUnit.SECONDS.toMillis(WAIT_BETWEEN_REQUESTS_IN_SECONDS) -
-                (clock.instant().toEpochMilli() - state.lastFailedOn.toEpochMilli())
+            (state.lastFailedOn.toEpochMilli() + TimeUnit.SECONDS.toMillis(WAIT_BETWEEN_REQUESTS_IN_SECONDS)) -
+                    (clock.instant().toEpochMilli())
         )
         val event = Record(
             MEMBERSHIP_ASYNC_REQUEST_TOPIC,

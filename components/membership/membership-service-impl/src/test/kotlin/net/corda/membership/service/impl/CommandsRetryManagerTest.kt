@@ -15,6 +15,7 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TO
 import net.corda.utilities.time.Clock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.never
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -128,7 +129,9 @@ class CommandsRetryManagerTest {
         manager.onPostCommit(states)
 
         verify(coordinator).cancelTimer("retry-key-1")
+        verify(coordinator, never()).cancelTimer("retry-key-2")
         verify(coordinator).cancelTimer("retry-key-3")
+        verify(coordinator, never()).cancelTimer("retry-key-4")
     }
 
     @Test
@@ -148,7 +151,9 @@ class CommandsRetryManagerTest {
 
         manager.onPostCommit(states)
 
+        verify(coordinator, never()).setTimer(eq("retry-key-1"), eq(2000), any())
         verify(coordinator).setTimer(eq("retry-key-2"), eq(2000), any())
+        verify(coordinator, never()).setTimer(eq("retry-key-3"), eq(2000), any())
         verify(coordinator).setTimer(eq("retry-key-4"), eq(2000), any())
     }
 

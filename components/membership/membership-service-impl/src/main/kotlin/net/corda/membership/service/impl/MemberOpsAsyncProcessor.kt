@@ -108,10 +108,12 @@ internal class MemberOpsAsyncProcessor(
             }
 
             logger.info("Processing registration ${request.requestId} to ${holdingIdentity.x500Name}.")
+            // CORE-10367: return the status update command as part of the onNext
             registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             logger.info("Processed registration ${request.requestId} to ${holdingIdentity.x500Name}.")
             Outcome.SUCCESS
         } catch (e: InvalidMembershipRegistrationException) {
+            // CORE-10367: return the status update command as part of the onNext
             membershipPersistenceClient.setRegistrationRequestStatus(
                 holdingIdentity,
                 registrationId.toString(),
@@ -124,6 +126,7 @@ internal class MemberOpsAsyncProcessor(
                 logger.warn("Registration ${request.requestId} failed. Will retry soon.", e)
                 Outcome.FAILED_CAN_RETRY
             } else {
+                // CORE-10367: return the status update command as part of the onNext
                 membershipPersistenceClient.setRegistrationRequestStatus(
                     holdingIdentity,
                     registrationId.toString(),
