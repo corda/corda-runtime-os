@@ -4,12 +4,12 @@ topics:
     consumers:
       - db
     producers:
-      - rpc
+      - rest
     config:
   ConfigManagementRequestResponseTopic:
     name: config.management.request.resp
     consumers:
-      - rpc
+      - rest
     producers:
       - db
     config:
@@ -22,7 +22,7 @@ topics:
       - membership
       - gateway
       - link-manager
-      - rpc
+      - rest
       - uniqueness
     producers:
       - db

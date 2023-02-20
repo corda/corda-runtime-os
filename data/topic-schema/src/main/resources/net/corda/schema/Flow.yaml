@@ -35,7 +35,7 @@ topics:
       - flow
     producers:
       - flow
-      - rpc
+      - rest
     config:
   FlowMapperEventStateTopic:
     name: flow.mapper.event.state
@@ -60,10 +60,10 @@ topics:
   FlowStatusTopic:
     name: flow.status
     consumers:
-      - rpc
+      - rest
     producers:
       - flow
-      - rpc
+      - rest
     config:
       cleanup.policy: compact
       segment.ms: 600000

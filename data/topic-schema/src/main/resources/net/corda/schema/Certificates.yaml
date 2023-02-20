@@ -4,12 +4,12 @@ topics:
     consumers:
       - db
     producers:
-      - rpc
+      - rest
     config:
   CertificatesRpcOpsRespTopic:
     name: certificates.rpc.ops.resp
     consumers:
-      - rpc
+      - rest
     producers:
       - db
     config:

@@ -1,36 +1,35 @@
-package net.corda.v5.membership
+package net.corda.v5.membership;
 
-import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.LayeredPropertyMap;
 
 /**
- * Part of [MemberInfo], MemberContext part is provided by the member as part of the initial MemberInfo proposal (i.e.
- * group registration).
+ * <p>Part of {@link MemberInfo}, MemberContext part is provided by the member as part of the initial MemberInfo proposal
+ * (i.e. group registration).</p>
  *
- * Contains information such as the node's endpoints, x500 name, key information, etc.
+ * <p>Contains information such as the node's endpoints, x500 name, key information, etc.</p>
  *
- * Example usages:
+ * <p>Example usages:</p>
  *
- * ```java
+ * <ul>
+ * <li>Java:<pre>{@code
  * Set<Map.Entry<String, String>> memberContextEntries = memberContext.getEntries();
  * String groupId = memberContext.parse("corda.groupId", String.class);
  * Instant modifiedTime = memberContext.parseOrNull("corda.modifiedTime", Instant.class);
  * Set<String> additionalInformation = memberContext.parseSet("additional.names", String.class);
  * List<EndpointInfo> endpoints = memberContext.parseList("corda.endpoints", EndpointInfo.class);
- * ```
- *
- * ```kotlin
+ * }</pre></li>
+ * <li>Kotlin:<pre>{@code
  * val entries = memberContext.entries
  * val groupId = memberContext.parse("corda.groupId", String::class.java)
  * val modifiedTime = memberContext.parseOrNull("corda.modifiedTime", Instant::class.java)
  * val additionalInformation = memberContext.parseSet("additional.names", String::class.java)
  * val endpoints = memberContext.parseList("corda.endpoints", EndpointInfo::class.java)
- * ```
+ * }</pre></li>
+ * </ul>
  *
- * Properties are exposed either through properties on interfaces in the public APIs, or internally through extension
- * properties.
+ * <p>Properties are exposed either through methods on interfaces in the public APIs, or internally through extension
+ * properties.</p>
  *
- * @property entries Returns [Set] of all entries in the underlying map.
- *
- * @see [LayeredPropertyMap] For further information on the properties and functions.
+ * @see LayeredPropertyMap For further information on the properties and functions.
  */
-interface MemberContext: LayeredPropertyMap
+public interface MemberContext extends LayeredPropertyMap {}

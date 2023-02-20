@@ -5,13 +5,13 @@ topics:
       - crypto
     producers:
       - membership
-      - rpc
+      - rest
     config:
   CryptoHSMRPCRegistrationRespTopic:
     name: crypto.hsm.rpc.registration.resp
     consumers:
       - membership
-      - rpc
+      - rest
     producers:
       - crypto
     config:
@@ -31,7 +31,7 @@ topics:
       - gateway
       - link-manager
       - membership
-      - rpc
+      - rest
     config:
   CryptoOpsRpcResponseTopic:
     name: crypto.ops.rpc.resp
@@ -40,7 +40,7 @@ topics:
       - gateway
       - link-manager
       - membership
-      - rpc
+      - rest
     producers:
       - crypto
     config:
