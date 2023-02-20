@@ -5,7 +5,7 @@ import java.util.UUID
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
-import net.corda.chunking.Constants.Companion.CORDA_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.CORDA_RECORD_OVERHEAD
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
@@ -33,7 +33,7 @@ class ChunkSerializerServiceImpl(
     }
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
-    private val maxRecordSize = (maxAllowedMessageSize - CORDA_MESSAGE_OVERHEAD).toInt()
+    private val maxRecordSize = (maxAllowedMessageSize - CORDA_RECORD_OVERHEAD).toInt()
     private val maxChunkSize = (maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD).toInt()
 
     override fun generateChunks(anyObject: Any): List<Chunk> {
