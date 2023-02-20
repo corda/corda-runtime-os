@@ -10,6 +10,7 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -76,7 +77,7 @@ class KeysFactoryTest {
             )
         } doThrow KeyAlreadyExistsException("", "", "")
         on {
-            lookup(tenantId, listOf(publicKey.publicKeyId()))
+            lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKey.publicKeyId())))
         } doReturn listOf(cryptoSigningKey)
     }
 

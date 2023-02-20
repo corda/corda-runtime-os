@@ -61,7 +61,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         val thrown = assertThrows(exception::class.java) {
             signingService.sign(
@@ -86,7 +87,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         assertThrows(IllegalArgumentException::class.java) {
             signingService.sign(
@@ -110,7 +112,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         val thrown = assertThrows(exception::class.java) {
             signingService.deriveSharedSecret(
@@ -136,7 +139,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         assertThrows(IllegalArgumentException::class.java) {
             signingService.deriveSharedSecret(
@@ -156,6 +160,7 @@ class SigningServiceGeneralTests {
     fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
         val existingKey = SigningCachedKey(
             id = UUID.randomUUID().toString(),
+            fullId = UUID.randomUUID().toString(),
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             alias = "alias1",
@@ -176,7 +181,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         assertThrows(KeyAlreadyExistsException::class.java) {
             signingService.generateKeyPair(
@@ -208,7 +214,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         var thrown = assertThrows(exception::class.java) {
             signingService.generateKeyPair(
@@ -252,7 +259,8 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         val filter = mapOf(
             CATEGORY_FILTER to category,
@@ -292,7 +300,8 @@ class SigningServiceGeneralTests {
             val signingService = SigningServiceImpl(
                 store = store,
                 cryptoServiceFactory = mock(),
-                schemeMetadata = schemeMetadata
+                schemeMetadata = schemeMetadata,
+                digestService = mock()
             )
             val filter = emptyMap<String, String>()
             val result = signingService.lookup(
@@ -339,7 +348,8 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock {
                 on { this.findInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
             },
-            schemeMetadata = schemeMetadata
+            schemeMetadata = schemeMetadata,
+            digestService = mock()
         )
         var result = signingService.generateKeyPair(
             tenantId = tenantId,
