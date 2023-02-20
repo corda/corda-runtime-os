@@ -55,6 +55,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRegistrationException
@@ -119,6 +120,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -175,6 +178,14 @@ class StaticMemberRegistrationService @Activate constructor(
             throw InvalidMembershipRegistrationException(
                 "Registration failed. The registration context is invalid: " + ex.message,
                 ex,
+            )
+        }
+        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
+        val alreadyRegisterMember = membershipGroupReader.lookup(member.x500Name)
+        if (alreadyRegisterMember?.isActive == true) {
+            throw InvalidMembershipRegistrationException(
+                "The member ${member.x500Name} had been register successfully in the group ${member.groupId}. " +
+                    "Can not re-register."
             )
         }
         try {
