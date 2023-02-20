@@ -33,7 +33,7 @@ import java.time.Instant
 
 @Component(service = [InteropMemberRegistrationService::class])
 class InteropMemberRegistrationService(
-    @Reference(service = CordaAvroSerializationFactory::class)
+    //@Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) {
 
