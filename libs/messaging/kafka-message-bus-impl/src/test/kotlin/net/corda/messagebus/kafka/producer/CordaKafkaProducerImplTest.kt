@@ -51,7 +51,7 @@ class CordaKafkaProducerImplTest {
     private val consumerChunkDeserializerService: ConsumerChunkDeserializerService<Any, Any> = mock()
     private val mockedCallback: CordaProducer.Callback = mock()
     private val cordaConsumer =
-        CordaKafkaConsumerImpl(consumerConfig, consumer, null, consumerChunkDeserializerService, Any::class.java)
+        CordaKafkaConsumerImpl(consumerConfig, consumer, null, consumerChunkDeserializerService)
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
     private val record: CordaProducerRecord<Any, Any> = CordaProducerRecord("topic", "key", "value")
