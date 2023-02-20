@@ -4,12 +4,15 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.withMDC
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.trace
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
@@ -22,7 +25,8 @@ import java.io.NotSerializableException
 class VerificationRequestProcessor(
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
-    private val responseFactory: ExternalEventResponseFactory
+    private val responseFactory: ExternalEventResponseFactory,
+    private val serializationService: SerializationService
 ) : DurableProcessor<String, TransactionVerificationRequest> {
 
     private companion object {
@@ -43,7 +47,8 @@ class VerificationRequestProcessor(
                 withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
                     try {
                         val holdingIdentity = request.holdingIdentity.toCorda()
-                        val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
+                        val cpkMetadata = request.getWireTransaction(serializationService).metadata.getCpkMetadata()
+                        val sandbox = verificationSandboxService.get(holdingIdentity, cpkMetadata)
                         requestHandler.handleRequest(sandbox, request)
                     } catch (e: Exception) {
                         errorResponse(request.flowExternalEventContext, e)
@@ -66,6 +71,9 @@ class VerificationRequestProcessor(
         externalEventContext: ExternalEventContext,
         errorType: ExternalEventResponseErrorType
     ) = "Exception occurred (type=$errorType) for flow-worker request ${externalEventContext.requestId}"
+
+    private fun TransactionVerificationRequest.getWireTransaction(serializationService: SerializationService) =
+        serializationService.deserialize<UtxoLedgerTransactionContainer>(transaction.array()).wireTransaction
 }
 
 

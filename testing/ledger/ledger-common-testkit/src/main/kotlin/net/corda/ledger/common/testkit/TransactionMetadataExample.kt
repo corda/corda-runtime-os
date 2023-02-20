@@ -1,15 +1,15 @@
 package net.corda.ledger.common.testkit
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
 @Suppress("LongParameterList")
 fun transactionMetadataExample(
-    cpiMetadata: CordaPackageSummaryImpl = cpiPackageSummaryExample,
+    cpiMetadata: CordaPackageSummary = cpiPackageSummaryExample,
     cpkPackageSeed: String? = null,
-    cpkMetadata: List<CordaPackageSummaryImpl> = cpkPackageSummaryListExample(cpkPackageSeed),
+    cpkMetadata: List<CordaPackageSummary> = cpkPackageSummaryListExample(cpkPackageSeed),
     numberOfComponentGroups: Int,
     ledgerModel: String = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
     transactionSubType: String? = null

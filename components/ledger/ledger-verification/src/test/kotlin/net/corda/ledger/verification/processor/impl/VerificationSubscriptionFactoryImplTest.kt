@@ -35,7 +35,7 @@ internal class VerificationSubscriptionFactoryImplTest {
             )
         ).thenReturn(expectedSubscription)
 
-        val target = VerificationSubscriptionFactoryImpl(subscriptionFactory, mock(), mock())
+        val target = VerificationSubscriptionFactoryImpl(subscriptionFactory, mock(), mock(), mock())
 
         val result = target.create(config)
 

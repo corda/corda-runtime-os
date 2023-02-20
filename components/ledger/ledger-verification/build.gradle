@@ -76,6 +76,7 @@ dependencies {
     integrationTestImplementation project(':testing:db-message-bus-testkit')
     integrationTestImplementation project(':testing:ledger:ledger-common-testkit')
     integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:test-serialization')
     integrationTestImplementation project(':testing:test-utilities')
 
     // needed to import serialization libs

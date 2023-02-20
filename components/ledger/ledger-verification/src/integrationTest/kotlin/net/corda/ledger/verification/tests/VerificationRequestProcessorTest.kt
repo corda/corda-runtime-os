@@ -12,13 +12,14 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
-import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus
@@ -39,6 +40,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -87,7 +89,7 @@ class VerificationRequestProcessorTest {
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
             REQUEST_ID, "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
         )
-        val NON_EXISTING_CPK = CordaPackageSummary(
+        val NON_EXISTING_CPK = CordaPackageSummaryImpl(
             "NonExistingCPK",
             "1.0",
             "SHA-256:2222222222222222",
@@ -135,14 +137,16 @@ class VerificationRequestProcessorTest {
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
-        val transaction = createTestTransaction(sandbox, isValid = true)
-        val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
+        val serializationService = sandbox.getSerializationService()
+        val transaction = createTestTransaction(sandbox, cpkSummaries, isValid = true)
+        val request = createRequest(sandbox, holdingIdentity, transaction)
 
         // Create request processor
         val processor = VerificationRequestProcessor(
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory
+            externalEventResponseFactory,
+            serializationService
         )
 
         // Send request to message processor
@@ -169,14 +173,16 @@ class VerificationRequestProcessorTest {
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
-        val transaction = createTestTransaction(sandbox, isValid = false)
-        val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
+        val serializationService = sandbox.getSerializationService()
+        val transaction = createTestTransaction(sandbox, cpkSummaries, isValid = false)
+        val request = createRequest(sandbox, holdingIdentity, transaction)
 
         // Create request processor
         val processor = VerificationRequestProcessor(
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory
+            externalEventResponseFactory,
+            serializationService
         )
 
         // Send request to message processor
@@ -207,14 +213,16 @@ class VerificationRequestProcessorTest {
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
-        val transaction = createTestTransaction(sandbox, isValid = true)
-        val request = createRequest(sandbox, holdingIdentity, transaction, listOf(NON_EXISTING_CPK))
+        val serializationService = sandbox.getSerializationService()
+        val transaction = createTestTransaction(sandbox, listOf(NON_EXISTING_CPK), isValid = true)
+        val request = createRequest(sandbox, holdingIdentity, transaction)
 
         // Create request processor
         val processor = VerificationRequestProcessor(
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory
+            externalEventResponseFactory,
+            serializationService
         )
 
         // Send request to message processor (there were max number of redeliveries)
@@ -232,7 +240,11 @@ class VerificationRequestProcessorTest {
         assertThat(response.requestId).isEqualTo(REQUEST_ID)
     }
 
-    private fun createTestTransaction(ctx: SandboxGroupContext, isValid: Boolean): UtxoLedgerTransactionContainer {
+    private fun createTestTransaction(
+        ctx: SandboxGroupContext,
+        cpkSummaries: List<CordaPackageSummary>,
+        isValid: Boolean
+    ): UtxoLedgerTransactionContainer {
         val signatory = ctx.getSerializationService().serialize(publicKeyExample).bytes
 
         val input = ctx.getSerializationService().serialize(
@@ -251,9 +263,7 @@ class VerificationRequestProcessorTest {
 
         val command = ctx.getSerializationService().serialize(TestCommand()).bytes
 
-        val wireTransaction = wireTransactionFactory.createExample(
-            jsonMarshallingService,
-            jsonValidator,
+        val wireTransaction = wireTransactionFactory.create(
             listOf(
                 emptyList(),
                 listOf(signatory),
@@ -265,16 +275,36 @@ class VerificationRequestProcessorTest {
                 listOf(outputState),
                 listOf(command)
             ),
-            ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
-            transactionSubType = "GENERAL"
+            cpkSummaries
         )
+
         val inputStateAndRefs: List<StateAndRef<*>> = listOf()
         val referenceStateAndRefs: List<StateAndRef<*>> = listOf()
         return UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs)
     }
 
+    private fun WireTransactionFactory.create(
+        componentGroups: List<List<ByteArray>>,
+        cpkMetadata: List<CordaPackageSummary>
+    ): WireTransaction {
+        val metadata =
+            transactionMetadataExample(
+                numberOfComponentGroups = componentGroups.size + 1,
+                cpkMetadata = cpkMetadata,
+                ledgerModel = UtxoLedgerTransactionImpl::class.java.canonicalName,
+                transactionSubType = "GENERAL"
+            )
+        val metadataJson = jsonMarshallingService.format(metadata)
+        val canonicalJson = jsonValidator.canonicalize(metadataJson)
+
+        val allGroupLists = listOf(
+            listOf(canonicalJson.toByteArray()),
+        ) + componentGroups
+        return create(allGroupLists)
+    }
+
     private fun CpkMetadata.toCpkSummary() =
-        CordaPackageSummary(
+        CordaPackageSummaryImpl(
             cpkId.name,
             cpkId.version,
             cpkId.signerSummaryHash.toString(),
@@ -285,12 +315,10 @@ class VerificationRequestProcessorTest {
         ctx: SandboxGroupContext,
         holdingIdentity: HoldingIdentity,
         transaction: UtxoLedgerTransactionContainer,
-        cpksSummaries: List<CordaPackageSummary>
     ) = TransactionVerificationRequest(
             Instant.now(),
             holdingIdentity.toAvro(),
             ctx.serialize(transaction),
-            cpksSummaries,
             EXTERNAL_EVENT_CONTEXT
         )
 

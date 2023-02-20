@@ -12,7 +12,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
 import java.time.Clock
-import net.corda.ledger.utxo.verification.CordaPackageSummary as CordaPackageSummaryAvro
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus as TransactionVerificationStatusAvro
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest as TransactionVerificationRequestAvro
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse as TransactionVerificationResponseAvro
@@ -38,7 +37,6 @@ class TransactionVerificationExternalEventFactory(
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setTransaction(parameters.transaction)
-                .setCpkMetadata(parameters.cpkMetadata)
                 .setFlowExternalEventContext(flowExternalEventContext)
                 .build()
         )
@@ -62,6 +60,5 @@ class TransactionVerificationExternalEventFactory(
 }
 
 data class TransactionVerificationParameters(
-    val transaction: ByteBuffer,
-    val cpkMetadata: List<CordaPackageSummaryAvro>
+    val transaction: ByteBuffer
 )

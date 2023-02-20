@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
@@ -35,12 +34,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     override fun verify(transaction: UtxoLedgerTransaction) {
         val verificationResult = externalEventExecutor.execute(
             TransactionVerificationExternalEventFactory::class.java,
-            TransactionVerificationParameters(
-                serialize(transaction.toContainer()),
-                transaction.getCpkMetadata().map {
-                    CordaPackageSummary(it.name, it.version, it.signerSummaryHash, it.fileChecksum)
-                }
-            )
+            TransactionVerificationParameters(serialize(transaction.toContainer()))
         )
 
         if (verificationResult.status != TransactionVerificationStatus.VERIFIED) {
@@ -56,11 +50,6 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     private fun UtxoLedgerTransaction.toContainer() =
         (this as UtxoLedgerTransactionInternal).run {
             UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs)
-        }
-
-    private fun UtxoLedgerTransaction.getCpkMetadata() =
-        (this as UtxoLedgerTransactionInternal).run {
-            wireTransaction.metadata.getCpkMetadata()
         }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)

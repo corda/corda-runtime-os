@@ -5,18 +5,23 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.utxo.verification.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 
 class VerificationRequestProcessorTest {
@@ -32,18 +37,33 @@ class VerificationRequestProcessorTest {
     private val verificationSandboxService = mock<VerificationSandboxService>()
     private val verificationRequestHandler = mock<VerificationRequestHandler>()
     private val responseFactory = mock<ExternalEventResponseFactory>()
+    private val serializationService = mock<SerializationService>()
     private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
-    private val cpkSummaries = listOf(CordaPackageSummary(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM))
+    private val cpkSummaries = listOf(CordaPackageSummaryImpl(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM))
+    private val serializedTransaction = ByteArray(0)
+    private val transactionContainer = mock<UtxoLedgerTransactionContainer>()
+    private val wireTransaction = mock<WireTransaction>()
+    private val transactionMetadata = mock<TransactionMetadata>()
     private val sandbox = mock<SandboxGroupContext>()
 
     private val verificationRequestProcessor = VerificationRequestProcessor(
         verificationSandboxService,
         verificationRequestHandler,
-        responseFactory
+        responseFactory,
+        serializationService
     )
 
     @BeforeEach
     fun setup() {
+        whenever(serializationService.deserialize(serializedTransaction, UtxoLedgerTransactionContainer::class.java))
+            .thenReturn(transactionContainer)
+        whenever(transactionContainer.wireTransaction).thenReturn(wireTransaction)
+        whenever(wireTransaction.metadata).thenReturn(transactionMetadata)
+        whenever(transactionMetadata.getCpkMetadata()).thenReturn(
+            listOf(
+                CordaPackageSummaryImpl(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
+            )
+        )
         whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenReturn(sandbox)
     }
 
@@ -101,8 +121,6 @@ class VerificationRequestProcessorTest {
             timestamp = Instant.MIN
             flowExternalEventContext = ExternalEventContext(requestId, "f1", KeyValuePairList())
             holdingIdentity = ALICE_X500_HOLDING_ID
-            cpkMetadata = listOf(
-                CordaPackageSummary(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
-            )
+            transaction = ByteBuffer.wrap(serializedTransaction)
         }
 }
