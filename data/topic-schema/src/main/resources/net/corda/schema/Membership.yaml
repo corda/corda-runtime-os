@@ -6,7 +6,7 @@ topics:
       - flow
       - link-manager
       - membership
-      - rpc
+      - rest
     producers:
       - db
       - membership
@@ -50,7 +50,7 @@ topics:
     consumers:
       - link-manager
       - membership
-      - rpc
+      - rest
       - flow
     producers:
       - membership
@@ -67,11 +67,11 @@ topics:
     consumers:
       - membership
     producers:
-      - rpc
+      - rest
   MembershipRpcOpsResponseTopic:
     name: membership.rpc.ops.resp
     consumers:
-      - rpc
+      - rest
     producers:
       - membership
   MembershipDBRpcOpsTopic:
@@ -81,14 +81,14 @@ topics:
     producers:
       - link-manager
       - membership
-      - rpc
+      - rest
     config:
   MembershipDBRpcOpsResponseTopic:
     name: membership.db.rpc.ops.resp
     consumers:
       - link-manager
       - membership
-      - rpc
+      - rest
     producers:
       - db
     config:
@@ -97,7 +97,7 @@ topics:
     consumers:
       - membership
     producers:
-      - rpc
+      - rest
   MembershipStaticNetworkTopic:
     name: membership.static.network
     consumers:

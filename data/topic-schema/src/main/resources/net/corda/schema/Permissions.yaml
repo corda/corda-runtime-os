@@ -2,7 +2,7 @@ topics:
   PermissionsUserSummaryTopic:
     name: permissions.user.summary
     consumers:
-      - rpc
+      - rest
       - db
     producers:
       - db

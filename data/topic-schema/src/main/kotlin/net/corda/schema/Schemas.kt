@@ -162,16 +162,16 @@ class Schemas {
     }
 
     /**
-     * RPC Message schema
+     * Rest Message schema
      */
-    class RPC {
+    class Rest {
         companion object {
-            const val RPC_PERM_MGMT_REQ_TOPIC = "rpc.permissions.management"
-            val RPC_PERM_MGMT_RESP_TOPIC = getRPCResponseTopic(RPC_PERM_MGMT_REQ_TOPIC)
-            const val RPC_PERM_USER_TOPIC = "rpc.permissions.user"
-            const val RPC_PERM_GROUP_TOPIC = "rpc.permissions.group"
-            const val RPC_PERM_ROLE_TOPIC = "rpc.permissions.role"
-            const val RPC_PERM_ENTITY_TOPIC = "rpc.permissions.permission"
+            const val REST_PERM_MGMT_REQ_TOPIC = "rest.permissions.management"
+            val REST_PERM_MGMT_RESP_TOPIC = getRPCResponseTopic(REST_PERM_MGMT_REQ_TOPIC)
+            const val REST_PERM_USER_TOPIC = "rest.permissions.user"
+            const val REST_PERM_GROUP_TOPIC = "rest.permissions.group"
+            const val REST_PERM_ROLE_TOPIC = "rest.permissions.role"
+            const val REST_PERM_ENTITY_TOPIC = "rest.permissions.permission"
         }
     }
 
