@@ -48,7 +48,11 @@ class NotaryInfoConverter @Activate constructor(
 }
 
 private data class NotaryInfoImpl(
-    override val name: MemberX500Name,
-    override val pluginClass: String,
-    override val publicKey: PublicKey,
-) : NotaryInfo
+    private val name: MemberX500Name,
+    private val pluginClass: String,
+    private val publicKey: PublicKey,
+) : NotaryInfo {
+    override fun getName() = name
+    override fun getPluginClass() = pluginClass
+    override fun getPublicKey() = publicKey
+}

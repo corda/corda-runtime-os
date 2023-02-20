@@ -8,7 +8,7 @@ import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
-import net.corda.e2etest.utilities.registerMember
+import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -65,9 +65,9 @@ class ConsensualLedgerTests {
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
 
-        registerMember(aliceHoldingId)
-        registerMember(bobHoldingId)
-        registerMember(charlieHoldingId)
+        registerStaticMember(aliceHoldingId)
+        registerStaticMember(bobHoldingId)
+        registerStaticMember(charlieHoldingId)
     }
 
     @Test

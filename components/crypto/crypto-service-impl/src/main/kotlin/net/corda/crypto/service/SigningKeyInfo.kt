@@ -5,6 +5,7 @@ import java.time.Instant
 @Suppress("LongParameterList")
 class SigningKeyInfo(
     val id: String,
+    // TODO see if we need to add full id here
     val tenantId: String,
     val category: String,
     val alias: String?,
