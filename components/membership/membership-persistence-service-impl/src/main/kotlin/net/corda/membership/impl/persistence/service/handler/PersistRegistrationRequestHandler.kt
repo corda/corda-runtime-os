@@ -9,6 +9,7 @@ import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.canMoveToStatus
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.virtualnode.toCorda
+import java.time.Instant
 import javax.persistence.LockModeType
 
 internal class PersistRegistrationRequestHandler(
@@ -53,6 +54,7 @@ internal class PersistRegistrationRequestHandler(
                     publicKey = request.registrationRequest.memberSignature.publicKey.array(),
                     context = keyValuePairListSerializer.serialize(request.registrationRequest.memberSignature.context) ?: byteArrayOf(),
                     content = request.registrationRequest.memberSignature.bytes.array(),
+                    timestamp = Instant.ofEpochSecond(0L)
                 )
             )
         }

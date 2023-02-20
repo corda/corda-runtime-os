@@ -40,10 +40,7 @@ class MemberInfoEntity(
     var mgmContext: ByteArray,
 
     @Column(name = "serial_number", nullable = false)
-    val serialNumber: Long,
-
-    @Column(name = "timestamp", nullable = false)
-    val timestamp: Instant
+    val serialNumber: Long
 ) {
 
     override fun equals(other: Any?): Boolean {

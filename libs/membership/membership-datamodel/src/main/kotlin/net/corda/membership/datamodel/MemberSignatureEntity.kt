@@ -2,6 +2,7 @@ package net.corda.membership.datamodel
 
 import net.corda.db.schema.DbSchema
 import net.corda.v5.base.types.MemberX500Name
+import java.time.Instant
 import java.util.Objects
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -32,6 +33,9 @@ class MemberSignatureEntity(
 
     @Column(name = "content", nullable = false, updatable = false, columnDefinition = "BLOB")
     val content: ByteArray,
+
+    @Column(name = "timestamp", nullable = false)
+    var timestamp: Instant
 ) {
     override fun equals(other: Any?): Boolean {
         if (other === this) return true

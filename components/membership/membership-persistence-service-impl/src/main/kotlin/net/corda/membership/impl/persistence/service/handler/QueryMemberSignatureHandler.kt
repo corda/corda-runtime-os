@@ -39,6 +39,9 @@ internal class QueryMemberSignatureHandler(
                             holdingIdentity.x500Name
                         )
                     ) ?: throw MembershipPersistenceException("Could not find signature for $holdingIdentity")
+
+                    logger.info("@@@ timestamp read from MemberInfoEntity: ${signatureEntity.timestamp}")
+
                     val signatureContext = if (signatureEntity.context.isEmpty()) {
                         KeyValuePairList(emptyList())
                     } else {

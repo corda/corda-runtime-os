@@ -39,8 +39,7 @@ internal class PersistMemberInfoHandler(
                         clock.instant(),
                         serializeContext(it.memberContext),
                         serializeContext(it.mgmContext),
-                        memberInfo.serial,
-                        Instant.ofEpochSecond(0L)
+                        memberInfo.serial
                     )
                     em.merge(entity)
                 }

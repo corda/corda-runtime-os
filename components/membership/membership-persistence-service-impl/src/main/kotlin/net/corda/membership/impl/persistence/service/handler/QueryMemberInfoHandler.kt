@@ -49,7 +49,6 @@ internal class QueryMemberInfoHandler(
                                 holdingIdentity.x500Name
                             )
                         )
-                        logger.info("@@@ timestamp read from MemberInfoEntity: ${entity.timestamp}")
                         entity
                     }.map {
                         it.toPersistentMemberInfo(context.holdingIdentity)
