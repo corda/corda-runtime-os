@@ -58,6 +58,7 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
             flowClassName = startContext.flowClassName
             createdTimestamp = startContext.createdTimestamp
             lastUpdateTimestamp = currentTimeProvider()
+            someString = "getCommonFlowStatus"
         }
     }
 }

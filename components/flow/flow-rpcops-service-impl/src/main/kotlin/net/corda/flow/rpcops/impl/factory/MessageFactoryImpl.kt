@@ -72,6 +72,7 @@ class MessageFactoryImpl : MessageFactory {
             this.flowStatus = FlowStates.START_REQUESTED
             this.createdTimestamp = now
             this.lastUpdateTimestamp = now
+            this.someString = "createStartFlowStatus"
         }
     }
 }

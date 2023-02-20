@@ -111,6 +111,9 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         try {
             val flowKey = newRecord.key
             val flowStatus = newRecord.value
+
+            log.info("@@@ flowStatus new field: ${flowStatus?.someString}")
+
             if (flowStatus == null) {
                 cache.remove(flowKey)
                 lock.writeLock().withLock { statusListenersPerFlowKey.removeAll(flowKey) }.map {
