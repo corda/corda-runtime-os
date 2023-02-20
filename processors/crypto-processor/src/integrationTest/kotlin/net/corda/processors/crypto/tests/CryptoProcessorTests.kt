@@ -27,7 +27,6 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
-import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
@@ -64,11 +63,15 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.crypto.sha256Bytes
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -426,9 +429,9 @@ class CryptoProcessorTests {
     fun `Should not find unknown public key by its id`(
         tenantId: String
     ) {
-        val found = opsClient.lookup(
+        val found = opsClient.lookupKeysByIds(
             tenantId = tenantId,
-            ids = listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))
+            keyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
         )
         assertEquals(0, found.size)
     }
@@ -594,9 +597,9 @@ class CryptoProcessorTests {
         category: String,
         externalId: String?
     ) {
-        val found = opsClient.lookup(
+        val found = opsClient.lookupKeysByIds(
             tenantId = tenantId,
-            ids = listOf(publicKey.publicKeyId())
+            keyIds = listOf(ShortHash.of(publicKey.publicKeyId()))
         )
         assertEquals(1, found.size)
         assertEquals(publicKey.publicKeyId(), found[0].id)
@@ -831,12 +834,12 @@ class CryptoProcessorTests {
 
     @Test
     fun `filterMyKeys filters and returns keys owned by the specified vnode`() {
-        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1")
-        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2")
-
-        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1")
-        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2")
-        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3")
+        val randomId = UUID.randomUUID()
+        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
+        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
+        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1-$randomId")
+        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2-$randomId")
+        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3-$randomId")
 
         val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
         val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
@@ -844,6 +847,54 @@ class CryptoProcessorTests {
 
         assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
         assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+    }
+
+    @Test
+    fun `filterMyKeys works for both short key ids and full key ids`() {
+        val randomId = UUID.randomUUID()
+        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
+        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
+        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1-$randomId")
+        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2-$randomId")
+        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3-$randomId")
+
+        val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
+        val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
+        val allKeys = vnodeKeys + vnode2Keys
+
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys))
+        assertEquals(vnodeKeys, opsClient.filterMyKeys(vnodeId, allKeys, usingFullIds = true))
+        assertEquals(vnode2Keys, opsClient.filterMyKeys(vnodeId2, allKeys, usingFullIds = true))
+    }
+
+    @Test
+    fun `lookup works for both short key ids and full key ids`() {
+        val randomId = UUID.randomUUID()
+        val vnodeKey1 = generateLedgerKey(vnodeId, "vnode-key-1-$randomId")
+        val vnodeKey2 = generateLedgerKey(vnodeId, "vnode-key-2-$randomId")
+        val vnode2Key1 = generateLedgerKey(vnodeId2, "vnode2-key-1-$randomId")
+        val vnode2Key2 = generateLedgerKey(vnodeId2, "vnode2-key-2-$randomId")
+        val vnode2Key3 = generateLedgerKey(vnodeId2, "vnode2-key-3-$randomId")
+
+        val vnodeKeys = listOf(vnodeKey1, vnodeKey2)
+        val vnode2Keys = listOf(vnode2Key1, vnode2Key2, vnode2Key3)
+        val vnodeKeysEncoded = vnodeKeys.map { it.encoded }
+        val vnode2KeysEncoded = vnode2Keys.map { it.encoded }
+
+        val allKeys = vnodeKeys + vnode2Keys
+        val allKeyIds = allKeys.map { it.publicKeyId() }.map { ShortHash.of(it) }
+        val allKeyFullIds = allKeys.map { it.fullId() }
+
+        val queriedVnodeKeysEncoded = opsClient.lookupKeysByIds(vnodeId, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedVnode2KeysEncoded = opsClient.lookupKeysByIds(vnodeId2, allKeyIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnodeKeysEncoded = opsClient.lookupKeysByFullIds(vnodeId, allKeyFullIds).map { it.publicKey.toBytes() }
+        val queriedByFullIdsVnode2KeysEncoded = opsClient.lookupKeysByFullIds(vnodeId2, allKeyFullIds).map { it.publicKey.toBytes() }
+
+        assertTrue(listsOfBytesAreEqual(vnodeKeysEncoded, queriedVnodeKeysEncoded))
+        assertTrue(listsOfBytesAreEqual(vnode2KeysEncoded, queriedVnode2KeysEncoded))
+        assertTrue(listsOfBytesAreEqual(queriedVnodeKeysEncoded, queriedByFullIdsVnodeKeysEncoded))
+        assertTrue(listsOfBytesAreEqual(queriedVnode2KeysEncoded, queriedByFullIdsVnode2KeysEncoded))
     }
 
     private fun generateLedgerKey(tenantId: String, keyAlias: String): PublicKey =
@@ -854,3 +905,25 @@ class CryptoProcessorTests {
             scheme = ECDSA_SECP256R1_CODE_NAME
         )
 }
+
+private fun java.nio.ByteBuffer.toBytes(): ByteArray {
+    val bytes = ByteArray(this.remaining())
+    this.get(bytes)
+    return bytes
+}
+
+private fun listsOfBytesAreEqual(bytesList0: List<ByteArray>, bytesList1: List<ByteArray>): Boolean =
+    bytesList0.size == bytesList1.size &&
+            bytesList0.all { outer ->
+                bytesList1.any { inner ->
+                    outer.contentEquals(inner)
+                }
+            } &&
+            bytesList1.all { outer ->
+                bytesList0.any { inner ->
+                    outer.contentEquals(inner)
+                }
+            }
+
+fun PublicKey.fullId(): SecureHash =
+    SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes())
