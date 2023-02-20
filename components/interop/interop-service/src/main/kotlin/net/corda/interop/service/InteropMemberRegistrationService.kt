@@ -21,6 +21,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
@@ -48,13 +49,16 @@ class InteropMemberRegistrationService(
         private val memberList =
             listOf(HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID))
     }
-
-    //Below method is to push the dummy interops memeber data to MEMBER_LIST_TOPIC
+//    require(endpoints.isNotEmpty()) { "Node must have at least one address." }
+//    require(platformVersion > 0) { "Platform version must be at least 1." }
+//    require(softwareVersion.isNotEmpty()) { "Node software version must not be blank." }
+    //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
     fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>> {
         val memberInfoList = mutableListOf<Record<String, PersistentMemberInfo>>()
         memberList.forEach {member ->
             val memberContext = listOf(
                 KeyValuePair(PARTY_NAME, member.x500Name.toString()),
+                KeyValuePair(String.format(URL_KEY, "0"), "http://localhost:8080"),
                 KeyValuePair(PARTY_SESSION_KEY, DUMMY_CERTIFICATE),
                 KeyValuePair(SESSION_KEY_HASH, "9DEA9C982267BD142162ADC141C1C11C2F547C3C37B4C693A3EA3A017C2C6563"),
                 KeyValuePair(GROUP_ID, INTEROP_GROUP_ID),
