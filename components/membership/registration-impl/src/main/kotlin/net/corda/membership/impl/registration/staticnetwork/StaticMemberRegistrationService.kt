@@ -181,10 +181,10 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
-        val alreadyRegisterMember = membershipGroupReader.lookup(member.x500Name)
-        if (alreadyRegisterMember?.isActive == true) {
+        val alreadyRegisteredMember = membershipGroupReader.lookup(member.x500Name)
+        if (alreadyRegisteredMember?.isActive == true) {
             throw InvalidMembershipRegistrationException(
-                "The member ${member.x500Name} had been register successfully in the group ${member.groupId}. " +
+                "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
                     "Can not re-register."
             )
         }
