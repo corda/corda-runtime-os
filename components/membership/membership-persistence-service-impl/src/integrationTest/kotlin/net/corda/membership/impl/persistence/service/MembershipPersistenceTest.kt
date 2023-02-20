@@ -1327,13 +1327,9 @@ class MembershipPersistenceTest {
     private class TestGroupParametersImpl(
         private val map: LayeredPropertyMap
     ) : LayeredPropertyMap by map, GroupParameters {
-        override val epoch: Int
-            get() = 5
-        override val minimumPlatformVersion: Int
-            get() = 5000
-        override val modifiedTime: Instant
-            get() = clock.instant()
-        override val notaries: List<NotaryInfo>
-            get() = emptyList()
+        override fun getEpoch() = 5
+        override fun getMinimumPlatformVersion() = 5000
+        override fun getModifiedTime() = clock.instant()
+        override fun getNotaries(): List<NotaryInfo> = emptyList()
     }
 }
