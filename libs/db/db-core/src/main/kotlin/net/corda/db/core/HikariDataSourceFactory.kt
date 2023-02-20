@@ -2,8 +2,12 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import org.slf4j.LoggerFactory
 import java.io.Closeable
+import java.util.UUID
 import javax.sql.DataSource
+
+private val logger = LoggerFactory.getLogger(HikariDataSourceFactory::class.java)
 
 /**
  * Creates Hikari [DataSource] instances.
@@ -20,14 +24,22 @@ class HikariDataSourceFactory(
         // TODO - this can be enabled when https://github.com/brettwooldridge/HikariCP/pull/1989 is released
         //   https://r3-cev.atlassian.net/browse/CORE-7113
         // ds.metricsTrackerFactory = MicrometerMetricsTrackerFactory(MeterFactory.registry)
-        DataSourceWrapper(ds)
+
+        val i = UUID.randomUUID().toString()
+        logger.warn("HikariDataSource - $i - 1.created - ${stackTrace()}")
+        DataSourceWrapper(ds, i)
     }
 ) : DataSourceFactory {
     /**
      * [HikariDataSource] wrapper that makes it [CloseableDataSource]
      */
-    private class DataSourceWrapper(private val delegate: HikariDataSource)
-        : CloseableDataSource, Closeable by delegate, DataSource by delegate
+    private class DataSourceWrapper(private val delegate: HikariDataSource, private val counter: String)
+        : CloseableDataSource, Closeable, DataSource by delegate {
+        override fun close() {
+            logger.warn("HikariDataSource - $counter - 2.closed - ${stackTrace()}")
+            delegate.close()
+        }
+    }
 
     override fun create(
         driverClass: String,
@@ -62,3 +74,5 @@ class HikariDataSourceFactory(
         return hikariDataSourceFactory(conf)
     }
 }
+
+private fun stackTrace() = Throwable().stackTraceToString().replace("\n", ", ")
