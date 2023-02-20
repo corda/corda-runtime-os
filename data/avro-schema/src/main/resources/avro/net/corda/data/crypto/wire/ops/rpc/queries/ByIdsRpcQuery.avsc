@@ -2,15 +2,15 @@
   "type": "record",
   "name": "ByIdsRpcQuery",
   "namespace": "net.corda.data.crypto.wire.ops.rpc.queries",
-  "doc": "Request to lookup for keys by their ids, the maximum number of items is 20.",
+  "doc": "Request to lookup for keys by their ids. Ids can be either short or full key ids. The maximum number of items is 20",
   "fields": [
     {
-      "name": "keys",
-      "type": {
-        "type": "array",
-        "items": "string"
-      },
-      "doc": "List of key ids."
+      "name": "keyIds",
+      "type": [
+        "net.corda.data.crypto.ShortHashes",
+        "net.corda.data.crypto.SecureHashes"
+      ],
+      "doc": "List of key ids"
     }
   ]
 }

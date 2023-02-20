@@ -10,6 +10,9 @@
             <column name="key_id" type="CHAR(12)">
                 <constraints nullable="false"/>
             </column>
+            <column name="full_key_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
             <column name="timestamp" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
@@ -50,6 +53,11 @@
         <addPrimaryKey constraintName="crypto_signing_key_pk"
                        tableName="crypto_signing_key"
                        columnNames="tenant_id, key_id"/>
+        <createIndex indexName="crypto_signing_key_full_key_idx"
+                     tableName="crypto_signing_key">
+            <column name="tenant_id"/>
+            <column name="full_key_id"/>
+        </createIndex>
         <createIndex indexName="crypto_signing_key_tenant_idx"
                      tableName="crypto_signing_key">
             <column name="tenant_id"/>
