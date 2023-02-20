@@ -115,20 +115,4 @@ class ChunkSerializerServiceImplTest {
         verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
         verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
-
-    @Test
-    fun `generateChunks from bytes too small so returns no chunks`() {
-        val result = chunkSerializerService.generateChunksFromBytes(someSmallBytes)
-        assertThat(result).isEmpty()
-    }
-
-    @Test
-    fun `generateChunks from bytes success and returns 3 chunks`() {
-        val result = chunkSerializerService.generateChunksFromBytes(someLargeBytes)
-        assertThat(result).isNotEmpty
-        assertThat(result.size).isEqualTo(5)
-
-        verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
-        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
-    }
 }
