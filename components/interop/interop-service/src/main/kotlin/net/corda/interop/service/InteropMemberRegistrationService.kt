@@ -27,13 +27,11 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.time.Instant
 
 @Component(service = [InteropMemberRegistrationService::class])
 class InteropMemberRegistrationService(
-    //@Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) {
 
@@ -122,8 +120,10 @@ class InteropMemberRegistrationService(
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
         val testId = "test1"
         val identity = net.corda.data.identity.HoldingIdentity(testId, testId)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "interop")
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
+        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1),
+            "", "", "interop")
+        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", " +
+                "\"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
 
         val interopMessage = InteropMessage("InteropMessageID-01", payload)
 
