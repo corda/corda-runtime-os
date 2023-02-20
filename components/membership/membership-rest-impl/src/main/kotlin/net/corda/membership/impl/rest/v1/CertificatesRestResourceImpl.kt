@@ -111,7 +111,7 @@ class CertificatesRestResourceImpl @Activate constructor(
         val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                keyIds = listOf(ShortHash.of(keyId))
+                keyIds = listOf(ShortHash.ofOrThrow(keyId))
             )
         }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
         val principal = when (key.category) {

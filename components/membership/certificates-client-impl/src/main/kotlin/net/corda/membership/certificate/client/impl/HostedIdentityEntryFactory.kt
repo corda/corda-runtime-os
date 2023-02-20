@@ -49,12 +49,12 @@ internal class HostedIdentityEntryFactory(
 
     private fun getKey(
         tenantId: String,
-        sessionKeyId: String?,
+        sessionKeyId: ShortHash?,
     ): String {
         val sessionKey = if (sessionKeyId != null) {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                keyIds = listOf(ShortHash.of(sessionKeyId))
+                keyIds = listOf(sessionKeyId)
             )
         } else {
             cryptoOpsClient.lookup(
@@ -112,7 +112,7 @@ internal class HostedIdentityEntryFactory(
             logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
             null
         } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${nodeInfo.holdingIdentity.shortHash}].")
-        val sessionPublicKey = getKey(holdingIdentityShortHash.value, sessionKeyId)
+        val sessionPublicKey = getKey(holdingIdentityShortHash.value, sessionKeyId?.let { ShortHash.of(sessionKeyId) })
         val (tlsKeyTenantId, tlsCertificateHoldingId) = if (useClusterLevelTlsCertificateAndKey) {
             P2P to null
         } else {

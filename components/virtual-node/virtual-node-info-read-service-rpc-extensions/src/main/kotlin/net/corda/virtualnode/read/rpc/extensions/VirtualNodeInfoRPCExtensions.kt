@@ -100,7 +100,7 @@ fun VirtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
 }
 
 /**
- * Creates a short hash from the given [holdingIdentityShortHash].
+ * Creates a short hash from the given [hexString].
  *
  * For consistency with [SecureHash.toHexString], any lower case alpha characters are converted to uppercase.
  *
@@ -109,16 +109,16 @@ fun VirtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
  * @see ShortHash.of
  */
 @SuppressWarnings("SwallowedException")
-fun ShortHash.Companion.ofOrThrow(holdingIdentityShortHash: String): ShortHash {
+fun ShortHash.Companion.ofOrThrow(hexString: String): ShortHash {
     return try {
-        of(holdingIdentityShortHash)
+        of(hexString)
     } catch (e: ShortHashException) {
-        throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+        throw BadRequestException("Invalid short hash ${e.message?.let { ": $it" }}")
     }
 }
 
 /**
- * Creates a short hash parsing the given [holdingIdentityShortHash].
+ * Creates a [ShortHash] parsing the given [hexString].
  *
  * For consistency with [SecureHash.toHexString], any lower case alpha characters are converted to uppercase.
  *
@@ -127,10 +127,10 @@ fun ShortHash.Companion.ofOrThrow(holdingIdentityShortHash: String): ShortHash {
  * @see ShortHash.of
  */
 @SuppressWarnings("SwallowedException")
-fun ShortHash.Companion.parseOrThrow(holdingIdentityShortHash: String): ShortHash {
+fun ShortHash.Companion.parseOrThrow(hexString: String): ShortHash {
     return try {
-        parse(holdingIdentityShortHash)
+        parse(hexString)
     } catch (e: ShortHashException) {
-        throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+        throw BadRequestException("Invalid short hash ${e.message?.let { ": $it" }}")
     }
 }

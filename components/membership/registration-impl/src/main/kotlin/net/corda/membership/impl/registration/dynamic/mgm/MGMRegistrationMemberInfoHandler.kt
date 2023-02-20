@@ -81,7 +81,7 @@ internal class MGMRegistrationMemberInfoHandler(
     private fun getKeyFromId(keyId: String, tenantId: String, expectedCategory: String): PublicKey {
         return cryptoOpsClient.lookupKeysByIds(
             tenantId,
-            listOf(ShortHash.of(keyId))
+            listOf(ShortHash.parse(keyId))
         ).firstOrNull()?.let {
             if (it.category != expectedCategory) {
                 throw MGMRegistrationContextValidationException(
