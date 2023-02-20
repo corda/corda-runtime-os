@@ -74,12 +74,12 @@ class InteropMemberRegistrationService(
 //                MEMBER_CPI_SIGNER_HASH,
 //                "SHA-256:367DDC08BB0BFBC8B338E2B8DC17EB1715A542386E6FE2376A9FB9EBC80A3DEC"
 //            )
-            )
+            ).sorted()
             val mgmContext = listOf(
                 KeyValuePair(STATUS, "ACTIVE"),
                 KeyValuePair(MODIFIED_TIME, Instant.now().toString()),
                 KeyValuePair(MemberInfoExtension.SERIAL, "1"),
-            )
+            ).sorted()
             memberInfoList.addAll(memberList.map {
                 Record(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
