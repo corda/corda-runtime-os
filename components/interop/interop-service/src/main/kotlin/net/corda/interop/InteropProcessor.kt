@@ -6,13 +6,15 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.service.InteropMessageTransformer
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.UUID
 
 //Based on FlowP2PFilter
@@ -35,8 +37,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         val outputEvents = mutableListOf<Record<*, *>>()
         events.forEach { appMessage ->
             val authMessage = appMessage.value?.message
-            if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == SUBSYSTEM) {
-                getOutputRecord(authMessage.header, authMessage.payload, appMessage.key)?.let { outputRecord ->
+            if (authMessage != null && authMessage is UnauthenticatedMessage && authMessage.header.subsystem == SUBSYSTEM) {
+                getOutputRecord(authMessage.toCommonHeader(), authMessage.payload, appMessage.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
                 }
             }
@@ -46,7 +48,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
 
     // Returns an OUTBOUND message to P2P layer, in the future it will pass a message to FlowProcessor
     private fun getOutputRecord(
-        header: AuthenticatedMessageHeader,
+        header: CommonHeader,
         payload: ByteBuffer,
         key: String
     ): Record<String, AppMessage>? {
@@ -67,25 +69,41 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
 
-    fun generateAppMessage(
-        header: AuthenticatedMessageHeader,
+    private fun generateAppMessage(
+        header: CommonHeader,
         interopMessage: InteropMessage,
         interopMessageSerializer: CordaAvroSerializer<InteropMessage>
     ): AppMessage {
-        val responseHeader = AuthenticatedMessageHeader(
+        val responseHeader = UnauthenticatedMessageHeader(
             header.source,
             header.destination,
-            header.ttl,
             header.messageId + "-" + UUID.randomUUID(),
-            "",
             SUBSYSTEM
         )
         return AppMessage(
-            AuthenticatedMessage(
+            UnauthenticatedMessage(
                 responseHeader,
                 ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
             )
         )
     }
 
-}
+    }
+
+data class CommonHeader(val destination: net.corda.data.identity.HoldingIdentity, val source: net.corda.data.identity.HoldingIdentity,
+                        val ttl: Instant? = null, val messageId: String, val traceId: String? = null,
+                        val subsystem: String = InteropProcessor.SUBSYSTEM)
+
+
+fun AuthenticatedMessage.toCommonHeader() =
+    CommonHeader(header.source,
+        header.destination,
+        header.ttl,
+        header.messageId ,
+        header.traceId)
+
+fun UnauthenticatedMessage.toCommonHeader() =
+    CommonHeader(header.source,
+        header.destination,
+        null,
+        header.messageId)

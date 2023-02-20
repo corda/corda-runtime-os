@@ -7,8 +7,9 @@ import net.corda.data.interop.InteropMessage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
+import net.corda.interop.InteropProcessor.Companion.SUBSYSTEM
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -18,6 +19,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
@@ -37,11 +39,11 @@ class InteropMemberRegistrationService(
 ) {
 
     companion object {
-        private val ALICE_ALTER_EGO_X500 = "CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB"
-        private val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        private const val ALICE_ALTER_EGO_X500 = "CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB"
+        private const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         private val ALICE_ALTER_EGO_X500_NAME = MemberX500Name.parse(ALICE_ALTER_EGO_X500)
         private val ALICE_X500_NAME = MemberX500Name.parse(ALICE_X500)
-        private val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         private val DUMMY_CERTIFICATE =
             this::class.java.getResource("/dummy_certificate.pem")?.readText()
         private val DUMMY_PUBLIC_SESSION_KEY =
@@ -49,9 +51,7 @@ class InteropMemberRegistrationService(
         private val memberList =
             listOf(HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID))
     }
-//    require(endpoints.isNotEmpty()) { "Node must have at least one address." }
-//    require(platformVersion > 0) { "Platform version must be at least 1." }
-//    require(softwareVersion.isNotEmpty()) { "Node software version must not be blank." }
+
     //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
     fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>> {
         val memberInfoList = mutableListOf<Record<String, PersistentMemberInfo>>()
@@ -59,6 +59,7 @@ class InteropMemberRegistrationService(
             val memberContext = listOf(
                 KeyValuePair(PARTY_NAME, member.x500Name.toString()),
                 KeyValuePair(String.format(URL_KEY, "0"), "http://localhost:8080"),
+                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 KeyValuePair(PARTY_SESSION_KEY, DUMMY_CERTIFICATE),
                 KeyValuePair(SESSION_KEY_HASH, "9DEA9C982267BD142162ADC141C1C11C2F547C3C37B4C693A3EA3A017C2C6563"),
                 KeyValuePair(GROUP_ID, INTEROP_GROUP_ID),
@@ -123,9 +124,7 @@ class InteropMemberRegistrationService(
     fun seedMessage() : List<Record<*,*>>{
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
         val testId = "test1"
-        val identity = net.corda.data.identity.HoldingIdentity(testId, testId)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1),
-            "", "", "interop")
+        val header = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), SUBSYSTEM, "1")
         val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", " +
                 "\"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
 
@@ -133,8 +132,8 @@ class InteropMemberRegistrationService(
 
         val interopRecord = Record(
             Schemas.P2P.P2P_IN_TOPIC, testId, AppMessage(
-                AuthenticatedMessage(
-                    flowHeader, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
+                UnauthenticatedMessage(
+                    header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
                 )
             )
         )
