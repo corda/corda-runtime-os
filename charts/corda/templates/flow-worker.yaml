@@ -1,8 +1,9 @@
 {{- $_ := set . "worker" "flow" }}
+{{- define "flowworker.deployment" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "corda.workerName" . | quote }}
+  name: {{ include "corda.workerName" . }}-{{ .flowworkerDeployment }}
   labels:
     {{- include "corda.workerLabels" . | nindent 4 }}
 spec:
@@ -33,7 +34,7 @@ spec:
                   - flow-worker
               topologyKey: "kubernetes.io/hostname"
       containers:
-      - name: {{ include "corda.workerName" . | quote }}
+      - name: {{ include "corda.workerName" . }}-{{ .flowworkerDeployment }}
         image: {{ include "corda.workerImage" . }}
         imagePullPolicy:  {{ .Values.imagePullPolicy }}
         {{- include "corda.containerSecurityContext" . | nindent 8 }}
@@ -67,3 +68,13 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{ end }}
+{{ if .Values.deployments.green.enabled }}
+{{- $_ := set . "flowworkerDeployment" "green" }}
+{{- template "flowworker.deployment" . }}
+{{ end }}
+{{ if .Values.deployments.blue.enabled }}
+{{- $_ := set . "flowworkerDeployment" "blue" }}
+---
+{{- template "flowworker.deployment" . }}
+{{ end }}

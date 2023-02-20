@@ -10,6 +10,46 @@
         "kafka"
     ],
     "properties": {
+        "deployments" : {
+            "type": "object",
+            "default": {},
+            "title": "deployments",
+            "required": [],
+            "properties": {
+                "blue": {
+                    "type": "object",
+                    "default": {},
+                    "title": "blue deployment",
+                    "required": [],
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "is blue deployment enabled",
+                            "examples": [
+                                true
+                            ]
+                        }
+                    }
+                },
+                "green": {
+                    "type": "object",
+                    "default": {},
+                    "title": "blue deployment",
+                    "required": [],
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "is green deployment enabled",
+                            "examples": [
+                                true
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "fullnameOverride": {
             "type": "string",
             "default": "",
