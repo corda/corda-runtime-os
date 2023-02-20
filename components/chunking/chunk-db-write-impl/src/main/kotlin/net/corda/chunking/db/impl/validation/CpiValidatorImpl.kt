@@ -9,7 +9,6 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.PackagingConstants
-import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.verify.verifyCpi
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
@@ -18,7 +17,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.schema.membership.MembershipSchema.GroupPolicySchema
-import net.corda.utilities.time.Clock
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
@@ -37,8 +35,7 @@ class CpiValidatorImpl(
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
-    certificatesService: CertificatesService,
-    private val clock: Clock,
+    certificatesService: CertificatesService
 ) : CpiValidator {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
