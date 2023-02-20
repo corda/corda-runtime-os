@@ -15,7 +15,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.cordapp.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
 import org.slf4j.LoggerFactory
 
-@InitiatingFlow("subflow-protocol")
+@InitiatingFlow(protocol = "subflow-protocol")
 class InitiatingSubFlowSmokeTestFlow(
     private val x500Name: MemberX500Name,
     private val initiateSessionInInitiatingFlow: Boolean,
@@ -51,7 +51,7 @@ class InlineSubFlowSmokeTestFlow(
 ) : SubFlow<InitiatedSmokeTestMessage> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable
@@ -67,7 +67,7 @@ class InlineSubFlowSmokeTestFlow(
     }
 }
 
-@InitiatedBy("subflow-protocol")
+@InitiatedBy(protocol = "subflow-protocol")
 class InitiatingSubFlowResponderSmokeTestFlow : ResponderFlow {
 
     private companion object {

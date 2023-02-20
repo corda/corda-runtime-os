@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.test.util.eventually
+import net.corda.virtualnode.ShortHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -52,6 +53,7 @@ class SigningKeyStoreTests {
         component = SigningKeyStoreImpl(
             coordinatorFactory,
             configurationReadService,
+            mock(),
             mock(),
             mock(),
             mock()
@@ -126,7 +128,7 @@ class SigningKeyStoreTests {
             )
         }
         assertThrows<IllegalArgumentException> {
-            component.lookup(UUID.randomUUID().toString(), keys)
+            component.lookupByIds(UUID.randomUUID().toString(), keys.map { ShortHash.of(it) })
         }
     }
 }

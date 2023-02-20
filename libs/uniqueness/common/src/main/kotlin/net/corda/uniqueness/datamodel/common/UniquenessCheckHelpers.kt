@@ -8,12 +8,14 @@ import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflictAvro
 import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknownAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro
+import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
@@ -88,6 +90,15 @@ fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
                 Instant.now(),
                 UniquenessCheckErrorMalformedRequestImpl(
                     avroResult.errorText
+                )
+            )
+        }
+        is UniquenessCheckResultUnhandledExceptionAvro -> {
+            UniquenessCheckResultFailureImpl(
+                Instant.now(),
+                UniquenessCheckErrorUnhandledExceptionImpl(
+                    avroResult.exception.errorType,
+                    avroResult.exception.errorMessage
                 )
             )
         }

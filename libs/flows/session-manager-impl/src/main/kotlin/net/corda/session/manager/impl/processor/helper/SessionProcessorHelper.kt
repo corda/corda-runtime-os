@@ -53,7 +53,7 @@ fun generateErrorEvent(
     initiatedIdentity: HoldingIdentity,
     errorMessage: String,
     errorType: String,
-    instant: Instant
+    instant: Instant,
 ): SessionEvent {
     val sessionId = sessionState.sessionId
     val errorEnvelope = ExceptionEnvelope(errorType, errorMessage)
@@ -120,4 +120,28 @@ fun recalcReceivedProcessState(receivedEventsState: SessionProcessState): Sessio
     }
 
     return SessionProcessState(nextSeqNum - 1, sortedEvents)
+}
+
+/**
+ * Convert a session state to an error state which a queued error message
+ * @param sessionState input session state
+ * @param sessionEvent input session event to get indentity info from
+ * @param instant to generate timestamps for
+ * @param errorMessage error message
+ * @param errorType error type
+ * @return session state updated to error state
+ */
+fun setErrorState(
+    sessionState: SessionState,
+    sessionEvent: SessionEvent,
+    instant: Instant,
+    errorMessage: String,
+    errorType: String,
+): SessionState {
+    return sessionState.apply {
+        status = SessionStateType.ERROR
+        sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(
+            generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)
+        )
+    }
 }

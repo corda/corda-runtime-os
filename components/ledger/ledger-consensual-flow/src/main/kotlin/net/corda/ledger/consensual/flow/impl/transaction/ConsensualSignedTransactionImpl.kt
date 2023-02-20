@@ -4,6 +4,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -11,7 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
 import java.util.Objects
@@ -27,7 +28,7 @@ class ConsensualSignedTransactionImpl(
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
         }
-        // TODO(CORE-7237 Check WireTx's metadata's ledger type and allow only the matching ones.)
+        verifyMetadata(wireTransaction.metadata)
     }
 
     override val id: SecureHash
@@ -83,7 +84,7 @@ class ConsensualSignedTransactionImpl(
                 transactionSignatureService.verifySignature(this, it)
                 true
             } catch (e: Exception) {
-                throw TransactionVerificationException(
+                throw TransactionSignatureException(
                     id,
                     "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
                     e

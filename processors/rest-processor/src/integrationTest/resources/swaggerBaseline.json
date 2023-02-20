@@ -1849,7 +1849,7 @@
                   "type" : "array",
                   "nullable" : false,
                   "items" : {
-                    "$ref" : "#/components/schemas/RegistrationRequestStatus"
+                    "$ref" : "#/components/schemas/RestRegistrationRequestStatus"
                   }
                 }
               }
@@ -1944,7 +1944,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/RegistrationRequestStatus"
+                  "$ref" : "#/components/schemas/RestRegistrationRequestStatus"
                 }
               }
             }
@@ -2232,6 +2232,107 @@
             "example" : "string"
           }
         } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/approve/{requestid}" : {
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "post_mgm__holdingidentityshorthash__approve__requestid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "requestid",
+          "in" : "path",
+          "description" : "ID of the registration request",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the registration request",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/decline/{requestid}" : {
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "post_mgm__holdingidentityshorthash__decline__requestid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "requestid",
+          "in" : "path",
+          "description" : "ID of the registration request",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the registration request",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "reason" : {
+                    "type" : "string",
+                    "description" : "Reason for declining the specified registration request",
+                    "nullable" : false,
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "description" : "Success"
@@ -2574,6 +2675,70 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PreAuthToken"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/registrations" : {
+      "get" : {
+        "tags" : [ "MGM API" ],
+        "description" : "",
+        "operationId" : "get_mgm__holdingidentityshorthash__registrations",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "requestsubjectx500name",
+          "in" : "query",
+          "description" : "X.500 name of the requesting member",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "X.500 name of the requesting member",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "viewhistoric",
+          "in" : "query",
+          "description" : "Include completed (historic) requests if set to 'true'",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "description" : "Include completed (historic) requests if set to 'true'",
+            "nullable" : false,
+            "example" : true
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/RestRegistrationRequestStatus"
+                  }
                 }
               }
             }
@@ -3858,7 +4023,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3997,7 +4161,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -4278,7 +4441,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4322,7 +4484,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4359,7 +4520,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -4451,38 +4611,6 @@
           }
         }
       },
-      "RegistrationRequestStatus" : {
-        "required" : [ "memberInfoSubmitted", "registrationId", "registrationStatus" ],
-        "type" : "object",
-        "properties" : {
-          "memberInfoSubmitted" : {
-            "$ref" : "#/components/schemas/MemberInfoSubmitted"
-          },
-          "registrationId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "registrationSent" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "registrationStatus" : {
-            "type" : "object",
-            "nullable" : false,
-            "example" : "SENT_TO_MGM",
-            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
-          },
-          "registrationUpdated" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-24T10:15:30Z"
-          }
-        }
-      },
       "RestMemberInfo" : {
         "required" : [ "memberContext", "mgmContext" ],
         "type" : "object",
@@ -4518,6 +4646,37 @@
             "items" : {
               "$ref" : "#/components/schemas/RestMemberInfo"
             }
+          }
+        }
+      },
+      "RestRegistrationRequestStatus" : {
+        "required" : [ "memberInfoSubmitted", "registrationId", "registrationStatus" ],
+        "type" : "object",
+        "properties" : {
+          "memberInfoSubmitted" : {
+            "$ref" : "#/components/schemas/MemberInfoSubmitted"
+          },
+          "registrationId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "registrationSent" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "registrationStatus" : {
+            "nullable" : false,
+            "example" : "SENT_TO_MGM",
+            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
+          },
+          "registrationUpdated" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
           }
         }
       },
@@ -4813,19 +4972,16 @@
             "example" : "string"
           },
           "flowOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -4854,7 +5010,6 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]

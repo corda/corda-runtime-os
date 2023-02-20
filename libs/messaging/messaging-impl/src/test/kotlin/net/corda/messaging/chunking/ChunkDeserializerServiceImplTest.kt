@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import net.corda.chunking.Checksum
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
 import net.corda.chunking.toAvro
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
@@ -18,6 +19,7 @@ class ChunkDeserializerServiceImplTest {
     private lateinit var valueDeserializer: CordaAvroDeserializer<String>
     private lateinit var keyDeserializer: CordaAvroDeserializer<String>
     private lateinit var chunkDeserializerService: ChunkDeserializerServiceImpl<String, String>
+    private lateinit var platformDigestService: PlatformDigestService
 
     private val chunkBuilder = ChunkBuilderServiceImpl()
     private val id = "id"
@@ -43,13 +45,16 @@ class ChunkDeserializerServiceImplTest {
     fun setup() {
         valueDeserializer = mock()
         keyDeserializer = mock()
-        chunkDeserializerService = ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, { })
+        platformDigestService = mock()
+        chunkDeserializerService = ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, { }, platformDigestService)
         whenever(keyDeserializer.deserialize(realKeyBytes)).thenReturn(realKey)
         whenever(valueDeserializer.deserialize(fullBytes)).thenReturn(completeValue)
+        val digest = Checksum.digestForBytes(fullBytes)
+        whenever(platformDigestService.hash(any<ByteArray>(), any())).thenReturn(digest)
 
         testChunk1 = chunkBuilder.buildChunk(id, 1,  ByteBuffer.wrap(bytes1), 10)
         testChunk2 = chunkBuilder.buildChunk(id, 2,  ByteBuffer.wrap(bytes2), 20)
-        testFinalChunk = chunkBuilder.buildFinalChunk(id, 3,  Checksum.digestForBytes(fullBytes), 20)
+        testFinalChunk = chunkBuilder.buildFinalChunk(id, 3,  digest, 20)
         chunks = mutableListOf(testChunk1, testChunk2, testFinalChunk)
         chunkMap = mutableMapOf(
             testChunkKey1 to testChunk1,

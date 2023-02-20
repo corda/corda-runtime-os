@@ -7,6 +7,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -27,8 +28,8 @@ class KeySpecExtractorTest {
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
     }
     private val cryptoOpsClient = mock<CryptoOpsClient> {
-        on { lookup(tenantId, listOf(publicKeyOne.publicKeyId())) } doReturn listOf(signingKey)
-        on { lookup(tenantId, listOf(publicKeyTwo.publicKeyId())) } doReturn emptyList()
+        on { lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKeyOne.publicKeyId()))) } doReturn listOf(signingKey)
+        on { lookupKeysByIds(tenantId, listOf(ShortHash.of(publicKeyTwo.publicKeyId()))) } doReturn emptyList()
     }
 
     private val extractor = KeySpecExtractor(tenantId, cryptoOpsClient)

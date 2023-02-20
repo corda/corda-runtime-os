@@ -41,7 +41,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
             serializationService
         )
 
-        whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
+        whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
     }
 
     @Test
@@ -69,7 +69,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
             verificationService.verify(transaction)
         }
 
-        verify(serializationService).serialize(any())
+        verify(serializationService).serialize(any<Any>())
         assertThat(argumentCaptor.firstValue).isEqualTo(TransactionVerificationExternalEventFactory::class.java)
     }
 
@@ -105,7 +105,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         assertThat(exception.originalExceptionClassName).isEqualTo(expectedObj.errorType)
         assertThat(exception.status).isEqualTo(expectedObj.status)
 
-        verify(serializationService).serialize(any())
+        verify(serializationService).serialize(any<Any>())
         assertThat(argumentCaptor.firstValue).isEqualTo(TransactionVerificationExternalEventFactory::class.java)
     }
 }

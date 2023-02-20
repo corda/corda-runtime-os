@@ -5,12 +5,14 @@ import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SharedSecretAliasSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.fullId
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStore
@@ -22,8 +24,10 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
@@ -31,7 +35,8 @@ import java.security.PublicKey
 class SigningServiceImpl(
     private val store: SigningKeyStore,
     private val cryptoServiceFactory: CryptoServiceFactory,
-    override val schemeMetadata: CipherSchemeMetadata
+    override val schemeMetadata: CipherSchemeMetadata,
+    private val digestService: PlatformDigestService
 ) : SigningService {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -64,10 +69,17 @@ class SigningServiceImpl(
         ).map { key -> key.toSigningKeyInfo() }
     }
 
-    override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
-        logger.debug { "lookup(tenantId=$tenantId, ids=[${ids.joinToString()}])" }
-        return store.lookup(tenantId, ids).map { key -> key.toSigningKeyInfo() }
-    }
+    override fun lookupByIds(tenantId: String, keyIds: List<ShortHash>): Collection<SigningKeyInfo> =
+        store.lookupByIds(tenantId, keyIds)
+            .map { foundKey ->
+                foundKey.toSigningKeyInfo()
+            }
+
+    override fun lookupByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): Collection<SigningKeyInfo> =
+        store.lookupByFullIds(tenantId, fullKeyIds)
+            .map { foundKey ->
+                foundKey.toSigningKeyInfo()
+            }
 
     override fun createWrappingKey(
         hsmId: String,
@@ -262,13 +274,16 @@ class SigningServiceImpl(
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
             val leafKeysIdsChunks = publicKey.leafKeys.map {
-                it.publicKeyId() to it
+                it.fullId(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
-                val found = store.lookup(tenantId, chunk.map { it.first })
+                val found = store.lookupByFullIds(
+                    tenantId,
+                    chunk.map { SecureHash.parse(it.first) }
+                )
                 if (found.isNotEmpty()) {
                     for (key in chunk) {
-                        val first = found.firstOrNull { it.id == key.first }
+                        val first = found.firstOrNull { it.fullId == key.first }
                         if (first != null) {
                             return OwnedKeyRecord(key.second, first)
                         }

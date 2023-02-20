@@ -9,7 +9,7 @@ import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
@@ -40,7 +40,7 @@ fun RegistrationRequestProgressDto.fromDto() = RegistrationRequestProgress(
  */
 fun MemberInfoSubmittedDto.fromDto() = MemberInfoSubmitted(data)
 
-fun RegistrationRequestStatusDto.fromDto() = RegistrationRequestStatus(
+fun RegistrationRequestStatusDto.fromDto() = RestRegistrationRequestStatus(
     this.registrationId,
     this.registrationSent,
     this.registrationUpdated,

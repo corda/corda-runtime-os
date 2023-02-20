@@ -35,9 +35,28 @@ internal class MigrationUtilityImpl(
             }
     }
 
-    override fun isVaultSchemaAndTargetCpiInSync(cpkChangelogs: List<CpkDbChangeLogEntity>, vaultDmlConnectionId: UUID): Boolean {
-        // todo cs - as part of CORE-https://r3-cev.atlassian.net/browse/CORE-9046
-        return false
+    override fun isVaultSchemaAndTargetCpiInSync(
+        virtualNodeShortHash: String,
+        cpkChangelogs: List<CpkDbChangeLogEntity>,
+        vaultDmlConnectionId: UUID
+    ): Boolean {
+
+        val missingCpks = mutableListOf<String>()
+        cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
+            val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+            dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
+                missingCpks.addAll(
+                    liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk)
+                )
+            }
+        }
+
+        if(missingCpks.size > 0) {
+            logger.warn("Found ${missingCpks.size} changelogs missing from virtual node vault $virtualNodeShortHash: " +
+                    missingCpks.joinToString()
+            )
+        }
+        return missingCpks.size == 0
     }
 
     private fun runCpkMigrations(

@@ -21,15 +21,21 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRestResource
 import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
 import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.httprpc.v1.types.response.PreAuthToken
 import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
+import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
+import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.membership.lib.registration.RegistrationRequestStatus
+import net.corda.membership.lib.toMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
@@ -129,6 +135,16 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             ruleId: String
         )
+
+        fun viewRegistrationRequests(
+            holdingIdentityShortHash: String,
+            requestSubjectX500Name: String?,
+            viewHistoric: Boolean,
+        ): Collection<RestRegistrationRequestStatus>
+
+        fun approveRegistrationRequest(holdingIdentityShortHash: String, requestId: String)
+
+        fun declineRegistrationRequest(holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason)
     }
 
     override val protocolVersion = 1
@@ -205,6 +221,18 @@ class MGMRestResourceImpl internal constructor(
 
     override fun deletePreAuthGroupApprovalRule(holdingIdentityShortHash: String, ruleId: String) =
         impl.deletePreAuthGroupApprovalRule(holdingIdentityShortHash, ruleId)
+
+    override fun viewRegistrationRequests(
+        holdingIdentityShortHash: String, requestSubjectX500Name: String?, viewHistoric: Boolean
+    ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestSubjectX500Name, viewHistoric)
+
+    override fun approveRegistrationRequest(
+        holdingIdentityShortHash: String, requestId: String
+    ) = impl.approveRegistrationRequest(holdingIdentityShortHash, requestId)
+
+    override fun declineRegistrationRequest(
+        holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
+    ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -285,6 +313,19 @@ class MGMRestResourceImpl internal constructor(
             remarks: String?
         ): PreAuthToken = throwNotRunningException()
 
+        override fun viewRegistrationRequests(
+            holdingIdentityShortHash: String,
+            requestSubjectX500Name: String?,
+            viewHistoric: Boolean,
+        ): Collection<RestRegistrationRequestStatus> = throwNotRunningException()
+
+        override fun approveRegistrationRequest(holdingIdentityShortHash: String, requestId: String): Unit =
+            throwNotRunningException()
+
+        override fun declineRegistrationRequest(
+            holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
+        ): Unit = throwNotRunningException()
+
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
         }
@@ -303,7 +344,7 @@ class MGMRestResourceImpl internal constructor(
             subject: String
         ) {
             verifyMutualTlsIsRunning()
-            val subjectName = MemberX500Name.parse("subject", subject)
+            val subjectName = parseX500Name("subject", subject)
             handleCommonErrors(holdingIdentityShortHash) {
                 mgmResourceClient.mutualTlsAllowClientCertificate(it, subjectName)
             }
@@ -311,7 +352,7 @@ class MGMRestResourceImpl internal constructor(
 
         override fun mutualTlsDisallowClientCertificate(holdingIdentityShortHash: String, subject: String) {
             verifyMutualTlsIsRunning()
-            val subjectName = MemberX500Name.parse("subject", subject)
+            val subjectName = parseX500Name("subject", subject)
             handleCommonErrors(holdingIdentityShortHash) {
                 mgmResourceClient.mutualTlsDisallowClientCertificate(it, subjectName)
             }
@@ -331,7 +372,7 @@ class MGMRestResourceImpl internal constructor(
             val ttlAsInstant = request.ttl?.let { ttl ->
                 clock.instant() + ttl
             }
-            val x500Name = MemberX500Name.parse("ownerX500Name", request.ownerX500Name)
+            val x500Name = parseX500Name("ownerX500Name", request.ownerX500Name)
             return handleCommonErrors(holdingIdentityShortHash) { shortHash ->
                 mgmResourceClient.generatePreAuthToken(
                     shortHash,
@@ -349,7 +390,7 @@ class MGMRestResourceImpl internal constructor(
             viewInactive: Boolean
         ): Collection<PreAuthToken> {
             val ownerX500 = ownerX500Name?.let {
-                MemberX500Name.parse("ownerX500Name", it)
+                parseX500Name("ownerX500Name", it)
             }
             val tokenId = preAuthTokenId?.let {
                 parsePreAuthTokenId(it)
@@ -436,6 +477,79 @@ class MGMRestResourceImpl internal constructor(
             ruleId: String
         ) = deleteGroupApprovalRule(holdingIdentityShortHash, ruleId, PREAUTH)
 
+        override fun viewRegistrationRequests(
+            holdingIdentityShortHash: String,
+            requestSubjectX500Name: String?,
+            viewHistoric: Boolean,
+        ): Collection<RestRegistrationRequestStatus> {
+            val requestSubject = requestSubjectX500Name?.let {
+                parseX500Name("requestSubjectX500Name", it)
+            }
+            return handleCommonErrors(holdingIdentityShortHash) {
+                mgmResourceClient.viewRegistrationRequests(
+                    it,
+                    requestSubject,
+                    viewHistoric,
+                )
+            }.map { it.toRest() }
+        }
+
+        override fun approveRegistrationRequest(
+            holdingIdentityShortHash: String,
+            requestId: String,
+        ) {
+            val registrationId = parseRegistrationRequestId(requestId)
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.reviewRegistrationRequest(
+                        it, registrationId, true
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
+            }
+        }
+
+        override fun declineRegistrationRequest(
+            holdingIdentityShortHash: String,
+            requestId: String,
+            reason: ManualDeclinationReason
+        ) {
+            val registrationId = parseRegistrationRequestId(requestId)
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.reviewRegistrationRequest(
+                        it, registrationId, false, reason
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
+            }
+        }
+
+        private fun RegistrationRequestStatus.toRest() =
+            RestRegistrationRequestStatus(
+                registrationId,
+                registrationSent,
+                registrationLastModified,
+                status.fromAvro(),
+                MemberInfoSubmitted(memberContext.toMap())
+            )
+
+        private fun net.corda.data.membership.common.RegistrationStatus.fromAvro() = when (this) {
+            net.corda.data.membership.common.RegistrationStatus.NEW -> RegistrationStatus.NEW
+            net.corda.data.membership.common.RegistrationStatus.SENT_TO_MGM -> RegistrationStatus.SENT_TO_MGM
+            net.corda.data.membership.common.RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
+            net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION ->
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION
+            net.corda.data.membership.common.RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatus.PENDING_APPROVAL_FLOW
+            net.corda.data.membership.common.RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL
+            net.corda.data.membership.common.RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
+            net.corda.data.membership.common.RegistrationStatus.DECLINED -> RegistrationStatus.DECLINED
+            net.corda.data.membership.common.RegistrationStatus.INVALID -> RegistrationStatus.INVALID
+            net.corda.data.membership.common.RegistrationStatus.APPROVED -> RegistrationStatus.APPROVED
+        }
+
         private fun deleteGroupApprovalRule(
             holdingIdentityShortHash: String,
             ruleId: String,
@@ -468,9 +582,20 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
-        private fun MemberX500Name.Companion.parse(keyName: String, x500Name: String): MemberX500Name {
+        private fun parseRegistrationRequestId(requestId: String): UUID {
             return try {
-                parse(x500Name)
+                UUID.fromString(requestId)
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    details = mapOf("registrationRequestId" to requestId),
+                    message = "requestId is not a valid registration request ID."
+                )
+            }
+        }
+
+        private fun parseX500Name(keyName: String, x500Name: String): MemberX500Name {
+            return try {
+                MemberX500Name.parse(x500Name)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     details = mapOf(keyName to x500Name),

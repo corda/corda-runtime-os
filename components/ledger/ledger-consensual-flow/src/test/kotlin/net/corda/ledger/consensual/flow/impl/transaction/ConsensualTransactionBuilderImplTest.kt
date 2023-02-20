@@ -6,6 +6,7 @@ import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.crypto.SecureHash
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -82,5 +83,14 @@ internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
             )
         )
         assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())
+    }
+
+    @Test
+    fun `adding states mutates and returns the current builder`() {
+        val originalTransactionBuilder = consensualTransactionBuilder
+        val mutatedTransactionBuilder = consensualTransactionBuilder.withStates(consensualStateExample)
+        assertThat(mutatedTransactionBuilder.states).isEqualTo(listOf(consensualStateExample))
+        assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
+        assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(System.identityHashCode(originalTransactionBuilder))
     }
 }

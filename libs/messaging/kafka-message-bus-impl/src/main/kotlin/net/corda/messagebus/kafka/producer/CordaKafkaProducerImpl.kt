@@ -7,6 +7,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecords
+import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
@@ -36,7 +37,8 @@ import org.slf4j.LoggerFactory
 @Suppress("TooManyFunctions")
 class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
-    private val producer: Producer<Any, Any>
+    private val producer: Producer<Any, Any>,
+    private val chunkSerializerService: ChunkSerializerService
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
@@ -49,6 +51,7 @@ class CordaKafkaProducerImpl(
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val asyncChunkErrorMessage = "Tried to send record which requires chunking using an asynchronous producer"
     }
 
     private fun CordaProducer.Callback.toKafkaCallback(): Callback {
@@ -57,24 +60,20 @@ class CordaKafkaProducerImpl(
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         tryWithCleanupOnFailure("send single record, no partition") {
-            val prefixedRecord =
-                ProducerRecord(topicPrefix + record.topic, record.key, record.value)
-            producer.send(prefixedRecord, callback?.toKafkaCallback())
+            sendRecord(record, callback)
         }
     }
 
     override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
         tryWithCleanupOnFailure("send single record, with partition") {
-            val prefixedRecord =
-                ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value)
-            producer.send(prefixedRecord, callback?.toKafkaCallback())
+            sendRecord(record, callback, partition)
         }
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
         tryWithCleanupOnFailure("send multiple records, no partition") {
             for (record in records) {
-                producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
+                sendRecord(record)
             }
         }
     }
@@ -82,8 +81,52 @@ class CordaKafkaProducerImpl(
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         tryWithCleanupOnFailure("send multiple records, with partitions") {
             for ((partition, record) in recordsWithPartitions) {
-                producer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value))
+                sendRecord(record, null, partition)
             }
+        }
+    }
+
+    /**
+     * Check to see if the [record] needs chunking. If it does then check producer type and send chunks,
+     * otherwise send the records normally
+     * @param record record to send
+     * @param callback for error handling in async producers
+     * @param partition partition to send to. defaults to null.
+     */
+    private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
+        val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
+        if (chunkedRecords.isNotEmpty()) {
+            sendChunks(chunkedRecords, callback, partition)
+        } else {
+            producer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value), callback?.toKafkaCallback())
+        }
+    }
+
+    /**
+     * Send chunked records via the kafka producer.
+     * If the producer is configured to be asynchronous, throw a fatal exception as this is not allowed.
+     * Async producers may fail to send some chunks which could block the consumer from returning records
+     * due it waiting for more chunks to arrive.
+     * Executes the callback if there is an error to mimic kafka producers error handling where it also sets the callback when there are
+     * errors always.
+     * @param cordaProducerRecords chunked records to send
+     * @param callback for error handling in async producers
+     * @param partition partition to send to. defaults to null.
+     */
+    private fun sendChunks(
+        cordaProducerRecords: List<CordaProducerRecord<*, *>>,
+        callback: CordaProducer.Callback? = null,
+        partition: Int? = null
+    ) {
+        if (!transactional) {
+            //set the call back and throw the exception. This mimics what the kafka client does
+            val exceptionThrown = CordaMessageAPIFatalException(asyncChunkErrorMessage)
+            callback?.onCompletion(exceptionThrown)
+            throw exceptionThrown
+        }
+        cordaProducerRecords.forEach {
+            //note callback is only applicable to async calls which are not allowed
+            producer.send(ProducerRecord(topicPrefix + it.topic, partition, it.key, it.value))
         }
     }
 
@@ -261,6 +304,8 @@ class CordaKafkaProducerImpl(
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
+            is CordaMessageAPIFatalException,
+            is CordaMessageAPIIntermittentException -> { throw ex }
 
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we

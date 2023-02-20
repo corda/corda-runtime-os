@@ -88,14 +88,15 @@ class FlowSessionManagerImpl @Activate constructor(
             key = checkpoint.flowId,
             sessionState = null,
             event = event,
-            instant = instant
+            instant = instant,
+            maxMsgSize = checkpoint.maxMessageSize
         )
     }
 
     override fun sendDataMessages(
         checkpoint: FlowCheckpoint,
         sessionToPayload: Map<String, ByteArray>,
-        instant: Instant
+        instant: Instant,
     ): List<SessionState> {
         validateSessionStates(checkpoint, sessionToPayload.keys, Operation.SENDING)
         return sessionToPayload.map { (sessionId, payload) ->
@@ -259,7 +260,8 @@ class FlowSessionManagerImpl @Activate constructor(
                 .setOutOfOrderSequenceNums(listOf(0))
                 .setPayload(payload)
                 .build(),
-            instant = instant
+            instant = instant,
+            maxMsgSize = checkpoint.maxMessageSize
         )
     }
 

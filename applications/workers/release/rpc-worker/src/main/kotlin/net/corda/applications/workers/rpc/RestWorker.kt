@@ -21,10 +21,10 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 
-/** The worker for handling RPC requests. */
+/** The worker for handling REST requests. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
-class RPCWorker @Activate constructor(
+class RestWorker @Activate constructor(
     @Reference(service = RestProcessor::class)
     private val processor: RestProcessor,
     @Reference(service = Shutdown::class)
@@ -47,15 +47,15 @@ class RPCWorker @Activate constructor(
 
     /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
-        logger.info("RPC worker starting.")
+        logger.info("REST worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
 
-        applicationBanner.show("RPC Worker", platformInfoProvider)
+        applicationBanner.show("REST Worker", platformInfoProvider)
 
         JavaSerialisationFilter.install()
 
-        val params = getParams(args, RPCWorkerParams())
-        if (printHelpOrVersion(params.defaultParams, RPCWorker::class.java, shutDownService)) return
+        val params = getParams(args, RestWorkerParams())
+        if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config =
@@ -68,14 +68,14 @@ class RPCWorker @Activate constructor(
     }
 
     override fun shutdown() {
-        logger.info("RPC worker stopping.")
+        logger.info("REST worker stopping.")
         processor.stop()
         workerMonitor.stop()
     }
 }
 
-/** Additional parameters for the RPC worker are added here. */
-private class RPCWorkerParams {
+/** Additional parameters for the REST worker are added here. */
+private class RestWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 }

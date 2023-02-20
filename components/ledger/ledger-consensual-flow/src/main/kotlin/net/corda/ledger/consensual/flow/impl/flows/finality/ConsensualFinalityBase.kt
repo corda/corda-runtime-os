@@ -6,7 +6,7 @@ import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersist
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
-import net.corda.ledger.consensual.flow.impl.transaction.verifier.verifyMetadata
+import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject

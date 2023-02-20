@@ -7,9 +7,11 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
+import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
@@ -31,7 +33,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.common.transaction.TransactionVerificationException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.utxo.Contract
@@ -202,7 +203,7 @@ class UtxoFinalityFlowTest {
     fun `called with an invalid transaction initially throws and persists as invalid`() {
         whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
-                TX_ID, "Verification error", null)
+                TX_ID, TransactionVerificationStatus.INVALID, null, "Verification error")
         )
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionVerificationException::class.java)

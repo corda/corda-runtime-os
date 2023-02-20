@@ -1,6 +1,9 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.TimeUnit
 import net.corda.data.demo.DemoRecord
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfig
@@ -15,6 +18,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -28,9 +32,11 @@ import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_T
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getDummyRecords
 import net.corda.messaging.integration.getKafkaProperties
+import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestDurableDummyMessageProcessor
 import net.corda.messaging.integration.processors.TestDurableProcessor
+import net.corda.messaging.integration.processors.TestDurableProcessorStrings
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_CONSUMER_MAX_POLL_INTERVAL
 import net.corda.test.util.eventually
@@ -47,15 +53,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class DurableSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
-    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "durableTestDurablePublisher"
@@ -63,6 +66,7 @@ class DurableSubscriptionIntegrationTest {
         const val DURABLE_TOPIC2 = "DurableTopic2"
         const val DURABLE_TOPIC3 = "DurableTopic3"
         const val DURABLE_TOPIC4 = "DurableTopic4"
+        const val CHARS_PER_KB = 1000
     }
 
     @InjectService(timeout = 4000)
@@ -261,5 +265,43 @@ class DurableSubscriptionIntegrationTest {
         durableSub1part2.close()
         durableSub2part2.close()
         publisher.close()
+    }
+
+    @Test
+    @KafkaOnly
+    @Timeout(value = 90, unit = TimeUnit.SECONDS)
+    fun `publish large data packets that require chunking and read them back`() {
+        topicUtils.createTopics(getTopicConfig(DURABLE_TOPIC1_TEMPLATE))
+
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1, true)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+
+        val records = getStringRecords(DURABLE_TOPIC1, 10, 5)
+        val recordsToSend = records.map {
+            Record(it.topic, it.key, getLargeString(3300))
+        }
+        publisher.publish(recordsToSend)
+        publisher.close()
+
+        val latch = CountDownLatch(20)
+        val durableSub1 = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1),
+            TestDurableProcessorStrings(latch),
+            TEST_CONFIG,
+            null
+        )
+
+        durableSub1.start()
+
+        assertTrue(latch.await(90, TimeUnit.SECONDS))
+        durableSub1.close()
+    }
+
+    private fun getLargeString(kiloBytes: Int) : String {
+        val stringBuilder = StringBuilder()
+        for (i in 0..CHARS_PER_KB*kiloBytes) {
+            stringBuilder.append(ThreadLocalRandom.current().nextInt(0,9) )
+        }
+        return stringBuilder.toString()
     }
 }
