@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.sandbox.SandboxGroup

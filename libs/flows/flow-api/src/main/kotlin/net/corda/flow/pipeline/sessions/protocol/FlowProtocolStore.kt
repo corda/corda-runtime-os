@@ -1,6 +1,6 @@
-package net.corda.flow.pipeline.sessions
+package net.corda.flow.pipeline.sessions.protocol
 
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 
 /**
  * Storage for protocol mappings for initiating and responder flows.

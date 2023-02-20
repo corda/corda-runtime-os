@@ -1,8 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
-import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
@@ -144,7 +143,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         assertThatThrownBy {
             utxoLedgerService.getPluggableNotaryClientFlow(utxoNotaryExample)
         }
-            .isInstanceOf(FlowFatalException::class.java)
+            .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("is invalid because it does not inherit from")
     }
 

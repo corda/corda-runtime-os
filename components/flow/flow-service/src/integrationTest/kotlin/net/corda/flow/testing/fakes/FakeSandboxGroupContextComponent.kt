@@ -3,10 +3,10 @@ package net.corda.flow.testing.fakes
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext

@@ -28,7 +28,6 @@ dependencies {
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':libs:flows:flow-api')
-    implementation project(':components:flow:flow-service')
     implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':components:ledger:ledger-common-flow')
     implementation project(':components:ledger:notary-worker-selection')

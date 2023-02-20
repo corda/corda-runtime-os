@@ -1,8 +1,6 @@
 package net.corda.ledger.utxo.flow.impl
 
-import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
@@ -58,8 +56,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
     private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = FlowSandboxService::class)
-    private val flowSandboxService: FlowSandboxService,
     @Reference(service = NotaryLookup::class)
     private val notaryLookup: NotaryLookup
 
@@ -155,7 +151,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
         val protocolStore = sandboxGroupContext
             .getObjectByKey<FlowProtocolStore>("FLOW_PROTOCOL_STORE") ?:
-            throw FlowFatalException(
+            throw CordaRuntimeException(
                 "Cannot get flow protocol store for current sandbox group context")
 
         // Hard-code supportedVersions to 1 for now, need MGM change to supply this, at which point
@@ -166,7 +162,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(flowName)
 
         if ( !PluggableNotaryClientFlow::class.java.isAssignableFrom(flowClass)) {
-            throw FlowFatalException("Notary client flow class $flowName is invalid because " +
+            throw CordaRuntimeException("Notary client flow class $flowName is invalid because " +
                     "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}.")
         }
 

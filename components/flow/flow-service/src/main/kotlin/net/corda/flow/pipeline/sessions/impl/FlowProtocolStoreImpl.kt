@@ -1,8 +1,8 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 
 /**
  * Tracks initiator and responder flows for either side of flow protocols declared in the CPI.
