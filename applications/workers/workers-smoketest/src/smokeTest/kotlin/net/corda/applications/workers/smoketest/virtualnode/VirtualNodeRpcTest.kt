@@ -417,11 +417,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun ClusterBuilder.eventuallyUpdateVirtualNodeState(vnodeId: String, newState: String, expectedOperationalStatuses: String) {
-        assertWithRetry {
-            timeout(Duration.of(60, ChronoUnit.SECONDS))
-            command { updateVirtualNodeState(vnodeId, newState) }
-            condition { it.code == 200 }
-        }
+        updateVirtualNodeState(vnodeId, newState)
 
         assertWithRetry {
             timeout(Duration.of(60, ChronoUnit.SECONDS))

@@ -3,7 +3,6 @@ package net.corda.libs.virtualnode.datamodel.repository
 import java.lang.IllegalArgumentException
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.UpdateVirtualNodeStateFailedException
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
@@ -104,7 +103,6 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         entityManager.persist(foundVNode)
     }
 
-    @Suppress("ComplexCondition")
     override fun updateVirtualNodeState(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
@@ -128,18 +126,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
                     operationalStatus
                 )
             }
-
-            val virtualNodeInfo = it.merge(updatedVirtualNodeInstance).toVirtualNodeInfo()
-
-            if (
-                virtualNodeInfo.flowOperationalStatus != operationalStatus &&
-                virtualNodeInfo.flowP2pOperationalStatus != operationalStatus &&
-                virtualNodeInfo.flowStartOperationalStatus != operationalStatus &&
-                virtualNodeInfo.vaultDbOperationalStatus != operationalStatus
-            )
-                throw UpdateVirtualNodeStateFailedException(holdingIdentityShortHash, newState)
-            else
-                return virtualNodeInfo
+            return it.merge(updatedVirtualNodeInstance).toVirtualNodeInfo()
         }
     }
 
