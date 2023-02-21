@@ -185,7 +185,7 @@ fun waitForRegistrationStatus(
         assertWithRetry {
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
-            // cache on the RPC worker, but for now this will have to suffice.
+            // cache on the REST worker, but for now this will have to suffice.
             timeout(60.seconds)
             interval(3.seconds)
             command {
@@ -229,7 +229,7 @@ fun registerStaticMember(
         assertWithRetry {
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
-            // cache on the RPC worker, but for now this will have to suffice.
+            // cache on the REST worker, but for now this will have to suffice.
             timeout(60.seconds)
             interval(1.seconds)
             command { getRegistrationStatus(holdingIdentityShortHash) }
