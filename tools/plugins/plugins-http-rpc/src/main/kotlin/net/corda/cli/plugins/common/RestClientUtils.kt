@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import kotlin.reflect.KClass
 
-object HttpRpcClientUtils {
+object RestClientUtils {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val errOut: Logger = LoggerFactory.getLogger("SystemErr")

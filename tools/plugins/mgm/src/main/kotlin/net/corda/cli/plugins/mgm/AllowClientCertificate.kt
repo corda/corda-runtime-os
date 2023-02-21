@@ -1,6 +1,6 @@
 package net.corda.cli.plugins.mgm
 
-import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.cli.plugins.mgm.Helpers.baseUrlFromClusterName
 import net.corda.cli.plugins.mgm.Helpers.rpcPasswordFromClusterName
