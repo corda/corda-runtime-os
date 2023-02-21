@@ -137,8 +137,7 @@ class InteropServiceIntegrationTest {
 
         publisher.publish(listOf(interopRecord, interopRecord, nonInteropSessionRecord))
 
-        //TODO 2 extra messages are send automatically by service as seed messages, remove +2 once seed message is removed
-        val expectedOutputMessages = 2 + 2
+        val expectedOutputMessages = 2
         val mapperLatch = CountDownLatch(expectedOutputMessages)
         val testProcessor = P2POutMessageCounter(testId, mapperLatch, expectedOutputMessages)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
@@ -148,7 +147,7 @@ class InteropServiceIntegrationTest {
             null
         )
         p2pOutSub.start()
-        assertTrue(mapperLatch.await(45, TimeUnit.SECONDS),
+        assertTrue(mapperLatch.await(30, TimeUnit.SECONDS),
             "Fewer P2P output messages were observed (${testProcessor.recordCount}) than expected ($expectedOutputMessages).")
         assertEquals(expectedOutputMessages, testProcessor.recordCount, "More P2P output messages were observed that expected.")
         p2pOutSub.close()

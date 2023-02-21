@@ -96,7 +96,7 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
-        //TODO below is temporary tactical code to setup members of interop group and send the first message,
+        //TODO below is temporary tactical code to setup members of interop group,
         // this will be phased out later on by CORE-10446
         publisher?.close()
         publisher = publisherFactory.createPublisher(
@@ -110,8 +110,6 @@ class InteropService @Activate constructor(
         logger.info("Publishing hosted identities")
         publisher?.publish(registrationService.createDummyHostedIdentity())
         logger.info("Publishing seed message")
-        publisher?.publish(registrationService.seedMessage())
-        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override val isRunning: Boolean
