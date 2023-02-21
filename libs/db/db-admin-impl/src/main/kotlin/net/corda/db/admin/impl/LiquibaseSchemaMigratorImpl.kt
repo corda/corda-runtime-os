@@ -15,6 +15,7 @@ import java.sql.Connection
 import java.util.UUID
 import liquibase.LabelExpression
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 @Component(service = [LiquibaseSchemaMigrator::class])
 class LiquibaseSchemaMigratorImpl(
@@ -90,7 +91,7 @@ class LiquibaseSchemaMigratorImpl(
         liquibaseSchemaName: String,
         tag: String? = null
     ) {
-        synchronized(liquibaseAccessLock) {
+        liquibaseAccessLock.withLock {
             val database = databaseFactory(datasource)
 
             // only set the schema if it's not specified as the default
@@ -131,7 +132,7 @@ class LiquibaseSchemaMigratorImpl(
         liquibaseSchemaName: String,
         tagToRollbackTo: String
     ) {
-        synchronized(liquibaseAccessLock) {
+        liquibaseAccessLock.withLock {
             val database = databaseFactory(datasource)
 
             // only set the schema if it's not specified as the default
