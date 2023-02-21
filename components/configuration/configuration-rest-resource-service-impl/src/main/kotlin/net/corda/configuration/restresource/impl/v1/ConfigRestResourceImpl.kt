@@ -1,14 +1,14 @@
-package net.corda.configuration.rpcops.impl.v1
+package net.corda.configuration.restresource.impl.v1
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
-import net.corda.configuration.rpcops.impl.GROUP_NAME
-import net.corda.configuration.rpcops.impl.exception.ConfigException
-import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
-import net.corda.configuration.rpcops.impl.exception.ConfigVersionConflictException
+import net.corda.configuration.restresource.impl.CLIENT_NAME_HTTP
+import net.corda.configuration.restresource.impl.GROUP_NAME
+import net.corda.configuration.restresource.impl.exception.ConfigException
+import net.corda.configuration.restresource.impl.exception.ConfigRestResourceException
+import net.corda.configuration.restresource.impl.exception.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -244,14 +244,14 @@ internal class ConfigRestResourceImpl @Activate constructor(
     /**
      * Sends the [request] to the configuration management topic on Kafka.
      *
-     * @throws ConfigRPCOpsException If the updated configuration could not be published.
+     * @throws ConfigRestResourceException If the updated configuration could not be published.
      */
     @Suppress("ThrowsCount")
     private fun sendRequest(request: ConfigurationManagementRequest): ConfigurationManagementResponse {
-        val nonNullRPCSender = rpcSender ?: throw ConfigRPCOpsException(
+        val nonNullRPCSender = rpcSender ?: throw ConfigRestResourceException(
             "Configuration update request could not be sent as no RPC sender has been created."
         )
-        val nonNullRequestTimeout = requestTimeout ?: throw ConfigRPCOpsException(
+        val nonNullRequestTimeout = requestTimeout ?: throw ConfigRestResourceException(
             "Configuration update request could not be sent as the request timeout has not been set."
         )
         return try {
@@ -261,7 +261,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
             //TODO - https://r3-cev.atlassian.net/browse/CORE-7930
             ConfigurationManagementResponse(true, null, request.section, request.config, request.schemaVersion, request.version+1)
         } catch (e: Exception) {
-            throw ConfigRPCOpsException("Could not publish updated configuration.", e)
+            throw ConfigRestResourceException("Could not publish updated configuration.", e)
         }
     }
 

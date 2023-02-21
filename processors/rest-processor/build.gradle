@@ -37,7 +37,7 @@ dependencies {
     implementation project(':libs:messaging:messaging')
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
-    runtimeOnly project(':components:configuration:configuration-rpcops-service-impl')
+    runtimeOnly project(':components:configuration:configuration-rest-resource-service-impl')
     runtimeOnly project(':components:flow:flow-rpcops-service-impl')
     runtimeOnly project(":components:membership:membership-rest-impl")
     runtimeOnly project(":components:crypto:crypto-client-impl")

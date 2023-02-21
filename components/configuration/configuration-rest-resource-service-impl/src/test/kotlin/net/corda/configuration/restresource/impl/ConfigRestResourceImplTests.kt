@@ -1,9 +1,9 @@
-package net.corda.configuration.rpcops.impl
+package net.corda.configuration.restresource.impl
 
 import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigurationGetService
-import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
-import net.corda.configuration.rpcops.impl.v1.ConfigRestResourceImpl
+import net.corda.configuration.restresource.impl.exception.ConfigRestResourceException
+import net.corda.configuration.restresource.impl.v1.ConfigRestResourceImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
@@ -208,7 +208,7 @@ class ConfigRestResourceImplTests {
         val (_, configRPCOps) = getConfigRPCOps()
 
         configRPCOps.setTimeout(1000)
-        val e = assertThrows<ConfigRPCOpsException> {
+        val e = assertThrows<ConfigRestResourceException> {
             configRPCOps.updateConfig(req)
         }
 
@@ -223,7 +223,7 @@ class ConfigRestResourceImplTests {
         val (_, configRPCOps) = getConfigRPCOps()
 
         configRPCOps.createAndStartRPCSender(mock())
-        val e = assertThrows<ConfigRPCOpsException> {
+        val e = assertThrows<ConfigRestResourceException> {
             configRPCOps.updateConfig(req)
         }
 
@@ -240,7 +240,7 @@ class ConfigRestResourceImplTests {
 
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
-        val e = assertThrows<ConfigRPCOpsException> {
+        val e = assertThrows<ConfigRestResourceException> {
             configRPCOps.updateConfig(req)
         }
 
@@ -283,7 +283,9 @@ class ConfigRestResourceImplTests {
         val validator = mock<ConfigurationValidator>().apply {
             if (failValidation) {
                 whenever(validate(any(), any<Version>(), any(), any())).thenAnswer {
-                    throw ConfigurationValidationException("key", Version(1, 0), SmartConfigImpl.empty(), setOf(invalidConfigError) )
+                    throw ConfigurationValidationException("key", Version(1, 0), SmartConfigImpl.empty(), setOf(
+                        invalidConfigError
+                    ) )
                 }
             } else {
                 whenever(validate(any(),  any<Version>(), any(), any())).thenAnswer { it.arguments[2] }
