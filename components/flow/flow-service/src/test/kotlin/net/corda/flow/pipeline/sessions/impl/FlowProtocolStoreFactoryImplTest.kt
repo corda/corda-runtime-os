@@ -8,7 +8,7 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
@@ -137,7 +137,7 @@ class FlowProtocolStoreFactoryImplTest {
 
     @InitiatingFlow(protocol = PROTOCOL)
     private class MyRPCFlow : ClientStartableFlow {
-        override fun call(requestBody: RestRequestBody): String {
+        override fun call(requestBody: ClientRequestBody): String {
             return ""
         }
     }

@@ -55,6 +55,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -119,6 +120,7 @@ class PersistenceServiceInternalTests {
     private lateinit var dogClass: Class<*>
     private lateinit var catClass: Class<*>
     private lateinit var schemaName: String
+    private lateinit var dbConnectionManager: FakeDbConnectionManager
 
     @BeforeAll
     fun setup(
@@ -148,7 +150,7 @@ class PersistenceServiceInternalTests {
         val testId = (0..1000000).random() // keeping this shorter than UUID.
         schemaName = "PSIT$testId"
         val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
+        dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
         entitySandboxService = createEntitySandbox(dbConnectionManager)
 
         sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity)
@@ -181,6 +183,12 @@ class PersistenceServiceInternalTests {
 
         // Each test is likely to leave junk lying around in the tables before the next test.
         // We can't trust deleting the tables because tests can run concurrently.
+    }
+
+    @AfterEach
+    fun afterEach() {
+        entityManagerFactory.close()
+        dbConnectionManager.stop()
     }
 
 

@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parseList
@@ -64,7 +64,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         val params = extractParameters(requestBody)
 
         require(params.outputStateCount > 0 || params.inputStateRefs.isNotEmpty()) {
@@ -118,7 +118,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
      */
     @Suppress("ComplexMethod")
     @Suspendable
-    private fun extractParameters(requestBody: RestRequestBody): NotarisationTestFlowParameters {
+    private fun extractParameters(requestBody: ClientRequestBody): NotarisationTestFlowParameters {
         val requestMessage = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
 
         val outputStateCount = requestMessage["outputStateCount"]?.toInt() ?: 0

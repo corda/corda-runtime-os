@@ -19,7 +19,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class FakeFlowFactory : FlowFactory {
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        return ClientStartedFlow(FakeFlow(), FakeRestRequestBody())
+        return ClientStartedFlow(FakeFlow(), FakeClientRequestBody())
     }
 
     override fun createInitiatedFlow(

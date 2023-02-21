@@ -2,7 +2,7 @@ package net.cordapp.testing.testflows.ledger
 
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
@@ -29,7 +29,7 @@ class TokenSelectionFlow : ClientStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Starting Token Selection Flow...")
         try {
             val inputs = requestBody.getRequestBodyAs<TokenSelectionRequest>(jsonMarshallingService)

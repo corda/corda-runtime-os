@@ -5,7 +5,7 @@ import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.durablestream.api.DurableCursorBuilder
 import org.junit.jupiter.api.Assertions
@@ -22,10 +22,10 @@ class DurableStreamsContextParameterValidatorTest {
                 get() = 1
 
             @HttpPOST
-            abstract fun test(@RestRequestBodyParameter context: String): DurableCursorBuilder<String>
+            abstract fun test(@ClientRequestBodyParameter context: String): DurableCursorBuilder<String>
 
             @HttpPOST
-            abstract fun test2(@RestRequestBodyParameter(name = "context") notContext: String): DurableCursorBuilder<String>
+            abstract fun test2(@ClientRequestBodyParameter(name = "context") notContext: String): DurableCursorBuilder<String>
 
             @HttpPOST
             abstract fun testImplicitBodyParam(context: String): DurableCursorBuilder<String>
@@ -71,10 +71,10 @@ class DurableStreamsContextParameterValidatorTest {
                 get() = 1
 
             @HttpGET
-            abstract fun test(@RestRequestBodyParameter context: String): DurableCursorBuilder<String>
+            abstract fun test(@ClientRequestBodyParameter context: String): DurableCursorBuilder<String>
 
             @HttpGET
-            abstract fun test2(@RestRequestBodyParameter(name = "context") notContext: String): DurableCursorBuilder<String>
+            abstract fun test2(@ClientRequestBodyParameter(name = "context") notContext: String): DurableCursorBuilder<String>
 
             @HttpGET
             abstract fun testImplicitBodyParam(context: String): DurableCursorBuilder<String>
@@ -93,10 +93,10 @@ class DurableStreamsContextParameterValidatorTest {
                 get() = 1
 
             @HttpPOST
-            abstract fun test(@RestRequestBodyParameter notContext: String): DurableCursorBuilder<String>
+            abstract fun test(@ClientRequestBodyParameter notContext: String): DurableCursorBuilder<String>
 
             @HttpPOST
-            abstract fun test2(@RestRequestBodyParameter(name = "contextOverriden") context: String): DurableCursorBuilder<String>
+            abstract fun test2(@ClientRequestBodyParameter(name = "contextOverriden") context: String): DurableCursorBuilder<String>
 
             @HttpPOST
             abstract fun testImplicitBodyParam(notContext: String): DurableCursorBuilder<String>
