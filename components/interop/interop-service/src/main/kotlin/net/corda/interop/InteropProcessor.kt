@@ -89,15 +89,9 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
 
     //This class gathers common fields from both AuthenticateMessageHeader and UnauthenticatedMessageHeader
     data class CommonHeader(val destination: net.corda.data.identity.HoldingIdentity,
-                            val source: net.corda.data.identity.HoldingIdentity,
-                            val ttl: Instant? = null, val messageId: String, val traceId: String? = null,
-                            val subsystem: String = SUBSYSTEM)
+                            val source: net.corda.data.identity.HoldingIdentity, val ttl: Instant? = null,
+                            val messageId: String, val traceId: String? = null, val subsystem: String = SUBSYSTEM)
 
     private fun UnauthenticatedMessage.toCommonHeader() =
         CommonHeader(header.source, header.destination, null, header.messageId)
     }
-
-
-
-
-
