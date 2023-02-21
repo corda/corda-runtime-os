@@ -138,6 +138,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     // a non-suspendable function to avoid trying (and failing) to serialize the objects used
     // internally.
     @VisibleForTesting
+    @Suppress("ThrowsCount")
     internal fun getPluggableNotaryClientFlow(notary: Party): Class<PluggableNotaryClientFlow> {
 
         val protocolName =
