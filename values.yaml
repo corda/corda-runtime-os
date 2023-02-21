@@ -32,7 +32,7 @@ bootstrap:
         valueFrom:
           secretKeyRef:
             name: "prereqs-postgresql"
-            key: "password"
+            key: "postgres-password"
       username:
         value: "user"
   kafka:
