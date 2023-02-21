@@ -34,7 +34,7 @@ bootstrap:
             name: "prereqs-postgresql"
             key: "postgres-password"
       username:
-        value: "user"
+        value: "postgres"
   kafka:
     replicas: 1
 
