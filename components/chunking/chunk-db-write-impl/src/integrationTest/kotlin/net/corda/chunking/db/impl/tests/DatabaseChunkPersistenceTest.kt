@@ -10,6 +10,7 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.NoResultException
 import javax.persistence.NonUniqueResultException
 import net.corda.chunking.ChunkWriterFactory
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.datamodel.ChunkingEntities
@@ -142,7 +143,7 @@ internal class DatabaseChunkPersistenceTest {
             .withFailMessage("The test string should not be a multiple of $divisor so that we have a final odd sized chunk ")
             .isNotEqualTo(mockCpkContent.length)
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize + 10240).apply {
+        val writer = ChunkWriterFactory.create(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...

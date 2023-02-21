@@ -2,6 +2,7 @@ package net.corda.cpk.write.impl
 
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.write.impl.services.db.CpkChecksumToData
@@ -163,7 +164,7 @@ class CpkWriteServiceImplTest {
             setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RECONCILIATION_CONFIG),
             mapOf(
                 ConfigKeys.MESSAGING_CONFIG to mock() {
-                    on { getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) }.doReturn(10240 + 32)
+                    on { getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) }.doReturn(APP_LEVEL_CHUNK_MESSAGE_OVERHEAD + 32)
                 },
                 ConfigKeys.RECONCILIATION_CONFIG to mock() {
                     on { getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS) }.doReturn(1)

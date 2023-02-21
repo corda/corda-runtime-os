@@ -7,6 +7,7 @@ import java.net.URI
  *
  * Implementations of this abstract class must specify an ID which aligns with the system properties set during the
  * E2E test run which define the target endpoints of a Corda cluster.
+ * Optionally, [rest] and [p2p] properties can be overridden with specific values if system properties are not used.
  */
 abstract class ClusterInfo {
     abstract val id: String
@@ -18,9 +19,9 @@ abstract class ClusterInfo {
         private const val DEFAULT_P2P_PORT = 8080
     }
 
-    private val restHostPropertyName get() = "E2E_CLUSTER_${id}_RPC_HOST"
-    private val restPortPropertyName get() = "E2E_CLUSTER_${id}_RPC_PORT"
-    private val restPasswordPropertyName get() = "E2E_CLUSTER_${id}_RPC_PASSWORD"
+    private val restHostPropertyName get() = "E2E_CLUSTER_${id}_REST_HOST"
+    private val restPortPropertyName get() = "E2E_CLUSTER_${id}_REST_PORT"
+    private val restPasswordPropertyName get() = "E2E_CLUSTER_${id}_REST_PASSWORD"
     private val p2pHostPropertyName get() = "E2E_CLUSTER_${id}_P2P_HOST"
     private val p2pPortPropertyName get() = "E2E_CLUSTER_${id}_P2P_PORT"
 
@@ -28,7 +29,7 @@ abstract class ClusterInfo {
     /**
      * REST API properties
      */
-    val rest = RestEndpointInfo(
+    open val rest = RestEndpointInfo(
         System.getenv(restHostPropertyName) ?: DEFAULT_REST_HOST,
         System.getenv(restPortPropertyName)?.toInt() ?: DEFAULT_REST_PORT,
         AdminPasswordUtil.adminUser,
@@ -38,7 +39,7 @@ abstract class ClusterInfo {
     /**
      * P2P gateway properties.
      */
-    val p2p = P2PEndpointInfo(
+    open val p2p = P2PEndpointInfo(
         System.getenv(p2pHostPropertyName) ?: DEFAULT_P2P_HOST,
         System.getenv(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT,
         "1"
