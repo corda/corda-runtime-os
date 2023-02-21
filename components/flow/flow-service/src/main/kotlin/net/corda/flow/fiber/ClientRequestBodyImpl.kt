@@ -1,13 +1,13 @@
 package net.corda.flow.fiber
 
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.marshalling.MarshallingService
 
 /**
  * Read the start args from the start context. This prevents the full start args from being serialized on every
  * checkpoint for a Rest started flow.
  */
-class RestRequestBodyImpl(private val fiberService: FlowFiberService) : RestRequestBody {
+class ClientRequestBodyImpl(private val fiberService: FlowFiberService) : ClientRequestBody {
 
     companion object {
         private const val MAX_STRING_LENGTH = 200
@@ -28,6 +28,6 @@ class RestRequestBodyImpl(private val fiberService: FlowFiberService) : RestRequ
 
     override fun toString(): String {
         // Truncate the JSON object to ensure that we don't try and write too much data into logs.
-        return "RestRequestBody(input=${requestBody.take(MAX_STRING_LENGTH)})"
+        return "ClientRequestBody(input=${requestBody.take(MAX_STRING_LENGTH)})"
     }
 }

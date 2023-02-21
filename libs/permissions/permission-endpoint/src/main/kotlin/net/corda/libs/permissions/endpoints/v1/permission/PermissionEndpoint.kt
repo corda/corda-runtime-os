@@ -5,7 +5,7 @@ import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
@@ -40,7 +40,7 @@ interface PermissionEndpoint : RestResource {
         updateTimestamp: The server-side timestamp showing when the permission was created
     """)
     fun createPermission(
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = """
             Details of the permission to be created. 
             permissionType: Defines whether this is an ALLOW or DENY type of permission
@@ -97,7 +97,7 @@ interface PermissionEndpoint : RestResource {
         responseDescription = "A set of identifiers for permissions created along with role identifiers " +
                 "they were associated with.")
     fun createAndAssignPermissions(
-        @RestRequestBodyParameter(description = "The details of the permissions to be created along with existing role " +
+        @ClientRequestBodyParameter(description = "The details of the permissions to be created along with existing role " +
                 "identifiers newly created permissions should be associated with.")
         request: BulkCreatePermissionsRequestType
     ): ResponseEntity<BulkCreatePermissionsResponseType>

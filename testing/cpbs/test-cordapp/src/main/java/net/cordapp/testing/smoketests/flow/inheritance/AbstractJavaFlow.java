@@ -1,7 +1,7 @@
 package net.cordapp.testing.smoketests.flow.inheritance;
 
 import net.corda.v5.application.flows.CordaInject;
-import net.corda.v5.application.flows.RestRequestBody;
+import net.corda.v5.application.flows.ClientRequestBody;
 import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.application.marshalling.JsonMarshallingService;
 import net.corda.v5.application.membership.MemberLookup;
@@ -29,7 +29,7 @@ public abstract class AbstractJavaFlow implements ClientStartableFlow, JavaMembe
     @NotNull
     @Override
     @Suspendable
-    public String call(@NotNull RestRequestBody requestBody) {
+    public String call(@NotNull ClientRequestBody requestBody) {
         logger.info("Executing Flow...");
 
         try {

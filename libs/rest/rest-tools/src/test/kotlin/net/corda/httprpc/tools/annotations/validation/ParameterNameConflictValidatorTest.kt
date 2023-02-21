@@ -4,7 +4,7 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -103,7 +103,7 @@ class ParameterNameConflictValidatorTest {
                 get() = 1
 
             @HttpGET
-            fun test(foO: String, @RestRequestBodyParameter(name = "Foo") foo2: String) {
+            fun test(foO: String, @ClientRequestBodyParameter(name = "Foo") foo2: String) {
                 foO.lowercase()
                 foo2.lowercase()
             }

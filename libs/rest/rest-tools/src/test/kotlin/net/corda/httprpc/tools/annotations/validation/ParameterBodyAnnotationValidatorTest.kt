@@ -4,7 +4,7 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.annotations.HttpWS
 import net.corda.httprpc.ws.DuplexChannel
@@ -20,7 +20,7 @@ class ParameterBodyAnnotationValidatorTest {
                 get() = 1
 
             @HttpGET
-            fun test(@RestRequestBodyParameter foo: String) {
+            fun test(@ClientRequestBodyParameter foo: String) {
                 foo.lowercase()
             }
 
@@ -50,7 +50,7 @@ class ParameterBodyAnnotationValidatorTest {
                 get() = 1
 
             @HttpPOST
-            fun test(@RestRequestBodyParameter foo: String, @RestRequestBodyParameter bar: String) {
+            fun test(@ClientRequestBodyParameter foo: String, @ClientRequestBodyParameter bar: String) {
                 foo.lowercase()
                 bar.lowercase()
             }

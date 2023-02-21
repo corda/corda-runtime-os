@@ -7,7 +7,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
@@ -99,7 +99,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     lateinit var signatureSpecService: SignatureSpecService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         val request = requestBody.getRequestBodyAs<RpcSmokeTestInput>(jsonMarshallingService)
         return jsonMarshallingService.format(execute(request))
     }
