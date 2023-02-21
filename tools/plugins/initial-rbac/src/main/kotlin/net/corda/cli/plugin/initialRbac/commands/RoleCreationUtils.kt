@@ -2,7 +2,7 @@ package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
 import net.corda.cli.plugins.common.HttpRpcClientUtils.executeWithRetry
-import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -20,7 +20,7 @@ internal object RoleCreationUtils {
         return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
     }
 
-    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
+    fun RestCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
         return checkOrCreateRole(
             roleName,
             permissionsToCreate.map { PermissionTemplate(it.key, it.value, null) }.toSet()
@@ -33,7 +33,7 @@ internal object RoleCreationUtils {
      * - creates role;
      * - assigns permissions to the role.
      */
-    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Set<PermissionTemplate>): Int {
+    fun RestCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Set<PermissionTemplate>): Int {
 
         val logger: Logger = LoggerFactory.getLogger(this::class.java)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")

@@ -3,7 +3,7 @@ package net.corda.cli.plugins.common
 import org.pf4j.ExtensionPoint
 import picocli.CommandLine.Option
 
-abstract class HttpRpcCommand : ExtensionPoint {
+abstract class RestCommand : ExtensionPoint {
 
     @Option(
         names = ["-t", "--target"],

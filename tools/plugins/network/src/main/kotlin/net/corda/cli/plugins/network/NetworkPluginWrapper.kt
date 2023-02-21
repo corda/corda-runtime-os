@@ -2,7 +2,7 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
-import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.httprpc.v1.MemberLookupRestResource
 import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
 import org.pf4j.Extension
@@ -32,7 +32,7 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."]
     )
-    class NetworkPlugin : HttpRpcCommand(), CordaCliPlugin {
+    class NetworkPlugin : RestCommand(), CordaCliPlugin {
 
         @Suppress("LongParameterList")
         @CommandLine.Command(

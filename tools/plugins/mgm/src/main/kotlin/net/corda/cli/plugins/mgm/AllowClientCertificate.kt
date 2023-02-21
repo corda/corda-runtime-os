@@ -1,7 +1,7 @@
 package net.corda.cli.plugins.mgm
 
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
-import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.mgm.Helpers.baseUrlFromClusterName
 import net.corda.cli.plugins.mgm.Helpers.rpcPasswordFromClusterName
 import net.corda.membership.httprpc.v1.MGMRestResource
@@ -44,7 +44,7 @@ class AllowClientCertificate : Runnable {
     )
     var rpcWorkerDeploymentName: String = "corda-rpc-worker"
 
-    private inner class Command : HttpRpcCommand() {
+    private inner class Command : RestCommand() {
         init {
             targetUrl = baseUrlFromClusterName(cordaClusterName, rpcWorkerDeploymentName)
             password = rpcPasswordFromClusterName(cordaClusterName)

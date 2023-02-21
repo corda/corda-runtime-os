@@ -14,7 +14,7 @@ object HttpRpcClientUtils {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val errOut: Logger = LoggerFactory.getLogger("SystemErr")
 
-    fun <I : RestResource> HttpRpcCommand.createHttpRpcClient(rpcOps: KClass<I>): RestClient<I> {
+    fun <I : RestResource> RestCommand.createHttpRpcClient(rpcOps: KClass<I>): RestClient<I> {
         val localTargetUrl = if(targetUrl.endsWith("/")) {
             targetUrl.dropLast(1)
         } else {
