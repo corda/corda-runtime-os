@@ -90,6 +90,7 @@ import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -454,7 +455,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             tenantId: String,
             expectedCategory: String,
         ): List<CryptoSigningKey> =
-            cryptoOpsClient.lookup(tenantId, keyIds).also { keys ->
+            cryptoOpsClient.lookupKeysByIds(tenantId, keyIds.map { ShortHash.of(it) }).also { keys ->
                 val ids = keys.onEach { key ->
                     if (key.category != expectedCategory) {
                         throw IllegalArgumentException("Key ${key.id} is not in category $expectedCategory but in ${key.category}")

@@ -182,8 +182,8 @@ private class CombinedWorkerParams {
     @Option(names = ["-d", "--database-params"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
-    @Option(names = ["-r", "--rpc-params"], description = ["RPC parameters for the worker."])
-    var rpcParams = emptyMap<String, String>()
+    @Option(names = ["-r", "--rest-params"], description = ["REST parameters for the worker."])
+    var restParams = emptyMap<String, String>()
 
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""

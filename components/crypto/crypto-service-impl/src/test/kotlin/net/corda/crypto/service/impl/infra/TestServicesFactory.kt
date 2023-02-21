@@ -174,7 +174,8 @@ class TestServicesFactory {
         SigningServiceImpl(
             signingKeyStore,
             cryptoServiceFactory,
-            schemeMetadata
+            schemeMetadata,
+            platformDigest
         )
     }
 
@@ -183,7 +184,8 @@ class TestServicesFactory {
             coordinatorFactory,
             schemeMetadata,
             signingKeyStore,
-            cryptoServiceFactory
+            cryptoServiceFactory,
+            platformDigest
         ).also {
             it.start()
             eventually {

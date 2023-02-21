@@ -45,6 +45,7 @@ class HostedIdentityEntryFactoryTest {
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val PUBLIC_CLUSTER_KEY_PEM = "publicClusterKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
+        const val SESSION_KEY_ID = "AB0123456789"
     }
 
     private val nodeInfo = mock<VirtualNodeInfo> {
@@ -69,7 +70,7 @@ class HostedIdentityEntryFactoryTest {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
     }
     private val filter = argumentCaptor<Map<String, String>>()
-    private val ids = argumentCaptor<List<String>>()
+    private val ids = argumentCaptor<List<ShortHash>>()
     private val cryptoOpsClient = mock<CryptoOpsClient> {
         on {
             lookup(
@@ -90,17 +91,17 @@ class HostedIdentityEntryFactoryTest {
             )
         } doReturn listOf(clusterSessionKey)
         on {
-            lookup(
+            lookupKeysByIds(
                 eq(VALID_NODE.toString()),
                 ids.capture()
             )
         } doReturn listOf(sessionKey)
 
         on {
-            filterMyKeys(eq(VALID_NODE.toString()), eq(listOf(certificatePublicKey)))
+            filterMyKeys(eq(VALID_NODE.toString()), eq(listOf(certificatePublicKey)), any())
         }.doReturn(listOf(certificatePublicKey))
         on {
-            filterMyKeys(eq(P2P), eq(listOf(certificatePublicKey)))
+            filterMyKeys(eq(P2P), eq(listOf(certificatePublicKey)), any())
         }.doReturn(listOf(certificatePublicKey))
     }
     private val sessionPublicKey = mock<PublicKey>()
@@ -212,7 +213,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
@@ -225,7 +226,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
@@ -256,7 +257,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
@@ -282,7 +283,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
@@ -295,13 +296,13 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = null,
         )
 
         assertThat(ids.firstValue)
             .hasSize(1)
-            .contains("id1")
+            .contains(ShortHash.of(SESSION_KEY_ID))
     }
 
     @Test
@@ -388,7 +389,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord with another session tenant will call the certificates from that tenant`() {
         whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
         val tenantId = mutableListOf<ShortHash?>()
-        whenever(cryptoOpsClient.filterMyKeys(eq(VALID_NODE.toString()), any())).doReturn(listOf(certificatePublicKey))
+        whenever(cryptoOpsClient.filterMyKeys(eq(VALID_NODE.toString()), any(), any())).doReturn(listOf(certificatePublicKey))
 
         val factory = HostedIdentityEntryFactory(
             virtualNodeInfoReadService,
@@ -403,7 +404,7 @@ class HostedIdentityEntryFactoryTest {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            sessionKeyId = "id1",
+            sessionKeyId = SESSION_KEY_ID,
             sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = false,
         )
@@ -449,7 +450,7 @@ class HostedIdentityEntryFactoryTest {
 
     @Test
     fun `createIdentityRecord will throw an exception if the certificate public key is unknown`() {
-        whenever(cryptoOpsClient.filterMyKeys(any(), any())).doReturn(emptyList())
+        whenever(cryptoOpsClient.filterMyKeys(any(), any(), any())).doReturn(emptyList())
 
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(

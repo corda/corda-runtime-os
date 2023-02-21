@@ -22,7 +22,7 @@ import org.mockito.kotlin.whenever
 class ChunkSerializerServiceImplTest {
 
     private companion object {
-        const val chunkSize = 1024 * 50L
+        const val maxAllowedMsgSize = 1024 * 50L
         val someSmallBytes = ByteArray(1)
         val someLargeBytes = ByteArray(1024 * 120)
     }
@@ -41,7 +41,7 @@ class ChunkSerializerServiceImplTest {
         chunkBuilderService = mock()
         producerRecord = mock()
         platformDigestService = mock()
-        chunkSerializerService = ChunkSerializerServiceImpl(chunkSize, serializer, chunkBuilderService, platformDigestService)
+        chunkSerializerService = ChunkSerializerServiceImpl(maxAllowedMsgSize, serializer, chunkBuilderService, platformDigestService)
 
         var partNumber = 0
         doAnswer {
@@ -107,28 +107,12 @@ class ChunkSerializerServiceImplTest {
     }
 
     @Test
-    fun `generateChunks from corda producer record success and returns 5 chunks`() {
+    fun `generateChunks from corda producer record success and returns 4 chunks`() {
         val result = chunkSerializerService.generateChunkedRecords(producerRecord)
         assertThat(result).isNotEmpty
-        assertThat(result.size).isEqualTo(5)
+        assertThat(result.size).isEqualTo(4)
 
-        verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
-        verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
-    }
-
-    @Test
-    fun `generateChunks from bytes too small so returns no chunks`() {
-        val result = chunkSerializerService.generateChunksFromBytes(someSmallBytes)
-        assertThat(result).isEmpty()
-    }
-
-    @Test
-    fun `generateChunks from bytes success and returns 3 chunks`() {
-        val result = chunkSerializerService.generateChunksFromBytes(someLargeBytes)
-        assertThat(result).isNotEmpty
-        assertThat(result.size).isEqualTo(5)
-
-        verify(chunkBuilderService, times(4)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+        verify(chunkBuilderService, times(3)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
         verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
     }
 }
