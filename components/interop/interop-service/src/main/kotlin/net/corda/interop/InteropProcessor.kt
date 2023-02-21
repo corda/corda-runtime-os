@@ -5,7 +5,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.service.InteropMessageTransformer
@@ -88,22 +87,17 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         )
     }
 
+    //This class gathers common fields from both AuthenticateMessageHeader and UnauthenticatedMessageHeader
+    data class CommonHeader(val destination: net.corda.data.identity.HoldingIdentity,
+                            val source: net.corda.data.identity.HoldingIdentity,
+                            val ttl: Instant? = null, val messageId: String, val traceId: String? = null,
+                            val subsystem: String = SUBSYSTEM)
+
+    private fun UnauthenticatedMessage.toCommonHeader() =
+        CommonHeader(header.source, header.destination, null, header.messageId)
     }
 
-data class CommonHeader(val destination: net.corda.data.identity.HoldingIdentity, val source: net.corda.data.identity.HoldingIdentity,
-                        val ttl: Instant? = null, val messageId: String, val traceId: String? = null,
-                        val subsystem: String = InteropProcessor.SUBSYSTEM)
 
 
-fun AuthenticatedMessage.toCommonHeader() =
-    CommonHeader(header.source,
-        header.destination,
-        header.ttl,
-        header.messageId ,
-        header.traceId)
 
-fun UnauthenticatedMessage.toCommonHeader() =
-    CommonHeader(header.source,
-        header.destination,
-        null,
-        header.messageId)
+
