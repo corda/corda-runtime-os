@@ -121,7 +121,8 @@ class MessageConverterTest {
             MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, mock(), members, serial)
         ).isNull()
         loggingInterceptor.assertSingleWarning(
-            "Attempted to send message to peer $peer which is not in the network map. The message was discarded."
+            "Attempted to send message to peer $peer with filter ACTIVE which is not in the network map. " +
+                    "The message was discarded."
         )
     }
 

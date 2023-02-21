@@ -51,13 +51,16 @@ class MembershipGroupReaderImpl(
         memberList.filterBy(filter).singleOrNull { it.name == name }
 
     private fun List<MemberInfo>.filterBy(filter: MembershipStatusFilter): List<MemberInfo> {
-        if (filter == MembershipStatusFilter.PENDING) {
-            return this.filter { it.status == MEMBER_STATUS_PENDING }
-        } else if (filter == MembershipStatusFilter.ACTIVE) {
-            return this.filter { it.status == MEMBER_STATUS_ACTIVE }
-        } else if ( filter == MembershipStatusFilter.LATEST ) {
-            return this.groupBy { it.name }.values.map { it.maxBy { it.serial } }
+        return when (filter) {
+            MembershipStatusFilter.PENDING -> this.filter { it.status == MEMBER_STATUS_PENDING }
+            MembershipStatusFilter.ACTIVE -> this.filter { it.status == MEMBER_STATUS_ACTIVE }
+            MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING ->
+                this.groupBy { it.name }.flatMap { memberEntry ->
+                    memberEntry.value.filterBy(MembershipStatusFilter.ACTIVE).ifEmpty {
+                        memberEntry.value.filterBy(MembershipStatusFilter.PENDING)
+                    }
+                }
+            else -> this.filter { it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED }
         }
-        return this.filter { it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED }
     }
 }

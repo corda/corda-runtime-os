@@ -242,14 +242,6 @@ internal class SessionManagerImpl(
             logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, message.header.messageId)
             return null
         }
-        logger.info("peer: ${peer.x500Name}, us: ${us.x500Name}")
-        logger.info("memberContext: ")
-        info.memberProvidedContext.entries.forEach {
-            logger.info("key ${it.key}, value ${it.value}")
-        }
-        info.mgmProvidedContext.entries.forEach {
-            logger.info("key ${it.key}, value ${it.value}")
-        }
         return SessionCounterparties(us.toCorda(), peer.toCorda(), status, info.serial)
     }
 
@@ -698,7 +690,7 @@ internal class SessionManagerImpl(
                     .lookupByKey(
                         hostedIdentityInSameGroup,
                         message.source.initiatorPublicKeyHash.array(),
-                        MembershipStatusFilter.LATEST,
+                        MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
                     )
                 if (member == null) {
                     null
@@ -760,7 +752,7 @@ internal class SessionManagerImpl(
                     .lookupByKey(
                         hostedIdentityInSameGroup,
                         initiatorIdentityData.initiatorPublicKeyHash.array(),
-                        MembershipStatusFilter.LATEST,
+                        MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
                     )
             }
         if (peer == null) {

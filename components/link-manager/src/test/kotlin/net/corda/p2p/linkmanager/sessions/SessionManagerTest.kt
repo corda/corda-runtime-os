@@ -549,7 +549,10 @@ class SessionManagerTest {
         val responderHello = mock<ResponderHelloMessage>()
         whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
         whenever(
-            membershipGroupReader.lookupBySessionKey(PublicKeyHash.parse(initiatorKeyHash), MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
+            membershipGroupReader.lookupBySessionKey(
+                PublicKeyHash.parse(initiatorKeyHash),
+                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING
+            )
         ).thenReturn(null)
 
         val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
@@ -925,7 +928,10 @@ class SessionManagerTest {
         val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(
-            membershipGroupReader.lookupBySessionKey(eq(PublicKeyHash.parse(initiatorPublicKeyHash)), any())
+            membershipGroupReader.lookupBySessionKey(
+                PublicKeyHash.parse(initiatorPublicKeyHash),
+                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING
+            )
         ).thenReturn(null)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))

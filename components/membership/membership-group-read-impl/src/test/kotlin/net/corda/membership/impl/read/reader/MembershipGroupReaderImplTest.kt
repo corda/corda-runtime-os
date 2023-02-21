@@ -93,12 +93,26 @@ class MembershipGroupReaderImplTest {
         on { mgmProvidedContext } doReturn mockedActiveMgmProvidedContext
         on { isActive } doReturn true
     }
+    private val bobActiveMemberInfo: MemberInfo = mock {
+        on { name } doReturn bobName
+        on { ledgerKeys } doReturn listOf(mockLedgerKey)
+        on { sessionInitiationKey } doReturn mockSessionKey
+        on { memberProvidedContext } doReturn mockedActiveMemberProvidedContext
+        on { mgmProvidedContext } doReturn mockedActiveMgmProvidedContext
+        on { isActive } doReturn true
+    }
 
     private val mockedPendingMgmProvidedContext = mock<MGMContext> {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_PENDING
     }
     private val alicePendingMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
+        on { memberProvidedContext } doReturn mockedActiveMemberProvidedContext
+        on { mgmProvidedContext } doReturn mockedPendingMgmProvidedContext
+        on { isActive } doReturn false
+    }
+    private val bobPendingMemberInfo: MemberInfo = mock {
+        on { name } doReturn bobName
         on { memberProvidedContext } doReturn mockedActiveMemberProvidedContext
         on { mgmProvidedContext } doReturn mockedPendingMgmProvidedContext
         on { isActive } doReturn false
@@ -121,6 +135,20 @@ class MembershipGroupReaderImplTest {
     fun `lookup known member with active status based on name`() {
         mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo))
         assertEquals(aliceActiveMemberInfo, membershipGroupReaderImpl.lookup(aliceName))
+    }
+
+    @Test
+    fun `lookup known member with falling back on pending status if no active state is present based on name`() {
+        mockMemberList(listOf(alicePendingMemberInfo, aliceSuspendedMemberInfo, bobPendingMemberInfo))
+        assertEquals(
+            alicePendingMemberInfo,
+            membershipGroupReaderImpl.lookup(aliceName, MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING)
+        )
+        mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo, bobActiveMemberInfo))
+        assertEquals(
+            aliceActiveMemberInfo,
+            membershipGroupReaderImpl.lookup(aliceName, MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING)
+        )
     }
 
     @Test
@@ -236,6 +264,26 @@ class MembershipGroupReaderImplTest {
             listOf(aliceActiveMemberInfo),
             membershipGroupReaderImpl.lookup()
         )
+    }
+
+    @Test
+    fun `lookup with falling back on pending status if no active state is present returns the correct list`() {
+        mockMemberList(listOf(alicePendingMemberInfo, aliceSuspendedMemberInfo, bobPendingMemberInfo))
+        assertEquals(
+            listOf(alicePendingMemberInfo, bobPendingMemberInfo),
+            membershipGroupReaderImpl.lookup(MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING)
+        )
+        mockMemberList(listOf(aliceActiveMemberInfo, alicePendingMemberInfo, bobPendingMemberInfo))
+        assertEquals(
+            listOf(aliceActiveMemberInfo, bobPendingMemberInfo),
+            membershipGroupReaderImpl.lookup(MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING)
+        )
+    }
+
+    @Test
+    fun `lookup with falling back on pending status if no active state is present returns empty list`() {
+        mockMemberList(listOf(aliceSuspendedMemberInfo, bobSuspendedMemberInfo))
+        assertThat(membershipGroupReaderImpl.lookup(MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING)).isEmpty()
     }
 
     @Test
