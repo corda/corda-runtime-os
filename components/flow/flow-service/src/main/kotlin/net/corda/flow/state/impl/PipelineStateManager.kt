@@ -71,7 +71,6 @@ class PipelineStateManager(
     }
 
     fun populateCpks(cpks: Set<SecureHash>) {
-
         if (state.cpks.isNullOrEmpty()) {
             state.cpks = cpks.map { net.corda.data.crypto.SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
         } else {
