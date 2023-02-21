@@ -72,9 +72,9 @@ object CpiLoader {
                 groupPolicyFileName = groupPolicyPath.toString()
                 outputFileName = cpiPath.toString()
                 signingOptions = SigningOptions().apply {
-                    keyAlias = signOptions.keyAlias
-                    keyStoreFileName = signOptions.keyStore
+                    keyStoreFileName = keyStorePath.toString()
                     keyStorePass = signOptions.keyStorePassword
+                    keyAlias = signOptions.keyAlias
                 }
             }.run()
 
