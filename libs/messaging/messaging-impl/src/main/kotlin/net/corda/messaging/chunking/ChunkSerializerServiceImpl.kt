@@ -58,7 +58,6 @@ class ChunkSerializerServiceImpl(
             ChunkKey.newBuilder()
                 .setPartNumber(it.partNumber)
                 .setRealKey(ByteBuffer.wrap(serializedKey))
-                .setRequestId(it.requestId)
                 .build()
         }
 
@@ -104,7 +103,7 @@ class ChunkSerializerServiceImpl(
         val serializedKey = cordaAvroSerializer.serialize(key) ?: return emptyList()
         val chunkKeys = mutableListOf<ChunkKey>()
         for (i in oldValueChunkCount downTo  newValueChunkCount+1) {
-            chunkKeys.add(ChunkKey("", ByteBuffer.wrap(serializedKey), i))
+            chunkKeys.add(ChunkKey(ByteBuffer.wrap(serializedKey), i))
         }
         return chunkKeys
     }

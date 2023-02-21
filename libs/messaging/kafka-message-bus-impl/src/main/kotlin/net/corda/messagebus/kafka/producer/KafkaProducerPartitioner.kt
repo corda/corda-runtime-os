@@ -2,7 +2,6 @@ package net.corda.messagebus.kafka.producer
 
 import net.corda.data.chunking.ChunkKey
 import net.corda.utilities.copyBytes
-import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.apache.kafka.clients.producer.Partitioner
 import org.apache.kafka.clients.producer.internals.BuiltInPartitioner
@@ -35,7 +34,7 @@ class KafkaProducerPartitioner : Partitioner {
      */
     override fun partition(topic: String, key: Any, keyBytes: ByteArray, value: Any?, valueBytes: ByteArray?, cluster: Cluster): Int {
         val keyBytesToPartition = if (key is ChunkKey) {
-            logger.debug { "Found ChunKey with id ${key.requestId}. Using real bytes for partitioning" }
+            logger.trace { "Found ChunkKey. Using real bytes $keyBytes for partitioning" }
             key.realKey.copyBytes()
         } else {
             keyBytes

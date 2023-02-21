@@ -133,7 +133,6 @@ fun buildFinalChunk(id: String, partNumber: Long): Chunk {
 
 fun buildChunkKey(id: String, partNumber: Long): ChunkKey {
     return ChunkKey.newBuilder()
-        .setRequestId(id)
         .setRealKey(ByteBuffer.wrap(id.toByteArray()))
         .setPartNumber(partNumber.toInt())
         .build()
