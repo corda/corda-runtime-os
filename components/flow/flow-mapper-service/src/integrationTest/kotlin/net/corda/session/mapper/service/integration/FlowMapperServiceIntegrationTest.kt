@@ -40,6 +40,7 @@ import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
@@ -81,6 +82,7 @@ class FlowMapperServiceIntegrationTest {
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
+        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 

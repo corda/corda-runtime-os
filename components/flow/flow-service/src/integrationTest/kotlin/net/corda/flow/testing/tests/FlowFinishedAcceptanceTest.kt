@@ -86,7 +86,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
             }
         }
-
     }
 
     @Test

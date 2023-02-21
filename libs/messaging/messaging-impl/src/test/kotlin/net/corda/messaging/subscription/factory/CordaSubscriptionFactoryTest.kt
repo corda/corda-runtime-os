@@ -39,6 +39,7 @@ class CordaSubscriptionFactoryTest {
             lifecycleCoordinatorFactory,
             mock(),
             mock(),
+            mock(),
             mock()
         )
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
