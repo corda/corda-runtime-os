@@ -95,6 +95,8 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "p2pLinkManager"
+    logging:
+      level: "debug"
   rpc:
     kafka:
       sasl:

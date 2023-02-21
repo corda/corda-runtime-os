@@ -126,9 +126,9 @@ class InteropMemberRegistrationService(
         val keyId = "test1"
         val header = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), SUBSYSTEM, "1")
         val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", " +
-                "\"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
+                "\"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"GBP\" } } ] }"
 
-        val interopMessage = InteropMessage("InteropMessageID-01", payload)
+        val interopMessage = InteropMessage("InteropMessageID-Seed-1", payload)
 
         val interopRecord = Record(
             Schemas.P2P.P2P_IN_TOPIC, keyId, AppMessage(
