@@ -2,7 +2,7 @@ package net.cordapp.demo.utxo
 
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
@@ -54,7 +54,7 @@ class FindTransactionFlow : ClientStartableFlow {
     lateinit var marshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Utxo find transaction flow starting...")
         val txId =
             requestBody.getRequestBodyAs(marshallingService, FindTransactionParameters::class.java).transactionId

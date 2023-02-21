@@ -2,7 +2,7 @@ package net.cordapp.demo.mandelbrot
 
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
@@ -277,7 +277,7 @@ class CalculateBlockFlow : ClientStartableFlow {
 
     @Suppress("NestedBlockDepth")
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Starting mandelbrot calc...")
 
         try {

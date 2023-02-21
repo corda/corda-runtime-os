@@ -5,7 +5,7 @@ import net.corda.httprpc.annotations.HttpGET;
 import net.corda.httprpc.annotations.HttpPOST;
 import net.corda.httprpc.annotations.RestPathParameter;
 import net.corda.httprpc.annotations.RestQueryParameter;
-import net.corda.httprpc.annotations.RestRequestBodyParameter;
+import net.corda.httprpc.annotations.ClientRequestBodyParameter;
 import net.corda.httprpc.annotations.HttpRestResource;
 
 @HttpRestResource(
@@ -21,7 +21,7 @@ public interface TestJavaPrimitivesRestResource extends RestResource {
       description = "Negate an Integer"
   )
   Integer negateInt(
-      @RestRequestBodyParameter(
+      @ClientRequestBodyParameter(
           description = "Int",
           required = false
       ) Integer number
@@ -33,7 +33,7 @@ public interface TestJavaPrimitivesRestResource extends RestResource {
       description = "Negate an Integer"
   )
   int negatePrimitiveInt(
-      @RestRequestBodyParameter(
+      @ClientRequestBodyParameter(
           description = "int",
           required = false
       ) int number

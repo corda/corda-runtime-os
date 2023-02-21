@@ -10,19 +10,19 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 
 @HttpRestResource(path = "customjson")
 interface CustomSerializationAPI : RestResource {
     @HttpPOST(path = "print")
-    fun printString(@RestRequestBodyParameter s: CustomString): CustomString
+    fun printString(@ClientRequestBodyParameter s: CustomString): CustomString
 
     @HttpPOST(path = "printcustommarshal")
-    fun printCustomMarshalString(@RestRequestBodyParameter s: CustomMarshalString): CustomMarshalString
+    fun printCustomMarshalString(@ClientRequestBodyParameter s: CustomMarshalString): CustomMarshalString
 
     @HttpPOST(path = "unsafe")
-    fun printUnsafeString(@RestRequestBodyParameter s: CustomUnsafeString): CustomUnsafeString
+    fun printUnsafeString(@ClientRequestBodyParameter s: CustomUnsafeString): CustomUnsafeString
 }
 
 @JsonSerialize(using = CustomSerializer::class)

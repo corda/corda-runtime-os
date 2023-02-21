@@ -3,7 +3,7 @@ package net.corda.httprpc.tools.annotations.validation
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -17,7 +17,7 @@ class ParameterAnnotationValidatorTest {
                 get() = 1
 
             @HttpPOST
-            fun test(foo: String, @RestQueryParameter @RestRequestBodyParameter bar: String) {
+            fun test(foo: String, @RestQueryParameter @ClientRequestBodyParameter bar: String) {
                 foo.lowercase()
                 bar.lowercase()
             }

@@ -3,7 +3,7 @@ package net.corda.membership.httprpc.v1
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 
@@ -42,7 +42,7 @@ interface NetworkRestResource : RestResource {
     fun setupHostedIdentities(
         @RestPathParameter(description = "ID of the holding identity to set up")
         holdingIdentityShortHash: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = """
                 Request object which contains properties for P2P messaging including:
                 p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias

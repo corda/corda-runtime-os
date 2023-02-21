@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
@@ -27,7 +27,7 @@ class FlowContextPropertiesMainFlow : ClientStartableFlow {
     lateinit var flowEngine: FlowEngine
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         flowEngine.flowContextProperties["key-1"] = "main-flow"
         flowEngine.flowContextProperties["key-2"] = "main-flow"
         val contextPropertiesMap = flowEngine.subFlow(FlowContextPropertiesSubFlow1())
