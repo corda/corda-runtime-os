@@ -87,7 +87,6 @@ class CordaKafkaConsumerImplTest {
             consumerParam,
             listenerParam,
             chunkDeserializerService,
-            String::class.java,
         )
     }
 

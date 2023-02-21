@@ -1,8 +1,14 @@
 package net.corda.chunking.db.impl.tests
 
 import com.google.common.jimfs.Jimfs
+import java.nio.file.FileSystem
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.util.UUID
 import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.ChunkWriterFactory
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.data.chunking.Chunk
@@ -18,11 +24,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecreateBinaryTest {
@@ -81,7 +82,7 @@ class RecreateBinaryTest {
         val chunkSize = loremIpsum.length / divisor
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize + 10240).apply {
+        val writer = ChunkWriterFactory.create(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...
