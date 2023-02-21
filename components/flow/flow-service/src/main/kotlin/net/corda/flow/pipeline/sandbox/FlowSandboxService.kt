@@ -5,7 +5,13 @@ import net.corda.virtualnode.HoldingIdentity
 
 interface FlowSandboxService {
 
-//TODO kdoc here to explain
+/**
+ * Uses the sandbox service to return a sandbox with extra services required for the flow pipeline
+ */
+
+/**
+ * @return A flow sandbox
+ */
 
     fun get(holdingIdentity: HoldingIdentity, cpks: Collection<SecureHash>): FlowSandboxGroupContext
 }
