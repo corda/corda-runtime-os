@@ -19,7 +19,8 @@ class KafkaTopicUtilsFactoryTest {
     fun testCreateTopicUtils() {
         val kafkaProperties = Properties()
         kafkaProperties.load(StringReader("bootstrap.servers=localhost:9092"))
-        val topicUtils = kafkaTopicUtilsFactory.createTopicUtils(kafkaProperties)
-        Assertions.assertNotNull(topicUtils)
+        kafkaTopicUtilsFactory.createTopicUtils(kafkaProperties).use {topicUtils ->
+            Assertions.assertNotNull(topicUtils)
+        }
     }
 }
