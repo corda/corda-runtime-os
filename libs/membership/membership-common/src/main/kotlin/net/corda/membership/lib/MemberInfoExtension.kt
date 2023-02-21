@@ -143,7 +143,7 @@ class MemberInfoExtension {
         const val INTEROP_ROLE = "interop"
 
         /**
-         * Interop role properties
+         * Interop service name
          */
         const val INTEROP_SERVICE_NAME = "corda.interop.service.name"
 
