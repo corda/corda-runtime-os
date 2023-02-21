@@ -14,6 +14,7 @@ import java.io.Writer
 import java.sql.Connection
 import java.util.UUID
 import liquibase.LabelExpression
+import java.util.concurrent.locks.ReentrantLock
 
 @Component(service = [LiquibaseSchemaMigrator::class])
 class LiquibaseSchemaMigratorImpl(
@@ -34,7 +35,7 @@ class LiquibaseSchemaMigratorImpl(
         // NOTE: may need to become variable depending on the DB type
         const val DEFAULT_DB_SCHEMA = "PUBLIC"
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private val liquibaseAccessLock = Any()
+        private val liquibaseAccessLock = ReentrantLock()
     }
 
     override fun updateDb(datasource: Connection, dbChange: DbChange, tag: String?) {
