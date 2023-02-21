@@ -19,7 +19,7 @@ import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.asynchronous.v1.AsyncResponse
-import net.corda.httprpc.messageBus.MessageBusUtils.withServiceUnavailableOnRepartition
+import net.corda.httprpc.messageBus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
@@ -218,7 +218,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
 
-        val requestId = withServiceUnavailableOnRepartition(logger, "Upgrade vNode") {
+        val requestId = tryWithExceptionHandling(logger, "Upgrade vNode") {
             sendAsynchronousRequest(
                 Instant.now(),
                 virtualNodeShortId,
@@ -305,7 +305,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
                 )
             )
         }
-        val resp = withServiceUnavailableOnRepartition(logger, "Create vNode") {
+        val resp = tryWithExceptionHandling(logger, "Create vNode") {
             sendAndReceive(rpcRequest)
         }
         return when (val resolvedResponse = resp.responseType) {
@@ -359,7 +359,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             )
         )
         // Actually send request and await response message on bus
-        val resp = withServiceUnavailableOnRepartition(logger, "Update vNode state") {
+        val resp = tryWithExceptionHandling(logger, "Update vNode state") {
             sendAndReceive(rpcRequest)
         }
         logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
