@@ -44,7 +44,7 @@ class FlowWorker @Activate constructor(
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
     @Reference(service = InteropProcessor::class)
-    private val interopProcessor: InteropProcessor,
+    private val interopProcessor: InteropProcessor
 ) : Application {
 
     private companion object {

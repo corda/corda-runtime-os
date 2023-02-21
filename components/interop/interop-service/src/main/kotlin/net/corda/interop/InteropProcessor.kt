@@ -38,7 +38,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         events.forEach { appMessage ->
             val authMessage = appMessage.value?.message
             if (authMessage != null && authMessage is UnauthenticatedMessage && authMessage.header.subsystem == SUBSYSTEM) {
-                getOutputRecord(authMessage.toCommonHeader(), authMessage.payload, appMessage.key)?.let { outputRecord ->
+                val header = with(authMessage.header) { CommonHeader(source, destination, null, messageId) }
+                getOutputRecord(header, authMessage.payload, appMessage.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
                 }
             }
@@ -88,11 +89,10 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         )
     }
 
-    //This class gathers common fields from both AuthenticateMessageHeader and UnauthenticatedMessageHeader
+    //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
     data class CommonHeader(val destination: net.corda.data.identity.HoldingIdentity,
                             val source: net.corda.data.identity.HoldingIdentity, val ttl: Instant? = null,
                             val messageId: String, val traceId: String? = null, val subsystem: String = SUBSYSTEM)
-
-    private fun UnauthenticatedMessage.toCommonHeader() =
-        CommonHeader(header.source, header.destination, null, header.messageId)
     }
+
+
