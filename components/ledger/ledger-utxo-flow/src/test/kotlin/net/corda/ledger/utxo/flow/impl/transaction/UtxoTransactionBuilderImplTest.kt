@@ -9,11 +9,12 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
-import net.corda.ledger.utxo.testkit.utxoStateAndRefExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.StateRef
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -22,6 +23,13 @@ import org.mockito.kotlin.whenever
 import kotlin.test.assertIs
 
 class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
+    private val stateRef1 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 1)), 0)
+    private val stateRef2 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 2)), 0)
+    private val stateRef3 = StateRef(SecureHash("SHA", byteArrayOf(1, 1, 1, 3)), 0)
+    private val state1 = UtxoStateClassExample("test 1", listOf(publicKeyExample))
+    private val state2 = UtxoStateClassExample("test 2", listOf(publicKeyExample))
+    private val state3 = UtxoStateClassExample("test 3", listOf(publicKeyExample))
+
     @Test
     fun `can build a simple Transaction`() {
 
@@ -266,15 +274,10 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `adding input states mutates and returns the current builder`() {
-        val inputState = utxoStateAndRefExample.ref
         val originalTransactionBuilder = utxoTransactionBuilder
 
-        val mutatedTransactionBuilder = utxoTransactionBuilder.addInputState(inputState)
-        assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(
-            listOf(
-                inputState
-            )
-        )
+(??)        val mutatedTransactionBuilder = utxoTransactionBuilder.addInputState(inputState)
+(??)        assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(listOf(inputState))
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
             System.identityHashCode(
@@ -282,13 +285,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             )
         )
 
-        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addInputStates(listOf(inputState))
-        assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(
-            listOf(
-                inputState,
-                inputState
-            )
-        )
+(??)        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addInputStates(listOf(inputState))
+(??)        assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(listOf(inputState, inputState))
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder2)).isEqualTo(
             System.identityHashCode(
@@ -296,9 +294,9 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             )
         )
 
-        val mutatedTransactionBuilder3 = utxoTransactionBuilder.addInputStates(inputState)
+        val mutatedTransactionBuilder3 = utxoTransactionBuilder.addInputStates(stateRef3)
         assertThat((mutatedTransactionBuilder3 as UtxoTransactionBuilderInternal).inputStateRefs)
-            .isEqualTo(listOf(inputState, inputState, inputState))
+            .isEqualTo(listOf(stateRef1, stateRef2, stateRef3))
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder3)).isEqualTo(
             System.identityHashCode(
@@ -309,13 +307,12 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
 
     @Test
     fun `adding reference states mutates and returns the current builder`() {
-        val referenceState = utxoStateAndRefExample.ref
         val originalTransactionBuilder = utxoTransactionBuilder
 
-        val mutatedTransactionBuilder = utxoTransactionBuilder.addReferenceState(referenceState)
+        val mutatedTransactionBuilder = utxoTransactionBuilder.addReferenceState(stateRef1)
         assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).referenceStateRefs).isEqualTo(
             listOf(
-                referenceState
+                stateRef1
             )
         )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
@@ -325,9 +322,9 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             )
         )
 
-        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addReferenceStates(listOf(referenceState))
+        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addReferenceStates(listOf(stateRef2))
         assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).referenceStateRefs)
-            .isEqualTo(listOf(referenceState, referenceState))
+            .isEqualTo(listOf(stateRef1, stateRef2))
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder2)).isEqualTo(
             System.identityHashCode(
@@ -335,9 +332,9 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             )
         )
 
-        val mutatedTransactionBuilder3 = utxoTransactionBuilder.addReferenceStates(referenceState)
+        val mutatedTransactionBuilder3 = utxoTransactionBuilder.addReferenceStates(stateRef3)
         assertThat((mutatedTransactionBuilder3 as UtxoTransactionBuilderInternal).referenceStateRefs)
-            .isEqualTo(listOf(referenceState, referenceState, referenceState))
+            .isEqualTo(listOf(stateRef1, stateRef2, stateRef3))
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder3)).isEqualTo(
             System.identityHashCode(
@@ -350,9 +347,9 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     fun `adding output states mutates and returns the current builder`() {
         val originalTransactionBuilder = utxoTransactionBuilder
 
-        val mutatedTransactionBuilder = utxoTransactionBuilder.addOutputState(utxoStateExample)
+        val mutatedTransactionBuilder = utxoTransactionBuilder.addOutputState(state1)
         assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).outputStates).isEqualTo(
-            listOf(ContractStateAndEncumbranceTag(utxoStateExample, null))
+            listOf(ContractStateAndEncumbranceTag(state1, null))
         )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
@@ -361,11 +358,11 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             )
         )
 
-        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addOutputStates(listOf(utxoStateExample))
+        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addOutputStates(listOf(state2))
         assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).outputStates).isEqualTo(
             listOf(
-                ContractStateAndEncumbranceTag(utxoStateExample, null),
-                ContractStateAndEncumbranceTag(utxoStateExample, null)
+                ContractStateAndEncumbranceTag(state1, null),
+                ContractStateAndEncumbranceTag(state2, null)
             )
         )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
@@ -375,12 +372,12 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             )
         )
 
-        val mutatedTransactionBuilder3 = utxoTransactionBuilder.addOutputStates(utxoStateExample)
+        val mutatedTransactionBuilder3 = utxoTransactionBuilder.addOutputStates(state3)
         assertThat((mutatedTransactionBuilder3 as UtxoTransactionBuilderInternal).outputStates).isEqualTo(
             listOf(
-                ContractStateAndEncumbranceTag(utxoStateExample, null),
-                ContractStateAndEncumbranceTag(utxoStateExample, null),
-                ContractStateAndEncumbranceTag(utxoStateExample, null)
+                ContractStateAndEncumbranceTag(state1, null),
+                ContractStateAndEncumbranceTag(state2, null),
+                ContractStateAndEncumbranceTag(state3, null)
             )
         )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
@@ -396,9 +393,9 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
         val tag = "tag"
         val originalTransactionBuilder = utxoTransactionBuilder
 
-        val mutatedTransactionBuilder = utxoTransactionBuilder.addEncumberedOutputStates(tag, listOf(utxoStateExample))
+        val mutatedTransactionBuilder = utxoTransactionBuilder.addEncumberedOutputStates(tag, listOf(state1))
         assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).outputStates).isEqualTo(
-            listOf(ContractStateAndEncumbranceTag(utxoStateExample, tag))
+            listOf(ContractStateAndEncumbranceTag(state1, tag))
         )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
@@ -407,11 +404,11 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             )
         )
 
-        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addEncumberedOutputStates(tag, utxoStateExample)
+        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addEncumberedOutputStates(tag, state2)
         assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).outputStates).isEqualTo(
             listOf(
-                ContractStateAndEncumbranceTag(utxoStateExample, tag),
-                ContractStateAndEncumbranceTag(utxoStateExample, tag)
+                ContractStateAndEncumbranceTag(state1, tag),
+                ContractStateAndEncumbranceTag(state2, tag)
             )
         )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
@@ -420,5 +417,97 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
                 originalTransactionBuilder
             )
         )
+    }
+
+    @Test
+    fun `Duplicating attachments throws`() {
+        val attachmentId = SecureHash("SHA", byteArrayOf(1, 1, 1, 1))
+        utxoTransactionBuilder
+            .addAttachment(attachmentId)
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addAttachment(attachmentId)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating commands throws`() {
+        val command = UtxoCommandExample()
+        utxoTransactionBuilder
+            .addCommand(command)
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addCommand(command)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating signatories throws`() {
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addSignatories(List(2) { publicKeyExample })
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating input states one by one throws`() {
+        utxoTransactionBuilder
+            .addInputState(stateRef1)
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addInputState(stateRef1)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating input states adding as a list throws`() {
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addInputStates(List(2) { stateRef1 })
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating reference states one by one throws`() {
+        utxoTransactionBuilder
+            .addReferenceState(stateRef1)
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addReferenceState(stateRef1)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating reference states adding as a list throws`() {
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addReferenceStates(List(2) { stateRef1 })
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating non encumbered outputs one by one throws`() {
+        utxoTransactionBuilder
+            .addOutputState(state1)
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addOutputState(state1)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating non encumbered outputs adding as a list throws`() {
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addOutputStates(List(2) { state1 })
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Duplicating encumbered outputs throws`() {
+        assertThatThrownBy{
+            utxoTransactionBuilder
+                .addEncumberedOutputStates("tag", List(2) { state1 })
+        }.isInstanceOf(IllegalArgumentException::class.java)
     }
 }

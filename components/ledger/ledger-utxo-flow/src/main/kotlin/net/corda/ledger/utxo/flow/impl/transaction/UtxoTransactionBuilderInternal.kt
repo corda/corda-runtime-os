@@ -15,4 +15,11 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder {
     val inputStateRefs: List<StateRef>
     val referenceStateRefs: List<StateRef>
     val outputStates: List<ContractStateAndEncumbranceTag>
+
+    /**
+     * Returns another transaction builder with the same content.
+     *
+     * @return A copy of the current transaction builder.
+     */
+    fun copy(): UtxoTransactionBuilder
 }

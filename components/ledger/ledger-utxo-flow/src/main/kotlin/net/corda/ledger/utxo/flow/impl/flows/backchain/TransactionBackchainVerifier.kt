@@ -6,5 +6,5 @@ import net.corda.v5.crypto.SecureHash
 interface TransactionBackchainVerifier {
 
     @Suspendable
-    fun verify(resolvingTransactionId: SecureHash, topologicalSort: TopologicalSort): Boolean
+    fun verify(initialTransactionIds: Set<SecureHash>, topologicalSort: TopologicalSort): Boolean
 }

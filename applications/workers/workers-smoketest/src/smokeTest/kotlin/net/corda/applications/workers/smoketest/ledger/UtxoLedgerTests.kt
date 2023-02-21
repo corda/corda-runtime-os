@@ -158,6 +158,69 @@ class UtxoLedgerTests {
         assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
 
+    @Test
+    fun `Utxo Ledger - create a transaction containing states and finalize it then consume it in a transactionbuilder sender flow`() {
+        val input = "txbuilder test"
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("input" to input, "members" to listOf(bobX500), "notary" to notaryX500),
+            "net.cordapp.demo.utxo.UtxoDemoFlow"
+        )
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowError).isNull()
+
+        for (holdingId in listOf(aliceHoldingId, bobHoldingId)) {
+            val findTransactionFlowRequestId = startRpcFlow(
+                holdingId,
+                mapOf("transactionId" to utxoFlowResult.flowResult!!),
+                "net.cordapp.demo.utxo.FindTransactionFlow"
+            )
+            val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
+            assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            assertThat(transactionResult.flowError).isNull()
+
+            val parsedResult = objectMapper
+                .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
+
+            assertThat(parsedResult.transaction).withFailMessage {
+                "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
+            }.isNotNull
+            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
+            assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
+            assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(2)
+            assertThat(parsedResult.transaction.participants).hasSize(2)
+        }
+
+        val sendTxBuilder = startRpcFlow(
+            aliceHoldingId,
+            mapOf("member" to bobX500),
+            "net.cordapp.demo.utxo.UtxoDemoTransactionBuilderSendingFlow"
+        )
+        val sendTxBuilderFlowResult = awaitRpcFlowFinished(aliceHoldingId, sendTxBuilder)
+
+        assertThat(sendTxBuilderFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(sendTxBuilderFlowResult.flowError).isNull()
+
+        // Peek into the last transaction
+
+        val peekFlowId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("transactionId" to sendTxBuilderFlowResult.flowResult!!),
+            "net.cordapp.demo.utxo.PeekTransactionFlow")
+
+        val peekFlowResult = awaitRpcFlowFinished(aliceHoldingId, peekFlowId)
+        assertThat(peekFlowResult.flowError).isNull()
+        assertThat(peekFlowResult.flowResult).isNotNull()
+
+        val parsedPeekFlowResult = objectMapper
+            .readValue(peekFlowResult.flowResult, PeekTransactionResponse::class.java)
+
+        assertThat(parsedPeekFlowResult.errorMessage).isNull()
+        assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
+        assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo("Populated by responder")
+    }
+
 
     @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {

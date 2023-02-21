@@ -891,8 +891,8 @@ class UtxoFinalityFlowTest {
 
         callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(initialTx, sessionAlice))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(initialTx, sessionBob))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
+        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
     }
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
@@ -910,7 +910,6 @@ class UtxoFinalityFlowTest {
         flow.flowMessaging = flowMessaging
         flow.persistenceService = persistenceService
         flow.transactionVerificationService = transactionVerificationService
-        flow.flowEngine = flowEngine
         flow.virtualNodeSelectorService = virtualNodeSelectorService
         flow.call()
     }

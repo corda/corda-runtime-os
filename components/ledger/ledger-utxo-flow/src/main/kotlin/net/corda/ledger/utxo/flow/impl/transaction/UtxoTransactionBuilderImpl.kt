@@ -18,7 +18,7 @@ import java.time.Instant
 import java.util.Objects
 
 @Suppress("TooManyFunctions", "LongParameterList")
-class UtxoTransactionBuilderImpl(
+open class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     private var notary: Party? = null,
     override var timeWindow: TimeWindow? = null,
@@ -33,16 +33,28 @@ class UtxoTransactionBuilderImpl(
     private var alreadySigned = false
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
+        require(attachmentId !in attachments) {
+            "Duplicating attachments is not allowed."
+        }
         this.attachments += attachmentId
         return this
     }
 
     override fun addCommand(command: Command): UtxoTransactionBuilder {
+        require(command !in commands) {
+            "Duplicating commands is not allowed."
+        }
         this.commands += command
         return this
     }
 
     override fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
+        require(
+            this.signatories.intersect(signatories.toSet()).isEmpty()
+                    && signatories.distinct().size == signatories.count()
+        ) {
+            "Duplicating signatories is not allowed."
+        }
         this.signatories += signatories
         return this
     }
@@ -52,11 +64,20 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
+        require(stateRef !in inputStateRefs) {
+            "Duplicating input StateRefs is not allowed."
+        }
         this.inputStateRefs += stateRef
         return this
     }
 
     override fun addInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
+        require(
+            this.inputStateRefs.intersect(stateRefs.toSet()).isEmpty()
+                    && stateRefs.distinct().size == stateRefs.count()
+        ) {
+            "Duplicating input StateRefs is not allowed."
+        }
         this.inputStateRefs += stateRefs
         return this
     }
@@ -66,11 +87,20 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun addReferenceState(stateRef: StateRef): UtxoTransactionBuilder {
+        require(stateRef !in referenceStateRefs) {
+            "Duplicating reference StateRefs is not allowed."
+        }
         this.referenceStateRefs += stateRef
         return this
     }
 
     override fun addReferenceStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
+        require(
+            this.referenceStateRefs.intersect(stateRefs.toSet()).isEmpty()
+                    && stateRefs.distinct().size == stateRefs.count()
+        ) {
+            "Duplicating reference StateRefs is not allowed."
+        }
         this.referenceStateRefs += stateRefs
         return this
     }
@@ -80,12 +110,23 @@ class UtxoTransactionBuilderImpl(
     }
 
     override fun addOutputState(contractState: ContractState): UtxoTransactionBuilder {
-        this.outputStates += contractState.withEncumbrance(null)
+        val outputState = contractState.withEncumbrance(null)
+        require(outputState !in outputStates) {
+            "Duplicating output states is not allowed."
+        }
+        this.outputStates += outputState
         return this
     }
 
     override fun addOutputStates(contractStates: Iterable<ContractState>): UtxoTransactionBuilder {
-        this.outputStates += contractStates.map { it.withEncumbrance(null) }
+        val outputStates = contractStates.map { it.withEncumbrance(null) }
+        require(
+            this.outputStates.intersect(outputStates.toSet()).isEmpty()
+                    && outputStates.distinct().size == outputStates.count()
+        ) {
+            "Duplicating output states is not allowed."
+        }
+        this.outputStates += outputStates
         return this
     }
 
@@ -97,7 +138,14 @@ class UtxoTransactionBuilderImpl(
         tag: String,
         contractStates: Iterable<ContractState>
     ): UtxoTransactionBuilder {
-        this.outputStates += contractStates.map { it.withEncumbrance(tag) }
+        val outputStates = contractStates.map { it.withEncumbrance(tag) }
+        require(
+            this.outputStates.intersect(outputStates.toSet()).isEmpty()
+                    && outputStates.distinct().size == outputStates.count()
+        ) {
+            "Duplicating output states is not allowed."
+        }
+        this.outputStates += outputStates
         return this
     }
 
@@ -141,6 +189,20 @@ class UtxoTransactionBuilderImpl(
     @Suspendable
     override fun toSignedTransaction(): UtxoSignedTransaction {
         return sign()
+    }
+
+    override fun copy(): UtxoTransactionBuilderImpl {
+        return UtxoTransactionBuilderImpl(
+            utxoSignedTransactionFactory,
+            notary,
+            timeWindow,
+            attachments.toMutableList(),
+            commands.toMutableList(),
+            signatories.toMutableList(),
+            inputStateRefs.toMutableList(),
+            referenceStateRefs.toMutableList(),
+            outputStates.toMutableList()
+        )
     }
 
     @Suspendable

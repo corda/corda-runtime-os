@@ -7,6 +7,7 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
@@ -406,7 +407,7 @@ class UtxoReceiveFinalityFlowTest {
 
         callReceiveFinalityFlow()
 
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
     }
 
     @Test
@@ -424,7 +425,7 @@ class UtxoReceiveFinalityFlowTest {
             .isInstanceOf(TransactionVerificationException::class.java)
             .hasMessageContaining("Verification error")
 
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction, session))
+        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {
