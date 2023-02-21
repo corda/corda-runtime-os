@@ -49,7 +49,7 @@ dependencies {
     runtimeOnly project(":components:membership:membership-persistence-client-impl")
     runtimeOnly project(':components:virtual-node:virtual-node-rpcops-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-rpcops-maintenance-impl')
-    runtimeOnly project(":components:permissions:permission-rpc-ops-impl")
+    runtimeOnly project(":components:permissions:permission-rest-resource-impl")
     runtimeOnly project(":components:membership:group-policy-impl")
 
     runtimeOnly project(':libs:configuration:configuration-endpoints')

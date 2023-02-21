@@ -15,7 +15,7 @@
     bnd.identity;id='net.corda.rest-processor',\
     bnd.identity;id='net.corda.virtual-node-rpcops-service-impl',\
     bnd.identity;id='net.corda.virtual-node-rpcops-maintenance-impl',\
-    bnd.identity;id='net.corda.permission-rpc-ops-impl',\
+    bnd.identity;id='net.corda.permission-rest-resource-impl',\
     bnd.identity;id='net.corda.membership-rest-impl',\
     bnd.identity;id='net.corda.configuration-rpcops-service-impl',\
     bnd.identity;id='org.webjars.swagger-ui',\
