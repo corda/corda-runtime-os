@@ -16,19 +16,30 @@ object CpiLoader {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
     }
 
-    fun get(resourceName: String, groupPolicy: String, cpiName: String, cpiVersion: String) =
-        cpbToCpi(getInputStream(resourceName), groupPolicy, cpiName, cpiVersion)
+    fun get(
+        resourceName: String,
+        groupPolicy: String,
+        cpiName: String,
+        cpiVersion: String,
+        signOptions: SignOptions = SignOptions(
+            keyStore = "cordadevcodesign.p12",
+            keyAlias = "cordacodesign",
+            keyStorePassword = "cordacadevpass"
+        )
+    ) = cpbToCpi(getInputStream(resourceName), groupPolicy, cpiName, cpiVersion, signOptions)
 
     fun getRawResource(resourceName: String) = getInputStream(resourceName)
 
-    /** Returns a new input stream
+    /**
+     * Returns a new input stream.
      * Don't use this method when we have actual CPIs
      */
-    private fun cpbToCpi(
+    fun cpbToCpi(
         inputStream: InputStream,
         networkPolicy: String,
         cpiNameValue: String,
-        cpiVersionValue: String
+        cpiVersionValue: String,
+        signOptions: SignOptions
     ): InputStream {
 
         val tempDirectory = createTempDirectory()
@@ -46,9 +57,9 @@ object CpiLoader {
             }
 
             // Save keystore to disk
-            val keyStorePath = tempDirectory.resolve("cordadevcodesign.p12")
+            val keyStorePath = tempDirectory.resolve(signOptions.keyStore)
             Files.newOutputStream(keyStorePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
-                it.write(getKeyStore())
+                it.write(getKeyStore(signOptions.keyStore))
             }
 
             // Create CPI
@@ -61,9 +72,9 @@ object CpiLoader {
                 groupPolicyFileName = groupPolicyPath.toString()
                 outputFileName = cpiPath.toString()
                 signingOptions = SigningOptions().apply {
-                    keyStoreFileName = keyStorePath.toString()
-                    keyStorePass = "cordacadevpass"
-                    keyAlias = "cordacodesign"
+                    keyAlias = signOptions.keyAlias
+                    keyStoreFileName = signOptions.keyStore
+                    keyStorePass = signOptions.keyStorePassword
                 }
             }.run()
 
@@ -74,6 +85,15 @@ object CpiLoader {
         }
     }
 
-    private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("cordadevcodesign.p12")?.use { it.readAllBytes() }
-        ?: throw FileNotFoundException("cordadevcodesign.p12 not found")
+    private fun getKeyStore(keyStoreResource: String) =
+        javaClass.classLoader.getResourceAsStream(keyStoreResource)?.use { it.readAllBytes() }
+            ?: throw FileNotFoundException("$keyStoreResource not found")
 }
+
+data class SignOptions(
+    val keyStore: String,
+    val keyAlias: String,
+    val keyStorePassword: String,
+    val signatureFile: String? = null,
+    val timeStampingAuthorityUrl: String? = null,
+)
