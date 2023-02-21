@@ -40,7 +40,7 @@ workers:
 #      suspend: true
 #    logging:
 #      level: "debug"
-  rpc:
+  rest:
     replicaCount: 1
 #    debug:
 #      enabled: true

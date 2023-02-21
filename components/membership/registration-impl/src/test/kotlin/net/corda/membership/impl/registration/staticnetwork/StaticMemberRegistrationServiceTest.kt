@@ -70,6 +70,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
@@ -84,6 +86,7 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -267,6 +270,9 @@ class StaticMemberRegistrationServiceTest {
         on { create(any()) } doReturn mockGroupParameters
     }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
+    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
+        on { getGroupReader(any()) } doReturn mock()
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -286,6 +292,7 @@ class StaticMemberRegistrationServiceTest {
         groupParametersFactory,
         virtualNodeInfoReadService,
         groupParametersWriterService,
+        membershipGroupReaderProvider,
     )
 
     private fun setUpPublisher() {
@@ -427,10 +434,58 @@ class StaticMemberRegistrationServiceTest {
 
             assertThat(status.firstValue).isEqualTo(mockGroupParameters)
         }
+
+        @Test
+        fun `registration pass when the member is not active`() {
+            val memberInfo = mock<MemberInfo> {
+                on { isActive } doReturn false
+            }
+            val reader = mock<MembershipGroupReader> {
+                on { lookup(any()) } doReturn memberInfo
+            }
+            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            setUpPublisher()
+            registrationService.start()
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+        }
+
+        @Test
+        fun `registration pass when the member is not found`() {
+            val reader = mock<MembershipGroupReader> {
+                on { lookup(any()) } doReturn null
+            }
+            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            setUpPublisher()
+            registrationService.start()
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+        }
     }
 
     @Nested
     inner class FailedRegistrationTests {
+        @Test
+        fun `it fails when the member is active`() {
+            val memberInfo = mock<MemberInfo> {
+                on { isActive } doReturn true
+            }
+            val reader = mock<MembershipGroupReader> {
+                on { lookup(any()) } doReturn memberInfo
+            }
+            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            setUpPublisher()
+            registrationService.start()
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+        }
+
         @Test
         fun `registration fails when name field is empty in the GroupPolicy file`() {
             setUpPublisher()
