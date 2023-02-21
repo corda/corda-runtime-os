@@ -171,9 +171,9 @@ fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) ->
     val groupId = try {
         getGroupIdFromJson(this.metadata.groupPolicy!!)
         // catch specific exceptions, and wrap them up so as to capture the request ID
-        // This exception will end up going over Kafka and being picked up by the RPC worker,
+        // This exception will end up going over Kafka and being picked up by the REST worker,
         // which then matches by class name,  so we cannot use subtypes of ValidationException without
-        // introducing knowledge of specific failure modes into the RPC worker
+        // introducing knowledge of specific failure modes into the REST worker
     } catch (e: GroupPolicyIdNotFoundException) {
         throw ValidationException("Unable to upload CPI due to group ID not found", requestId)
     } catch (e: GroupPolicyParseException) {

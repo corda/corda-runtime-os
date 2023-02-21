@@ -10,4 +10,4 @@ kafka:
           - "membership"
           - "p2pGateway"
           - "p2pLinkManager"
-          - "rpc"
+          - "rest"

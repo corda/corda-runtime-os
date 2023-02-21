@@ -18,10 +18,10 @@ import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
 import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
-import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
-import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
-import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
-import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
+import net.corda.schema.Schemas.Rest.Companion.REST_PERM_ENTITY_TOPIC
+import net.corda.schema.Schemas.Rest.Companion.REST_PERM_GROUP_TOPIC
+import net.corda.schema.Schemas.Rest.Companion.REST_PERM_ROLE_TOPIC
+import net.corda.schema.Schemas.Rest.Companion.REST_PERM_USER_TOPIC
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
@@ -70,15 +70,15 @@ class PermissionStorageReaderImpl(
     }
 
     override fun publishUpdatedUser(user: AvroUser) {
-        publisher.publish(listOf(Record(RPC_PERM_USER_TOPIC, key = user.loginName, value = user))).single().getOrThrow()
+        publisher.publish(listOf(Record(REST_PERM_USER_TOPIC, key = user.loginName, value = user))).single().getOrThrow()
     }
 
     override fun publishUpdatedRole(role: AvroRole) {
-        publisher.publish(listOf(Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role))).single().getOrThrow()
+        publisher.publish(listOf(Record(REST_PERM_ROLE_TOPIC, key = role.id, value = role))).single().getOrThrow()
     }
 
     override fun publishNewPermission(permission: AvroPermission) {
-        publisher.publish(listOf(Record(RPC_PERM_ENTITY_TOPIC, key = permission.id, value = permission))).single().getOrThrow()
+        publisher.publish(listOf(Record(REST_PERM_ENTITY_TOPIC, key = permission.id, value = permission))).single().getOrThrow()
     }
 
     override fun publishGroups(ids: List<String>) {
@@ -125,12 +125,12 @@ class PermissionStorageReaderImpl(
     private fun createUserRecords(users: List<User>): List<Record<String, AvroUser>> {
         val userNames = users.map { it.loginName }.toHashSet()
         val updated = users.map { user ->
-            Record(RPC_PERM_USER_TOPIC, key = user.loginName, value = user.toAvroUser())
+            Record(REST_PERM_USER_TOPIC, key = user.loginName, value = user.toAvroUser())
         }
 
         val removed: List<Record<String, AvroUser>> = permissionManagementCache.users
             .filterKeys { loginName -> loginName !in userNames }
-            .map { (loginName, _) -> Record(RPC_PERM_USER_TOPIC, key = loginName, value = null) }
+            .map { (loginName, _) -> Record(REST_PERM_USER_TOPIC, key = loginName, value = null) }
 
         return updated + removed
     }
@@ -138,11 +138,11 @@ class PermissionStorageReaderImpl(
     private fun createGroupRecords(groups: List<Group>): List<Record<String, AvroGroup>> {
         val groupIds = groups.map { it.id }.toHashSet()
         val updated = groups.map { group ->
-            Record(RPC_PERM_GROUP_TOPIC, key = group.id, value = group.toAvroGroup())
+            Record(REST_PERM_GROUP_TOPIC, key = group.id, value = group.toAvroGroup())
         }
         val removed: List<Record<String, AvroGroup>> = permissionManagementCache.groups
             .filterKeys { id -> id !in groupIds }
-            .map { (id, _) -> Record(RPC_PERM_GROUP_TOPIC, key = id, value = null) }
+            .map { (id, _) -> Record(REST_PERM_GROUP_TOPIC, key = id, value = null) }
 
         return updated + removed
     }
@@ -150,11 +150,11 @@ class PermissionStorageReaderImpl(
     private fun createRoleRecords(roles: List<Role>): List<Record<String, AvroRole>> {
         val roleIds = roles.map { it.id }.toHashSet()
         val updated = roles.map { role ->
-            Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role.toAvroRole())
+            Record(REST_PERM_ROLE_TOPIC, key = role.id, value = role.toAvroRole())
         }
         val removed: List<Record<String, AvroRole>> = permissionManagementCache.roles
             .filterKeys { id -> id !in roleIds }
-            .map { (id, _) -> Record(RPC_PERM_ROLE_TOPIC, key = id, value = null) }
+            .map { (id, _) -> Record(REST_PERM_ROLE_TOPIC, key = id, value = null) }
 
         return updated + removed
     }
@@ -162,11 +162,11 @@ class PermissionStorageReaderImpl(
     private fun createPermissionRecords(permissions: List<Permission>): List<Record<String, AvroPermission>> {
         val permissionIds = permissions.map { it.id }.toHashSet()
         val updated = permissions.map { perm ->
-            Record(RPC_PERM_ENTITY_TOPIC, key = perm.id, value = perm.toAvroPermission())
+            Record(REST_PERM_ENTITY_TOPIC, key = perm.id, value = perm.toAvroPermission())
         }
         val removed: List<Record<String, AvroPermission>> = permissionManagementCache.permissions
             .filterKeys { id -> id !in permissionIds }
-            .map { (id, _) -> Record(RPC_PERM_ENTITY_TOPIC, key = id, value = null) }
+            .map { (id, _) -> Record(REST_PERM_ENTITY_TOPIC, key = id, value = null) }
 
         return updated + removed
     }
