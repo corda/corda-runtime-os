@@ -126,10 +126,6 @@ class ConcurrentFlowMessaging(
         return doInitiate(x500Name, flowContextPropertiesBuilder)
     }
 
-    override fun invokeInterop(identity: MemberX500Name, facade: String, method: String) {
-        TODO("Interop is not supported on the simulator.")
-    }
-
     /**
      * Not yet implemented.
      */
