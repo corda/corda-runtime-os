@@ -104,7 +104,7 @@ class InteropService @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         publisher?.start()
-        val registrationService = InteropMemberRegistrationService(cordaAvroSerializationFactory)
+        val registrationService = InteropMemberRegistrationService()
         logger.info("Publishing member infos")
         publisher?.publish(registrationService.createDummyMemberInfo())
         logger.info("Publishing hosted identities")

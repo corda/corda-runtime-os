@@ -1,6 +1,5 @@
 package net.corda.interop.service
 
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
@@ -28,9 +27,7 @@ import org.osgi.service.component.annotations.Component
 import java.time.Instant
 
 @Component(service = [InteropMemberRegistrationService::class])
-class InteropMemberRegistrationService(
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
-) {
+class InteropMemberRegistrationService {
 
     companion object {
         private const val ALICE_ALTER_EGO_X500 = "CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB"
