@@ -1,9 +1,9 @@
-package net.corda.configuration.restresource.impl
+package net.corda.configuration.rest.impl
 
 import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigurationGetService
-import net.corda.configuration.restresource.impl.exception.ConfigRestResourceException
-import net.corda.configuration.restresource.impl.v1.ConfigRestResourceImpl
+import net.corda.configuration.rest.impl.exception.ConfigRestResourceException
+import net.corda.configuration.rest.impl.v1.ConfigRestResourceImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest

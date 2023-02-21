@@ -1,4 +1,4 @@
-package net.corda.configuration.restresource.impl.exception
+package net.corda.configuration.rest.impl.exception
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

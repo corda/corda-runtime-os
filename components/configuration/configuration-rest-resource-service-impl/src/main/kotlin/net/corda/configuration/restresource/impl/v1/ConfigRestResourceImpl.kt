@@ -1,14 +1,14 @@
-package net.corda.configuration.restresource.impl.v1
+package net.corda.configuration.rest.impl.v1
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.configuration.restresource.impl.CLIENT_NAME_HTTP
-import net.corda.configuration.restresource.impl.GROUP_NAME
-import net.corda.configuration.restresource.impl.exception.ConfigException
-import net.corda.configuration.restresource.impl.exception.ConfigRestResourceException
-import net.corda.configuration.restresource.impl.exception.ConfigVersionConflictException
+import net.corda.configuration.rest.impl.CLIENT_NAME_HTTP
+import net.corda.configuration.rest.impl.GROUP_NAME
+import net.corda.configuration.rest.impl.exception.ConfigException
+import net.corda.configuration.rest.impl.exception.ConfigRestResourceException
+import net.corda.configuration.rest.impl.exception.ConfigVersionConflictException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
