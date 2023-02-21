@@ -7,8 +7,8 @@ import javax.persistence.PersistenceException
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog

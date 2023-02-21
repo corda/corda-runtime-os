@@ -2,7 +2,7 @@ package net.corda.chunking.db.impl.cpi
 
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractorHelpers
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpkIdentifier

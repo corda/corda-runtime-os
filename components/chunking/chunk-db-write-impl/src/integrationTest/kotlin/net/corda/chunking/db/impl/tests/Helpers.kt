@@ -2,8 +2,8 @@ package net.corda.chunking.db.impl.tests
 
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.v5.crypto.DigestAlgorithmName

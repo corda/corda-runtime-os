@@ -1,9 +1,9 @@
 package net.corda.test.util.dsl.entities.cpx
 
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.CpiCpkKey
-import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
+import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 
 fun cpiCpk(init: CpiCpkBuilder.() -> Unit): CpiCpkBuilder {
     val cpiCpk = CpiCpkBuilder()
