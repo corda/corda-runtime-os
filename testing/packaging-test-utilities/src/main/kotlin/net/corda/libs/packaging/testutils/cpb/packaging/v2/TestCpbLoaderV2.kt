@@ -83,7 +83,7 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
                         ),
                         fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, hash),
                         cpksMetadata = cpks.map { it.metadata },
-                        groupPolicy = null,
+                        groupPolicy = "{}",
                         timestamp = clock.instant()
                     )
                 override val cpks =

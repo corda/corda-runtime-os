@@ -9,7 +9,7 @@ data class CpiMetadata(
     val cpiId: CpiIdentifier,
     val fileChecksum: SecureHash,
     val cpksMetadata: Collection<CpkMetadata>,
-    val groupPolicy: String?,
+    val groupPolicy: String,
     val version: Int = -1,
     val timestamp: Instant,
     val isDeleted: Boolean = false,

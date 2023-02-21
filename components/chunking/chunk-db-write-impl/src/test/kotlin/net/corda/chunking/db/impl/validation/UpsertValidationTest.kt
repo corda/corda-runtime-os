@@ -59,6 +59,7 @@ class UpsertValidationTest {
             on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
             on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
             on { this.groupId }.doReturn(groupId )
+            on { this.groupPolicy }.doReturn("{}" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
@@ -81,6 +82,7 @@ class UpsertValidationTest {
             on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
             on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
             on { this.groupId }.doReturn("foo" )
+            on { this.groupPolicy }.doReturn("{}" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
@@ -103,6 +105,7 @@ class UpsertValidationTest {
             on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
             on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
             on { this.groupId }.doReturn("" )
+            on { this.groupPolicy }.doReturn("{}" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
@@ -125,6 +128,7 @@ class UpsertValidationTest {
             on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
             on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
             on { this.groupId }.doReturn("" )
+            on { this.groupPolicy }.doReturn("{}" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))
@@ -147,6 +151,7 @@ class UpsertValidationTest {
             on { signerSummaryHash }.doReturn(SecureHash("SHA1", "DUMMY:ABCDEFGH".toByteArray()).toString() )
             on { fileChecksum }.doReturn(SecureHash("SHA1", "DUMMY:abcdefgh".toByteArray()).toString() )
             on { this.groupId }.doReturn("" )
+            on { this.groupPolicy }.doReturn("{}" )
         }
 
         val p = DatabaseCpiPersistence(createMockEntityManagerFactory(listOf(meta)))

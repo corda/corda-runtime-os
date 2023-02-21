@@ -24,12 +24,12 @@ class CpkFileRepositoryImpl: CpkFileRepository {
         em.persist(CpkFileEntity(cpkFile.fileChecksum.toString(), cpkFile.data))
     }
 
-    override fun findById(em: EntityManager, fileChecksums: List<String>): List<CpkFile> {
+    override fun findById(em: EntityManager, fileChecksums: List<SecureHash>): List<CpkFile> {
         return em.createQuery(
             "FROM ${CpkFileEntity::class.java.simpleName} f WHERE f.fileChecksum IN :ids",
             CpkFileEntity::class.java
         )
-            .setParameter("ids", fileChecksums)
+            .setParameter("ids", fileChecksums.map { it.toString() })
             .resultList.map { it.toDto() }
     }
 

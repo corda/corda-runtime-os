@@ -89,7 +89,6 @@ class GroupPolicyProviderImplTest {
     private val groupPolicy1 = "{\"$registrationProtocolKey\": \"$regProtocol1\", \"$groupIdKey\": \"$groupId1\"}"
     private val groupPolicy2 = "{\"$registrationProtocolKey\": \"$regProtocol2\", \"$groupIdKey\": \"$groupId1\"}"
     private val groupPolicy3 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
-    private val groupPolicy4: String? = null
     private val groupPolicy5 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
 
     private val parsedGroupPolicy1: GroupPolicy = mock {
@@ -112,14 +111,13 @@ class GroupPolicyProviderImplTest {
     private val holdingIdentity4 = HoldingIdentity(bob, groupId2)
     private val holdingIdentity5 = HoldingIdentity(mgm, groupId2)
 
-    private fun mockMetadata(resultGroupPolicy: String?) = mock<CpiMetadata> {
+    private fun mockMetadata(resultGroupPolicy: String) = mock<CpiMetadata> {
         on { groupPolicy } doReturn resultGroupPolicy
     }
 
     private val cpiMetadata1 = mockMetadata(groupPolicy1)
     private val cpiMetadata2 = mockMetadata(groupPolicy2)
     private val cpiMetadata3 = mockMetadata(groupPolicy3)
-    private val cpiMetadata4 = mockMetadata(groupPolicy4)
     private val cpiMetadata5 = mockMetadata(groupPolicy5)
 
     private val cpiIdentifier1: CpiIdentifier = mock()
@@ -174,7 +172,6 @@ class GroupPolicyProviderImplTest {
         on { get(cpiIdentifier1) } doReturn cpiMetadata1
         on { get(cpiIdentifier2) } doReturn cpiMetadata2
         on { get(cpiIdentifier3) } doReturn cpiMetadata3
-        on { get(cpiIdentifier4) } doReturn cpiMetadata4
         on { get(cpiIdentifier5) } doReturn cpiMetadata5
     }
 
@@ -214,7 +211,6 @@ class GroupPolicyProviderImplTest {
         on { parse(eq(holdingIdentity1), eq(groupPolicy2), any()) }.doReturn(parsedGroupPolicy2)
         on { parse(eq(holdingIdentity2), eq(groupPolicy2), any()) }.doReturn(parsedGroupPolicy2)
         on { parse(eq(holdingIdentity3), eq(groupPolicy3), any()) }.doReturn(parsedGroupPolicy3)
-        on { parse(eq(holdingIdentity4), eq(null), any()) }.doThrow(BadGroupPolicyException(""))
         on { parse(eq(holdingIdentity5), eq(groupPolicy3), any()) }.doReturn(parsedMgmGroupPolicy)
     }
 

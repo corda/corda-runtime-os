@@ -92,9 +92,9 @@ class VirtualNodeWriterProcessorTests {
     private val summaryHash = net.corda.v5.crypto.SecureHash.parse("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData =
-        CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicy)
+        CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicy, "", "", emptySet())
     private val cpiMetaDataWithMGM =
-        CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicyWithMGMInfo)
+        CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicyWithMGMInfo, "", "", emptySet())
     private val connectionId = UUID.randomUUID().toString()
 
     /** Use the test clock so we can control the Instant that is written into timestamps such that
@@ -412,7 +412,10 @@ class VirtualNodeWriterProcessorTests {
                     cpiId,
                     CPI_ID_SHORT_HASH,
                     MGM_DEFAULT_GROUP_ID,
-                    mgmGroupPolicy
+                    mgmGroupPolicy,
+                    "",
+                    "",
+                    emptySet()
                 )
             )
         }

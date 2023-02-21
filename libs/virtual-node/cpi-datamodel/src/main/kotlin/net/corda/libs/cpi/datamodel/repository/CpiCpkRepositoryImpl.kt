@@ -17,7 +17,7 @@ class CpiCpkRepositoryImpl: CpiCpkRepository {
     }
 
     override fun findById(em: EntityManager, id: CpiCpkIdentifier): CpiCpk? {
-        return em.find(CpiCpkEntity::class.java, id)?.toDto()
+        return em.find(CpiCpkEntity::class.java, id.toEntity())?.toDto()
     }
 
     private fun CpiCpkIdentifier.toEntity() =
@@ -37,3 +37,22 @@ class CpiCpkRepositoryImpl: CpiCpkRepository {
     private fun CpiCpkEntity.toDto() =
         CpiCpk(id.toDto(), cpkFileName, metadata.toDtoLite())
 }
+
+internal fun CpiCpk.toEntity(): CpiCpkEntity =
+    CpiCpkEntity(
+        CpiCpkKey(
+            id.cpiName,
+            id.cpiVersion,
+            id.cpiSignerSummaryHash.toString(),
+            id.cpkFileChecksum.toString()
+        ),
+        cpkOriginalFileName,
+        CpkMetadataEntity(
+            metadataLite.cpkFileChecksum.toString(),
+            metadataLite.cpkId.name,
+            metadataLite.cpkId.version,
+            metadataLite.cpkId.signerSummaryHash.toString(),
+            metadataLite.cpkFormatVersion.toString(),
+            metadataLite.serializedMetadata
+        )
+    )

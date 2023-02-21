@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.libs.cpi.datamodel.CpiCpk
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
 
@@ -15,5 +16,8 @@ internal data class CpiMetadataLite(
     val id: CpiIdentifier,
     val fileChecksum: String,
     val mgmGroupId: String,
-    val groupPolicy: String
+    val groupPolicy: String,
+    val cpiFileName: String,
+    val fileUploadRequestId: String,
+    val cpiCpk: Set<CpiCpk>
 )

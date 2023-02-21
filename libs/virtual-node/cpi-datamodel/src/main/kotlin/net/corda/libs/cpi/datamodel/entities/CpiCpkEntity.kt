@@ -23,7 +23,7 @@ class CpiCpkEntity(
     @EmbeddedId
     val id: CpiCpkKey,
     @Column(name = "cpk_file_name", nullable = false)
-    var cpkFileName: String,
+    var cpkFileName: String, // Original file name
     // note - orphanRemoval = false because a CPK could be associated with a different CPI.
     @OneToOne(cascade = [CascadeType.MERGE, CascadeType.PERSIST])
     @JoinColumn(name = "cpk_file_checksum", referencedColumnName = "file_checksum", insertable = false, updatable = false)

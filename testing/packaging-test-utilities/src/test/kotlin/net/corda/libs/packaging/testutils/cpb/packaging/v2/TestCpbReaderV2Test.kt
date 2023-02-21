@@ -26,7 +26,7 @@ class TestCpbReaderV2Test {
         Assertions.assertAll(
             { Assertions.assertEquals("testCpbV2.cpb", cpi.metadata.cpiId.name) },
             { Assertions.assertEquals("1.0.0.0", cpi.metadata.cpiId.version) },
-            { Assertions.assertNull(cpi.metadata.groupPolicy) },
+            { Assertions.assertEquals(cpi.metadata.groupPolicy, "{}") },
             { Assertions.assertEquals(2, cpi.cpks.size) },
         )
 

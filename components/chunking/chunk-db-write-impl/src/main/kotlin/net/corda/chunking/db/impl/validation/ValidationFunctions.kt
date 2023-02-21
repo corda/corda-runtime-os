@@ -104,11 +104,7 @@ fun CpiPersistence.persistCpiToDatabase(
     // We'll publish to the database using the de-chunking checksum.
 
     try {
-        val cpiExists = this.cpiExists(
-            cpi.metadata.cpiId.name,
-            cpi.metadata.cpiId.version,
-            cpi.metadata.cpiId.signerSummaryHash.toString()
-        )
+        val cpiExists = this.cpiExists(cpi.metadata.cpiId)
 
         return if (cpiExists && fileInfo.forceUpload) {
             log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
@@ -168,7 +164,7 @@ private fun Cpi.validateHasGroupPolicy(requestId: String? = null) {
 fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) -> String): String {
     validateHasGroupPolicy(requestId)
     val groupId = try {
-        getGroupIdFromJson(this.metadata.groupPolicy!!)
+        getGroupIdFromJson(this.metadata.groupPolicy)
         // catch specific exceptions, and wrap them up so as to capture the request ID
         // This exception will end up going over Kafka and being picked up by the RPC worker,
         // which then matches by class name,  so we cannot use subtypes of ValidationException without
@@ -192,7 +188,7 @@ fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) ->
 fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
     validateHasGroupPolicy()
     return try {
-        GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
+        GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy)
     } catch (e: Exception) {
         throw ValidationException("Group policy file in the CPI is invalid. Could not get file format version. ${e.message}", null, e)
     }

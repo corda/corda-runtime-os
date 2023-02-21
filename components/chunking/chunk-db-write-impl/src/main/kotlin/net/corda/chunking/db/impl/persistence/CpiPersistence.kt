@@ -3,6 +3,7 @@ package net.corda.chunking.db.impl.persistence
 import net.corda.chunking.RequestId
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.crypto.SecureHash
 
@@ -18,7 +19,7 @@ interface CpiPersistence {
      *
      * @return true if CPI exists
      */
-    fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean
+    fun cpiExists(cpiId: CpiIdentifier): Boolean
 
     /** Persist the CPI metadata and the CPKs
      *
@@ -64,7 +65,7 @@ interface CpiPersistence {
      *
      *  @return null if not found
      */
-    fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String?
+    fun getGroupId(cpiId: CpiIdentifier): String?
 
     /**
      * Can we insert (or update) this CPI into the database given its name and groupId?

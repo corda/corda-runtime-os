@@ -3,7 +3,6 @@ package net.corda.chunking.db.impl.persistence.database
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.libs.cpi.datamodel.*
-import net.corda.libs.cpi.datamodel.entities.*
 import net.corda.libs.cpi.datamodel.repository.*
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
@@ -11,7 +10,6 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.*
 import net.corda.orm.utils.transaction
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
@@ -30,6 +28,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
         val cpkFileRepository = CpkFileRepositoryImpl()
         val cpiMetadataRepository = CpiMetadataRepositoryImpl()
+        val cpkMetadataRepository = CpkMetadataRepositoryImpl()
+        val cpiCpkRepository = CpiCpkRepositoryImpl()
     }
 
     /**
@@ -43,8 +43,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    override fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean =
-        getCpiMetadataEntity(cpiName, cpiVersion, signerSummaryHash) != null
+    override fun cpiExists(cpiId: CpiIdentifier): Boolean =
+        getCpiMetadataEntity(cpiId) != null
 
     override fun persistMetadataAndCpks(
         cpi: Cpi,
@@ -56,90 +56,74 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     ): CpiMetadata {
         entityManagerFactory.createEntityManager().transaction { em ->
 
-            val cpiMetadataEntity = createCpiMetadataEntity(
-                cpi,
+            val cpiMetadata = cpiMetadataRepository.update(
+                em,
+                cpi.metadata.cpiId,
                 cpiFileName,
                 cpiFileChecksum,
-                requestId,
+                cpi.metadata.groupPolicy,
                 groupId,
-                createCpiCpkRelationships(em, cpi)
+                requestId,
+                createCpiCpkRelationships(em, cpi),
             )
 
-            val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
-
             persistNewCpkFileEntities(em, cpi.metadata.fileChecksum, cpi.cpks)
-
             persistNewChangelogs(em, changelogsExtractedFromCpi)
 
-            return@persistMetadataAndCpks convertToDto(cpi, cpiFileChecksum, managedCpiMetadataEntity)
+            return@persistMetadataAndCpks cpiMetadata
         }
     }
 
-    private fun createCpiCpkRelationships(em: EntityManager, cpi: Cpi): Set<CpiCpkEntity> {
+    private fun createCpiCpkRelationships(em: EntityManager, cpi: Cpi): Set<CpiCpk> {
         // there may be some CPKs that already exist. We should load these first, then create CpiCpk associations for them (if necessary).
-        val foundCpks = em.createQuery(
-            "FROM ${CpkMetadataEntity::class.java.simpleName} cpk " +
-                    "WHERE cpk.cpkFileChecksum IN :cpkFileChecksums",
-            CpkMetadataEntity::class.java
-        )
-            .setParameter("cpkFileChecksums", cpi.cpks.map { it.metadata.fileChecksum.toString() })
-            .resultList
-            .associateBy { it.cpkFileChecksum }
+        val foundCpks = cpkMetadataRepository.findById(em, cpi.cpks.map { it.metadata.fileChecksum }).associateBy { it.cpkFileChecksum }
 
-        val (existingCpks, newCpks) = cpi.cpks.partition { it.metadata.fileChecksum.toString() in foundCpks.keys }
 
-        val newCpiCpkRelationships = newCpks.map { thisCpk ->
-            val cpkFileChecksum = thisCpk.metadata.fileChecksum.toString()
-            val signerSummaryHashStr = cpi.metadata.cpiId.signerSummaryHash.toString()
-            CpiCpkEntity(
-                CpiCpkKey(
-                    cpi.metadata.cpiId.name,
-                    cpi.metadata.cpiId.version,
-                    signerSummaryHashStr,
-                    cpkFileChecksum
-                ),
-                thisCpk.originalFileName!!,
-                CpkMetadataEntity(
-                    cpkFileChecksum,
-                    thisCpk.metadata.cpkId.name,
-                    thisCpk.metadata.cpkId.version,
-                    thisCpk.metadata.cpkId.signerSummaryHash.toString(),
-                    thisCpk.metadata.manifest.cpkFormatVersion.toString(),
-                    thisCpk.metadata.toJsonAvro()
-                )
-            )
-        }
+        val (existingCpks, newCpks) = cpi.cpks.partition { it.metadata.fileChecksum in foundCpks.keys }
+
+        val newCpiCpkRelationships = newCpks.map { cpk -> genCpiCpk(cpi, cpk) }
 
         check(foundCpks.keys.size == existingCpks.toSet().size)
-        check(foundCpks.keys == existingCpks.map { it.metadata.fileChecksum.toString() }.toSet())
+        check(foundCpks.keys == existingCpks.map { it.metadata.fileChecksum }.toSet())
 
-        val relationshipsForExistingCpks = existingCpks.map { thisCpk ->
-            val cpkFileChecksumStr = thisCpk.metadata.fileChecksum.toString()
-            val signerSummaryHashStr = cpi.metadata.cpiId.signerSummaryHash.toString()
-            val cpiCpkKey = CpiCpkKey(
-                cpi.metadata.cpiId.name,
-                cpi.metadata.cpiId.version,
-                signerSummaryHashStr,
-                cpkFileChecksumStr
-            )
+        val relationshipsForExistingCpks = existingCpks.map { cpk ->
+            val cpiCpkId = genCpiCpkId(cpi, cpk)
+
             // cpiCpk relationship might already exist for this CPI, for example, if a force uploaded CPI doesn't change a CPK, otherwise
             // create a new one with the CpkMetadataEntity
-            em.find(CpiCpkEntity::class.java, cpiCpkKey)
-                ?: CpiCpkEntity(
-                    CpiCpkKey(
-                        cpi.metadata.cpiId.name,
-                        cpi.metadata.cpiId.version,
-                        signerSummaryHashStr,
-                        cpkFileChecksumStr
-                    ),
-                    thisCpk.originalFileName!!,
-                    foundCpks[cpkFileChecksumStr]!!
+            cpiCpkRepository.findById(em, cpiCpkId)
+                ?: CpiCpk(
+                    cpiCpkId,
+                    cpk.originalFileName!!,
+                    foundCpks[cpk.metadata.fileChecksum]!!
                 )
         }
 
         val totalCpiCpkRelationships = newCpiCpkRelationships + relationshipsForExistingCpks
         return totalCpiCpkRelationships.toSet()
     }
+
+    private fun genCpiCpkId(cpi: Cpi, cpk: Cpk) = CpiCpkIdentifier(
+            cpi.metadata.cpiId.name,
+            cpi.metadata.cpiId.version,
+            cpi.metadata.cpiId.signerSummaryHash,
+            cpk.metadata.fileChecksum
+        )
+
+    private fun genCpiCpk(cpi: Cpi, cpk:Cpk) = CpiCpk(
+        genCpiCpkId(cpi, cpk),
+        cpk.originalFileName!!,
+        CpkMetadataLite(
+            CpkIdentifier(
+                cpk.metadata.cpkId.name,
+                cpk.metadata.cpkId.version,
+                cpk.metadata.cpkId.signerSummaryHash,
+            ),
+            cpk.metadata.fileChecksum,
+            cpk.metadata.manifest.cpkFormatVersion,
+            cpk.metadata.toJsonAvro()
+        )
+    )
 
     /**
      * Update the changelogs in the db for cpi upload
@@ -177,113 +161,57 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         // Perform update of CPI and store CPK along with its metadata
         entityManagerFactory.createEntityManager().transaction { em ->
             // We cannot delete old representation of CPI as there is FK constraint from `vnode_instance`
-            val existingMetadataEntity = requireNotNull(
-                findCpiMetadataEntityInTransaction(
-                    em,
-                    cpiId.name,
-                    cpiId.version,
-                    cpiId.signerSummaryHash.toString()
-                )
+            val existingCpiMetadata = requireNotNull(
+                findCpiMetadataEntityInTransaction(em, cpiId)
             ) {
                 "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
             }
 
-            val updatedMetadata = existingMetadataEntity.update(
-                fileUploadRequestId = requestId,
-                fileName = cpiFileName,
-                fileChecksum = cpiFileChecksum.toString(),
-                cpks = createCpiCpkRelationships(em, cpi)
+            val updatedCpiMetadata = cpiMetadataRepository.update(
+                em,
+                existingCpiMetadata,
+                cpiFileName,
+                cpiFileChecksum,
+                requestId,
+                groupId,
+                createCpiCpkRelationships(em, cpi)
             )
-
-            val cpiMetadataEntity = em.merge(updatedMetadata)
 
             persistNewCpkFileEntities(em, cpiFileChecksum, cpi.cpks)
 
             persistNewChangelogs(em, changelogsExtractedFromCpi)
 
-            return convertToDto(cpi, cpiFileChecksum, cpiMetadataEntity)
+            return updatedCpiMetadata
         }
     }
-
-    private fun convertToDto(cpi: Cpi, cpiFileChecksum: SecureHash, cpiMetadataEntity: CpiMetadataEntity): CpiMetadata =
-        CpiMetadata(
-            cpi.metadata.cpiId,
-            cpiFileChecksum,
-            cpi.cpks.map { it.metadata },
-            cpi.metadata.groupPolicy,
-            version = cpiMetadataEntity.entityVersion,
-            timestamp = UTCClock().instant()
-        )
 
     /**
      * @return null if not found
      */
     private fun findCpiMetadataEntityInTransaction(
-        entityManager: EntityManager,
-        name: String,
-        version: String,
-        signerSummaryHash: String
-    ): CpiMetadataEntity? {
-        val primaryKey = CpiMetadataEntityKey(
-            name,
-            version,
-            signerSummaryHash
-        )
+        em: EntityManager,
+        cpiId: CpiIdentifier
+    ): CpiMetadata? {
 
-        return entityManager.find(
-            CpiMetadataEntity::class.java,
-            primaryKey,
-            // In case of force update, we want the entity to change regardless of whether the CPI being uploaded
-            //  is identical to an existing.
-            //  OPTIMISTIC_FORCE_INCREMENT means the version number will always be bumped.
-            LockModeType.OPTIMISTIC_FORCE_INCREMENT
-        )
+        // In case of force update, we want the entity to change regardless of whether the CPI being uploaded
+        //  is identical to an existing.
+        //  OPTIMISTIC_FORCE_INCREMENT means the version number will always be bumped.
+        return cpiMetadataRepository.findById(em, cpiId, LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     }
 
-    private fun getCpiMetadataEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
+    private fun getCpiMetadataEntity(cpiId: CpiIdentifier): CpiMetadata? {
         return entityManagerFactory.createEntityManager().transaction {
-            findCpiMetadataEntityInTransaction(it, name, version, signerSummaryHash)
+            findCpiMetadataEntityInTransaction(it, cpiId)
         }
     }
 
-    override fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String? {
-        return getCpiMetadataEntity(cpiName, cpiVersion, signerSummaryHash)?.groupId
-    }
-
-    /**
-     * For a given CPI, create the metadata entity required to insert into the database.
-     *
-     * @param cpi CPI object
-     * @param cpiFileName original file name
-     * @param checksum checksum/hash of the CPI
-     * @param requestId the requestId originating from the chunk upload
-     */
-    @Suppress("LongParameterList")
-    private fun createCpiMetadataEntity(
-        cpi: Cpi,
-        cpiFileName: String,
-        checksum: SecureHash,
-        requestId: RequestId,
-        groupId: String,
-        cpiCpkEntities: Set<CpiCpkEntity>
-    ): CpiMetadataEntity {
-        val cpiMetadata = cpi.metadata
-
-        return CpiMetadataEntity.create(
-            name = cpiMetadata.cpiId.name,
-            version = cpiMetadata.cpiId.version,
-            signerSummaryHash = cpiMetadata.cpiId.signerSummaryHash.toString(),
-            fileName = cpiFileName,
-            fileChecksum = checksum.toString(),
-            groupPolicy = cpi.metadata.groupPolicy!!,
-            groupId = groupId,
-            fileUploadRequestId = requestId,
-            cpks = cpiCpkEntities
-        )
+    // Todo: Try removing this method
+    override fun getGroupId(cpiId: CpiIdentifier): String? {
+        return getCpiMetadataEntity(cpiId)?.groupId
     }
 
     private fun persistNewCpkFileEntities( em: EntityManager, cpiFileChecksum: SecureHash, cpks: Collection<Cpk>) {
-        val existingCpkMap = cpkFileRepository.findById(em, cpks.map { it.metadata.fileChecksum.toString() }).associateBy { it.fileChecksum }
+        val existingCpkMap = cpkFileRepository.findById(em, cpks.map { it.metadata.fileChecksum }).associateBy { it.fileChecksum }
 
         val (existingCpks, newCpks) = cpks.partition { it.metadata.fileChecksum in existingCpkMap.keys }
 

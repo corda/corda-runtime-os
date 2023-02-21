@@ -11,17 +11,10 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
 class ValidateGroupIdTest {
-    @Test
-    fun `fails when no group policy file exists`() {
-        val mockMetadata = mock<CpiMetadata> { on { groupPolicy }.doReturn(null) }
-        val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
-
-        assertThrows<ValidationException> { cpi.validateAndGetGroupId("") { s -> s } }
-    }
 
     @Test
     fun `fails when group id is empty`() {
-        val mockMetadata = mock<CpiMetadata> { on { groupPolicy }.doReturn(null) }
+        val mockMetadata = mock<CpiMetadata> { on { groupPolicy }.doReturn("{}") }
         val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
 
         assertThrows<ValidationException> { cpi.validateAndGetGroupId("") { "" } }

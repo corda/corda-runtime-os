@@ -55,6 +55,6 @@ internal class VirtualNodeEntityRepository(
 
     private fun CpiMetadata.toLite(): CpiMetadataLite {
         val cpiId = CpiIdentifier(cpiId.name, cpiId.version, cpiId.signerSummaryHash)
-        return CpiMetadataLite(cpiId, fileChecksum.toHexString(), groupId, groupPolicy!!)
+        return CpiMetadataLite(cpiId, fileChecksum.toHexString(), groupId, groupPolicy, "", "", emptySet())
     }
 }
