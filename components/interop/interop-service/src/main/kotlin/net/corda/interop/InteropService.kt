@@ -96,6 +96,8 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
+        //below is temporary tactical code to setup members of interop group and send the first message,
+        // this will be phased out later on
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             PublisherConfig("interop-registration-service"),
@@ -108,7 +110,7 @@ class InteropService @Activate constructor(
         logger.info("Publishing hosted identities")
         publisher?.publish(registrationService.createDummyHostedIdentity())
         logger.info("Publishing seed message")
-        publisher?.publish(registrationService.seedMessage()) //TODO
+        publisher?.publish(registrationService.seedMessage())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
