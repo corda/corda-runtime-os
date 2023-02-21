@@ -441,7 +441,7 @@ class StaticMemberRegistrationServiceTest {
                 on { isActive } doReturn false
             }
             val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn memberInfo
+                on { lookup(any(), any()) } doReturn memberInfo
             }
             whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
             setUpPublisher()
@@ -455,7 +455,7 @@ class StaticMemberRegistrationServiceTest {
         @Test
         fun `registration pass when the member is not found`() {
             val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn null
+                on { lookup(any(), any()) } doReturn null
             }
             whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
             setUpPublisher()
@@ -475,7 +475,7 @@ class StaticMemberRegistrationServiceTest {
                 on { isActive } doReturn true
             }
             val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn memberInfo
+                on { lookup(any(), any()) } doReturn memberInfo
             }
             whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
             setUpPublisher()
