@@ -3,13 +3,8 @@ package net.corda.interop.service
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.interop.InteropMessage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.UnauthenticatedMessage
-import net.corda.data.p2p.app.UnauthenticatedMessageHeader
-import net.corda.interop.InteropProcessor.Companion.SUBSYSTEM
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -30,7 +25,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
-import java.nio.ByteBuffer
 import java.time.Instant
 
 @Component(service = [InteropMemberRegistrationService::class])
@@ -119,24 +113,5 @@ class InteropMemberRegistrationService(
                 hostedIdentity
             )
         }
-    }
-
-    fun seedMessage() : List<Record<*,*>>{
-        val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
-        val keyId = "test1"
-        val header = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), SUBSYSTEM, "1")
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", " +
-                "\"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"GBP\" } } ] }"
-
-        val interopMessage = InteropMessage("InteropMessageID-Seed-1", payload)
-
-        val interopRecord = Record(
-            Schemas.P2P.P2P_IN_TOPIC, keyId, AppMessage(
-                UnauthenticatedMessage(
-                    header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
-                )
-            )
-        )
-        return listOf(interopRecord)
     }
 }

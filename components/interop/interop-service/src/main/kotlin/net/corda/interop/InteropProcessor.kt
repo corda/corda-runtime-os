@@ -5,7 +5,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.service.InteropMessageTransformer
@@ -38,14 +37,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         val outputEvents = mutableListOf<Record<*, *>>()
         events.forEach { appMessage ->
             val authMessage = appMessage.value?.message
-            if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == SUBSYSTEM) {
-                val header = with(authMessage.header) { CommonHeader(source, destination, ttl, messageId) }
-                getOutputRecord(header, authMessage.payload, appMessage.key)?.let { outputRecord ->
-                    outputEvents.add(outputRecord)
-                }
-            } else if (authMessage != null && authMessage is UnauthenticatedMessage && authMessage.header.subsystem == SUBSYSTEM) {
-                //TODO temporary branch for UnauthenticatedMessage, as this type is send for now instead of AuthenticatedMessage
-                // (except for the integration test)
+            //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
+            if (authMessage != null && authMessage is UnauthenticatedMessage && authMessage.header.subsystem == SUBSYSTEM) {
                 val header = with(authMessage.header) { CommonHeader(source, destination, null, messageId) }
                 getOutputRecord(header, authMessage.payload, appMessage.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
@@ -71,7 +64,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             logger.info("Converted facade request to interop message : $message")
             Record(Schemas.P2P.P2P_OUT_TOPIC, key, generateAppMessage(header, message, cordaAvroSerializer))
         } else {
-            logger.info("Faild to converted interop message to facade request: null interop message")
+            logger.warn("Fail to converted interop message to facade request: empty payload")
             null
         }
     }

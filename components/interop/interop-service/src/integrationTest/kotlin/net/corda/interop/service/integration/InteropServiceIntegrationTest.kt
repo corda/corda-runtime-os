@@ -22,6 +22,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.InteropService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -103,7 +105,7 @@ class InteropServiceIntegrationTest {
         republishConfig(publisher)
 
         val identity = HoldingIdentity(testId, testId)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "interop")
+        val header = UnauthenticatedMessageHeader(identity, identity, "interop" , "1")
         val version = listOf(1)
         val sessionEvent = SessionEvent(
             MessageDirection.INBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
@@ -120,8 +122,8 @@ class InteropServiceIntegrationTest {
 
         val interopRecord = Record(
             P2P_IN_TOPIC, testId, AppMessage(
-                AuthenticatedMessage(
-                    flowHeader, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
+                UnauthenticatedMessage(
+                    header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))
                 )
             )
         )
