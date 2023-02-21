@@ -13,6 +13,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.Closeable
 import java.sql.SQLIntegrityConstraintViolationException
 import java.sql.SQLTransientException
 import java.time.Instant
@@ -29,7 +30,7 @@ import javax.persistence.Tuple
 @Suppress("TooManyFunctions")
 class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
-) {
+): Closeable {
     // At the moment it's not easy to create partitions, so default value increased to 3 until tooling is available
     // (There are multiple consumers using the same group for some topics and some stay idle if there is only 1 partition)
     private val defaultNumPartitions = 3
@@ -40,7 +41,8 @@ class DBAccess(
         internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
 
-    fun close() {
+    override fun close() {
+        entityManagerFactory.close()
     }
 
     fun getMaxCommittedPositions(
