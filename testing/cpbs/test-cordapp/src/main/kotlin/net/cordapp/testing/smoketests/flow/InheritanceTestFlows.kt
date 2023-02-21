@@ -2,7 +2,7 @@ package net.cordapp.testing.smoketests.flow
 
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -30,7 +30,7 @@ abstract class AbstractFlow : ClientStartableFlow, MemberResolver {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Executing Flow...")
 
         try {

@@ -4,7 +4,7 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.asynchronous.v1.AsyncResponse
@@ -35,7 +35,7 @@ interface VirtualNodeRestResource : RestResource {
         responseDescription = "The details of the created virtual node."
     )
     fun createVirtualNode(
-        @RestRequestBodyParameter(description = "Details of the virtual node to be created")
+        @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
         request: VirtualNodeRequest
     ): VirtualNodeInfo
 

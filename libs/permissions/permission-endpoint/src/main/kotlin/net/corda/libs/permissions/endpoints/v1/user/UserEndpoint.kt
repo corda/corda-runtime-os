@@ -7,7 +7,7 @@ import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
@@ -47,7 +47,7 @@ interface UserEndpoint : RestResource {
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account""")
     fun createUser(
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = """
                 Details of the user to be created with the following parameters:
                 enabled: If true, the user account is enabled; false, the account is disabled

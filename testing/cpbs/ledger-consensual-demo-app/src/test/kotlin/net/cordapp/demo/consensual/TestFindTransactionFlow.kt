@@ -1,7 +1,7 @@
 package net.cordapp.demo.consensual
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
@@ -30,7 +30,7 @@ class TestFindTransactionFlow {
         flow.marshallingService = marshallingService
         flow.ledgerService = ledgerService
 
-        val badRequest = mock<RestRequestBody>()
+        val badRequest = mock<ClientRequestBody>()
         val body = FindTransactionParameters(txIdBad.toString())
         whenever(badRequest.getRequestBodyAs<FindTransactionParameters>(marshallingService)).thenReturn(body)
 
@@ -64,7 +64,7 @@ class TestFindTransactionFlow {
         flow.marshallingService = marshallingService
         flow.ledgerService = ledgerService
 
-        val goodRequest = mock<RestRequestBody>()
+        val goodRequest = mock<ClientRequestBody>()
         val body = FindTransactionParameters(txIdGood.toString())
         whenever(goodRequest.getRequestBodyAs<FindTransactionParameters>(marshallingService)).thenReturn(body)
 

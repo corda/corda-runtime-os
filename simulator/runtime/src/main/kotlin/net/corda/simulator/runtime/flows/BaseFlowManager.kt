@@ -3,7 +3,7 @@ package net.corda.simulator.runtime.flows
 import net.corda.simulator.runtime.utils.accessField
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import org.slf4j.LoggerFactory
@@ -18,7 +18,7 @@ class BaseFlowManager : FlowManager {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun call(requestData: RestRequestBody, flow: ClientStartableFlow) : String {
+    override fun call(requestData: ClientRequestBody, flow: ClientStartableFlow) : String {
         val result = flow.call(requestData)
         closeFlowMessaging(flow)
         return result

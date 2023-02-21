@@ -1,7 +1,7 @@
 package net.cordapp.demo.utxo
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.crypto.SecureHash
@@ -32,7 +32,7 @@ class TestPeekTransactionFlow {
             flow.marshallingService = jsonMarshallingService
             flow.ledgerService = ledgerService
 
-            val badRequest = mock<RestRequestBody>()
+            val badRequest = mock<ClientRequestBody>()
             val body = PeekTransactionParameters(txIdBad.toString())
             whenever(badRequest.getRequestBodyAs<PeekTransactionParameters>(jsonMarshallingService)).thenReturn(body)
 
@@ -78,7 +78,7 @@ class TestPeekTransactionFlow {
             flow.marshallingService = jsonMarshallingService
             flow.ledgerService = ledgerService
 
-            val goodRequest = mock<RestRequestBody>()
+            val goodRequest = mock<ClientRequestBody>()
             val body = PeekTransactionParameters(txIdGood.toString())
             whenever(goodRequest.getRequestBodyAs<PeekTransactionParameters>(jsonMarshallingService)).thenReturn(body)
 

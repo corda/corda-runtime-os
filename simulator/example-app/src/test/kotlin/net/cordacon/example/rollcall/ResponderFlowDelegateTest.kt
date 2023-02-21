@@ -4,7 +4,7 @@ import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
@@ -24,7 +24,7 @@ abstract class ResponderFlowDelegateTest {
             @CordaInject
             private lateinit var flowMessaging: FlowMessaging
 
-            override fun call(requestBody: RestRequestBody): String {
+            override fun call(requestBody: ClientRequestBody): String {
                 val session = flowMessaging.initiateFlow(student)
                 session.send(RollCallRequest(student))
                 return session.receive(RollCallResponse::class.java).response

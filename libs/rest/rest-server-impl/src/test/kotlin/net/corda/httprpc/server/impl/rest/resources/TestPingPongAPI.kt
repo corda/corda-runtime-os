@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl.rest.resources
 
 import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 
 @HttpRestResource(
@@ -13,7 +13,7 @@ interface TestPingPongAPI : RestResource {
 
     @HttpPOST
     fun ping(
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "Data",
             required = false
         ) data: PingPongData?
