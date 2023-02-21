@@ -1,8 +1,11 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.opsBusProcessor
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
@@ -166,7 +169,7 @@ class CryptoOpsBusProcessor(
                     tenantId = context.tenantId,
                     category = request.category,
                     alias = request.alias,
-                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
+                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             } else {
@@ -175,7 +178,7 @@ class CryptoOpsBusProcessor(
                     category = request.category,
                     alias = request.alias,
                     externalId = request.externalId,
-                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
+                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             }
@@ -187,7 +190,7 @@ class CryptoOpsBusProcessor(
                 signingService.freshKey(
                     tenantId = context.tenantId,
                     category = request.category,
-                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
+                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             } else {
@@ -195,7 +198,7 @@ class CryptoOpsBusProcessor(
                     tenantId = context.tenantId,
                     category = request.category,
                     externalId = request.externalId,
-                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
+                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             }
@@ -249,4 +252,12 @@ class CryptoOpsBusProcessor(
         request.context.tenantId,
         request.context.other
     )
+
+    private fun CipherSchemeMetadata.findKeySchemeOrThrow(codeName: String): KeyScheme {
+        return try {
+            this.findKeyScheme(codeName)
+        } catch (exception: IllegalArgumentException) {
+            throw exception.message?.let { InvalidParamsException(it) } ?: exception
+        }
+    }
 }
