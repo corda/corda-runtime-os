@@ -17,7 +17,6 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
-import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
@@ -291,35 +290,34 @@ internal class VirtualNodeWriterProcessor(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
-                    dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
-                        // changelog tags are the CPK file checksum the changelog belongs to
-                        val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
-                            em,
-                            dataSource,
-                            systemTerminatorTag
-                        )
+                    val dataSource = dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!)
+                    // changelog tags are the CPK file checksum the changelog belongs to
+                    val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
+                        em,
+                        dataSource,
+                        systemTerminatorTag
+                    )
 
-                        logger.info(
-                            "CPK file checksums of currently applied changelogs on vault schema for virtual node " +
-                                    "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString()}]"
-                        )
+                    logger.info(
+                        "CPK file checksums of currently applied changelogs on vault schema for virtual node " +
+                                "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString()}]"
+                    )
 
-                        val changesetsToRollback =
+                    val changesetsToRollback =
                             cpkDbChangeLogRepository.findByFileChecksum(em, cpkChecksumsOfAppliedChangelogs)
                                 .groupBy { it.id.cpkFileChecksum }
 
-                        changesetsToRollback.forEach { (cpkFileChecksum, changelogs) ->
-                            logger.info(
-                                "Virtual node '$currentVNodeShortHash' attempting to roll back the following changelogs for CPK " +
-                                        "'$cpkFileChecksum' [${changelogs.joinToString { it.id.filePath }}]"
-                            )
-                            rollbackVirtualNodeDb(
-                                dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
-                                changelogs,
-                                systemTerminatorTag
-                            )
-                            logger.info("Migrations for CPK '$cpkFileChecksum' successfully rolled back.")
-                        }
+                    changesetsToRollback.forEach { (cpkFileChecksum, changelogs) ->
+                        logger.info(
+                            "Virtual node '$currentVNodeShortHash' attempting to roll back the following changelogs for CPK " +
+                                    "'$cpkFileChecksum' [${changelogs.joinToString { it.id.filePath }}]"
+                        )
+                        rollbackVirtualNodeDb(
+                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
+                            changelogs,
+                            systemTerminatorTag
+                        )
+                        logger.info("Migrations for CPK '$cpkFileChecksum' successfully rolled back.")
                     }
 
                     val changelogsToRun =
@@ -327,9 +325,8 @@ internal class VirtualNodeWriterProcessor(
 
                     changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
                         try {
-                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use {
-                                runCpkResyncMigrations(it, cpkFileChecksum, changelogsForThisCpk)
-                            }
+                            val vaultDataSource = dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!)
+                            runCpkResyncMigrations(vaultDataSource, cpkFileChecksum, changelogsForThisCpk)
                         } catch (e: Exception) {
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI ${cpiMetadata.id.name} - changelogs: [" +
@@ -363,13 +360,14 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun rollbackVirtualNodeDb(
-        dataSource: CloseableDataSource,
+        dataSource: DataSource,
         changelogs: List<CpkDbChangeLog>,
         tagToRollbackTo: String
     ) {
         val dbChange = VirtualNodeDbChangeLog(changelogs)
-        val connection = dataSource.connection
-        LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
+        dataSource.connection.use { connection ->
+            LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
+        }
     }
 
     // State change request produced by VirtualNodeMaintenanceRPCOpsImpl
@@ -616,7 +614,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun runCpkResyncMigrations(
-        dataSource: CloseableDataSource,
+        dataSource: DataSource,
         cpkFileChecksum: String,
         changelogs: List<CpkDbChangeLog>
     ) {
@@ -624,9 +622,10 @@ internal class VirtualNodeWriterProcessor(
 
         logger.info("Preparing to run ${changelogs.size} resync migrations for CPK '$cpkFileChecksum'.")
 
-        LiquibaseSchemaMigratorImpl().updateDb(
-            dataSource.connection,
-            VirtualNodeDbChangeLog(changelogs.map {
+        dataSource.connection.use { connection ->
+            LiquibaseSchemaMigratorImpl().updateDb(
+                connection,
+                VirtualNodeDbChangeLog(changelogs.map {
                 CpkDbChangeLog(
                     CpkDbChangeLogIdentifier(
                         it.id.cpkFileChecksum,
@@ -634,8 +633,9 @@ internal class VirtualNodeWriterProcessor(
                     ), it.content
                 )
             }),
-            tag = cpkFileChecksum
-        )
+                tag = cpkFileChecksum
+            )
+        }
         logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")
     }
 
@@ -715,16 +715,20 @@ internal class VirtualNodeWriterProcessor(
         em: EntityManager,
         dataSource: DataSource,
         systemTerminatorTag: String
-    ): Set<String> = (
-            em.createNativeQuery(
-                "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
-                        "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
-                        "ORDER BY orderexecuted"
-            )
-                .setParameter("systemTerminatorTag", systemTerminatorTag)
-                .resultList
-                .toSet() as Set<String>
-            ).toSet()
+    ): Set<String> {
+        dataSource.connection.use { connection ->
+            return (
+                    em.createNativeQuery(
+                        "SELECT tag FROM ${connection.schema}.databasechangelog " +
+                                "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
+                                "ORDER BY orderexecuted"
+                    )
+                        .setParameter("systemTerminatorTag", systemTerminatorTag)
+                        .resultList
+                        .toSet() as Set<String>
+                    ).toSet()
+        }
+    }
 
     private fun sendSuccessfulResponse(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,

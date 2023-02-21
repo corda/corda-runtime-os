@@ -58,7 +58,7 @@ class DbConnectionManagerImpl @Activate constructor(
         logger.info("Stopped")
     }
 
-    override fun getOrCreateDataSource(id: UUID, name: String): CloseableDataSource {
+    override fun getOrCreateDataSource(id: UUID, name: String): DataSource {
         return dataSources.computeIfAbsent(id) { dbId ->
             val configuration = DbUtils.getEntityManagerConfiguration(
                 "testkit-db-manager-db-$schemaName",
@@ -109,7 +109,7 @@ class DbConnectionManagerImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun createDatasource(connectionId: UUID): CloseableDataSource {
+    override fun createDatasource(connectionId: UUID): DataSource {
         return getOrCreateDataSource(connectionId, "")
     }
 

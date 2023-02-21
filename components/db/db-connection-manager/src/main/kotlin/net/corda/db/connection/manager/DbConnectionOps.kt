@@ -78,7 +78,7 @@ interface DbConnectionOps {
      * @param connectionId
      * @return [CloseableDataSource] instance
      */
-    fun createDatasource(connectionId: UUID): CloseableDataSource
+    fun createDatasource(connectionId: UUID): DataSource
 
     /**
      * Get DB connection for given [name].

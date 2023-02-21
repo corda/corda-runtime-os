@@ -3,13 +3,13 @@ package net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility
 import java.util.UUID
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import org.slf4j.LoggerFactory
+import javax.sql.DataSource
 
 internal class MigrationUtilityImpl(
     private val dbConnectionManager: DbConnectionManager,
@@ -28,9 +28,8 @@ internal class MigrationUtilityImpl(
         migrationChangeLogs
             .groupBy { it.id.cpkFileChecksum }
             .forEach { (cpkFileChecksum, changelogs) ->
-                dbConnectionManager.createDatasource(vaultDdlConnectionId).use {
-                    runCpkMigrations(it, virtualNodeShortHash, cpkFileChecksum, changelogs)
-                }
+                val dataSource = dbConnectionManager.createDatasource(vaultDdlConnectionId)
+                runCpkMigrations(dataSource, virtualNodeShortHash, cpkFileChecksum, changelogs)
             }
     }
 
@@ -43,9 +42,10 @@ internal class MigrationUtilityImpl(
         val missingCpks = mutableListOf<String>()
         cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
             val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs)
-            dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
+            val datasource = dbConnectionManager.createDatasource(vaultDmlConnectionId)
+            datasource.connection.use { connection ->
                 missingCpks.addAll(
-                    liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk)
+                    liquibaseSchemaMigrator.listUnrunChangeSets(connection, allChangeLogsForCpk)
                 )
             }
         }
@@ -59,12 +59,14 @@ internal class MigrationUtilityImpl(
     }
 
     private fun runCpkMigrations(
-        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLog>
+        dataSource: DataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLog>
     ) {
         logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
         val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
         try {
-            liquibaseSchemaMigrator.updateDb(dataSource.connection, allChangeLogsForCpk, tag = cpkFileChecksum)
+            dataSource.connection.use { connection ->
+                liquibaseSchemaMigrator.updateDb(connection, allChangeLogsForCpk, tag = cpkFileChecksum)
+            }
         } catch (e: Exception) {
             val msg =
                 "CPI migrations failed for virtual node '$virtualNodeShortHash`. Failure occurred running CPI migrations on " +
