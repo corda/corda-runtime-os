@@ -382,11 +382,16 @@ class MemberLookupRestResourceTest {
 
         @Test
         fun `viewGroupParameters correctly returns group parameters as JSON string`() {
+            val expectedGroupParamsMap = mapOf(
+                MPV_KEY to "1",
+                EPOCH_KEY to "1",
+                MODIFIED_TIME_KEY to clock.instant().toString(),
+            )
+
             val result = memberLookupRestResource.viewGroupParameters(HOLDING_IDENTITY_STRING)
-            assertThat(result)
-                .contains("\"${MPV_KEY}\":\"1\"")
-                .contains("\"${EPOCH_KEY}\":\"1\"")
-                .contains("\"${MODIFIED_TIME_KEY}\":\"${clock.instant()}\"")
+
+            assertThat(result.size).isEqualTo(3)
+            assertThat(result.entries).isEqualTo(expectedGroupParamsMap.entries)
         }
     }
 }

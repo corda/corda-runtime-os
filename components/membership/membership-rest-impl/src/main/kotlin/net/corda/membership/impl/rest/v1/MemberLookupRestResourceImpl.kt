@@ -1,6 +1,5 @@
 package net.corda.membership.impl.rest.v1
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
@@ -49,7 +48,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             country: String?
         ): RestMemberInfoList
 
-        fun viewGroupParameters(holdingIdentityShortHash: ShortHash): String
+        fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String>
     }
 
     override val protocolVersion = 1
@@ -104,7 +103,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         country
     )
 
-    override fun viewGroupParameters(holdingIdentityShortHash: String): String =
+    override fun viewGroupParameters(holdingIdentityShortHash: String): Map<String, String> =
         impl.viewGroupParameters(ShortHash.parseOrThrow(holdingIdentityShortHash))
 
     fun activate(reason: String) {
@@ -130,7 +129,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
         )
 
-        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): String =
+        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String> =
             throw ServiceUnavailableException(
                 "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -172,17 +171,15 @@ class MemberLookupRestResourceImpl @Activate constructor(
             )
         }
 
-        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): String {
+        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String> {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
             ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
-            val groupParametersMap = with(membershipGroupReaderProvider.getGroupReader(holdingIdentity)) {
+            return with(membershipGroupReaderProvider.getGroupReader(holdingIdentity)) {
                 groupParameters?.toMap()
             } ?: throw ResourceNotFoundException("Could not find group parameters for holding identity " +
                         "'$holdingIdentityShortHash'.")
-
-            return ObjectMapper().writeValueAsString(groupParametersMap)
         }
 
         private fun GroupParameters.toMap() = entries.associate { it.key to it.value }

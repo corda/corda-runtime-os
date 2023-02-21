@@ -1812,13 +1812,17 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The group parameters of the membership group as a string in JSON format",
+            "description" : "The group parameters of the membership group as a map",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "string",
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "type" : "string",
+                    "example" : "string"
+                  },
                   "nullable" : false,
-                  "example" : "string"
+                  "example" : "No example available for this type"
                 }
               }
             }
