@@ -27,6 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -77,6 +78,7 @@ class GroupPolicyProviderImplTest {
 
     private val groupId1 = "ABC123"
     private val groupId2 = "DEF456"
+    private val groupId3 = "INTEROP"
 
     private val regProtocol1 = "foo"
     private val regProtocol2 = "bar"
@@ -91,6 +93,7 @@ class GroupPolicyProviderImplTest {
     private val groupPolicy3 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
     private val groupPolicy4: String? = null
     private val groupPolicy5 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
+    private val groupPolicy6 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId3\"}"
 
     private val parsedGroupPolicy1: GroupPolicy = mock {
         on { groupId } doReturn groupId1
@@ -104,6 +107,10 @@ class GroupPolicyProviderImplTest {
         on { groupId } doReturn groupId2
         on { registrationProtocol }.doReturn(regProtocol3)
     }
+    private val parsedGroupPolicy6: GroupPolicy = mock {
+        on { groupId } doReturn groupId3
+        on { registrationProtocol }.doReturn(regProtocol3)
+    }
     private val parsedMgmGroupPolicy: MGMGroupPolicy = mock()
 
     private val holdingIdentity1 = HoldingIdentity(alice, groupId1)
@@ -111,6 +118,7 @@ class GroupPolicyProviderImplTest {
     private val holdingIdentity3 = HoldingIdentity(alice, groupId2)
     private val holdingIdentity4 = HoldingIdentity(bob, groupId2)
     private val holdingIdentity5 = HoldingIdentity(mgm, groupId2)
+    private val holdingIdentity6 = HoldingIdentity(alice, groupId3)
 
     private fun mockMetadata(resultGroupPolicy: String?) = mock<CpiMetadata> {
         on { groupPolicy } doReturn resultGroupPolicy
@@ -164,6 +172,7 @@ class GroupPolicyProviderImplTest {
         on { get(eq(holdingIdentity3)) } doReturn createVirtualNodeInfo(holdingIdentity3, cpiIdentifier3)
         on { get(eq(holdingIdentity4)) } doReturn createVirtualNodeInfo(holdingIdentity4, cpiIdentifier4)
         on { get(eq(holdingIdentity5)) } doReturn createVirtualNodeInfo(holdingIdentity5, cpiIdentifier5)
+        on { get(eq(holdingIdentity6)) } doReturn null
         on { registerCallback(any()) } doAnswer {
             virtualNodeListener = it.arguments[0] as VirtualNodeInfoListener
             mock()
@@ -204,6 +213,11 @@ class GroupPolicyProviderImplTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
     }
+
+    private val interopGroupPolicyReader: InteropGroupPolicyReader = mock {
+        on { getGroupPolicy(holdingIdentity6) } doReturn groupPolicy6
+    }
+
     private val subscriptionFactory: SubscriptionFactory = mock {
         on { createCompactedSubscription(any(), any<FinishedRegistrationsProcessor>(), any()) } doReturn subscription
     }
@@ -216,6 +230,7 @@ class GroupPolicyProviderImplTest {
         on { parse(eq(holdingIdentity3), eq(groupPolicy3), any()) }.doReturn(parsedGroupPolicy3)
         on { parse(eq(holdingIdentity4), eq(null), any()) }.doThrow(BadGroupPolicyException(""))
         on { parse(eq(holdingIdentity5), eq(groupPolicy3), any()) }.doReturn(parsedMgmGroupPolicy)
+        on { parse(eq(holdingIdentity6), eq(groupPolicy6), any()) }.doReturn(parsedGroupPolicy6)
     }
 
     private val membershipQueryClient: MembershipQueryClient = mock {
@@ -258,7 +273,8 @@ class GroupPolicyProviderImplTest {
             groupPolicyParser,
             membershipQueryClient,
             subscriptionFactory,
-            configurationReadService
+            configurationReadService,
+            interopGroupPolicyReader
         )
     }
 
@@ -1062,5 +1078,16 @@ class GroupPolicyProviderImplTest {
         )
 
         assertThat(called).isZero
+    }
+
+    @Test
+    fun `Interop groupPolicy is returned when CPI metadata is null `() {
+        startComponentAndDependencies()
+        postConfigChangedEvent()
+        assertExpectedGroupPolicy(
+            groupPolicyProvider.getGroupPolicy(holdingIdentity6),
+            groupId3,
+            regProtocol3
+        )
     }
 }
