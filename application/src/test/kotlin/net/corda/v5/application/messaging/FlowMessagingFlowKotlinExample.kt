@@ -1,7 +1,7 @@
 package net.corda.v5.application.messaging
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.base.types.MemberX500Name
 
@@ -13,7 +13,7 @@ class FlowMessagingFlowKotlinExample : ClientStartableFlow  {
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
 
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         val counterparty = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB")
 
         val session = flowMessaging.initiateFlow(counterparty)

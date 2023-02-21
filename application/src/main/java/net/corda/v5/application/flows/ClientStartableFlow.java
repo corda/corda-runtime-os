@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * {@link ClientStartableFlow} is a {@link Flow} that is started via RPC.
  * <p>
- * {@link ClientStartableFlow#call} takes in a {@link RestRequestBody}, containing the body of the RPC request that started the flow.
+ * {@link ClientStartableFlow#call} takes in a {@link ClientRequestBody}, containing the body of the RPC request that started the flow.
  * <p>
  * The string return type is treated by the platform as a JSON encoded string to return to the REST
  * service, and will appear in the REST flow status when the flow completes. To assist in returning valid JSON, the
@@ -63,5 +63,5 @@ public interface ClientStartableFlow extends Flow {
      */
     @Suspendable
     @NotNull
-    String call(@NotNull RestRequestBody requestBody);
+    String call(@NotNull ClientRequestBody requestBody);
 }

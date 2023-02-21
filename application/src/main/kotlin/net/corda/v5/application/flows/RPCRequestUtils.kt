@@ -12,7 +12,7 @@ import net.corda.v5.application.marshalling.MarshallingService
  *
  * @return An instance of the class populated by the provided input data.
  */
-inline fun <reified T> RestRequestBody.getRequestBodyAs(marshallingService: MarshallingService) : T {
+inline fun <reified T> ClientRequestBody.getRequestBodyAs(marshallingService: MarshallingService) : T {
     return getRequestBodyAs(marshallingService, T::class.java)
 }
 
@@ -25,6 +25,6 @@ inline fun <reified T> RestRequestBody.getRequestBodyAs(marshallingService: Mars
  *
  * @return A list of instances of the class populated by the provided input data.
  */
-inline fun <reified T> RestRequestBody.getRequestBodyAsList(marshallingService: MarshallingService) : List<T> {
+inline fun <reified T> ClientRequestBody.getRequestBodyAsList(marshallingService: MarshallingService) : List<T> {
     return getRequestBodyAsList(marshallingService, T::class.java)
 }

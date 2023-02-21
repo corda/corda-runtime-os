@@ -13,7 +13,7 @@ public class CordaInjectJavaApiTest {
 
     @Test
     public void cordaInject() {
-        assertEquals(DONE, new MyFlow().call(mock(RestRequestBody.class)));
+        assertEquals(DONE, new MyFlow().call(mock(ClientRequestBody.class)));
     }
 
     static class MyFlow implements ClientStartableFlow {
@@ -26,7 +26,7 @@ public class CordaInjectJavaApiTest {
 
         @NotNull
         @Override
-        public String call(@NotNull RestRequestBody requestBody) {
+        public String call(@NotNull ClientRequestBody requestBody) {
             return DONE;
         }
     }
