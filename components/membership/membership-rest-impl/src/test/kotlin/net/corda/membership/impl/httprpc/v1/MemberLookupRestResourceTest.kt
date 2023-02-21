@@ -43,12 +43,10 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -57,7 +55,6 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
-import kotlin.test.assertFailsWith
 
 class MemberLookupRestResourceTest {
     companion object {
@@ -225,16 +222,16 @@ class MemberLookupRestResourceTest {
     @Test
     fun `starting and stopping the service succeeds`() {
         memberLookupRestResource.start()
-        assertTrue(memberLookupRestResource.isRunning)
+        assertThat(memberLookupRestResource.isRunning).isTrue
         memberLookupRestResource.stop()
-        assertFalse(memberLookupRestResource.isRunning)
+        assertThat(memberLookupRestResource.isRunning).isFalse
     }
 
     @Test
     fun `exception should be thrown when service is not running`() {
         val ex =
-            assertFailsWith<ServiceUnavailableException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
-        assertTrue(ex.message.contains("MemberLookupRestResourceImpl"))
+            assertThrows<ServiceUnavailableException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
+        assertThat(ex).hasMessageContaining("MemberLookupRestResourceImpl")
     }
 
     @Nested
@@ -249,71 +246,71 @@ class MemberLookupRestResourceTest {
         @Test
         fun `unfiltered lookup returns a list of all active members and their contexts`() {
             val result = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING)
-            assertEquals(2, result.members.size)
-            assertEquals(RestMemberInfoList(memberInfoList.map {
+            assertThat(result.members.size).isEqualTo(2)
+            assertThat(result).isEqualTo(RestMemberInfoList(memberInfoList.map {
                 RestMemberInfo(it.memberProvidedContext.entries.associate { it.key to it.value },
                     it.mgmProvidedContext.entries.associate { it.key to it.value })
-            }), result)
+            }))
         }
 
         @Test
         fun `lookup filtered by common name (CN) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, commonName = "bob")
-            assertEquals(1, result1.members.size)
-            assertEquals(bobRestResult, result1)
+            assertThat(result1.members.size).isEqualTo(1)
+            assertThat(result1).isEqualTo(bobRestResult)
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, commonName = "BOB")
-            assertEquals(1, result2.members.size)
-            assertEquals(bobRestResult, result2)
+            assertThat(result2.members.size).isEqualTo(1)
+            assertThat(result2).isEqualTo(bobRestResult)
         }
 
         @Test
         fun `lookup filtered by organization (O) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organization = "ALICE")
-            assertEquals(1, result1.members.size)
-            assertEquals(aliceRestResult, result1)
+            assertThat(result1.members.size).isEqualTo(1)
+            assertThat(result1).isEqualTo(aliceRestResult)
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organization = "alice")
-            assertEquals(1, result2.members.size)
-            assertEquals(aliceRestResult, result2)
+            assertThat(result2.members.size).isEqualTo(1)
+            assertThat(result2).isEqualTo(aliceRestResult)
         }
 
         @Test
         fun `lookup filtered by organization unit (OU) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "unit2")
-            assertEquals(1, result1.members.size)
-            assertEquals(bobRestResult, result1)
+            assertThat(result1.members.size).isEqualTo(1)
+            assertThat(result1).isEqualTo(bobRestResult)
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "UNIT2")
-            assertEquals(1, result2.members.size)
-            assertEquals(bobRestResult, result2)
+            assertThat(result2.members.size).isEqualTo(1)
+            assertThat(result2).isEqualTo(bobRestResult)
         }
 
         @Test
         fun `lookup filtered by locality (L) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, locality = "london")
-            assertEquals(1, result1.members.size)
-            assertEquals(aliceRestResult, result1)
+            assertThat(result1.members.size).isEqualTo(1)
+            assertThat(result1).isEqualTo(aliceRestResult)
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, locality = "LONDON")
-            assertEquals(1, result2.members.size)
-            assertEquals(aliceRestResult, result2)
+            assertThat(result2.members.size).isEqualTo(1)
+            assertThat(result2).isEqualTo(aliceRestResult)
         }
 
         @Test
         fun `lookup filtered by state (ST) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, state = "state2")
-            assertEquals(1, result1.members.size)
-            assertEquals(bobRestResult, result1)
+            assertThat(result1.members.size).isEqualTo(1)
+            assertThat(result1).isEqualTo(bobRestResult)
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, state = "state2")
-            assertEquals(1, result2.members.size)
-            assertEquals(bobRestResult, result2)
+            assertThat(result2.members.size).isEqualTo(1)
+            assertThat(result2).isEqualTo(bobRestResult)
         }
 
         @Test
         fun `lookup filtered by country (C) is case-insensitive and returns a list of members and their contexts`() {
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, country = "gb")
-            assertEquals(1, result1.members.size)
-            assertEquals(aliceRestResult, result1)
+            assertThat(result1.members.size).isEqualTo(1)
+            assertThat(result1).isEqualTo(aliceRestResult)
             val result2 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, country = "GB")
-            assertEquals(1, result2.members.size)
-            assertEquals(aliceRestResult, result2)
+            assertThat(result2.members.size).isEqualTo(1)
+            assertThat(result2).isEqualTo(aliceRestResult)
         }
 
         @Test
@@ -327,8 +324,8 @@ class MemberLookupRestResourceTest {
                 "state2",
                 "ie"
             )
-            assertEquals(1, result1.members.size)
-            assertEquals(bobRestResult, result1)
+            assertThat(result1.members.size).isEqualTo(1)
+            assertThat(result1).isEqualTo(bobRestResult)
             val result2 = memberLookupRestResource.lookup(
                 HOLDING_IDENTITY_STRING,
                 "BOB",
@@ -338,15 +335,15 @@ class MemberLookupRestResourceTest {
                 "STATE2",
                 "IE"
             )
-            assertEquals(1, result2.members.size)
-            assertEquals(bobRestResult, result2)
+            assertThat(result2.members.size).isEqualTo(1)
+            assertThat(result2).isEqualTo(bobRestResult)
         }
 
         @Test
         fun `lookup should fail when non-existent holding identity is used`() {
             val ex =
-                assertFailsWith<ResourceNotFoundException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
-            assertTrue(ex.message.contains("holding identity"))
+                assertThrows<ResourceNotFoundException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
+            assertThat(ex).hasMessageContaining("Could not find holding identity")
         }
     }
 
@@ -361,15 +358,15 @@ class MemberLookupRestResourceTest {
 
         @Test
         fun `viewGroupParameters should fail when non-existent holding identity is used`() {
-            val ex = assertFailsWith<ResourceNotFoundException> {
+            val ex = assertThrows<ResourceNotFoundException> {
                 memberLookupRestResource.viewGroupParameters(BAD_HOLDING_IDENTITY.value)
             }
-            assertTrue(ex.message.contains("Could not find holding identity"))
+            assertThat(ex).hasMessageContaining("Could not find holding identity")
         }
 
         @Test
         fun `viewGroupParameters fails with bad request if short hash is invalid`() {
-            assertFailsWith<BadRequestException> {
+            assertThrows<BadRequestException> {
                 memberLookupRestResource.viewGroupParameters("INVALID_SHORT_HASH")
             }
         }
@@ -377,10 +374,10 @@ class MemberLookupRestResourceTest {
         @Test
         fun `viewGroupParameters fails when reader returns null`() {
             whenever(groupReader.groupParameters).doReturn(null)
-            val ex = assertFailsWith<ResourceNotFoundException> {
+            val ex = assertThrows<ResourceNotFoundException> {
                 memberLookupRestResource.viewGroupParameters(HOLDING_IDENTITY_STRING)
             }
-            assertTrue(ex.message.contains("Could not find group parameters"))
+            assertThat(ex).hasMessageContaining("Could not find group parameters")
         }
 
         @Test
