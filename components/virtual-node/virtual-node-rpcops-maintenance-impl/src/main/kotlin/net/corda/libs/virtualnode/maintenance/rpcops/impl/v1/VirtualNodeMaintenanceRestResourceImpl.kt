@@ -13,6 +13,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.messageBus.MessageBusUtils.withServiceUnavailableOnRepartition
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
@@ -130,10 +131,12 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
-        val cpiUploadRequestId = cpiUploadRPCOpsService.cpiUploadManager.uploadCpi(
-            upload.fileName, upload.content,
-            mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
-        )
+        val cpiUploadRequestId = withServiceUnavailableOnRepartition(logger,"Force CPI upload") {
+            cpiUploadRPCOpsService.cpiUploadManager.uploadCpi(
+                upload.fileName, upload.content,
+                mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
+            )
+        }
         return CpiUploadRestResource.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
@@ -149,7 +152,9 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                 actor
             )
         )
-        val resp: VirtualNodeManagementResponse = sendAndReceive(request)
+        val resp = withServiceUnavailableOnRepartition(logger, "Re-sync vNode DB") {
+            sendAndReceive(request)
+        }
         when (val resolvedResponse = resp.responseType) {
             is VirtualNodeDBResetResponse -> Unit // We don't want to do anything with this
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
