@@ -96,8 +96,8 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
-        //below is temporary tactical code to setup members of interop group and send the first message,
-        // this will be phased out later on
+        //TODO below is temporary tactical code to setup members of interop group and send the first message,
+        // this will be phased out later on by CORE-10446
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             PublisherConfig("interop-registration-service"),

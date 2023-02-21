@@ -27,5 +27,9 @@
         <root level="${env:CONSOLE_LOG_LEVEL:-info}">
             <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="${env:CONSOLE_LOG_LEVEL:-info}"/>
         </root>
+
+        <logger name="net.corda.p2p.linkmanager" level="debug" additivity="false">
+            <AppenderRef ref="text" level="debug"/>
+        </logger>
     </Loggers>
 </Configuration>

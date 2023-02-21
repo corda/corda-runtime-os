@@ -17,6 +17,7 @@ import java.time.Instant
 import java.util.UUID
 
 //Based on FlowP2PFilter
+//TODO temporarily uses UnauthenticatedMessage instead of AuthenticatedMessage
 @Suppress("Unused")
 class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFactory) :
     DurableProcessor<String, AppMessage> {
