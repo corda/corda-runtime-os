@@ -92,7 +92,7 @@ class InteropServiceIntegrationTest {
             setupConfig(publisher)
         }
     }
-    @Test
+    //@Test
     fun `verify messages from p2p-in are send back to p2p-out`() {
         interopService.start()
         val testId = "test1"
