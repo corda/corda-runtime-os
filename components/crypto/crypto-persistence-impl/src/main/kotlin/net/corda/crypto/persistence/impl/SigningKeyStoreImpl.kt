@@ -42,7 +42,7 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -258,8 +258,8 @@ class SigningKeyStoreImpl @Activate constructor(
         }
 
         fun lookupByKeyIds(tenantId: String, requestedKeyIds: Set<ShortHash>): Collection<SigningCachedKey> {
-            require(requestedKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
-                "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
+            require(requestedKeyIds.size <= KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+                "The number of ids exceeds ${KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT}"
             }
 
             val cachedKeys =
@@ -283,8 +283,8 @@ class SigningKeyStoreImpl @Activate constructor(
         }
 
         fun lookupByFullKeyIds(tenantId: String, requestedFullKeyIds: Set<SecureHash>): Collection<SigningCachedKey> {
-            require(requestedFullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
-                "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
+            require(requestedFullKeyIds.size <= KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+                "The number of ids exceeds ${KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT}"
             }
 
             // cache is using short key ids so convert to find cached keys

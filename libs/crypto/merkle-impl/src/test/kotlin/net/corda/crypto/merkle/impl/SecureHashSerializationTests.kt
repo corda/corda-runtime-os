@@ -31,15 +31,13 @@ class SecureHashSerializationTests {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_256.name
         val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHash(
-            algorithm = algorithm,
-            bytes = digest
-        )
-
-        val expected = byteArrayOf(83, 72, 65, 45, 50, 53, 54, // SHA-256
+        val cut = SecureHash(algorithm, digest)
+        val expected = byteArrayOf(
+            83, 72, 65, 45, 50, 53, 54, // SHA-256
             58, // :
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35, // The digest
-            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
+            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83
+        )
 
         assertArrayEquals(expected, cut.serialize())
     }
@@ -49,10 +47,7 @@ class SecureHashSerializationTests {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_256.name
         val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHash(
-            algorithm = algorithm,
-            bytes = digest
-        )
+        val cut = SecureHash(algorithm, digest)
 
         val sha256serialized = byteArrayOf(83, 72, 65, 45, 50, 53, 54,
             58,

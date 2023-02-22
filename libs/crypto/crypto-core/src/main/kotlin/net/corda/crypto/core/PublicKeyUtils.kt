@@ -3,10 +3,22 @@ package net.corda.crypto.core
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.v5.base.util.EncodingUtils
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.sha256Bytes
+import java.security.MessageDigest
 import java.security.PublicKey
+
+
+private fun messageDigestSha256(): MessageDigest =
+    MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
+
+fun ByteArray.sha256Bytes(): ByteArray = messageDigestSha256().digest(this)
+
+fun PublicKey.sha256Bytes(): ByteArray = messageDigestSha256().digest(encoded)
+
+fun PublicKey.toStringShort(): String = "DL" + EncodingUtils.toBase58(sha256Bytes())
+
 
 // TODO we should end up with only having helpers all of them using `DigestService`/ `PlatformDigestService`
 //  as recorded in https://r3-cev.atlassian.net/browse/CORE-10267.

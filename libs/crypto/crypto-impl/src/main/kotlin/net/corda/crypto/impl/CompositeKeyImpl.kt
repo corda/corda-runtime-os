@@ -3,10 +3,8 @@ package net.corda.crypto.impl
 import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.utilities.exactAdd
 import net.corda.v5.base.types.ByteArrays.sequence
-import net.corda.v5.crypto.COMPOSITE_KEY_CHILDREN_LIMIT
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
-import net.corda.v5.crypto.keys
 import org.bouncycastle.asn1.ASN1EncodableVector
 import org.bouncycastle.asn1.ASN1Encoding
 import org.bouncycastle.asn1.ASN1Integer
@@ -72,8 +70,8 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         // If we want PublicKey we only keep one key, otherwise it will lead to semantically equivalent trees
         // but having different structures.
         require(children.size > 1) { "CompositeKey must consist of two or more child nodes." }
-        require(children.size <= COMPOSITE_KEY_CHILDREN_LIMIT) {
-            "CompositeKey must consist of less or equal than $COMPOSITE_KEY_CHILDREN_LIMIT child nodes."
+        require(children.size <= CompositeKey.COMPOSITE_KEY_CHILDREN_LIMIT) {
+            "CompositeKey must consist of less or equal than ${CompositeKey.COMPOSITE_KEY_CHILDREN_LIMIT} child nodes."
         }
         // We should ensure threshold is positive, because smaller allowable weight for a node key is 1.
         require(threshold > 0) {
@@ -116,10 +114,10 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         visitedMap[this] = true
         cycleDetection(visitedMap) // Graph cycle testing on the root node.
         checkConstraints()
-        for ((node, _) in children) {
-            if (node is CompositeKeyImpl) {
+        for (child in children) {
+            if (child.node is CompositeKeyImpl) {
                 // We don't need to check for cycles on the rest of the nodes (testing on the root node is enough).
-                node.checkConstraints()
+                child.node.checkConstraints()
             }
         }
         validated = true
@@ -129,9 +127,9 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     // Unlike similar solutions that use long conversion, this approach takes advantage of the minimum weight being 1.
     private fun totalWeight(): Int {
         var sum = 0
-        for ((_, weight) in children) {
-            require(weight > 0) { "Non-positive weight: $weight detected." }
-            sum = sum exactAdd weight // Add and check for integer overflow.
+        for (child in children) {
+            require(child.weight > 0) { "Non-positive weight: $weight detected." }
+            sum = sum exactAdd child.weight // Add and check for integer overflow.
         }
         return sum
     }
@@ -196,8 +194,8 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     /**
      * Set of all leaf keys of that [CompositeKey].
      */
-    override val leafKeys: Set<PublicKey>
-        get() = children.flatMap { it.node.keys }.toSet() // Uses PublicKey.keys extension.
+    override fun getLeafKeys(): Set<PublicKey> =
+        children.flatMap { it.node.keys }.toSet() // Uses PublicKey.keys extension.
 
     /**
      * Compares the two given instances of the [CompositeKey] based on the content.

@@ -7,8 +7,8 @@ import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
@@ -69,7 +69,10 @@ class ConsensualSignedTransactionImpl(
         }.map { it.by }.toSet()
         val requiredSignatories = this.toLedgerTransaction().requiredSignatories
         return requiredSignatories.filter {
-            !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
+            !KeyUtils.isFulfilledBy(
+                it,
+                appliedSignatories
+            ) // isFulfilledBy() helps to make this working with CompositeKeys.
         }.toSet()
     }
 
@@ -91,7 +94,7 @@ class ConsensualSignedTransactionImpl(
         // isFulfilledBy() helps to make this working with CompositeKeys.
         val missingSignatories = toLedgerTransaction()
             .requiredSignatories
-            .filterNot { it.isFulfilledBy(appliedSignatories) }
+            .filterNot { KeyUtils.isFulfilledBy(it, appliedSignatories) }
             .toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(

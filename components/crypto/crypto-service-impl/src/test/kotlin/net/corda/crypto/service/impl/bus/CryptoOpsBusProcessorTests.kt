@@ -437,7 +437,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         factory.verifier.verify(publicKey, signatureSpec3, signature3.bytes.array(), data)
         // sign using public key and custom scheme
-        val signatureSpec4 = SignatureSpec(signatureName = "SHA512withECDSA")
+        val signatureSpec4 = SignatureSpec("SHA512withECDSA")
         val css4 = CryptoSignatureSpec(signatureSpec4.signatureName, null, null)
         val signature4 = process<CryptoSignatureWithKey>(SignRpcCommand(encKey, css4, ByteBuffer.wrap(data), emptyContext))
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(signature3.publicKey.array()))

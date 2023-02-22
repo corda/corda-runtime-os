@@ -3,7 +3,7 @@ package net.corda.libs.permissions.manager.impl
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.v5.crypto.sha256Bytes
+import net.corda.crypto.core.sha256Bytes
 import java.time.Duration
 
 /**

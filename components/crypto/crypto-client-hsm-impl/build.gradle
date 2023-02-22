@@ -22,6 +22,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
+    implementation project(":libs:crypto:crypto-core")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
