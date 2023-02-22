@@ -7,7 +7,7 @@ import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
-import net.corda.interop.service.InteropMessageTransformer
+import net.corda.interop.service.impl.InteropMessageTransformer
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas

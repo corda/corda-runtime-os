@@ -40,7 +40,9 @@ class InteropService @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = InteropMemberRegistrationService::class)
+    private val registrationService: InteropMemberRegistrationService
 ) : Lifecycle {
 
     companion object {
@@ -85,6 +87,7 @@ class InteropService @Activate constructor(
     }
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
+        logger.info("restartInteropProcessor")
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
@@ -104,7 +107,6 @@ class InteropService @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         publisher?.start()
-        val registrationService = InteropMemberRegistrationService()
         logger.info("Publishing member infos")
         publisher?.publish(registrationService.createDummyMemberInfo())
         logger.info("Publishing hosted identities")
