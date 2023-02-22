@@ -2,12 +2,12 @@ package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
-import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
+import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
@@ -97,7 +97,7 @@ fun CpiPersistence.persistCpiToDatabase(
     groupId: String,
     fileInfo: FileInfo,
     requestId: RequestId,
-    changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>,
+    changelogsExtractedFromCpi: List<CpkDbChangeLog>,
     log: Logger
 ): CpiMetadataEntity {
     // Cannot compare the CPI.metadata.hash to our checksum above
@@ -204,5 +204,5 @@ fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
  *
  * @return list of entities containing liquibase scripts ready for insertion into database
  */
-fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLogEntity> =
-    LiquibaseExtractor().extractLiquibaseEntitiesFromCpi(this)
+fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLog> =
+    LiquibaseScriptExtractor().extract(this)
