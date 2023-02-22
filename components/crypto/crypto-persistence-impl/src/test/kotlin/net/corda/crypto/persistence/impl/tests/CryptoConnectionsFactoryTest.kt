@@ -136,4 +136,13 @@ class CryptoConnectionsFactoryTest {
             assertEquals(previousCache, nextCache)
         }
     }
+
+    @Order(7)
+    @Test
+    fun `on stop closes resources`() {
+        val cryptoConnectionsFactory = lifecycleTest.testClass
+        cryptoConnectionsFactory.stop()
+        assertNull(cryptoConnectionsFactory.connections)
+        assertEquals(LifecycleStatus.DOWN, cryptoConnectionsFactory.coordinator.status)
+    }
 }

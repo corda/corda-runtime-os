@@ -93,7 +93,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
         log.debug { "Processing event: ${event::class.java.simpleName}" }
         when (event) {
             is StartEvent -> {}
-            is StopEvent -> { connections = null }
+            is StopEvent -> closeResources()
 
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
@@ -112,11 +112,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                     LifecycleStatus.ERROR -> {
                         log.info("Received ${event.status::name} event, closing resources")
                         updateStatus(event.status)
-                        configRegistration?.close()
-                        configRegistration = null
-                        clearCache()
-                        connections = null
-                        previousConfig = null
+                        closeResources()
                     }
                 }
             }
@@ -156,6 +152,14 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                 }
             }
         }
+    }
+
+    private fun closeResources() {
+        configRegistration?.close()
+        configRegistration = null
+        clearCache()
+        connections = null
+        previousConfig = null
     }
 
     override val isRunning: Boolean
