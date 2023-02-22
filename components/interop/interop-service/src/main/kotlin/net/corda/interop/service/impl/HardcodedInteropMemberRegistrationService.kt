@@ -24,12 +24,10 @@ import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
 import java.time.Instant
 
-@Component(service = [InteropMemberRegistrationService::class])
-class HardcodedInteropMemberRegistrationService @Activate constructor(): InteropMemberRegistrationService {
+@Suppress("Unused")
+class HardcodedInteropMemberRegistrationService :  InteropMemberRegistrationService {
 
     companion object {
         private  val ALICE_ALTER_EGO_X500 = "CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB"

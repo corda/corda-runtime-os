@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.SessionEvent
-import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -16,7 +15,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -40,9 +38,7 @@ class InteropService @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    @Reference(service = InteropMemberRegistrationService::class)
-    private val registrationService: InteropMemberRegistrationService
+    private val publisherFactory: PublisherFactory
 ) : Lifecycle {
 
     companion object {
@@ -101,17 +97,12 @@ class InteropService @Activate constructor(
         }
         //TODO below is temporary tactical code to setup members of interop group,
         // this will be phased out later on by CORE-10446
-        publisher?.close()
-        publisher = publisherFactory.createPublisher(
-            PublisherConfig("interop-registration-service"),
-            event.config.getConfig(MESSAGING_CONFIG)
-        )
-        publisher?.start()
-        logger.info("Publishing member infos")
-        publisher?.publish(registrationService.createDummyMemberInfo())
-        logger.info("Publishing hosted identities")
-        publisher?.publish(registrationService.createDummyHostedIdentity())
-        logger.info("Publishing seed message")
+//        publisher?.close()
+//        publisher = publisherFactory.createPublisher(
+//            PublisherConfig("interop-registration-service"),
+//            event.config.getConfig(MESSAGING_CONFIG)
+//        )
+//        publisher?.start()
     }
 
     override val isRunning: Boolean
