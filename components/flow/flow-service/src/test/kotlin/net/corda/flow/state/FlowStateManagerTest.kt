@@ -2,20 +2,25 @@ package net.corda.flow.state
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventState
+import net.corda.data.flow.state.external.ExternalEventStateStatus
+import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.BOB_X500_HOLDING_IDENTITY
-import net.corda.flow.FLOW_ID_1
+import net.corda.flow.*
 import net.corda.flow.state.impl.FlowStateManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertIterableEquals
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
+import java.time.Instant
+
 
 class FlowStateManagerTest {
     @Suppress("LongParameterList")
@@ -92,26 +97,36 @@ class FlowStateManagerTest {
     }
 
     @Test
-    fun `External event state is successfully persisted through a rollback`() {
-        val flowState = createFlowState(sessionStates = listOf(
-            SessionState().apply{ sessionId = "foo" }
-        ))
+    fun `External event state is successfully retained through a rollback`() {
+        val mockExternalEventState = ExternalEventState().apply {
+            requestId = REQUEST_ID_1
+            status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
+            eventToSend = mock()
+            retries = 0
+            factoryClassName = "none"
+            sendTimestamp = Instant.now()
+            response = ExternalEventResponse()
+        }
 
-        flowState.externalEventState = ExternalEventState().apply { requestId = "foo" }
+        val stateBuilder = ExternalEventState.newBuilder(mockExternalEventState)
+
+        val flowState = createFlowState(sessionStates = listOf(
+            SessionState().apply{ sessionId = SESSION_ID_1 }
+        )).apply { externalEventState = stateBuilder.build() }
 
         val sut = FlowStateManager(flowState)
 
         assertEquals(
-            ExternalEventState().apply { requestId = "foo" },
+            stateBuilder.build().apply { requestId = REQUEST_ID_1 },
             sut.externalEventState
         )
 
-        sut.externalEventState?.apply { requestId = "bar" }
+        sut.externalEventState?.apply { requestId = REQUEST_ID_2 }
 
         sut.rollback()
 
         assertEquals(
-            ExternalEventState().apply { requestId = "foo" },
+            stateBuilder.build().apply { requestId = REQUEST_ID_2 },
             sut.externalEventState
         )
     }

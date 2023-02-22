@@ -15,6 +15,7 @@ val ALICE_X500_HOLDING_IDENTITY = HoldingIdentity(ALICE_X500, "group1")
 val SESSION_ID_1 = "S1"
 val FLOW_ID_1 = "F1"
 val REQUEST_ID_1 ="R1"
+val REQUEST_ID_2 ="R2"
 
 val MINIMUM_SMART_CONFIG = SmartConfigFactory.createWithoutSecurityServices().create(
     ConfigFactory.parseMap(
