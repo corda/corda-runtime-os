@@ -139,7 +139,7 @@ class CryptoConnectionsFactoryTest {
 
     @Order(7)
     @Test
-    fun `on stop closes resources`() {
+    fun `on stop closes resources and switches status to DOWN`() {
         val cryptoConnectionsFactory = lifecycleTest.testClass
         cryptoConnectionsFactory.stop()
         assertNull(cryptoConnectionsFactory.connections)
