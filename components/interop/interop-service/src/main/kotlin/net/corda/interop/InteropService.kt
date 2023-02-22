@@ -60,6 +60,7 @@ class InteropService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
+                logger.info("StartEvent")
                 configurationReadService.start()
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
@@ -70,6 +71,7 @@ class InteropService @Activate constructor(
                 }
             }
             is RegistrationStatusChangeEvent -> {
+                logger.info("StartEvent ${event.status}")
                 if (event.status == LifecycleStatus.UP) {
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
@@ -83,13 +85,16 @@ class InteropService @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
+                logger.info("ConfigChangedEvent")
                 restartInteropProcessor(event)
+            }
+            else -> {
+                logger.info("Other event $event")
             }
         }
     }
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
-        logger.info("restartInteropProcessor")
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
@@ -109,11 +114,11 @@ class InteropService @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         publisher?.start()
-        logger.info("Publishing member infos")
-        publisher?.publish(registrationService.createDummyMemberInfo())
-        logger.info("Publishing hosted identities")
-        publisher?.publish(registrationService.createDummyHostedIdentity())
-        logger.info("Publishing seed message")
+//        logger.info("Publishing member infos")
+//        publisher?.publish(registrationService.createDummyMemberInfo())
+//        logger.info("Publishing hosted identities")
+//        publisher?.publish(registrationService.createDummyHostedIdentity())
+//        logger.info("Publishing seed message")
     }
 
     override val isRunning: Boolean
