@@ -1,7 +1,7 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.api.CordaCliPlugin
-import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.membership.httprpc.v1.MemberLookupRestResource
 import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
