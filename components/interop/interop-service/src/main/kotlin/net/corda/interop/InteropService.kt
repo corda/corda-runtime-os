@@ -60,6 +60,7 @@ class InteropService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
+                configurationReadService.start()
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
@@ -78,6 +79,7 @@ class InteropService @Activate constructor(
                     }
                 } else {
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
+                    coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
                 }
             }
             is ConfigChangedEvent -> {
