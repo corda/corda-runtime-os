@@ -31,10 +31,12 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>)
 
     @BelongsToContract(TestContract::class)
-    class TestState(
-        val testField: String,
-        override val participants: List<PublicKey>
-    ) : ContractState
+    class TestState(val testField: String, private val participants: List<PublicKey>) : ContractState {
+
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+    }
 
 
     class TestContract : Contract {

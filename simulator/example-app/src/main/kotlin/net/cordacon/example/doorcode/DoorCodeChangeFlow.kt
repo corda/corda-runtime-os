@@ -105,10 +105,10 @@ class DoorCodeChangeResponderFlow : ResponderFlow {
             log.info("\"${memberLookup.myInfo().name}\" got the new door code ${doorCodeState.code}")
         }
         val requiredSignatories = finalizedSignedTransaction.toLedgerTransaction().requiredSignatories
-        val actualSignatories = finalizedSignedTransaction.signatures.map {it.by}.toSet()
+        val actualSignatories = finalizedSignedTransaction.signatures.map { it.by }.toSet()
         check(requiredSignatories == actualSignatories) {
             "Signatories were not as expected. Expected:\n    " + requiredSignatories.joinToString("\n    ") +
-            "and got:\n    " + actualSignatories.joinToString("\n    ")
+                    "and got:\n    " + actualSignatories.joinToString("\n    ")
         }
         log.info("Finished responder flow - $finalizedSignedTransaction")
     }
@@ -132,12 +132,14 @@ class DoorCodeQueryFlow : ClientStartableFlow {
         val txId = requestBody.getRequestBodyAs(jsonMarshallingService, DoorCodeQuery::class.java).txId
         val tx = consensualLedgerService.findSignedTransaction(txId)
 
-        checkNotNull(tx) {"No consensual ledger transaction was persisted for provided id"}
+        checkNotNull(tx) { "No consensual ledger transaction was persisted for provided id" }
 
-        return jsonMarshallingService.format(DoorCodeQueryResponse(
-            (tx.toLedgerTransaction().states[0] as DoorCodeConsensualState).code,
-            tx.signatures.map { checkNotNull(memberLookup.lookup(it.by)?.name) }.toSet()
-        ))
+        return jsonMarshallingService.format(
+            DoorCodeQueryResponse(
+                (tx.toLedgerTransaction().states[0] as DoorCodeConsensualState).code,
+                tx.signatures.map { checkNotNull(memberLookup.lookup(it.by)?.name) }.toSet()
+            )
+        )
     }
 }
 
@@ -160,6 +162,11 @@ data class DoorCodeQueryResponse(
 )
 
 @CordaSerializable
-class DoorCodeConsensualState(val code: DoorCode, override val participants: List<PublicKey>) : ConsensualState {
+class DoorCodeConsensualState(val code: DoorCode, private val participants: List<PublicKey>) : ConsensualState {
+
+    override fun getParticipants(): List<PublicKey> {
+        return participants
+    }
+
     override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
 }

@@ -60,7 +60,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     private fun UtxoLedgerTransaction.getCpkMetadata() =
         (this as UtxoLedgerTransactionInternal).run {
-            wireTransaction.metadata.getCpkMetadata()
+            wireTransaction.metadata.cpkMetadata
         }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)

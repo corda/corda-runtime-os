@@ -7,12 +7,17 @@ import java.time.Instant
  * Represents an unbounded time window that tends towards negative infinity.
  *
  * @constructor Creates a new instance of the [TimeWindowUntilImpl] data class.
- * @property from Always Instant.MIN as this time window tends towards negative infinity.
  * @property until The boundary at which the time window ends.
  */
-data class TimeWindowUntilImpl(override val until: Instant) : TimeWindow {
+data class TimeWindowUntilImpl(private val until: Instant) : TimeWindow {
 
-    override val from: Instant? = null
+    override fun getFrom(): Instant {
+        return Instant.MIN
+    }
+
+    override fun getUntil(): Instant {
+        return until
+    }
 
     /**
      * Determines whether the current [TimeWindow] contains the specified [Instant].

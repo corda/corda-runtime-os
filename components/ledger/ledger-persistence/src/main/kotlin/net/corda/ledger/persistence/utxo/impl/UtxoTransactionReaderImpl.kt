@@ -83,7 +83,7 @@ class UtxoTransactionReaderImpl(
         get() = signedTransaction.signatures
 
     override val cpkMetadata: List<CordaPackageSummary>
-        get() = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        get() = signedTransaction.wireTransaction.metadata.cpkMetadata
 
     override fun getProducedStates(): List<StateAndRef<ContractState>> {
         val relevantStatesSet = relevantStatesIndexes.toSet()
@@ -107,17 +107,20 @@ class UtxoTransactionReaderImpl(
     }
 
     override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
-        return wrappedWireTransaction.inputStateRefs.groupBy { it.transactionId }
-            .flatMap { inputsByTransaction ->
-                // this is not the most efficient way of doing this - to be fixed in CORE-8971
-                val tx =
-                    persistenceService.findTransaction(inputsByTransaction.key.toString(), TransactionStatus.VERIFIED)
-                requireNotNull(tx) { "Failed to load transaction ${inputsByTransaction.key}" }
-                val wrappedTx = WrappedUtxoWireTransaction(tx.wireTransaction, serializer)
-                inputsByTransaction.value.map { ref -> wrappedTx.outputStateAndRefs[ref.index] }
-            }
+        TODO("Not yet implemented")
     }
 
-    override fun getConsumedStateRefs(): List<StateRef> = wrappedWireTransaction.inputStateRefs
+//    override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
+//        return wrappedWireTransaction.inputStateRefs.groupBy { it.transactionId }
+//            .flatMap { inputsByTransaction ->
+//                // this is not the most efficient way of doing this - to be fixed in CORE-8971
+//                val tx =
+//                    persistenceService.findTransaction(inputsByTransaction.key.toString(), TransactionStatus.VERIFIED)
+//                requireNotNull(tx) { "Failed to load transaction ${inputsByTransaction.key}" }
+//                val wrappedTx = WrappedUtxoWireTransaction(tx.wireTransaction, serializer)
+//                inputsByTransaction.value.map { ref -> wrappedTx.outputStateAndRefs[ref.index] }
+//            }
+//    }
 
+    override fun getConsumedStateRefs(): List<StateRef> = wrappedWireTransaction.inputStateRefs
 }

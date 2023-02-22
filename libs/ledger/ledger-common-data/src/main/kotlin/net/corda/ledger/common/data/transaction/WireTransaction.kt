@@ -20,11 +20,8 @@ class WireTransaction(
     private val digestService: DigestService,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>,
-    override val metadata: TransactionMetadata
-): TransactionWithMetadata {
-    override val id: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        rootMerkleTree.root
-    }
+    private val metadata: TransactionMetadata
+) : TransactionWithMetadata {
 
     fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
@@ -116,5 +113,13 @@ class WireTransaction(
                     }
                 }" +
                 ")"
+    }
+
+    override fun getId(): SecureHash {
+        return rootMerkleTree.root
+    }
+
+    override fun getMetadata(): TransactionMetadata {
+        return metadata
     }
 }

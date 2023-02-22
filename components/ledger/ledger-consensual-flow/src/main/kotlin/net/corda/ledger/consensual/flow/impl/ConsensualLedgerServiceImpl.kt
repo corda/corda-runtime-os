@@ -14,8 +14,8 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
+import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -52,19 +52,20 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         return persistenceService.find(id)?.toLedgerTransaction()
     }
 
-
     @Suspendable
     override fun finalize(
         signedTransaction: ConsensualSignedTransaction,
-        sessions: List<FlowSession>
+        sessions: Iterable<FlowSession>
     ): ConsensualSignedTransaction {
+        val distinctSessions = sessions.distinctBy { it.counterparty }
+
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
         */
         val consensualFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                ConsensualFinalityFlow(signedTransaction as ConsensualSignedTransactionInternal, sessions)
+                ConsensualFinalityFlow(signedTransaction as ConsensualSignedTransactionInternal, distinctSessions)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

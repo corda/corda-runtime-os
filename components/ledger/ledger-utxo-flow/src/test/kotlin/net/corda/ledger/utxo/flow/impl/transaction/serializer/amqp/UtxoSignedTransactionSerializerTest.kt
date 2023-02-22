@@ -67,16 +67,16 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
         assertThat(deserialized).isEqualTo(signedTx)
         assertThat(deserialized.outputStateAndRefs).hasSize(3)
 
-        assertThat(deserialized.outputStateAndRefs[0].state.encumbrance).isNotNull().extracting { it?.tag }
+        assertThat(deserialized.outputStateAndRefs[0].state.encumbranceGroup).isNotNull.extracting { it?.tag }
             .isEqualTo("encumbrance 1")
-        assertThat(deserialized.outputStateAndRefs[0].state.encumbrance).isNotNull().extracting { it?.size }
+        assertThat(deserialized.outputStateAndRefs[0].state.encumbranceGroup).isNotNull.extracting { it?.size }
             .isEqualTo(2)
 
-        assertThat(deserialized.outputStateAndRefs[1].state.encumbrance).isNotNull().extracting { it?.tag }
+        assertThat(deserialized.outputStateAndRefs[1].state.encumbranceGroup).isNotNull.extracting { it?.tag }
             .isEqualTo("encumbrance 1")
-        assertThat(deserialized.outputStateAndRefs[1].state.encumbrance).isNotNull().extracting { it?.size }
+        assertThat(deserialized.outputStateAndRefs[1].state.encumbranceGroup).isNotNull.extracting { it?.size }
             .isEqualTo(2)
 
-        assertThat(deserialized.outputStateAndRefs[2].state.encumbrance).isNull()
+        assertThat(deserialized.outputStateAndRefs[2].state.encumbranceGroup).isNull()
     }
 }

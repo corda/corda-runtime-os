@@ -33,7 +33,7 @@ fun <T : ContractState> ContractState.cast(type: Class<T>): T {
  * @throws IllegalArgumentException if the current [TransactionState] cannot be cast to the specified type.
  */
 fun <T : ContractState> TransactionState<*>.cast(type: Class<T>): TransactionState<T> {
-    return TransactionStateImpl(contractState.cast(type), notary, encumbrance)
+    return TransactionStateImpl(contractState.cast(type), notary, encumbranceGroup)
 }
 
 /**

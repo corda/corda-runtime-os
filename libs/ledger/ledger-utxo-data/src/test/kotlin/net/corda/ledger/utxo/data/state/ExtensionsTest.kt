@@ -11,7 +11,13 @@ import java.security.PublicKey
 class ExtensionsTest {
 
     class TestContract : Contract {
-        class TestState(override val participants: List<PublicKey>) : ContractState
+
+        class TestState(private val participants: List<PublicKey>) : ContractState {
+
+            override fun getParticipants(): List<PublicKey> {
+                return participants
+            }
+        }
 
         override fun verify(transaction: UtxoLedgerTransaction) {
             TODO("Not yet implemented")
@@ -41,7 +47,12 @@ class ExtensionsTest {
     }
 
     @BelongsToContract(TestContract::class)
-    class TestState2(override val participants: List<PublicKey>) : ContractState
+    class TestState2(private val participants: List<PublicKey>) : ContractState {
+
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+    }
 
     @Test
     fun canGetContractClassWithAnnotation() {
@@ -50,7 +61,12 @@ class ExtensionsTest {
         Assertions.assertNotNull(state.getContractClass())
     }
 
-    class Enclosed(override val participants: List<PublicKey>) : ContractState
+    class Enclosed(private val participants: List<PublicKey>) : ContractState {
+
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+    }
 
     @Test
     fun gettingContractFailsForOtherClasses() {
@@ -63,4 +79,9 @@ class ExtensionsTest {
     }
 }
 
-class NonEnclosed(override val participants: List<PublicKey>) : ContractState
+class NonEnclosed(private val participants: List<PublicKey>) : ContractState {
+
+    override fun getParticipants(): List<PublicKey> {
+        return participants
+    }
+}
