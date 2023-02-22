@@ -266,10 +266,11 @@ class MembershipPersistenceTest {
             override fun setRegistrationRequestStatus(
                 viewOwningIdentity: HoldingIdentity,
                 registrationId: String,
-                registrationRequestStatus: RegistrationStatus
+                registrationRequestStatus: RegistrationStatus,
+                reason: String?,
             ) = safeCall {
                 membershipPersistenceClient.setRegistrationRequestStatus(
-                    viewOwningIdentity, registrationId, registrationRequestStatus
+                    viewOwningIdentity, registrationId, registrationRequestStatus, reason
                 )
             }
 

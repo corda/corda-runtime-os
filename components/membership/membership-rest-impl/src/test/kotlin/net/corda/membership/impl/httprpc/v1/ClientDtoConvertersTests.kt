@@ -17,6 +17,10 @@ import org.junit.jupiter.params.provider.EnumSource
 import java.time.Instant
 
 class ClientDtoConvertersTests {
+    private companion object {
+        const val REASON = "test reason"
+    }
+
     @Test
     fun `fromDto for RegistrationRequestStatusDto`() {
         val dto = RegistrationRequestStatusDto(
@@ -29,7 +33,8 @@ class ClientDtoConvertersTests {
                     "key 1" to "value 1",
                     "key 2" to "value 2",
                 )
-            )
+            ),
+            REASON
         )
 
         val status = dto.fromDto()
@@ -45,7 +50,8 @@ class ClientDtoConvertersTests {
                         "key 1" to "value 1",
                         "key 2" to "value 2",
                     )
-                )
+                ),
+                REASON
             )
         )
     }

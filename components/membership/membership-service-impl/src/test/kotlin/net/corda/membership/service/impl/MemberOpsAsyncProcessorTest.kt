@@ -31,6 +31,10 @@ import java.time.Instant
 import java.util.UUID
 
 class MemberOpsAsyncProcessorTest {
+    private companion object {
+        const val INVALID_REASON = "Registration failed because the request was invalid."
+    }
+
     private val shortHash = ShortHash.of("123123123123")
     private val identity = mock<HoldingIdentity>()
     private val info = mock<VirtualNodeInfo> {
@@ -331,6 +335,7 @@ class MemberOpsAsyncProcessorTest {
             identity,
             id.toString(),
             RegistrationStatus.INVALID,
+            INVALID_REASON,
         )
     }
 
