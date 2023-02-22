@@ -12,7 +12,11 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.*
+import net.corda.flow.BOB_X500_HOLDING_IDENTITY
+import net.corda.flow.FLOW_ID_1
+import net.corda.flow.REQUEST_ID_1
+import net.corda.flow.REQUEST_ID_2
+import net.corda.flow.SESSION_ID_1
 import net.corda.flow.state.impl.FlowStateManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertIterableEquals

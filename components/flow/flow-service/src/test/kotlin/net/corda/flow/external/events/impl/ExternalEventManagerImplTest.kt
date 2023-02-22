@@ -380,6 +380,7 @@ class ExternalEventManagerImplTest {
 
     @ParameterizedTest(name = "getEventToSend returns an external event and updates the state if the state is {0} and the sendTimestamp is surpassed")
     @EnumSource(names = ["RETRY", "OK"])
+    @Suppress("MaxLineLength")
     fun `getEventToSend returns an external event and updates the state if the state is correct and the sendTimestamp is surpassed`(stateType: ExternalEventStateType) {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
@@ -416,6 +417,7 @@ class ExternalEventManagerImplTest {
 
     @ParameterizedTest(name = "getEventToSend does not return an external event if the state is {0} and the sendTimestamp is not surpassed")
     @EnumSource(names = ["RETRY", "OK"])
+    @Suppress("MaxLineLength")
     fun `getEventToSend does not return an external event if the state is correct and the sendTimestamp is not surpassed`(stateType: ExternalEventStateType) {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
