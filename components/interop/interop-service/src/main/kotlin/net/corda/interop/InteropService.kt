@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.SessionEvent
-//import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,10 +16,11 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-//import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-//import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -56,6 +57,7 @@ class InteropService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
+                configurationReadService.start()
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
@@ -69,11 +71,12 @@ class InteropService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG)
+                            setOf(MESSAGING_CONFIG, P2P_LINK_MANAGER_CONFIG)
                         )
                     }
                 } else {
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
+                    coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
                 }
             }
             is ConfigChangedEvent -> {
@@ -84,17 +87,17 @@ class InteropService @Activate constructor(
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
         logger.info("restartInteropProcessor $event")
-//        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-//        coordinator.createManagedResource(SUBSCRIPTION) {
-//            subscriptionFactory.createDurableSubscription(
-//                SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
-//                InteropProcessor(cordaAvroSerializationFactory),
-//                messagingConfig,
-//                null
-//            ).also {
-//                it.start()
-//            }
-//        }
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        coordinator.createManagedResource(SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
+                InteropProcessor(cordaAvroSerializationFactory),
+                messagingConfig,
+                null
+            ).also {
+                it.start()
+            }
+        }
         //TODO below is temporary tactical code to setup members of interop group,
         // this will be phased out later on by CORE-10446
 //        publisher?.close()
