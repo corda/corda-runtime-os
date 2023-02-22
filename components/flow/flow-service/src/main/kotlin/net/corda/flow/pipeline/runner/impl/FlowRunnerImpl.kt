@@ -10,7 +10,7 @@ import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.factory.FlowFiberFactory
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner

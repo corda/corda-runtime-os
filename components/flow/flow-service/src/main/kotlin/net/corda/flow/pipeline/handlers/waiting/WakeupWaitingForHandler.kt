@@ -2,7 +2,7 @@ package net.corda.flow.pipeline.handlers.waiting
 
 import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Component
 

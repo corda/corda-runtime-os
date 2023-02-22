@@ -25,11 +25,10 @@ import org.slf4j.LoggerFactory
  * The client that is used for the non-validating notary logic. This class is very simple and uses the basic
  * send-and-receive logic and it will also initiate the server side of the non-validating notary.
  */
-// TODO CORE-7292 What is the best way to define the protocol
-@InitiatingFlow(protocol = "non-validating-notary")
+@InitiatingFlow(protocol = "net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryClientFlowImpl(
     private val stx: UtxoSignedTransaction,
-    private val notary: Party
+    private val notaryRepresentative: Party
 ) : PluggableNotaryClientFlow {
 
     private companion object {
@@ -82,13 +81,14 @@ class NonValidatingNotaryClientFlowImpl(
      */
     @Suspendable
     override fun call(): List<DigitalSignatureAndMetadata> {
-        log.trace { "Notarizing transaction ${stx.id} with notary $notary" }
+        log.trace { "Notarizing transaction ${stx.id} with notary $notaryRepresentative" }
 
-        val session = flowMessaging.initiateFlow(notary.name)
+        val session = flowMessaging.initiateFlow(notaryRepresentative.name)
 
         val payload = generatePayload(stx)
 
-        log.trace { "Sending notarization request to notary $notary for transaction ${stx.id}" }
+        log.trace { "Sending notarization request to notary service ${stx.notary} via " +
+                "representative $notaryRepresentative for transaction ${stx.id}" }
 
         val notarisationResponse = session.sendAndReceive(
             NotarisationResponse::class.java,
@@ -97,11 +97,13 @@ class NonValidatingNotaryClientFlowImpl(
 
         return when (val error = notarisationResponse.error) {
             null -> {
-                log.trace { "Received notarization response from notary $notary for transaction ${stx.id}" }
+                log.trace { "Received notarization response from notary service ${stx.notary} " +
+                        "for transaction ${stx.id}" }
                 notarisationResponse.signatures
             }
             else -> {
-                log.trace { "Received notarization error from notary $notary for transaction ${stx.id}. Error: $error" }
+                log.trace { "Received notarization error from notary service ${stx.notary} for " +
+                        "transaction ${stx.id}. Error: $error" }
                 throw NotaryException(error, stx.id)
             }
         }
