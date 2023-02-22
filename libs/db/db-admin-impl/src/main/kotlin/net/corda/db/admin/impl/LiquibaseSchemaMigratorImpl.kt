@@ -108,21 +108,17 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            try {
-                log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
-                        "DB Schema for ${database.connection.catalog}")
-                if (null == sql) {
-                    lb.update(Contexts())
-                } else {
-                    lb.update(Contexts(), sql)
-                }
-                if (tag != null) {
-                    lb.tag(tag)
-                }
-                log.info("${database.connection.catalog} DB schema update complete")
-            } finally {
-                lb.close()
+            log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
+                    "DB Schema for ${database.connection.catalog}")
+            if (null == sql) {
+                lb.update(Contexts())
+            } else {
+                lb.update(Contexts(), sql)
             }
+            if (tag != null) {
+                lb.tag(tag)
+            }
+            log.info("${database.connection.catalog} DB schema update complete")
         }
     }
 
@@ -149,12 +145,8 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            try {
-                lb.rollback(tagToRollbackTo, Contexts())
-                log.info("${database.connection.catalog} DB schema rollback complete")
-            } finally {
-                lb.close()
-            }
+            lb.rollback(tagToRollbackTo, Contexts())
+            log.info("${database.connection.catalog} DB schema rollback complete")
         }
     }
 }
