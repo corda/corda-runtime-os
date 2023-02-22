@@ -176,10 +176,11 @@ class MemberLookupRestResourceImpl @Activate constructor(
                 holdingIdentityShortHash
             ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
-            return with(membershipGroupReaderProvider.getGroupReader(holdingIdentity)) {
-                groupParameters?.toMap()
-            } ?: throw ResourceNotFoundException("Could not find group parameters for holding identity " +
-                        "'$holdingIdentityShortHash'.")
+            return membershipGroupReaderProvider
+                .getGroupReader(holdingIdentity)
+                .groupParameters
+                ?.toMap() ?: throw ResourceNotFoundException("Could not find group parameters for holding identity " +
+                    "'$holdingIdentityShortHash'.")
         }
 
         private fun GroupParameters.toMap() = entries.associate { it.key to it.value }

@@ -390,8 +390,7 @@ class MemberLookupRestResourceTest {
 
             val result = memberLookupRestResource.viewGroupParameters(HOLDING_IDENTITY_STRING)
 
-            assertThat(result.size).isEqualTo(3)
-            assertThat(result.entries).isEqualTo(expectedGroupParamsMap.entries)
+            assertThat(result).containsExactlyEntriesOf(expectedGroupParamsMap)
         }
     }
 }
