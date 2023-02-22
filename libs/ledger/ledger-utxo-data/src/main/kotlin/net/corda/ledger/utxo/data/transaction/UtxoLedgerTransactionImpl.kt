@@ -28,9 +28,6 @@ class UtxoLedgerTransactionImpl(
     override val wireTransaction: WireTransaction
         get() = wrappedWireTransaction.wireTransaction
 
-//    val attachmentIds: List<SecureHash>
-//        get() = wrappedWireTransaction.attachmentIds
-
     override fun getId(): SecureHash {
         return wrappedWireTransaction.id
     }
