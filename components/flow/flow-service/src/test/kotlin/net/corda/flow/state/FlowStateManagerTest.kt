@@ -49,7 +49,7 @@ class FlowStateManagerTest {
     }
 
     @Test
-    fun `Rollback successfully restores sessions to initial state adding additional sessions`() {
+    fun `Rollback successfully restores sessions to initial state after adding additional sessions`() {
         val initialSessions = listOf(SessionState().apply {
             sessionId = "foo"
         })
@@ -88,6 +88,31 @@ class FlowStateManagerTest {
         assertIterableEquals(
             listOf(SessionState().apply {sessionId = "foo"}),
             sut.sessions
+        )
+    }
+
+    @Test
+    fun `External event state is successfully persisted through a rollback`() {
+        val flowState = createFlowState(sessionStates = listOf(
+            SessionState().apply{ sessionId = "foo" }
+        ))
+
+        flowState.externalEventState = ExternalEventState().apply { requestId = "foo" }
+
+        val sut = FlowStateManager(flowState)
+
+        assertEquals(
+            ExternalEventState().apply { requestId = "foo" },
+            sut.externalEventState
+        )
+
+        sut.externalEventState?.apply { requestId = "bar" }
+
+        sut.rollback()
+
+        assertEquals(
+            ExternalEventState().apply { requestId = "foo" },
+            sut.externalEventState
         )
     }
 

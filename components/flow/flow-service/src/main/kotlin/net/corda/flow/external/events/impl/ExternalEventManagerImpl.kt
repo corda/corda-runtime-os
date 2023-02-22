@@ -170,7 +170,7 @@ class ExternalEventManagerImpl(
     }
 
     private fun canRetryEvent(externalEventState: ExternalEventState, instant: Instant): Boolean {
-        return if (externalEventState.status.type == ExternalEventStateType.RETRY) {
+        return if (externalEventState.status.type in setOf(ExternalEventStateType.RETRY, ExternalEventStateType.OK)) {
             val sendTimestamp = externalEventState.sendTimestamp.truncatedTo(ChronoUnit.MILLIS).toEpochMilli()
             val currentTimestamp = instant.truncatedTo(ChronoUnit.MILLIS).toEpochMilli()
             sendTimestamp < currentTimestamp
