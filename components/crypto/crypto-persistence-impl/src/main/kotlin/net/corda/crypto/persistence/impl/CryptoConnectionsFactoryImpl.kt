@@ -5,27 +5,31 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.component.impl.DependenciesTracker
-import net.corda.crypto.config.impl.CryptoConnectionsFactoryConfig
-import net.corda.crypto.config.impl.cryptoConnectionFactory
-import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.lifecycle.DependentComponents
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.VisibleForTesting
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
@@ -40,75 +44,42 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val vnodeInfo: VirtualNodeInfoReadService
-) : AbstractConfigurableComponent<CryptoConnectionsFactoryImpl.Impl>(
-    coordinatorFactory = coordinatorFactory,
-    myName = LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>(),
-    configurationReadService = configurationReadService,
-    upstream = DependenciesTracker.DefaultWithConfigReader(
-        setOf(
-            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-            LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
-            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+) : CryptoConnectionsFactory {
+    companion object {
+        private val log = LoggerFactory.getLogger(CryptoConnectionsFactory::class.java)
+    }
+
+    private val dependentComponents =
+        DependentComponents.of(
+            ::dbConnectionManager,
+            ::virtualNodeInfoReadService,
+            ::configurationReadService
         )
-    ),
-    configKeys = setOf(
-        ConfigKeys.BOOT_CONFIG,
-        ConfigKeys.CRYPTO_CONFIG
-    )
-), CryptoConnectionsFactory {
 
-    override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        logger,
-        event.config.toCryptoConfig().cryptoConnectionFactory(),
-        dbConnectionManager,
-        jpaEntitiesRegistry,
-        vnodeInfo
-    )
+    val coordinator =
+        coordinatorFactory.createCoordinator<CryptoConnectionsFactory>(
+            dependentComponents,
+            ::processEvent
+        )
 
-    override fun getEntityManagerFactory(tenantId: String): EntityManagerFactory =
-        impl.getEntityManagerFactory(tenantId)
+    private var configRegistration: Resource? = null
+    private var previousConfig: CryptoConnectionsFactoryCacheConfig? = null
 
-    class Impl(
-        private val logger: Logger,
-        private val config: CryptoConnectionsFactoryConfig,
-        private val dbConnectionOps: DbConnectionOps,
-        private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-        private val vnodeInfo: VirtualNodeInfoReadService
-    ) : DownstreamAlwaysUpAbstractImpl() {
+    @Volatile
+    @VisibleForTesting
+    var connections: Cache<String, EntityManagerFactory>? = null
 
-        @Volatile
-        private var connections: Cache<String, EntityManagerFactory> = createConnectionsCache()
-
-        override fun onUpstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) {
-            if (!isUpstreamUp) {
-                connections = createConnectionsCache()
-            }
+    override fun getEntityManagerFactory(tenantId: String): EntityManagerFactory  =
+        if (CryptoTenants.isClusterTenant(tenantId)) {
+            dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+        } else {
+            connections!!.get(tenantId) { createEntityManagerFactory(tenantId) }
         }
 
-        override fun close() {
-            super.close()
-            val values = connections.asMap().values
-            connections.invalidateAll()
-            connections.cleanUp()
-            values.forEach {
-                try {
-                    it.close()
-                } catch (e: Throwable) {
-                    // intentional
-                }
-            }
-        }
-
-        fun getEntityManagerFactory(tenantId: String): EntityManagerFactory =
-            if (CryptoTenants.isClusterTenant(tenantId)) {
-                dbConnectionOps.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
-            } else {
-                connections.get(tenantId) { createEntityManagerFactory(tenantId) }
-            }
-
-        private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.createEntityManagerFactory(
-            connectionId = vnodeInfo.getByHoldingIdentityShortHash(ShortHash.of(tenantId))?.cryptoDmlConnectionId
+    private fun createEntityManagerFactory(tenantId: String) =
+        dbConnectionManager.createEntityManagerFactory(
+            connectionId = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(tenantId))?.cryptoDmlConnectionId
                 ?: throw throw IllegalStateException(
                     "virtual node for $tenantId is not registered."
                 ),
@@ -118,18 +89,92 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                 )
         )
 
-        private fun createConnectionsCache(): Cache<String, EntityManagerFactory> {
-            logger.info(
-                "Building connections cache, maximumSize={}, expireAfterAccessMins={}",
-                config.maximumSize,
-                config.expireAfterAccessMins
-            )
-            return CacheFactoryImpl().build(
-                "Crypto-Db-Connections-Cache",
-                Caffeine.newBuilder()
-                    .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
-                    .maximumSize(config.maximumSize)
-                    .evictionListener { _, value, _ -> value?.close() })
+    private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        log.debug { "Processing event: ${event::class.java.simpleName}" }
+        when (event) {
+            is StartEvent -> {}
+            is StopEvent -> { connections = null }
+
+            is RegistrationStatusChangeEvent -> {
+                when (event.status) {
+                    LifecycleStatus.UP -> {
+                        log.info("All dependent components are UP, now registering for config updates")
+                        configRegistration?.close()
+                        configRegistration = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(
+                                ConfigKeys.BOOT_CONFIG,
+                                ConfigKeys.CRYPTO_CONFIG
+                            )
+                        )
+                    }
+                    LifecycleStatus.DOWN,
+                    LifecycleStatus.ERROR -> {
+                        log.info("Received ${event.status::name} event, closing resources")
+                        updateStatus(event.status)
+                        configRegistration?.close()
+                        configRegistration = null
+                        clearCache()
+                        connections = null
+                        previousConfig = null
+                    }
+                }
+            }
+            is ConfigChangedEvent -> {
+                val newConfig =
+                    event.config.toCryptoConnectionsFactoryCacheConfig()
+                if (newConfig != previousConfig) {
+                    log.info(
+                        "Received new configuration for cache, so creating new cache with "
+                                + "maximumSize = ${newConfig.maximumSize}, expireAfterAccessMins = ${newConfig.expireAfterAccessMins}"
+                    )
+                    clearCache()
+                    connections = createConnectionsCache(newConfig)
+                    previousConfig = newConfig
+                }
+                updateStatus(LifecycleStatus.UP)
+            }
         }
     }
+
+    private fun updateStatus(newStatus: LifecycleStatus) {
+        if (newStatus != coordinator.status) {
+            coordinator.updateStatus(newStatus)
+        }
+    }
+
+    private fun clearCache() {
+        connections?.let { cache ->
+            val values = cache.asMap().values
+            cache.invalidateAll()
+            cache.cleanUp()
+            values.forEach {
+                try {
+                    it.close()
+                } catch (e: Throwable) {
+                    // intentional
+                }
+            }
+        }
+    }
+
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    override fun start() {
+        coordinator.start()
+    }
+
+    override fun stop() {
+        coordinator.stop()
+    }
+}
+
+private fun createConnectionsCache(config: CryptoConnectionsFactoryCacheConfig): Cache<String, EntityManagerFactory> {
+    return CacheFactoryImpl().build(
+        "Crypto-Db-Connections-Cache",
+        Caffeine.newBuilder()
+            .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
+            .maximumSize(config.maximumSize)
+            .evictionListener { _, value, _ -> value?.close() })
 }
