@@ -13,7 +13,7 @@ import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.messageBus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

@@ -13,7 +13,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.messageBus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource

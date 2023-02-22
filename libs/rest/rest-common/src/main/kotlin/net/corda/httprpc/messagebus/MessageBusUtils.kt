@@ -1,4 +1,4 @@
-package net.corda.httprpc.messageBus
+package net.corda.httprpc.messagebus
 
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ServiceUnavailableException
@@ -17,7 +17,7 @@ object MessageBusUtils {
      *
      *  @param logger Logger instance to register exceptions, if any, under WARN log level.
      *  @param operation String representing the operation being executed.
-     *  @param untranslatedExceptions List of exception types to ignore.
+     *  @param untranslatedExceptions Set of exception types to re-throw untranslated.
      *  @param block Block to execute.
      */
     @Suppress("ThrowsCount")

@@ -19,7 +19,7 @@ import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.asynchronous.v1.AsyncResponse
-import net.corda.httprpc.messageBus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
