@@ -7,6 +7,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
@@ -16,7 +17,6 @@ import net.corda.crypto.persistence.impl.SigningKeysRepository
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance

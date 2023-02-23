@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,15 +10,9 @@ import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 
 class GroupPolicyListenerTest {
     private val coordinator = mock<LifecycleCoordinator>()

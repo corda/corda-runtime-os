@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl.infra
 
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
@@ -24,7 +25,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
 import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock

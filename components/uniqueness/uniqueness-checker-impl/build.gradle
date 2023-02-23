@@ -31,6 +31,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
+    testImplementation project(":libs:crypto:crypto-core")
     testImplementation project(":libs:virtual-node:virtual-node-info")
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")

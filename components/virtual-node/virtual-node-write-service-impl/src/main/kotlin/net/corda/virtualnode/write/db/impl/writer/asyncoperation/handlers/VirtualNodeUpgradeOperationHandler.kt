@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
+import net.corda.crypto.core.ShortHash
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -16,7 +17,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.schema.Schemas
 import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException

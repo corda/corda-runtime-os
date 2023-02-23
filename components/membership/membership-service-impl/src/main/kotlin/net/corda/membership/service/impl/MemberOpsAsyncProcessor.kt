@@ -1,5 +1,6 @@
 package net.corda.membership.service.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationStatus
@@ -9,7 +10,6 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

@@ -10,13 +10,12 @@ dependencies {
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(':libs:crypto:crypto-core')
 
     api "net.corda:corda-avro-schema"
 
     api project(':libs:crypto:cipher-suite')
+    api project(':libs:crypto:crypto-core')
     api project(":libs:lifecycle:lifecycle")
-    api project(':libs:virtual-node:virtual-node-info')
 }
 
 

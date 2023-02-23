@@ -1,8 +1,9 @@
 package net.corda.virtualnode.read
 
+import net.corda.crypto.core.ShortHash
+
 import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerReader
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 

@@ -1,8 +1,8 @@
 package net.corda.crypto.persistence
 
+import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
 import java.security.PublicKey
 
 interface SigningKeyStore : Lifecycle {

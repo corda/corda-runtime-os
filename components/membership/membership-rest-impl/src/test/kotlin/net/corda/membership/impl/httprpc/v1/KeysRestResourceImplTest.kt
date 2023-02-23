@@ -12,6 +12,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -28,7 +29,6 @@ import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.rest.v1.KeysRestResourceImpl
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
