@@ -14,8 +14,15 @@ internal class MessageFactoryImplTest {
 
     private val messageFactory = MessageFactoryImpl()
     private val clientRequestId = UUID.randomUUID().toString()
-    val FLOW1 = "flow1"
-    val instantTimestamp = Instant.now().minusMillis(1)
+    private val flow1 = "flow1"
+
+    private val vaultDdlConnectionId = "16929514-237c-11ed-861d-0242ac120001"
+    private val vaultDmlConnectionId = "26929514-237c-11ed-861d-0242ac120002"
+    private val cryptoDdlConnectionId = "36929514-237c-11ed-861d-0242ac120003"
+    private val cryptoDmlConnectionId = "46929514-237c-11ed-861d-0242ac120004"
+    private val uniquenessDdlConnectionId = "56929514-237c-11ed-861d-0242ac120005"
+    private val uniquenessDmlConnectionId = "66929514-237c-11ed-861d-0242ac120006"
+    private val hsmConnectionId = "76929514-237c-11ed-861d-0242ac120007"
 
     private fun getStubVirtualNode(): VirtualNodeInfo {
         return VirtualNodeInfo(
@@ -24,13 +31,13 @@ internal class MessageFactoryImplTest {
                 "", "",
                 SecureHash("", "bytes".toByteArray())
             ),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
+            UUID.fromString(vaultDdlConnectionId),
+            UUID.fromString(vaultDmlConnectionId),
+            UUID.fromString(cryptoDdlConnectionId),
+            UUID.fromString(cryptoDmlConnectionId),
+            UUID.fromString(uniquenessDdlConnectionId),
+            UUID.fromString(uniquenessDmlConnectionId),
+            UUID.fromString(hsmConnectionId),
             version = 0,
             timestamp = Instant.now()
         )
@@ -39,7 +46,7 @@ internal class MessageFactoryImplTest {
     @Test
     fun `createFlowStatusResponse returns last updated timestamp`() {
         val virtualNodeInfo = getStubVirtualNode()
-        val status = messageFactory.createStartFlowStatus(clientRequestId, virtualNodeInfo.toAvro(), FLOW1)
+        val status = messageFactory.createStartFlowStatus(clientRequestId, virtualNodeInfo.toAvro(), flow1)
         val response = messageFactory.createFlowStatusResponse(status)
         assertThat(response.timestamp).isEqualTo(status.lastUpdateTimestamp)
     }
