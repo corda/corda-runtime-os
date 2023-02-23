@@ -137,6 +137,8 @@ class StartFlowTest : FlowServiceTestBase() {
                 nullStateRecord()
                 markedForDlq()
                 noFlowEvents()
+                //we can't return a status record after the change to checkpoint initialization
+                // Story to deal with change in status records -> CORE-10571: Re-design how status record is published
 /*                flowStatus(
                     state = FlowStates.FAILED,
                     errorType = FlowProcessingExceptionTypes.FLOW_FAILED,

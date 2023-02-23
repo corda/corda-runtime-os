@@ -23,7 +23,7 @@ class StartFlowEventHandler @Activate constructor(
             context.checkpoint,
             WaitingFor(WaitingForStartFlow),
             context.inputEventPayload.startContext.identity.toCorda(),
-            ) {
+        ) {
             context.inputEventPayload.startContext
         }
         return context

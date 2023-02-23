@@ -26,7 +26,7 @@ class CheckpointInitializerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         waitingFor: WaitingFor,
         holdingIdentity: HoldingIdentity,
-        contextBuilder:(Set<SecureHash>) -> FlowStartContext
+        contextBuilder: (Set<SecureHash>) -> FlowStartContext
     ) {
         val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
             ?: throw FlowTransientException("Failed to find the virtual node info for holder '$holdingIdentity'")

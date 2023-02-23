@@ -11,7 +11,7 @@ interface FlowProtocolStoreFactory {
      * Create a new [FlowProtocolStore].
      *
      * @param sandboxGroup The sandbox to create the flow protocol store for.
-     * @param cpiMetadata CPI metadata for the CPI installed into this sandbox.
+     * @return FlowProtocolStore.
      */
     fun create(sandboxGroup: SandboxGroup) : FlowProtocolStore
 }
