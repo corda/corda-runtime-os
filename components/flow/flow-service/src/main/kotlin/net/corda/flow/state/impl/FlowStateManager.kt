@@ -70,15 +70,7 @@ class FlowStateManager(private val initialState: FlowState) {
         }
 
     fun rollback() {
-        var retainedEventState: ExternalEventState? = null
-        this.externalEventState?.let {
-            retainedEventState = ExternalEventState.newBuilder(state.externalEventState).build()
-        }
-
-        state = FlowState.newBuilder(initialState).build().apply {
-            externalEventState = retainedEventState
-        }
-
+        state = FlowState.newBuilder(initialState).build()
         sessionMap = validateAndCreateSessionMap(state.sessions)
         stack = FlowStackImpl(state.flowStackItems)
         flowContext = FlowStackBasedContext(stack)
