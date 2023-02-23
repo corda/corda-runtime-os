@@ -8,6 +8,7 @@ import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
+import net.corda.membership.impl.rest.v1.fromDto
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test

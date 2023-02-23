@@ -25,6 +25,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
+import net.corda.membership.impl.rest.v1.KeysRestResourceImpl
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.ShortHash
