@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel
+package net.corda.libs.cpi.datamodel.entities
 
 import java.time.Instant
 import javax.persistence.Column
@@ -39,7 +39,7 @@ const val QUERY_PARAM_ID = "id"
             " WHERE f.entityVersion = :$QUERY_PARAM_ENTITY_VERSION" +
             " AND f.id = :$QUERY_PARAM_ID"
 )
-data class CpkFileEntity(
+class CpkFileEntity(
     @Id
     @Column(name = "file_checksum", nullable = false, unique = true)
     var fileChecksum: String,
@@ -64,15 +64,12 @@ data class CpkFileEntity(
         other as CpkFileEntity
 
         if (fileChecksum != other.fileChecksum) return false
-        if (!data.contentEquals(other.data)) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = fileChecksum.hashCode()
-        result = 31 * result + data.contentHashCode()
-        return result
+        return fileChecksum.hashCode()
     }
 }
 

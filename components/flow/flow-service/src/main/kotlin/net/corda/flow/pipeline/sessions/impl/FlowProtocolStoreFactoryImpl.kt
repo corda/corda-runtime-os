@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
@@ -19,10 +19,12 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    @Suppress("ThrowsCount")
     private fun extractDataForFlow(
         flowName: String,
         flowClass: Class<*>,
         initiatorToProtocol: MutableMap<String, List<FlowProtocol>>,
+        protocolToInitiator: MutableMap<FlowProtocol, String>,
         protocolToResponder: MutableMap<FlowProtocol, String>
     ) {
         when {
@@ -31,6 +33,14 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
                 val versions = flowClass.getAnnotation(InitiatingFlow::class.java).version
                 val protocols = versions.map { FlowProtocol(protocol, it) }
                 initiatorToProtocol[flowName] = protocols
+                if (protocols.any { it in protocolToInitiator }) {
+                    throw FlowFatalException(
+                        "Cannot declare multiple initiators for the same protocol in the same CPI"
+                    )
+                }
+                protocols.forEach {
+                    protocolToInitiator[it] = flowName
+                }
             }
 
             flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {
@@ -58,14 +68,15 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
         sandboxGroup: SandboxGroup,
     ): FlowProtocolStore {
         val initiatorToProtocol = mutableMapOf<String, List<FlowProtocol>>()
+        val protocolToInitiator = mutableMapOf<FlowProtocol, String>()
         val protocolToResponder = mutableMapOf<FlowProtocol, String>()
 
         sandboxGroup.metadata.flatMap { it.value.cordappManifest.flows }.forEach { flow ->
             logger.trace { "Reading flow $flow for protocols" }
             val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
-            extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
+            extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToInitiator, protocolToResponder)
         }
 
-        return FlowProtocolStoreImpl(initiatorToProtocol, protocolToResponder)
+        return FlowProtocolStoreImpl(initiatorToProtocol, protocolToInitiator, protocolToResponder)
     }
 }

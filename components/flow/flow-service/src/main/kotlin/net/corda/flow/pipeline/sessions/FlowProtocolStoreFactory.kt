@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.sessions
 
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.sandbox.SandboxGroup
 
 /**

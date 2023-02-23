@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.handlers.events
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.CheckpointInitializer
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate

@@ -17,6 +17,7 @@ import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.ws.DuplexChannel
@@ -171,11 +172,15 @@ class FlowRestResourceImpl @Activate constructor(
         )
 
         val recordFutures = try {
-            publisher!!.publish(records)
+            tryWithExceptionHandling(
+                log,
+                "Publishing start flow events",
+                untranslatedExceptions = setOf(CordaMessageAPIFatalException::class.java)
+            ) {
+                publisher!!.publish(records)
+            }
         } catch (ex: CordaMessageAPIFatalException) {
             throw markFatalAndReturnFailureException(ex)
-        } catch (ex: Exception) {
-            throw failureException(ex)
         }
         waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsTerminal ->
             if (failureIsTerminal) {

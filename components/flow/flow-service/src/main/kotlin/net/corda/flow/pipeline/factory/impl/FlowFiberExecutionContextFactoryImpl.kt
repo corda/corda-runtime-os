@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.factory.impl
 
 import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService

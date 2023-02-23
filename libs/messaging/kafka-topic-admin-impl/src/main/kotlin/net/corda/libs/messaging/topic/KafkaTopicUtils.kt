@@ -66,6 +66,10 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         }
     }
 
+    override fun close() {
+        adminClient.close()
+    }
+
     private fun referenceTopicsConfig(): Config = ConfigFactory.parseString(
         """
         topics = [

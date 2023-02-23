@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel
+package net.corda.libs.cpi.datamodel.entities
 
 import java.io.Serializable
 import java.time.Instant
@@ -36,7 +36,7 @@ import javax.persistence.Version
 @Table(name = "cpi")
 @IdClass(CpiMetadataEntityKey::class)
 @Suppress("LongParameterList")
-data class CpiMetadataEntity(
+class CpiMetadataEntity(
     @Id
     @Column(name = "name", nullable = false)
     val name: String,
@@ -150,6 +150,35 @@ data class CpiMetadataEntity(
         result = 31 * result + signerSummaryHash.hashCode()
         return result
     }
+
+    fun copy(
+        name: String = this.name,
+        version: String = this.version,
+        signerSummaryHash: String = this.signerSummaryHash,
+        fileName: String = this.fileName,
+        fileChecksum: String = this.fileChecksum,
+        groupPolicy: String = this.groupPolicy,
+        groupId: String = this.groupId,
+        fileUploadRequestId: String = this.fileUploadRequestId,
+        cpks: Set<CpiCpkEntity> = this.cpks,
+        insertTimestamp: Instant? = this.insertTimestamp,
+        isDeleted: Boolean = this.isDeleted,
+        entityVersion: Int = this.entityVersion
+    ) =
+        CpiMetadataEntity(
+            name,
+            version,
+            signerSummaryHash,
+            fileName,
+            fileChecksum,
+            groupPolicy,
+            groupId,
+            fileUploadRequestId,
+            cpks,
+            insertTimestamp,
+            isDeleted,
+            entityVersion
+        )
 }
 
 /** The composite primary key for a CpiEntity. */

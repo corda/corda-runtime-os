@@ -25,11 +25,16 @@ class FlowProtocolStoreFactoryImplTest {
 
     companion object {
         private const val INITIATING_FLOW = "initiating-flow"
+        private const val INITIATING_FLOW_V2 = "initiating-flow-v2"
+        private const val INITIATING_FLOW_V1_AND_V2 = "initiating-flow-v1-v2"
         private const val INITIATED_FLOW = "initiated-flow"
+        private const val INITIATED_FLOW_V2 = "initiated-flow-v2"
+        private const val INITIATED_FLOW_V1_AND_V2 = "initiated-flow-v1-v2"
         private const val RPC_FLOW = "rpc-flow"
         private const val BAD_RESPONDER = "bad-responder"
         private const val INVALID_RESPONDER = "invalid-responder"
         private const val PROTOCOL = "protocol"
+        private const val PROTOCOL2 = "protocol2"
     }
 
     @Test
@@ -42,8 +47,68 @@ class FlowProtocolStoreFactoryImplTest {
         )
         val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
+        assertEquals(INITIATING_FLOW, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
         assertEquals(INITIATED_FLOW, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
-        assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(RPC_FLOW, mock()))
+        assertEquals(Pair(PROTOCOL2, listOf(1)), protocolStore.protocolsForInitiator(RPC_FLOW, mock()))
+    }
+
+    @Test
+    fun `adding initiator and responder flows that support multiple versions in same flows is successful`() {
+        val cpiMetadata = makeMockCPIMetadata(
+            listOf(
+                CpkFlowClassNameLists(listOf(INITIATING_FLOW_V1_AND_V2), listOf(), listOf()),
+                CpkFlowClassNameLists(listOf(INITIATED_FLOW_V1_AND_V2), listOf(), listOf(INITIATED_FLOW_V1_AND_V2))
+            )
+        )
+        val sandboxGroup = makeMockSandboxGroup()
+        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+        assertEquals(Pair(PROTOCOL, listOf(1, 2)), protocolStore.protocolsForInitiator(INITIATING_FLOW_V1_AND_V2, mock()))
+        assertEquals(INITIATING_FLOW_V1_AND_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1, 2)))
+        assertEquals(INITIATING_FLOW_V1_AND_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
+        assertEquals(INITIATING_FLOW_V1_AND_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(2)))
+        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1, 2), mock()))
+        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
+        assertEquals(INITIATED_FLOW_V1_AND_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(2), mock()))
+    }
+
+    @Test
+    fun `adding initiator and responder flows that support multiple versions in different flows is successful`() {
+        val cpiMetadata = makeMockCPIMetadata(
+            listOf(
+                CpkFlowClassNameLists(listOf(INITIATING_FLOW), listOf(), listOf()),
+                CpkFlowClassNameLists(listOf(INITIATING_FLOW_V2), listOf(), listOf()),
+                CpkFlowClassNameLists(listOf(INITIATED_FLOW), listOf(), listOf(INITIATED_FLOW)),
+                CpkFlowClassNameLists(listOf(INITIATED_FLOW_V2), listOf(), listOf(INITIATED_FLOW_V2))
+            )
+        )
+        val sandboxGroup = makeMockSandboxGroup()
+        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+        assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
+        assertEquals(Pair(PROTOCOL, listOf(2)), protocolStore.protocolsForInitiator(INITIATING_FLOW_V2, mock()))
+        assertEquals(INITIATING_FLOW_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1, 2)))
+        assertEquals(INITIATING_FLOW, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
+        assertEquals(INITIATING_FLOW_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(2)))
+        assertEquals(INITIATED_FLOW_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(1, 2), mock()))
+        assertEquals(INITIATED_FLOW, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
+        assertEquals(INITIATED_FLOW_V2, protocolStore.responderForProtocol(PROTOCOL, listOf(2), mock()))
+    }
+
+    @Test
+    fun `adding two initiators with the same protocol results in an error`() {
+        val cpiMetadata = makeMockCPIMetadata(
+            listOf(
+                CpkFlowClassNameLists(listOf(INITIATING_FLOW), listOf(), listOf()),
+                CpkFlowClassNameLists(listOf(INITIATING_FLOW_V1_AND_V2), listOf(), listOf())
+            )
+        )
+        val sandboxGroup = makeMockSandboxGroup()
+        val thrownException = assertThrows<FlowFatalException> {
+            FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+        }
+        assertEquals(
+            "Cannot declare multiple initiators for the same protocol in the same CPI",
+            thrownException.message
+        )
     }
 
     @Test
@@ -51,7 +116,7 @@ class FlowProtocolStoreFactoryImplTest {
         val sandboxGroup = makeMockSandboxGroup(
             listOf(
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW, BAD_RESPONDER), listOf(), listOf(BAD_RESPONDER)),
-                CpkFlowClassNameLists(listOf(RPC_FLOW, INITIATED_FLOW), listOf(RPC_FLOW), listOf(INITIATED_FLOW))
+                CpkFlowClassNameLists(listOf(INITIATED_FLOW), listOf(), listOf(INITIATED_FLOW))
             )
         )
         val thrownException = assertThrows<FlowFatalException> {
@@ -95,14 +160,23 @@ class FlowProtocolStoreFactoryImplTest {
         val metadata = cpks.map { Pair(mock<Bundle>(), it) }.toMap()
         val sandboxGroup = mock<SandboxGroup>()
         whenever(sandboxGroup.metadata).thenReturn(metadata)
-        whenever(
-            sandboxGroup.loadClassFromMainBundles(
-                INITIATING_FLOW,
-                Flow::class.java
-            )
-        ).thenReturn(MyInitiatingFlow::class.java)
+        whenever(sandboxGroup.loadClassFromMainBundles(INITIATING_FLOW, Flow::class.java)).thenReturn(
+            MyInitiatingFlow::class.java
+        )
+        whenever(sandboxGroup.loadClassFromMainBundles(INITIATING_FLOW_V2, Flow::class.java)).thenReturn(
+            MyInitiatingFlowV2::class.java
+        )
+        whenever(sandboxGroup.loadClassFromMainBundles(INITIATING_FLOW_V1_AND_V2, Flow::class.java)).thenReturn(
+            MyInitiatingFlowV1And2::class.java
+        )
         whenever(sandboxGroup.loadClassFromMainBundles(INITIATED_FLOW, Flow::class.java)).thenReturn(
             MyResponderFlow::class.java
+        )
+        whenever(sandboxGroup.loadClassFromMainBundles(INITIATED_FLOW_V2, Flow::class.java)).thenReturn(
+            MyResponderFlowV2::class.java
+        )
+        whenever(sandboxGroup.loadClassFromMainBundles(INITIATED_FLOW_V1_AND_V2, Flow::class.java)).thenReturn(
+            MyResponderFlowV1And2::class.java
         )
         whenever(sandboxGroup.loadClassFromMainBundles(RPC_FLOW, Flow::class.java)).thenReturn(
             MyRPCFlow::class.java
@@ -123,13 +197,37 @@ class FlowProtocolStoreFactoryImplTest {
         }
     }
 
+    @InitiatingFlow(protocol = PROTOCOL, version=(intArrayOf(2)))
+    private class MyInitiatingFlowV2 : SubFlow<Unit> {
+        override fun call() {
+        }
+    }
+
+    @InitiatingFlow(protocol = PROTOCOL, version=(intArrayOf(1, 2)))
+    private class MyInitiatingFlowV1And2 : SubFlow<Unit> {
+        override fun call() {
+        }
+    }
+
     @InitiatedBy(protocol = PROTOCOL)
     private class MyResponderFlow : ResponderFlow {
         override fun call(session: FlowSession) {
         }
     }
 
-    @InitiatingFlow(protocol = PROTOCOL)
+    @InitiatedBy(protocol = PROTOCOL, version=(intArrayOf(2)))
+    private class MyResponderFlowV2 : ResponderFlow {
+        override fun call(session: FlowSession) {
+        }
+    }
+
+    @InitiatedBy(protocol = PROTOCOL, version=(intArrayOf(1, 2)))
+    private class MyResponderFlowV1And2 : ResponderFlow {
+        override fun call(session: FlowSession) {
+        }
+    }
+
+    @InitiatingFlow(protocol = PROTOCOL2)
     private class MyRPCFlow : ClientStartableFlow {
         override fun call(requestBody: ClientRequestBody): String {
             return ""
