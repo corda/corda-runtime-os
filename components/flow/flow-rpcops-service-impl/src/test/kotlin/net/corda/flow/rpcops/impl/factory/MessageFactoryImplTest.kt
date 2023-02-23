@@ -12,9 +12,10 @@ import java.util.UUID
 
 internal class MessageFactoryImplTest {
 
-    private lateinit var messageFactory: MessageFactoryImpl
+    private val messageFactory = MessageFactoryImpl()
     private val clientRequestId = UUID.randomUUID().toString()
     val FLOW1 = "flow1"
+    val instantTimestamp = Instant.now().minusMillis(1)
 
     private fun getStubVirtualNode(): VirtualNodeInfo {
         return VirtualNodeInfo(
@@ -37,10 +38,9 @@ internal class MessageFactoryImplTest {
 
     @Test
     fun `createFlowStatusResponse returns last updated timestamp`() {
-        messageFactory = MessageFactoryImpl()
         val virtualNodeInfo = getStubVirtualNode()
         val status = messageFactory.createStartFlowStatus(clientRequestId, virtualNodeInfo.toAvro(), FLOW1)
-        messageFactory.createFlowStatusResponse(status)
-        assertThat(status.lastUpdateTimestamp).isNotEqualTo(Instant.now())
+        val response = messageFactory.createFlowStatusResponse(status)
+        assertThat(response.timestamp).isEqualTo(status.lastUpdateTimestamp)
     }
 }
