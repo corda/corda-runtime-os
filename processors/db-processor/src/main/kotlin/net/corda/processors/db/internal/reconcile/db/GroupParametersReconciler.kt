@@ -68,7 +68,7 @@ class GroupParametersReconciler(
     @VisibleForTesting
     internal var reconciler: Reconciler? = null
 
-    override fun close() {
+    override fun stop() {
         lock.withLock {
             dbReconcilerReader?.stop()
             dbReconcilerReader = null
