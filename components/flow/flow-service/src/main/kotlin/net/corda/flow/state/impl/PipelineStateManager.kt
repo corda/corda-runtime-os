@@ -35,7 +35,7 @@ class PipelineStateManager(
     }
 
     val cpk: Set<SecureHash>
-        get() = state.cpks.map { SecureHash(it.algorithm, it.bytes.array()) }.toSet()
+        get() = state.cpkFileHashes.map { SecureHash(it.algorithm, it.bytes.array()) }.toSet()
 
     val retryState: RetryState?
         get() = state.retryState
@@ -71,10 +71,10 @@ class PipelineStateManager(
     }
 
     fun populateCpks(cpks: Set<SecureHash>) {
-        if (state.cpks.isNullOrEmpty()) {
-            state.cpks = cpks.map { net.corda.data.crypto.SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
+        if (state.cpkFileHashes.isNullOrEmpty()) {
+            state.cpkFileHashes = cpks.map { net.corda.data.crypto.SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
         } else {
-            throw IllegalStateException("cpk list ${state.cpks} cannot be updated to $cpks once set")
+            throw IllegalStateException("cpk list ${state.cpkFileHashes} cannot be updated to $cpks once set")
         }
     }
 
