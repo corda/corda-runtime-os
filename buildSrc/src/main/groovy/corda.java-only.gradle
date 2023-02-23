@@ -2,7 +2,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
-tasks.matching { it.name ==~ 'compile.*Kotlin' }.configureEach {
+tasks.named('compileKotlin') {
     doFirst {
         throw new InvalidUserCodeException("Module '${project.path}' should only contain Java classes")
     }

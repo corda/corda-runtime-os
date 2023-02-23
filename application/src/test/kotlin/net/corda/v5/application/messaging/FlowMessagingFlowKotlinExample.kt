@@ -18,7 +18,7 @@ class FlowMessagingFlowKotlinExample : ClientStartableFlow  {
 
         val session = flowMessaging.initiateFlow(counterparty)
 
-        val result = session.sendAndReceive<String>("hello")
+        val result = session.sendAndReceive(String::class.java, "hello")
 
         session.close()
 
