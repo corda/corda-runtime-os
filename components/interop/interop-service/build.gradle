@@ -20,10 +20,14 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.12.4"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.5"
 
     implementation project(":libs:membership:membership-common")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(":components:virtual-node:cpi-info-read-service")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -42,4 +46,6 @@ dependencies {
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
+    integrationTestImplementation project(':testing:cpi-info-read-service-fake')
 }
