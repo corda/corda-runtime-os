@@ -14,8 +14,8 @@ import net.corda.messaging.api.records.Record
  *
  * @param checkpoint The [FlowCheckpoint] of a flow that should be modified by the pipeline.
  * @param inputEvent The received [FlowEvent].
- * @param isRetryEvent Indicates whether we should clear the retry state in the flow checkpoint when this event is processed.
  * @param inputEventPayload The received [FlowEvent.payload].
+ * @param isRetryEvent Indicates whether we should clear the retry state in the flow checkpoint when this event is processed.
  * @param outputRecords The [Record]s that should be sent back to the message bus when the pipeline completes.
  * @param T The type of [FlowEvent.payload].
  * @param mdcProperties properties to set the flow fibers MDC with.
@@ -23,9 +23,9 @@ import net.corda.messaging.api.records.Record
 data class FlowEventContext<T>(
     val checkpoint: FlowCheckpoint,
     val inputEvent: FlowEvent,
-    var isRetryEvent: Boolean = false,
     var inputEventPayload: T,
     val config: SmartConfig,
+    var isRetryEvent: Boolean = false,
     val outputRecords: List<Record<*, *>>,
     val sendToDlq: Boolean = false,
     val mdcProperties: Map<String, String>
