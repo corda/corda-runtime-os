@@ -32,7 +32,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.httprpc.exception.BadRequestException
-import net.corda.membership.impl.rest.v1.MemberLookupRestResourceImpl
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
