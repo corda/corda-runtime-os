@@ -32,7 +32,7 @@ import java.util.UUID
 
 class MemberOpsAsyncProcessorTest {
     private companion object {
-        const val INVALID_REASON = "Registration failed because the request was invalid."
+        const val FAILURE_REASON = "oops"
     }
 
     private val shortHash = ShortHash.of("123123123123")
@@ -209,7 +209,7 @@ class MemberOpsAsyncProcessorTest {
     fun `onNext when the request is not available will be ignored`() {
         whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
             MembershipQueryResult.Failure(
-                "oops"
+                FAILURE_REASON
             )
         )
         val id = UUID(0, 1)
@@ -305,7 +305,7 @@ class MemberOpsAsyncProcessorTest {
     fun `onNext with invalid request will persist the invalid state`() {
         val id = UUID(0, 1)
         whenever(registrationProxy.register(any(), any(), any()))
-            .doThrow(InvalidMembershipRegistrationException("oops"))
+            .doThrow(InvalidMembershipRegistrationException(FAILURE_REASON))
 
         processor.onNext(
             listOf(
@@ -335,7 +335,7 @@ class MemberOpsAsyncProcessorTest {
             identity,
             id.toString(),
             RegistrationStatus.INVALID,
-            INVALID_REASON,
+            FAILURE_REASON,
         )
     }
 
@@ -343,7 +343,7 @@ class MemberOpsAsyncProcessorTest {
     fun `onNext with not ready error will not throw an exception`() {
         val id = UUID(0, 1)
         whenever(registrationProxy.register(any(), any(), any()))
-            .doThrow(NotReadyMembershipRegistrationException("oops"))
+            .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
 
         assertDoesNotThrow {
             processor.onNext(

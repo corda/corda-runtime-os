@@ -23,7 +23,6 @@ internal class MemberOpsAsyncProcessor(
     private val membershipQueryClient: MembershipQueryClient,
 ) : DurableProcessor<String, MembershipAsyncRequest> {
     private companion object {
-        const val INVALID_REASON = "Registration failed because the request was invalid."
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     override fun onNext(events: List<Record<String, MembershipAsyncRequest>>): List<Record<*, *>> {
@@ -89,7 +88,7 @@ internal class MemberOpsAsyncProcessor(
                 holdingIdentity,
                 registrationId.toString(),
                 RegistrationStatus.INVALID,
-                INVALID_REASON,
+                e.message?.take(255),
             )
             logger.warn("Registration ${request.requestId} failed.", e)
         }
