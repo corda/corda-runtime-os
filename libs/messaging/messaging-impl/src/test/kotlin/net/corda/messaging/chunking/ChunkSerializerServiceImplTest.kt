@@ -25,6 +25,7 @@ class ChunkSerializerServiceImplTest {
         const val maxAllowedMsgSize = 1024 * 50L
         val someSmallBytes = ByteArray(1)
         val someLargeBytes = ByteArray(1024 * 120)
+        val someExtraLargeBytes = ByteArray(1024 * 240)
     }
 
     private lateinit var serializer: CordaAvroSerializer<Any>
@@ -35,6 +36,9 @@ class ChunkSerializerServiceImplTest {
     private val value: String = "somevalue"
     private val key: String = "somekey"
 
+    private val mockedLargeObject1: Any = mock()
+    private val mockedExtraLargeObject2: Any = mock()
+
     @BeforeEach
     fun setup() {
         serializer = mock()
@@ -42,7 +46,6 @@ class ChunkSerializerServiceImplTest {
         producerRecord = mock()
         platformDigestService = mock()
         chunkSerializerService = ChunkSerializerServiceImpl(maxAllowedMsgSize, serializer, chunkBuilderService, platformDigestService)
-
         var partNumber = 0
         doAnswer {
             partNumber += 1
@@ -73,6 +76,9 @@ class ChunkSerializerServiceImplTest {
         whenever(producerRecord.value).thenReturn(value)
         whenever(serializer.serialize(key)).thenReturn(someSmallBytes)
         whenever(serializer.serialize(value)).thenReturn(someLargeBytes)
+
+        whenever(serializer.serialize(mockedLargeObject1)).thenReturn(someLargeBytes)
+        whenever(serializer.serialize(mockedExtraLargeObject2)).thenReturn(someExtraLargeBytes)
     }
 
     @Test
@@ -114,5 +120,22 @@ class ChunkSerializerServiceImplTest {
 
         verify(chunkBuilderService, times(3)).buildChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
         verify(chunkBuilderService, times(1)).buildFinalChunk(any(), any(), any(), any(), anyOrNull(), anyOrNull())
+    }
+
+    @Test
+    fun `getChunkKeysToClear when old state is larger than the new state returns chuunks that need to be cleared`() {
+        val result = chunkSerializerService.getChunkKeysToClear(key, mockedExtraLargeObject2, mockedLargeObject1)
+        assertThat(result).isNotNull
+        assertThat(result?.size).isEqualTo(3)
+
+        verify(serializer, times(3)).serialize(any())
+    }
+
+    @Test
+    fun `getChunkKeysToClear when old state is smaller than the new state returns no chunks to clear`() {
+        val result = chunkSerializerService.getChunkKeysToClear(key, mockedLargeObject1, mockedExtraLargeObject2)
+        assertThat(result).isNull()
+
+        verify(serializer, times(2)).serialize(any())
     }
 }

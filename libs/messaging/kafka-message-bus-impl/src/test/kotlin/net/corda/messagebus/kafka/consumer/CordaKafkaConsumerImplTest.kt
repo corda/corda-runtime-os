@@ -14,6 +14,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
+import net.corda.messaging.kafka.subscription.generateChunkedCleanupRecordsList
 import net.corda.messaging.kafka.subscription.generateConsumerRecords
 import net.corda.messaging.kafka.subscription.generateMockChunkedConsumerRecordsList
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecords
@@ -506,6 +507,24 @@ class CordaKafkaConsumerImplTest {
         assertThat(secondResult.size).isEqualTo(3)
         verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
         verify(chunkDeserializerService, times(1)).assembleChunks(any<Map<ChunkKey, Chunk>>())
+    }
+
+
+    @Test
+    fun `Receiving ChunkKey cleanup records has no effect`() {
+        consumer = mock()
+
+        val cleanupRecords = generateConsumerRecords(generateChunkedCleanupRecordsList(10, eventTopic, 0), eventTopic, 0)
+        whenever(consumer.poll(Mockito.any(Duration::class.java))).thenReturn(cleanupRecords)
+
+        cordaKafkaConsumer = createConsumer(consumer)
+
+        val firstResult = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
+        val secondResult = cordaKafkaConsumer.poll(Duration.ofMillis(100L))
+        assertThat(firstResult.size).isEqualTo(0)
+        assertThat(secondResult.size).isEqualTo(0)
+        verify(consumer, times(2)).poll(Mockito.any(Duration::class.java))
+        verify(chunkDeserializerService, times(0)).assembleChunks(any<Map<ChunkKey, Chunk>>())
     }
 
 
