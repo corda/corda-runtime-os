@@ -15,4 +15,12 @@ class FakeClientRequestBody: ClientRequestBody {
     override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
         TODO("Not yet implemented")
     }
+
+    override fun <K, V> getRequestBodyAsMap(
+        marshallingService: MarshallingService,
+        keyClass: Class<K>,
+        valueClass: Class<V>
+    ): MutableMap<K, V> {
+        TODO("Not yet implemented")
+    }
 }

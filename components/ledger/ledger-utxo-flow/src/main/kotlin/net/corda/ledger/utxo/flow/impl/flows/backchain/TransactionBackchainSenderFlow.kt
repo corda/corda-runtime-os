@@ -5,7 +5,6 @@ import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.trace
@@ -17,7 +16,7 @@ import org.slf4j.LoggerFactory
 class TransactionBackchainSenderFlow(private val transaction: UtxoSignedTransaction, private val session: FlowSession) : SubFlow<Unit> {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(TransactionBackchainSenderFlow::class.java)
+        private val log: Logger = LoggerFactory.getLogger(TransactionBackchainSenderFlow::class.java)
     }
 
     @CordaInject
@@ -30,7 +29,7 @@ class TransactionBackchainSenderFlow(private val transaction: UtxoSignedTransact
                     "so that the backchain can be resolved"
         }
         while (true) {
-            when (val request = session.receive<TransactionBackchainRequest>()) {
+            when (val request = session.receive(TransactionBackchainRequest::class.java)) {
                 is TransactionBackchainRequest.Get -> {
                     val transactions = request.transactionIds.map { id ->
                         utxoLedgerPersistenceService.find(id)

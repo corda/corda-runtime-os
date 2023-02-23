@@ -5,7 +5,6 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
@@ -23,7 +22,7 @@ class BrokenProtocolFlow : ClientStartableFlow {
         val session = messaging.initiateFlow(
             MemberX500Name("Alice", "Alice Corp", "LDN", "GB")
         )
-        session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1))
+        session.sendAndReceive(MyClass::class.java, MyClass("Serialize me please", 1))
         return ""
     }
 }

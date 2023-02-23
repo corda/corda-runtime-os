@@ -5,8 +5,6 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.data.flow.FlowStartContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.application.flows.getRequestBodyAs
-import net.corda.v5.application.flows.getRequestBodyAsList
 import net.corda.v5.application.marshalling.MarshallingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -23,13 +21,13 @@ class ClientRequestBodyImplTest {
     @Test
     fun `rpc request data is retrieved when getRequestBody is called`() {
         val requestData = ClientRequestBodyImpl(setupStartArgs(TEST_START_ARGS))
-        assertEquals(TEST_START_ARGS, requestData.getRequestBody())
+        assertEquals(TEST_START_ARGS, requestData.requestBody)
     }
 
     @Test
     fun `rpc request data can marshal request body to a type`() {
         val requestData = ClientRequestBodyImpl(setupStartArgs(TEST_START_ARGS))
-        assertEquals(TestData("bar"), requestData.getRequestBodyAs<TestData>(TestMarshallingService()))
+        assertEquals(TestData("bar"), requestData.getRequestBodyAs(TestMarshallingService(), TestData::class.java))
     }
 
     @Test
@@ -37,7 +35,7 @@ class ClientRequestBodyImplTest {
         val requestData = ClientRequestBodyImpl(setupStartArgs(LIST_START_ARGS))
         assertEquals(
             listOf(TestData("bar"), TestData("baz")),
-            requestData.getRequestBodyAsList<TestData>(TestMarshallingService())
+            requestData.getRequestBodyAsList(TestMarshallingService(), TestData::class.java)
         )
     }
 
@@ -59,6 +57,13 @@ class ClientRequestBodyImplTest {
             return objectMapper.readValue(
                 input,
                 objectMapper.typeFactory.constructCollectionType(List::class.java, clazz)
+            )
+        }
+
+        override fun <K, V> parseMap(input: String, keyClass: Class<K>, valueClass: Class<V>): Map<K, V> {
+            return objectMapper.readValue(
+                input,
+                objectMapper.typeFactory.constructMapType(LinkedHashMap::class.java, keyClass, valueClass)
             )
         }
     }
