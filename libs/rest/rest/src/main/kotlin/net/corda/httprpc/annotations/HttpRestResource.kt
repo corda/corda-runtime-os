@@ -1,4 +1,4 @@
-package net.corda.httprpc.annotations
+package net.corda.rest.annotations
 
 /**
  * Marks an interface extending `RestResource` to be exposed as an HTTP resource.

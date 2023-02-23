@@ -2,9 +2,9 @@ package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import java.lang.IllegalArgumentException
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
-import net.corda.httprpc.security.RestAuthContext
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.security.RestAuthContext
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -21,9 +21,9 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.httprpc.ResponseCode
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.rest.ResponseCode
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto

@@ -1,4 +1,4 @@
-package net.corda.httprpc.tools
+package net.corda.rest.tools
 
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory

@@ -1,11 +1,11 @@
-package net.corda.httprpc.tools.annotations.validation
+package net.corda.rest.tools.annotations.validation
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.tools.annotations.validation.utils.getParameterName
-import net.corda.httprpc.tools.annotations.validation.utils.isBodyParameter
-import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.tools.annotations.validation.utils.getParameterName
+import net.corda.rest.tools.annotations.validation.utils.isBodyParameter
+import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
 import java.lang.reflect.Method
 
 /**

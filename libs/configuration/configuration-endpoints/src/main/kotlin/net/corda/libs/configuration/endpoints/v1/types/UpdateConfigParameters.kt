@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.endpoints.v1.types
 
-import net.corda.httprpc.JsonObject
+import net.corda.rest.JsonObject
 
 /**
  * The data object sent via HTTP to request a cluster configuration update.

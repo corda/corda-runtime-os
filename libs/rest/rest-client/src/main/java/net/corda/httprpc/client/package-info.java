@@ -1,4 +1,4 @@
 @Export
-package net.corda.httprpc.client;
+package net.corda.rest.client;
 
 import org.osgi.annotation.bundle.Export;

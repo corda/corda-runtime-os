@@ -1,4 +1,4 @@
 @Export
-package net.corda.httprpc.client.auth.scheme;
+package net.corda.rest.client.auth.scheme;
 
 import org.osgi.annotation.bundle.Export;

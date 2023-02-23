@@ -1,7 +1,7 @@
-package net.corda.httprpc.ssl.impl
+package net.corda.rest.ssl.impl
 
-import net.corda.httprpc.ssl.KeyStoreInfo
-import net.corda.httprpc.ssl.SslCertReadService
+import net.corda.rest.ssl.KeyStoreInfo
+import net.corda.rest.ssl.SslCertReadService
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.File

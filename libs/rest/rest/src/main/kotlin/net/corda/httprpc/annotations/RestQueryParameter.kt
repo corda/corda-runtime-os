@@ -1,4 +1,4 @@
-package net.corda.httprpc.annotations
+package net.corda.rest.annotations
 
 /**
  * Marks a function parameter of a function annotated with HTTP Endpoint annotation as a query parameter.

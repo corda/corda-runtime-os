@@ -1,9 +1,9 @@
 package net.corda.cli.plugins.common
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.client.RestClient
-import net.corda.httprpc.client.config.RestClientConfig
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.rest.RestResource
+import net.corda.rest.client.RestClient
+import net.corda.rest.client.config.RestClientConfig
+import net.corda.rest.exception.ResourceAlreadyExistsException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration

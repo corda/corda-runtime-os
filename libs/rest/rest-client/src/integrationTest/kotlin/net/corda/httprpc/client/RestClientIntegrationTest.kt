@@ -1,20 +1,20 @@
-package net.corda.httprpc.client
+package net.corda.rest.client
 
-import net.corda.httprpc.client.config.RestClientConfig
-import net.corda.httprpc.server.config.models.RestServerSettings
-import net.corda.httprpc.server.impl.RestServerImpl
-import net.corda.httprpc.test.CalendarRestResource
-import net.corda.httprpc.test.CalendarRestResourceImpl
-import net.corda.httprpc.test.CustomSerializationAPI
-import net.corda.httprpc.test.CustomSerializationAPIImpl
-import net.corda.httprpc.test.CustomString
-import net.corda.httprpc.test.NumberSequencesRestResource
-import net.corda.httprpc.test.NumberSequencesRestResourceImpl
-import net.corda.httprpc.test.NumberTypeEnum
-import net.corda.httprpc.test.TestEntityRestResource
-import net.corda.httprpc.test.TestEntityRestResourceImpl
-import net.corda.httprpc.test.TestHealthCheckAPI
-import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.rest.client.config.RestClientConfig
+import net.corda.rest.server.config.models.RestServerSettings
+import net.corda.rest.server.impl.RestServerImpl
+import net.corda.rest.test.CalendarRestResource
+import net.corda.rest.test.CalendarRestResourceImpl
+import net.corda.rest.test.CustomSerializationAPI
+import net.corda.rest.test.CustomSerializationAPIImpl
+import net.corda.rest.test.CustomString
+import net.corda.rest.test.NumberSequencesRestResource
+import net.corda.rest.test.NumberSequencesRestResourceImpl
+import net.corda.rest.test.NumberTypeEnum
+import net.corda.rest.test.TestEntityRestResource
+import net.corda.rest.test.TestEntityRestResourceImpl
+import net.corda.rest.test.TestHealthCheckAPI
+import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.test.util.eventually
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.seconds
@@ -33,11 +33,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.fail
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.test.TestFileUploadAPI
-import net.corda.httprpc.test.TestFileUploadImpl
-import net.corda.httprpc.test.utils.ChecksumUtil.generateChecksum
-import net.corda.httprpc.test.utils.multipartDir
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.test.TestFileUploadAPI
+import net.corda.rest.test.TestFileUploadImpl
+import net.corda.rest.test.utils.ChecksumUtil.generateChecksum
+import net.corda.rest.test.utils.multipartDir
 
 internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     companion object {

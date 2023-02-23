@@ -5,8 +5,8 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.CryptoTenants.RPC_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

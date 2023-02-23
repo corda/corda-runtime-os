@@ -1,8 +1,8 @@
 package net.corda.virtualnode.rpcops.impl.validation.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.ShortHash

@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.config
+package net.corda.rest.server.config
 
 import net.corda.utilities.NetworkHostAndPort
 import java.nio.file.Path

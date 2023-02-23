@@ -8,8 +8,8 @@ import net.corda.crypto.core.CryptoConsts.Categories.TLS
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.CryptoTenants.RPC_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler

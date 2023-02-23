@@ -9,11 +9,11 @@ import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

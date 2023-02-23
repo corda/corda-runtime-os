@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.config.models
+package net.corda.rest.server.config.models
 
 import java.nio.file.Path
 

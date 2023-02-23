@@ -1,4 +1,4 @@
-package net.corda.httprpc.durablestream.api;
+package net.corda.rest.durablestream.api;
 
 import kotlin.Unit;
 import org.assertj.core.api.Assertions;

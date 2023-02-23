@@ -1,8 +1,8 @@
 package net.corda.membership.impl.rest.v1
 
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler

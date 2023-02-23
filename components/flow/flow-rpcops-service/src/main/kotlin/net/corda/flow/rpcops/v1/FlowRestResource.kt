@@ -3,15 +3,15 @@ package net.corda.flow.rpcops.v1
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.ClientRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.annotations.HttpWS
-import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.ws.DuplexChannel
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.HttpWS
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfig
 
 /** Rest operations for flow management. */

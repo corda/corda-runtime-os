@@ -1,8 +1,8 @@
 package net.corda.libs.permissions.endpoints.common
 
 import java.util.concurrent.TimeoutException
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
