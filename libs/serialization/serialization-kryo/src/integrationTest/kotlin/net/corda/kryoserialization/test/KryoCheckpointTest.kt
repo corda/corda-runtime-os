@@ -26,8 +26,12 @@ import java.util.concurrent.Executors
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class KryoCheckpointTest {
-    @RegisterExtension
-    private val lifecycle = AllTestsLifecycle()
+
+    companion object {
+        @JvmStatic
+        @RegisterExtension
+        private val lifecycle = AllTestsLifecycle()
+    }
 
     @InjectService(timeout = 1000)
     lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory

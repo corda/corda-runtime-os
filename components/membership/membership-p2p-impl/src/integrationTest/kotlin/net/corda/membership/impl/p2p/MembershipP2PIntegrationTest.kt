@@ -231,6 +231,7 @@ class MembershipP2PIntegrationTest {
             }
         }
 
+        @JvmStatic
         @AfterAll
         fun tearDown() {
             p2pSender.close()

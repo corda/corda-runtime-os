@@ -41,8 +41,12 @@ const val TIMEOUT_MILLIS = 30000L
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class CommonLedgerIntegrationTest {
-    @RegisterExtension
-    val lifecycle = AllTestsLifecycle()
+
+    companion object {
+        @JvmStatic
+        @RegisterExtension
+        val lifecycle = AllTestsLifecycle()
+    }
 
     open val testingCpb = "/META-INF/ledger-common-empty-app.cpb"
 

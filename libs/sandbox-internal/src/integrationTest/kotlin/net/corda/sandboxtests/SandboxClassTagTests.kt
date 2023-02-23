@@ -27,8 +27,11 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class SandboxClassTagTests {
-    @RegisterExtension
-    private val lifecycle = AllTestsLifecycle()
+    companion object {
+        @JvmStatic
+        @RegisterExtension
+        private val lifecycle = AllTestsLifecycle()
+    }
 
     private lateinit var sandboxFactory: SandboxFactory
 
