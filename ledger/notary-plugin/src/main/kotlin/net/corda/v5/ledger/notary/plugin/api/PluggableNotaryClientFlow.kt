@@ -10,8 +10,12 @@ import net.corda.v5.application.flows.SubFlow
  * The client flow must implement this interface in order for it to be instantiated in the provider.
  * If the client flow doesn't implement this interface the plugin selection will not work.
  *
- * Implementations must specify the [InitiatingFlow][net.corda.v5.application.flows.InitiatingFlow] annotation.
- * Further, the [call] method must specify the [Suspendable][net.corda.v5.base.annotations.Suspendable] annotation.
+ * Implementations must:
+ * - Specify the [InitiatingFlow][net.corda.v5.application.flows.InitiatingFlow] annotation.
+ * - Provide a constructor which takes exactly two arguments: a [UtxoSignedTransaction][net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction]
+ *   representing the transaction, and a [Party][net.corda.v5.ledger.common.Party] which is
+ *   populated with the notary virtual node representing the notary service.
+ * - The [call] method must specify the [Suspendable][net.corda.v5.base.annotations.Suspendable] annotation.
  *
  * The server side will not have an interface like the client, it will only implement the
  * [ResponderFlow][net.corda.v5.application.flows.ResponderFlow] interface.
