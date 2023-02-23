@@ -2,8 +2,6 @@ package net.cordapp.demo.utxo
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
-import net.corda.v5.application.marshalling.parse
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -34,10 +32,10 @@ class TestPeekTransactionFlow {
 
             val badRequest = mock<ClientRequestBody>()
             val body = PeekTransactionParameters(txIdBad.toString())
-            whenever(badRequest.getRequestBodyAs<PeekTransactionParameters>(jsonMarshallingService)).thenReturn(body)
+            whenever(badRequest.getRequestBodyAs(jsonMarshallingService, PeekTransactionParameters::class.java)).thenReturn(body)
 
             val result = flow.call(badRequest)
-            val resObj = jsonMarshallingService.parse<PeekTransactionResponse>(result)
+            val resObj = jsonMarshallingService.parse(result, PeekTransactionResponse::class.java)
             Assertions.assertThat(resObj.inputs).isEmpty()
             Assertions.assertThat(resObj.outputs).isEmpty()
             Assertions.assertThat(resObj.errorMessage)
@@ -80,10 +78,10 @@ class TestPeekTransactionFlow {
 
             val goodRequest = mock<ClientRequestBody>()
             val body = PeekTransactionParameters(txIdGood.toString())
-            whenever(goodRequest.getRequestBodyAs<PeekTransactionParameters>(jsonMarshallingService)).thenReturn(body)
+            whenever(goodRequest.getRequestBodyAs(jsonMarshallingService, PeekTransactionParameters::class.java)).thenReturn(body)
 
             val result = flow.call(goodRequest)
-            val resObj = jsonMarshallingService.parse<PeekTransactionResponse>(result)
+            val resObj = jsonMarshallingService.parse(result, PeekTransactionResponse::class.java)
             Assertions.assertThat(resObj.inputs).isEmpty()
             Assertions.assertThat(resObj.outputs).hasSize(1)
             Assertions.assertThat(resObj.outputs.first().testField).isEqualTo("text")

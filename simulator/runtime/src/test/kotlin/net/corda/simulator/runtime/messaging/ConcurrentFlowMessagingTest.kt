@@ -10,7 +10,6 @@ import net.corda.simulator.runtime.testflows.PingAckMessage
 import net.corda.simulator.runtime.testflows.PingAckResponderFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -278,9 +277,9 @@ class ConcurrentFlowMessagingTest {
         )
 
         // Then each recipient should receive the message
-        assertThat(senderAndReceiver1Sessions.second.receive<PingAckMessage>().message, `is`("Ping"))
-        assertThat(senderAndReceiver2Sessions.second.receive<PingAckMessage>().message, `is`("Ping"))
-        assertThat(senderAndReceiver3Sessions.second.receive<PingAckMessage>().message, `is`("Ping"))
+        assertThat(senderAndReceiver1Sessions.second.receive(PingAckMessage::class.java).message, `is`("Ping"))
+        assertThat(senderAndReceiver2Sessions.second.receive(PingAckMessage::class.java).message, `is`("Ping"))
+        assertThat(senderAndReceiver3Sessions.second.receive(PingAckMessage::class.java).message, `is`("Ping"))
 
         // Also when we send different type of messages to different recipients
         val payload2 = Message("Ping2")
@@ -293,9 +292,9 @@ class ConcurrentFlowMessagingTest {
         flowMessaging.sendAllMap(map)
 
         // Then each recipient should receive the correct message
-        assertThat(senderAndReceiver1Sessions.second.receive<PingAckMessage>().message, `is`("Ping"))
-        assertThat(senderAndReceiver2Sessions.second.receive<Message>().message, `is`("Ping2"))
-        assertThat(senderAndReceiver3Sessions.second.receive<Message>().message, `is`("Ping3"))
+        assertThat(senderAndReceiver1Sessions.second.receive(PingAckMessage::class.java).message, `is`("Ping"))
+        assertThat(senderAndReceiver2Sessions.second.receive(Message::class.java).message, `is`("Ping2"))
+        assertThat(senderAndReceiver3Sessions.second.receive(Message::class.java).message, `is`("Ping3"))
     }
 
     @Test
