@@ -1,13 +1,13 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
-import java.lang.Exception
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
@@ -34,8 +34,7 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val virtualNodeInfoPublisher: Publisher,
     private val migrationUtility: MigrationUtility,
-    private val getCurrentChangelogsForCpi: (EntityManager, String, String, String) -> List<CpkDbChangeLogEntity> =
-        ::findCurrentCpkChangeLogsForCpi,
+    private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
 
@@ -195,13 +194,7 @@ internal class VirtualNodeUpgradeOperationHandler(
             requestId, requestTimestamp, request.toString()
         )
 
-        val migrationChangelogs: List<CpkDbChangeLogEntity> =
-            getCurrentChangelogsForCpi(
-                em,
-                targetCpiMetadata.id.name,
-                targetCpiMetadata.id.version,
-                targetCpiMetadata.id.signerSummaryHash.toString()
-            )
+        val migrationChangelogs: List<CpkDbChangeLog> = cpkDbChangeLogRepository.findByCpiId(em, targetCpiMetadata.id)
 
         return UpgradeTransactionCompleted(
             upgradedVnodeInfo,
@@ -210,7 +203,7 @@ internal class VirtualNodeUpgradeOperationHandler(
     }
 
     private fun tryRunningMigrationsInProcess(
-        changelogs: List<CpkDbChangeLogEntity>,
+        changelogs: List<CpkDbChangeLog>,
         vaultDdlConnectionId: UUID,
         requestId: String,
         request: VirtualNodeUpgradeRequest
@@ -258,7 +251,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
     data class UpgradeTransactionCompleted(
         val upgradedVirtualNodeInfo: VirtualNodeInfo,
-        val cpkChangelogs: List<CpkDbChangeLogEntity>
+        val cpkChangelogs: List<CpkDbChangeLog>
     )
 
     private fun VirtualNodeUpgradeRequest.validateMandatoryFields() {

@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel
+package net.corda.libs.cpi.datamodel.entities
 
 import java.io.Serializable
 import java.time.Instant
@@ -19,7 +19,7 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = "cpi_cpk")
-data class CpiCpkEntity(
+class CpiCpkEntity(
     @EmbeddedId
     val id: CpiCpkKey,
     @Column(name = "cpk_file_name", nullable = false)
@@ -42,10 +42,24 @@ data class CpiCpkEntity(
     fun onUpdate() {
         insertTimestamp = Instant.now()
     }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as CpiCpkEntity
+
+        if (id != other.id) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
 }
 
 @Embeddable
-data class CpiCpkKey(
+class CpiCpkKey(
     @Column(name = "cpi_name")
     val cpiName: String,
     @Column(name = "cpi_version")
@@ -54,4 +68,27 @@ data class CpiCpkKey(
     val cpiSignerSummaryHash: String,
     @Column(name = "cpk_file_checksum")
     val cpkFileChecksum: String,
-): Serializable
+): Serializable {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as CpiCpkKey
+
+        if (cpiName != other.cpiName) return false
+        if (cpiVersion != other.cpiVersion) return false
+        if (cpiSignerSummaryHash != other.cpiSignerSummaryHash) return false
+        if (cpkFileChecksum != other.cpkFileChecksum) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = cpiName.hashCode()
+        result = 31 * result + cpiVersion.hashCode()
+        result = 31 * result + cpiSignerSummaryHash.hashCode()
+        result = 31 * result + cpkFileChecksum.hashCode()
+        return result
+    }
+}

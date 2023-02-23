@@ -2,14 +2,15 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
 
-private fun createCertificate() = CpiLoader::class.java.classLoader.getResource("certificate.pem")!!
+private fun createCertificate(certificateResource: String) = CpiLoader::class.java.classLoader.getResource(certificateResource)!!
     .readText()
     .replace("\r", "")
     .replace("\n", System.lineSeparator())
 
 fun getDefaultStaticNetworkGroupPolicy(
     groupId: String,
-    staticMemberNames: List<String>
+    staticMemberNames: List<String>,
+    certificateResource : String = "certificate.pem"
 ): String {
     val groupPolicy = mapOf(
         "fileFormatVersion" to 1,
@@ -33,11 +34,11 @@ fun getDefaultStaticNetworkGroupPolicy(
         ),
         "p2pParameters" to mapOf(
             "sessionTrustRoots" to listOf(
-                createCertificate(),
-                createCertificate()
+                createCertificate(certificateResource),
+                createCertificate(certificateResource)
             ),
             "tlsTrustRoots" to listOf(
-                createCertificate()
+                createCertificate(certificateResource)
             ),
             "sessionPki" to "Standard",
             "tlsPki" to "Standard",

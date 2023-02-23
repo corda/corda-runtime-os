@@ -101,7 +101,7 @@ internal class MgmAllowedCertificateSubjectsReconciler(
             }
     }
 
-    override fun close() {
+    override fun stop() {
         dbReconcilerReader?.stop()
         dbReconcilerReader = null
         reconciler?.stop()

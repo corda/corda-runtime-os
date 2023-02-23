@@ -1,4 +1,4 @@
-package net.corda.flow.pipeline
+package net.corda.flow.pipeline.events
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.state.FlowCheckpoint
@@ -28,5 +28,3 @@ data class FlowEventContext<T>(
     val sendToDlq: Boolean = false,
     val mdcProperties: Map<String, String>
 )
-
-

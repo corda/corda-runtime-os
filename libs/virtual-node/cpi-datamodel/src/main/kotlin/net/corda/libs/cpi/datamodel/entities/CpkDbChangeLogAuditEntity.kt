@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel
+package net.corda.libs.cpi.datamodel.entities
 
 import java.time.Instant
 import javax.persistence.Column
@@ -12,7 +12,7 @@ import javax.persistence.Table
 @Suppress("LongParameterList")
 @Entity
 @Table(name = "cpk_db_change_log_audit")
-class CpkDbChangeLogAuditEntity(
+internal class CpkDbChangeLogAuditEntity(
     @Id
     val id: String,
     @Column(name = "cpk_file_checksum", nullable = false, updatable = false)

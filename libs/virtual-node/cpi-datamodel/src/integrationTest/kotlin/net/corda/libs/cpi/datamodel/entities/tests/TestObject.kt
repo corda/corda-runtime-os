@@ -1,17 +1,21 @@
-package net.corda.libs.cpi.datamodel.tests
+package net.corda.libs.cpi.datamodel.entities.tests
 
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.CpiCpkKey
+import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.v5.crypto.SecureHash
 
 object TestObject {
-    fun randomChecksumString(): String {
+    private fun randomChecksumString(): String {
         return "SHA-256:" + List(64) {
-            (('a'..'z') + ('A'..'Z') + ('0'..'9')).random()
+            (('a'..'f') + ('A'..'F') + ('0'..'9')).random()
         }.joinToString("")
+    }
+
+    fun randomChecksum(): SecureHash {
+        return SecureHash.parse(randomChecksumString())
     }
 
     fun createCpi(id: String, cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String, cpks: Set<CpiCpkEntity>) =

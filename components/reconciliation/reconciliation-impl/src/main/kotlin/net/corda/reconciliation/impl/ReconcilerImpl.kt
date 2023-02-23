@@ -45,6 +45,5 @@ internal class ReconcilerImpl<K : Any, V : Any>(
 
     override fun stop() {
         coordinator.stop()
-        coordinator.close()
     }
 }

@@ -11,6 +11,8 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
 
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:messaging:messaging")
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(':libs:virtual-node:virtual-node-info')
 }
