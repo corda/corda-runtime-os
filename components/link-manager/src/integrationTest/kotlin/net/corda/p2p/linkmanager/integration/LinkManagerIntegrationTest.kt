@@ -58,6 +58,7 @@ class LinkManagerIntegrationTest {
     companion object {
         private const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000
@@ -70,7 +71,7 @@ class LinkManagerIntegrationTest {
                 producer {
                     close.timeout = 6000
                 }
-            }
+            }`
       """
         private const val cryptoConf = """
         dummy=1

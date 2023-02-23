@@ -337,6 +337,7 @@ class FlowMapperServiceIntegrationTest {
 
     private val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

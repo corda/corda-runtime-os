@@ -132,6 +132,7 @@ class MembershipPersistenceTest {
         private const val MEMBER_CONTEXT_VALUE = "value"
         private const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

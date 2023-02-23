@@ -159,7 +159,7 @@ class MembershipP2PIntegrationTest {
             )
         private const val messagingConf = """
             componentVersion="5.1"
-            $MAX_ALLOWED_MSG_SIZE = 100000
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

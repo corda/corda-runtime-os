@@ -83,6 +83,7 @@ class MessageBusIntegrationTests {
 
         const val MESSAGING_CONFIG = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000
