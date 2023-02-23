@@ -261,7 +261,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val thisEventUpdates = getUpdatesForEvent(state, event)
         val updatedState = thisEventUpdates?.updatedState
 
-        generateChunkKeyCleanupRecords(key, state, updatedState, outputRecords)
 
         when {
             thisEventUpdates == null -> {
@@ -269,6 +268,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor failed to complete."
                 )
+                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
@@ -279,6 +279,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
                             "Processor marked event for the dead letter queue"
                 )
+                generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
                 outputRecords.add(Record(stateTopic, key, null))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
@@ -289,6 +290,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
 
             else -> {
+                generateChunkKeyCleanupRecords(key, state, updatedState, outputRecords)
                 outputRecords.addAll(thisEventUpdates.responseEvents)
                 outputRecords.add(Record(stateTopic, key, updatedState))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState

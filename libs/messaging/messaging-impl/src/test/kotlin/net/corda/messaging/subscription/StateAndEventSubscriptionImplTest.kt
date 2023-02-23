@@ -165,6 +165,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(5)).commitTransaction()
+        verify(chunkSerializerService, times(5)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
 
         assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
@@ -286,6 +287,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(5)).commitTransaction()
+        verify(chunkSerializerService, times(5)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
 
     }
 
@@ -338,6 +340,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(28)).sendRecords(any())
         verify(producer, times(28)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(28)).commitTransaction()
+        verify(chunkSerializerService, times(30)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -390,6 +393,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(3)).sendRecords(any())
         verify(producer, times(3)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(3)).commitTransaction()
+        verify(chunkSerializerService, times(30)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -448,6 +452,7 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(1)).commitTransaction()
+        verify(chunkSerializerService, times(1)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -512,6 +517,7 @@ class StateAndEventSubscriptionImplTest {
         })
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(1)).commitTransaction()
+        verify(chunkSerializerService, times(1)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -558,5 +564,6 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, never()).sendRecords(any())
         verify(producer, never()).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, never()).commitTransaction()
+        verify(chunkSerializerService, never()).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 }

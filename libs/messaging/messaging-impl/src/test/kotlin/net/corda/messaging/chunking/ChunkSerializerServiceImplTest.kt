@@ -25,7 +25,7 @@ class ChunkSerializerServiceImplTest {
         const val maxAllowedMsgSize = 1024 * 50L
         val someSmallBytes = ByteArray(1)
         val someLargeBytes = ByteArray(1024 * 120)
-        val someExtraLargeBytes = ByteArray(1024 * 240)
+        val someExtraLargeBytes = ByteArray(1024 * 220)
     }
 
     private lateinit var serializer: CordaAvroSerializer<Any>
@@ -123,12 +123,28 @@ class ChunkSerializerServiceImplTest {
     }
 
     @Test
-    fun `getChunkKeysToClear when old state is larger than the new state returns chuunks that need to be cleared`() {
+    fun `getChunkKeysToClear when old state is larger than the new state returns chunks that need to be cleared`() {
         val result = chunkSerializerService.getChunkKeysToClear(key, mockedExtraLargeObject2, mockedLargeObject1)
         assertThat(result).isNotNull
         assertThat(result?.size).isEqualTo(3)
 
         verify(serializer, times(3)).serialize(any())
+    }
+
+    @Test
+    fun `getChunkKeysToClear when new state is null cleans up all ChunkKeys`() {
+        val result = chunkSerializerService.getChunkKeysToClear(key, mockedExtraLargeObject2, null)
+        assertThat(result).isNotNull
+        assertThat(result?.size).isEqualTo(7)
+
+        verify(serializer, times(2)).serialize(any())
+    }
+
+    @Test
+    fun `getChunkKeysToClear when old state is null cleans up no ChunkKeys`() {
+        val result = chunkSerializerService.getChunkKeysToClear(key, null, mockedExtraLargeObject2)
+        assertThat(result).isNull()
+        verify(serializer, times(0)).serialize(any())
     }
 
     @Test

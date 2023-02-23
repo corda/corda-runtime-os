@@ -67,6 +67,7 @@ class ChunkSerializerServiceImpl(
     override fun getChunkKeysToClear(key: Any, oldValue: Any?, newValue: Any?): List<ChunkKey>? {
         return try {
             val oldValueChunkCount = getChunkCount(oldValue)
+            if (oldValueChunkCount == 0) return null
             val newValueChunkCount = getChunkCount(newValue)
             if (oldValueChunkCount > newValueChunkCount) {
                 generateChunkKeysToClear(key, oldValueChunkCount, newValueChunkCount)
