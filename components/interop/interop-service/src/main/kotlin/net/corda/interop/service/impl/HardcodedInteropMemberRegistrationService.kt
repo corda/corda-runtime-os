@@ -28,6 +28,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
 
+@Suppress("unused")
 @Component(service = [InteropMemberRegistrationService::class])
 class HardcodedInteropMemberRegistrationService @Activate constructor(): InteropMemberRegistrationService {
 

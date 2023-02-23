@@ -96,5 +96,3 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
                             val source: net.corda.data.identity.HoldingIdentity, val ttl: Instant? = null,
                             val messageId: String, val traceId: String? = null, val subsystem: String = SUBSYSTEM)
     }
-
-

@@ -3,6 +3,7 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -38,9 +39,9 @@ class InteropService @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
-    //@Reference(service = InteropMemberRegistrationService::class)
-    //private val registrationService: InteropMemberRegistrationService
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = InteropMemberRegistrationService::class)
+    private val registrationService: InteropMemberRegistrationService
 ) : Lifecycle {
 
     companion object {
@@ -52,14 +53,12 @@ class InteropService @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
-    //private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
     private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("$event")
         when (event) {
             is StartEvent -> {
-                //configurationReadService.start()
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
@@ -78,7 +77,6 @@ class InteropService @Activate constructor(
                     }
                 } else {
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                    //coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
                 }
             }
             is ConfigChangedEvent -> {
@@ -107,33 +105,33 @@ class InteropService @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         publisher?.start()
-//        logger.info("Publishing member infos")
-//        publisher?.publish(registrationService.createDummyMemberInfo())
-//        logger.info("Publishing hosted identities")
-//        publisher?.publish(registrationService.createDummyHostedIdentity())
-//        logger.info("Publishing seed message")
+        logger.info("Publishing member infos")
+        publisher?.publish(registrationService.createDummyMemberInfo())
+        logger.info("Publishing hosted identities")
+        publisher?.publish(registrationService.createDummyHostedIdentity())
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override val isRunning: Boolean
         get() {
-            logger.debug("isRunning=${coordinator.isRunning}")
+            logger.info("isRunning=${coordinator.isRunning}")
             return coordinator.isRunning
         }
 
     override fun start() {
-        logger.debug("starting")
+        logger.info("starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.debug("stopping")
+        logger.info("stopping")
         coordinator.stop()
     }
 
     @Suppress("unused")
     @Deactivate
     fun close() {
-        logger.debug("closing")
+        logger.info("closing")
         coordinator.close()
     }
 }
