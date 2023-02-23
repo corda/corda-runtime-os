@@ -95,7 +95,7 @@ fun UniquenessCheckResult.toNotarisationResponse(
         }
         is UniquenessCheckResultFailure -> NotarisationResponse(
             emptyList(),
-            uniquenessResult.error.toNotaryError(txId)
+            uniquenessResult.error.toNotaryException(txId)
         )
         else -> NotarisationResponse(
             emptyList(),
@@ -108,7 +108,7 @@ fun UniquenessCheckResult.toNotarisationResponse(
  * A helper function that will convert a [UniquenessCheckError] to a [NotaryException].
  */
 @Suspendable
-private fun UniquenessCheckError.toNotaryError(txId: SecureHash?): NotaryException {
+private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryException {
     return when (this) {
         is UniquenessCheckErrorInputStateConflict -> NotaryExceptionInputStateConflict(conflictingStates, txId)
         is UniquenessCheckErrorInputStateUnknown -> NotaryExceptionInputStateUnknown(unknownStates, txId)

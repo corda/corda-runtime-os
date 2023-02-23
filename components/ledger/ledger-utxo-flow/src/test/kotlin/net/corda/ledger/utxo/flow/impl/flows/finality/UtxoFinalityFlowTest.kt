@@ -335,7 +335,7 @@ class UtxoFinalityFlowTest {
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarization failed permanently with Unable to notarise transaction <Unknown> :" +
+                "Notarization failed permanently with Unable to notarise transaction <Unknown>:" +
                         " notarisation error.",
                 FinalityNotarizationFailureType.FATAL.value
             ), sessions
@@ -370,17 +370,17 @@ class UtxoFinalityFlowTest {
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         @CordaSerializable
-        class TestNotaryErrorNonFatal(
+        class TestNotaryExceptionNonFatal(
             errorText: String,
             txId: SecureHash? = null
         ) : NotaryException.NotaryExceptionUnknown(errorText, txId)
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow))
-            .thenThrow(TestNotaryErrorNonFatal("notarisation error"))
+            .thenThrow(TestNotaryExceptionNonFatal("notarisation error"))
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessage("Unable to notarise transaction <Unknown> : notarisation error")
+            .hasMessage("Unable to notarise transaction <Unknown>: notarisation error")
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
@@ -407,7 +407,7 @@ class UtxoFinalityFlowTest {
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarization failed with Unable to notarise transaction <Unknown> : notarisation error.",
+                "Notarization failed with Unable to notarise transaction <Unknown>: notarisation error.",
                 FinalityNotarizationFailureType.UNKNOWN.value
             ), sessions
         )
