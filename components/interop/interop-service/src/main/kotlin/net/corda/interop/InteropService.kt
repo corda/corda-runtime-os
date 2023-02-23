@@ -3,8 +3,6 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.flow.event.SessionEvent
-import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -28,7 +26,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList", "Unused")
+@Suppress("LongParameterList")
 @Component(service = [InteropService::class], immediate = true)
 class InteropService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -40,9 +38,9 @@ class InteropService @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    @Reference(service = InteropMemberRegistrationService::class)
-    private val registrationService: InteropMemberRegistrationService
+    private val publisherFactory: PublisherFactory
+    //@Reference(service = InteropMemberRegistrationService::class)
+    //private val registrationService: InteropMemberRegistrationService
 ) : Lifecycle {
 
     companion object {
@@ -54,14 +52,14 @@ class InteropService @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
-    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+    //private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
     private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.info("$event")
         when (event) {
             is StartEvent -> {
-                logger.info("StartEvent")
-                configurationReadService.start()
+                //configurationReadService.start()
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
@@ -71,7 +69,6 @@ class InteropService @Activate constructor(
                 }
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("StartEvent ${event.status}")
                 if (event.status == LifecycleStatus.UP) {
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
@@ -81,15 +78,11 @@ class InteropService @Activate constructor(
                     }
                 } else {
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                    coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
+                    //coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
                 }
             }
             is ConfigChangedEvent -> {
-                logger.info("ConfigChangedEvent")
                 restartInteropProcessor(event)
-            }
-            else -> {
-                logger.info("Other event $event")
             }
         }
     }
@@ -122,18 +115,25 @@ class InteropService @Activate constructor(
     }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() {
+            logger.debug("isRunning=${coordinator.isRunning}")
+            return coordinator.isRunning
+        }
 
     override fun start() {
+        logger.debug("starting")
         coordinator.start()
     }
 
     override fun stop() {
+        logger.debug("stopping")
         coordinator.stop()
     }
 
+    @Suppress("unused")
     @Deactivate
     fun close() {
+        logger.debug("closing")
         coordinator.close()
     }
 }
