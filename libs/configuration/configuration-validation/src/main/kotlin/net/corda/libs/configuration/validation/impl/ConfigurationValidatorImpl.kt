@@ -78,10 +78,10 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         version: Version?,
         applyDefaults: Boolean
     ): JsonNode {
-        logger.info("Configuration to validate: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
         //jsonNode is updated in place by walker when [applyDefaults] is true
         val configAsJSONNode = config.toJsonNode()
         val secretsNode = configSecretHelper.hideSecrets(configAsJSONNode)
+        logger.info("Configuration to validate: $secretsNode")
         val errors = try {
             // Note that the JSON schema library does lazy schema loading, so schema retrieval issues may not manifest
             // until the validation stage.
