@@ -98,6 +98,26 @@ topics:
       - membership
     producers:
       - rest
+  MembershipAsyncRequestStateTopic:
+    name: membership.async.request.state
+    consumers:
+      - membership
+    producers:
+      - membership
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  MembershipAsyncRequestDlqTopic:
+    name: membership.async.request.dlq
+    consumers:
+      - membership
+    producers:
+      - membership
+    config:
   MembershipStaticNetworkTopic:
     name: membership.static.network
     consumers:

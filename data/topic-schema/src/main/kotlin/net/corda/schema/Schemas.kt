@@ -102,6 +102,8 @@ class Schemas {
             val MEMBERSHIP_DB_RPC_RESPONSE_TOPIC = getRPCResponseTopic(MEMBERSHIP_DB_RPC_TOPIC)
             const val MEMBERSHIP_STATIC_NETWORK_TOPIC = "membership.static.network"
             const val MEMBERSHIP_ASYNC_REQUEST_TOPIC = "membership.async.request"
+            val MEMBERSHIP_ASYNC_REQUEST_STATE_TOPIC = getStateAndEventStateTopic(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
+            val MEMBERSHIP_ASYNC_REQUEST_DLQ_TOPIC = getStateAndEventDLQTopic(MEMBERSHIP_ASYNC_REQUEST_TOPIC)
 
             const val EVENT_TOPIC = "membership.event"
 
