@@ -1,18 +1,16 @@
 package net.corda.simulator.runtime.flows
 
+import net.corda.v5.application.flows.ClientRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.application.flows.set
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
@@ -27,9 +25,9 @@ class FlowContextPropertiesMainFlow : ClientStartableFlow {
     lateinit var flowEngine: FlowEngine
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
-        flowEngine.flowContextProperties["key-1"] = "main-flow"
-        flowEngine.flowContextProperties["key-2"] = "main-flow"
+    override fun call(requestBody: ClientRequestBody): String {
+        flowEngine.flowContextProperties.put("key-1", "main-flow")
+        flowEngine.flowContextProperties.put("key-2", "main-flow")
         val contextPropertiesMap = flowEngine.subFlow(FlowContextPropertiesSubFlow1())
         contextPropertiesMap["main-flow"] = flowEngine.flowContextProperties
 
@@ -49,7 +47,7 @@ class FlowContextPropertiesSubFlow1 : SubFlow<HashMap<String, FlowContextPropert
 
     @Suspendable
     override fun call(): HashMap<String, FlowContextProperties> {
-        flowEngine.flowContextProperties["key-2"] = "subflow-1"
+        flowEngine.flowContextProperties.put("key-2", "subflow-1")
 
         val contextPropertiesFromSubFlow = flowEngine.subFlow(FlowContextPropertiesSubFlow2())
         val contextPropertiesMap: HashMap<String, FlowContextProperties> = HashMap()
@@ -65,10 +63,10 @@ class FlowContextPropertiesSubFlow1 : SubFlow<HashMap<String, FlowContextPropert
         }
         charlieSession.send(Member.CHARLIE)
 
-        val bobContextProperties = bobSession.receive<FlowContextProperties>()
-        val charlieContextProperties = charlieSession.receive<FlowContextProperties>()
+        val bobContextProperties = bobSession.receive(FlowContextProperties::class.java)
+        val charlieContextProperties = charlieSession.receive(FlowContextProperties::class.java)
 
-        flowEngine.flowContextProperties["key-3"] = "subflow-1"
+        flowEngine.flowContextProperties.put("key-3", "subflow-1")
 
         contextPropertiesMap["subflow-1"] = flowEngine.flowContextProperties
         contextPropertiesMap["subflow-2"] = contextPropertiesFromSubFlow
@@ -88,7 +86,7 @@ class FlowContextPropertiesSubFlow2 : SubFlow<FlowContextProperties> {
 
     @Suspendable
     override fun call(): FlowContextProperties {
-        flowEngine.flowContextProperties["key-3"] = "subflow-2"
+        flowEngine.flowContextProperties.put("key-3", "subflow-2")
         return flowEngine.flowContextProperties
     }
 }
@@ -100,12 +98,12 @@ class FlowContextPropertiesSubFlowResponder : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val member = session.receive<Member>()
+        val member = session.receive(Member::class.java)
         if(member == Member.BOB){
-            flowEngine.flowContextProperties["key-3"] = "bob"
+            flowEngine.flowContextProperties.put("key-3", "bob")
             session.send(flowEngine.flowContextProperties)
         }else if(member == Member.CHARLIE){
-            flowEngine.flowContextProperties["key-3"] = "charlie"
+            flowEngine.flowContextProperties.put("key-3", "charlie")
             session.send(flowEngine.flowContextProperties)
         }
     }

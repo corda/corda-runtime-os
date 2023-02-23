@@ -114,7 +114,7 @@ class SessionDataProcessorSendTest {
             SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )
 
-        whenever(chunkSerializerService.generateChunksFromBytes(any())).thenReturn(listOf(Chunk(), Chunk(), Chunk()))
+        whenever(chunkSerializerService.generateChunks(any())).thenReturn(listOf(Chunk(), Chunk(), Chunk()))
         val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, payload).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)

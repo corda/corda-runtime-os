@@ -6,7 +6,7 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.InitiatedFlow
-import net.corda.flow.fiber.RestRequestBodyImpl
+import net.corda.flow.fiber.ClientRequestBodyImpl
 import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
@@ -38,7 +38,7 @@ class FlowFactoryImpl @Activate constructor(
                     )
                 )
             val logic = flowClass.getDeclaredConstructor().newInstance()
-            val args = RestRequestBodyImpl(flowFiberService)
+            val args = ClientRequestBodyImpl(flowFiberService)
 
             ClientStartedFlow(logic, args)
         } catch (e: Exception) {

@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.sandbox
 
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.serialization.checkpoint.CheckpointSerializer
 

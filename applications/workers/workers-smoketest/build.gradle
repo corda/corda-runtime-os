@@ -144,8 +144,8 @@ tasks.register('smokeTest', Test) {
     // E.g. during Jenkins pipeline setup.
     systemProperty "cryptoWorkerHealthHttp",
             project.getProperties().getOrDefault("cryptoWorkerHealthHttp",combinedWorker ? null : "http://localhost:7001/")
-    systemProperty "rpcWorkerHealthHttp",
-            project.getProperties().getOrDefault("rpcWorkerHealthHttp",combinedWorker ? null : "http://localhost:7002/")
+    systemProperty "restWorkerHealthHttp",
+            project.getProperties().getOrDefault("restWorkerHealthHttp",combinedWorker ? null : "http://localhost:7002/")
     systemProperty "flowWorkerHealthHttp",
             project.getProperties().getOrDefault("flowWorkerHealthHttp",combinedWorker ? null : "http://localhost:7003/")
     systemProperty "dbWorkerHealthHttp",

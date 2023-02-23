@@ -4,7 +4,7 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
@@ -59,7 +59,7 @@ interface MemberRegistrationRestResource : RestResource {
     fun startRegistration(
         @RestPathParameter(description = "The holding identity ID of the requesting virtual node")
         holdingIdentityShortHash: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "The request sent during registration which contains the requested registration action" +
                     " (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process."
         )

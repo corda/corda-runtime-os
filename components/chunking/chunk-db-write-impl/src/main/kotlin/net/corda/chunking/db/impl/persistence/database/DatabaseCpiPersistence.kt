@@ -3,14 +3,16 @@ package net.corda.chunking.db.impl.persistence.database
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
-import net.corda.libs.cpi.datamodel.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.CpiCpkKey
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkFileEntity
-import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
+import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
+import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
@@ -19,7 +21,6 @@ import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
@@ -32,6 +33,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
+        val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
     }
 
     /**
@@ -61,7 +64,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         cpiFileChecksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>
+        changelogsExtractedFromCpi: List<CpkDbChangeLog>
     ): CpiMetadataEntity {
         entityManagerFactory.createEntityManager().transaction { em ->
 
@@ -151,7 +154,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     /**
      * Update the changelogs in the db for cpi upload
      *
-     * @property changelogsExtractedFromCpi: [List]<[CpkDbChangeLogEntity]> a list of changelogs extracted from the force
+     * @property changelogsExtractedFromCpi: [List]<[CpkDbChangeLog]> a list of changelogs extracted from the force
      *  uploaded cpi.
      * @property em: [EntityManager] the entity manager from the call site. We reuse this for several operations as part
      *  of CPI upload
@@ -159,24 +162,14 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
      * @return [Boolean] indicating whether we actually updated any changelogs
      */
     private fun persistNewChangelogs(
-        changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>,
+        changelogsExtractedFromCpi: List<CpkDbChangeLog>,
         em: EntityManager
     ) {
-        // The incoming changelogs will not be marked deleted
-        changelogsExtractedFromCpi.forEach { require(!it.isDeleted) }
 
-        changelogsExtractedFromCpi.forEach { changelogEntity ->
-            log.info("Persisting changelog and audit for CPK: ${changelogEntity.id.cpkFileChecksum}, ${changelogEntity.id.filePath})")
-            em.merge(changelogEntity) // merging ensures any existing changelogs have isDeleted set to false
-            em.persist(
-                CpkDbChangeLogAuditEntity(
-                    UUID.randomUUID().toString(),
-                    changelogEntity.id.cpkFileChecksum,
-                    changelogEntity.id.filePath,
-                    changelogEntity.content,
-                    changelogEntity.isDeleted
-                )
-            )
+        changelogsExtractedFromCpi.forEach { changelog ->
+            log.info("Persisting changelog and audit for CPK: ${changelog.id.cpkFileChecksum}, ${changelog.id.filePath})")
+            cpkDbChangeLogRepository.update(em, changelog)  // updating ensures any existing changelogs have isDeleted set to false
+            cpkDbChangeLogAuditRepository.put(em, CpkDbChangeLogAudit(changeLog = changelog))
         }
     }
 
@@ -186,7 +179,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         cpiFileChecksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>
+        changelogsExtractedFromCpi: List<CpkDbChangeLog>
     ): CpiMetadataEntity {
         val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")

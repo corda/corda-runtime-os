@@ -17,6 +17,7 @@ import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -183,7 +184,7 @@ class KeysRestResourceImpl @Activate constructor(
                 tryWithExceptionHandling(
                     logger,
                     "generate key pair for tenant $tenantId",
-                    ignoredExceptions = listOf(
+                    untranslatedExceptions = setOf(
                         KeyAlreadyExistsException::class.java,
                         InvalidParamsException::class.java
                     )

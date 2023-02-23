@@ -6,7 +6,7 @@ import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
@@ -52,7 +52,7 @@ interface RoleEndpoint : RestResource {
         groupVisibility: An optional group visibility of the role
         permissions: The list of permissions associated with the role""")
     fun createRole(
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description =
             """
                 Details of the role to be created: 

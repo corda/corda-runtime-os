@@ -1,13 +1,12 @@
 package net.cordacon.example.doorcode
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -46,7 +45,7 @@ class DoorCodeChangeFlow : ClientStartableFlow {
     lateinit var memberLookup: MemberLookup
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         val changeRequest = requestBody.getRequestBodyAs(jsonMarshallingService, DoorCodeChangeRequest::class.java)
         val participants = changeRequest.participants
         val newDoorCode = changeRequest.newDoorCode
@@ -129,8 +128,8 @@ class DoorCodeQueryFlow : ClientStartableFlow {
     lateinit var memberLookup: MemberLookup
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
-        val txId = requestBody.getRequestBodyAs<DoorCodeQuery>(jsonMarshallingService).txId
+    override fun call(requestBody: ClientRequestBody): String {
+        val txId = requestBody.getRequestBodyAs(jsonMarshallingService, DoorCodeQuery::class.java).txId
         val tx = consensualLedgerService.findSignedTransaction(txId)
 
         checkNotNull(tx) {"No consensual ledger transaction was persisted for provided id"}

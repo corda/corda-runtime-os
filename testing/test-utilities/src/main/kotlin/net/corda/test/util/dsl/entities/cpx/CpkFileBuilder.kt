@@ -1,7 +1,7 @@
 package net.corda.test.util.dsl.entities.cpx
 
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpkFileEntity
+import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
 
 fun cpkFile(init: CpkFileBuilder.() -> Unit): CpkFileEntity {
     val cpkFileBuilder = CpkFileBuilder()

@@ -9,7 +9,7 @@ import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.annotations.HttpWS
 import net.corda.httprpc.annotations.RestSinceVersion
@@ -41,7 +41,7 @@ interface TestHealthCheckAPI : RestResource {
     ): String
 
     @HttpPOST(path = "ping")
-    fun ping(@RestRequestBodyParameter(description = "Data", required = false) pingPongData: PingPongData?): String
+    fun ping(@ClientRequestBodyParameter(description = "Data", required = false) pingPongData: PingPongData?): String
 
     @HttpGET(path = "plusOne", responseDescription = "Increased by one")
     fun plusOne(@RestQueryParameter(required = false) numbers: List<String> = emptyList()): List<Double>
@@ -50,19 +50,19 @@ interface TestHealthCheckAPI : RestResource {
     fun plus(@RestPathParameter number: Long): Long
 
     @HttpPOST(path = "plusdouble", title = "Add One to a Double", description = "Add One to a Double")
-    fun plusDouble(@RestRequestBodyParameter number: Double): Double
+    fun plusDouble(@ClientRequestBodyParameter number: Double): Double
 
     @HttpPOST(path = "bodyPlayground")
-    fun bodyPlayground(s1: String?, @RestRequestBodyParameter(required = false) s2: String?): String
+    fun bodyPlayground(s1: String?, @ClientRequestBodyParameter(required = false) s2: String?): String
 
     @HttpPOST(path = "timeCall")
-    fun timeCall(@RestRequestBodyParameter time: TimeCallDto): String
+    fun timeCall(@ClientRequestBodyParameter time: TimeCallDto): String
 
     @HttpPOST(path = "dateCall")
-    fun dateCall(@RestRequestBodyParameter date: DateCallDto): String
+    fun dateCall(@ClientRequestBodyParameter date: DateCallDto): String
 
     @HttpPOST(path = "instantCall")
-    fun instantCall(@RestRequestBodyParameter instant: InstantCallDto): String
+    fun instantCall(@ClientRequestBodyParameter instant: InstantCallDto): String
 
     @HttpGET(path = "throwexception", title = "Throw Exception", description = "Throw an exception")
     fun throwException(@RestQueryParameter(name = "exception", description = "exception", required = true) exception: String)
@@ -74,7 +74,7 @@ interface TestHealthCheckAPI : RestResource {
     fun parseUuid(@RestPathParameter uuid: String): UUID
 
     @HttpPOST(path = "stringMethodWithNameInAnnotation")
-    fun stringMethodWithNameInAnnotation(@RestRequestBodyParameter(name = "correctName") incorrectName: String): String
+    fun stringMethodWithNameInAnnotation(@ClientRequestBodyParameter(name = "correctName") incorrectName: String): String
 
     data class SomeTestNullableType(val number: Int, val str: String)
     data class ObjectWithNullableString(val str: String?)

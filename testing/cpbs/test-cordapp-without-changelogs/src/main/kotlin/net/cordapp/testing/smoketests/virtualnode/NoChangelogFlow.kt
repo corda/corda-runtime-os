@@ -1,7 +1,7 @@
 package net.cordapp.testing.smoketests.virtualnode
 
 import net.corda.v5.application.flows.ClientStartableFlow
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
 
@@ -12,7 +12,7 @@ class NoChangelogFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("NoChangelogFlow starting...")
         return "NO_CHANGELOG_FLOW_COMPLETE"
     }

@@ -1,6 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.libs.cpi.datamodel.findAllCpiMetadata
+import net.corda.libs.cpi.datamodel.entities.findAllCpiMetadata
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata

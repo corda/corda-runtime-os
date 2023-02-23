@@ -1,7 +1,7 @@
 package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import org.junit.jupiter.api.Test

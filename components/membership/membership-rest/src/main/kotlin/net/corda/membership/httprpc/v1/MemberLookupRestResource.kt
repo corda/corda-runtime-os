@@ -86,4 +86,29 @@ interface MemberLookupRestResource : RestResource {
         )
         country: String? = null
     ): RestMemberInfoList
+
+    /**
+     * The [viewGroupParameters] method allows you to inspect the group parameters of the membership group, as
+     * visible to the member represented by [holdingIdentityShortHash].
+     *
+     * Example usage:
+     * ```
+     * memberLookupOps.viewGroupParameters(holdingIdentityShortHash = "58B6030FABDD")
+     * ```
+     *
+     * @param holdingIdentityShortHash Holding identity ID of the requesting member, which uniquely identifies the member
+     * and its group.
+     *
+     * @return The group parameters of the membership group as a [Map].
+     */
+    @HttpGET(
+        path = "{holdingIdentityShortHash}/group-parameters",
+        description = "This method retrieves the group parameters of the membership group.",
+        responseDescription = "The group parameters of the membership group as a map"
+    )
+    fun viewGroupParameters(
+        @RestPathParameter(description = "Holding identity ID of the requesting member. The result contains group " +
+                "parameters visible to this member.")
+        holdingIdentityShortHash: String
+    ): Map<String, String>
 }

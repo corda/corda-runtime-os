@@ -4,7 +4,8 @@ import java.nio.ByteBuffer
 import java.util.UUID
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkBuilderService
-import net.corda.chunking.Constants.Companion.CORDA_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.CORDA_RECORD_OVERHEAD
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
@@ -32,26 +33,26 @@ class ChunkSerializerServiceImpl(
     }
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
-    private val maxBytesSize = (maxAllowedMessageSize - CORDA_MESSAGE_OVERHEAD).toInt()
-    private val chunkSize = maxBytesSize - CORDA_MESSAGE_OVERHEAD
+    private val maxRecordSize = (maxAllowedMessageSize - CORDA_RECORD_OVERHEAD).toInt()
+    private val maxChunkSize = (maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD).toInt()
 
-    override fun generateChunks(avroObject: Any): List<Chunk> {
-        logger.debug { "Generating chunks for object of type ${avroObject::class.java}" }
-        val bytes = tryToSerialize(avroObject)
-        if (bytes == null || bytes.size <= maxBytesSize) {
+    override fun generateChunks(anyObject: Any): List<Chunk> {
+        logger.debug { "Generating chunks for object of type ${anyObject::class.java}" }
+        val bytes = tryToSerialize(anyObject)
+        if (bytes == null || bytes.size <= maxChunkSize) {
             return emptyList()
         }
-        return generateChunksFromBytes(bytes)
+        return generateChunksFromBytes(bytes, maxChunkSize)
     }
 
     override fun generateChunkedRecords(producerRecord: CordaProducerRecord<*, *>): List<CordaProducerRecord<*, *>> {
         val serializedKey = tryToSerialize(producerRecord.key)
         val valueBytes = tryToSerialize(producerRecord.value)
-        if (serializedKey == null || valueBytes == null || valueBytes.size <= maxBytesSize) {
+        if (serializedKey == null || valueBytes == null || valueBytes.size <= maxRecordSize) {
             return emptyList()
         }
 
-        val chunksToKey = generateChunksFromBytes(valueBytes).associateBy {
+        val chunksToKey = generateChunksFromBytes(valueBytes, maxRecordSize).associateBy {
             ChunkKey.newBuilder()
                 .setPartNumber(it.partNumber)
                 .setRealKey(ByteBuffer.wrap(serializedKey))
@@ -62,12 +63,8 @@ class ChunkSerializerServiceImpl(
         return chunksToKey.map { CordaProducerRecord(producerRecord.topic, it.key, it.value) }
     }
 
-    override fun generateChunksFromBytes(bytes: ByteArray): List<Chunk> {
+    private fun generateChunksFromBytes(bytes: ByteArray, chunkSize: Int): List<Chunk> {
         val byteSize = bytes.size
-        if (byteSize <= maxBytesSize) {
-            logger.debug { "Failed to deserialize bytes or object is too small for chunking" }
-            return emptyList()
-        }
         val hash = platformDigestService.hash(bytes, DigestAlgorithmName(Checksum.ALGORITHM))
         var partNumber = INITIAL_PART_NUMBER
         val requestId = UUID.randomUUID().toString()
