@@ -32,9 +32,10 @@ class DbConnectionOpsImpl(
     override fun getClusterDataSource(): CloseableDataSource =
         dbConnectionsRepository.getClusterDataSource()
 
-    override fun createDatasource(connectionId: UUID): CloseableDataSource =
-        dbConnectionsRepository.create(connectionId) ?:
-            throw DBConfigurationException("Details for $connectionId cannot be found")
+    override fun createDatasource(connectionId: UUID): CloseableDataSource {
+        logger.info("Creating datasource thread ${Thread.currentThread().name} (${Thread.currentThread().id})")
+        return dbConnectionsRepository.create(connectionId) ?: throw DBConfigurationException("Details for $connectionId cannot be found")
+    }
 
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         dbConnectionsRepository.create(name, privilege)
