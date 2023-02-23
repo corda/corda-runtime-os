@@ -58,7 +58,7 @@ interface CryptoOpsClient : Lifecycle {
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      * @throws [KeyAlreadyExistsException] if a key with the provided alias already exists for the tenant.
-     * @throws [InvalidParamsException] If the tenant is not configured for the given category.
+     * @throws [InvalidParamsException] If the tenant is not configured for the given category or if the key's scheme is invalid.
      *
      * @return The public part of the pair.
      */
@@ -81,7 +81,7 @@ interface CryptoOpsClient : Lifecycle {
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      * @throws [KeyAlreadyExistsException] if a key with the provided alias already exists for the tenant.
-     * @throws [InvalidParamsException] If the tenant is not configured for the given category.
+     * @throws [InvalidParamsException] If the tenant is not configured for the given category or if the key's scheme is invalid.
      *
      * @return The public part of the pair.
      */
@@ -103,6 +103,7 @@ interface CryptoOpsClient : Lifecycle {
      * @param category The key category, such as ACCOUNTS, CI, etc.
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
+     * @throws [InvalidParamsException] If the key's scheme is invalid.
      *
      * @return The [PublicKey] of the generated [KeyPair].
      */
@@ -122,6 +123,7 @@ interface CryptoOpsClient : Lifecycle {
      * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
+     * @throws [InvalidParamsException] If the key's scheme is invalid.
      *
      * @return The [PublicKey] of the generated [KeyPair].
      */
