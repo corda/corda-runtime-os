@@ -16,7 +16,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
-import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
@@ -102,7 +101,7 @@ class NonValidatingNotaryClientFlowImpl(
             }
             else -> {
                 log.trace { "Received notarization error from notary $notary for transaction ${stx.id}. Error: $error" }
-                throw NotaryException(error, stx.id)
+                throw error
             }
         }
     }

@@ -16,8 +16,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.ledger.notary.plugin.core.NotaryError
-import net.corda.v5.ledger.notary.plugin.core.NotaryException
+import net.corda.v5.ledger.notary.plugin.core.NotaryException.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -189,7 +188,7 @@ class UtxoFinalityFlow(
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
-            val (message, failureReason) = if (e is NotaryException && e.error is NotaryError.NotaryErrorFatal) {
+            val (message, failureReason) = if (e is NotaryExceptionFatal) {
                 persistInvalidTransaction(transaction)
                 "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.FATAL
             } else {

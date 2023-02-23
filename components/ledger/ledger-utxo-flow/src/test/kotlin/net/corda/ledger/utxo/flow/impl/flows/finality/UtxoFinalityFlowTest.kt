@@ -33,7 +33,6 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
-import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
@@ -301,12 +300,13 @@ class UtxoFinalityFlowTest {
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         @CordaSerializable
-        data class TestNotaryErrorFatal(
-            val errorText: String
-        ) : NotaryError.NotaryErrorFatal, CordaRuntimeException(errorText)
+        class TestNotaryExceptionFatal(
+            errorText: String,
+            txId: SecureHash? = null
+        ) : NotaryException.NotaryExceptionFatal(errorText, txId)
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(
-            NotaryException(TestNotaryErrorFatal("notarisation error"))
+            TestNotaryExceptionFatal("notarisation error", null)
         )
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
@@ -339,7 +339,7 @@ class UtxoFinalityFlowTest {
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Notarization failed permanently with Unable to notarise transaction <Unknown> :" +
-                        " TestNotaryErrorFatal(errorText=notarisation error).",
+                        " notarisation error.",
                 FinalityNotarizationFailureType.FATAL.value
             ), sessions
         )
@@ -373,16 +373,17 @@ class UtxoFinalityFlowTest {
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         @CordaSerializable
-        data class TestNotaryErrorNonFatal(
-            val errorText: String
-        ) : NotaryError.NotaryErrorUnknown, CordaRuntimeException(errorText)
+        class TestNotaryErrorNonFatal(
+            errorText: String,
+            txId: SecureHash? = null
+        ) : NotaryException.NotaryExceptionUnknown(errorText, txId)
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow))
             .thenThrow(TestNotaryErrorNonFatal("notarisation error"))
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessage("notarisation error")
+            .hasMessage("Unable to notarise transaction <Unknown> : notarisation error")
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
@@ -409,7 +410,7 @@ class UtxoFinalityFlowTest {
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarization failed with notarisation error.",
+                "Notarization failed with Unable to notarise transaction <Unknown> : notarisation error.",
                 FinalityNotarizationFailureType.UNKNOWN.value
             ), sessions
         )
