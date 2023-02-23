@@ -22,7 +22,7 @@ import org.slf4j.Logger
 import java.security.InvalidParameterException
 
 /**
- * Initiator will notify the receiver side with UNRECOVERABLE if the notarization error cannot be recovered and the
+ * Initiator will notify the receiver side with FATAL if the notarization error cannot be recovered and the
  * transaction can be updated to INVALID.
  */
 enum class FinalityNotarizationFailureType(val value: String) {
