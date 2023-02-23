@@ -221,7 +221,42 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
     @Test
     fun `Receiving an event does not resend the external event unless a 'transient' error is received`() {
+        given {
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 500000L)
 
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
+                .suspendsWith(
+                    FlowIORequest.ExternalEvent(
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
+                    )
+                )
+        }
+
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+                noExternalEvent(TOPIC)
+            }
+        }
+    }
+
+    @Test
+    fun `Receiving an event resends the external event if status is OK but the retry window has been surpassed`() {
         given {
             startFlowEventReceived(
                 FLOW_ID1,
@@ -241,6 +276,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
         }
 
+
         `when` {
             wakeupEventReceived(FLOW_ID1)
         }
@@ -248,7 +284,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                noExternalEvent(TOPIC)
+                externalEvent(TOPIC, KEY, ANY_INPUT)
             }
         }
     }
