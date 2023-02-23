@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -24,8 +25,11 @@ class InteropService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService
-) : Lifecycle {
+    private val configurationReadService: ConfigurationReadService,
+    @Suppress("unused")
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory
+    ) : Lifecycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -68,30 +72,30 @@ class InteropService @Activate constructor(
     }
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
-        logger.debug("$event")
+        logger.info("$event")
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override val isRunning: Boolean
         get() {
-            logger.debug("isRunning=${coordinator.isRunning}")
+            logger.info("isRunning=${coordinator.isRunning}")
             return coordinator.isRunning
         }
 
     override fun start() {
-        logger.debug("starting")
+        logger.info("starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.debug("stopping")
+        logger.info("stopping")
         coordinator.stop()
     }
 
     @Suppress("unused")
     @Deactivate
     fun close() {
-        logger.debug("closing")
+        logger.info("closing")
         coordinator.close()
     }
 }
