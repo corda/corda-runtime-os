@@ -10,7 +10,6 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
@@ -73,7 +72,8 @@ class ConsensualFinalityFlow(
             try {
                 log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
                 session.send(initialTransaction)
-                session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
+                @Suppress("unchecked_cast")
+                session.receive(Payload::class.java) as Payload<List<DigitalSignatureAndMetadata>>
             } catch (e: CordaRuntimeException) {
                 log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
                 persistInvalidTransaction(initialTransaction)

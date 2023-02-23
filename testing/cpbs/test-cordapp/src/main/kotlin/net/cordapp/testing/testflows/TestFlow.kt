@@ -1,10 +1,9 @@
 package net.cordapp.testing.testflows
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
@@ -37,7 +36,7 @@ class TestFlow : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)
+            val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, TestFlowInput::class.java)
             if (inputs.throwException) {
                 throw IllegalStateException("Caller requested exception to be raised")
             }
