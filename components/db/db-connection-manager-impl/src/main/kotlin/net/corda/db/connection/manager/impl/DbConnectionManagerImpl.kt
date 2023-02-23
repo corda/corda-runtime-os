@@ -149,6 +149,7 @@ class DbConnectionManagerImpl (
      * @param dataSource DataSource
      */
     private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
+        logger.info("Creating entity manager factory thread ${Thread.currentThread().name} (${Thread.currentThread().id})")
         return entityManagerFactoryFactory.create(
             name,
             entitiesRegistry.get(name)?.classes?.toList() ?:
