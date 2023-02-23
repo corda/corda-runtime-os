@@ -12,7 +12,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -37,10 +36,10 @@ class InteropService @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.info("$event")
         when (event) {
             is StartEvent -> {
-                logger.info("StartEvent")
-                configurationReadService.start()
+                //configurationReadService.start()
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
@@ -50,46 +49,49 @@ class InteropService @Activate constructor(
                 }
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("StartEvent ${event.status}")
                 if (event.status == LifecycleStatus.UP) {
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG, P2P_LINK_MANAGER_CONFIG)
+                            setOf(MESSAGING_CONFIG)
                         )
                     }
                 } else {
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                    coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
+                    //coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
                 }
             }
             is ConfigChangedEvent -> {
                 restartInteropProcessor(event)
             }
-            else -> {
-                logger.info("Other event $event")
-            }
         }
     }
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
-        logger.info("$event")
+        logger.debug("$event")
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() {
+            logger.debug("isRunning=$isRunning")
+            return coordinator.isRunning
+        }
 
     override fun start() {
+        logger.debug("starting")
         coordinator.start()
     }
 
     override fun stop() {
+        logger.debug("stopping")
         coordinator.stop()
     }
 
     @Suppress("unused")
     @Deactivate
     fun close() {
+        logger.debug("closing")
         coordinator.close()
     }
 }
