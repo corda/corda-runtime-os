@@ -33,7 +33,7 @@ class InteropService @Activate constructor(
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
+    private val coordinator : LifecycleCoordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("$event")
@@ -74,7 +74,7 @@ class InteropService @Activate constructor(
 
     override val isRunning: Boolean
         get() {
-            logger.debug("isRunning=$isRunning")
+            logger.debug("isRunning=${coordinator.isRunning}")
             return coordinator.isRunning
         }
 
