@@ -181,6 +181,7 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
         try {
+            println("QQ 1 -> membershipQueryClient -> $membershipQueryClient")
             val alreadyRegisteredMember = membershipQueryClient
                 .queryMemberInfo(member, listOf(member))
                 .getOrThrow()
@@ -213,6 +214,11 @@ class StaticMemberRegistrationService @Activate constructor(
             persistGroupParameters(memberInfo, staticMemberList)
 
             persistRegistrationRequest(registrationId, memberInfo)
+
+            persistenceClient.persistMemberInfo(
+                member,
+                listOf(memberInfo)
+            )
         } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration failed. Reason:", e)
             throw e
