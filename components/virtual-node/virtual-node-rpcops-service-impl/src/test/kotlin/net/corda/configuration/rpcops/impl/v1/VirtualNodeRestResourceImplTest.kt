@@ -1,12 +1,22 @@
 package net.corda.configuration.rpcops.impl.v1
 
+import java.util.UUID
+import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.InvalidStateChangeException
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.security.RestAuthContext
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.utilities.time.ClockFactory
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRestResourceImpl
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -42,6 +52,10 @@ class VirtualNodeRestResourceImplTest {
 
     private val mockClockFactory = mock<ClockFactory>().apply {
         whenever(createUTCClock()) doReturn UTCClock()
+    }
+
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
+        whenever(getByHoldingIdentityShortHash(any())) doReturn mockVnode()
     }
 
     @Nested
@@ -131,5 +145,49 @@ class VirtualNodeRestResourceImplTest {
 
             verify(mockDownCoordinator).isRunning
         }
+    }
+
+    @Test
+    fun `cant update virtual node state to same state`() {
+        val vnodeResource =
+            VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), virtualNodeInfoReadService, mock(), mock(), mockClockFactory)
+        vnodeResource.start()
+
+        assertThrows<InvalidStateChangeException> {
+            vnodeResource.updateVirtualNodeState("ABCABC123123", "ACTIVE")
+        }
+    }
+
+    @Test
+    fun `cant set state of virtual node to non defined value`() {
+        val vnodeResource =
+            VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), virtualNodeInfoReadService, mock(), mock(), mockClockFactory)
+        vnodeResource.start()
+
+        assertThrows<InvalidInputDataException> {
+            vnodeResource.updateVirtualNodeState("ABCABC123123", "BLAHBLAHBLAH")
+        }
+    }
+
+    private fun mockVnode(operational: OperationalStatus = OperationalStatus.ACTIVE): VirtualNodeInfo? {
+        return VirtualNodeInfo(
+            HoldingIdentity(MemberX500Name("test","IE","IE"), "group"),
+            CpiIdentifier("cpi","1", SecureHash.parse("SHA-256:1234567890")),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            operational,
+            operational,
+            operational,
+            operational,
+            null,
+            -1,
+            mock(),
+            false
+        )
     }
 }
