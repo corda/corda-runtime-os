@@ -31,6 +31,14 @@ class ClientStartedFlowTest {
         override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
             TODO("Not yet implemented")
         }
+
+        override fun <K : Any?, V : Any?> getRequestBodyAsMap(
+            marshallingService: MarshallingService,
+            keyClass: Class<K>,
+            valueClass: Class<V>
+        ): MutableMap<K, V> {
+            TODO("Not yet implemented")
+        }
     }
 
     private class TestFlow : ClientStartableFlow {

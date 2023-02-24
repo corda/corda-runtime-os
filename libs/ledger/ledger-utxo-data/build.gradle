@@ -16,6 +16,7 @@ dependencies {
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:utilities')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
