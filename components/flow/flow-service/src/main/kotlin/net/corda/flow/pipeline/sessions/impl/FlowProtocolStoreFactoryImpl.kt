@@ -45,7 +45,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
             }
 
             flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {
-                if (!flowClass.isAssignableFrom(ResponderFlow::class.java)) {
+                if (!flowClass.interfaces.contains(ResponderFlow::class.java)) {
                     throw FlowFatalException(
                         "Flow ${flowClass.canonicalName} must implement ${ResponderFlow::class.simpleName}"
                     )
