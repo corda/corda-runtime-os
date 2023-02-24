@@ -188,6 +188,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     "Can not re-register."
             )
         }
+        println("QQQ AAA for $registrationId pass check! -> membershipGroupReader: $membershipGroupReader, alreadyRegisteredMember: $alreadyRegisteredMember")
         try {
             val roles = MemberRole.extractRolesFromContext(context)
             logger.debug("Roles are: {}", roles)
