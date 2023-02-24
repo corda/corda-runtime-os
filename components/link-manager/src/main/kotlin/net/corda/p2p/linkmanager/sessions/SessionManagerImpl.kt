@@ -163,7 +163,9 @@ internal class SessionManagerImpl(
     )
 
     private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
-    private val executorService = executorServiceFactory()
+    private val executorService = executorServiceFactory().also {
+        it.scheduleAtFixedRate({ recordTotalSessionMetrics() }, 5, 5, TimeUnit.SECONDS)
+    }
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -830,6 +832,13 @@ internal class SessionManagerImpl(
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             false
         }
+    }
+
+    private fun recordTotalSessionMetrics() {
+        CordaMetrics.Metric.OutboundSessionCount.builder()
+            .build().set(outboundSessionPool.getAllSessionIds().size)
+        CordaMetrics.Metric.InboundSessionCount.builder()
+            .build().set(activeInboundSessions.size + pendingInboundSessions.size)
     }
 
     class HeartbeatManager(
