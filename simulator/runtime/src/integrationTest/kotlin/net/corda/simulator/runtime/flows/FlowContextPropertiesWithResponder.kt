@@ -1,19 +1,17 @@
 package net.corda.simulator.runtime.flows
 
+import net.corda.v5.application.flows.ClientRequestBody
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.application.flows.set
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -36,20 +34,22 @@ class FlowContextPropertiesInitiator : ClientStartableFlow{
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        flowEngine.flowContextProperties["key-1"] = "initiator"
+        flowEngine.flowContextProperties.put("key-1", "initiator")
         val participants = requestBody.getRequestBodyAs(jsonMarshallingService, FlowRequest::class.java).participants
 
         val flowSession1 = flowMessaging.initiateFlow(participants[0])
         flowSession1.send(Member.BOB)
-        val contextPropertiesMap = flowSession1.receive<HashMap<String, FlowContextProperties>>()
+        @Suppress("unchecked_cast")
+        val contextPropertiesMap = flowSession1.receive(HashMap::class.java) as HashMap<String, FlowContextProperties>
 
-        flowEngine.flowContextProperties["key-2"] = "initiator"
+        flowEngine.flowContextProperties.put("key-2", "initiator")
 
         val flowSession2 = flowMessaging.initiateFlow(participants[1]){ flowContextProperties ->
             flowContextProperties.put("key-4", "from-builder")
         }
         flowSession2.send(Member.CHARLIE)
-        contextPropertiesMap.putAll(flowSession2.receive<HashMap<String, FlowContextProperties>>())
+        @Suppress("unchecked_cast")
+        contextPropertiesMap.putAll(flowSession2.receive(HashMap::class.java) as HashMap<String, FlowContextProperties>)
 
 
         contextPropertiesMap["initiator"] = flowEngine.flowContextProperties
@@ -66,17 +66,17 @@ class FlowContextPropertiesResponder : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        flowEngine.flowContextProperties["key-2"] = "bob-charlie"
-        val member = session.receive<Member>()
+        flowEngine.flowContextProperties.put("key-2", "bob-charlie")
+        val member = session.receive(Member::class.java)
         val contextPropertiesMap = HashMap<String, FlowContextProperties>()
         if(member == Member.BOB){
-            flowEngine.flowContextProperties["key-3"] = "bob"
+            flowEngine.flowContextProperties.put("key-3", "bob")
             val contextPropertiesFromSubFlow = flowEngine.subFlow(FlowContextPropertiesResponderSubFlow1())
             contextPropertiesMap["bob"] = flowEngine.flowContextProperties
             contextPropertiesMap["bob-subflow"] = contextPropertiesFromSubFlow
             session.send(contextPropertiesMap)
         }else if(member == Member.CHARLIE){
-            flowEngine.flowContextProperties["key-3"] = "charlie"
+            flowEngine.flowContextProperties.put("key-3", "charlie")
             val contextPropertiesFromSubFlow = flowEngine.subFlow(FlowContextPropertiesResponderSubFlow2())
             contextPropertiesMap["charlie"] = flowEngine.flowContextProperties
             contextPropertiesMap["charlie-subflow"] = contextPropertiesFromSubFlow
@@ -94,7 +94,7 @@ class FlowContextPropertiesResponderSubFlow1 : SubFlow<FlowContextProperties> {
 
     @Suspendable
     override fun call(): FlowContextProperties {
-        flowEngine.flowContextProperties["key-4"] = "bob-subflow"
+        flowEngine.flowContextProperties.put("key-4", "bob-subflow")
         return flowEngine.flowContextProperties
     }
 
@@ -108,7 +108,7 @@ class FlowContextPropertiesResponderSubFlow2 : SubFlow<FlowContextProperties> {
 
     @Suspendable
     override fun call(): FlowContextProperties {
-        flowEngine.flowContextProperties["key-4"] = "charlie-subflow"
+        flowEngine.flowContextProperties.put("key-4", "charlie-subflow")
         return flowEngine.flowContextProperties
     }
 

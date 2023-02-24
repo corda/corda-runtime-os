@@ -1,17 +1,15 @@
 package net.cordapp.demo.utxo
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -68,7 +66,7 @@ class UtxoBackchainResolutionDemoFlow : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("UTXO backchain resolution demo flow starting!!...")
         try {
-            val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
+            val request = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
 
             val myInfo = memberLookup.myInfo()
             val members = request.members.map {
@@ -260,7 +258,8 @@ class UtxoBackchainResolutionDemoResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val txs = session.receive<List<SecureHash>>()
+        @Suppress("unchecked_cast")
+        val txs = session.receive(List::class.java) as List<SecureHash>
         txs.map { utxoLedgerService.findSignedTransaction(it) }
             .forEachIndexed { index, tx ->
                 log.info("PEER TX${index + 1} = ${tx?.id}")

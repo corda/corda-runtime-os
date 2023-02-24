@@ -24,7 +24,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
 ) : RequestHandler {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun execute(): List<Record<*, *>> {

@@ -35,6 +35,13 @@ data class RPCRequestDataWrapper(
                 return marshallingService.parseList(requestBody, clazz)
             }
 
+            override fun <K, V> getRequestBodyAsMap(
+                marshallingService: MarshallingService,
+                keyClass: Class<K>,
+                valueClass: Class<V>
+            ): Map<K, V> {
+                return marshallingService.parseMap(requestBody, keyClass, valueClass)
+            }
         }
     }
 }

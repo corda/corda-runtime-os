@@ -1,12 +1,11 @@
 package net.cordapp.demo.consensual
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -46,7 +45,7 @@ class ConsensualDemoFlow : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Consensual flow demo starting...")
         try {
-            val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
+            val request = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
 
             val myInfo = memberLookup.myInfo()
             val members = request.members.map { x500 ->

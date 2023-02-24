@@ -14,4 +14,5 @@ dependencies {
 
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:utilities')
 }
