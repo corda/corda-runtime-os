@@ -118,6 +118,7 @@ internal class MemberOpsAsyncProcessor(
                 holdingIdentity,
                 registrationId.toString(),
                 RegistrationStatus.INVALID,
+                e.message?.take(255),
             )
             logger.warn("Registration ${request.requestId} failed. Invalid registration request.", e)
             Outcome.FAILED_CANNOT_RETRY
