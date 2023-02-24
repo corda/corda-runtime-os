@@ -26,7 +26,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
-import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository

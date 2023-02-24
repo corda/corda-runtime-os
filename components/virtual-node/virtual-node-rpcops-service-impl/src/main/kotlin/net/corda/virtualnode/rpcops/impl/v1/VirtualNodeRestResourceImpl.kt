@@ -14,9 +14,6 @@ import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.asynchronous.v1.AsyncResponse
 import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
@@ -61,6 +58,11 @@ import java.time.Instant
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
+import java.lang.IllegalArgumentException
+import net.corda.httprpc.exception.InvalidStateChangeException
+import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.exception.InvalidInputDataException
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
@@ -348,7 +350,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
-        // TODO: Validate newState
+        validateStateChange(virtualNodeShortId, newState)
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
@@ -372,6 +374,25 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             }
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
+    }
+    private fun validateStateChange(virtualNodeShortId: String, newState: String) {
+        val state = try {
+            VirtualNodeStateTransitions.valueOf(newState.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
+        }
+        val virtualNode = getVirtualNode(virtualNodeShortId)
+
+        val inMaintenance = listOf(virtualNode.flowOperationalStatus,
+            virtualNode.flowStartOperationalStatus,
+            virtualNode.flowP2pOperationalStatus,
+            virtualNode.vaultDbOperationalStatus).any { it == OperationalStatus.INACTIVE }
+
+        // Compare new state to current state
+        when(inMaintenance) {
+            true -> if(state == VirtualNodeStateTransitions.MAINTENANCE) throw InvalidStateChangeException("VirtualNode", virtualNodeShortId, newState)
+            false -> if(state == VirtualNodeStateTransitions.ACTIVE) throw InvalidStateChangeException("VirtualNode", virtualNodeShortId, newState)
         }
     }
 
