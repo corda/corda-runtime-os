@@ -158,7 +158,7 @@ class InteropServiceIntegrationTest {
     }
 
     @Test
-    fun `verify messages in memebrship-info topic and hosted-identities topic`() {
+    fun `verify messages in membership-info topic and hosted-identities topic`() {
         val clearMemberInfoSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("member-info", Schemas.Membership.MEMBER_LIST_TOPIC),
             ClearMemberInfoProcessor(),
@@ -179,7 +179,7 @@ class InteropServiceIntegrationTest {
         clearHostedIdsSub.close()
 
         interopService.start()
-        val memberExpectedOutputMessages = 4
+        val memberExpectedOutputMessages = 4 + 2
         val memberMapperLatch = CountDownLatch(memberExpectedOutputMessages)
         val memberProcessor = MemberInfoMessageCounter(memberMapperLatch, memberExpectedOutputMessages)
         val memberOutSub = subscriptionFactory.createDurableSubscription(
