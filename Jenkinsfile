@@ -1,6 +1,6 @@
 @Library('corda-shared-build-pipeline-steps@5.0.1') _
 
-cordaPipelineKubernetesAgent(
+cordaPipeline(
     runIntegrationTests: false,
     publishOSGiImage: true,
     dailyBuildCron: 'H 03 * * *',
