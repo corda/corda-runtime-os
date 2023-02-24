@@ -34,9 +34,9 @@ class CheckpointInitializerImpl @Activate constructor(
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
             ?: throw FlowTransientException("Failed to find the cpiMetadata for identifier '${vNodeInfo.cpiIdentifier}'")
 
-        val cpks = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
+        val cpkFileHashes = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
 
-        checkpoint.initFlowState(contextBuilder(cpks), cpks)
+        checkpoint.initFlowState(contextBuilder(cpkFileHashes), cpkFileHashes)
         checkpoint.waitingFor = waitingFor
 
     }

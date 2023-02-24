@@ -257,7 +257,7 @@ class FlowCheckpointImplTest {
 
         val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false))
         flowCheckpoint.initFlowState(flowStartContext, cpks)
-        assertThat(flowCheckpoint.cpks).isNotEmpty
+        assertThat(flowCheckpoint.cpkFileHashes).isNotEmpty
         assertThat(flowCheckpoint.flowKey).isEqualTo(flowKey)
         assertThat(flowCheckpoint.flowStartContext).isEqualTo(flowStartContext)
         assertThat(flowCheckpoint.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY.toCorda())

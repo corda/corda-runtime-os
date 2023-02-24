@@ -47,7 +47,7 @@ class InitiateFlowRequestService @Activate constructor(
 
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
         val protocolStore = try {
-            flowSandboxService.get(checkpoint.holdingIdentity, checkpoint.cpks).protocolStore
+            flowSandboxService.get(checkpoint.holdingIdentity, checkpoint.cpkFileHashes).protocolStore
         } catch (e: Exception) {
             throw FlowTransientException(
                 "Failed to get the flow sandbox for identity ${checkpoint.holdingIdentity}: ${e.message}",

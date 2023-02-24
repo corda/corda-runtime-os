@@ -13,8 +13,8 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
-import net.corda.v5.crypto.SecureHash
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -111,8 +111,8 @@ class FlowCheckpointImpl(
     override val inRetryState: Boolean
         get() = pipelineStateManager.retryState != null
 
-    override val cpks: Set<SecureHash>
-        get() = pipelineStateManager.cpk
+    override val cpkFileHashes: Set<SecureHash>
+        get() = pipelineStateManager.cpkFileHashes
 
     override val retryEvent: FlowEvent
         get() = pipelineStateManager.retryEvent
@@ -127,7 +127,7 @@ class FlowCheckpointImpl(
     override val maxMessageSize: Long
         get() = config.getLong(MAX_ALLOWED_MSG_SIZE)
 
-    override fun initFlowState(flowStartContext: FlowStartContext, cpks: Set<SecureHash>) {
+    override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
@@ -149,7 +149,7 @@ class FlowCheckpointImpl(
 
         flowStateManager = FlowStateManager(flowState)
         nullableFlowStack = FlowStackImpl(flowState.flowStackItems)
-        pipelineStateManager.populateCpks(cpks)
+        pipelineStateManager.populateCpkFileHashes(cpkFileHashes)
     }
 
     override fun getSessionState(sessionId: String): SessionState? {

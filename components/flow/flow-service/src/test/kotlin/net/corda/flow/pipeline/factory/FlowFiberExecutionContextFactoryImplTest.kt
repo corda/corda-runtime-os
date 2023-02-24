@@ -59,7 +59,7 @@ class FlowFiberExecutionContextFactoryImplTest {
         whenever(context.checkpoint.flowStartContext).thenReturn(flowStartContext)
         whenever(context.checkpoint.holdingIdentity).thenReturn(BOB_X500_HOLDING_IDENTITY.toCorda())
         whenever(flowSandboxService.get(BOB_X500_HOLDING_IDENTITY.toCorda(), emptySet())).thenReturn(sandboxGroupContext)
-        whenever(context.checkpoint.cpks).thenReturn(emptySet())
+        whenever(context.checkpoint.cpkFileHashes).thenReturn(emptySet())
         whenever(membershipGroupReaderProvider.getGroupReader(
             BOB_X500_HOLDING_IDENTITY.toCorda()
         )).thenReturn(membershipGroupReader)

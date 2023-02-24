@@ -34,7 +34,7 @@ class PipelineStateManager(
         state.maxFlowSleepDuration = config.getInt(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION)
     }
 
-    val cpk: Set<SecureHash>
+    val cpkFileHashes: Set<SecureHash>
         get() = state.cpkFileHashes.map { SecureHash(it.algorithm, it.bytes.array()) }.toSet()
 
     val retryState: RetryState?
@@ -70,11 +70,11 @@ class PipelineStateManager(
         state.retryState = null
     }
 
-    fun populateCpks(cpks: Set<SecureHash>) {
+    fun populateCpkFileHashes(cpkFileHashes: Set<SecureHash>) {
         if (state.cpkFileHashes.isNullOrEmpty()) {
-            state.cpkFileHashes = cpks.map { net.corda.data.crypto.SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
+            state.cpkFileHashes = cpkFileHashes.map { net.corda.data.crypto.SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
         } else {
-            throw IllegalStateException("cpk list ${state.cpkFileHashes} cannot be updated to $cpks once set")
+            throw IllegalStateException("cpk file hash list ${state.cpkFileHashes} cannot be updated to $cpkFileHashes once set")
         }
     }
 

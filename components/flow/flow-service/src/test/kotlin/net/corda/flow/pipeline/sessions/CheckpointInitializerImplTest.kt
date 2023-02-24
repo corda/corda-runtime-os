@@ -25,7 +25,7 @@ import org.mockito.kotlin.whenever
 class CheckpointInitializerImplTest {
 
     @Test
-    fun `happy path`() {
+    fun `Initializes the checkpoint and saves cpkFilesHashes to the checkpoint`() {
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
         val cpiInfoReadService = mock<CpiInfoReadService>()
 
@@ -55,11 +55,11 @@ class CheckpointInitializerImplTest {
             startContext
         }
         verify(checkpoint).initFlowState(any(), any())
-        assertThat(checkpoint.cpks).hasSameClassAs(java.util.HashSet<SecureHash>())
+        assertThat(checkpoint.cpkFileHashes).hasSameClassAs(java.util.HashSet<SecureHash>())
     }
 
     @Test
-    fun `null cpi metadata`() {
+    fun `Null cpi metadata throws FlowTransientException`() {
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
         val cpiInfoReadService = mock<CpiInfoReadService>()
 
@@ -94,7 +94,7 @@ class CheckpointInitializerImplTest {
     }
 
     @Test
-    fun `null virtualNodeInfo`() {
+    fun `Null virtualNodeInfo throws FlowTransientException`() {
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
         val cpiInfoReadService = mock<CpiInfoReadService>()
 
@@ -125,7 +125,7 @@ class CheckpointInitializerImplTest {
     }
 
     @Test
-    fun `waitingFor is set`() {
+    fun `WaitingFor value is set`() {
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
         val cpiInfoReadService = mock<CpiInfoReadService>()
 

@@ -17,7 +17,7 @@ import java.nio.ByteBuffer
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
  */
 interface FlowCheckpoint : NonSerializable {
-    val cpks: Set<SecureHash>
+    val cpkFileHashes: Set<SecureHash>
 
     val flowId: String
 
@@ -53,7 +53,7 @@ interface FlowCheckpoint : NonSerializable {
 
     val maxMessageSize: Long
 
-    fun initFlowState(flowStartContext: FlowStartContext, cpks: Set<SecureHash>)
+    fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>)
 
     fun getSessionState(sessionId: String): SessionState?
 
