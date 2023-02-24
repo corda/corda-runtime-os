@@ -54,6 +54,7 @@ internal class CommandsRetryManager(
         event: LifecycleEvent,
     ) {
         if (event is RetryEvent) {
+            println("QQQ in retry for ${event.key}")
             logger.info("Retrying request ${event.key}")
             publisher.publish(
                 listOf(
@@ -69,15 +70,22 @@ internal class CommandsRetryManager(
     }
 
     override fun onPartitionSynced(states: Map<String, MembershipAsyncRequestState>) {
+        states.forEach {(key, value) ->
+            println("QQQ in onPartitionSynced for $key -> ${value.numberOfRetriesSoFar}")
+        }
         states.forEach(::addTimer)
     }
 
     override fun onPartitionLost(states: Map<String, MembershipAsyncRequestState>) {
+        states.forEach {(key, value) ->
+            println("QQQ in onPartitionLost for $key -> ${value.numberOfRetriesSoFar}")
+        }
         states.keys.forEach(::cancelTimer)
     }
 
     override fun onPostCommit(updatedStates: Map<String, MembershipAsyncRequestState?>) {
         updatedStates.forEach { (key, state) ->
+            println("QQQ in onPostCommit for $key -> ${state?.numberOfRetriesSoFar}")
             if (state == null) {
                 cancelTimer(key)
             } else {

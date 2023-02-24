@@ -41,6 +41,8 @@ internal class MemberOpsAsyncProcessor(
         state: MembershipAsyncRequestState?,
         event: Record<String, MembershipAsyncRequest>,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
+        val forDebug = UUID.randomUUID().toString()
+        println("QQQ $forDebug in onNext -> key: ${event.key}, state: ${state?.numberOfRetriesSoFar}")
         val numberOfRetriesSoFar = state?.numberOfRetriesSoFar ?: 0
         val canRetry = numberOfRetriesSoFar < MAX_RETRIES
         val outcome = when (val request = event.value?.request) {
@@ -52,6 +54,7 @@ internal class MemberOpsAsyncProcessor(
                 Outcome.FAILED_CANNOT_RETRY
             }
         }
+        println("QQQ $forDebug \t key: ${event.key} outcome: $outcome")
 
         return when (outcome) {
             Outcome.SUCCESS -> StateAndEventProcessor.Response(

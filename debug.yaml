@@ -12,21 +12,21 @@
 #
 workers:
   crypto:
-    replicaCount: 1
+    replicaCount: 2
 #    debug:
 #      enabled: true
 #      suspend: true
 #    logging:
 #      level: "debug"
   db:
-    replicaCount: 1
+    replicaCount: 2
 #    debug:
 #      enabled: true
 #      suspend: true
 #    logging:
 #      level: "debug"
   flow:
-    replicaCount: 1
+    replicaCount: 2
 #    debug:
 #      enabled: true
 #      suspend: true
@@ -34,14 +34,14 @@ workers:
 #      level: "debug"
     verifyInstrumentation: true
   membership:
-    replicaCount: 1
+    replicaCount: 2
 #    debug:
 #      enabled: true
 #      suspend: true
 #    logging:
 #      level: "debug"
   rest:
-    replicaCount: 1
+    replicaCount: 2
 #    debug:
 #      enabled: true
 #      suspend: true
