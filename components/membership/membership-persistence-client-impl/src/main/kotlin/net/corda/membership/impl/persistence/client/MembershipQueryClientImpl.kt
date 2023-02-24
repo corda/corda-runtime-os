@@ -13,6 +13,7 @@ import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
+import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequests
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
@@ -300,13 +301,13 @@ class MembershipQueryClientImpl(
     override fun queryQueuedRegistrationRequests(
         viewOwningIdentity: HoldingIdentity,
         registeringIdentity: HoldingIdentity
-    ): MembershipQueryResult<List<RegistrationRequest>> {
+    ): MembershipQueryResult<List<RegistrationStatusDetails>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-
+            QueryQueuedRegistrationRequests(registeringIdentity.shortHash.value)
         ).execute()
         return when (val payload = result.payload) {
-            is ApprovalRulesQueryResponse -> MembershipQueryResult.Success(payload.rules)
+            is RegistrationRequestsQueryResponse -> MembershipQueryResult.Success(payload.registrationRequests)
             else -> MembershipQueryResult.Failure("Failed to retrieve queued registration requests.")
         }
     }

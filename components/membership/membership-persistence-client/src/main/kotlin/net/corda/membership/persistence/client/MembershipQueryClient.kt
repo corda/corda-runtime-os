@@ -6,6 +6,7 @@ import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
@@ -143,6 +144,6 @@ interface MembershipQueryClient : Lifecycle {
     fun queryQueuedRegistrationRequests(
         viewOwningIdentity: HoldingIdentity,
         registeringIdentity: HoldingIdentity
-    ): MembershipQueryResult<List<RegistrationRequest>>
+    ): MembershipQueryResult<List<RegistrationStatusDetails>>
 }
 

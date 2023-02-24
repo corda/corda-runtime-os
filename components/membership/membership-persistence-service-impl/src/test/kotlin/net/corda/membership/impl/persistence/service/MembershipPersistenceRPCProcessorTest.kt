@@ -23,6 +23,7 @@ import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
+import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequests
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
@@ -95,12 +96,14 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val requestId = UUID.randomUUID().toString()
     private val ourX500Name = MemberX500Name.parse("O=Alice, L=London, C=GB").toString()
-    private val ourGroupId = UUID.randomUUID().toString()
+    private val groupId = UUID.randomUUID().toString()
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val preAuthTokenId = UUID.randomUUID().toString()
-    private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, ourGroupId)
+    private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, groupId)
     private val context = "context".toByteArray()
     private val vaultDmlConnectionId = UUID(30, 0)
+    private val membersHoldingIdentity =
+        createTestHoldingIdentity(MemberX500Name.parse("O=Bob, L=London, C=GB").toString(), groupId)
 
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
@@ -161,6 +164,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { select(registrationRequestRoot) } doReturn mock
         on { where() } doReturn mock
         on { where(any()) } doReturn mock
+        on { where(any(), any()) } doReturn mock
         on { orderBy(order) } doReturn mock
     }
     private val registrationRequestQuery = mock<TypedQuery<RegistrationRequestEntity>> {
@@ -656,4 +660,25 @@ class MembershipPersistenceRPCProcessorTest {
         }
     }
 
+    @Test
+    fun `query queued registration requests returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            QueryQueuedRegistrationRequests(membersHoldingIdentity.shortHash.value)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNull()
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
 }
