@@ -3,17 +3,17 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequests
-import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.virtualnode.toCorda
 import java.time.Instant
 
-internal class QueryQueuedRegistrationRequestsHandler(persistenceHandlerServices: PersistenceHandlerServices)
-    : BaseRequestStatusHandler<QueryQueuedRegistrationRequests, RegistrationRequestsQueryResponse>(persistenceHandlerServices) {
+internal class QueryQueuedRegistrationRequestHandler(persistenceHandlerServices: PersistenceHandlerServices)
+    : BaseRequestStatusHandler<QueryQueuedRegistrationRequests, RegistrationRequestQueryResponse>(persistenceHandlerServices) {
     override fun invoke(
         context: MembershipRequestContext,
         request: QueryQueuedRegistrationRequests,
-    ): RegistrationRequestsQueryResponse {
+    ): RegistrationRequestQueryResponse {
         val viewOwnersShortHash = context.holdingIdentity.toCorda().shortHash
         logger.info("Querying for queued registration requests belonging to holding identity with " +
                 "ID `${request.requestSubjectShortHash}`.")
@@ -31,10 +31,13 @@ internal class QueryQueuedRegistrationRequestsHandler(persistenceHandlerServices
                 )
                 .orderBy(criteriaBuilder.asc(root.get<Instant>("created")))
 
-            val requests = em.createQuery(query).resultList.map {
-                it.toDetails()
+            val requests = em.createQuery(query).resultList
+            if(requests.isNotEmpty()) {
+                val oldest = requests.first().toDetails()
+                RegistrationRequestQueryResponse(oldest)
+            } else {
+                RegistrationRequestQueryResponse(null)
             }
-            RegistrationRequestsQueryResponse(requests)
         }
     }
 

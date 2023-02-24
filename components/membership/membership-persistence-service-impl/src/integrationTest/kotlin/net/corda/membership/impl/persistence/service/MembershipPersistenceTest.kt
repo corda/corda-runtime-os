@@ -1244,7 +1244,7 @@ class MembershipPersistenceTest {
     }
 
     @Test
-    fun `queryQueuedRegistrationRequests retrieves the expected registration requests`() {
+    fun `queryQueuedRegistrationRequest retrieves the oldest registration request`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
         }
@@ -1263,11 +1263,31 @@ class MembershipPersistenceTest {
             persistRequest(registeringHoldingIdentity, id, RegistrationStatus.NEW)
         }
 
-        val result = membershipQueryClient.queryQueuedRegistrationRequests(
+        val result = membershipQueryClient.queryQueuedRegistrationRequest(
             viewOwningHoldingIdentity,
             registeringHoldingIdentity
         ).getOrThrow()
-        assertThat(result.map { it.registrationId }).containsExactlyElementsOf(queuedRegistrationIds)
+        assertThat(result?.registrationId).isEqualTo(queuedRegistrationIds.first())
+    }
+
+    @Test
+    fun `queryQueuedRegistrationRequest returns null when there were no queued requests`() {
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
+        }
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+        // Persist a request pending manual approval
+        val registrationId = randomUUID().toString()
+        persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
+
+        val result = membershipQueryClient.queryQueuedRegistrationRequest(
+            viewOwningHoldingIdentity,
+            registeringHoldingIdentity
+        ).getOrThrow()
+        assertThat(result).isNull()
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =

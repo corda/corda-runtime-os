@@ -8,7 +8,6 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -133,17 +132,19 @@ interface MembershipQueryClient : Lifecycle {
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>>
 
     /**
-     * Query for a given member's queued registration requests having `NEW` status, ordered by creation time of the request (ascending order).
+     * Query for a given member's queued registration requests having `NEW` status, returns the request which
+     * was the oldest based on creation time.
      *
      * @param viewOwningIdentity The holding identity whose view we want to check.
      * @param registeringIdentity The registering member's identity, whose requests we want to see.
      *
-     * @return a query result with a list of registration requests submitted by [registeringIdentity] if the query executed successfully.
-     * Empty list is returned if there weren't any queued requests submitted by given member.
+     * @return a query result with the oldest request submitted by [registeringIdentity] if
+     * the query executed successfully.
+     * Null is returned if there weren't any queued requests submitted by given member.
      */
-    fun queryQueuedRegistrationRequests(
+    fun queryQueuedRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registeringIdentity: HoldingIdentity
-    ): MembershipQueryResult<List<RegistrationStatusDetails>>
+    ): MembershipQueryResult<RegistrationStatusDetails?>
 }
 

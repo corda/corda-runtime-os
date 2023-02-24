@@ -5,6 +5,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -177,6 +178,11 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         ruleType: ApprovalRuleType,
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>> = MembershipQueryResult.Success(emptyList())
+
+    override fun queryQueuedRegistrationRequest(
+        viewOwningIdentity: HoldingIdentity,
+        registeringIdentity: HoldingIdentity
+    ): MembershipQueryResult<RegistrationStatusDetails?> = MembershipQueryResult.Success(null)
 
     override val isRunning = true
 

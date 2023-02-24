@@ -176,6 +176,8 @@ class MembershipPersistenceRPCProcessorTest {
         on { createQuery(RegistrationRequestEntity::class.java) } doReturn registrationRequestsQuery
         on { equal(ruleTypePath, ApprovalRuleType.STANDARD.name) } doReturn predicate
         on { equal(ruleRegexPath, DUMMY_RULE) } doReturn predicate
+        on { equal(shortHashPath, membersHoldingIdentity.shortHash.value) } doReturn predicate
+        on { equal(statusPath, RegistrationStatus.NEW.name) } doReturn predicate
         on { and(predicate, predicate) } doReturn predicate
         on { `in`(statusPath) } doReturn inStatus
         on { asc(createdPath) } doReturn order
@@ -661,7 +663,7 @@ class MembershipPersistenceRPCProcessorTest {
     }
 
     @Test
-    fun `query queued registration requests returns success`() {
+    fun `query oldest queued registration request returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
             QueryQueuedRegistrationRequests(membersHoldingIdentity.shortHash.value)

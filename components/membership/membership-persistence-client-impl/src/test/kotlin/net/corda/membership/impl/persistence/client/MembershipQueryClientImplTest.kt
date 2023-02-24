@@ -1253,23 +1253,13 @@ class MembershipQueryClientImplTest {
         @Test
         fun `returns the correct data in case of successful valid result`() {
             postConfigChangedEvent()
-            val statuses = listOf(
-                RegistrationStatusDetails(
-                    clock.instant(),
-                    clock.instant(),
-                    RegistrationStatus.NEW,
-                    "id 1",
-                    1,
-                    KeyValuePairList(listOf(KeyValuePair("key", "value")))
-                ),
-                RegistrationStatusDetails(
-                    clock.instant(),
-                    clock.instant(),
-                    RegistrationStatus.NEW,
-                    "id 2",
-                    1,
-                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2")))
-                ),
+            val request = RegistrationStatusDetails(
+                clock.instant(),
+                clock.instant(),
+                RegistrationStatus.NEW,
+                "id 1",
+                1,
+                KeyValuePairList(listOf(KeyValuePair("key", "value")))
             )
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -1283,13 +1273,13 @@ class MembershipQueryClientImplTest {
                 CompletableFuture.completedFuture(
                     MembershipPersistenceResponse(
                         context,
-                        RegistrationRequestsQueryResponse(statuses)
+                        RegistrationRequestQueryResponse(request)
                     )
                 )
             }
 
-            val result = membershipQueryClient.queryQueuedRegistrationRequests(ourHoldingIdentity, membersHoldingidentity)
-            assertThat(result.getOrThrow()).containsAll(statuses)
+            val result = membershipQueryClient.queryQueuedRegistrationRequest(ourHoldingIdentity, membersHoldingidentity)
+            assertThat(result.getOrThrow()).isEqualTo(request)
         }
 
         @Test
@@ -1312,7 +1302,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryQueuedRegistrationRequests(ourHoldingIdentity, membersHoldingidentity)
+            val result = membershipQueryClient.queryQueuedRegistrationRequest(ourHoldingIdentity, membersHoldingidentity)
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
 
@@ -1336,7 +1326,7 @@ class MembershipQueryClientImplTest {
                 )
             }
 
-            val result = membershipQueryClient.queryQueuedRegistrationRequests(ourHoldingIdentity, membersHoldingidentity)
+            val result = membershipQueryClient.queryQueuedRegistrationRequest(ourHoldingIdentity, membersHoldingidentity)
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
     }

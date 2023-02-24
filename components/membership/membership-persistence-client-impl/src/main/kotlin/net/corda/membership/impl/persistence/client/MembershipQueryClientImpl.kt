@@ -31,7 +31,6 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -298,16 +297,16 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryQueuedRegistrationRequests(
+    override fun queryQueuedRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registeringIdentity: HoldingIdentity
-    ): MembershipQueryResult<List<RegistrationStatusDetails>> {
+    ): MembershipQueryResult<RegistrationStatusDetails?> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryQueuedRegistrationRequests(registeringIdentity.shortHash.value)
         ).execute()
         return when (val payload = result.payload) {
-            is RegistrationRequestsQueryResponse -> MembershipQueryResult.Success(payload.registrationRequests)
+            is RegistrationRequestQueryResponse -> MembershipQueryResult.Success(payload.registrationRequest)
             else -> MembershipQueryResult.Failure("Failed to retrieve queued registration requests.")
         }
     }

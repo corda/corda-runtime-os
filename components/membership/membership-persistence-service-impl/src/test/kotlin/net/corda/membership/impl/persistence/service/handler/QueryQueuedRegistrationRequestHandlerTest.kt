@@ -35,7 +35,7 @@ import javax.persistence.criteria.Path
 import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
 
-class QueryQueuedRegistrationRequestsHandlerTest {
+class QueryQueuedRegistrationRequestHandlerTest {
     private val groupId = UUID.randomUUID().toString()
     private val viewOwner = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
 
@@ -104,7 +104,7 @@ class QueryQueuedRegistrationRequestsHandlerTest {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
     }
 
-    private val handler = QueryQueuedRegistrationRequestsHandler(service)
+    private val handler = QueryQueuedRegistrationRequestHandler(service)
 
     private val context: MembershipRequestContext = mock {
         on { holdingIdentity } doReturn viewOwner
@@ -114,17 +114,17 @@ class QueryQueuedRegistrationRequestsHandlerTest {
     }
 
     @Test
-    fun `invoke returns a list of queued requests`() {
+    fun `invoke returns the oldest queued request`() {
         val ids = (1..4).map {
             "id-$it"
         }
         whenever(actualQuery.resultList).doReturn(
-            ids.map {
+            (0..3).map {
                 RegistrationRequestEntity(
-                    it,
+                    ids[it],
                     memberShortHash.value,
                     "NEW",
-                    Instant.ofEpochSecond(500),
+                    Instant.ofEpochSecond(500 + it.toLong()),
                     Instant.ofEpochSecond(600),
                     byteArrayOf(1, 2, 3)
                 )
@@ -133,18 +133,17 @@ class QueryQueuedRegistrationRequestsHandlerTest {
 
         val result = handler.invoke(context, request)
 
-        assertThat(result.registrationRequests.map { it.registrationId })
-            .containsAll(ids)
+        assertThat(result.registrationRequest.registrationId).isEqualTo("id-1")
     }
 
     @Test
-    fun `invoke returns empty response when no queued requests were found`() {
+    fun `invoke returns null when no queued requests were found`() {
         whenever(actualQuery.resultList).doReturn(
             emptyList()
         )
 
         val result = handler.invoke(context, request)
 
-        assertThat(result.registrationRequests).isEmpty()
+        assertThat(result.registrationRequest).isNull()
     }
 }
