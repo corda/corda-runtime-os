@@ -27,7 +27,6 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.impl.rest.v1.MemberLookupRestResourceImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
