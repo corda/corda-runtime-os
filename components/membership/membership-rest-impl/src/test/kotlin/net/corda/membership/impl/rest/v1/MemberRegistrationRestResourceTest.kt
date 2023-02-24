@@ -15,9 +15,6 @@ import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
-import net.corda.membership.impl.rest.v1.MemberRegistrationRestResourceImpl
-import net.corda.membership.impl.rest.v1.fromDto
-import net.corda.membership.impl.rest.v1.toDto
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

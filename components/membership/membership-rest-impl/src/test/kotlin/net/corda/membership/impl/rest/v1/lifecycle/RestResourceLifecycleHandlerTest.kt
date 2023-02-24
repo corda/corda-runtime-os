@@ -8,7 +8,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.MemberResourceClient
-import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
