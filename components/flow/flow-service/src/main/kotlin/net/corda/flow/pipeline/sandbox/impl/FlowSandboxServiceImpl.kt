@@ -48,16 +48,16 @@ class FlowSandboxServiceImpl @Activate constructor(
         const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
     }
 
-    override fun get(holdingIdentity: HoldingIdentity, cpks: Collection<SecureHash>): FlowSandboxGroupContext {
+    override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Collection<SecureHash>): FlowSandboxGroupContext {
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,
-            cpks.toSet(),
+            cpkFileHashes.toSet(),
             SandboxGroupType.FLOW,
             null
         )
 
         if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkFileChecksums)) {
-            throw IllegalStateException("The sandbox can't find one or more of the CPKs $cpks ")
+            throw IllegalStateException("The sandbox can't find one or more of the CPKs $cpkFileHashes ")
         }
 
         val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->

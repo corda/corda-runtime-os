@@ -13,9 +13,9 @@ interface FlowSandboxService {
      * Uses the sandbox service to return a sandbox with extra services required for the flow pipeline.
      *
      * @param holdingIdentity a HoldingIdentity.
-     * @param cpks a Collection of cpk FileHashes.
+     * @param cpkFileHashes a Collection of cpk FileHashes.
      * @return a FlowSandboxGroupContext.
      */
 
-    fun get(holdingIdentity: HoldingIdentity, cpks: Collection<SecureHash>): FlowSandboxGroupContext
+    fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Collection<SecureHash>): FlowSandboxGroupContext
 }
