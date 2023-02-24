@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import java.util.Collections.unmodifiableList
+import java.util.Collections.unmodifiableMap
 import net.corda.common.json.serializers.JsonDeserializerAdaptor
 import net.corda.common.json.serializers.JsonSerializerAdaptor
 import net.corda.common.json.serializers.standardTypesModule
@@ -51,7 +53,13 @@ class SimpleJsonMarshallingService(
     }
 
     override fun <T> parseList(input: String, clazz: Class<T>): List<T> {
-        return objectMapper.readValue(input, objectMapper.typeFactory.constructCollectionType(List::class.java, clazz))
+        return unmodifiableList(objectMapper.readValue(
+            input, objectMapper.typeFactory.constructCollectionType(List::class.java, clazz)))
+    }
+
+    override fun <K, V> parseMap(input: String, keyClass: Class<K>, valueClass: Class<V>): Map<K, V> {
+        return unmodifiableMap(objectMapper.readValue(
+            input, objectMapper.typeFactory.constructMapType(LinkedHashMap::class.java, keyClass, valueClass)))
     }
 
     private class RequestDataSerializer : StdDeserializer<RequestData>(RequestData::class.java) {

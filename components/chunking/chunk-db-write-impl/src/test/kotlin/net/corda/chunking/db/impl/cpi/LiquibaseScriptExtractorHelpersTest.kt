@@ -1,8 +1,8 @@
 package net.corda.chunking.db.impl.cpi
 
-import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
-import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractorHelpers
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
+import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
+import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractorHelpers
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpkIdentifier
@@ -23,7 +23,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-internal class LiquibaseExtractorHelpersTest {
+internal class LiquibaseScriptExtractorHelpersTest {
     companion object {
         const val EXTENDABLE_CPB = "/META-INF/extendable-cpb.cpb"
         private fun getInputStream(resourceName: String): InputStream {
@@ -92,8 +92,8 @@ internal class LiquibaseExtractorHelpersTest {
             SecureHash.parse("ALGO:0987654321")
         )
 
-        val obj = LiquibaseExtractorHelpers()
-        val entities = jarWithLiquibase().inputStream().use { obj.getEntities(cpk, it) }
+        val obj = LiquibaseScriptExtractorHelpers()
+        val entities = jarWithLiquibase().inputStream().use { obj.readLiquibaseScripts(cpk, it) }
 
         assertThat(entities.size).isEqualTo(1)
     }
@@ -107,8 +107,8 @@ internal class LiquibaseExtractorHelpersTest {
             SecureHash.parse("ALGO:0987654321")
         )
 
-        val obj = LiquibaseExtractorHelpers()
-        val entities = cpkWithNestedJar().inputStream().use { obj.getEntities(cpk, it) }
+        val obj = LiquibaseScriptExtractorHelpers()
+        val entities = cpkWithNestedJar().inputStream().use { obj.readLiquibaseScripts(cpk, it) }
 
         assertThat(entities.size).isEqualTo(1)
     }
@@ -122,8 +122,8 @@ internal class LiquibaseExtractorHelpersTest {
             SecureHash.parse("ALGO:0987654321")
         )
 
-        val obj = LiquibaseExtractorHelpers()
-        val entities = jarWithoutLiquibase().inputStream().use { obj.getEntities(cpk, it) }
+        val obj = LiquibaseScriptExtractorHelpers()
+        val entities = jarWithoutLiquibase().inputStream().use { obj.readLiquibaseScripts(cpk, it) }
 
         assertThat(entities.size).isEqualTo(0)
     }
@@ -137,8 +137,8 @@ internal class LiquibaseExtractorHelpersTest {
             SecureHash.parse("ALGO:0987654321")
         )
 
-        val obj = LiquibaseExtractorHelpers()
-        val entities = jarWithBrokenLiquibase().inputStream().use { obj.getEntities(cpk, it) }
+        val obj = LiquibaseScriptExtractorHelpers()
+        val entities = jarWithBrokenLiquibase().inputStream().use { obj.readLiquibaseScripts(cpk, it) }
 
         assertThat(entities.size).isEqualTo(0)
     }
@@ -153,30 +153,30 @@ internal class LiquibaseExtractorHelpersTest {
         )
 
 
-        val obj = LiquibaseExtractorHelpers()
-        val entities = jarWithOtherXmlResource().inputStream().use { obj.getEntities(cpk, it) }
+        val obj = LiquibaseScriptExtractorHelpers()
+        val entities = jarWithOtherXmlResource().inputStream().use { obj.readLiquibaseScripts(cpk, it) }
 
         assertThat(entities.size).isEqualTo(0)
     }
 
     @Test
     fun `liquibase XML accepted`() {
-        assertThat(LiquibaseExtractorHelpers().isLiquibaseXml(liquibase)).isTrue
+        assertThat(LiquibaseScriptExtractorHelpers().isLiquibaseXml(liquibase)).isTrue
     }
 
     @Test
     fun `liquibase XML rejected`() {
-        assertThat(LiquibaseExtractorHelpers().isLiquibaseXml(notLiquibase)).isFalse
+        assertThat(LiquibaseScriptExtractorHelpers().isLiquibaseXml(notLiquibase)).isFalse
     }
 
     @Test
     fun `not XML rejected`() {
-        assertThat(LiquibaseExtractorHelpers().isLiquibaseXml(notXml)).isFalse
+        assertThat(LiquibaseScriptExtractorHelpers().isLiquibaseXml(notXml)).isFalse
     }
 
     @Test
     fun `empty string that is not not XML rejected`() {
-        assertThat(LiquibaseExtractorHelpers().isLiquibaseXml("")).isFalse
+        assertThat(LiquibaseScriptExtractorHelpers().isLiquibaseXml("")).isFalse
     }
 
     @Test
@@ -188,13 +188,13 @@ internal class LiquibaseExtractorHelpersTest {
             SecureHash.parse("ALGO:0987654321")
         )
 
-        val obj = LiquibaseExtractorHelpers()
+        val obj = LiquibaseScriptExtractorHelpers()
 
         // Note:  INCORRECT USAGE on purpose (we just want some CPKs to test)
         // We're testing a **CPI**, not a *CPK**, so we're persisting
         // the scripts using the "mock cpk" as the db key.
 
-        val entities = getInputStream(EXTENDABLE_CPB).use { obj.getEntities(cpk, it) }
+        val entities = getInputStream(EXTENDABLE_CPB).use { obj.readLiquibaseScripts(cpk, it) }
 
         // "extendable-cpb" contains cats.cpk (3) and dogs.cpk (2) liquibase files.
         val expectedLiquibaseFileCount = 5
@@ -204,13 +204,13 @@ internal class LiquibaseExtractorHelpersTest {
 
     @Test
     fun `test real cpb and parse it`() {
-        val obj = LiquibaseExtractorHelpers()
+        val obj = LiquibaseScriptExtractorHelpers()
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
-        val entities = mutableListOf<CpkDbChangeLogEntity>()
+        val entities = mutableListOf<CpkDbChangeLog>()
         cpi.cpks.forEach { cpk ->
             Files.newInputStream(cpk.path!!).use {
-                entities += obj.getEntities(cpk, it)
+                entities += obj.readLiquibaseScripts(cpk, it)
             }
         }
 
@@ -223,10 +223,10 @@ internal class LiquibaseExtractorHelpersTest {
     fun `test real cpb via validation function`() {
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
-        val obj = LiquibaseExtractor()
-        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
+        val obj = LiquibaseScriptExtractor()
+        assertThat(obj.extract(cpi).isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5
-        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).size).isEqualTo(expectedLiquibaseFileCount)
+        assertThat(obj.extract(cpi).size).isEqualTo(expectedLiquibaseFileCount)
     }
 }

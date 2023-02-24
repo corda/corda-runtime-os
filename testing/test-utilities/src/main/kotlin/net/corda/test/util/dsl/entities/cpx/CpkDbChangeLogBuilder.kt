@@ -1,16 +1,19 @@
 package net.corda.test.util.dsl.entities.cpx
 
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 
-fun cpkDbChangeLog(init: CpkDbChangeLogBuilder.() -> Unit): CpkDbChangeLogEntity {
+fun cpkDbChangeLog(init: CpkDbChangeLogBuilder.() -> Unit): CpkDbChangeLog {
     val builder = CpkDbChangeLogBuilder()
     init(builder)
     return builder.build()
 }
 
-class CpkDbChangeLogBuilder(private var fileChecksumSupplier: () -> String? = { null }, private val randomUUID: UUID = UUID.randomUUID()) {
+class CpkDbChangeLogBuilder(
+    private var fileChecksumSupplier: () -> String? = { null },
+    private val randomUUID: UUID = UUID.randomUUID()
+) {
 
     private var filePath: String? = null
 
@@ -24,9 +27,9 @@ class CpkDbChangeLogBuilder(private var fileChecksumSupplier: () -> String? = { 
         return this
     }
 
-    fun build(): CpkDbChangeLogEntity {
-        return CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(
+    fun build(): CpkDbChangeLog {
+        return CpkDbChangeLog(
+            CpkDbChangeLogIdentifier(
                 fileChecksumSupplier.invoke() ?: "file_checksum_$randomUUID",
                 filePath ?: "file_path_$randomUUID"
             ),

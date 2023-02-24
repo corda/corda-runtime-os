@@ -6,7 +6,6 @@ import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.EmbeddedId
 import javax.persistence.Entity
-import javax.persistence.EntityManager
 import javax.persistence.Table
 import javax.persistence.Version
 
@@ -15,7 +14,7 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = "cpk_db_change_log")
-class CpkDbChangeLogEntity(
+internal class CpkDbChangeLogEntity(
     @EmbeddedId
     var id: CpkDbChangeLogKey,
     @Column(name = "content", nullable = false)
@@ -55,7 +54,7 @@ class CpkDbChangeLogEntity(
  * Composite primary key for a Cpk Change Log Entry.
  */
 @Embeddable
-class CpkDbChangeLogKey(
+internal class CpkDbChangeLogKey(
     @Column(name = "cpk_file_checksum", nullable = false)
     var cpkFileChecksum: String,
     @Column(name = "file_path", nullable = false)
@@ -78,42 +77,4 @@ class CpkDbChangeLogKey(
         result = 31 * result + filePath.hashCode()
         return result
     }
-}
-
-fun findChangelogEntitiesForGivenCpkFileChecksums(entityManager: EntityManager, cpkFileChecksums: Set<String>):
-        Map<String, List<CpkDbChangeLogEntity>> {
-    return cpkFileChecksums.chunked(100) { batch ->
-        entityManager.createQuery(
-            "FROM ${CpkDbChangeLogEntity::class.simpleName}" +
-                    " WHERE id.cpkFileChecksum IN :cpkFileChecksums",
-            CpkDbChangeLogEntity::class.java
-        )
-            .setParameter("cpkFileChecksums", batch)
-            .resultList
-    }.flatten()
-        .groupBy { it.id.cpkFileChecksum }
-}
-
-fun findCurrentCpkChangeLogsForCpi(
-    entityManager: EntityManager,
-    cpiName: String,
-    cpiVersion: String,
-    cpiSignerSummaryHash: String?
-): List<CpkDbChangeLogEntity> {
-    return entityManager.createQuery(
-        "SELECT changelog " +
-                "FROM ${CpkDbChangeLogEntity::class.simpleName} AS changelog INNER JOIN " +
-                "${CpiCpkEntity::class.simpleName} AS cpiCpk " +
-                "ON changelog.id.cpkFileChecksum = cpiCpk.id.cpkFileChecksum " +
-                "WHERE cpiCpk.id.cpiName = :name AND " +
-                "      cpiCpk.id.cpiVersion = :version AND " +
-                "      cpiCpk.id.cpiSignerSummaryHash = :signerSummaryHash AND " +
-                "      changelog.isDeleted = FALSE " +
-                "ORDER BY changelog.insertTimestamp DESC",
-        CpkDbChangeLogEntity::class.java
-    )
-        .setParameter("name", cpiName)
-        .setParameter("version", cpiVersion)
-        .setParameter("signerSummaryHash", cpiSignerSummaryHash ?: "")
-        .resultList
 }
