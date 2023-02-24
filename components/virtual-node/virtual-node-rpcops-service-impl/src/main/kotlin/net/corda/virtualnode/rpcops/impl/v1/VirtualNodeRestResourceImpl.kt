@@ -378,7 +378,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
     }
     private fun validateStateChange(virtualNodeShortId: String, newState: String) {
         val state = try {
-            VirtualNodeStateTransitions.valueOf(newState.uppercase())
+            VirtualNodeMaintenanceState.valueOf(newState.uppercase())
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
         }
@@ -391,8 +391,8 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
 
         // Compare new state to current state
         when(inMaintenance) {
-            true -> if(state == VirtualNodeStateTransitions.MAINTENANCE) throw InvalidStateChangeException("VirtualNode", virtualNodeShortId, newState)
-            false -> if(state == VirtualNodeStateTransitions.ACTIVE) throw InvalidStateChangeException("VirtualNode", virtualNodeShortId, newState)
+            true -> if(state == VirtualNodeMaintenanceState.MAINTENANCE) throw InvalidStateChangeException("VirtualNode", virtualNodeShortId, newState)
+            false -> if(state == VirtualNodeMaintenanceState.ACTIVE) throw InvalidStateChangeException("VirtualNode", virtualNodeShortId, newState)
         }
     }
 

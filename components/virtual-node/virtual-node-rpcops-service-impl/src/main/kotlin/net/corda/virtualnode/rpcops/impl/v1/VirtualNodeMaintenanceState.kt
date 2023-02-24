@@ -1,6 +1,6 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
-enum class VirtualNodeStateTransitions {
+enum class VirtualNodeMaintenanceState {
     ACTIVE,
     MAINTENANCE
 }
