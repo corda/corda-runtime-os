@@ -117,11 +117,14 @@ internal class MemberOpsAsyncProcessor(
             Outcome.SUCCESS
         } catch (e: InvalidMembershipRegistrationException) {
             // CORE-10367: return the status update command as part of the onNext
-            membershipPersistenceClient.setRegistrationRequestStatus(
+            println("QQQ for $registrationId for $e")
+            e.printStackTrace()
+            val pers = membershipPersistenceClient.setRegistrationRequestStatus(
                 holdingIdentity,
                 registrationId.toString(),
                 RegistrationStatus.INVALID,
             )
+            println("QQQ for $registrationId  persistence replied -> $pers")
             logger.warn("Registration ${request.requestId} failed. Invalid registration request.", e)
             Outcome.FAILED_CANNOT_RETRY
         } catch (e: Exception) {
