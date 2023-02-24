@@ -28,7 +28,6 @@ import net.corda.data.p2p.markers.Component
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
@@ -132,7 +131,8 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        logger.debug { "Processing outbound message ${message.header.messageId} to ${message.header.destination}." }
+        //TODO CORE-9865 temporarily produce logs in info level
+        logger.info( "Processing outbound message ${message.header.messageId} to ${message.header.destination}." )
 
         val discardReason = checkSourceAndDestinationValid(
             message.header.source, message.header.destination
