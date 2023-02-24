@@ -5,8 +5,13 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.createFromConfig
+import net.corda.db.connection.manager.impl.lifecyclewrappers.DownOnErrorCloseableDataSource
+import net.corda.db.connection.manager.impl.lifecyclewrappers.DownOnErrorDataSource
+import net.corda.db.connection.manager.impl.lifecyclewrappers.DownOnErrorEntityManagerFactory
+import net.corda.db.connection.manager.impl.lifecyclewrappers.downOnError
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
+import net.corda.db.core.DbPrivilege
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -15,6 +20,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.JpaEntitiesSet
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -22,11 +28,13 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.UUID
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
 @Component(service = [DbConnectionManager::class])
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class DbConnectionManagerImpl (
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val dataSourceFactory: DataSourceFactory,
@@ -36,7 +44,7 @@ class DbConnectionManagerImpl (
     private val dbConnectionOps: DbConnectionOps,
     private val checkConnectionRetryTimeout: Duration,
     private val sleeper: (d: Duration) -> Unit
-): DbConnectionManager, DbConnectionOps by dbConnectionOps, DataSourceFactory by dataSourceFactory {
+): DbConnectionManager, DbConnectionOps, DataSourceFactory {
 
     @Activate
     constructor(
@@ -170,4 +178,87 @@ class DbConnectionManagerImpl (
     } catch (e: Exception) {
         throw DBConfigurationException("Could not connect to cluster database.", e)
     }
+
+    override fun create(
+        driverClass: String,
+        jdbcUrl: String,
+        username: String,
+        password: String,
+        isAutoCommit: Boolean,
+        maximumPoolSize: Int
+    ): CloseableDataSource {
+        val closeableDataSource = lifecycleCoordinator.downOnError {
+            dataSourceFactory.create(driverClass, jdbcUrl, username, password, isAutoCommit, maximumPoolSize)
+        }
+
+        return DownOnErrorCloseableDataSource(lifecycleCoordinator, closeableDataSource)
+    }
+
+    override fun putConnection(
+        name: String,
+        privilege: DbPrivilege,
+        config: SmartConfig,
+        description: String?,
+        updateActor: String
+    ): UUID =
+        lifecycleCoordinator.downOnError { dbConnectionOps.putConnection(name, privilege, config, description, updateActor) }
+
+    override fun putConnection(
+        entityManager: EntityManager,
+        name: String,
+        privilege: DbPrivilege,
+        config: SmartConfig,
+        description: String?,
+        updateActor: String
+    ): UUID =
+        lifecycleCoordinator.downOnError { dbConnectionOps.putConnection(entityManager, name, privilege, config, description, updateActor) }
+
+    override fun getClusterDataSource(): DataSource {
+        val clusterDataSource = lifecycleCoordinator.downOnError {
+            dbConnectionOps.getClusterDataSource()
+        }
+        return DownOnErrorDataSource(lifecycleCoordinator, clusterDataSource)
+    }
+
+    override fun createDatasource(connectionId: UUID): CloseableDataSource {
+        val dataSource = lifecycleCoordinator.downOnError { dbConnectionOps.createDatasource(connectionId) }
+        return DownOnErrorCloseableDataSource(lifecycleCoordinator, dataSource)
+    }
+
+    override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
+        lifecycleCoordinator.downOnError { dbConnectionOps.getDataSource(name, privilege) }?.let { dataSource ->
+            DownOnErrorDataSource(lifecycleCoordinator, dataSource)
+        }
+
+    override fun getDataSource(config: SmartConfig): CloseableDataSource {
+        val closeableDataSource = lifecycleCoordinator.downOnError { dbConnectionOps.getDataSource(config) }
+        return DownOnErrorCloseableDataSource(lifecycleCoordinator, closeableDataSource)
+    }
+
+    override fun getClusterEntityManagerFactory(): EntityManagerFactory =
+        lifecycleCoordinator.downOnError { DownOnErrorEntityManagerFactory(
+            lifecycleCoordinator,
+            dbConnectionOps.getClusterEntityManagerFactory()
+        ) }
+
+    override fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory =
+        lifecycleCoordinator.downOnError { DownOnErrorEntityManagerFactory(
+            lifecycleCoordinator,
+            dbConnectionOps.getOrCreateEntityManagerFactory(db, privilege)
+        ) }
+
+    override fun getOrCreateEntityManagerFactory(
+        name: String,
+        privilege: DbPrivilege,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory = lifecycleCoordinator.downOnError { DownOnErrorEntityManagerFactory(
+        lifecycleCoordinator,
+        dbConnectionOps.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
+    ) }
+
+    override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory =
+        lifecycleCoordinator.downOnError { DownOnErrorEntityManagerFactory(
+            lifecycleCoordinator,
+            dbConnectionOps.createEntityManagerFactory(connectionId, entitiesSet)
+        ) }
 }
