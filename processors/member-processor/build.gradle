@@ -42,7 +42,6 @@ dependencies {
     runtimeOnly project(':components:crypto:crypto-hes-impl')
     runtimeOnly project(':components:membership:group-params-writer-service-impl')
     runtimeOnly project(":components:membership:group-policy-impl")
-    runtimeOnly project(":components:membership:membership-persistence-client-impl")
     runtimeOnly project(":components:membership:membership-service-impl")
     runtimeOnly project(":components:membership:membership-p2p-impl")
     runtimeOnly project(":components:membership:registration-impl")

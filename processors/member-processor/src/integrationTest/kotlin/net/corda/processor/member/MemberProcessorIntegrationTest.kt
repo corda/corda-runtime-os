@@ -20,7 +20,6 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.membership.certificate.publisher.MembersClientCertificatePublisher
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -131,6 +130,7 @@ class MemberProcessorIntegrationTest {
         @InjectService(timeout = 5000L)
         lateinit var hsmRegistrationClient: HSMRegistrationClient
 
+
         lateinit var publisher: Publisher
 
         private val invalidHoldingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
@@ -191,6 +191,7 @@ class MemberProcessorIntegrationTest {
             memberProcessor.start(boostrapConfig)
             membershipGroupReaderProvider.start()
             hsmRegistrationClient.start()
+            cpiInfoReader.start()
             membersClientCertificatePublisher.start()
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<MemberProcessorIntegrationTest>(),

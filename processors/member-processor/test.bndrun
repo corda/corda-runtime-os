@@ -30,7 +30,6 @@
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='net.corda.membership-impl',\
     bnd.identity;id='net.corda.membership-service-impl',\
-    bnd.identity;id='net.corda.membership-persistence-client-impl',\
     bnd.identity;id='net.corda.membership-p2p-impl',\
     bnd.identity;id='net.corda.members-client-certificate-publisher-service-impl',\
     bnd.identity;id='net.corda.crypto-processor',\

@@ -6,10 +6,10 @@ NAMESPACE_PREFIX="${USER//./}"
 
 # Chart and Docker Image versions to deploy
 CORDA_CHART_VERSION="^0.1.0-beta"
-if [ -z $DOCKER_IMAGE_VERSION ]; then
-  DOCKER_IMAGE_VERSION=$(curl -u $CORDA_ARTIFACTORY_USERNAME:$CORDA_ARTIFACTORY_PASSWORD  https://corda-os-docker-unstable.software.r3.com:/v2/corda-os-p2p-link-manager-worker/tags/list | jq -r -M '.["tags"] | map(select(contains("5.0.0.0-beta"))) | sort | reverse | .[0]')
-fi
-#DOCKER_IMAGE_VERSION=5.0.0.0-beta-167361472154
+#if [ -z $DOCKER_IMAGE_VERSION ]; then
+#  DOCKER_IMAGE_VERSION=$(curl -u $CORDA_ARTIFACTORY_USERNAME:$CORDA_ARTIFACTORY_PASSWORD  https://corda-os-docker-unstable.software.r3.com:/v2/corda-os-p2p-link-manager-worker/tags/list | jq -r -M '.["tags"] | map(select(contains("5.0.0.0-beta"))) | sort | reverse | .[0]')
+#fi
+DOCKER_IMAGE_VERSION='preTest-23b4096cb'
 
 # Uncomment to enable mutual TLS
 # MTLS="Y"
