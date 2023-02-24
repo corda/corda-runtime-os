@@ -23,18 +23,21 @@ class FacadeToFlowMapperService @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val mapper = ObjectMapper(YAMLFactory()).registerModule(KotlinModule())
     }
+
     fun getFlowName(
         destinationIdentity: HoldingIdentity,
         facadeId: String,
         facadeName: String
     ): String {
-        logger.info("Fetching flow name for holding identity : ${destinationIdentity.x500Name} " +
-                "facade id : $facadeId facade name : $facadeName")
-        //Now we are using hardcoded facade definition and
+        logger.info(
+            "Fetching flow name for holding identity : ${destinationIdentity.x500Name} " +
+                    "facade id : $facadeId facade name : $facadeName"
+        )
+        // Now we are using hardcoded facade definition and
         // the assumption is we will get the required facade to flow mapping configuration as a part of CPIMetaData.
-        // The following code snippet suggest that how we can read it when it will be available.
+        // The following code snippet suggests how we can read it and when it will be available.
         val vNodeInfo = virtualNodeInfoReadService.get(destinationIdentity)
-        if(vNodeInfo != null) {
+        if (vNodeInfo != null) {
             checkNotNull(vNodeInfo) {
                 "Failed to find the virtual node info for holder '${destinationIdentity}' in ${virtualNodeInfoReadService::class.java}"
             }
@@ -47,7 +50,7 @@ class FacadeToFlowMapperService @Activate constructor(
                 this::class.java.getResource("/dummy-facade-to-flow-config.yaml")?.readText(),
                 FacadeFlowMapping::class.java
             ).facadeFlowMapping
-                .first { it.facadeId == facadeId }.mapping
+                .first { it.facadeId == facadeId }.facadeMethodMapping
                 .first { it.facadeMethod == facadeName }
                 .flowName
         }

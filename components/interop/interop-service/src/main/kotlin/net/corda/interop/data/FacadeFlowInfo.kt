@@ -1,5 +1,15 @@
 package net.corda.interop.data
 
-data class FacadeFlowInfo(val facadeId: String, val mapping : List<Mapping>)
-data class Mapping(val facadeMethod : String, val flowName : String)
-data class FacadeFlowMapping(val facadeFlowMapping : List<FacadeFlowInfo>)
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class FacadeFlowInfo(
+    @JsonProperty("facade-id") val facadeId: String,
+    @JsonProperty("facade-method-mapping") val facadeMethodMapping: List<FacadeMethodMapping>
+)
+
+data class FacadeMethodMapping(
+    @JsonProperty("facade-method") val facadeMethod: String,
+    @JsonProperty("flow-name") val flowName: String
+)
+
+data class FacadeFlowMapping(@JsonProperty("facade-flow-mapping") val facadeFlowMapping: List<FacadeFlowInfo>)
