@@ -138,7 +138,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
         whenever(mockCurrentSandboxGroupContext.get()).thenReturn(flowSandboxGroupContext)
 
-        whenever(mockFlowSandboxService.get(any())).thenReturn(flowSandboxGroupContext)
+        whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         assertThatThrownBy {
             utxoLedgerService.getPluggableNotaryClientFlow(utxoNotaryExample)
@@ -182,7 +182,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
         whenever(mockCurrentSandboxGroupContext.get()).thenReturn(flowSandboxGroupContext)
 
-        whenever(mockFlowSandboxService.get(any())).thenReturn(flowSandboxGroupContext)
+        whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         val result = assertDoesNotThrow {
             utxoLedgerService.getPluggableNotaryClientFlow(utxoNotaryExample)
