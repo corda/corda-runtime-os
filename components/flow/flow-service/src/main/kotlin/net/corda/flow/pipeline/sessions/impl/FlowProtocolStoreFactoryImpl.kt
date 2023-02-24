@@ -1,8 +1,8 @@
 package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
+import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
@@ -45,7 +45,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
             }
 
             flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {
-                if (!flowClass.interfaces.contains(ResponderFlow::class.java)) {
+                if (!flowClass.isAssignableFrom(ResponderFlow::class.java)) {
                     throw FlowFatalException(
                         "Flow ${flowClass.canonicalName} must implement ${ResponderFlow::class.simpleName}"
                     )
