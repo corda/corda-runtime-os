@@ -12,6 +12,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
+import java.lang.NumberFormatException
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
@@ -76,11 +77,16 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         interopMessage: InteropMessage,
         interopMessageSerializer: CordaAvroSerializer<InteropMessage>
     ): AppMessage {
+        val msgId = try {
+            "${header.messageId.toInt() + 1}"
+        } catch (e: NumberFormatException) {
+            "${header.messageId} - ${UUID.randomUUID()}"
+        }
         val responseHeader = UnauthenticatedMessageHeader(
             header.source,
             header.destination,
-            header.messageId + "-" + UUID.randomUUID(),
-            SUBSYSTEM
+            SUBSYSTEM,
+            msgId
         )
         return AppMessage(
             UnauthenticatedMessage(
