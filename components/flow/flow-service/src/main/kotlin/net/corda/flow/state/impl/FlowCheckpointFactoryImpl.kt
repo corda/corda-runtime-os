@@ -22,7 +22,7 @@ class FlowCheckpointFactoryImpl : FlowCheckpointFactory {
             retryState = null
             maxFlowSleepDuration = config.getInt(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION)
             pendingPlatformError = null
-            cpks = emptyList<SecureHash>()
+            cpkFileHashes = emptyList<SecureHash>()
         }.build()
         return Checkpoint.newBuilder().apply {
             flowId = newFlowId
