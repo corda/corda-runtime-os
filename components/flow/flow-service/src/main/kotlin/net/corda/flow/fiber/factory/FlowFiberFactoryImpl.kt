@@ -31,13 +31,13 @@ class FlowFiberFactoryImpl : FlowFiberFactory {
         val id = try {
             UUID.fromString(flowId)
         } catch (e: IllegalArgumentException) {
-            throw FlowFatalException("Expected the flow key to have a UUID id found '${flowId}' instead.", e)
+            throw FlowFatalException(FiberExceptionConstants.INVALID_FLOW_KEY.format(flowId), e)
         }
         try {
             val flowFiber = FlowFiberImpl(id, logic, currentScheduler)
             return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
         } catch (e: Throwable) {
-            throw FlowFatalException("Unable to execute flow fiber: ${e.message}", e)
+            throw FlowFatalException(FiberExceptionConstants.UNABLE_TO_EXECUTE.format(e.message), e)
         }
     }
 

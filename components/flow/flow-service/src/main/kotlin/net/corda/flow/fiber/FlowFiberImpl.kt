@@ -69,16 +69,16 @@ class FlowFiberImpl(
                 // suspended by Corda for the last time to mark it was finished already. Logging the callstack here would be
                 // misleading as it would point the log entry to the internal rethrow in Corda. In this case nothing has
                 // gone wrong, so we shouldn't log that it has.
-                log.warn("Flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
+                log.warn(FiberExceptionConstants.FLOW_DISCONTINUED.format(e.cause?.javaClass?.canonicalName, e.cause?.message))
                 failTopLevelSubFlow(e.cause!!)
             } catch (t: Throwable) {
-                log.warn("FlowFiber failed due to Throwable being thrown", t)
+                log.warn(FiberExceptionConstants.FLOW_FAILED_THROWABLE, t)
                 failTopLevelSubFlow(t)
             }
 
             if (!flowCompletion.isDone) {
-                log.warn("runFlow failed to complete normally, forcing a failure")
-                failTopLevelSubFlow(IllegalStateException("Flow failed to complete normally, forcing a failure"))
+                log.warn(FiberExceptionConstants.FLOW_FAILED_GENERIC)
+                failTopLevelSubFlow(IllegalStateException(FiberExceptionConstants.FLOW_FAILED_GENERIC))
             }
         } finally {
             removeCurrentSandboxGroupContext()
@@ -109,7 +109,7 @@ class FlowFiberImpl(
         when (outcomeOfFlow) {
             is FlowIORequest.FlowFinished -> finishTopLevelSubFlow(outcomeOfFlow)
             is FlowIORequest.FlowFailed -> failTopLevelSubFlow(outcomeOfFlow.exception)
-            else -> throw IllegalStateException("Unexpected Flow outcome")
+            else -> throw IllegalStateException(FiberExceptionConstants.UNEXPECTED_OUTCOME)
         }
     }
 
@@ -150,7 +150,7 @@ class FlowFiberImpl(
                     // that it might be filled with less useful information.
                     fillInStackTrace()
                 })
-            else -> throw IllegalStateException("Tried to return when suspension outcome says to continue")
+            else -> throw IllegalStateException(FiberExceptionConstants.INVALID_FLOW_RETURN)
         }
     }
 
@@ -188,45 +188,24 @@ class FlowFiberImpl(
         val flowStackService = flowFiberExecutionContext?.flowStackService
         return when {
             flowStackService == null -> {
-                log.debug {
-                    "Flow [$flowId] should have a single flow stack item when finishing but the stack was null. " +
-                    "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)" }
-                throw CordaRuntimeException(
-                    "Flow [$flowId] should have a single flow stack item when finishing but the stack was null. " +
-                    "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)"
-                )
+                log.debug { FiberExceptionConstants.NULL_FLOW_STACK_SERVICE.format(flowId) }
+                throw CordaRuntimeException( FiberExceptionConstants.NULL_FLOW_STACK_SERVICE.format(flowId) )
             }
             flowStackService.size > 1 -> {
-                log.debug {
-                    "Flow [$flowId] should have a single flow stack item when finishing but contained the following elements instead: " +
-                    "${flowFiberExecutionContext?.flowStackService} (Note: This may happen if you're missing a `@Suspendable` )" +
-                    "annotation somewhere in your flow.)" }
+                log.debug { FiberExceptionConstants.INCORRECT_ITEM_COUNT.format(flowId, flowFiberExecutionContext?.flowStackService) }
                 throw CordaRuntimeException(
-                    "Flow [$flowId] should have a single flow stack item when finishing but contained " +
-                    "${flowFiberExecutionContext?.flowStackService?.size} elements. " +
-                    "(Note: This may happen if you're missing a `@Suspendable` annotation " +
-                    "somewhere in your flow.)"
+                    FiberExceptionConstants.INCORRECT_ITEM_COUNT.format(flowId, flowFiberExecutionContext?.flowStackService?.size)
                 )
             }
             flowStackService.size == 0 -> {
-                log.debug {
-                    "Flow [$flowId] should have a single flow stack item when finishing but was empty. " +
-                    "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)" }
-                throw CordaRuntimeException(
-                    "Flow [$flowId] should have a single flow stack item when finishing but was empty. " +
-                    "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)"
-                )
+                log.debug { FiberExceptionConstants.EMPTY_FLOW_STACK.format(flowId) }
+                throw CordaRuntimeException(FiberExceptionConstants.EMPTY_FLOW_STACK.format(flowId))
             }
             else -> {
                 when (val item = flowStackService.peek()) {
                     null -> {
-                        log.debug {
-                            "Flow [$flowId] should have a single flow stack item when finishing but was empty. " +
-                            "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)" }
-                        throw CordaRuntimeException(
-                            "Flow [$flowId] should have a single flow stack item when finishing but was empty. " +
-                            "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)"
-                        )
+                        log.debug { FiberExceptionConstants.EMPTY_FLOW_STACK.format(flowId) }
+                        throw CordaRuntimeException(FiberExceptionConstants.EMPTY_FLOW_STACK.format(flowId))
                     }
                     else -> item
                 }
