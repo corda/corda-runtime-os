@@ -1,13 +1,12 @@
 package net.cordacon.example.doorcode
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -130,7 +129,7 @@ class DoorCodeQueryFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        val txId = requestBody.getRequestBodyAs<DoorCodeQuery>(jsonMarshallingService).txId
+        val txId = requestBody.getRequestBodyAs(jsonMarshallingService, DoorCodeQuery::class.java).txId
         val tx = consensualLedgerService.findSignedTransaction(txId)
 
         checkNotNull(tx) {"No consensual ledger transaction was persisted for provided id"}

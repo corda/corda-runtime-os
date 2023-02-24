@@ -8,7 +8,6 @@ import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -37,11 +36,11 @@ class SimConsensualLedgerService(
         signedTransaction: ConsensualSignedTransaction,
         sessions: List<FlowSession>
     ): ConsensualSignedTransaction {
-
+        @Suppress("unchecked_cast")
         val finalSignedTransaction = sessions.fold(signedTransaction) {
             tx, sess ->
                 sess.send(signedTransaction)
-            (tx as ConsensualSignedTransactionBase).addSignatures(sess.receive())
+            (tx as ConsensualSignedTransactionBase).addSignatures(sess.receive(List::class.java) as List<DigitalSignatureAndMetadata>)
         }
 
         sessions.forEach {
@@ -73,7 +72,7 @@ class SimConsensualLedgerService(
         session: FlowSession,
         validator: ConsensualTransactionValidator
     ): ConsensualSignedTransaction {
-        var signedTransaction = session.receive<ConsensualSignedTransaction>()
+        val signedTransaction = session.receive(ConsensualSignedTransaction::class.java)
         validator.checkTransaction(signedTransaction.toLedgerTransaction())
 
         val keysToSignWith = memberLookup.myInfo().ledgerKeys.filter {
@@ -82,7 +81,7 @@ class SimConsensualLedgerService(
 
         val signatures = signStates(signedTransaction, keysToSignWith)
         session.send(signatures)
-        val finalizedTx: ConsensualSignedTransactionBase = session.receive()
+        val finalizedTx = session.receive(ConsensualSignedTransactionBase::class.java)
         persistenceService.persist(finalizedTx.toEntity())
         return finalizedTx
     }
