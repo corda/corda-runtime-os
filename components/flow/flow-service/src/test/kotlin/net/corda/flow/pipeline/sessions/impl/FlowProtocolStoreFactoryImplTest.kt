@@ -52,13 +52,12 @@ class FlowProtocolStoreFactoryImplTest {
 
     @Test
     fun `adding initiator and responder flows that support multiple versions in same flows is successful`() {
-        val cpiMetadata = makeMockCPIMetadata(
+        val sandboxGroup = makeMockSandboxGroup(
             listOf(
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW_V1_AND_V2), listOf(), listOf()),
                 CpkFlowClassNameLists(listOf(INITIATED_FLOW_V1_AND_V2), listOf(), listOf(INITIATED_FLOW_V1_AND_V2))
             )
         )
-        val sandboxGroup = makeMockSandboxGroup()
         val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         assertEquals(Pair(PROTOCOL, listOf(1, 2)), protocolStore.protocolsForInitiator(INITIATING_FLOW_V1_AND_V2, mock()))
         assertEquals(INITIATING_FLOW_V1_AND_V2, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1, 2)))
@@ -71,7 +70,7 @@ class FlowProtocolStoreFactoryImplTest {
 
     @Test
     fun `adding initiator and responder flows that support multiple versions in different flows is successful`() {
-        val cpiMetadata = makeMockCPIMetadata(
+        val sandboxGroup = makeMockSandboxGroup(
             listOf(
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW), listOf(), listOf()),
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW_V2), listOf(), listOf()),
@@ -79,7 +78,6 @@ class FlowProtocolStoreFactoryImplTest {
                 CpkFlowClassNameLists(listOf(INITIATED_FLOW_V2), listOf(), listOf(INITIATED_FLOW_V2))
             )
         )
-        val sandboxGroup = makeMockSandboxGroup()
         val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
         assertEquals(Pair(PROTOCOL, listOf(2)), protocolStore.protocolsForInitiator(INITIATING_FLOW_V2, mock()))
@@ -93,15 +91,14 @@ class FlowProtocolStoreFactoryImplTest {
 
     @Test
     fun `adding two initiators with the same protocol results in an error`() {
-        val cpiMetadata = makeMockCPIMetadata(
+        val sandboxGroup = makeMockSandboxGroup(
             listOf(
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW), listOf(), listOf()),
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW_V1_AND_V2), listOf(), listOf())
             )
         )
-        val sandboxGroup = makeMockSandboxGroup()
         val thrownException = assertThrows<FlowFatalException> {
-            FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+            FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         }
         assertEquals(
             "Cannot declare multiple initiators for the same protocol in the same CPI",
