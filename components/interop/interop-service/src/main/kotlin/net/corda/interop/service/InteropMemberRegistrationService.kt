@@ -10,6 +10,4 @@ interface InteropMemberRegistrationService {
     fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>>
 
     fun createDummyHostedIdentity(): List<Record<String, HostedIdentityEntry>>
-
-    fun seedMessage() : List<Record<*,*>>
 }

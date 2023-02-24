@@ -109,8 +109,6 @@ class InteropService @Activate constructor(
         publisher?.publish(registrationService.createDummyMemberInfo())
         logger.info("Publishing hosted identities")
         publisher?.publish(registrationService.createDummyHostedIdentity())
-        logger.info("Publishing seed message")
-        publisher?.publish(registrationService.seedMessage())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
