@@ -539,7 +539,7 @@ Default name for cluster DB secret
 Cluster DB credentials environment variables
 */}}
 {{- define "corda.clusterDbEnv" -}}
-- name: PGUSER
+- name: DB_CLUSTER_USERNAME
   valueFrom:
     secretKeyRef:
       {{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
@@ -549,7 +549,7 @@ Cluster DB credentials environment variables
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "username"
       {{- end }}
-- name: PGPASSWORD
+- name: DB_CLUSTER_PASSWORD
   valueFrom:
     secretKeyRef:
       {{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
@@ -560,6 +560,53 @@ Cluster DB credentials environment variables
       key: "password"
       {{- end }}
 {{- end -}}
+
+{{/*
+Default name for bootstrap cluster DB secret
+*/}}
+{{- define "corda.bootstrapClusterDbDefaultSecretName" -}}
+{{ printf "%s-bootstrap-cluster-db" (include "corda.fullname" .) }}
+{{- end -}}
+
+{{/*
+Bootstrap cluster DB credentials environment variables
+*/}}
+{{- define "corda.bootstrapClusterDbEnv" -}}
+- name: PGUSER
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.cluster.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else if .Values.bootstrap.db.cluster.username.value }}
+      name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
+      key: "username"
+      {{- else if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
+      key: "username"
+      {{- end }}
+
+- name: PGPASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.cluster.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else if .Values.bootstrap.db.cluster.password.value }}
+      name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- else if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else}}
+      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- end }}
+{{- end -}}
+
 
 {{/*
 Kafka TLS truststore password

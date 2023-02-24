@@ -6,8 +6,6 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.findCurrentCpkChangeLogsForCpi
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -22,8 +20,9 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQU
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
-import javax.persistence.EntityManager
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 
@@ -36,8 +35,7 @@ internal class VirtualNodeWriterFactory(
     private val virtualNodeDbAdmin: VirtualNodesDbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
-    private val getCurrentChangeLogsForCpi: (EntityManager, String, String, String) -> List<CpkDbChangeLogEntity> =
-        ::findCurrentCpkChangeLogsForCpi
+    private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
 ) {
 
 
@@ -125,7 +123,7 @@ internal class VirtualNodeWriterFactory(
             vNodeDbFactory,
             groupPolicyParser,
             UTCClock(),
-            getCurrentChangeLogsForCpi,
+            cpkDbChangeLogRepository,
             migrationUtility = MigrationUtilityImpl(dbConnectionManager, LiquibaseSchemaMigratorImpl())
         )
 

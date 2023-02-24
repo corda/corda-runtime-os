@@ -191,6 +191,32 @@ bootstrap:
           key: ""
   # Configuration for database bootstrap
   db:
+    # Bootstrap cluster database configuration
+    cluster:
+      # the bootstrap cluster database password configuration
+      password:
+        # -- the bootstrap cluster database password
+        value: ""
+        # the bootstrap cluster database password secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the bootstrap cluster database password secret key reference
+          secretKeyRef:
+            # -- the bootstrap cluster database password secret name
+            name: ""
+            # -- the bootstrap cluster database password secret key
+            key: ""
+      # the bootstrap cluster database user configuration
+      username:
+        # -- the bootstrap cluster database user
+        value: ""
+        # the bootstrap cluster database user secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the bootstrap cluster database user secret key reference
+          secretKeyRef:
+            # -- the bootstrap cluster database user secret name
+            name: ""
+            # -- the bootstrap cluster database user secret key
+            key: ""
     # -- Indicates whether DB bootstrap is enabled as part of installation
     enabled: true
     # crypto configuration

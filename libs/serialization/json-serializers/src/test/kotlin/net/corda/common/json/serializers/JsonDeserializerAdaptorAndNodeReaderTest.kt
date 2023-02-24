@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonNodeReader
 import net.corda.v5.application.marshalling.json.JsonNodeReaderType
-import net.corda.v5.application.marshalling.json.parse
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -93,7 +92,7 @@ class JsonDeserializerAdaptorAndNodeReaderTest {
                 }
             }
             val expectedParsedObject = DefaultDeserializable("v-contents1", "v-contents2")
-            assertEquals(expectedParsedObject, jsonRoot.getField("object1")!!.parse<DefaultDeserializable>())
+            assertEquals(expectedParsedObject, jsonRoot.getField("object1")!!.parse(DefaultDeserializable::class.java))
 
             // Arrays
             assertTrue(jsonRoot.hasField("array1"))
