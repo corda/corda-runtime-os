@@ -12,7 +12,6 @@ import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -40,7 +39,8 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
 
     override fun read(input: CheckpointInput, type: Class<UtxoSignedTransactionInternal>): UtxoSignedTransactionInternal {
         val wireTransaction = input.readClassAndObject() as WireTransaction
-        val signatures: List<DigitalSignatureAndMetadata> = uncheckedCast(input.readClassAndObject())
+        @Suppress("unchecked_cast")
+        val signatures = input.readClassAndObject() as List<DigitalSignatureAndMetadata>
         return UtxoSignedTransactionImpl(
             serialisationService,
             transactionSignatureService,

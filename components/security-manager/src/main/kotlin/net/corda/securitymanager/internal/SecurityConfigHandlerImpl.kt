@@ -14,7 +14,7 @@ import net.corda.schema.configuration.ConfigKeys.SECURITY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SECURITY_POLICY
 import net.corda.securitymanager.SecurityConfigHandler
 import net.corda.securitymanager.SecurityManagerService
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate

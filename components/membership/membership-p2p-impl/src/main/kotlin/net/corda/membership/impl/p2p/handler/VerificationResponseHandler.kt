@@ -5,7 +5,7 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.virtualnode.toCorda

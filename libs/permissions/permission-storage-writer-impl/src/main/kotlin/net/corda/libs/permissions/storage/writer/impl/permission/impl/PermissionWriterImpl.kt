@@ -9,7 +9,7 @@ import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.RPCPermissionOperation
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID

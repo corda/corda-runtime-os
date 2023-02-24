@@ -14,7 +14,6 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -32,7 +31,7 @@ class NonValidatingNotaryClientFlowImpl(
 ) : PluggableNotaryClientFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -81,14 +80,18 @@ class NonValidatingNotaryClientFlowImpl(
      */
     @Suspendable
     override fun call(): List<DigitalSignatureAndMetadata> {
-        log.trace { "Notarizing transaction ${stx.id} with notary $notaryRepresentative" }
+        if (log.isTraceEnabled) {
+            log.trace("Notarizing transaction {} with notary {}", stx.id, notaryRepresentative)
+        }
 
         val session = flowMessaging.initiateFlow(notaryRepresentative.name)
 
         val payload = generatePayload(stx)
 
-        log.trace { "Sending notarization request to notary service ${stx.notary} via " +
-                "representative $notaryRepresentative for transaction ${stx.id}" }
+        if (log.isTraceEnabled) {
+            log.trace("Sending notarization request to notary service {} via " +
+                        "representative {} for transaction {}", stx.notary, notaryRepresentative, stx.id)
+        }
 
         val notarisationResponse = session.sendAndReceive(
             NotarisationResponse::class.java,
@@ -97,13 +100,17 @@ class NonValidatingNotaryClientFlowImpl(
 
         return when (val error = notarisationResponse.error) {
             null -> {
-                log.trace { "Received notarization response from notary service ${stx.notary} " +
-                        "for transaction ${stx.id}" }
+                if (log.isTraceEnabled) {
+                    log.trace("Received notarization response from notary service {} for transaction {}",
+                              stx.notary, stx.id)
+                }
                 notarisationResponse.signatures
             }
             else -> {
-                log.trace { "Received notarization error from notary service ${stx.notary} for " +
-                        "transaction ${stx.id}. Error: $error" }
+                if (log.isTraceEnabled) {
+                    log.trace("Received notarization error from notary service {} for transaction {}. Error: {}",
+                              stx.notary, stx.id, error)
+                }
                 throw NotaryException(error, stx.id)
             }
         }

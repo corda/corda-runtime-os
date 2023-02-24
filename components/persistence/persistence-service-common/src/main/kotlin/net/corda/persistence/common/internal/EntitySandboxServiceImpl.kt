@@ -23,8 +23,7 @@ import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.virtualnode.HoldingIdentity
@@ -193,7 +192,8 @@ class EntitySandboxServiceImpl @Activate constructor(
         )
 
         return try {
-            uncheckedCast(clazz.getConstructor().newInstance())
+            @Suppress("unchecked_cast")
+            clazz.getConstructor().newInstance() as UtxoLedgerTokenStateObserver<ContractState>
         } catch (e: Exception) {
             logger.error(
                 "The UtxoLedgerTokenStateObserver '${clazz}' must implement a default public constructor.",

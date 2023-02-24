@@ -6,14 +6,13 @@ import net.corda.httprpc.client.connect.RestClientProxyHandler
 import net.corda.httprpc.client.connect.RestConnectionListenerDistributor
 import net.corda.httprpc.client.connect.remote.RemoteUnirestClient
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Proxy
 import java.time.Duration
-import java.util.*
+import java.util.Timer
 import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.concurrent.scheduleAtFixedRate
 
@@ -56,9 +55,10 @@ class RestClient<I : RestResource> internal constructor(
 
         private const val defaultHealthCheckInterval = 10000L
 
+        @Suppress("unchecked_cast")
         private fun <I : RestResource> defaultProxyGenerator(
             rpcOpsClass: Class<I>, proxyHandler: RestClientProxyHandler<I>): I =
-            uncheckedCast(Proxy.newProxyInstance(rpcOpsClass.classLoader, arrayOf(rpcOpsClass), proxyHandler))
+            Proxy.newProxyInstance(rpcOpsClass.classLoader, arrayOf(rpcOpsClass), proxyHandler) as I
 
         private fun <T> Logger.logElapsedTime(label: String, body: () -> T): T = logElapsedTime(label, this, body)
 

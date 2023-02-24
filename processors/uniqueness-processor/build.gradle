@@ -12,6 +12,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:uniqueness:uniqueness-checker')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-base'
 
     runtimeOnly project(':components:uniqueness:uniqueness-checker-impl')

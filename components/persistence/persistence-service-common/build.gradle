@@ -25,6 +25,7 @@ dependencies {
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:crypto:cipher-suite-impl")
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
