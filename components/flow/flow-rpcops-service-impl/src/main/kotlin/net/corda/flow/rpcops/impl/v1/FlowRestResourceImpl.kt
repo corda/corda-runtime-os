@@ -145,8 +145,8 @@ class FlowRestResourceImpl @Activate constructor(
             throw InvalidInputDataException(msg, details)
         }
 
-        val rpcContext = CURRENT_REST_CONTEXT.get()
-        val principal = rpcContext.principal
+        val restContext = CURRENT_REST_CONTEXT.get()
+        val principal = restContext.principal
 
         if (!permissionValidationService.permissionValidator.authorizeUser(principal,
                 "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}")) {

@@ -29,7 +29,7 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         @Suppress("Unused")
         @JvmStatic
         @BeforeAll
-        fun setRPCContext() {
+        fun setRestContext() {
             val restAuthContext = mock<RestAuthContext>().apply {
                 whenever(principal).thenReturn(actor)
             }
