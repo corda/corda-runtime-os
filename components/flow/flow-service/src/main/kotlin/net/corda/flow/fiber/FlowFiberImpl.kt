@@ -69,7 +69,7 @@ class FlowFiberImpl(
                 // suspended by Corda for the last time to mark it was finished already. Logging the callstack here would be
                 // misleading as it would point the log entry to the internal rethrow in Corda. In this case nothing has
                 // gone wrong, so we shouldn't log that it has.
-                log.warn(FiberExceptionConstants.FLOW_DISCONTINUED.format(e.cause?.javaClass?.canonicalName, e.cause?.message))
+                log.warn(FiberExceptionConstants.FLOW_DISCONTINUED.format(e.cause?.javaClass?.canonicalName, e.cause?.message ?: "No exception message provided."))
                 failTopLevelSubFlow(e.cause!!)
             } catch (t: Throwable) {
                 log.warn(FiberExceptionConstants.FLOW_FAILED_THROWABLE, t)

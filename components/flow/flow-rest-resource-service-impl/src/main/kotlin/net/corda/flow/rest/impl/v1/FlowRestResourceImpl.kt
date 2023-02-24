@@ -258,7 +258,7 @@ class FlowRestResourceImpl @Activate constructor(
                 flowStatusFeedRegistration.close()
             }
         } catch (e: WebSocketValidationException) {
-            log.warn("Validation error while registering flow status listener - ${e.message}")
+            log.warn("Validation error while registering flow status listener - ${e.message ?: "No exception message provided."}")
             error(e)
         } catch (e: Exception) {
             log.error("Unexpected error at registerFlowStatusListener")

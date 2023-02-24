@@ -104,7 +104,7 @@ class PipelineStateManager(
     private fun createAvroExceptionEnvelope(exception: Exception): ExceptionEnvelope {
         return ExceptionEnvelope().apply {
             errorType = FlowProcessingExceptionTypes.FLOW_TRANSIENT_EXCEPTION
-            errorMessage = exception.message
+            errorMessage = exception.message ?: "No exception message provided."
         }
     }
 }
