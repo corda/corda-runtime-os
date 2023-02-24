@@ -130,7 +130,7 @@ class MemberOpsAsyncProcessorTest {
         fun `it with a command that can be replayed will create a state`() {
             val id = UUID(0, 1)
             whenever(registrationProxy.register(any(), any(), any()))
-                .doThrow(NotReadyMembershipRegistrationException("oops"))
+                .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
             val command = MembershipAsyncRequest(
                 RegistrationAsyncRequest(
                     shortHash.value,
@@ -173,7 +173,7 @@ class MemberOpsAsyncProcessorTest {
         fun `it should increment the retry count if it fails again`() {
             val id = UUID(0, 1)
             whenever(registrationProxy.register(any(), any(), any()))
-                .doThrow(NotReadyMembershipRegistrationException("oops"))
+                .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
             val command = MembershipAsyncRequest(
                 RegistrationAsyncRequest(
                     shortHash.value,
@@ -220,7 +220,7 @@ class MemberOpsAsyncProcessorTest {
         fun `it should not retry if it tried too many times`() {
             val id = UUID(0, 1)
             whenever(registrationProxy.register(any(), any(), any()))
-                .doThrow(NotReadyMembershipRegistrationException("oops"))
+                .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
             val command = MembershipAsyncRequest(
                 RegistrationAsyncRequest(
                     shortHash.value,
@@ -256,6 +256,48 @@ class MemberOpsAsyncProcessorTest {
                     responseEvents = emptyList(),
                     markForDLQ = true,
                 )
+            )
+        }
+
+        @Test
+        fun `it should persist invalid status if it tried too many times`() {
+            val id = UUID(0, 1)
+            whenever(registrationProxy.register(any(), any(), any()))
+                .doThrow(NotReadyMembershipRegistrationException(FAILURE_REASON))
+            val command = MembershipAsyncRequest(
+                RegistrationAsyncRequest(
+                    shortHash.value,
+                    id.toString(),
+                    RegistrationAction.REQUEST_JOIN,
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(
+                                "key",
+                                "value"
+                            )
+                        )
+                    )
+                )
+            )
+
+            processor.onNext(
+                MembershipAsyncRequestState(
+                    command,
+                    20,
+                    Instant.ofEpochMilli(4000),
+                ),
+                Record(
+                    "topic",
+                    "key",
+                    command,
+                )
+            )
+
+            verify(membershipPersistenceClient).setRegistrationRequestStatus(
+                identity,
+                id.toString(),
+                RegistrationStatus.INVALID,
+                FAILURE_REASON,
             )
         }
     }
@@ -352,7 +394,7 @@ class MemberOpsAsyncProcessorTest {
         fun `it should retry if the current status is not available`() {
             whenever(membershipQueryClient.queryRegistrationRequestStatus(any(), any())).doReturn(
                 MembershipQueryResult.Failure(
-                    "oops"
+                    FAILURE_REASON
                 )
             )
             val id = UUID(0, 1)
@@ -470,7 +512,7 @@ class MemberOpsAsyncProcessorTest {
         fun `it should not retry if the request id invalid`() {
             val id = UUID(0, 1)
             whenever(registrationProxy.register(any(), any(), any()))
-                .doThrow(InvalidMembershipRegistrationException("oops"))
+                .doThrow(InvalidMembershipRegistrationException(FAILURE_REASON))
             val reply = processor.onNext(
                 null,
                 Record(
@@ -495,6 +537,42 @@ class MemberOpsAsyncProcessorTest {
             )
 
             assertThat(reply.markForDLQ).isTrue
+        }
+
+        @Test
+        fun `it should persist invalid status if the request is invalid`() {
+            val id = UUID(0, 1)
+            whenever(registrationProxy.register(any(), any(), any()))
+                .doThrow(InvalidMembershipRegistrationException(FAILURE_REASON))
+            processor.onNext(
+                null,
+                Record(
+                    "topic",
+                    "key",
+                    MembershipAsyncRequest(
+                        RegistrationAsyncRequest(
+                            shortHash.value,
+                            id.toString(),
+                            RegistrationAction.REQUEST_JOIN,
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(
+                                        "key",
+                                        "value"
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                )
+            )
+
+            verify(membershipPersistenceClient).setRegistrationRequestStatus(
+                identity,
+                id.toString(),
+                RegistrationStatus.INVALID,
+                FAILURE_REASON,
+            )
         }
     }
 }
