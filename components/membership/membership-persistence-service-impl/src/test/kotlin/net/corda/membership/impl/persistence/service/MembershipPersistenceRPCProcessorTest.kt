@@ -302,7 +302,7 @@ class MembershipPersistenceRPCProcessorTest {
                         ByteBuffer.wrap("456".toByteArray()),
                         KeyValuePairList(emptyList())
                     ),
-                    false
+                    true
                 )
             )
         )
