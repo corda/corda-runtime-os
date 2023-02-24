@@ -65,6 +65,7 @@ import net.corda.v5.base.util.minutes
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -400,6 +401,43 @@ class SessionManagerTest {
         verify(outboundSessionPool.constructed().first(), never()).getNextSession(counterparties)
         loggingInterceptor.assertSingleWarningContains("Could not get session information from message sent from")
         loggingInterceptor.assertSingleWarningContains("Peer is not in the members map.")
+    }
+
+    @Test
+    fun `when no session exists, if destination member info is missing from network map on second lookup no message is sent`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(membershipGroupReader.lookup(PEER_PARTY.x500Name, MembershipStatusFilter.ACTIVE))
+            .thenReturn(PEER_MEMBER_INFO)
+            .thenReturn(null)
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val anotherInitiatorHello = mock<InitiatorHelloMessage>()
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
+
+        val sessionState = sessionManager.processOutboundMessage(message)
+        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
+
+        argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
+            verify(sessionReplayer, times(2)).addMessageForReplay(
+                any(),
+                this.capture(),
+                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY, MembershipStatusFilter.ACTIVE, 1L))
+            )
+            assertThat(this.allValues.size).isEqualTo(2)
+            assertThat(this.allValues).extracting<HoldingIdentity> {
+                it.sessionCounterparties.ourId
+            }.containsOnly(OUR_PARTY)
+            assertThat(this.allValues).extracting<HoldingIdentity> {
+                it.sessionCounterparties.counterpartyId
+            }.containsOnly(PEER_PARTY)
+            assertThat(this.allValues).extracting<InitiatorHelloMessage> { it.message as InitiatorHelloMessage }
+                .containsExactlyInAnyOrder(initiatorHello, anotherInitiatorHello)
+        }
+
+        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
+                "which is not in ${OUR_PARTY}'s members map. Filter was ${MembershipStatusFilter.ACTIVE}. " +
+                "The sessionInit message was not sent.")
     }
 
     @Test

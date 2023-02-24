@@ -224,7 +224,7 @@ class MessageConverter {
 
             val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination, filter)
             if (destMemberInfo == null) {
-                logger.warn("Attempted to send message to peer $destination with filter ${filter} " +
+                logger.warn("Attempted to send message to peer $destination with filter $filter " +
                         "which is not in the network map. The message was discarded.")
                 return null
             }
