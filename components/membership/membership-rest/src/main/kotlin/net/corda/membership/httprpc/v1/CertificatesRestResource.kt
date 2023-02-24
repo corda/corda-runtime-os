@@ -6,7 +6,7 @@ import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPOST
 import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 
 /**
@@ -57,12 +57,12 @@ interface CertificatesRestResource : RestResource {
                 "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "The unique alias under which the certificate chain will be stored",
             required = true,
         )
         alias: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "A valid certificate chain in PEM format obtained from a certificate authority",
             required = true,
             name = "certificate"
@@ -112,12 +112,12 @@ interface CertificatesRestResource : RestResource {
             description = "The certificate holding identity ID",
         )
         holdingIdentityId: String?,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "The unique alias under which the certificate chain will be stored",
             required = true,
         )
         alias: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "A valid certificate chain in PEM format obtained from a certificate authority",
             required = true,
             name = "certificate"
@@ -289,17 +289,17 @@ interface CertificatesRestResource : RestResource {
         tenantId: String,
         @RestPathParameter(description = "Identifier of the public key that will be included in the certificate")
         keyId: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "The X.500 name that will be the subject associated with the request",
             required = true,
         )
         x500Name: String,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "Used to specify additional subject names",
             required = false,
         )
         subjectAlternativeNames: List<String>?,
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "Used to add additional attributes to the CSR; for example, signature spec",
             required = false,
         )

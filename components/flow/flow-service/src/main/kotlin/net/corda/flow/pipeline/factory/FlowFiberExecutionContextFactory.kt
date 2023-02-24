@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.factory
 
 import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 
 /**
  * [FlowFiberExecutionContextFactory] Creates a new, initialized instance of [FlowFiberExecutionContext].

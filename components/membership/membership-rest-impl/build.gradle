@@ -23,6 +23,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:rest:rest")
+    implementation project(":libs:rest:rest-common")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:membership:certificates-common')
     implementation project(":libs:membership:membership-impl")

@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.handlers.requests
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -32,4 +32,3 @@ class ForceCheckpointRequestHandler @Activate constructor(
         return context.copy(outputRecords = context.outputRecords + record)
     }
 }
-

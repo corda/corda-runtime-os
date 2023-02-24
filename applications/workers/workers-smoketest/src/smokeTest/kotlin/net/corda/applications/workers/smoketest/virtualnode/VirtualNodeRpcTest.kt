@@ -436,7 +436,7 @@ class VirtualNodeRpcTest {
                         false
                     }
                 } catch (e: Exception) {
-                    println("Failed, repsonse: $it")
+                    println("Failed, response: $it")
                     false
                 }
             }

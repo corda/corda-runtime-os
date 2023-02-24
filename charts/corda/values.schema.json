@@ -514,6 +514,32 @@
                     ],
                     "additionalProperties": false,
                     "properties": {
+                        "cluster": {
+                            "type": "object",
+                            "default": {},
+                            "title": "bootstrap cluster database configuration",
+                            "required": [
+                                "username",
+                                "password"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                }
+                            },
+                            "examples": [{
+                                "password": {
+                                    "value": "password"
+                                },
+                                "username": {
+                                    "value": "username"
+                                }
+                            }]
+                        },
                         "enabled": {
                             "type": "boolean",
                             "default": true,

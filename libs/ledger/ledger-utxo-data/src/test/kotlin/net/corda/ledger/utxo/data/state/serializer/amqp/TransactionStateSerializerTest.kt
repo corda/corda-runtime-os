@@ -6,7 +6,7 @@ import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
-import net.corda.v5.application.serialization.deserialize
+import net.corda.utilities.serialization.deserialize
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 

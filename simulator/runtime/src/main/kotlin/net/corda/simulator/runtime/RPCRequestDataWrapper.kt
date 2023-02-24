@@ -1,12 +1,12 @@
 package net.corda.simulator.runtime
 
 import net.corda.simulator.RequestData
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.marshalling.MarshallingService
 
 /**
  * Corda normally takes requests via its API in the form of JSON-formatted strings, which are converted by Corda into
- * an RestRequestBody interface. This class represents the equivalent for Simulator.
+ * an ClientRequestBody interface. This class represents the equivalent for Simulator.
  *
  * @clientRequestId the id which uniquely identifies a request
  * @flowClassName the name of the flow class to run
@@ -19,10 +19,10 @@ data class RPCRequestDataWrapper(
     : RequestData {
 
     /**
-     * Converts this into Corda's RestRequestBody.
+     * Converts this into Corda's ClientRequestBody.
      */
-    override fun toRPCRequestData() : RestRequestBody {
-        return object : RestRequestBody {
+    override fun toRPCRequestData() : ClientRequestBody {
+        return object : ClientRequestBody {
             override fun getRequestBody(): String {
                 return this@RPCRequestDataWrapper.requestBody
             }
@@ -35,6 +35,13 @@ data class RPCRequestDataWrapper(
                 return marshallingService.parseList(requestBody, clazz)
             }
 
+            override fun <K, V> getRequestBodyAsMap(
+                marshallingService: MarshallingService,
+                keyClass: Class<K>,
+                valueClass: Class<V>
+            ): Map<K, V> {
+                return marshallingService.parseMap(requestBody, keyClass, valueClass)
+            }
         }
     }
 }

@@ -4,9 +4,9 @@ import net.corda.simulator.crypto.HsmCategory
 import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.simulator.runtime.testutils.createMember
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
@@ -30,7 +30,7 @@ class SigningTest {
             private lateinit var memberLookup: MemberLookup
 
             @Suspendable
-            override fun call(requestBody: RestRequestBody): String {
+            override fun call(requestBody: ClientRequestBody): String {
                 val keyHolder = requestBody.getRequestBodyAs(jsonMarshallingService, MemberX500Name::class.java)
                 val publicKey = memberLookup.lookup(keyHolder)?.ledgerKeys?.get(0)
                 checkNotNull(publicKey)

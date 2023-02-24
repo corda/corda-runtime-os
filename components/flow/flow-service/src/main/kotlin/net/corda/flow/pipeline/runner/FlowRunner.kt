@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.runner
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 
 /**
  * [FlowRunner] starts or resumes [FlowFiber]s.
@@ -20,4 +20,3 @@ interface FlowRunner {
      */
     fun runFlow(context: FlowEventContext<Any>, flowContinuation: FlowContinuation): FiberFuture
 }
-

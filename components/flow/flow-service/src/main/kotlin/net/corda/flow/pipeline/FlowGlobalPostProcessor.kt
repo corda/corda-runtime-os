@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline
 
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.pipeline.events.FlowEventContext
 
 /**
  * [FlowGlobalPostProcessor] performs post-processing that should always execute as part of the [FlowEventPipeline].

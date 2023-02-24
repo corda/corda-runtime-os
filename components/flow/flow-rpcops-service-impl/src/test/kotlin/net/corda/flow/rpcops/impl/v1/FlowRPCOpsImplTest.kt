@@ -11,6 +11,7 @@ import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ForbiddenException
+import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -364,7 +365,7 @@ class FlowRPCOpsImplTest {
         val flowRPCOps = createFlowRpcOps()
 
         doThrow(CordaMessageAPIIntermittentException("")).whenever(publisher).publish(any())
-        assertThrows<FlowRPCOpsServiceException> {
+        assertThrows<InternalServerException> {
             flowRPCOps.startFlow(VALID_SHORT_HASH, StartFlowParameters(clientRequestId, FLOW1, TestJsonObject()))
         }
 
