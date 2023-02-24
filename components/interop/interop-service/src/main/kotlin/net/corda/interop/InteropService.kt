@@ -3,6 +3,7 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,9 +14,12 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -33,7 +37,11 @@ class InteropService @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = InteropMemberRegistrationService::class)
+    private val registrationService: InteropMemberRegistrationService
     ) : Lifecycle {
 
     companion object {
@@ -45,12 +53,12 @@ class InteropService @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
+    private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("$event")
         when (event) {
             is StartEvent -> {
-                //configurationReadService.start()
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
@@ -69,7 +77,6 @@ class InteropService @Activate constructor(
                     }
                 } else {
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                    //coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
                 }
             }
             is ConfigChangedEvent -> {
@@ -79,11 +86,10 @@ class InteropService @Activate constructor(
     }
 
     private fun restartInteropProcessor(event: ConfigChangedEvent) {
-        logger.info("$event")
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, Schemas.P2P.P2P_IN_TOPIC),
+                SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
                 InteropProcessor(cordaAvroSerializationFactory),
                 messagingConfig,
                 null
@@ -91,6 +97,18 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
+        //TODO below is temporary tactical code to setup members of interop group,
+        // this will be phased out later on by CORE-10446
+        publisher?.close()
+        publisher = publisherFactory.createPublisher(
+            PublisherConfig("interop-registration-service"),
+            event.config.getConfig(MESSAGING_CONFIG)
+        )
+        publisher?.start()
+        logger.info("Publishing member infos")
+        publisher?.publish(registrationService.createDummyMemberInfo())
+        logger.info("Publishing hosted identities")
+        publisher?.publish(registrationService.createDummyHostedIdentity())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
