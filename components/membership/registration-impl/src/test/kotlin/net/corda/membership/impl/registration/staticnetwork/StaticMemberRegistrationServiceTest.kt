@@ -70,8 +70,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
@@ -270,8 +270,8 @@ class StaticMemberRegistrationServiceTest {
         on { create(any()) } doReturn mockGroupParameters
     }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
-    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
-        on { getGroupReader(any()) } doReturn mock()
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on { queryMemberInfo(any(), any()) } doReturn MembershipQueryResult.Success(emptyList())
     }
 
     private val registrationService = StaticMemberRegistrationService(
@@ -292,7 +292,7 @@ class StaticMemberRegistrationServiceTest {
         groupParametersFactory,
         virtualNodeInfoReadService,
         groupParametersWriterService,
-        membershipGroupReaderProvider,
+        membershipQueryClient,
     )
 
     private fun setUpPublisher() {
@@ -440,10 +440,8 @@ class StaticMemberRegistrationServiceTest {
             val memberInfo = mock<MemberInfo> {
                 on { isActive } doReturn false
             }
-            val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn memberInfo
-            }
-            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            whenever(membershipQueryClient.queryMemberInfo(alice, listOf(alice)))
+                .thenReturn(MembershipQueryResult.Success(listOf(memberInfo)))
             setUpPublisher()
             registrationService.start()
 
@@ -454,10 +452,8 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration pass when the member is not found`() {
-            val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn null
-            }
-            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            whenever(membershipQueryClient.queryMemberInfo(alice, listOf(alice)))
+                .thenReturn(MembershipQueryResult.Success(emptyList()))
             setUpPublisher()
             registrationService.start()
 
@@ -474,10 +470,8 @@ class StaticMemberRegistrationServiceTest {
             val memberInfo = mock<MemberInfo> {
                 on { isActive } doReturn true
             }
-            val reader = mock<MembershipGroupReader> {
-                on { lookup(any()) } doReturn memberInfo
-            }
-            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            whenever(membershipQueryClient.queryMemberInfo(alice, listOf(alice)))
+                .thenReturn(MembershipQueryResult.Success(listOf(memberInfo)))
             setUpPublisher()
             registrationService.start()
 

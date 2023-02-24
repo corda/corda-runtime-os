@@ -16,7 +16,8 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
-import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -78,10 +79,9 @@ class RegistrationServiceLifecycleHandlerTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
-    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
-        on { getGroupReader(any()) } doReturn mock()
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on { queryMemberInfo(any(), any()) } doReturn MembershipQueryResult.Success(emptyList())
     }
-
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
@@ -100,7 +100,7 @@ class RegistrationServiceLifecycleHandlerTest {
         mock(),
         virtualNodeInfoReadService,
         mock(),
-        membershipGroupReaderProvider,
+        membershipQueryClient,
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
@@ -288,7 +288,7 @@ class RegistrationServiceLifecycleHandlerTest {
                 mock(),
                 virtualNodeInfoReadService,
                 mock(),
-                membershipGroupReaderProvider,
+                membershipQueryClient,
             )
 
             val handle = RegistrationServiceLifecycleHandler(staticMemberRegistrationService)

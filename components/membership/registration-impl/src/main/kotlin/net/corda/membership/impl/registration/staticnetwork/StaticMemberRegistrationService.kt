@@ -55,7 +55,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRegistrationException
@@ -120,8 +120,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
-    @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -180,16 +180,18 @@ class StaticMemberRegistrationService @Activate constructor(
                 ex,
             )
         }
-        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
-        val alreadyRegisteredMember = membershipGroupReader.lookup(member.x500Name)
-        if (alreadyRegisteredMember?.isActive == true) {
-            throw InvalidMembershipRegistrationException(
-                "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
-                    "Can not re-register."
-            )
-        }
-        println("QQQ AAA for $registrationId pass check! -> membershipGroupReader: $membershipGroupReader, alreadyRegisteredMember: $alreadyRegisteredMember")
         try {
+            val alreadyRegisteredMember = membershipQueryClient
+                .queryMemberInfo(member, listOf(member))
+                .getOrThrow()
+                .firstOrNull()
+            if (alreadyRegisteredMember?.isActive == true) {
+                throw InvalidMembershipRegistrationException(
+                    "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
+                        "Can not re-register."
+                )
+            }
+
             val roles = MemberRole.extractRolesFromContext(context)
             logger.debug("Roles are: {}", roles)
             val keyScheme = context[KEY_SCHEME] ?: throw IllegalArgumentException("Key scheme must be specified.")
