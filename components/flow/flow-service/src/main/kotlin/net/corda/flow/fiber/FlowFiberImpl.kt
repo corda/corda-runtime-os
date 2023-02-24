@@ -188,28 +188,45 @@ class FlowFiberImpl(
         val flowStackService = flowFiberExecutionContext?.flowStackService
         return when {
             flowStackService == null -> {
-                log.debug { "Flow [$flowId] should have a single flow stack item when finishing but the stack was null" }
-                throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but the stack was null")
+                log.debug {
+                    "Flow [$flowId] should have a single flow stack item when finishing but the stack was null. " +
+                    "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)" }
+                throw CordaRuntimeException(
+                    "Flow [$flowId] should have a single flow stack item when finishing but the stack was null. " +
+                    "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)"
+                )
             }
             flowStackService.size > 1 -> {
                 log.debug {
                     "Flow [$flowId] should have a single flow stack item when finishing but contained the following elements instead: " +
-                            "${flowFiberExecutionContext?.flowStackService}"
-                }
+                    "${flowFiberExecutionContext?.flowStackService} (Note: This may happen if you're missing a `@Suspendable` )" +
+                    "annotation somewhere in your flow.)" }
                 throw CordaRuntimeException(
                     "Flow [$flowId] should have a single flow stack item when finishing but contained " +
-                            "${flowFiberExecutionContext?.flowStackService?.size} elements"
+                    "${flowFiberExecutionContext?.flowStackService?.size} elements. " +
+                    "(Note: This may happen if you're missing a `@Suspendable` annotation " +
+                    "somewhere in your flow.)"
                 )
             }
             flowStackService.size == 0 -> {
-                log.debug { "Flow [$flowId] should have a single flow stack item when finishing but was empty" }
-                throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but was empty")
+                log.debug {
+                    "Flow [$flowId] should have a single flow stack item when finishing but was empty. " +
+                    "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)" }
+                throw CordaRuntimeException(
+                    "Flow [$flowId] should have a single flow stack item when finishing but was empty. " +
+                    "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)"
+                )
             }
             else -> {
                 when (val item = flowStackService.peek()) {
                     null -> {
-                        log.debug { "Flow [$flowId] should have a single flow stack item when finishing but was empty" }
-                        throw CordaRuntimeException("Flow [$flowId] should have a single flow stack item when finishing but was empty")
+                        log.debug {
+                            "Flow [$flowId] should have a single flow stack item when finishing but was empty. " +
+                            "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)" }
+                        throw CordaRuntimeException(
+                            "Flow [$flowId] should have a single flow stack item when finishing but was empty. " +
+                            "(Note: This may happen if you're missing a `@Suspendable` annotation somewhere in your flow.)"
+                        )
                     }
                     else -> item
                 }
