@@ -25,7 +25,7 @@ ignore:
         reason: >-
           Corda5 Shippable artifacts do not make use of dokka-core, which is
           where this dependency originates, this is used at compile / build time
-          only for Kdoc  generation and not shipped in any of our releasable
+          only for Kdoc generation and not shipped in any of our releasable
           artifacts.
         expires: 2023-06-19T10:40:55.991Z
         created: 2022-12-20T10:40:55.995Z
