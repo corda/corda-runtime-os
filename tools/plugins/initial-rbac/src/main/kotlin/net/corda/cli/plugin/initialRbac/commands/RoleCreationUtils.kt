@@ -1,7 +1,7 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
-import net.corda.cli.plugins.common.HttpRpcClientUtils.executeWithRetry
+import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType

@@ -28,6 +28,7 @@ class FlowProtocolStoreFactoryImplTest {
         private const val INITIATED_FLOW = "initiated-flow"
         private const val INITIATED_FLOW_V2 = "initiated-flow-v2"
         private const val INITIATED_FLOW_V1_AND_V2 = "initiated-flow-v1-v2"
+        private const val INITIATED_INHERITED_RESPONDER = "inherited-responder-v1"
         private const val RPC_FLOW = "rpc-flow"
         private const val BAD_RESPONDER = "bad-responder"
         private const val INVALID_RESPONDER = "invalid-responder"
@@ -140,6 +141,28 @@ class FlowProtocolStoreFactoryImplTest {
         )
     }
 
+    @Test
+    fun `created protocol store has correct behaviour when retrieving inherited responder flow`() {
+        val cpiMetadata = makeMockCPIMetadata(
+            listOf(
+                CpkFlowClassNameLists(listOf(INITIATING_FLOW), listOf(), listOf()),
+                CpkFlowClassNameLists(listOf(INITIATED_INHERITED_RESPONDER), listOf(), listOf(INITIATED_INHERITED_RESPONDER))
+            )
+        )
+        val sandboxGroup = makeMockSandboxGroup()
+        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+        assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
+        assertEquals(INITIATING_FLOW, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
+        assertEquals(INITIATED_INHERITED_RESPONDER, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
+    }
+
+    private fun makeMockCPIMetadata(flows: List<CpkFlowClassNameLists>): CpiMetadata {
+        val cpiMetadata = mock<CpiMetadata>()
+        val cpks = flows.map { makeMockCPKMetadata(it) }
+        whenever(cpiMetadata.cpksMetadata).thenReturn(cpks)
+        return cpiMetadata
+    }
+
     private fun makeMockCPKMetadata(flows: CpkFlowClassNameLists): CpkMetadata {
         val cpkMetadata = mock<CpkMetadata>()
         val manifest = mock<CordappManifest>()
@@ -181,6 +204,9 @@ class FlowProtocolStoreFactoryImplTest {
         )
         whenever(sandboxGroup.loadClassFromMainBundles(INVALID_RESPONDER, Flow::class.java)).thenReturn(
             InvalidResponderFlow::class.java
+        )
+        whenever(sandboxGroup.loadClassFromMainBundles(INITIATED_INHERITED_RESPONDER, Flow::class.java)).thenReturn(
+            MyInheritedResponderFlow::class.java
         )
 
         return sandboxGroup
@@ -243,4 +269,12 @@ class FlowProtocolStoreFactoryImplTest {
         val rpcFlows: List<String>,
         val initiatedFlows: List<String>
     )
+
+    private interface InheritedResponderFlow : ResponderFlow
+
+    @InitiatedBy(protocol = PROTOCOL, version=(intArrayOf(1)))
+    private class MyInheritedResponderFlow : InheritedResponderFlow {
+        override fun call(session: FlowSession) {
+        }
+    }
 }

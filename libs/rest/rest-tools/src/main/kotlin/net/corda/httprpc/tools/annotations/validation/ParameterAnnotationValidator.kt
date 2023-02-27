@@ -1,7 +1,7 @@
 package net.corda.httprpc.tools.annotations.validation
 
 import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
+import net.corda.httprpc.annotations.isRestParameterAnnotation
 import net.corda.httprpc.tools.annotations.validation.utils.endpoints
 import java.lang.reflect.Method
 
@@ -18,7 +18,7 @@ internal class ParameterAnnotationValidator(private val clazz: Class<out RestRes
         method.parameters.fold(RestValidationResult()) { total, parameter ->
             total + try {
                 parameter.annotations.single {
-                    it.isHttpRpcParameterAnnotation()
+                    it.isRestParameterAnnotation()
                 }
                 RestValidationResult()
             } catch (e: IllegalArgumentException) {

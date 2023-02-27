@@ -20,7 +20,6 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQU
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
-import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
@@ -66,11 +65,11 @@ internal class VirtualNodeWriterFactory(
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
         val oldVirtualNodeEntityRepository =
-            VirtualNodeEntityRepository(this.dbConnectionManager.getClusterEntityManagerFactory())
-        val migrationUtility = MigrationUtilityImpl(dbConnectionManager, LiquibaseSchemaMigratorImpl())
+            VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
+        val migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator)
 
         val virtualNodeUpgradeHandler = VirtualNodeUpgradeOperationHandler(
-            this.dbConnectionManager.getClusterEntityManagerFactory(),
+            dbConnectionManager.getClusterEntityManagerFactory(),
             oldVirtualNodeEntityRepository,
             virtualNodeInfoPublisher,
             migrationUtility
@@ -124,7 +123,7 @@ internal class VirtualNodeWriterFactory(
             groupPolicyParser,
             UTCClock(),
             cpkDbChangeLogRepository,
-            migrationUtility = MigrationUtilityImpl(dbConnectionManager, LiquibaseSchemaMigratorImpl())
+            migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator)
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)
