@@ -129,8 +129,12 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
         val key = "seed-message-1"
         val header = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), "interop", "123")
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\"," +
-                " \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
+        val payload = """
+            {
+                \"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\",
+                "parameters" : [ { "abc" : { "type" : "string", "value" : "USD" } } ] 
+            }
+        """.trimIndent()
 
         val interopMessage = InteropMessage("1", payload)
 

@@ -97,8 +97,8 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
-        //TODO below is temporary tactical code to setup members of interop group,
-        // this will be phased out later on by CORE-10446
+        //TODO temporary code (commented and uncommented) to setup members of interop group,
+        // and send seed message in absence of a flow, this will be phased out later on by CORE-10446
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             PublisherConfig("interop-registration-service"),
@@ -109,31 +109,25 @@ class InteropService @Activate constructor(
         publisher?.publish(registrationService.createDummyMemberInfo())
         logger.info("Publishing hosted identities")
         publisher?.publish(registrationService.createDummyHostedIdentity())
-        logger.info("Publishing seed message")
-        publisher?.publish(registrationService.seedMessage())
+        //logger.info("Publishing seed message")
+        //publisher?.publish(registrationService.seedMessage())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override val isRunning: Boolean
-        get() {
-            logger.info("isRunning=${coordinator.isRunning}")
-            return coordinator.isRunning
-        }
+        get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("stopping")
         coordinator.stop()
     }
 
     @Suppress("unused")
     @Deactivate
     fun close() {
-        logger.info("closing")
         coordinator.close()
     }
 }
