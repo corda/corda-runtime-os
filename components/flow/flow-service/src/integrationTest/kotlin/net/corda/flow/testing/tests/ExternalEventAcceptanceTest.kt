@@ -79,7 +79,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L)
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L) // -5 seconds (in the past)
         }
     }
 
@@ -222,7 +222,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving an event does not resend the external event unless a 'transient' error is received`() {
         given {
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 500000L)
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 500000L) // 50 seconds
 
             startFlowEventReceived(
                 FLOW_ID1,
@@ -325,7 +325,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a 'transient' error response does not resend the external event if the retry window has not been surpassed`() {
         given {
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 50000L)
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 50000L) // 5 seconds
 
             startFlowEventReceived(
                 FLOW_ID1,
@@ -408,7 +408,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given a 'transient' error response has been received receiving a successful response resumes the flow and does not resend the event`() {
         given {
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L)
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L) // -5 seconds (in the past)
 
             startFlowEventReceived(
                 FLOW_ID1,
