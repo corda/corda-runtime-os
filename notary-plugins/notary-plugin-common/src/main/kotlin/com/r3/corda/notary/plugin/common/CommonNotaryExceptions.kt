@@ -4,7 +4,8 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.notary.plugin.core.NotaryException
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import java.time.Instant
 
 /**
@@ -21,7 +22,7 @@ import java.time.Instant
 class NotaryExceptionInputStateConflict(
     val conflictingStates: List<UniquenessCheckStateDetails>,
     txId: SecureHash? = null
-) : NotaryException.NotaryExceptionFatal(
+) : NotaryExceptionFatal(
     "Input State Conflict(s): $conflictingStates",
     txId
 )
@@ -35,7 +36,7 @@ class NotaryExceptionInputStateConflict(
 class NotaryExceptionInputStateUnknown(
     val unknownStates: List<UniquenessCheckStateRef>,
     txId: SecureHash? = null
-) : NotaryException.NotaryExceptionFatal(
+) : NotaryExceptionFatal(
     "Unknown Input State(s): $unknownStates",
     txId
 )
@@ -49,7 +50,7 @@ class NotaryExceptionInputStateUnknown(
 class NotaryExceptionReferenceStateConflict(
     val conflictingStates: List<UniquenessCheckStateDetails>,
     txId: SecureHash? = null
-) : NotaryException.NotaryExceptionFatal(
+) : NotaryExceptionFatal(
     "Reference State Conflict(s): $conflictingStates",
     txId
 )
@@ -63,7 +64,7 @@ class NotaryExceptionReferenceStateConflict(
 class NotaryExceptionReferenceStateUnknown(
     val unknownStates: List<UniquenessCheckStateRef>,
     txId: SecureHash? = null
-) : NotaryException.NotaryExceptionFatal(
+) : NotaryExceptionFatal(
     "Unknown Reference State(s): $unknownStates",
     txId
 )
@@ -81,7 +82,7 @@ class NotaryExceptionTimeWindowOutOfBounds(
     val timeWindowLowerBound: Instant?,
     val timeWindowUpperBound: Instant,
     txId: SecureHash? = null
-) : NotaryException.NotaryExceptionFatal(
+) : NotaryExceptionFatal(
     "Time Window Out of Bounds. " +
             "Evaluated at $evaluationTimestamp, upper bound: $timeWindowUpperBound, lower bound: $timeWindowLowerBound",
     txId
@@ -96,7 +97,7 @@ class NotaryExceptionTimeWindowOutOfBounds(
 class NotaryExceptionMalformedRequest(
     val errorText: String,
     txId: SecureHash? = null
-) : NotaryException.NotaryExceptionFatal(
+) : NotaryExceptionFatal(
     "Malformed Request received by the uniqueness checker: $errorText",
     txId
 )
@@ -110,7 +111,7 @@ class NotaryExceptionMalformedRequest(
 class NotaryExceptionGeneral(
     val errorText: String?,
     txId: SecureHash? = null
-) : NotaryException.NotaryExceptionUnknown(
+) : NotaryExceptionUnknown(
     "General Error: $errorText",
     txId
 )

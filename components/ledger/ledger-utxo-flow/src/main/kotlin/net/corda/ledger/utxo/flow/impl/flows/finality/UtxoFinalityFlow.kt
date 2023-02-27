@@ -17,7 +17,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
-import net.corda.v5.ledger.notary.plugin.core.NotaryException.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.AccessController
 import java.security.PrivilegedExceptionAction

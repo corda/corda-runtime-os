@@ -34,6 +34,8 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -300,7 +302,7 @@ class UtxoFinalityFlowTest {
         class TestNotaryExceptionFatal(
             errorText: String,
             txId: SecureHash? = null
-        ) : NotaryException.NotaryExceptionFatal(errorText, txId)
+        ) : NotaryExceptionFatal(errorText, txId)
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(
             TestNotaryExceptionFatal("notarisation error", null)
@@ -373,7 +375,7 @@ class UtxoFinalityFlowTest {
         class TestNotaryExceptionNonFatal(
             errorText: String,
             txId: SecureHash? = null
-        ) : NotaryException.NotaryExceptionUnknown(errorText, txId)
+        ) : NotaryExceptionUnknown(errorText, txId)
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow))
             .thenThrow(TestNotaryExceptionNonFatal("notarisation error"))
