@@ -1,6 +1,6 @@
 package net.corda.processors.rest.internal
 
-import net.corda.components.rpc.RestGateway
+import net.corda.components.rest.RestGateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
