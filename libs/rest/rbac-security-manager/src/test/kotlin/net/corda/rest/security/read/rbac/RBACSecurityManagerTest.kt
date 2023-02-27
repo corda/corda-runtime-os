@@ -4,7 +4,6 @@ import javax.security.auth.login.FailedLoginException
 import net.corda.rest.security.read.Password
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
-import net.corda.rest.security.read.rbac.RBACSecurityManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
