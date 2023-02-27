@@ -9,8 +9,8 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation project(':libs:crypto:crypto-core')
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:crypto:crypto-core')
 
     api "net.corda:corda-avro-schema"
 
