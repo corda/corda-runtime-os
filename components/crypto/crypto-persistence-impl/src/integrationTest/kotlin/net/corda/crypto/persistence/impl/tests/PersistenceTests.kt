@@ -278,7 +278,7 @@ class PersistenceTests {
             actual: SigningCachedKey?
         ) {
             assertNotNull(actual)
-            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
+            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id.value)
             assertEquals(tenantId, actual.tenantId)
             assertEquals(expected.category, actual.category)
             assertEquals(expected.alias, actual.alias)
@@ -302,7 +302,7 @@ class PersistenceTests {
             actual: SigningCachedKey?
         ) {
             assertNotNull(actual)
-            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
+            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id.value)
             assertEquals(tenantId, actual.tenantId)
             assertEquals(expected.category, actual.category)
             assertEquals(expected.alias, actual.alias)
