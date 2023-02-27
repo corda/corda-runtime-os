@@ -24,20 +24,25 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PRE_AUTH_TOKEN
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.parse
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
+import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -144,6 +149,15 @@ class StartRegistrationHandlerTest {
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
     }
+    private val mockGroupParameters = mock<GroupParameters> {
+        on { entries } doReturn mapOf(String.format(NOTARY_SERVICE_NAME_KEY, 0) to x500Name.toString()).entries
+    }
+    private val groupReader = mock<MembershipGroupReader> {
+        on { groupParameters } doReturn mockGroupParameters
+    }
+    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
+        on { getGroupReader(mgmHoldingIdentity.toCorda()) } doReturn groupReader
+    }
 
     @BeforeEach
     fun setUp() {
@@ -175,6 +189,7 @@ class StartRegistrationHandlerTest {
             memberTypeChecker,
             membershipPersistenceClient,
             membershipQueryClient,
+            membershipGroupReaderProvider,
             cordaAvroSerializationFactory,
         )
     }
@@ -423,6 +438,39 @@ class StartRegistrationHandlerTest {
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if role is set to notary and notary service name already exists`() {
+        val notaryDetails = MemberNotaryDetails(
+            x500Name,
+            "Notary Plugin A",
+            listOf(mock())
+        )
+        val mockNotary = mock<NotaryInfo> {
+            on { name } doReturn x500Name
+        }
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        whenever(mockGroupParameters.notaries).thenReturn(listOf(mockNotary))
+
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if role is set to notary and group parameters cannot be read`() {
+        val notaryDetails = MemberNotaryDetails(
+            x500Name,
+            "Notary Plugin A",
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        whenever(groupReader.groupParameters).thenReturn(null)
 
         val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
 

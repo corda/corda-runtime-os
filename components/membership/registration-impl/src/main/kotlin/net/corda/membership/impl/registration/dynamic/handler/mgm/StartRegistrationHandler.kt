@@ -30,6 +30,8 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -48,6 +50,7 @@ internal class StartRegistrationHandler(
     private val memberTypeChecker: MemberTypeChecker,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : RegistrationHandler<StartRegistration> {
 
@@ -120,7 +123,7 @@ internal class StartRegistrationHandler(
             ) { "Registering member has not specified any endpoints" }
 
             // Validate role-specific information if any role is set
-            validateRoleInformation(pendingMemberInfo)
+            validateRoleInformation(pendingMemberInfo, mgmHoldingId)
 
             // Persist pending member info
             membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
@@ -213,7 +216,7 @@ internal class StartRegistrationHandler(
         )
     }
 
-    private fun validateRoleInformation(member: MemberInfo) {
+    private fun validateRoleInformation(member: MemberInfo, mgm: HoldingIdentity) {
         // If role is set to notary, notary details are specified
         member.notaryDetails?.let { notary ->
             validateRegistrationRequest(
@@ -224,6 +227,11 @@ internal class StartRegistrationHandler(
                     it.isNotBlank()
                 ) { "Registering member has specified an invalid notary service plugin type." }
             }
+            membershipGroupReaderProvider.getGroupReader(mgm).groupParameters?.let { groupParameters ->
+                validateRegistrationRequest(groupParameters.notaries.none { it.name == notary.serviceName }) {
+                    "Notary service '${notary.serviceName}' already exists."
+                }
+            } ?: throw MembershipRegistrationException("Could not read group parameters of the membership group '${member.groupId}'.")
         }
     }
 
