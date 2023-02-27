@@ -7,7 +7,6 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.LoggerFactory
@@ -74,7 +73,8 @@ class CordaAvroDeserializerImpl<T : Any>(
     }
 
     override fun deserialize(data: ByteArray): T? {
-        return uncheckedCast(deserialize(data, false))
+        @Suppress("unchecked_cast")
+        return deserialize(data, false) as? T
     }
 
     override fun deserialize(topic: String?, data: ByteArray?): Any? {

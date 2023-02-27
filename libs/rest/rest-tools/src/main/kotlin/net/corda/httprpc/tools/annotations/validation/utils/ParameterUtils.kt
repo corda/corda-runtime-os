@@ -3,7 +3,7 @@ package net.corda.httprpc.tools.annotations.validation.utils
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.annotations.ClientRequestBodyParameter
-import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
+import net.corda.httprpc.annotations.isRestParameterAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.isDuplexChannel
 import java.lang.reflect.Parameter
@@ -25,7 +25,7 @@ fun Parameter.isBodyParameter() = (this.annotations.any { it is ClientRequestBod
 
 @Suppress("ComplexMethod")
 fun getParameterName(parameter: Parameter) =
-    parameter.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }?.let {
+    parameter.annotations.singleOrNull { it.isRestParameterAnnotation() }?.let {
         when (it) {
             is RestPathParameter -> it.name(parameter).lowercase()
             is RestQueryParameter -> it.name(parameter).lowercase()

@@ -11,8 +11,8 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.httprpc.v1.HsmRestResource
-import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
+import net.corda.membership.rest.v1.HsmRestResource
+import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow

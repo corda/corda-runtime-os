@@ -5,7 +5,7 @@ import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.client.serialization.objectMapper
 import net.corda.httprpc.tools.annotations.extensions.name
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 

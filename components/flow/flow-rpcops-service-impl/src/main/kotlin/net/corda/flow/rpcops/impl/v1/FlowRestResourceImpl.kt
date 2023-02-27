@@ -35,8 +35,8 @@ import net.corda.permissions.validation.PermissionValidationService
 import net.corda.rbac.schema.RbacKeys
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
-import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
@@ -145,8 +145,8 @@ class FlowRestResourceImpl @Activate constructor(
             throw InvalidInputDataException(msg, details)
         }
 
-        val rpcContext = CURRENT_REST_CONTEXT.get()
-        val principal = rpcContext.principal
+        val restContext = CURRENT_REST_CONTEXT.get()
+        val principal = restContext.principal
 
         if (!permissionValidationService.permissionValidator.authorizeUser(principal,
                 "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}")) {

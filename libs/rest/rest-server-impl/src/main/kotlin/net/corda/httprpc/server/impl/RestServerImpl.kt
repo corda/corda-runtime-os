@@ -17,9 +17,9 @@ import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.httprpc.server.impl.websocket.deferred.DeferredWebSocketCloserService
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.function.Supplier

@@ -40,8 +40,8 @@ import net.corda.messaging.integration.processors.TestDurableProcessorStrings
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_CONSUMER_MAX_POLL_INTERVAL
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.millis
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals

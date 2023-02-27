@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType

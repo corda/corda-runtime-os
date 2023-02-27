@@ -20,7 +20,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.Sche
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaPairModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaPositionedValueModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 
 private val log =

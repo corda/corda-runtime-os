@@ -2,7 +2,7 @@ package net.corda.virtualnode.read.impl
 
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo

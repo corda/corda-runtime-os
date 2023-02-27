@@ -11,7 +11,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
