@@ -39,7 +39,6 @@ internal class MigrationUtilityImpl(
         cpkChangelogs: List<CpkDbChangeLog>,
         vaultDmlConnectionId: UUID
     ): Boolean {
-/*
         val missingCpks = mutableListOf<String>()
         cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
             val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs)
@@ -55,8 +54,7 @@ internal class MigrationUtilityImpl(
                     missingCpks.joinToString()
             )
         }
-        return missingCpks.size == 0*/
-        return true
+        return missingCpks.size == 0
     }
 
     private fun runCpkMigrations(
