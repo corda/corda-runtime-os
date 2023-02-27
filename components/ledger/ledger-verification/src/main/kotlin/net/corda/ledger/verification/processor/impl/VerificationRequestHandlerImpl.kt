@@ -1,7 +1,7 @@
 package net.corda.ledger.verification.processor.impl
 
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.data.ExceptionEnvelope as ExceptionEnvelopeAvro
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus as TransactionVerificationStatusAvro
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest as TransactionVerificationRequestAvro
@@ -15,8 +15,8 @@ import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.impl.getSerializationService
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

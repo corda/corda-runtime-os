@@ -2,8 +2,8 @@ package net.corda.simulator
 
 import net.corda.simulator.exceptions.ServiceConfigurationException
 import net.corda.simulator.factories.RequestDataFactory
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.ClientRequestBody
+import net.corda.v5.application.flows.Flow
 import java.util.ServiceLoader
 
 /**

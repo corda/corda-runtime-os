@@ -33,8 +33,7 @@ public abstract class AbstractJavaFlow implements ClientStartableFlow, JavaMembe
         logger.info("Executing Flow...");
 
         try {
-            @SuppressWarnings("unchecked")
-            Map<String, String> request = requestBody.getRequestBodyAs(jsonMarshallingService, Map.class);
+            Map<String, String> request = requestBody.getRequestBodyAsMap(jsonMarshallingService, String.class, String.class);
             String memberInfoRequest = Objects.requireNonNull(request.get("id"), "Failed to find key 'id' in the RPC input args");
             MemberInfo memberInfoResponse = memberLookupService.lookup(MemberX500Name.parse(memberInfoRequest));
 

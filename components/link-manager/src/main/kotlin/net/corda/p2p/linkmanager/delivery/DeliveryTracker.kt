@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.AuthenticatedMessageDeliveryState
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
@@ -25,12 +26,15 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
@@ -122,7 +126,16 @@ internal class DeliveryTracker(
                 val records = processAuthenticatedMessage(message)
                 logger.debug { "Replaying data message ${message.message.header.messageId}." }
                 publisher.publish(records)
+                recordReplaysMetric(message.message)
             }
+        }
+
+        private fun recordReplaysMetric(message: AuthenticatedMessage) {
+            CordaMetrics.Metric.OutboundMessageReplayCount.builder()
+                .withTag(CordaMetrics.Tag.SourceVirtualNode, message.header.source.x500Name)
+                .withTag(CordaMetrics.Tag.DestinationVirtualNode, message.header.destination.x500Name)
+                .withTag(CordaMetrics.Tag.MembershipGroup, message.header.source.groupId)
+                .build().increment()
         }
     }
 
@@ -146,14 +159,48 @@ internal class DeliveryTracker(
                 val timestamp = marker.timestamp
                 return when (markerType) {
                     is LinkManagerProcessedMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
-                    is LinkManagerReceivedMarker -> Response(null, emptyList())
-                    is TtlExpiredMarker -> Response(null, emptyList())
+                    is LinkManagerReceivedMarker -> {
+                        if (state != null) {
+                            // if we receive multiple acknowledgements, it is possible the state might have been nullified already.
+                            // Only the first one matters for calculating the end-to-end delivery latency anyway.
+                            recordDeliveryLatencyMetric(state)
+                        }
+                        Response(null, emptyList())
+                    }
+                    is TtlExpiredMarker -> {
+                        if (state != null) {
+                            recordTtlExpiredMetric(state)
+                        }
+                        Response(null, emptyList())
+                    }
                     else -> respond(state)
                 }
             }
 
             private fun respond(state: AuthenticatedMessageDeliveryState?): Response<AuthenticatedMessageDeliveryState> {
                 return Response(state, emptyList())
+            }
+
+            private fun recordDeliveryLatencyMetric(state: AuthenticatedMessageDeliveryState) {
+                val originalProcessingTime = Instant.ofEpochMilli(state.timestamp)
+                val deliveryLatency = Duration.between(originalProcessingTime, Instant.now())
+                val header = state.message.message.header
+                CordaMetrics.Metric.OutboundMessageDeliveryLatency.builder()
+                    .withTag(CordaMetrics.Tag.SourceVirtualNode, header.source.x500Name)
+                    .withTag(CordaMetrics.Tag.DestinationVirtualNode, header.destination.x500Name)
+                    .withTag(CordaMetrics.Tag.MembershipGroup, header.source.groupId)
+                    .withTag(CordaMetrics.Tag.MessagingSubsystem, header.subsystem)
+                    .build().record(deliveryLatency)
+            }
+
+            private fun recordTtlExpiredMetric(state: AuthenticatedMessageDeliveryState) {
+                val header = state.message.message.header
+                CordaMetrics.Metric.OutboundMessageTtlExpired.builder()
+                    .withTag(CordaMetrics.Tag.SourceVirtualNode, header.source.x500Name)
+                    .withTag(CordaMetrics.Tag.DestinationVirtualNode, header.destination.x500Name)
+                    .withTag(CordaMetrics.Tag.MembershipGroup, header.source.groupId)
+                    .withTag(CordaMetrics.Tag.MessagingSubsystem, header.subsystem)
+                    .build().increment()
             }
 
             override val keyClass = String::class.java

@@ -31,7 +31,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
 ) : TransactionBackchainVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable
