@@ -44,20 +44,13 @@ import java.security.PrivilegedExceptionAction
 @Suppress("LongParameterList")
 @Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
 class UtxoLedgerServiceImpl @Activate constructor(
-    @Reference(service = UtxoFilteredTransactionFactory::class)
-    private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
-    @Reference(service = UtxoSignedTransactionFactory::class)
-    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    @Reference(service = FlowEngine::class)
-    private val flowEngine: FlowEngine,
-    @Reference(service = UtxoLedgerPersistenceService::class)
-    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
-    @Reference(service = UtxoLedgerStateQueryService::class)
-    private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
-    @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = NotaryLookup::class)
-    private val notaryLookup: NotaryLookup
+    @Reference(service = UtxoFilteredTransactionFactory::class) private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
+    @Reference(service = UtxoSignedTransactionFactory::class) private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    @Reference(service = FlowEngine::class) private val flowEngine: FlowEngine,
+    @Reference(service = UtxoLedgerPersistenceService::class) private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
+    @Reference(service = UtxoLedgerStateQueryService::class) private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
+    @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup
 
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
@@ -88,19 +81,22 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
-        return UtxoFilteredTransactionBuilderImpl(utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal)
+        return UtxoFilteredTransactionBuilderImpl(
+            utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal
+        )
     }
 
     @Suspendable
-    override fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>> {
-        return utxoLedgerStateQueryService.findUnconsumedStatesByType(stateClass)
+    override fun <T : ContractState> findUnconsumedStatesByType(type: Class<T>): List<StateAndRef<T>> {
+        return utxoLedgerStateQueryService.findUnconsumedStatesByType(type)
     }
 
     @Suspendable
     override fun finalize(
-        signedTransaction: UtxoSignedTransaction,
-        sessions: List<FlowSession>
+        signedTransaction: UtxoSignedTransaction, sessions: Iterable<FlowSession>
     ): UtxoSignedTransaction {
+        val distinctSessions = sessions.distinctBy { it.counterparty }
+
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
@@ -109,7 +105,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 UtxoFinalityFlow(
                     signedTransaction as UtxoSignedTransactionInternal,
-                    sessions,
+                    distinctSessions,
                     getPluggableNotaryClientFlow(signedTransaction.notary)
                 )
             })
@@ -121,8 +117,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun receiveFinality(
-        session: FlowSession,
-        validator: UtxoTransactionValidator
+        session: FlowSession, validator: UtxoTransactionValidator
     ): UtxoSignedTransaction {
         val utxoReceiveFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
@@ -141,33 +136,30 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suppress("ThrowsCount")
     internal fun getPluggableNotaryClientFlow(notary: Party): Class<PluggableNotaryClientFlow> {
 
-        val protocolName =
-            notaryLookup.notaryServices.firstOrNull { it.name == notary.name }?.pluginClass
-                ?: throw CordaRuntimeException("Plugin class not found for notary service " +
-                        "${notary.name} . This means that no notary service matching this name " +
-                        "has been registered on the network."
+        val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary.name }?.pluginClass
+            ?: throw CordaRuntimeException(
+                "Plugin class not found for notary service " + "${notary.name} . This means that no notary service matching this name " + "has been registered on the network."
             )
 
         val sandboxGroupContext = currentSandboxGroupContext.get()
 
-        val protocolStore = sandboxGroupContext
-            .getObjectByKey<FlowProtocolStore>("FLOW_PROTOCOL_STORE") ?:
-            throw CordaRuntimeException(
-                "Cannot get flow protocol store for current sandbox group context")
+        val protocolStore =
+            sandboxGroupContext.getObjectByKey<FlowProtocolStore>("FLOW_PROTOCOL_STORE") ?: throw CordaRuntimeException(
+                "Cannot get flow protocol store for current sandbox group context"
+            )
 
         // Hard-code supportedVersions to 1 for now, need MGM change to supply this, at which point
         // we can pass in (see CORE-9740)
-        val flowName = protocolStore
-            .initiatorForProtocol(protocolName, supportedVersions = listOf(1))
+        val flowName = protocolStore.initiatorForProtocol(protocolName, supportedVersions = listOf(1))
 
         val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(flowName)
 
-        if ( !PluggableNotaryClientFlow::class.java.isAssignableFrom(flowClass)) {
-            throw CordaRuntimeException("Notary client flow class $flowName is invalid because " +
-                    "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}.")
+        if (!PluggableNotaryClientFlow::class.java.isAssignableFrom(flowClass)) {
+            throw CordaRuntimeException(
+                "Notary client flow class $flowName is invalid because " + "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
+            )
         }
 
-        @Suppress("UNCHECKED_CAST")
-        return flowClass as Class<PluggableNotaryClientFlow>
+        @Suppress("UNCHECKED_CAST") return flowClass as Class<PluggableNotaryClientFlow>
     }
 }
