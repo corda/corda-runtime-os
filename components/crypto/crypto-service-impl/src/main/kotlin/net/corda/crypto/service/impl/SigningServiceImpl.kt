@@ -12,7 +12,7 @@ import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.core.KeyAlreadyExistsException
-import net.corda.crypto.core.fullId
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStore
@@ -274,12 +274,12 @@ class SigningServiceImpl(
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
             val leafKeysIdsChunks = publicKey.leafKeys.map {
-                it.fullId(schemeMetadata, digestService) to it
+                it.fullIdHash(schemeMetadata, digestService) to it
             }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
                 val found = store.lookupByFullIds(
                     tenantId,
-                    chunk.map { SecureHash.parse(it.first) }
+                    chunk.map { it.first }
                 )
                 if (found.isNotEmpty()) {
                     for (key in chunk) {
