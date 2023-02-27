@@ -53,14 +53,22 @@ class HsmRestResourceImpl @Activate constructor(
 
     override fun assignedHsm(tenantId: String, category: String): HsmAssociationInfo? {
         verifyTenantId(tenantId)
-        return tryWithExceptionHandling(logger, "Find HSM") {
+        return tryWithExceptionHandling(
+            logger,
+            "Find HSM",
+            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
+        ) {
             hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
         }
     }
 
     override fun assignSoftHsm(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
-        return tryWithExceptionHandling(logger, "Assign Soft HSM") {
+        return tryWithExceptionHandling(
+            logger,
+            "Assign Soft HSM",
+            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
+        ) {
             hsmRegistrationClient.assignSoftHSM(
                 tenantId,
                 category.toCategory()
@@ -70,7 +78,11 @@ class HsmRestResourceImpl @Activate constructor(
 
     override fun assignHsm(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
-        return tryWithExceptionHandling(logger, "Assign HSM") {
+        return tryWithExceptionHandling(
+            logger,
+            "Assign HSM",
+            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
+        ) {
             hsmRegistrationClient.assignHSM(
                 tenantId,
                 category.toCategory(),
