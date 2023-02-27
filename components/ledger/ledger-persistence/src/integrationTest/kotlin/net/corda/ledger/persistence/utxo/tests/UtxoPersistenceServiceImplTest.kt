@@ -556,7 +556,7 @@ class UtxoPersistenceServiceImplTest {
         override val signatures: List<DigitalSignatureAndMetadata>
             get() = transactionContainer.signatures
         override val cpkMetadata: List<CordaPackageSummary>
-            get() = transactionContainer.wireTransaction.metadata.getCpkMetadata()
+            get() = transactionContainer.wireTransaction.metadata.cpkMetadata
 
         override fun getProducedStates(): List<StateAndRef<ContractState>> {
             return listOf(

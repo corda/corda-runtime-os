@@ -34,9 +34,7 @@ import java.security.PublicKey
 //TODO impl impl in package name
 
 @Suppress("LongParameterList")
-@Component(
-    service = [UtxoSignedTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE
-)
+@Component(service = [UtxoSignedTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,

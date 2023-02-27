@@ -70,13 +70,15 @@ class UtxoFilteredTransactionImpl(
             when (filteredOutputStates) {
                 is UtxoFilteredData.Removed<ContractState> -> FilteredDataRemovedImpl()
                 is UtxoFilteredData.SizeOnly -> FilteredDataSizeImpl(filteredOutputStates.size)
-                is UtxoFilteredData.Audit -> processAuditData(filteredOutputStates)
+                is UtxoFilteredData.Audit -> extractOutputStateAndRefs(filteredOutputStates)
                 else -> throw FilteredDataInconsistencyException("Unknown filtered data type.")
             }
         }
     }
 
-    private fun processAuditData(filteredOutputStates: UtxoFilteredData.Audit<ContractState>): UtxoFilteredData<StateAndRef<*>> {
+    private fun extractOutputStateAndRefs(
+        filteredOutputStates: UtxoFilteredData.Audit<ContractState>
+    ): UtxoFilteredData<StateAndRef<*>> {
         val componentGroupOrdinal = UtxoComponentGroup.OUTPUTS_INFO.ordinal
         return when (val filteredStateInfos = getFilteredData<UtxoOutputInfoComponent>(componentGroupOrdinal)) {
             is UtxoFilteredData.Audit -> {

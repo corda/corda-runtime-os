@@ -11,8 +11,8 @@ import java.time.Instant
  */
 data class TimeWindowUntilImpl(private val until: Instant) : TimeWindow {
 
-    override fun getFrom(): Instant {
-        return Instant.MIN
+    override fun getFrom(): Instant? {
+        return null
     }
 
     override fun getUntil(): Instant {

@@ -59,7 +59,9 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
                             stateAndRef.state.contractStateType.name,
                             token.poolKey.issuerHash,
                             token.poolKey.symbol
-                        ), token.amount, token.filterFields
+                        ),
+                        token.amount,
+                        token.filterFields
                     )
                 }
 

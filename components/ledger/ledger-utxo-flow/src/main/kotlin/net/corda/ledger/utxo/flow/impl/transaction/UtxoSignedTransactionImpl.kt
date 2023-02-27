@@ -81,8 +81,11 @@ data class UtxoSignedTransactionImpl(
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
         UtxoSignedTransactionImpl(
-            serializationService, transactionSignatureService, utxoLedgerTransactionFactory,
-            wireTransaction, signatures + signature
+            serializationService,
+            transactionSignatureService,
+            utxoLedgerTransactionFactory,
+            wireTransaction,
+            signatures + signature
         )
 
     @Suspendable
