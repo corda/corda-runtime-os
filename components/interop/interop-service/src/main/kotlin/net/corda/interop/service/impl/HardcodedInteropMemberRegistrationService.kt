@@ -131,7 +131,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
         val header = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), "interop", "123")
         val payload = """
             {
-                \"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\",
+                "method": "org.corda.interop/platform/tokens/v1.0/reserve-tokens",
                 "parameters" : [ { "abc" : { "type" : "string", "value" : "USD" } } ] 
             }
         """.trimIndent()
