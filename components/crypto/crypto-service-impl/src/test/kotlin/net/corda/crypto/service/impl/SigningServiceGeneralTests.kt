@@ -21,7 +21,9 @@ import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
@@ -159,8 +161,8 @@ class SigningServiceGeneralTests {
     @Test
     fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
         val existingKey = SigningCachedKey(
-            id = UUID.randomUUID().toString(),
-            fullId = UUID.randomUUID().toString(),
+            id = ShortHash.of("0123456789AB"),
+            fullId = SecureHash.parse("SHA-256:0123456789AB"),
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             alias = "alias1",
