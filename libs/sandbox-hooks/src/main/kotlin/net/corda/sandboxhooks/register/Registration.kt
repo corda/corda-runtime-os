@@ -1,5 +1,6 @@
 package net.corda.sandboxhooks.register
 
+import net.corda.kotlin.reflect.heap.KotlinHeapFixer
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandboxhooks.bundle.IsolatingCollisionBundleHook
 import net.corda.sandboxhooks.bundle.IsolatingEventHook
@@ -14,6 +15,7 @@ import org.osgi.framework.hooks.resolver.ResolverHookFactory
 import org.osgi.framework.hooks.service.EventListenerHook
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 
 /**
@@ -31,6 +33,11 @@ class Registration @Activate constructor(
     bundleContext: BundleContext
 ) {
     init {
+        // Purge Kotlin reflection of WeakReference objects belonging to unloaded sandboxes.
+        // This is a temporary workaround until Kotlin handles this itself.
+        // See https://youtrack.jetbrains.com/issue/KT-56619.
+        KotlinHeapFixer.start()
+
         with(bundleContext) {
             registerService(EventListenerHook::class.java, IsolatingEventListenerHook(sandboxService), null)
             registerService(org.osgi.framework.hooks.service.FindHook::class.java, IsolatingFindServiceHook(sandboxService), null)
@@ -39,5 +46,10 @@ class Registration @Activate constructor(
             registerService(org.osgi.framework.hooks.bundle.FindHook::class.java, IsolatingFindBundleHook(sandboxService),  null)
             registerService(ResolverHookFactory::class.java, IsolatingResolverBundleHookFactory(sandboxService), null)
         }
+    }
+
+    @Deactivate
+    fun shutdown() {
+        KotlinHeapFixer.stop()
     }
 }
