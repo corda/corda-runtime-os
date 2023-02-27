@@ -9,9 +9,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
+import net.corda.utilities.parse
+import net.corda.utilities.parseList
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo

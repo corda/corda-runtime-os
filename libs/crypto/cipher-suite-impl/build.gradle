@@ -25,6 +25,7 @@ dependencies {
     api project(':libs:crypto:crypto-core')
     api project(':libs:crypto:crypto-impl')
     api project(':libs:sandbox-types')
+    implementation project(':libs:utilities')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

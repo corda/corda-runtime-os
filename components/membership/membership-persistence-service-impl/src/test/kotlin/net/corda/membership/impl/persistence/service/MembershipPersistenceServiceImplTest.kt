@@ -28,7 +28,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

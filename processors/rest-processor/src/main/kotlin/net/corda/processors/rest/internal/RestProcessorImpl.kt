@@ -27,7 +27,7 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rest.RestProcessor
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

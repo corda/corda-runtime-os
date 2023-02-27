@@ -54,7 +54,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock

@@ -29,8 +29,8 @@ import net.corda.messaging.integration.processors.TestRPCResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCUnresponsiveResponderProcessor
 import net.corda.test.util.eventually
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.millis
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach

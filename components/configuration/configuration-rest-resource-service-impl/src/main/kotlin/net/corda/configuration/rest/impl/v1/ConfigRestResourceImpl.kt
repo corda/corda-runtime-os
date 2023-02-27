@@ -43,11 +43,11 @@ import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

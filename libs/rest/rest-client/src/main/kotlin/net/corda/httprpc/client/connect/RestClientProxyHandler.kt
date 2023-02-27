@@ -22,7 +22,7 @@ import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.isStaticallyExposedGet
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method

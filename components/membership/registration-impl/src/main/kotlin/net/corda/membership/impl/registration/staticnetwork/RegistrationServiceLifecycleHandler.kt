@@ -22,7 +22,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_STATIC_NETWORK_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_STATIC_NETWORK_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 

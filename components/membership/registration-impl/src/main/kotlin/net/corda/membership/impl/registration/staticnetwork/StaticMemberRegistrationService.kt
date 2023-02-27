@@ -62,8 +62,8 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.concurrent.SecManagerForkJoinPool
 import net.corda.v5.base.exceptions.CordaRuntimeException

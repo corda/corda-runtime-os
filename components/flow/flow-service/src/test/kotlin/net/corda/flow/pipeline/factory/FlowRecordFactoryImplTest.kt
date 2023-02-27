@@ -9,9 +9,9 @@ import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.factory.impl.FlowRecordFactoryImpl
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

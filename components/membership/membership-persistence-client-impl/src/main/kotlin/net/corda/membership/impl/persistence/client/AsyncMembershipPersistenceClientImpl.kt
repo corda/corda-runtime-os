@@ -14,7 +14,7 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_ASYNC_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -113,10 +113,11 @@ internal class AsyncMembershipPersistenceClientImpl(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
+        reason: String?,
     ): Collection<Record<*, *>> {
         return createRecords(
             viewOwningIdentity,
-            UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus)
+            UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus, reason)
         )
     }
 }

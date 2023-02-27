@@ -33,7 +33,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_ASYNC_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock

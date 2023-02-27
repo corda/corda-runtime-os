@@ -15,8 +15,8 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.schema.configuration.FlowConfig
+import net.corda.utilities.seconds
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith

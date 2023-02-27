@@ -4,8 +4,8 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.EVENT_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext

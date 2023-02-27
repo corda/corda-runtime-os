@@ -65,6 +65,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
+        reason: String?,
     ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
 
     override fun mutualTlsAddCertificateToAllowedList(
@@ -135,6 +136,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
             viewOwningIdentity: HoldingIdentity,
             registrationId: String,
             registrationRequestStatus: RegistrationStatus,
+            reason: String?,
         ) = emptyList<Record<*, *>>()
     }
 

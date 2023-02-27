@@ -13,7 +13,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_ASYNC_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.time.Clock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

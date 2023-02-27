@@ -2,7 +2,6 @@ package net.corda.messagebus.kafka.serialization
 
 import net.corda.data.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
@@ -17,13 +16,9 @@ class CordaAvroSerializerImpl<T : Any>(
     }
 
     override fun serialize(data: T): ByteArray? {
-        return when (data.javaClass) {
-            String::class.java -> {
-                stringSerializer.serialize(null, uncheckedCast(data))
-            }
-            ByteArray::class.java -> {
-                uncheckedCast(data)
-            }
+        return when (data) {
+            is String -> stringSerializer.serialize(null, data)
+            is ByteArray -> data
             else -> {
                 try {
                     schemaRegistry.serialize(data).array()

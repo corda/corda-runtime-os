@@ -1,8 +1,8 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.utilities.exactAdd
 import net.corda.v5.base.types.ByteArrays.sequence
-import net.corda.v5.base.util.exactAdd
 import net.corda.v5.crypto.COMPOSITE_KEY_CHILDREN_LIMIT
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight

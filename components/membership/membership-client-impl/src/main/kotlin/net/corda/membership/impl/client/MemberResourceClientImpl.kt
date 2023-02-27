@@ -42,7 +42,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
@@ -425,7 +425,8 @@ class MemberResourceClientImpl @Activate constructor(
                         "registrationProtocolVersion" to this.protocolVersion.toString(),
                         *this.memberContext.items.map { it.key to it.value }.toTypedArray(),
                     )
-                )
+                ),
+                this.reason
             )
     }
 

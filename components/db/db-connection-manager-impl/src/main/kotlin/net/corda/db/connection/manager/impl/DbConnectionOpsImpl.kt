@@ -11,7 +11,7 @@ import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import javax.persistence.EntityManager

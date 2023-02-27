@@ -9,8 +9,7 @@ import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.orm.utils.transaction
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.SQLIntegrityConstraintViolationException
@@ -92,8 +91,8 @@ class DBAccess(
             val results = entityManager.createQuery(select).resultList
             results.forEach {
                 val topic = it.get(0, String::class.java)
-                val partition: Int = uncheckedCast(it.get(1))
-                val offset: Long = uncheckedCast(it.get(2))
+                val partition: Int = it.get(1) as Int
+                val offset: Long = it.get(2) as Long
                 val topicPartition = CordaTopicPartition(topic, partition)
                 maxOffsetsPerTopic[topicPartition] = offset
             }

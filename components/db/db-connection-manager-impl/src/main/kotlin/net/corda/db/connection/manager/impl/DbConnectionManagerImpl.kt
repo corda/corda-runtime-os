@@ -15,7 +15,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate

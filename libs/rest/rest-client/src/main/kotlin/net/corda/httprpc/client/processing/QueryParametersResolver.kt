@@ -2,7 +2,6 @@ package net.corda.httprpc.client.processing
 
 import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.tools.annotations.extensions.name
-import net.corda.v5.base.util.uncheckedCast
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
@@ -23,7 +22,7 @@ private fun Any?.encodeQueryParam(): Any? {
     return if (this == null) {
         null
     } else if (Iterable::class.java.isAssignableFrom(this::class.java)) {
-        val list: Iterable<Any?> = uncheckedCast(this)
+        val list: Iterable<Any?> = this as Iterable<Any?>
         list.map { it?.toString()?.encodeParam() }
     } else {
         toString().encodeParam()

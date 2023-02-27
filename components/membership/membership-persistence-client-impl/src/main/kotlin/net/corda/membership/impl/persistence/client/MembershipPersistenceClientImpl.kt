@@ -233,12 +233,13 @@ class MembershipPersistenceClientImpl(
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
-        registrationRequestStatus: RegistrationStatus
+        registrationRequestStatus: RegistrationStatus,
+        reason: String?,
     ): MembershipPersistenceResult<Unit> {
         logger.info("Updating the status of a registration request with ID '$registrationId'.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus)
+            UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus, reason)
         ).execute()
         return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
             null -> MembershipPersistenceResult.success()

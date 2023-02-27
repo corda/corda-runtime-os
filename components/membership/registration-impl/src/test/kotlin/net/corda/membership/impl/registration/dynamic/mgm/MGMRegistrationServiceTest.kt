@@ -71,8 +71,8 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.EVENT_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG

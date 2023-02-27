@@ -2,7 +2,6 @@ package net.corda.common.json.serializers
 
 import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.uncheckedCast
 
 /**
  * Static entry point to stock platform serialization providers defined in this library and only in this library. This
@@ -23,7 +22,8 @@ fun standardTypesModule() = SimpleModule("Standard types").apply {
     // class it's registered against, although at runtime it doesn't make any difference. Here we have to suggest we
     // are serialising Any types because the adaptors (generally being constructed at run time) do not retain type
     // information outside a Class<*> object.
-    addDeserializer(uncheckedCast(memberX500NameDeserializer.deserializingType), memberX500NameDeserializer)
+    @Suppress("unchecked_cast")
+    addDeserializer(memberX500NameDeserializer.deserializingType as Class<Any>, memberX500NameDeserializer)
     addSerializer(
         MemberX500Name::class.java,
         JsonSerializerAdaptor(MemberX500NameSerializer(), MemberX500Name::class.java)

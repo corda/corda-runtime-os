@@ -74,12 +74,14 @@ interface AsyncMembershipPersistenceClient {
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param registrationId The ID of the registration request.
      * @param registrationRequestStatus The new status of the registration request.
+     * @param reason Reason why the status specified by [registrationRequestStatus] is being set.
      *
      * @return a collection of records to be sent in order for the DB worker to persist the request.
      */
     fun setRegistrationRequestStatusRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
-        registrationRequestStatus: RegistrationStatus
+        registrationRequestStatus: RegistrationStatus,
+        reason: String? = null,
     ): Collection<Record<*, *>>
 }

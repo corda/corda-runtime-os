@@ -16,7 +16,7 @@ import net.corda.membership.lib.toMap
 import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_STATIC_NETWORK_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_STATIC_NETWORK_TOPIC
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity

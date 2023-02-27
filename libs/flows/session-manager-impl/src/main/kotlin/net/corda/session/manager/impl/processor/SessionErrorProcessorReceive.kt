@@ -6,7 +6,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 

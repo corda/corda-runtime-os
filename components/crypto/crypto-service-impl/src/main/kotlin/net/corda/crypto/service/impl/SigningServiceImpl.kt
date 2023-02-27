@@ -20,7 +20,7 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT

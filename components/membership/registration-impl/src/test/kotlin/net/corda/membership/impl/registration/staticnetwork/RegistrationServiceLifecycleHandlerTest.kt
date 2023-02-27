@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
@@ -51,6 +52,9 @@ class RegistrationServiceLifecycleHandlerTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(any()) } doReturn mock()
+    }
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
+        on { createAvroSerializer<Any>(any()) } doReturn mock()
     }
 
     @Test
@@ -210,7 +214,7 @@ class RegistrationServiceLifecycleHandlerTest {
                 hsmRegistrationClient,
                 memberInfoFactory,
                 mock(),
-                mock(),
+                cordaAvroSerializationFactory,
                 membershipSchemaValidatorFactory,
                 mock(),
                 platformInfoProvider,
