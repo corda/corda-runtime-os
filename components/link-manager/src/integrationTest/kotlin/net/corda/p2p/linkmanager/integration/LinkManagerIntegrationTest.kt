@@ -33,6 +33,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
@@ -128,6 +129,7 @@ class LinkManagerIntegrationTest {
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
                 .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+                .withValue(BOOT_MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
         )
 
     private fun Publisher.publishLinkManagerConfig(config: Config) {
