@@ -9,6 +9,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     api 'net.corda:corda-membership'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-avro-schema"
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:crypto:crypto-core')
 }
