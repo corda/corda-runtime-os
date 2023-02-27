@@ -24,9 +24,9 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.httprpc.v1.KeysRestResource
-import net.corda.membership.httprpc.v1.types.response.KeyMetaData
-import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
+import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.types.response.KeyMetaData
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate

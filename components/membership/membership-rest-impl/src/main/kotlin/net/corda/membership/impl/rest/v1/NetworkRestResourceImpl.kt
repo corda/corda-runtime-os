@@ -11,8 +11,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
-import net.corda.membership.httprpc.v1.NetworkRestResource
-import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.NetworkRestResource
+import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate

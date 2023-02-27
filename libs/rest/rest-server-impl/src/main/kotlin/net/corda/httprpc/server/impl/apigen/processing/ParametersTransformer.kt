@@ -10,7 +10,7 @@ import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
 import net.corda.utilities.VisibleForTesting
 import org.slf4j.LoggerFactory
 import net.corda.v5.base.util.trace
-import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
+import net.corda.httprpc.annotations.isRestParameterAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
 import java.lang.reflect.Parameter
 import kotlin.reflect.KParameter
@@ -35,7 +35,7 @@ internal object ParametersTransformerFactory {
         BodyParametersExplicitTransformer(name, type)
 
     fun create(param: KParameter) =
-        param.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }.let {
+        param.annotations.singleOrNull { it.isRestParameterAnnotation() }.let {
             when (it) {
                 is RestPathParameter -> PathParametersTransformer(param, it)
                 is RestQueryParameter -> QueryParametersTransformer(param, it)
