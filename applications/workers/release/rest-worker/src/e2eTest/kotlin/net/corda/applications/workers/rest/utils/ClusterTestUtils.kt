@@ -6,7 +6,6 @@ import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.JsonObject
-import net.corda.httprpc.client.exceptions.RequestErrorException
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -30,7 +29,6 @@ import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.fail
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -129,15 +127,8 @@ fun E2eCluster.uploadCpi(
                 size = cpiJar.size.toLong(),
             )
             val id = cpi(upload).id
-            eventually {
-                val status = try {
-                    // status() throws exceptions for certain Http errors rather than returning an error. This means we
-                    // must catch any errors expected due to asynchronicity here and fail them, so the eventually loop
-                    // can retry rather than stop the test with an unexpected exception at this point.
-                    status(id)
-                } catch(requestErrorException: RequestErrorException) {
-                    fail(requestErrorException)
-                }
+            eventually(allowAllExceptions = true) {
+                val status = status(id)
                 assertThat(status.status).isEqualTo("OK")
                 status.cpiFileChecksum
             }
@@ -253,7 +244,7 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 1.minutes) {
+                eventually(duration = 1.minutes, allowAllExceptions = true) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .isEqualTo(RegistrationStatus.APPROVED)
@@ -513,7 +504,8 @@ fun E2eCluster.assertAllMembersAreInMemberList(
 ) {
     eventually(
         waitBetween = 2.seconds,
-        duration = 60.seconds
+        duration = 60.seconds,
+        allowAllExceptions = true,
     ) {
         val groupId = getGroupId(member.holdingId)
         lookupMembers(member.holdingId).also { result ->
