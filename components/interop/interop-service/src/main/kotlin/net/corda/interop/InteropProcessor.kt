@@ -64,8 +64,6 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
                 interopMessage.messageId.incrementOrUuid(), facadeRequest)
             logger.info("Converted facade request to interop message : $message")
             val result = generateAppMessage(header, message, cordaAvroSerializer)
-            logger.info("Generating output message with subsystem $SUBSYSTEM. " +
-                    "Key: $key, facade request: ${result.message}, header $header.")
             Record(Schemas.P2P.P2P_OUT_TOPIC, key, result)
         } else {
             logger.warn("Fail to converted interop message to facade request: empty payload")
@@ -87,6 +85,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             SUBSYSTEM,
             header.messageId.incrementOrUuid()
         )
+        logger.info("Generating output message: header=$responseHeader, payload=$interopMessage")
         return AppMessage(
             UnauthenticatedMessage(
                 responseHeader,
