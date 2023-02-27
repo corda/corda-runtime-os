@@ -448,7 +448,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
         }
 
-        @Suppress("NestedBlockDepth")
+        @Suppress("NestedBlockDepth", "ThrowsCount")
         private fun getKeysFromIds(
             keyIds: List<String>,
             tenantId: String,
