@@ -56,13 +56,17 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
     ): Record<String, AppMessage>? {
         val interopMessage  = cordaAvroDeserializer.deserialize(payload.array())
         //following logging is added just check serialisation/de-serialisation result and can be removed later
-        logger.info ( "Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, facade request: $interopMessage" )
+        logger.info("Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, facade request: $interopMessage, header $header.")
         return if (interopMessage != null) {
             val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
             logger.info("Converted interop message to facade request : $facadeRequest")
-            val message : InteropMessage = InteropMessageTransformer.getInteropMessage(interopMessage.messageId, facadeRequest)
+            val message : InteropMessage = InteropMessageTransformer.getInteropMessage(
+                interopMessage.messageId.incrementOrUuid(), facadeRequest)
             logger.info("Converted facade request to interop message : $message")
-            Record(Schemas.P2P.P2P_OUT_TOPIC, key, generateAppMessage(header, message, cordaAvroSerializer))
+            val result = generateAppMessage(header, message, cordaAvroSerializer)
+            logger.info("Generating output message with subsystem $SUBSYSTEM. " +
+                    "Key: $key, facade request: ${result.message}, header $header.")
+            Record(Schemas.P2P.P2P_OUT_TOPIC, key, result)
         } else {
             logger.warn("Fail to converted interop message to facade request: empty payload")
             null
@@ -77,16 +81,11 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         interopMessage: InteropMessage,
         interopMessageSerializer: CordaAvroSerializer<InteropMessage>
     ): AppMessage {
-        val msgId = try {
-            "${header.messageId.toInt() + 1}"
-        } catch (e: NumberFormatException) {
-            "${header.messageId} - ${UUID.randomUUID()}"
-        }
         val responseHeader = UnauthenticatedMessageHeader(
             header.source,
             header.destination,
             SUBSYSTEM,
-            msgId
+            header.messageId.incrementOrUuid()
         )
         return AppMessage(
             UnauthenticatedMessage(
@@ -95,6 +94,12 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             )
         )
     }
+
+    private fun String.incrementOrUuid() = try {
+            "${toInt() + 1}"
+        } catch (e: NumberFormatException) {
+            "${UUID.randomUUID()}"
+        }
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
     data class CommonHeader(val destination: net.corda.data.identity.HoldingIdentity,

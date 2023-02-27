@@ -132,7 +132,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
         val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\"," +
                 " \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
 
-        val interopMessage = InteropMessage("InteropMessageID-01", payload)
+        val interopMessage = InteropMessage("1", payload)
 
         return listOf(Record(
             Schemas.P2P.P2P_IN_TOPIC, key,
