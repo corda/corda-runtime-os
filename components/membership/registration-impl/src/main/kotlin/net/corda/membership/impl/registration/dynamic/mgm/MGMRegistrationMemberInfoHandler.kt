@@ -67,14 +67,43 @@ internal class MGMRegistrationMemberInfoHandler(
         }
 
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
-    fun buildAndPersist(
-        registrationId: UUID,
+    fun buildAndPersistMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
     ): MemberInfo {
         return buildMgmInfo(holdingIdentity, context).also {
             persistMemberInfo(holdingIdentity, it)
-            persistRegistrationRequest(registrationId, holdingIdentity, it)
+        }
+    }
+
+    fun persistRegistrationRequest(
+        registrationId: UUID,
+        holdingIdentity: HoldingIdentity,
+        mgmInfo: MemberInfo
+    ) {
+        val serializedMemberContext = keyValuePairListSerializer.serialize(
+            mgmInfo.memberProvidedContext.toWire()
+        ) ?: throw MGMRegistrationMemberInfoHandlingException(
+            "Failed to serialize the member context for this request."
+        )
+        val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
+            viewOwningIdentity = holdingIdentity,
+            registrationRequest = RegistrationRequest(
+                status = RegistrationStatus.APPROVED,
+                registrationId = registrationId.toString(),
+                requester = holdingIdentity,
+                memberContext = ByteBuffer.wrap(serializedMemberContext),
+                signature = CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf()),
+                    KeyValuePairList(emptyList())
+                )
+            )
+        )
+        if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
+            throw MGMRegistrationMemberInfoHandlingException(
+                "Registration failed, persistence error. Reason: ${registrationRequestPersistenceResult.errorMsg}"
+            )
         }
     }
 
@@ -160,37 +189,6 @@ internal class MGMRegistrationMemberInfoHandler(
                 SERIAL to SERIAL_CONST,
             )
         )
-    }
-
-    private fun persistRegistrationRequest(
-        registrationId: UUID,
-        holdingIdentity: HoldingIdentity,
-        mgmInfo: MemberInfo
-    ) {
-        val serializedMemberContext = keyValuePairListSerializer.serialize(
-            mgmInfo.memberProvidedContext.toWire()
-        ) ?: throw MGMRegistrationMemberInfoHandlingException(
-            "Failed to serialize the member context for this request."
-        )
-        val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
-            viewOwningIdentity = holdingIdentity,
-            registrationRequest = RegistrationRequest(
-                status = RegistrationStatus.APPROVED,
-                registrationId = registrationId.toString(),
-                requester = holdingIdentity,
-                memberContext = ByteBuffer.wrap(serializedMemberContext),
-                signature = CryptoSignatureWithKey(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    ByteBuffer.wrap(byteArrayOf()),
-                    KeyValuePairList(emptyList())
-                )
-            )
-        )
-        if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
-            throw MGMRegistrationMemberInfoHandlingException(
-                "Registration failed, persistence error. Reason: ${registrationRequestPersistenceResult.errorMsg}"
-            )
-        }
     }
 }
 

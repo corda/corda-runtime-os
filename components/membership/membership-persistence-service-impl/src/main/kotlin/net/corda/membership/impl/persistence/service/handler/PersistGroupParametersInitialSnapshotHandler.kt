@@ -23,6 +23,12 @@ internal class PersistGroupParametersInitialSnapshotHandler(
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
         }
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroDeserializer (
+            { logger.error("Failed to deserialize key value pair list.") },
+            KeyValuePairList::class.java
+        )
+
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
         return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
@@ -48,12 +54,23 @@ internal class PersistGroupParametersInitialSnapshotHandler(
         context: MembershipRequestContext,
         request: PersistGroupParametersInitialSnapshot
     ): PersistGroupParametersResponse {
+        val activePlatformVersion = platformInfoProvider.activePlatformVersion.toString()
         val persistedGroupParameters = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+            val currentGroupParameters = em.find(GroupParametersEntity::class.java, 1, LockModeType.PESSIMISTIC_WRITE)?.let {
+                keyValuePairListDeserializer.deserialize(it.parameters)
+            }
+            currentGroupParameters?.let {
+                if (it.get(MPV_KEY) != activePlatformVersion) {
+                    throw MembershipPersistenceException("Group parameters already exists with a different platform version.")
+                }
+                return@transaction currentGroupParameters
+            }
+
             // Create initial snapshot of group parameters.
             val groupParameters = KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "1"),
-                    KeyValuePair(MPV_KEY, platformInfoProvider.activePlatformVersion.toString()),
+                    KeyValuePair(MPV_KEY, activePlatformVersion),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                 )
             )
