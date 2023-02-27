@@ -38,6 +38,7 @@ class DbConnectionManagerEventHandler(
             }
             is StopEvent -> {
                 logger.debug { "DbConnectionManager stopping." }
+                onStop(coordinator)
             }
             is ErrorEvent -> {
                 logger.error(
@@ -51,14 +52,16 @@ class DbConnectionManagerEventHandler(
         }
     }
 
-    fun scheduleNextDbCheck(@Suppress("UNUSED_PARAMETER") coordinator: LifecycleCoordinator) {
-        // Turned off while we investigate a failing test
-        // coordinator.setTimer(dbCheckTimerKey, timeBetweenDbChecks.toMillis()) { key -> CheckDbEvent(key) }
+    fun scheduleNextDbCheck(coordinator: LifecycleCoordinator) {
+         coordinator.setTimer(dbCheckTimerKey, timeBetweenDbChecks.toMillis()) { key -> CheckDbEvent(key) }
     }
 
-    @Synchronized
+    private fun onStop(coordinator: LifecycleCoordinator) {
+        coordinator.cancelTimer(dbCheckTimerKey)
+    }
+
     private fun checkDb(coordinator: LifecycleCoordinator) {
-        if (dbConnectionManager.testAllConnections()) {
+        if (dbConnectionManager.testConnection()) {
             coordinator.updateStatus(LifecycleStatus.UP, "DB check passed")
         } else {
             coordinator.updateStatus(LifecycleStatus.DOWN, "DB check failed")
