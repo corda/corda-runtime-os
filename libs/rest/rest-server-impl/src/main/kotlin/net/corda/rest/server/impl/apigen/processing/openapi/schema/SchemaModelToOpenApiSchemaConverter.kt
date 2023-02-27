@@ -20,11 +20,11 @@ import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaO
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaPairModel
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaPositionedValueModel
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 
 private val log =
-    LoggerFactory.getLogger("net.corda.httprpc.server.impl.SchemaModelToOpenApiSchemaConverter.kt")
+    LoggerFactory.getLogger("net.corda.rest.server.impl.SchemaModelToOpenApiSchemaConverter.kt")
 
 /**
  * [SchemaModelToOpenApiSchemaConverter] is a conversion layer between our [SchemaModel] and swagger's required [Schema].
