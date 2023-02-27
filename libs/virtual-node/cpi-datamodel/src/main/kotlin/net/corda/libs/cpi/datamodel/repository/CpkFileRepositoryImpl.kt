@@ -24,7 +24,7 @@ class CpkFileRepositoryImpl: CpkFileRepository {
         em.persist(CpkFileEntity(cpkFile.fileChecksum.toString(), cpkFile.data))
     }
 
-    override fun findById(em: EntityManager, fileChecksums: List<SecureHash>): List<CpkFile> {
+    override fun findById(em: EntityManager, fileChecksums: Collection<SecureHash>): List<CpkFile> {
         return em.createQuery(
             "FROM ${CpkFileEntity::class.java.simpleName} f WHERE f.fileChecksum IN :ids",
             CpkFileEntity::class.java
@@ -42,7 +42,7 @@ class CpkFileRepositoryImpl: CpkFileRepository {
             .singleResult.toDto()
     }
 
-    override fun findAll(em: EntityManager, fileChecksumsToExclude: List<SecureHash>): List<CpkFile> {
+    override fun findAll(em: EntityManager, fileChecksumsToExclude: Collection<SecureHash>): List<CpkFile> {
         return em.createQuery(
             "FROM ${CpkFileEntity::class.java.simpleName} cpk " +
                     "WHERE cpk.fileChecksum NOT IN (:checksums)",

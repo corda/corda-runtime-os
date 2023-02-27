@@ -16,7 +16,7 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
         private val cpkFileRepository = CpkFileRepositoryImpl()
     }
 
-    override fun getAllCpkFileIds(fileChecksumsToExclude: List<SecureHash>): List<SecureHash> {
+    override fun getAllCpkFileIds(fileChecksumsToExclude: Collection<SecureHash>): List<SecureHash> {
         return entityManagerFactory.createEntityManager().transaction { em ->
             cpkFileRepository.findAll(em, fileChecksumsToExclude).map { it.fileChecksum }
         }
