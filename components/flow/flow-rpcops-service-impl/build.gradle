@@ -23,6 +23,7 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:flows:utils")
+    implementation project(':libs:utilities')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'

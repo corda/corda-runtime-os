@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -157,7 +158,7 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 true,
-                "sessionAlias",
+                null,
                 null,
             )
 
@@ -168,7 +169,7 @@ class CertificatesClientImplTest {
                 "Alias",
                 true,
                 null,
-                "sessionAlias",
+                null,
             )
         }
 
@@ -202,7 +203,7 @@ class CertificatesClientImplTest {
                     shortHash,
                     "Alias",
                     true,
-                    "sessionAlias",
+                    null,
                     null
                 )
             }
@@ -222,7 +223,7 @@ class CertificatesClientImplTest {
                     shortHash,
                     "Alias",
                     false,
-                    "sessionAlias",
+                    null,
                     null
                 )
             }
@@ -233,7 +234,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>>()
             whenever(
                 mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), any())
+                    .createIdentityRecord(any(), any(), any(), any(), anyOrNull())
             ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -245,7 +246,7 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 false,
-                "sessionAlias",
+                null,
                 "chain",
             )
 

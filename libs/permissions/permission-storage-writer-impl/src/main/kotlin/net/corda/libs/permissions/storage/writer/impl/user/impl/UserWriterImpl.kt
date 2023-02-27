@@ -13,7 +13,7 @@ import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID

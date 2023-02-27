@@ -11,7 +11,7 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_ASYNC_REQUEST_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.utilities.time.Clock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

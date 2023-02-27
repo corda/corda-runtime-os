@@ -21,7 +21,6 @@ import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -79,7 +78,7 @@ class SessionManagerImpl @Activate constructor(
                 val nextMessage = undeliveredMessages.first()
                 val nextMessagePayload = nextMessage.payload
                 if (nextMessagePayload is SessionData && nextMessagePayload.payload is Chunk) {
-                    assembleAndReturnChunkIfPossible(sessionState, uncheckedCast(nextMessagePayload.payload))
+                    assembleAndReturnChunkIfPossible(sessionState, nextMessagePayload.payload as Chunk)
                 } else {
                     nextMessage
                 }

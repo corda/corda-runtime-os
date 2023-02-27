@@ -5,6 +5,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -79,9 +80,15 @@ internal class MGMRegistrationMemberInfoHandler(
 
     @Suppress("ThrowsCount")
     private fun getKeyFromId(keyId: String, tenantId: String, expectedCategory: String): PublicKey {
+        val parsedKeyId =
+            try {
+                ShortHash.parse(keyId)
+            } catch (e: ShortHashException) {
+                throw IllegalArgumentException(e)
+            }
         return cryptoOpsClient.lookupKeysByIds(
             tenantId,
-            listOf(ShortHash.of(keyId))
+            listOf(parsedKeyId)
         ).firstOrNull()?.let {
             if (it.category != expectedCategory) {
                 throw MGMRegistrationContextValidationException(

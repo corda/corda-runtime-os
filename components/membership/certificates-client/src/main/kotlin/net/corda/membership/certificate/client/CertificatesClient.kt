@@ -25,7 +25,7 @@ interface CertificatesClient : Lifecycle, DbCertificateClient {
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        sessionKeyId: String?,
+        sessionKeyId: ShortHash?,
         sessionCertificateChainAlias: String?,
     )
 }

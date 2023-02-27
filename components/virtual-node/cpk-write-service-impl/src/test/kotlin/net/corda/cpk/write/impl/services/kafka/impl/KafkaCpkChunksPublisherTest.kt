@@ -5,7 +5,7 @@ import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.publisher.Publisher
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

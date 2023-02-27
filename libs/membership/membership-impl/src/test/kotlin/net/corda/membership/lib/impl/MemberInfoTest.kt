@@ -29,9 +29,9 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.toSortedMap
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.parse
+import net.corda.utilities.parseList
 import net.corda.v5.base.exceptions.ValueNotFoundException
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import org.apache.avro.file.DataFileReader

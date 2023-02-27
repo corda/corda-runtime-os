@@ -12,8 +12,8 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.utils.tryGetResult
-import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
-import net.corda.v5.base.util.debug
+import net.corda.schema.Schemas.getStateAndEventStateTopic
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")

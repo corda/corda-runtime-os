@@ -11,7 +11,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_MGMT_REQUEST_TOPIC
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn

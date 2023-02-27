@@ -14,7 +14,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.VirtualNodeInfo
@@ -45,7 +45,7 @@ class HostedIdentityEntryFactoryTest {
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val PUBLIC_CLUSTER_KEY_PEM = "publicClusterKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
-        const val SESSION_KEY_ID = "AB0123456789"
+        val SESSION_KEY_ID = ShortHash.of("AB0123456789")
     }
 
     private val nodeInfo = mock<VirtualNodeInfo> {
@@ -302,7 +302,7 @@ class HostedIdentityEntryFactoryTest {
 
         assertThat(ids.firstValue)
             .hasSize(1)
-            .contains(ShortHash.of(SESSION_KEY_ID))
+            .contains(SESSION_KEY_ID)
     }
 
     @Test

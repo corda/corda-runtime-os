@@ -6,13 +6,13 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList", "TooManyFunctions")

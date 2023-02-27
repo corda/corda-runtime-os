@@ -49,12 +49,12 @@ internal class HostedIdentityEntryFactory(
 
     private fun getKey(
         tenantId: String,
-        sessionKeyId: String?,
+        sessionKeyId: ShortHash?,
     ): String {
         val sessionKey = if (sessionKeyId != null) {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                keyIds = listOf(ShortHash.of(sessionKeyId))
+                keyIds = listOf(sessionKeyId)
             )
         } else {
             cryptoOpsClient.lookup(
@@ -103,7 +103,7 @@ internal class HostedIdentityEntryFactory(
         tlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
         sessionCertificateChainAlias: String?,
-        sessionKeyId: String?,
+        sessionKeyId: ShortHash?,
     ): Record<String, HostedIdentityEntry> {
         val nodeInfo = getNode(holdingIdentityShortHash)
         val policy = try {

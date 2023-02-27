@@ -10,6 +10,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
     implementation project(":libs:rest:rest")
     api project(":libs:rest:ssl-cert-read")
