@@ -28,9 +28,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration

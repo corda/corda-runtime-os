@@ -23,7 +23,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull

@@ -11,13 +11,13 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 internal class PermissionEndpointEventHandler(private val endpointName: String) : LifecycleEventHandler {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @VisibleForTesting

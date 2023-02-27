@@ -3,7 +3,7 @@ package net.corda.httprpc.test
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.lifecycle.Lifecycle
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneId

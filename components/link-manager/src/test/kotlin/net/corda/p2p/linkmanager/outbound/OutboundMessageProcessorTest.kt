@@ -26,7 +26,7 @@ import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly

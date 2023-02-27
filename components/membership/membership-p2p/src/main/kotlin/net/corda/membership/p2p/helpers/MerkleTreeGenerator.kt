@@ -18,7 +18,7 @@ class MerkleTreeGenerator(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val NODE_HASH_PREFIX = "CORDA_MEMBERSHIP_NODE"
         const val LEAF_HASH_PREFIX = "CORDA_MEMBERSHIP_LEAF"
     }

@@ -19,7 +19,7 @@ import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

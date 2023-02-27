@@ -12,7 +12,7 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 /**

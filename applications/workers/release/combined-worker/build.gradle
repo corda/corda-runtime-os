@@ -79,6 +79,7 @@ dependencies {
     implementation project(':processors:verification-processor')
     implementation project(':processors:link-manager-processor')
     implementation project(':processors:gateway-processor')
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'

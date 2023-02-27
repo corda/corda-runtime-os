@@ -76,7 +76,7 @@ import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name

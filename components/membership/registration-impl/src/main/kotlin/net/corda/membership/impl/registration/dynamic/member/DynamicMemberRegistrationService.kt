@@ -91,6 +91,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -447,13 +448,19 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
         }
 
-        @Suppress("NestedBlockDepth")
+        @Suppress("NestedBlockDepth", "ThrowsCount")
         private fun getKeysFromIds(
             keyIds: List<String>,
             tenantId: String,
             expectedCategory: String,
-        ): List<CryptoSigningKey> =
-            cryptoOpsClient.lookupKeysByIds(tenantId, keyIds.map { ShortHash.of(it) }).also { keys ->
+        ): List<CryptoSigningKey> {
+            val parsedKeyIds =
+                try {
+                    keyIds.map { ShortHash.parse(it) }
+                } catch (e: ShortHashException) {
+                    throw IllegalArgumentException(e)
+                }
+            return cryptoOpsClient.lookupKeysByIds(tenantId, parsedKeyIds).also { keys ->
                 val ids = keys.onEach { key ->
                     if (key.category != expectedCategory) {
                         throw IllegalArgumentException("Key ${key.id} is not in category $expectedCategory but in ${key.category}")
@@ -468,6 +475,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     throw IllegalArgumentException("No keys found for tenant: $tenantId under $missingKeys.")
                 }
             }
+        }
 
         private fun getSignatureSpec(key: CryptoSigningKey, specFromContext: String?): SignatureSpec {
             if (specFromContext != null) {

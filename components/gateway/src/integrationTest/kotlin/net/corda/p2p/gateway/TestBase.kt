@@ -33,13 +33,13 @@ import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import java.net.BindException

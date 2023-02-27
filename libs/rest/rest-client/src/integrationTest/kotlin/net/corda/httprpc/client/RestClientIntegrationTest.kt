@@ -17,7 +17,7 @@ import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.test.util.eventually
 import net.corda.utilities.NetworkHostAndPort
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions

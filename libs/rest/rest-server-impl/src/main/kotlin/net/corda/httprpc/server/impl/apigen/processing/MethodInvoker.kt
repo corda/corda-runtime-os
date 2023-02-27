@@ -7,11 +7,10 @@ import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.lifecycle.Lifecycle
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.httprpc.durablestream.api.Cursor
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import java.util.function.Supplier
 import javax.security.auth.login.FailedLoginException
 
@@ -89,7 +88,8 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
         @Suppress("SpreadOperator")
         val returnValue = super.invoke(*methodArgs.toTypedArray())
 
-        val durableCursorTransferObject = uncheckedCast<Any, Supplier<Cursor.PollResult<Any>>>(returnValue as Any)
+        @Suppress("unchecked_cast")
+        val durableCursorTransferObject = returnValue as Supplier<Cursor.PollResult<Any>>
         return durableCursorTransferObject.get()
                 .also {
                     log.trace {
