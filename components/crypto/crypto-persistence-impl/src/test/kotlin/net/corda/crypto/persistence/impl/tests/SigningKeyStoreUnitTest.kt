@@ -100,8 +100,8 @@ class SigningKeyStoreUnitTest {
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
-            val cachedKey0 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId0.toString()) }
-            val cachedKey1 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId1.toString()) }
+            val cachedKey0 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId0) }
+            val cachedKey1 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId1) }
             createCache(config = signingServiceConfig).also {
                 it.put(CacheKey(tenantId, shortKeyId0), cachedKey0)
                 it.put(CacheKey(tenantId, shortKeyId1), cachedKey1)
@@ -109,7 +109,7 @@ class SigningKeyStoreUnitTest {
         }
         setUpSigningKeyStore(cacheFactory)
         assertEquals(
-            setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
+            setOf(fullKeyId0, fullKeyId1),
             signingKeyStore.lookupByKeyIds(tenantId, setOf(shortKeyId0, shortKeyId1)).map { it.fullId }.toSet()
         )
         // verify it didn't go to the database
@@ -125,8 +125,8 @@ class SigningKeyStoreUnitTest {
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
             val cachedKey0 = mock<SigningCachedKey>().also {
-                whenever(it.id).thenReturn(shortKeyId0.toString())
-                whenever(it.fullId).thenReturn(fullKeyId0.toString())
+                whenever(it.id).thenReturn(shortKeyId0)
+                whenever(it.fullId).thenReturn(fullKeyId0)
             }
             createCache(config = signingServiceConfig).also {
                 it.put(CacheKey(tenantId, shortKeyId0), cachedKey0)
@@ -135,7 +135,7 @@ class SigningKeyStoreUnitTest {
 
         val keysCaptor = argumentCaptor<Set<ShortHash>>()
         signingKeysRepository.run {
-            val dbFetchedKey = mock<SigningCachedKey>().also { whenever(it.id).thenReturn(shortKeyId1.value) }
+            val dbFetchedKey = mock<SigningCachedKey>().also { whenever(it.id).thenReturn(shortKeyId1) }
             whenever(this.findKeysByIds(any(), eq(tenantId), keysCaptor.capture())).thenReturn(setOf(dbFetchedKey))
         }
 
@@ -144,7 +144,7 @@ class SigningKeyStoreUnitTest {
 
         val expectedNotFoundInCache = setOf(shortKeyId1)
         assertEquals(expectedNotFoundInCache, keysCaptor.firstValue)
-        assertEquals(setOf(shortKeyId0.value, shortKeyId1.value), lookedUpByKeyIdsKeys.mapTo(mutableSetOf()) { it.id })
+        assertEquals(setOf(shortKeyId0, shortKeyId1), lookedUpByKeyIdsKeys.mapTo(mutableSetOf()) { it.id })
         verify(connectionsFactory, times(1)).getEntityManagerFactory(any())
     }
 
@@ -157,8 +157,8 @@ class SigningKeyStoreUnitTest {
         val shortKeyId1 = ShortHash.of(fullKeyId1)
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
-            val cachedKey0 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId0.toString()) }
-            val cachedKey1 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId1.toString()) }
+            val cachedKey0 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId0) }
+            val cachedKey1 = mock<SigningCachedKey>().also { whenever(it.fullId).thenReturn(fullKeyId1) }
 
             createCache(config = signingServiceConfig).also {
                 it.put(CacheKey(tenantId, shortKeyId0), cachedKey0)
@@ -168,7 +168,7 @@ class SigningKeyStoreUnitTest {
 
         setUpSigningKeyStore(cacheFactory)
         assertEquals(
-            setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
+            setOf(fullKeyId0, fullKeyId1),
             signingKeyStore.lookupByFullKeyIds(tenantId, setOf(fullKeyId0, fullKeyId1)).map { it.fullId }.toSet()
         )
         // verify it didn't go to the database
@@ -184,8 +184,8 @@ class SigningKeyStoreUnitTest {
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
             val cachedKey0 = mock<SigningCachedKey>().also {
-                whenever(it.id).thenReturn(shortKeyId0.toString())
-                whenever(it.fullId).thenReturn(fullKeyId0.toString())
+                whenever(it.id).thenReturn(shortKeyId0)
+                whenever(it.fullId).thenReturn(fullKeyId0)
             }
 
             createCache(config = signingServiceConfig).also {
@@ -196,8 +196,8 @@ class SigningKeyStoreUnitTest {
         val keysCaptor = argumentCaptor<Set<SecureHash>>()
         signingKeysRepository.run {
             val dbFetchedKey = mock<SigningCachedKey>().also {
-                whenever(it.id).thenReturn(shortKeyId1.value)
-                whenever(it.fullId).thenReturn(fullKeyId1.toString())
+                whenever(it.id).thenReturn(shortKeyId1)
+                whenever(it.fullId).thenReturn(fullKeyId1)
             }
             whenever(this.findKeysByFullIds(any(), eq(tenantId), keysCaptor.capture())).thenReturn(setOf(dbFetchedKey))
         }
@@ -207,7 +207,7 @@ class SigningKeyStoreUnitTest {
 
         val expectedNotFoundInCache = setOf(fullKeyId1)
         assertEquals(expectedNotFoundInCache, keysCaptor.firstValue)
-        assertEquals(setOf(fullKeyId0.toString(), fullKeyId1.toString()), lookedUpByFullKeyIdsKeys.mapTo(mutableSetOf()) { it.fullId })
+        assertEquals(setOf(fullKeyId0, fullKeyId1.toString()), lookedUpByFullKeyIdsKeys.mapTo(mutableSetOf()) { it.fullId })
         verify(connectionsFactory, times(1)).getEntityManagerFactory(any())
     }
 
@@ -219,8 +219,8 @@ class SigningKeyStoreUnitTest {
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
             val cachedKey = mock<SigningCachedKey>().also {
-                whenever(it.id).thenReturn(shortKeyId.toString())
-                whenever(it.fullId).thenReturn(fullKeyId.toString())
+                whenever(it.id).thenReturn(shortKeyId)
+                whenever(it.fullId).thenReturn(fullKeyId)
             }
 
             createCache(config = signingServiceConfig).also {
@@ -251,8 +251,8 @@ class SigningKeyStoreUnitTest {
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
             val cachedKey = mock<SigningCachedKey>().also {
-                whenever(it.id).thenReturn(shortKeyId.toString())
-                whenever(it.fullId).thenReturn(fullKeyId.toString())
+                whenever(it.id).thenReturn(shortKeyId)
+                whenever(it.fullId).thenReturn(fullKeyId)
             }
 
             createCache(config = signingServiceConfig).also {
@@ -263,7 +263,7 @@ class SigningKeyStoreUnitTest {
         setUpSigningKeyStore(cacheFactory)
         val lookedUpByFullKeyIdKey = signingKeyStore.lookupByFullKeyId(tenantId, fullKeyId)
 
-        assertEquals(fullKeyId.toString(), lookedUpByFullKeyIdKey!!.fullId)
+        assertEquals(fullKeyId, lookedUpByFullKeyIdKey!!.fullId)
         verify(connectionsFactory, times(0)).getEntityManagerFactory(any())
     }
 
@@ -276,8 +276,8 @@ class SigningKeyStoreUnitTest {
 
         val cacheFactory: (CryptoSigningServiceConfig) -> Cache<CacheKey, SigningCachedKey> = {
             val cachedKey = mock<SigningCachedKey>().also {
-                whenever(it.id).thenReturn(shortKeyId.toString())
-                whenever(it.fullId).thenReturn(fullKeyId.toString())
+                whenever(it.id).thenReturn(shortKeyId)
+                whenever(it.fullId).thenReturn(fullKeyId)
             }
 
             createCache(config = signingServiceConfig).also {
