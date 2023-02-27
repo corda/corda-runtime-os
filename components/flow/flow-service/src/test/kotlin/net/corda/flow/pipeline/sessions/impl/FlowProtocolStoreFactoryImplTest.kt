@@ -143,24 +143,16 @@ class FlowProtocolStoreFactoryImplTest {
 
     @Test
     fun `created protocol store has correct behaviour when retrieving inherited responder flow`() {
-        val cpiMetadata = makeMockCPIMetadata(
+        val sandboxGroup = makeMockSandboxGroup(
             listOf(
                 CpkFlowClassNameLists(listOf(INITIATING_FLOW), listOf(), listOf()),
                 CpkFlowClassNameLists(listOf(INITIATED_INHERITED_RESPONDER), listOf(), listOf(INITIATED_INHERITED_RESPONDER))
             )
         )
-        val sandboxGroup = makeMockSandboxGroup()
-        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup)
         assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
         assertEquals(INITIATING_FLOW, protocolStore.initiatorForProtocol(PROTOCOL, listOf(1)))
         assertEquals(INITIATED_INHERITED_RESPONDER, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
-    }
-
-    private fun makeMockCPIMetadata(flows: List<CpkFlowClassNameLists>): CpiMetadata {
-        val cpiMetadata = mock<CpiMetadata>()
-        val cpks = flows.map { makeMockCPKMetadata(it) }
-        whenever(cpiMetadata.cpksMetadata).thenReturn(cpks)
-        return cpiMetadata
     }
 
     private fun makeMockCPKMetadata(flows: CpkFlowClassNameLists): CpkMetadata {
