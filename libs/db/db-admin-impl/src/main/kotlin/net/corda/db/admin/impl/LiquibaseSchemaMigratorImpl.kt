@@ -82,11 +82,7 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            log.info("Listing unrun changesets for ${database.databaseProductName} ${database.databaseProductVersion} " +
-                    "DB Schema for ${database.connection.catalog}")
-            return liquibase.use { lb ->
-                lb.listUnrunChangeSets(Contexts(), LabelExpression()).map { it.filePath }
-            }
+            return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map { it.filePath }
         }
     }
 
@@ -108,7 +104,7 @@ class LiquibaseSchemaMigratorImpl(
 
             // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
             val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
-            val liquibase = liquibaseFactory(
+            val lb = liquibaseFactory(
                 masterChangeLogFileName,
                 StreamResourceAccessor(masterChangeLogFileName, dbChange),
                 database
@@ -116,15 +112,13 @@ class LiquibaseSchemaMigratorImpl(
 
             log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
                     "DB Schema for ${database.connection.catalog}")
-            liquibase.use { lb ->
-                if (null == sql) {
-                    lb.update(Contexts())
-                } else {
-                    lb.update(Contexts(), sql)
-                }
-                if (tag != null) {
-                    lb.tag(tag)
-                }
+            if (null == sql) {
+                lb.update(Contexts())
+            } else {
+                lb.update(Contexts(), sql)
+            }
+            if (tag != null) {
+                lb.tag(tag)
             }
             log.info("${database.connection.catalog} DB schema update complete")
         }
@@ -147,15 +141,13 @@ class LiquibaseSchemaMigratorImpl(
 
             // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
             val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
-            val liquibase = liquibaseFactory(
+            val lb = liquibaseFactory(
                 masterChangeLogFileName,
                 StreamResourceAccessor(masterChangeLogFileName, dbChange),
                 database
             )
 
-            liquibase.use {
-                it.rollback(tagToRollbackTo, Contexts())
-            }
+            lb.rollback(tagToRollbackTo, Contexts())
             log.info("${database.connection.catalog} DB schema rollback complete")
         }
     }
