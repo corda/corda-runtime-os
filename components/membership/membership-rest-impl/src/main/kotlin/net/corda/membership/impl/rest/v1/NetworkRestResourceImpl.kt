@@ -4,6 +4,7 @@ import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -13,6 +14,7 @@ import net.corda.membership.certificate.client.CertificatesResourceNotFoundExcep
 import net.corda.membership.httprpc.v1.NetworkRestResource
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -37,6 +39,7 @@ class NetworkRestResourceImpl @Activate constructor(
         holdingIdentityShortHash: String,
         request: HostedIdentitySetupRequest
     ) {
+        val operation = "set up locally hosted identities"
         try {
             certificatesClient.setupLocallyHostedIdentity(
                 ShortHash.parseOrThrow(holdingIdentityShortHash),
@@ -51,8 +54,11 @@ class NetworkRestResourceImpl @Activate constructor(
             logger.warn(e.message)
             throw e
         } catch (e: SignatureException) {
-            logger.warn("Could not set up locally hosted identities", e)
+            logger.warn("Could not $operation", e)
             throw BadRequestException("The certificate was not signed by the correct certificate authority. ${e.message}")
+        } catch (e: CordaRPCAPIPartitionException) {
+            logger.warn("Could not $operation", e)
+            throw ServiceUnavailableException("Could not $operation: Repartition Event!")
         } catch (e: Throwable) {
             logger.warn("Could not publish to locally hosted identities", e)
             throw InternalServerException("Could not import certificate: ${e.message}")
