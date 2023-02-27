@@ -12,7 +12,7 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
 
@@ -25,6 +25,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     compileOnly "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"

@@ -10,8 +10,8 @@ import net.corda.crypto.impl.getSigningData
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
+import net.corda.utilities.debug
 import net.corda.v5.application.crypto.DigestService
-import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException

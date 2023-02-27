@@ -12,13 +12,13 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.days
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.time.Duration
 
 @InitiatingFlow(protocol = "utxo-evolve-protocol")
 class UtxoDemoEvolveFlow : ClientStartableFlow {
@@ -78,7 +78,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 .addOutputState(output)
                 .addInputState(input.ref)
                 .setNotary(input.state.notary)
-                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .setTimeWindowUntil(Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addSignatories(output.participants)
                 .toSignedTransaction()
 

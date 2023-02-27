@@ -4,7 +4,7 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.RestQueryParameter
 import net.corda.httprpc.annotations.ClientRequestBodyParameter
-import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
+import net.corda.httprpc.annotations.isRestParameterAnnotation
 import net.corda.httprpc.tools.annotations.validation.utils.endpoints
 import net.corda.httprpc.tools.annotations.validation.utils.getParameterName
 import java.lang.reflect.Parameter
@@ -42,7 +42,7 @@ internal class ParameterNameConflictValidator(private val clazz: Class<out RestR
     }
 
     private fun getParameterType(param: Parameter): String =
-        param.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }?.let {
+        param.annotations.singleOrNull { it.isRestParameterAnnotation() }?.let {
             when (it) {
                 is RestPathParameter -> "PATH"
                 is RestQueryParameter -> "QUERY"

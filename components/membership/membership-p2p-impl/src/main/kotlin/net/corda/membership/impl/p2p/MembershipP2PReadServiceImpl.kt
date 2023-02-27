@@ -21,8 +21,8 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.registry.AvroSchemaRegistry

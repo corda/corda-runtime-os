@@ -2,7 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.util.concurrent.GlobalEventExecutor
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIterable
 import org.junit.jupiter.api.Test

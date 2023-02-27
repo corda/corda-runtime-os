@@ -29,9 +29,9 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.millis
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.calculateHash

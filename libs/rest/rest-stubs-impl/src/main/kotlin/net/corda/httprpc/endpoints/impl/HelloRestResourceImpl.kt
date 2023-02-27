@@ -34,8 +34,8 @@ class HelloRestResourceImpl : HelloRestResource, PluggableRestResource<HelloRest
     override val protocolVersion = 99
 
     override fun greet(addressee: String): String {
-        val rpcContext = CURRENT_REST_CONTEXT.get()
-        val principal = rpcContext.principal
+        val restContext = CURRENT_REST_CONTEXT.get()
+        val principal = restContext.principal
         return "Hello, $addressee! (from $principal)".also { log.info(it) }
     }
 }

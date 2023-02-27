@@ -12,8 +12,7 @@ import net.corda.httprpc.durablestream.api.Cursor
 import net.corda.httprpc.durablestream.api.FiniteDurableCursor
 import net.corda.httprpc.durablestream.api.FiniteDurableCursorBuilder
 import net.corda.httprpc.durablestream.api.PositionManager
-import net.corda.v5.base.util.trace
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
@@ -60,6 +59,7 @@ private class RestFiniteDurableCursorClientImpl(
             method.endpointHttpVerb, parameters.toWebRequest(rawPath),
             pollResultParamType, RequestContext.fromAuthenticationConfig(authenticationConfig)
         )
-        return uncheckedCast(response.body!!)
+        @Suppress("unchecked_cast")
+        return response.body as Cursor.PollResult<Any>
     }
 }

@@ -14,4 +14,5 @@ data class RegistrationRequestStatus(
     val registrationSent: Instant,
     val registrationLastModified: Instant,
     val protocolVersion: Int,
+    val reason: String? = null,
 )

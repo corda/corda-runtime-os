@@ -30,10 +30,9 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
-import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.schema.Schemas.getStateAndEventDLQTopic
+import net.corda.schema.Schemas.getStateAndEventStateTopic
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -317,7 +316,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 "Failed to finish within the time limit for state: $state and event: $event"
             )
         }!!
-        return uncheckedCast(future.tryGetResult())
+        @Suppress("unchecked_cast")
+        return future.tryGetResult() as? StateAndEventProcessor.Response<S>
     }
 
     private fun generateDeadLetterRecord(event: CordaConsumerRecord<K, E>, state: S?): Record<*, *> {

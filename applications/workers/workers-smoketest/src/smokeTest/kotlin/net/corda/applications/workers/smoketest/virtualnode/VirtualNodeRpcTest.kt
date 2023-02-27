@@ -670,6 +670,7 @@ class VirtualNodeRpcTest {
             val cpiV1 = getCpiChecksum(upgradeTestingCpiName, "v1")
             eventuallyCreateVirtualNode(cpiV1, bobX500)
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v1")
+            awaitVirtualNodeOperationCompletion(bobHoldingId)
 
             runReturnAStringFlow("upgrade-test-v1", bobHoldingId)
             runSimplePersistenceCheckFlow("Could persist fish", bobHoldingId)
@@ -704,6 +705,15 @@ class VirtualNodeRpcTest {
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
             triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
+            awaitVirtualNodeOperationCompletion(bobHoldingId)
+        }
+    }
+
+    @Test
+    @Order(114)
+    fun `can change virtual node's state to active and run a flow after upgrade`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
             eventuallyUpdateVirtualNodeState(bobHoldingId, "active", "ACTIVE")
 
@@ -733,6 +743,14 @@ class VirtualNodeRpcTest {
                     response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(bobX500) &&
                     response.toJson()["cpiIdentifier"]["cpiName"].textValue().equals(cpiName) &&
                     response.toJson()["cpiIdentifier"]["cpiVersion"].textValue().equals(cpiVersion)
+        }
+    }
+
+    private fun ClusterBuilder.awaitVirtualNodeOperationCompletion(virtualNodeShortHash: String) = assertWithRetry {
+        timeout(Duration.of(30, ChronoUnit.SECONDS))
+        command { getVNode(virtualNodeShortHash) }
+        condition { response ->
+            response.code == 200 && response.toJson()["operationInProgress"].isNull
         }
     }
 

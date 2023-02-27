@@ -72,16 +72,18 @@ class LiquibaseSchemaMigratorImpl(
     }
 
     override fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String> {
-        val database = databaseFactory(datasource)
+        liquibaseAccessLock.withLock {
+            val database = databaseFactory(datasource)
 
-        val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
-        val liquibase = liquibaseFactory(
-            masterChangeLogFileName,
-            StreamResourceAccessor(masterChangeLogFileName, dbChange),
-            database
-        )
+            val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
+            val liquibase = liquibaseFactory(
+                masterChangeLogFileName,
+                StreamResourceAccessor(masterChangeLogFileName, dbChange),
+                database
+            )
 
-        return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map { it.filePath }
+            return liquibase.listUnrunChangeSets(Contexts(), LabelExpression()).map { it.filePath }
+        }
     }
 
     private fun process(

@@ -2,7 +2,7 @@ package net.corda.messagebus.kafka.producer
 
 import net.corda.data.chunking.ChunkKey
 import net.corda.utilities.copyBytes
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.apache.kafka.clients.producer.Partitioner
 import org.apache.kafka.clients.producer.internals.BuiltInPartitioner
 import org.apache.kafka.common.Cluster

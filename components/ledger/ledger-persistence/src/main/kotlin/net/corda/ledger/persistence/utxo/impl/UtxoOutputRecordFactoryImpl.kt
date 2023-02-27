@@ -14,7 +14,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
-import net.corda.schema.Schemas.Services.Companion.TOKEN_CACHE_EVENT
+import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken

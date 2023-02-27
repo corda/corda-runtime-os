@@ -4,8 +4,8 @@ import io.javalin.core.util.Header.AUTHORIZATION
 import net.corda.httprpc.server.impl.context.ClientRequestContext
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import net.corda.v5.base.util.trace
 import javax.security.auth.login.FailedLoginException
 
 internal class DefaultCredentialResolver : CredentialResolver {

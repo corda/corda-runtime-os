@@ -3,11 +3,11 @@ package net.corda.applications.workers.rest.utils
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.membership.httprpc.v1.MemberLookupRestResource
-import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
+import net.corda.membership.rest.v1.MemberLookupRestResource
+import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.minutes
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.minutes
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import java.io.ByteArrayOutputStream
