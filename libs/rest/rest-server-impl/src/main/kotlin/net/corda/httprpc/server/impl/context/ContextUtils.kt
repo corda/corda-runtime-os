@@ -20,10 +20,10 @@ import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
 import net.corda.httprpc.server.impl.security.RestAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.CredentialResolver
 import net.corda.metrics.CordaMetrics
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException

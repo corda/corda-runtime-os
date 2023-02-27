@@ -7,7 +7,7 @@ import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Duration
 

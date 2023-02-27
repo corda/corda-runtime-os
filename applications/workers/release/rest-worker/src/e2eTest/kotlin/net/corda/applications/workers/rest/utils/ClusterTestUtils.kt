@@ -26,8 +26,8 @@ import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.minutes
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.minutes
+import net.corda.utilities.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.fail

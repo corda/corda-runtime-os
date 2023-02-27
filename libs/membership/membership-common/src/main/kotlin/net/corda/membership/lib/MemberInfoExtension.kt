@@ -3,10 +3,10 @@ package net.corda.membership.lib
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseList
-import net.corda.v5.base.util.parseOrNull
-import net.corda.v5.base.util.parseSet
+import net.corda.utilities.parse
+import net.corda.utilities.parseList
+import net.corda.utilities.parseOrNull
+import net.corda.utilities.parseSet
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.calculateHash

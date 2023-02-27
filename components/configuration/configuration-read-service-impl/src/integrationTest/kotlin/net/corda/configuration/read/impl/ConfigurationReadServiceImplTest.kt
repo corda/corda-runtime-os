@@ -13,7 +13,7 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
@@ -22,7 +22,7 @@ import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

@@ -14,11 +14,11 @@ import net.corda.httprpc.tools.isDuplexChannel
 import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.httprpc.durablestream.api.isFiniteDurableStreamsMethod
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
-import org.slf4j.LoggerFactory
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
-import java.lang.reflect.InvocationTargetException
 import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
+import net.corda.utilities.debug
+import net.corda.utilities.trace
+import org.slf4j.LoggerFactory
+import java.lang.reflect.InvocationTargetException
 
 /**
  * [RouteProvider] implementations are responsible for returning route mapping information to the requesting server implementation.

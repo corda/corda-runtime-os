@@ -12,8 +12,8 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.LoggerFactory
 

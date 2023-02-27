@@ -28,10 +28,10 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_ENTITY_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_GROUP_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_ROLE_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_USER_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_ENTITY_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_GROUP_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_ROLE_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_USER_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate

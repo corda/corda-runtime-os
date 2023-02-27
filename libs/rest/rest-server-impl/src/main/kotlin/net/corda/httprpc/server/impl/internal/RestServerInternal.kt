@@ -22,13 +22,14 @@ import net.corda.httprpc.server.impl.context.ContextUtils.authenticate
 import net.corda.httprpc.server.impl.context.ContextUtils.authorize
 import net.corda.httprpc.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.httprpc.server.impl.context.ContextUtils.invokeHttpMethod
+import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
+import net.corda.httprpc.server.impl.websocket.mapToWsStatusCode
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.utilities.VisibleForTesting
-import org.slf4j.LoggerFactory
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.eclipse.jetty.http2.HTTP2Cipher
 import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
@@ -41,10 +42,9 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
+import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import javax.servlet.MultipartConfigElement
-import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
-import net.corda.httprpc.server.impl.websocket.mapToWsStatusCode
 import java.util.LinkedList
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")

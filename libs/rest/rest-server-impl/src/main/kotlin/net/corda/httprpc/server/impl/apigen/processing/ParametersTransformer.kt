@@ -9,9 +9,9 @@ import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
 import net.corda.utilities.VisibleForTesting
 import org.slf4j.LoggerFactory
-import net.corda.v5.base.util.trace
 import net.corda.httprpc.annotations.isRestParameterAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
+import net.corda.utilities.trace
 import java.lang.reflect.Parameter
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance

@@ -16,7 +16,7 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 internal class CompactedSubscriptionImpl<K : Any, V : Any>(
