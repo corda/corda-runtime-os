@@ -347,7 +347,8 @@ class MemberResourceClientImpl @Activate constructor(
                         "registrationProtocolVersion" to this.protocolVersion.toString(),
                         *this.memberContext.items.map { it.key to it.value }.toTypedArray(),
                     )
-                )
+                ),
+                this.reason
             )
     }
 

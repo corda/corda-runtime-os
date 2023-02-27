@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -91,9 +92,10 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setRegistrationRequestStatus(
-                mgm.toCorda(),
-                REGISTRATION_ID,
-                RegistrationStatus.PENDING_AUTO_APPROVAL
+                eq(mgm.toCorda()),
+                eq(REGISTRATION_ID),
+                eq(RegistrationStatus.PENDING_AUTO_APPROVAL),
+                anyOrNull()
             )
         } doReturn MembershipPersistenceResult.success()
     }
@@ -493,15 +495,17 @@ class ProcessMemberVerificationResponseHandlerTest {
         verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
             any(),
             any(),
-            any()
+            any(),
+            anyOrNull()
         )
     }
 
     private fun verifySetRegistrationStatus(status: RegistrationStatus) {
         verify(membershipPersistenceClient).setRegistrationRequestStatus(
-            mgm.toCorda(),
-            REGISTRATION_ID,
-            status
+            eq(mgm.toCorda()),
+            eq(REGISTRATION_ID),
+            eq(status),
+            anyOrNull()
         )
     }
 
