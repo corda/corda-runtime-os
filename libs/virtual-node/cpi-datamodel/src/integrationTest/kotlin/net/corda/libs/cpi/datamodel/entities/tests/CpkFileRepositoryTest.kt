@@ -17,12 +17,7 @@ import org.mockito.kotlin.eq
 class CpkFileRepositoryTest {
     private val cpkFileRepository = CpkFileRepositoryImpl()
 
-    private lateinit var emFactory: EntityManagerFactory
-
-    @BeforeEach
-    fun setUp() {
-        emFactory = mock()
-    }
+    private val emFactory = mock<EntityManagerFactory>()
 
     @Test
     fun `get cpk data by checksum uses named query`() {
