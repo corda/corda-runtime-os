@@ -34,6 +34,7 @@ import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
+import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.preauth.PreAuthToken
@@ -673,13 +674,14 @@ class MembershipPersistenceRPCProcessorTest {
 
         assertThat(responseFuture).isCompleted
         with(responseFuture.get()) {
-            assertThat(payload).isNull()
+            assertThat(payload).isNotNull
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
                 assertThat(requestId).isEqualTo(rqContext.requestId)
                 assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
                 assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                assertThat(payload).isEqualTo(RegistrationRequestQueryResponse(null))
             }
         }
     }
