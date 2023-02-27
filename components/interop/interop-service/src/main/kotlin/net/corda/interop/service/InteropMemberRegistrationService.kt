@@ -6,7 +6,6 @@ import net.corda.messaging.api.records.Record
 
 interface InteropMemberRegistrationService {
 
-    //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
     fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>>
 
     fun createDummyHostedIdentity(): List<Record<String, HostedIdentityEntry>>
