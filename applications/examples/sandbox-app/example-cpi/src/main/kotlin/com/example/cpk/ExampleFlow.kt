@@ -1,11 +1,10 @@
 package com.example.cpk
 
 import net.corda.v5.application.crypto.DigestService
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.marshalling.parse
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -31,9 +30,9 @@ class ExampleFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        val json = requestBody.getRequestBody()
+        val json = requestBody.requestBody
         logger.info("Invoked: JSON={}", json)
-        val input = jsonMarshaller.parse<FlowInput>(json)
+        val input = jsonMarshaller.parse(json, FlowInput::class.java)
         return hashOf(
             bytes = input.message?.toByteArray() ?: byteArrayOf()
         ).also { result ->

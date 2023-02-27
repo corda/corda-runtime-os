@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.handlers.events
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.lang.reflect.ParameterizedType
 
 class JsonMarshallingServiceImplTest {
@@ -19,8 +20,8 @@ class JsonMarshallingServiceImplTest {
     )
 
     companion object {
-        val TEST_FIELD = "testfield"
-        val TEST_VALUE = "testvalue"
+        const val TEST_FIELD = "testfield"
+        const val TEST_VALUE = "testvalue"
     }
 
     class SimpleSerializer : JsonSerializer<SimpleDto> {
@@ -62,7 +63,7 @@ class JsonMarshallingServiceImplTest {
     }
 
     @Suppress("EmptyClassBlock")
-    class OtherDto {}
+    class OtherDto
 
     class OtherSerializer : JsonSerializer<OtherDto> {
         override fun serialize(item: OtherDto, jsonWriter: JsonWriter) {}
@@ -152,6 +153,36 @@ class JsonMarshallingServiceImplTest {
         assertThat(dtoList[0].quantity).isEqualTo(1)
         assertThat(dtoList[1].name).isEqualTo("n2")
         assertThat(dtoList[1].quantity).isEqualTo(2)
+        assertThrows<UnsupportedOperationException> { (dtoList as MutableList<*>).clear() }
+    }
+
+    @Test
+    fun `can deserialize map from json string`() {
+        val dtoMap = JsonMarshallingServiceImpl().parseMap("""
+            {
+              "100": {
+                "name": "n1",
+                "quantity": 1
+              },
+              "200": {
+                "name": "n2",
+                "quantity": 2
+              },
+              "300": {
+                "name": "n3",
+                "quantity": 3
+              }
+            }
+        """.trimIndent(),
+            Int::class.java,
+            SimpleDto::class.java
+        )
+        assertThat(dtoMap).hasSize(3)
+        assertThat(dtoMap.keys).containsExactly(100, 200, 300)
+        assertThat(dtoMap[100]).isEqualTo(SimpleDto("n1", 1))
+        assertThat(dtoMap[200]).isEqualTo(SimpleDto("n2", 2))
+        assertThat(dtoMap[300]).isEqualTo(SimpleDto("n3", 3))
+        assertThrows<UnsupportedOperationException> { (dtoMap as MutableMap<*,*>).clear() }
     }
 
     @Test

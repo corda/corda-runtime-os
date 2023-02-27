@@ -38,6 +38,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-serialization-impl")
     implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(':libs:utilities')
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

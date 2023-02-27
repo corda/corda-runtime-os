@@ -5,7 +5,6 @@ import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.BaseInitiatorFlowSession
 import net.corda.simulator.runtime.messaging.FlowContext
 import net.corda.simulator.runtime.messaging.SimFlowContextProperties
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -39,7 +38,7 @@ class InitiatorFlowSessionTest {
 
         // Then it should throw in that receive
         assertThrows<ResponderFlowException> {
-            sendingSession.receive<Any>()
+            sendingSession.receive(Any::class.java)
         }
 
         // Or in any subsequent send
@@ -49,7 +48,7 @@ class InitiatorFlowSessionTest {
 
         // Or any subsequent receive
         assertThrows<ResponderFlowException> {
-            sendingSession.receive<Any>()
+            sendingSession.receive(Any::class.java)
         }
 
         // Or when we try to close the session

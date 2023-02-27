@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.handlers.events
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 
 /**
  * The [FlowEventHandler] interface is implemented by services that process [FlowEvent]s received from the message bus.
@@ -31,4 +31,3 @@ interface FlowEventHandler<T> {
      */
     fun preProcess(context: FlowEventContext<T>): FlowEventContext<T>
 }
-

@@ -17,13 +17,14 @@ import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.httprpc.v1.KeysRestResource
-import net.corda.membership.httprpc.v1.types.response.KeyMetaData
-import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
+import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.types.response.KeyMetaData
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.ShortHash
@@ -183,7 +184,7 @@ class KeysRestResourceImpl @Activate constructor(
                 tryWithExceptionHandling(
                     logger,
                     "generate key pair for tenant $tenantId",
-                    ignoredExceptions = listOf(
+                    untranslatedExceptions = setOf(
                         KeyAlreadyExistsException::class.java,
                         InvalidParamsException::class.java
                     )

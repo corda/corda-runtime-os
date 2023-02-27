@@ -4,7 +4,7 @@ import com.r3.corda.notary.plugin.common.NotaryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
+import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
@@ -12,19 +12,24 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import java.security.AccessController
+import java.security.PrivilegedExceptionAction
+import kotlin.reflect.full.primaryConstructor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
 class UtxoFinalityFlow(
     private val initialTransaction: UtxoSignedTransactionInternal,
-    private val sessions: List<FlowSession>
+    private val sessions: List<FlowSession>,
+    private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>
 ) : UtxoFinalityBase() {
 
     private companion object {
@@ -39,7 +44,7 @@ class UtxoFinalityFlow(
     lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
-    lateinit var pluggableNotaryClientFlowFactory: PluggableNotaryClientFlowFactory
+    lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -82,7 +87,8 @@ class UtxoFinalityFlow(
         val signaturesPayloads = sessions.associateWith { session ->
             try {
                 log.debug { "Requesting signatures from ${session.counterparty} for transaction $transactionId" }
-                session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
+                @Suppress("unchecked_cast")
+                session.receive(Payload::class.java) as Payload<List<DigitalSignatureAndMetadata>>
             } catch (e: CordaRuntimeException) {
                 log.warn("Failed to receive signatures from ${session.counterparty} for transaction $transactionId")
                 persistInvalidTransaction(initialTransaction)
@@ -175,7 +181,8 @@ class UtxoFinalityFlow(
         transaction: UtxoSignedTransactionInternal
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val notary = transaction.notary
-        val notarizationFlow = pluggableNotaryClientFlowFactory.create(notary, transaction)
+
+        val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
 
         // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
         if (log.isTraceEnabled) {
@@ -246,6 +253,19 @@ class UtxoFinalityFlow(
         }
 
         return notarizedTransaction to notarySignatures
+    }
+
+    // Gets a new notary client plugin flow instance. This is done in a non-suspendable
+    // function to avoid trying (and failing) to serialize the objects used internally.
+    @VisibleForTesting
+    internal fun newPluggableNotaryClientFlowInstance(
+        transaction: UtxoSignedTransactionInternal
+    ) : PluggableNotaryClientFlow {
+        return AccessController.doPrivileged(PrivilegedExceptionAction {
+            pluggableNotaryClientFlow.kotlin.primaryConstructor!!.call(
+                transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notary)
+            )
+        })
     }
 
     @Suspendable

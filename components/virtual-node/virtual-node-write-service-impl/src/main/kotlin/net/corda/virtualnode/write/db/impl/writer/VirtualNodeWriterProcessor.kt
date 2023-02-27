@@ -23,9 +23,6 @@ import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.entities.findChangelogEntitiesForGivenCpkFileChecksums
-import net.corda.libs.cpi.datamodel.entities.findCurrentCpkChangeLogsForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
@@ -63,6 +60,9 @@ import javax.persistence.EntityManager
 import javax.sql.DataSource
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import kotlin.system.measureTimeMillis
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -76,9 +76,7 @@ import kotlin.system.measureTimeMillis
  * @property groupPolicyParser Parses group policy JSON strings and returns MemberInfo structures
  * @property clock A clock instance used to add timestamps to what the records we publish. This is configurable rather
  *           than always simply the system wall clock time so that we can control everything in tests.
- * @property getCurrentChangelogsForCpi an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
- *           Takes an EntityManager (since that lets us continue a transaction) and a CpiIdentifier as a parameter and
- *           returns a list of CpkDbChangeLogEntity.
+ * @property changeLogsRepository Used to retrieve the changelogs for a CPI.
  */
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class VirtualNodeWriterProcessor(
@@ -88,8 +86,7 @@ internal class VirtualNodeWriterProcessor(
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
-    private val getCurrentChangelogsForCpi: (EntityManager, String, String, String) -> List<CpkDbChangeLogEntity> =
-        ::findCurrentCpkChangeLogsForCpi,
+    private val changeLogsRepository: CpkDbChangeLogRepository,
     private val holdingIdentityRepository: HoldingIdentityRepository = HoldingIdentityRepositoryImpl(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
     private val migrationUtility: MigrationUtility
@@ -99,6 +96,7 @@ internal class VirtualNodeWriterProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         val systemTerminatorTag = "${VAULT.name}-system-final"
+        val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
     }
 
     @Suppress("ReturnCount", "ComplexMethod", "LongMethod")
@@ -270,9 +268,9 @@ internal class VirtualNodeWriterProcessor(
                 val shortHash = ShortHash.Companion.of(currentVNodeShortHash)
                 // Open a TX to find the connection information we need for the virtual nodes vault as it may live on
                 //  another database.
-                it.transaction { tx ->
+                it.transaction { em ->
                     // Retrieve virtual node info
-                    val virtualNodeInfo = virtualNodeRepository.find(tx, shortHash)
+                    val virtualNodeInfo = virtualNodeRepository.find(em, shortHash)
                     if (null == virtualNodeInfo) {
                         logger.warn("Could not find the virtual node: $currentVNodeShortHash")
                         respFuture.complete(
@@ -296,7 +294,7 @@ internal class VirtualNodeWriterProcessor(
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
-                            tx,
+                            em,
                             dataSource,
                             systemTerminatorTag
                         )
@@ -306,7 +304,9 @@ internal class VirtualNodeWriterProcessor(
                                     "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString()}]"
                         )
 
-                        val changesetsToRollback = findChangelogEntitiesForGivenCpkFileChecksums(tx, cpkChecksumsOfAppliedChangelogs)
+                        val changesetsToRollback =
+                            cpkDbChangeLogRepository.findByFileChecksum(em, cpkChecksumsOfAppliedChangelogs)
+                                .groupBy { it.id.cpkFileChecksum }
 
                         changesetsToRollback.forEach { (cpkFileChecksum, changelogs) ->
                             logger.info(
@@ -322,13 +322,8 @@ internal class VirtualNodeWriterProcessor(
                         }
                     }
 
-                    val changelogsToRun = getCurrentChangelogsForCpi(
-                        em,
-                        cpiMetadata.id.name,
-                        cpiMetadata.id.version,
-                        cpiMetadata.id.signerSummaryHash.toString()
-                    )
-                        .groupBy { it.id.cpkFileChecksum }
+                    val changelogsToRun =
+                        changeLogsRepository.findByCpiId(em, cpiMetadata.id).groupBy { it.id.cpkFileChecksum }
 
                     changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
                         try {
@@ -338,7 +333,8 @@ internal class VirtualNodeWriterProcessor(
                         } catch (e: Exception) {
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI ${cpiMetadata.id.name} - changelogs: [" +
-                                        "${changelogsForThisCpk.joinToString { it.id.cpkFileChecksum + ", " + it.id.filePath }}]", e
+                                        "${changelogsForThisCpk.joinToString { it.id.cpkFileChecksum + ", " + it.id.filePath }}]",
+                                e
                             )
                             respFuture.complete(
                                 VirtualNodeManagementResponse(
@@ -368,11 +364,10 @@ internal class VirtualNodeWriterProcessor(
 
     private fun rollbackVirtualNodeDb(
         dataSource: CloseableDataSource,
-        changelogs: List<CpkDbChangeLogEntity>,
+        changelogs: List<CpkDbChangeLog>,
         tagToRollbackTo: String
     ) {
-        val changelogDtos = changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) }
-        val dbChange = VirtualNodeDbChangeLog(changelogDtos)
+        val dbChange = VirtualNodeDbChangeLog(changelogs)
         val connection = dataSource.connection
         LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
     }
@@ -395,12 +390,7 @@ internal class VirtualNodeWriterProcessor(
                 val nodeInfo = virtualNodeRepository.find(entityManager, shortHash)
 
                 if (nodeInfo != null) {
-                    val changelogsPerCpk = getCurrentChangelogsForCpi(
-                        em,
-                        nodeInfo.cpiIdentifier.name,
-                        nodeInfo.cpiIdentifier.version,
-                        nodeInfo.cpiIdentifier.signerSummaryHash.toString()
-                    )
+                    val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
                     if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
                         if (!migrationUtility.isVaultSchemaAndTargetCpiInSync(
                                 stateChangeRequest.holdingIdentityShortHash,
@@ -478,9 +468,20 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
         when (val typedRequest = request.request) {
-            is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
-            is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
-            is VirtualNodeDBResetRequest -> resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeCreateRequest -> {
+                logger.info("Handling virtual node creation request for ${typedRequest.x500Name}, ${typedRequest.cpiFileChecksum}")
+                createVirtualNode(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeStateChangeRequest -> {
+                logger.info(
+                    "Handling change virtual node state request for ${typedRequest.holdingIdentityShortHash} to ${typedRequest.newState}"
+                )
+                changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeDBResetRequest -> {
+                logger.info("Handling virtual node db reset request for ${typedRequest.holdingIdentityShortHashes.joinToString()}")
+                resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            }
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
@@ -605,17 +606,12 @@ internal class VirtualNodeWriterProcessor(
     private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb, virtualNodeShortHash: String) {
         dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
             // every changelog here is from a CPK currently associated with the given CPI.
-            val changelogsPerCpk: Map<String, List<CpkDbChangeLogEntity>> = getCurrentChangelogsForCpi(
-                em,
-                cpiMetadata.id.name,
-                cpiMetadata.id.version,
-                cpiMetadata.id.signerSummaryHash.toString()
-            )
-                .groupBy { it.id.cpkFileChecksum }
+            val changelogsPerCpk =
+                changeLogsRepository.findByCpiId(em, cpiMetadata.id).groupBy { it.id.cpkFileChecksum }
 
             changelogsPerCpk.forEach { (cpkFileChecksum, changeLogs) ->
                 logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
-                val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+                val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
                 try {
                     vaultDb.runCpiMigrations(allChangeLogsForCpk, cpkFileChecksum)
                 } catch (e: Exception) {
@@ -630,14 +626,25 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
-    private fun runCpkResyncMigrations(dataSource: CloseableDataSource, cpkFileChecksum: String, changelogs: List<CpkDbChangeLogEntity>) {
+    private fun runCpkResyncMigrations(
+        dataSource: CloseableDataSource,
+        cpkFileChecksum: String,
+        changelogs: List<CpkDbChangeLog>
+    ) {
         if (changelogs.isEmpty()) return
 
         logger.info("Preparing to run ${changelogs.size} resync migrations for CPK '$cpkFileChecksum'.")
 
         LiquibaseSchemaMigratorImpl().updateDb(
             dataSource.connection,
-            VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) }),
+            VirtualNodeDbChangeLog(changelogs.map {
+                CpkDbChangeLog(
+                    CpkDbChangeLogIdentifier(
+                        it.id.cpkFileChecksum,
+                        it.id.filePath
+                    ), it.content
+                )
+            }),
             tag = cpkFileChecksum
         )
         logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")
@@ -715,7 +722,11 @@ internal class VirtualNodeWriterProcessor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getAppliedChangelogTags(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): Set<String> = (
+    private fun getAppliedChangelogTags(
+        em: EntityManager,
+        dataSource: DataSource,
+        systemTerminatorTag: String
+    ): Set<String> = (
             em.createNativeQuery(
                 "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
                         "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
