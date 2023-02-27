@@ -29,7 +29,7 @@ import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.ShortHashException
-import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
+import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -87,7 +87,7 @@ class KeysRestResourceImpl @Activate constructor(
             return tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
                 cryptoOpsClient.lookupKeysByIds(
                     tenantId = tenantId,
-                    keyIds = ids.map { ShortHash.ofOrThrow(it) }
+                    keyIds = ids.map { createKeyIdOrHttpThrow(it) }
                 )
             }.associate { it.id to it.toMetaData() }
         }
@@ -212,7 +212,7 @@ class KeysRestResourceImpl @Activate constructor(
         val key = tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                keyIds = listOf(ShortHash.ofOrThrow(keyId))
+                keyIds = listOf(createKeyIdOrHttpThrow(keyId))
             )
         }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
 

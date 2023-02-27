@@ -32,6 +32,7 @@ import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
@@ -111,7 +112,7 @@ class CertificatesRestResourceImpl @Activate constructor(
         val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                keyIds = listOf(ShortHash.ofOrThrow(keyId))
+                keyIds = listOf(createKeyIdOrHttpThrow(keyId))
             )
         }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
         val principal = when (key.category) {
