@@ -1,12 +1,14 @@
 package net.corda.metrics
 
 import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
+import java.util.concurrent.atomic.AtomicInteger
 import io.micrometer.core.instrument.Tag as micrometerTag
 
 
@@ -18,6 +20,7 @@ object CordaMetrics {
         fun builder(): MeterBuilder<T> {
             return MeterBuilder(this.metricsName, this.meter)
         }
+
         /**
          * Number of HTTP Requests.
          */
@@ -40,6 +43,46 @@ object CordaMetrics {
          * Time it took for a flow to complete sucessfully or to error.
          */
         object FlowRunTime : Metric<Timer>("flow.run.time", Metrics::timer)
+
+        /**
+         * Number of outbound peer-to-peer data messages sent.
+         */
+        object OutboundMessageCount: Metric<Counter>("p2p.message.outbound", Metrics::counter)
+
+        /**
+         * Number of outbound peer-to-peer data messages replayed.
+         */
+        object OutboundMessageReplayCount: Metric<Counter>("p2p.message.outbound.replayed", Metrics::counter)
+
+        /**
+         * Time it took for an outbound peer-to-peer message to be delivered end-to-end (from initial processing to acknowledgement).
+         */
+        object OutboundMessageDeliveryLatency: Metric<Timer>("p2p.message.outbound.latency", Metrics::timer)
+
+        /**
+         * Number of outbound peer-to-peer data messages that were discarded because their TTL expired.
+         */
+        object OutboundMessageTtlExpired: Metric<Counter>("p2p.message.outbound.expired", Metrics::counter)
+
+        /**
+         * Number of inbound peer-to-peer data messages received.
+         */
+        object InboundMessageCount: Metric<Counter>("p2p.message.inbound", Metrics::counter)
+
+        /**
+         * Number of outbound peer-to-peer sessions that timed out (indicating communication issues with peers).
+         */
+        object OutboundSessionTimeoutCount: Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
+
+        /**
+         * Number of outbound peer-to-peer sessions.
+         */
+        object OutboundSessionCount: Metric<SettableGauge>("p2p.session.outbound", CordaMetrics::settableGauge)
+
+        /**
+         * Number of inbound peer-to-peer sessions.
+         */
+        object InboundSessionCount: Metric<SettableGauge>("p2p.session.inbound", CordaMetrics::settableGauge)
     }
 
     enum class Tag(val value: String) {
@@ -90,6 +133,31 @@ object CordaMetrics {
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.
          */
         OperationStatus("operationStatus"),
+
+        /**
+         * The source virtual node in peer-to-peer communication.
+         */
+        SourceVirtualNode("sourceVNode"),
+
+        /**
+         * The destination virtual node in peer-to-peer communication.
+         */
+        DestinationVirtualNode("destinationVNode"),
+
+        /**
+         * The membership group within which peer-to-peer communication happens.
+         */
+        MembershipGroup("group"),
+
+        /**
+         * The type of a peer-to-peer message.
+         */
+        MessageType("messageType"),
+
+        /**
+         * The subsystem that sends or receives a peer-to-peer message from the network layer.
+         */
+        MessagingSubsystem("subsystem")
     }
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
@@ -118,6 +186,14 @@ object CordaMetrics {
                 }
             })
             .commonTags(Tag.WorkerType.value, workerType)
+    }
+
+    fun settableGauge(name: String, tags: Iterable<micrometerTag>): SettableGauge {
+        val gaugeValue = AtomicInteger()
+        val gauge = Gauge.builder(name, gaugeValue, Number::toDouble)
+            .tags(tags)
+            .register(registry)
+        return SettableGauge(gauge, gaugeValue)
     }
 
     class MeterBuilder<T: Meter>(

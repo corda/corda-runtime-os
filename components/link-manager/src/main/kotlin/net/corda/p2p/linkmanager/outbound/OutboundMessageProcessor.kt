@@ -25,6 +25,7 @@ import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.Component
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
@@ -100,9 +101,11 @@ internal class OutboundMessageProcessor(
         return when (message) {
             is AuthenticatedMessage -> {
                 processAuthenticatedMessage(AuthenticatedMessageAndKey(message, event.key))
+                    .also { recordOutboundMessagesMetric(message) }
             }
             is UnauthenticatedMessage -> {
                 processUnauthenticatedMessage(message)
+                    .also { recordOutboundMessagesMetric(message) }
             }
             else -> {
                 logger.warn("Unknown message type: ${message::class.java}")
@@ -322,6 +325,30 @@ internal class OutboundMessageProcessor(
                                            reason: String): Record<String, AppMessageMarker> {
         val marker = AppMessageMarker(LinkManagerDiscardedMarker(message, reason), clock.instant().toEpochMilli())
         return Record(Schemas.P2P.P2P_OUT_MARKERS, message.message.header.messageId, marker)
+    }
+
+    private fun recordOutboundMessagesMetric(message: AuthenticatedMessage) {
+        message.header.let {
+            recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName)
+        }
+    }
+
+    private fun recordOutboundMessagesMetric(message: UnauthenticatedMessage) {
+        message.header.let {
+            recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+                it.subsystem, message::class.java.simpleName)
+        }
+    }
+
+    private fun recordOutboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
+        CordaMetrics.Metric.OutboundMessageCount.builder()
+            .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
+            .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
+            .withTag(CordaMetrics.Tag.MembershipGroup, group)
+            .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
+            .withTag(CordaMetrics.Tag.MessageType, messageType)
+            .build().increment()
     }
 
 }

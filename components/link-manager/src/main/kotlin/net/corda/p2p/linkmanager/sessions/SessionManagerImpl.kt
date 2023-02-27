@@ -35,6 +35,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
@@ -159,7 +160,9 @@ internal class SessionManagerImpl(
     )
 
     private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
-    private val executorService = executorServiceFactory()
+    private val executorService = executorServiceFactory().also {
+        it.scheduleAtFixedRate({ recordTotalSessionMetrics() }, 5, 5, TimeUnit.SECONDS)
+    }
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -867,6 +870,13 @@ internal class SessionManagerImpl(
         }
     }
 
+    private fun recordTotalSessionMetrics() {
+        CordaMetrics.Metric.OutboundSessionCount.builder()
+            .build().set(outboundSessionPool.getAllSessionIds().size)
+        CordaMetrics.Metric.InboundSessionCount.builder()
+            .build().set(activeInboundSessions.size + pendingInboundSessions.size)
+    }
+
     class HeartbeatManager(
         publisherFactory: PublisherFactory,
         private val configurationReaderService: ConfigurationReadService,
@@ -1047,6 +1057,7 @@ internal class SessionManagerImpl(
                 )
                 destroySession(counterparties, sessionId)
                 trackedSessions.remove(sessionId)
+                recordSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
             } else {
                 executorService.schedule(
                     { sessionTimeout(counterparties, sessionId) },
@@ -1129,6 +1140,14 @@ internal class SessionManagerImpl(
 
         private fun timeStamp(): Long {
             return clock.instant().toEpochMilli()
+        }
+
+        private fun recordSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity) {
+            CordaMetrics.Metric.OutboundSessionTimeoutCount.builder()
+                .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
+                .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination.x500Name.toString())
+                .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
+                .build().increment()
         }
     }
 }
