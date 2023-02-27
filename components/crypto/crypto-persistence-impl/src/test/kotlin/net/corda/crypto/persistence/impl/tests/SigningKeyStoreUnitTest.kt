@@ -207,7 +207,7 @@ class SigningKeyStoreUnitTest {
 
         val expectedNotFoundInCache = setOf(fullKeyId1)
         assertEquals(expectedNotFoundInCache, keysCaptor.firstValue)
-        assertEquals(setOf(fullKeyId0, fullKeyId1.toString()), lookedUpByFullKeyIdsKeys.mapTo(mutableSetOf()) { it.fullId })
+        assertEquals(setOf(fullKeyId0, fullKeyId1), lookedUpByFullKeyIdsKeys.mapTo(mutableSetOf()) { it.fullId })
         verify(connectionsFactory, times(1)).getEntityManagerFactory(any())
     }
 
