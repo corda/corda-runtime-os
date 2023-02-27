@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.impl.apigen.processing.openapi.schema
+package net.corda.rest.server.impl.apigen.processing.openapi.schema
 
 import io.swagger.v3.oas.models.media.ArraySchema
 import io.swagger.v3.oas.models.media.BooleanSchema
@@ -8,18 +8,18 @@ import io.swagger.v3.oas.models.media.NumberSchema
 import io.swagger.v3.oas.models.media.ObjectSchema
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.media.StringSchema
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.JsonSchemaModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaCollectionModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaDurableReturnResultModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaEnumModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaMapModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaModelFieldsHelper
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaMultiRefObjectModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaObjectModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaPairModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaPositionedValueModel
-import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.JsonSchemaModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaCollectionModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaDurableReturnResultModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaEnumModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaMapModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaModelFieldsHelper
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaMultiRefObjectModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaObjectModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaPairModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaPositionedValueModel
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
