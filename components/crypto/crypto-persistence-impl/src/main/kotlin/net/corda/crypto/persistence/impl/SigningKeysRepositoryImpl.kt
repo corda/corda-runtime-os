@@ -69,8 +69,8 @@ object SigningKeysRepositoryImpl : SigningKeysRepository {
 
 fun SigningKeyEntity.toSigningCachedKey(): SigningCachedKey =
     SigningCachedKey(
-        id = keyId,
-        fullId = fullKeyId,
+        id = ShortHash.parse(keyId),
+        fullId = SecureHash.parse(fullKeyId),
         tenantId = tenantId,
         category = category,
         alias = alias,

@@ -534,7 +534,8 @@ class MGMRestResourceImpl internal constructor(
                 registrationSent,
                 registrationLastModified,
                 status.fromAvro(),
-                MemberInfoSubmitted(memberContext.toMap())
+                MemberInfoSubmitted(memberContext.toMap()),
+                reason,
             )
 
         private fun net.corda.data.membership.common.RegistrationStatus.fromAvro() = when (this) {

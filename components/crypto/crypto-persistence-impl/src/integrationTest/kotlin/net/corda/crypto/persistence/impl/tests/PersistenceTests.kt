@@ -49,11 +49,13 @@ import net.corda.orm.utils.use
 import net.corda.schema.configuration.BootConfig
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.EncodingUtils.toHex
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.crypto.sha256Bytes
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -73,6 +75,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -275,7 +278,7 @@ class PersistenceTests {
             actual: SigningCachedKey?
         ) {
             assertNotNull(actual)
-            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
+            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id.value)
             assertEquals(tenantId, actual.tenantId)
             assertEquals(expected.category, actual.category)
             assertEquals(expected.alias, actual.alias)
@@ -299,7 +302,7 @@ class PersistenceTests {
             actual: SigningCachedKey?
         ) {
             assertNotNull(actual)
-            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
+            assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id.value)
             assertEquals(tenantId, actual.tenantId)
             assertEquals(expected.category, actual.category)
             assertEquals(expected.alias, actual.alias)
@@ -735,9 +738,9 @@ class PersistenceTests {
             )
         )
         assertEquals(3, keys.size)
-        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.publicKeyId() })
-        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.publicKeyId() })
-        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.publicKeyId() })
+        assertSigningCachedKey(tenantId, p1, keys.firstOrNull { it.id == p1.key.publicKey.id() })
+        assertSigningCachedKey(tenantId, p3, keys.firstOrNull { it.id == p3.key.publicKey.id() })
+        assertSigningCachedKey(tenantId, w2, keys.firstOrNull { it.id == w2.key.publicKey.id() })
     }
 
     @ParameterizedTest
@@ -791,7 +794,7 @@ class PersistenceTests {
             mapOf(
                 CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(2, result1.size)
         listOf(p1, p4).sortedBy { it.alias }.forEachIndexed { i, o ->
             assertSigningCachedKey(tenantId, o, result1.elementAt(i))
@@ -804,7 +807,7 @@ class PersistenceTests {
             mapOf(
                 CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(2, result2.size)
         listOf(p1, p4).sortedByDescending { it.alias }.forEachIndexed { i, o ->
             assertSigningCachedKey(tenantId, o, result2.elementAt(i))
@@ -818,7 +821,7 @@ class PersistenceTests {
                 CATEGORY_FILTER to CryptoConsts.Categories.CI,
                 SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(1, result3.size)
         assertSigningCachedKey(tenantId, w1, result3.first())
         val result4 = signingKeyStore.lookup(
@@ -831,7 +834,7 @@ class PersistenceTests {
                 SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
                 CATEGORY_FILTER to CryptoConsts.Categories.TLS
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(1, result4.size)
         assertSigningCachedKey(tenantId, p2, result4.first())
         val result5 = signingKeyStore.lookup(
@@ -845,7 +848,7 @@ class PersistenceTests {
                 CATEGORY_FILTER to CryptoConsts.Categories.CI,
                 EXTERNAL_ID_FILTER to w3.externalId!!
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(1, result5.size)
         assertSigningCachedKey(tenantId, w3, result5.first())
         val result6 = signingKeyStore.lookup(
@@ -857,7 +860,7 @@ class PersistenceTests {
                 CREATED_AFTER_FILTER to Instant.now().minusSeconds(300).toString(),
                 CREATED_BEFORE_FILTER to Instant.now().minusSeconds(-1).toString()
             )
-        ).filter { thisTestKeys.contains(it.id) }
+        ).filter { thisTestKeys.contains(it.id.value) }
         assertEquals(7, result6.size)
         listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
             when (it) {
@@ -968,3 +971,6 @@ class PersistenceTests {
         assertEquals(0, page3.size)
     }
 }
+
+fun PublicKey.id(): ShortHash =
+    ShortHash.of(SecureHash(DigestAlgorithmName.SHA2_256.name, this.sha256Bytes()))

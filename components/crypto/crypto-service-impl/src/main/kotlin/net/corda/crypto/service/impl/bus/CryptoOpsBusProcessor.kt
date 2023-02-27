@@ -53,7 +53,7 @@ class CryptoOpsBusProcessor(
 
         private fun SigningKeyInfo.toAvro(): CryptoSigningKey =
             CryptoSigningKey(
-                this.id,
+                this.id.value,
                 this.tenantId,
                 this.category,
                 this.alias,

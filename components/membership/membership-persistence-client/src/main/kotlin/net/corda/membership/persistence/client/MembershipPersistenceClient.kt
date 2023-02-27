@@ -155,6 +155,7 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param registrationId The ID of the registration request.
      * @param registrationRequestStatus The new status of the registration request.
+     * @param reason Reason why the status specified by [registrationRequestStatus] is being set.
      *
      * @return membership persistence result to indicate the result of the persistence operation.
      *  No payload is returned in the case of success.
@@ -162,7 +163,8 @@ interface MembershipPersistenceClient : Lifecycle {
     fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
-        registrationRequestStatus: RegistrationStatus
+        registrationRequestStatus: RegistrationStatus,
+        reason: String? = null,
     ): MembershipPersistenceResult<Unit>
 
     /**
