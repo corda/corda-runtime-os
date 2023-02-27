@@ -36,6 +36,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
@@ -651,6 +652,8 @@ class MGMRestResourceImpl internal constructor(
                 holdingIdentityNotFound(holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
+            } catch (e: CordaRPCAPIPartitionException) {
+                throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
             }
         }
     }
