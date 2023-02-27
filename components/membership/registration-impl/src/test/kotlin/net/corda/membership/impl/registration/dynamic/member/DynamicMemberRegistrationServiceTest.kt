@@ -3,7 +3,6 @@ package net.corda.membership.impl.registration.dynamic.member
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
@@ -65,7 +64,6 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
@@ -183,9 +181,6 @@ class DynamicMemberRegistrationServiceTest {
         whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
     }
 
-    private val publisherFactory: PublisherFactory = mock {
-        on { createPublisher(any(), any()) } doReturn mockPublisher
-    }
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(SESSION_KEY.toByteArray()) } doReturn sessionKey
         on { decodePublicKey(SESSION_KEY) } doReturn sessionKey
@@ -228,7 +223,6 @@ class DynamicMemberRegistrationServiceTest {
     private val testConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
     private val dependentComponents = setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
         LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
@@ -254,9 +248,6 @@ class DynamicMemberRegistrationServiceTest {
     private val lifecycleHandlerCaptor: KArgumentCaptor<LifecycleEventHandler> = argumentCaptor()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), lifecycleHandlerCaptor.capture()) } doReturn coordinator
-    }
-    private val configurationReadService: ConfigurationReadService = mock {
-        on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
     private var memberContextCaptor: KArgumentCaptor<KeyValuePairList> = argumentCaptor()
     private val keyValuePairListSerializer: CordaAvroSerializer<Any> = mock {
@@ -314,8 +305,6 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val locallyHostedIdentitiesService = mock<LocallyHostedIdentitiesService>()
     private val registrationService = DynamicMemberRegistrationService(
-        publisherFactory,
-        configurationReadService,
         lifecycleCoordinatorFactory,
         cryptoOpsClient,
         keyEncodingService,
@@ -861,16 +850,11 @@ class DynamicMemberRegistrationServiceTest {
 
             val configArgs = argumentCaptor<Set<String>>()
             verify(configHandle, never()).close()
-            verify(configurationReadService).registerComponentForUpdates(
-                eq(coordinator),
-                configArgs.capture()
-            )
             assertThat(configArgs.firstValue)
                 .isEqualTo(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG))
 
             postRegistrationStatusChangeEvent(LifecycleStatus.UP)
             verify(configHandle).close()
-            verify(configurationReadService, times(2)).registerComponentForUpdates(eq(coordinator), any())
 
             postStopEvent()
             verify(configHandle, times(2)).close()
@@ -896,10 +880,6 @@ class DynamicMemberRegistrationServiceTest {
 
             val configCaptor = argumentCaptor<PublisherConfig>()
             verify(mockPublisher, never()).close()
-            verify(publisherFactory).createPublisher(
-                configCaptor.capture(),
-                any()
-            )
             verify(mockPublisher).start()
             verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
 
@@ -909,10 +889,6 @@ class DynamicMemberRegistrationServiceTest {
 
             postConfigChangedEvent()
             verify(mockPublisher).close()
-            verify(publisherFactory, times(2)).createPublisher(
-                configCaptor.capture(),
-                any()
-            )
             verify(mockPublisher, times(2)).start()
             verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
 

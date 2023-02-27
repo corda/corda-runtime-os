@@ -23,6 +23,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -84,6 +85,7 @@ class MembershipPersistenceServiceImplTest {
             )
         } doReturn rpcSubscription
     }
+    private val publisherFactory = mock<PublisherFactory>()
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
@@ -100,6 +102,7 @@ class MembershipPersistenceServiceImplTest {
         membershipPersistenceService = MembershipPersistenceServiceImpl(
             coordinatorFactory,
             subscriptionFactory,
+            publisherFactory,
             configurationReadService,
             dbConnectionManager,
             jpaEntitiesRegistry,

@@ -17,7 +17,6 @@ import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
-import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
@@ -37,6 +36,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -94,31 +94,6 @@ class MembershipPersistenceClientImpl(
 
     override val groupName = "membership.db.persistence.client.group"
     override val clientName = "membership.db.persistence.client"
-
-    override fun persistMemberInfo(
-        viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberInfo>
-    ): MembershipPersistenceResult<Unit> {
-        logger.info("Persisting ${memberInfos.size} member info(s).")
-        val avroViewOwningIdentity = viewOwningIdentity.toAvro()
-        val result = MembershipPersistenceRequest(
-            buildMembershipRequestContext(avroViewOwningIdentity),
-            PersistMemberInfo(
-                memberInfos.map {
-                    PersistentMemberInfo(
-                        avroViewOwningIdentity,
-                        it.memberProvidedContext.toAvro(),
-                        it.mgmProvidedContext.toAvro(),
-                    )
-                }
-
-            )
-        ).execute()
-        return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
-            null -> MembershipPersistenceResult.success()
-            else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
-        }
-    }
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
@@ -392,5 +367,9 @@ class MembershipPersistenceClientImpl(
             null -> MembershipPersistenceResult.success()
             else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
+    }
+
+    override val asyncClient: AsyncMembershipPersistenceClient by lazy {
+        AsyncMembershipPersistenceClientImpl(clock)
     }
 }

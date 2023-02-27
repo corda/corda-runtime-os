@@ -60,7 +60,6 @@ import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
@@ -82,14 +81,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
+import java.util.concurrent.Callable
+import kotlin.streams.asSequence
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
 class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
-    @Reference(service = PublisherFactory::class)
-    internal val publisherFactory: PublisherFactory,
     @Reference(service = SubscriptionFactory::class)
     internal val subscriptionFactory: SubscriptionFactory,
     @Reference(service = KeyEncodingService::class)
@@ -160,7 +159,7 @@ class StaticMemberRegistrationService @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ) {
+    ) : Collection<Record<*, *>> {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             throw MembershipRegistrationException(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
@@ -188,7 +187,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     "Can not re-register."
             )
         }
-        try {
+        return try {
             val roles = MemberRole.extractRolesFromContext(context)
             logger.debug("Roles are: {}", roles)
             val keyScheme = context[KEY_SCHEME] ?: throw IllegalArgumentException("Key scheme must be specified.")
@@ -205,11 +204,11 @@ class StaticMemberRegistrationService @Activate constructor(
                 roles,
                 staticMemberList,
             )
-            (records + createHostedIdentity(member, groupPolicy)).publish()
 
-            persistGroupParameters(memberInfo, staticMemberList)
-
-            persistRegistrationRequest(registrationId, memberInfo)
+            records +
+                persistGroupParameters(memberInfo, staticMemberList) +
+                createHostedIdentity(member, groupPolicy) +
+                persistRegistrationRequest(registrationId, memberInfo)
         } catch (e: InvalidMembershipRegistrationException) {
             logger.warn("Registration failed. Reason:", e)
             throw e
@@ -225,16 +224,13 @@ class StaticMemberRegistrationService @Activate constructor(
         }
     }
 
-    private fun List<Record<*, *>>.publish() {
-        lifecycleHandler.publisher.publish(this).forEach {
-            it.get()
-        }
-    }
-
-    private fun persistGroupParameters(memberInfo: MemberInfo, staticMemberList: List<StaticMember>) {
+    private fun persistGroupParameters(
+        memberInfo: MemberInfo,
+        staticMemberList: List<StaticMember>
+    ): Collection<Record<*, *>> {
         val cache = lifecycleHandler.groupParametersCache
         val holdingIdentity = memberInfo.holdingIdentity
-        val groupParametersList = cache.getOrCreateGroupParameters(holdingIdentity).run {
+        val (groupParametersList, groupParametersRecords) = cache.getOrCreateGroupParameters(holdingIdentity).run {
             memberInfo.notaryDetails?.let {
                 cache.addNotary(memberInfo)
             } ?: this
@@ -243,30 +239,37 @@ class StaticMemberRegistrationService @Activate constructor(
 
         // Persist group parameters for this member, and publish to Kafka.
         persistenceClient.persistGroupParameters(holdingIdentity, groupParameters).getOrThrow()
-        groupParametersWriterService.put(holdingIdentity, groupParameters)
+        val records = groupParametersWriterService.createRecords(holdingIdentity, groupParameters)
 
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
         // Also publish to Kafka.
-        if (memberInfo.notaryDetails != null) {
-            SecManagerForkJoinPool.pool.submit {
-                staticMemberList
-                    .parallelStream()
-                    .map { MemberX500Name.parse(it.name!!) }
-                    .filter { it != memberInfo.name }
-                    .map { HoldingIdentity(it, memberInfo.groupId) }
-                    .filter { virtualNodeInfoReadService.get(it) != null }
-                    .forEach {
-                        persistenceClient.persistGroupParameters(it, groupParameters).getOrThrow()
-                        groupParametersWriterService.put(it, groupParameters)
-                    }
-            }.join()
+        val notaryRecords = if (memberInfo.notaryDetails != null) {
+            SecManagerForkJoinPool.pool.submit(
+                Callable {
+                    staticMemberList
+                        .parallelStream()
+                        .asSequence()
+                        .map { MemberX500Name.parse(it.name!!) }
+                        .filter { it != memberInfo.name }
+                        .map { HoldingIdentity(it, memberInfo.groupId) }
+                        .filter { virtualNodeInfoReadService.get(it) != null }
+                        .flatMap {
+                            persistenceClient.persistGroupParameters(it, groupParameters).getOrThrow()
+                            groupParametersWriterService.createRecords(it, groupParameters)
+                        }.toList()
+                }
+            ).join()
+        } else {
+            emptyList()
         }
+
+        return records + notaryRecords + groupParametersRecords
     }
 
-    private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
+    private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo): Collection<Record<*, *>> {
         val memberContext = keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
             ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
-        persistenceClient.persistRegistrationRequest(
+        return persistenceClient.asyncClient.createPersistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
@@ -279,7 +282,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     KeyValuePairList(emptyList())
                 )
             )
-        ).getOrThrow()
+        )
     }
 
     /**

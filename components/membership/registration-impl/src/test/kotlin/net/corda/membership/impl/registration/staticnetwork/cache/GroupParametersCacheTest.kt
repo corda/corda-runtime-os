@@ -14,8 +14,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
 import net.corda.membership.lib.toMap
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -24,13 +22,11 @@ import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 class GroupParametersCacheTest {
     private companion object {
@@ -48,10 +44,6 @@ class GroupParametersCacheTest {
     private val keyEncodingService = mock<KeyEncodingService> {
         on { encodeAsString(any()) } doReturn "test-key"
     }
-    private val publishCaptor = argumentCaptor<List<Record<*, *>>>()
-    private val publisher: Publisher = mock {
-        on { publish(publishCaptor.capture()) } doReturn listOf(CompletableFuture.completedFuture(Unit))
-    }
 
     @Test
     fun `group parameters are added to cache when set is called`() {
@@ -61,7 +53,7 @@ class GroupParametersCacheTest {
             KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
             KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),
         ))
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(platformInfoProvider, keyEncodingService)
 
         groupParametersCache.set(knownGroupId, groupParameters)
 
@@ -70,11 +62,11 @@ class GroupParametersCacheTest {
 
     @Test
     fun `when cache is empty, getOrCreateGroupParameters publishes snapshot`() {
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(platformInfoProvider, keyEncodingService)
 
-        groupParametersCache.getOrCreateGroupParameters(knownIdentity)
+        val (_, records) = groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
-        with(publishCaptor.firstValue.first()) {
+        with(records.first()) {
             assertThat(key).isEqualTo(knownGroupId)
             with(value as StaticGroupDefinition) {
                 val params = this.groupParameters.toMap()
@@ -107,12 +99,12 @@ class GroupParametersCacheTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { groupId } doReturn knownGroupId
         }
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(platformInfoProvider, keyEncodingService)
         groupParametersCache.getOrCreateGroupParameters(knownIdentity)
 
-        groupParametersCache.addNotary(notary)
+        val (_, records) = groupParametersCache.addNotary(notary)!!
 
-        with(publishCaptor.firstValue.first()) {
+        with(records.first()) {
             assertThat(key).isEqualTo(knownGroupId)
             with(value as StaticGroupDefinition) {
                 assertThat(this.groupParameters.items.containsAll(
@@ -150,7 +142,7 @@ class GroupParametersCacheTest {
             on { mgmProvidedContext } doReturn mgmContext
             on { groupId } doReturn knownGroupId
         }
-        val groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
+        val groupParametersCache = GroupParametersCache(platformInfoProvider, keyEncodingService)
         val existingGroupParameters = KeyValuePairList(mutableListOf(
             KeyValuePair(EPOCH_KEY, EPOCH.toString()),
             KeyValuePair(MPV_KEY, MPV.toString()),
@@ -160,9 +152,9 @@ class GroupParametersCacheTest {
         ))
         groupParametersCache.set(knownGroupId, existingGroupParameters)
 
-        groupParametersCache.addNotary(notary)
+        val (_, records) = groupParametersCache.addNotary(notary)!!
 
-        with(publishCaptor.firstValue.first()) {
+        with(records.first()) {
             assertThat(key).isEqualTo(knownGroupId)
             with(value as StaticGroupDefinition) {
                 assertThat(this.groupParameters.items.containsAll(

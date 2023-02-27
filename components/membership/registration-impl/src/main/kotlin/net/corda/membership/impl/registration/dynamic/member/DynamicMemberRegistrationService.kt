@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.member
 
-import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -23,7 +22,6 @@ import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -74,13 +72,8 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -100,15 +93,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
 class DynamicMemberRegistrationService @Activate constructor(
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CryptoOpsClient::class)
@@ -137,19 +125,18 @@ class DynamicMemberRegistrationService @Activate constructor(
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
-    private interface InnerRegistrationService : AutoCloseable {
+    private interface InnerRegistrationService {
         fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        )
+        ): Collection<Record<*, *>>
     }
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock: Clock = UTCClock()
 
-        const val PUBLICATION_TIMEOUT_SECONDS = 30L
         const val SESSION_KEY_ID = "$PARTY_SESSION_KEY.id"
         const val SESSION_KEY_SIGNATURE_SPEC = "$PARTY_SESSION_KEY.signature.spec"
         const val LEDGER_KEY_ID = "$LEDGER_KEYS.%s.id"
@@ -161,19 +148,8 @@ class DynamicMemberRegistrationService @Activate constructor(
         val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
     }
 
-    // for watching the config changes
-    private var configHandle: AutoCloseable? = null
-
     // for checking the components' health
     private var componentHandle: RegistrationHandle? = null
-
-    private var _publisher: Publisher? = null
-
-    /**
-     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
-     */
-    private val publisher: Publisher
-        get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
 
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
@@ -210,7 +186,6 @@ class DynamicMemberRegistrationService @Activate constructor(
 
     private fun deactivate(coordinator: LifecycleCoordinator) {
         coordinator.updateStatus(LifecycleStatus.DOWN)
-        impl.close()
         impl = InactiveImpl
     }
 
@@ -218,21 +193,19 @@ class DynamicMemberRegistrationService @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>,
-    ) = impl.register(registrationId, member, context)
+    ): Collection<Record<*, *>> = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationService {
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) {
+        ): Collection<Record<*, *>> {
             logger.warn("DynamicMemberRegistrationService is currently inactive.")
             throw NotReadyMembershipRegistrationException(
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
             )
         }
-
-        override fun close() = Unit
     }
 
     private inner class ActiveImpl : InnerRegistrationService {
@@ -241,7 +214,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>,
-        ) {
+        ): Collection<Record<*, *>> {
             try {
                 membershipSchemaValidatorFactory
                     .createValidator()
@@ -264,7 +237,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ex,
                 )
             }
-            try {
+            return try {
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
@@ -340,7 +313,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     member.shortHash.value
                 )
 
-                membershipPersistenceClient.persistRegistrationRequest(
+                membershipPersistenceClient.asyncClient.createPersistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
                         status = RegistrationStatus.SENT_TO_MGM,
@@ -349,9 +322,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         signature = memberSignature,
                     )
-                ).getOrThrow()
-
-                publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                ) + record
             } catch (e: InvalidMembershipRegistrationException) {
                 logger.warn("Registration failed.", e)
                 throw e
@@ -371,10 +342,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                     e,
                 )
             }
-        }
-
-        override fun close() {
-            publisher.close()
         }
 
         private fun buildMemberContext(
@@ -574,7 +541,6 @@ class DynamicMemberRegistrationService @Activate constructor(
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> handleConfigChange(event, coordinator)
         }
     }
 
@@ -594,10 +560,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         deactivate(coordinator)
         componentHandle?.close()
         componentHandle = null
-        configHandle?.close()
-        configHandle = null
-        _publisher?.close()
-        _publisher = null
     }
 
     private fun handleRegistrationChangeEvent(
@@ -606,27 +568,11 @@ class DynamicMemberRegistrationService @Activate constructor(
     ) {
         when (event.status) {
             LifecycleStatus.UP -> {
-                configHandle?.close()
-                configHandle = configurationReadService.registerComponentForUpdates(
-                    coordinator,
-                    setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
-                )
+                activate(coordinator)
             }
             else -> {
                 deactivate(coordinator)
-                configHandle?.close()
             }
         }
-    }
-
-    // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
-    private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        _publisher?.close()
-        _publisher = publisherFactory.createPublisher(
-            PublisherConfig("dynamic-member-registration-service"),
-            event.config.getConfig(MESSAGING_CONFIG)
-        )
-        _publisher?.start()
-        activate(coordinator)
     }
 }

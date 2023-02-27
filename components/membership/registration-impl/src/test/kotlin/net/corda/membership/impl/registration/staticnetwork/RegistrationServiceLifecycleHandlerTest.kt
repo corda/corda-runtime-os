@@ -5,11 +5,8 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.data.KeyValuePairList
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.Resource
 import net.corda.lifecycle.createCoordinator
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -18,34 +15,17 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
 class RegistrationServiceLifecycleHandlerTest {
-    private val componentHandle: RegistrationHandle = mock()
-    private val subRegistrationHandle: RegistrationHandle = mock()
-    private val configHandle: Resource = mock()
-
     private val groupPolicyProvider: GroupPolicyProvider = mock()
-
-    private val configurationReadService: ConfigurationReadService = mock {
-        on { registerComponentForUpdates(any(), any()) } doReturn configHandle
-    }
-
-    private val publisher: Publisher = mock()
-
-    private val publisherFactory: PublisherFactory = mock {
-        on { createPublisher(any(), any()) } doReturn publisher
-    }
 
     private val subName = LifecycleCoordinatorName("COMPACTED_SUBSCRIPTION")
 
@@ -63,15 +43,6 @@ class RegistrationServiceLifecycleHandlerTest {
         } doReturn mockSubscription
     }
 
-    private val coordinator: LifecycleCoordinator = mock {
-        on { followStatusChangesByName(any()) } doReturn componentHandle
-        on { followStatusChangesByName(setOf(mockSubscription.subscriptionName)) } doReturn subRegistrationHandle
-    }
-
-    private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), any()) } doReturn coordinator
-    }
-
     private val memberInfoFactory: MemberInfoFactory = mock()
 
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
@@ -81,31 +52,6 @@ class RegistrationServiceLifecycleHandlerTest {
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(any()) } doReturn mock()
     }
-
-    private val staticMemberRegistrationService = StaticMemberRegistrationService(
-        groupPolicyProvider,
-        publisherFactory,
-        subscriptionFactory,
-        mock(),
-        mock(),
-        configurationReadService,
-        coordinatorFactory,
-        hsmRegistrationClient,
-        memberInfoFactory,
-        mock(),
-        mock(),
-        membershipSchemaValidatorFactory,
-        mock(),
-        platformInfoProvider,
-        mock(),
-        virtualNodeInfoReadService,
-        mock(),
-        membershipGroupReaderProvider,
-    )
-
-    private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
-        staticMemberRegistrationService
-    )
 
     @Test
     fun `Start event does not immediately move to UP status`() {
@@ -124,7 +70,6 @@ class RegistrationServiceLifecycleHandlerTest {
             sendConfigUpdate<TestRegistrationComponent>(configs)
 
             verifyIsUp<TestRegistrationComponent>()
-            assertNotNull(testClass.registrationServiceLifecycleHandler.publisher)
             assertNotNull(testClass.registrationServiceLifecycleHandler.groupParametersCache)
         }
     }
@@ -143,21 +88,6 @@ class RegistrationServiceLifecycleHandlerTest {
             sendConfigUpdate<TestRegistrationComponent>(configs)
             verifyIsUp<TestRegistrationComponent>()
         }
-    }
-
-    @Test
-    fun `component is DOWN after a stop event and the publisher is closed`() {
-        getTestContext().run {
-            testClass.start()
-            bringDependenciesUp()
-            sendConfigUpdate<TestRegistrationComponent>(configs)
-
-            verifyIsUp<TestRegistrationComponent>()
-            testClass.stop()
-            verifyIsDown<TestRegistrationComponent>()
-        }
-
-        assertThrows<IllegalArgumentException> { registrationServiceLifecycleHandler.publisher }
     }
 
     @Test
@@ -272,7 +202,6 @@ class RegistrationServiceLifecycleHandlerTest {
 
             val staticMemberRegistrationService = StaticMemberRegistrationService(
                 groupPolicyProvider,
-                publisherFactory,
                 subscriptionFactory,
                 mock(),
                 mock(),

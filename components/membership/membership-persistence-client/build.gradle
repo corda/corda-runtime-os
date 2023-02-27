@@ -16,4 +16,5 @@ dependencies {
 
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-common')
+    implementation project(':libs:messaging:messaging')
 }

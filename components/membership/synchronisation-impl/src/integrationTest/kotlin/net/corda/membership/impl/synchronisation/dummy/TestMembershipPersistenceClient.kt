@@ -4,7 +4,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -12,6 +11,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -55,16 +55,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         }
 
     override fun getPersistedGroupParameters(): GroupParameters? = persistedGroupParameters
-
-    override fun persistMemberInfo(
-        viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberInfo>
-    ): MembershipPersistenceResult<Unit> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
@@ -161,6 +151,12 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
             throw UnsupportedOperationException(this)
         }
     }
+
+    override val asyncClient: AsyncMembershipPersistenceClient
+        get() = with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
 
     override fun mutualTlsAddCertificateToAllowedList(
         mgmHoldingIdentity: HoldingIdentity,

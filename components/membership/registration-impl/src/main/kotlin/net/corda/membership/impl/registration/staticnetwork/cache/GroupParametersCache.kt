@@ -15,7 +15,6 @@ import net.corda.membership.lib.addNewNotaryService
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.membership.registration.MembershipRegistrationException
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_STATIC_NETWORK_TOPIC
 import net.corda.utilities.time.UTCClock
@@ -23,10 +22,10 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 class GroupParametersCache(
     private val platformInfoProvider: PlatformInfoProvider,
-    private val publisher: Publisher,
     private val keyEncodingService: KeyEncodingService
 ) {
     private companion object {
@@ -53,8 +52,19 @@ class GroupParametersCache(
      *
      * @return Group parameters for the group if present, or newly created snapshot of group parameters.
      */
-    fun getOrCreateGroupParameters(holdingIdentity: HoldingIdentity): KeyValuePairList =
-        cache[holdingIdentity.groupId] ?: createGroupParametersSnapshot(holdingIdentity)
+    fun getOrCreateGroupParameters(holdingIdentity: HoldingIdentity): Pair<KeyValuePairList, Collection<Record<*, *>>> {
+        val created = AtomicBoolean(false)
+        return cache.computeIfAbsent(holdingIdentity.groupId) {
+            created.set(true)
+            createGroupParametersSnapshot(holdingIdentity)
+        }.let {
+            if (created.get()) {
+                it to it.toPublishRecords(holdingIdentity.groupId)
+            } else {
+                it to emptyList()
+            }
+        }
+    }
 
     /**
      * Adds a notary to the group parameters. Adds new (or rotated) notary keys if the specified notary service exists,
@@ -64,7 +74,7 @@ class GroupParametersCache(
      *
      * @return Updated group parameters with notary information.
      */
-    fun addNotary(notary: MemberInfo): KeyValuePairList? {
+    fun addNotary(notary: MemberInfo): Pair<KeyValuePairList, Collection<Record<*, *>>>? {
         val groupId = notary.groupId
         val groupParameters = cache[groupId]?.toMap()
             ?: throw MembershipRegistrationException("Cannot add notary information - no group parameters found.")
@@ -80,9 +90,9 @@ class GroupParametersCache(
             addNewNotaryService(groupParameters, notaryDetails, keyEncodingService, logger)
         }
 
-        updated?.publish(groupId)
-
-        return updated
+        return updated?.let {
+            it to it.toPublishRecords(groupId)
+        }
     }
 
     private fun createGroupParametersSnapshot(holdingIdentity: HoldingIdentity): KeyValuePairList {
@@ -94,19 +104,16 @@ class GroupParametersCache(
             )
         ).apply {
             set(holdingIdentity.groupId, this)
-            publish(holdingIdentity.groupId)
         }
     }
 
-    private fun KeyValuePairList.publish(groupId: String) {
-        publisher.publish(
-            listOf(
-                Record(
-                    MEMBERSHIP_STATIC_NETWORK_TOPIC,
-                    groupId,
-                    StaticGroupDefinition(groupId, this)
-                )
+    private fun KeyValuePairList.toPublishRecords(groupId: String): Collection<Record<*, *>> {
+        return listOf(
+            Record(
+                MEMBERSHIP_STATIC_NETWORK_TOPIC,
+                groupId,
+                StaticGroupDefinition(groupId, this)
             )
-        ).forEach { it.get() }
+        )
     }
 }

@@ -29,7 +29,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.calculateHash
@@ -70,11 +70,11 @@ internal class MGMRegistrationMemberInfoHandler(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
-    ): MemberInfo {
-        return buildMgmInfo(holdingIdentity, context).also {
-            persistMemberInfo(holdingIdentity, it)
-            persistRegistrationRequest(registrationId, holdingIdentity, it)
-        }
+    ): Pair<MemberInfo, Collection<Record<*, *>>> {
+        val memberInfo = buildMgmInfo(holdingIdentity, context)
+        return memberInfo to
+                persistMemberInfo(holdingIdentity, memberInfo) +
+                persistRegistrationRequest(registrationId, holdingIdentity, memberInfo)
     }
 
     @Suppress("ThrowsCount")
@@ -104,13 +104,8 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
 
-    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: MemberInfo) {
-        val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
-        if (persistenceResult is MembershipPersistenceResult.Failure) {
-            throw MGMRegistrationMemberInfoHandlingException(
-                "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
-            )
-        }
+    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: MemberInfo): Collection<Record<*, *>> {
+        return membershipPersistenceClient.asyncClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
     }
 
     private fun buildMgmInfo(
@@ -159,13 +154,13 @@ internal class MGMRegistrationMemberInfoHandler(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
         mgmInfo: MemberInfo
-    ) {
+    ): Collection<Record<*, *>> {
         val serializedMemberContext = keyValuePairListSerializer.serialize(
             mgmInfo.memberProvidedContext.toWire()
         ) ?: throw MGMRegistrationMemberInfoHandlingException(
             "Failed to serialize the member context for this request."
         )
-        val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
+        return membershipPersistenceClient.asyncClient.createPersistRegistrationRequest(
             viewOwningIdentity = holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
@@ -179,11 +174,6 @@ internal class MGMRegistrationMemberInfoHandler(
                 )
             )
         )
-        if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
-            throw MGMRegistrationMemberInfoHandlingException(
-                "Registration failed, persistence error. Reason: ${registrationRequestPersistenceResult.errorMsg}"
-            )
-        }
     }
 }
 

@@ -582,6 +582,8 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
+        val mp = mapOf("a" to "b")
+        assertThat(mp).containsExactlyEntriesOf(mp)
         memberOpsClient.startRegistration(request)
 
         verifyNoInteractions(membershipPersistenceClient)

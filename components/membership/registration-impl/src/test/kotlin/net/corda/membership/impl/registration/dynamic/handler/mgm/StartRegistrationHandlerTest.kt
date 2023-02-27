@@ -158,7 +158,6 @@ class StartRegistrationHandlerTest {
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
         }
         membershipQueryClient = mock {
             on {
@@ -368,9 +367,6 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member info fails to persist`() {
-        whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(
-            MembershipPersistenceResult.Failure("error")
-        )
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
@@ -565,10 +561,9 @@ class StartRegistrationHandlerTest {
         verify(membershipQueryClient, getVerificationMode(queryMemberInfo))
             .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
 
-        verify(membershipPersistenceClient, getVerificationMode(persistMemberInfo))
-            .persistMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
-
         verify(memberTypeChecker, getVerificationMode(verify))
             .getMgmMemberInfo(eq(mgmHoldingIdentity.toCorda()))
+
+        println("QQQ TODO: $persistMemberInfo")
     }
 }

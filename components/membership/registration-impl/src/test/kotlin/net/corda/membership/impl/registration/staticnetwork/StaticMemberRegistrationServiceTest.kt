@@ -64,8 +64,6 @@ import net.corda.membership.lib.toSortedMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -153,12 +151,6 @@ class StaticMemberRegistrationServiceTest {
         on { getGroupPolicy(charlie) } doReturn groupPolicyWithoutStaticNetwork
         on { getGroupPolicy(daisy) } doReturn groupPolicyWithStaticNetwork
         on { getGroupPolicy(eric) } doReturn groupPolicyWithEmptyStaticNetwork
-    }
-
-    private val mockPublisher: Publisher = mock()
-
-    private val publisherFactory: PublisherFactory = mock {
-        on { createPublisher(any(), any()) } doReturn mockPublisher
     }
 
     private val mockSubscription: CompactedSubscription<String, KeyValuePairList> = mock()
@@ -276,7 +268,6 @@ class StaticMemberRegistrationServiceTest {
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
-        publisherFactory,
         subscriptionFactory,
         keyEncodingService,
         cryptoOpsClient,
@@ -311,7 +302,6 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             registrationService.register(registrationId, alice, mockContext)
-            verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
             verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
 
@@ -669,7 +659,6 @@ class StaticMemberRegistrationServiceTest {
         @Test
         fun `registration adds notary info to member info`() {
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
             setUpPublisher()
             registrationService.start()
             val context = mapOf(
@@ -711,7 +700,6 @@ class StaticMemberRegistrationServiceTest {
         @Test
         fun `registration without notary will not add notary to member info`() {
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
             setUpPublisher()
             registrationService.start()
             val context = mapOf(

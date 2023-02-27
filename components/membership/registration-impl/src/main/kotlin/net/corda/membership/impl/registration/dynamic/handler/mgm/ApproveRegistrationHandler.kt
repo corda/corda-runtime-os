@@ -77,22 +77,24 @@ internal class ApproveRegistrationHandler(
 
             // If approved member has notary role set, add notary to MGM's view of the group parameters.
             // Otherwise, retrieve epoch of current group parameters from the group reader.
-            val epoch = if (memberInfo.notaryDetails != null) {
+            val (epoch, groupParametersRecords) = if (memberInfo.notaryDetails != null) {
                 val mgmHoldingIdentity = mgm.holdingIdentity
                 val result = membershipPersistenceClient.addNotaryToGroupParameters(mgmHoldingIdentity, memberInfo)
                 if (result is MembershipPersistenceResult.Failure) {
                     throw MembershipPersistenceException(
                         "Failed to update group parameters with notary information of" +
-                                " '${memberInfo.name}', which has role set to 'notary'."
+                            " '${memberInfo.name}', which has role set to 'notary'."
                     )
                 }
                 val persistedGroupParameters = groupParametersFactory.create(result.getOrThrow())
-                groupParametersWriterService.put(mgmHoldingIdentity, persistedGroupParameters)
-                persistedGroupParameters.epoch
+                persistedGroupParameters.epoch to
+                    groupParametersWriterService.createRecords(mgmHoldingIdentity, persistedGroupParameters)
             } else {
                 val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
-                reader.groupParameters?.epoch
-            } ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
+                val epoch = reader.groupParameters?.epoch
+                    ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
+                epoch to emptyList()
+            }
 
             val distributionCommand = Record(
                 REGISTRATION_COMMAND_TOPIC,
@@ -121,7 +123,7 @@ internal class ApproveRegistrationHandler(
                 )
             )
 
-            listOf(memberRecord, persistApproveMessage, distributionCommand)
+            listOf(memberRecord, persistApproveMessage, distributionCommand) + groupParametersRecords
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)
             listOf(

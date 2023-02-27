@@ -31,6 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.test.util.TestRandom
@@ -162,14 +163,13 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { create(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
     }
+    private val membershipPersistenceAsyncClient = mock<AsyncMembershipPersistenceClient>()
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
-        on {
-            persistMemberInfo(eq(holdingIdentity), eq(listOf(memberInfo)))
-        } doReturn MembershipPersistenceResult.success()
-
         on {
             persistRegistrationRequest(any(), any())
         } doReturn MembershipPersistenceResult.success()
+
+        on { asyncClient } doReturn membershipPersistenceAsyncClient
     }
 
     private val platformInfoProvider: PlatformInfoProvider = mock {
@@ -235,7 +235,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         verify(membershipPersistenceClient).persistRegistrationRequest(any(), any())
-        verify(membershipPersistenceClient).persistMemberInfo(any(), any())
+        verify(membershipPersistenceAsyncClient).persistMemberInfo(any(), any())
         verify(cordaAvroSerializer).serialize(any())
         verify(memberInfoFactory).create(any(), any<SortedMap<String, String?>>())
         verify(platformInfoProvider).activePlatformVersion
@@ -359,27 +359,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
         verify(cryptoOpsClient).lookupKeysByIds(any(), any())
         verify(keyEncodingService).decodePublicKey(any<ByteArray>())
-    }
-
-    @Test
-    fun `expected exception thrown if member info persistence fails`() {
-        whenever(
-            membershipPersistenceClient.persistMemberInfo(
-                eq(holdingIdentity), eq(listOf(memberInfo))
-            )
-        ).doReturn(MembershipPersistenceResult.Failure(""))
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
-                holdingIdentity,
-                validTestContext
-            )
-        }
-        verify(membershipPersistenceClient).persistMemberInfo(
-            eq(holdingIdentity),
-            eq(listOf(memberInfo))
-        )
     }
 
     @Test

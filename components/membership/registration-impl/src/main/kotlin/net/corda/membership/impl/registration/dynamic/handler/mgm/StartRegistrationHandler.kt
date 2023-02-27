@@ -27,7 +27,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.preAuthToken
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
@@ -80,12 +79,9 @@ internal class StartRegistrationHandler(
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
 
             logger.info("Persisting the received registration request.")
-            membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
-                require(it as? MembershipPersistenceResult.Failure == null) {
-                    "Failed to persist the received registration request. Reason: " +
-                            (it as MembershipPersistenceResult.Failure).errorMsg
-                }
-            }
+            val persistRequest = membershipPersistenceClient.asyncClient.createPersistRegistrationRequest(
+                mgmHoldingId, registrationRequest
+            )
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
@@ -123,12 +119,8 @@ internal class StartRegistrationHandler(
             validateRoleInformation(pendingMemberInfo)
 
             // Persist pending member info
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
-                require(it as? MembershipPersistenceResult.Failure == null) {
-                    "Failed to persist pending member info. Reason: " +
-                            (it as MembershipPersistenceResult.Failure).errorMsg
-                }
-            }
+            val persistMemberInfoRequest =
+                membershipPersistenceClient.asyncClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo))
 
             val persistentMemberInfo = PersistentMemberInfo.newBuilder()
                 .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
@@ -142,7 +134,7 @@ internal class StartRegistrationHandler(
             )
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-            Pair(VerifyMember(), listOf(pendingMemberRecord))
+            Pair(VerifyMember(), listOf(pendingMemberRecord) + persistRequest + persistMemberInfoRequest)
         } catch (ex: InvalidRegistrationRequestException) {
             logger.warn("Declined registration.", ex)
             Pair(DeclineRegistration(ex.originalMessage), emptyList())

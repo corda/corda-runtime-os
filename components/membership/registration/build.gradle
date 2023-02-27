@@ -13,4 +13,5 @@ dependencies {
 
     api project(":libs:membership:membership-common")
     api project(":libs:virtual-node:virtual-node-info")
+    implementation project(':libs:messaging:messaging')
 }

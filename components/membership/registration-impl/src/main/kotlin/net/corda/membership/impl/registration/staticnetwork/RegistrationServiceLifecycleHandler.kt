@@ -19,8 +19,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.staticnetwork.cache.GroupParametersCache
 import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -42,8 +40,6 @@ class RegistrationServiceLifecycleHandler(
         private const val COMPONENT_HANDLE = "RegistrationServiceLifecycleHandler.COMPONENT_HANDLE"
     }
 
-    private val publisherFactory = staticMemberRegistrationService.publisherFactory
-
     private val subscriptionFactory = staticMemberRegistrationService.subscriptionFactory
 
     private val configurationReadService = staticMemberRegistrationService.configurationReadService
@@ -52,18 +48,7 @@ class RegistrationServiceLifecycleHandler(
 
     private val keyEncodingService = staticMemberRegistrationService.keyEncodingService
 
-    private var _groupParametersCache: GroupParametersCache? = null
-
-    private var _publisher: Publisher? = null
-
-    /**
-     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
-     */
-    val publisher: Publisher
-        get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
-
-    val groupParametersCache: GroupParametersCache
-        get() = _groupParametersCache ?: throw IllegalArgumentException("GroupParametersCache is not initialized.")
+    val groupParametersCache = GroupParametersCache(platformInfoProvider, keyEncodingService)
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -87,8 +72,6 @@ class RegistrationServiceLifecycleHandler(
     }
 
     private fun handleStopEvent() {
-        _publisher?.close()
-        _publisher = null
     }
 
     private fun handleRegistrationChangeEvent(
@@ -135,16 +118,7 @@ class RegistrationServiceLifecycleHandler(
         }
     }
 
-    // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
     private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        _publisher?.close()
-        _publisher = publisherFactory.createPublisher(
-            PublisherConfig("static-member-registration-service"),
-            event.config.getConfig(MESSAGING_CONFIG)
-        )
-        _publisher?.start()
-        _groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
-
         recreateSubscription(coordinator, event.config.getConfig(MESSAGING_CONFIG))
         coordinator.updateStatus(LifecycleStatus.UP)
     }

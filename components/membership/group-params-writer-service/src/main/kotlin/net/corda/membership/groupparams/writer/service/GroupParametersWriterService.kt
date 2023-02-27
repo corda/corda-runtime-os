@@ -1,6 +1,7 @@
 package net.corda.membership.groupparams.writer.service
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.messaging.api.records.Record
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
@@ -12,4 +13,6 @@ interface GroupParametersWriterService : ReconcilerWriter<HoldingIdentity, Group
     override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters)
 
     override fun remove(recordKey: HoldingIdentity)
+
+    fun createRecords(recordKey: HoldingIdentity, recordValue: GroupParameters): Collection<Record<*, *>>
 }

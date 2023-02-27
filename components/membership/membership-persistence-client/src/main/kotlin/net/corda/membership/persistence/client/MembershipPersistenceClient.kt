@@ -23,21 +23,6 @@ import java.util.UUID
 @Suppress("TooManyFunctions")
 interface MembershipPersistenceClient : Lifecycle {
     /**
-     * Persists a list of member info records as viewed by a specific holding identity.
-     * Member Infos which already exist are updated.
-     *
-     * @param viewOwningIdentity The holding identity of the owner of the view of data.
-     * @param memberInfos The list of member information to persist.
-     *
-     * @return membership persistence result to indicate the result of the persistence operation.
-     *  No payload is returned in the case of success.
-     */
-    fun persistMemberInfo(
-        viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberInfo>
-    ): MembershipPersistenceResult<Unit>
-
-    /**
      * Persist a new version of the group policy.
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
@@ -271,4 +256,6 @@ interface MembershipPersistenceClient : Lifecycle {
         ruleId: String,
         ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit>
+
+    val asyncClient: AsyncMembershipPersistenceClient
 }

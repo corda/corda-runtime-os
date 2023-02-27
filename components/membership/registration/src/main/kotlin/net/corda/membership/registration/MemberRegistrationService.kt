@@ -2,6 +2,7 @@ package net.corda.membership.registration
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.HoldingIdentity
 import java.util.UUID
 
@@ -27,6 +28,7 @@ interface MemberRegistrationService : Lifecycle {
      * @param registrationId The registration ID
      * @param member The holding identity of the virtual node requesting registration.
      * @param context The member or MGM context required for on-boarding within a group.
+     * @return records to forward to the bus.
      *
      * @throws [MembershipRegistrationException] in case of a registration error.
      *
@@ -35,5 +37,5 @@ interface MemberRegistrationService : Lifecycle {
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    )
+    ): Collection<Record<*, *>>
 }

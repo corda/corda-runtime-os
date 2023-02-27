@@ -7,8 +7,10 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
@@ -23,11 +25,6 @@ import java.util.UUID
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipPersistenceClient::class])
 class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPersistenceClient {
-    override fun persistMemberInfo(
-        viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberInfo>,
-    ) = MembershipPersistenceResult.success()
-
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
@@ -105,12 +102,41 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ruleParams: ApprovalRuleParams,
     ): MembershipPersistenceResult<ApprovalRuleDetails> = MembershipPersistenceResult.Failure("Unsupported")
 
-
     override fun deleteApprovalRule(
         viewOwningIdentity: HoldingIdentity,
         ruleId: String,
         ruleType: ApprovalRuleType,
     ) = MembershipPersistenceResult.success()
+
+    override val asyncClient = object : AsyncMembershipPersistenceClient {
+        override fun persistMemberInfo(
+            viewOwningIdentity: HoldingIdentity,
+            memberInfos: Collection<MemberInfo>,
+        ) = emptyList<Record<*, *>>()
+
+        override fun createPersistRegistrationRequest(
+            viewOwningIdentity: HoldingIdentity,
+            registrationRequest: RegistrationRequest,
+        ) = emptyList<Record<*, *>>()
+
+        override fun setMemberAndRegistrationRequestAsApprovedRequest(
+            viewOwningIdentity: HoldingIdentity,
+            approvedMember: HoldingIdentity,
+            registrationRequestId: String,
+        ) = emptyList<Record<*, *>>()
+
+        override fun setMemberAndRegistrationRequestAsDeclinedRequest(
+            viewOwningIdentity: HoldingIdentity,
+            declinedMember: HoldingIdentity,
+            registrationRequestId: String,
+        ) = emptyList<Record<*, *>>()
+
+        override fun setRegistrationRequestStatusRequest(
+            viewOwningIdentity: HoldingIdentity,
+            registrationId: String,
+            registrationRequestStatus: RegistrationStatus,
+        ) = emptyList<Record<*, *>>()
+    }
 
     override val isRunning = true
 

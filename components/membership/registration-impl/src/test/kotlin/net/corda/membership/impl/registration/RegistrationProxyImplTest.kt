@@ -38,6 +38,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
+import net.corda.messaging.api.records.Record
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -280,7 +281,7 @@ class RegistrationProxyImplTest {
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) = Unit
+        ): Collection<Record<*, *>> = emptyList()
     }
 
     class RegistrationProtocol2 : AbstractRegistrationProtocol() {
@@ -288,7 +289,7 @@ class RegistrationProxyImplTest {
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) = Unit
+        ): Collection<Record<*, *>> = emptyList()
     }
 
     abstract class AbstractRegistrationProtocol : MemberRegistrationService {
@@ -297,7 +298,7 @@ class RegistrationProxyImplTest {
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) = Unit
+        ): Collection<Record<*, *>> = emptyList()
 
         override val isRunning = true
         override fun start() { started += 1 }

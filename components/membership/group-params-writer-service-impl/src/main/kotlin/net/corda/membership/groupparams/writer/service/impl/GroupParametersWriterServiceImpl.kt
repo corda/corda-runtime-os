@@ -66,6 +66,14 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) = impl.put(recordKey, recordValue)
 
     override fun remove(recordKey: HoldingIdentity) = impl.remove(recordKey)
+    override fun createRecords(recordKey: HoldingIdentity, recordValue: GroupParameters) =
+        listOf(
+            Record(
+                GROUP_PARAMETERS_TOPIC,
+                recordKey.shortHash.toString(),
+                recordValue.toAvro(recordKey)
+            )
+        )
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
@@ -102,12 +110,9 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     private inner class ActiveImpl : InnerGroupParametersWriterService {
         override fun put(recordKey: HoldingIdentity, recordValue: GroupParameters) {
             publisher.publish(
-                listOf(
-                    Record(
-                        GROUP_PARAMETERS_TOPIC,
-                        recordKey.shortHash.toString(),
-                        recordValue.toAvro(recordKey)
-                    )
+                createRecords(
+                    recordKey,
+                    recordValue
                 )
             ).forEach { it.get() }
         }

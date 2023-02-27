@@ -59,11 +59,6 @@ internal class VerifyMemberHandler(
                     "Could not verify registration request: '$registrationId' member ${member.x500Name} - Can not be an MGM."
                 )
             }
-            membershipPersistenceClient.setRegistrationRequestStatus(
-                mgm.toCorda(),
-                registrationId,
-                RegistrationStatus.PENDING_MEMBER_VERIFICATION
-            )
             listOf(
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
                     mgm,
@@ -74,8 +69,13 @@ internal class VerifyMemberHandler(
                     ),
                     membershipConfig.getTtlMinutes(VERIFY_MEMBER_REQUEST),
                     id = ttlIdsFactory.createId(key),
-                )
+                ),
+            ) + membershipPersistenceClient.asyncClient.setRegistrationRequestStatusRequest(
+                mgm.toCorda(),
+                registrationId,
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
             )
+
         } catch (e: Exception) {
             logger.warn("Member verification failed for registration request: '$registrationId'.", e)
             listOf(

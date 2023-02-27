@@ -21,7 +21,6 @@ import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
-import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
@@ -197,13 +196,6 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `persist list of member info before starting component`() {
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
-
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-    }
-
-    @Test
     fun `persist registration request before starting component`() {
         val result = membershipPersistenceClient.persistRegistrationRequest(
             ourHoldingIdentity,
@@ -337,34 +329,6 @@ class MembershipPersistenceClientImplTest {
         }
     }
 
-    @Test
-    fun `request to persistence list of member infos is as expected`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse()
-
-        membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
-
-        with(argumentCaptor<MembershipPersistenceRequest>()) {
-            verify(rpcSender).sendRequest(capture())
-
-            assertThat(firstValue.context.requestTimestamp).isBeforeOrEqualTo(clock.instant())
-            assertThat(firstValue.context.holdingIdentity)
-                .isEqualTo(ourHoldingIdentity.toAvro())
-
-            assertThat(firstValue.request).isInstanceOf(PersistMemberInfo::class.java)
-            assertThat((firstValue.request as PersistMemberInfo).members)
-                .isNotEmpty
-                .isEqualTo(
-                    listOf(
-                        PersistentMemberInfo(
-                            ourHoldingIdentity.toAvro(),
-                            KeyValuePairList(emptyList()),
-                            KeyValuePairList(emptyList())
-                        )
-                    )
-                )
-        }
-    }
 
     @Test
     fun `request to persistence registration request is as expected`() {
@@ -388,64 +352,6 @@ class MembershipPersistenceClientImplTest {
                     .isEqualTo(this@MembershipPersistenceClientImplTest.registrationId)
             }
         }
-    }
-
-    @Test
-    fun `successful response for list of member info is correct`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse()
-
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-    }
-
-    @Test
-    fun `failed response for list of member info is correct`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"), null)
-
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-    }
-
-    @Test
-    fun `Mismatch in holding identity between RQ and RS causes failed response`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse(
-            holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
-        )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-    }
-
-    @Test
-    fun `Mismatch in request timestamp between RQ and RS causes failed response`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse(
-            reqTimestampOverride = clock.instant().plusSeconds(5)
-        )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-    }
-
-    @Test
-    fun `Mismatch in request ID between RQ and RS causes failed response`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse(
-            reqIdOverride = "Group ID 3"
-        )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-    }
-
-    @Test
-    fun `Response timestamp before request timestamp causes failed response`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse(
-            rsTimestampOverride = clock.instant().minusSeconds(10)
-        )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test

@@ -13,6 +13,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.registration.RegistrationRequestStatus
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -33,11 +34,6 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : MembershipPersistenceClient, MembershipQueryClient {
-    override fun persistMemberInfo(
-        viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberInfo>,
-    ) = MembershipPersistenceResult.success()
-
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
@@ -181,4 +177,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun stop() {
         coordinator.stop()
     }
+
+    override val asyncClient: AsyncMembershipPersistenceClient
+        get() = TODO("Not yet implemented")
 }

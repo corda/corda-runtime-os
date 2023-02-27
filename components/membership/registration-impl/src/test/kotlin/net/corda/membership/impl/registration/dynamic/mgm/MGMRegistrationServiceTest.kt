@@ -66,14 +66,11 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -111,7 +108,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.*
-import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
     private companion object {
@@ -119,7 +115,6 @@ class MGMRegistrationServiceTest {
         const val SESSION_KEY_ID = "ABC123456789"
         const val ECDH_KEY_STRING = "5678"
         const val ECDH_KEY_ID = "BBC123456789"
-        const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
@@ -142,13 +137,7 @@ class MGMRegistrationServiceTest {
         on { publicKey } doReturn ByteBuffer.wrap(ECDH_KEY_STRING.toByteArray())
         on { category } doReturn PRE_AUTH
     }
-    private val mockPublisher = mock<Publisher>().apply {
-        whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
-    }
 
-    private val publisherFactory: PublisherFactory = mock {
-        on { createPublisher(any(), any()) } doReturn mockPublisher
-    }
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(SESSION_KEY_STRING.toByteArray()) } doReturn sessionKey
         on { decodePublicKey(ECDH_KEY_STRING.toByteArray()) } doReturn ecdhKey
@@ -212,8 +201,8 @@ class MGMRegistrationServiceTest {
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val mockGroupParametersList: KeyValuePairList = mock()
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
+    private val asyncMembershipPersistenceClient = mock<AsyncMembershipPersistenceClient>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
-        on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
         on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
         on {
             persistRegistrationRequest(
@@ -222,6 +211,7 @@ class MGMRegistrationServiceTest {
             )
         } doReturn MembershipPersistenceResult.success()
         on { persistGroupParametersInitialSnapshot(any()) } doReturn MembershipPersistenceResult.Success(mockGroupParametersList)
+        on { asyncClient } doReturn asyncMembershipPersistenceClient
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -244,8 +234,6 @@ class MGMRegistrationServiceTest {
         on { create(mockGroupParametersList) } doReturn mockGroupParameters
     }
     private val registrationService = MGMRegistrationService(
-        publisherFactory,
-        configurationReadService,
         lifecycleCoordinatorFactory,
         cryptoOpsClient,
         keyEncodingService,
@@ -321,12 +309,9 @@ class MGMRegistrationServiceTest {
         fun `registration successfully builds MGM info and publishes it`() {
             postConfigChangedEvent()
             registrationService.start()
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
 
-            registrationService.register(registrationRequest, mgm, properties)
+            val publishedList = registrationService.register(registrationRequest, mgm, properties)
 
-            verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
-            val publishedList = capturedPublishedList.firstValue
             val publishedMgmInfo = publishedList.first()
             val publishedEvent = publishedList.last()
             assertSoftly {
@@ -441,7 +426,7 @@ class MGMRegistrationServiceTest {
 
             registrationService.register(registrationRequest, mgm, properties)
 
-            verify(membershipPersistenceClient).persistMemberInfo(
+            verify(asyncMembershipPersistenceClient).persistMemberInfo(
                 eq(mgm),
                 argThat {
                     this.size == 1 &&
@@ -491,20 +476,6 @@ class MGMRegistrationServiceTest {
 
     @Nested
     inner class FailedRegistrationTests {
-        @Test
-        fun `registration failure to persist return an error`() {
-            postConfigChangedEvent()
-            registrationService.start()
-            whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
-                .doReturn(MembershipPersistenceResult.Failure("Nop"))
-
-            val exception = assertThrows<InvalidMembershipRegistrationException> {
-                registrationService.register(registrationRequest, mgm, properties)
-            }
-
-            assertThat(exception).hasMessageContaining("Registration failed, persistence error. Reason: Nop")
-        }
-
         @Test
         fun `registration fails when coordinator is not running`() {
             val exception = assertThrows<NotReadyMembershipRegistrationException> {
@@ -639,7 +610,6 @@ class MGMRegistrationServiceTest {
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             verify(componentHandle, never()).close()
             verify(configHandle, never()).close()
-            verify(mockPublisher, never()).close()
         }
 
         @Test
@@ -675,36 +645,6 @@ class MGMRegistrationServiceTest {
             postRegistrationStatusChangeEvent(LifecycleStatus.ERROR)
 
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-        }
-
-        @Test
-        fun `config changed event creates publisher`() {
-            postConfigChangedEvent()
-
-            val configCaptor = argumentCaptor<PublisherConfig>()
-            verify(mockPublisher, never()).close()
-            verify(publisherFactory).createPublisher(
-                configCaptor.capture(),
-                any()
-            )
-            verify(mockPublisher).start()
-            verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-
-            with(configCaptor.firstValue) {
-                assertThat(clientId).isEqualTo(PUBLISHER_CLIENT_ID)
-            }
-
-            postConfigChangedEvent()
-            verify(mockPublisher).close()
-            verify(publisherFactory, times(2)).createPublisher(
-                configCaptor.capture(),
-                any()
-            )
-            verify(mockPublisher, times(2)).start()
-            verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
-
-            postStopEvent()
-            verify(mockPublisher, times(3)).close()
         }
     }
 }

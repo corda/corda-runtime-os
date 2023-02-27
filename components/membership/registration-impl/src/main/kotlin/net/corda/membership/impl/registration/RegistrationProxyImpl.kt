@@ -15,6 +15,7 @@ import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionExceptio
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
+import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -46,7 +47,7 @@ class RegistrationProxyImpl @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        )
+        ): Collection<Record<*, *>>
     }
 
     companion object {
@@ -132,7 +133,7 @@ class RegistrationProxyImpl @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ) = impl.register(registrationId, member, context)
+    ): Collection<Record<*, *>> = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationProxy {
         override fun register(
@@ -148,7 +149,7 @@ class RegistrationProxyImpl @Activate constructor(
             registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
-        ) {
+        ): Collection<Record<*, *>> {
             val protocol = try {
                 groupPolicyProvider.getGroupPolicy(member)?.registrationProtocol
             } catch (e: BadGroupPolicyException) {
@@ -161,7 +162,7 @@ class RegistrationProxyImpl @Activate constructor(
                 null
             } ?: throw RegistrationProtocolSelectionException("Could not find group policy file for holding identity: [$member]")
 
-            getRegistrationService(protocol).register(registrationId, member, context)
+            return getRegistrationService(protocol).register(registrationId, member, context)
         }
 
         private fun getRegistrationService(protocol: String): MemberRegistrationService {

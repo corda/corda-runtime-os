@@ -62,6 +62,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -202,13 +203,6 @@ class MembershipPersistenceTest {
          * for the DB message bus.
          */
         val membershipPersistenceClientWrapper = object : MembershipPersistenceClient {
-            override fun persistMemberInfo(
-                viewOwningIdentity: HoldingIdentity,
-                memberInfos: Collection<MemberInfo>
-            ) = safeCall {
-                membershipPersistenceClient.persistMemberInfo(viewOwningIdentity, memberInfos)
-            }
-
             override fun persistGroupPolicy(
                 viewOwningIdentity: HoldingIdentity,
                 groupPolicy: LayeredPropertyMap,
@@ -339,6 +333,11 @@ class MembershipPersistenceTest {
                     viewOwningIdentity, ruleId, ruleType
                 )
             }
+
+            override val asyncClient: AsyncMembershipPersistenceClient
+                get() = safeCall {
+                    membershipPersistenceClient.asyncClient
+                }
 
             fun <T> safeCall(func: () -> T): T {
                 return eventually {
@@ -880,8 +879,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-
-        val result = membershipPersistenceClientWrapper.persistMemberInfo(
+        val records = membershipPersistenceClientWrapper.asyncClient.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
                 memberInfoFactory.create(
@@ -890,36 +888,43 @@ class MembershipPersistenceTest {
                 )
             )
         )
+        publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig)
+            .use {  publisher ->
+                publisher.publish(records.toList())
+                    .forEach {
+                        it.join()
+                    }
+            }
 
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-
-        val persistedEntity = vnodeEmf.use {
-            it.find(
-                MemberInfoEntity::class.java,
-                MemberInfoEntityPrimaryKey(
-                    groupId, memberx500Name.toString()
+        eventually {
+            val persistedEntity = vnodeEmf.use {
+                it.find(
+                    MemberInfoEntity::class.java,
+                    MemberInfoEntityPrimaryKey(
+                        groupId, memberx500Name.toString()
+                    )
                 )
-            )
+            }
+            assertThat(persistedEntity).isNotNull
+            assertThat(persistedEntity.groupId).isEqualTo(groupId)
+            assertThat(persistedEntity.memberX500Name).isEqualTo(memberx500Name.toString())
+            assertThat(persistedEntity.serialNumber).isEqualTo(1)
+            assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+
+            val persistedMgmContext = persistedEntity.mgmContext.deserializeContextAsMap()
+            assertThat(persistedMgmContext)
+                .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
+                .containsEntry(SERIAL, "1")
+
+            val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
+            assertThat(persistedMemberContext)
+                .containsEntry(String.format(URL_KEY, "0"), endpointUrl)
+                .containsEntry(String.format(PROTOCOL_VERSION, "0"), "1")
+                .containsEntry(GROUP_ID, groupId)
+                .containsEntry(PARTY_NAME, memberx500Name.toString())
+                .containsEntry(PLATFORM_VERSION, "5000")
+                .containsEntry(SOFTWARE_VERSION, "5.0.0")
         }
-        assertThat(persistedEntity).isNotNull
-        assertThat(persistedEntity.groupId).isEqualTo(groupId)
-        assertThat(persistedEntity.memberX500Name).isEqualTo(memberx500Name.toString())
-        assertThat(persistedEntity.serialNumber).isEqualTo(1)
-        assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-
-        val persistedMgmContext = persistedEntity.mgmContext.deserializeContextAsMap()
-        assertThat(persistedMgmContext)
-            .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
-            .containsEntry(SERIAL, "1")
-
-        val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
-        assertThat(persistedMemberContext)
-            .containsEntry(String.format(URL_KEY, "0"), endpointUrl)
-            .containsEntry(String.format(PROTOCOL_VERSION, "0"), "1")
-            .containsEntry(GROUP_ID, groupId)
-            .containsEntry(PARTY_NAME, memberx500Name.toString())
-            .containsEntry(PLATFORM_VERSION, "5000")
-            .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
 
     @Test
@@ -1265,7 +1270,7 @@ class MembershipPersistenceTest {
             ?.items
             ?.associate { it.key to it.value } ?: fail("Failed to deserialize context.")
 
-    private fun persistMember(memberName: MemberX500Name): MembershipPersistenceResult<Unit> {
+    private fun persistMember(memberName: MemberX500Name) {
         val endpointUrl = "http://localhost:8080"
         val memberContext = KeyValuePairList(
             listOf(
@@ -1283,8 +1288,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-
-        return membershipPersistenceClientWrapper.persistMemberInfo(
+        val records = membershipPersistenceClientWrapper.asyncClient.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
                 memberInfoFactory.create(
@@ -1293,6 +1297,24 @@ class MembershipPersistenceTest {
                 )
             )
         )
+        publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig)
+            .use { publisher ->
+                publisher.publish(records.toList())
+                    .forEach {
+                        it.join()
+                    }
+            }
+        eventually {
+            val persistedEntity = vnodeEmf.use {
+                it.find(
+                    MemberInfoEntity::class.java,
+                    MemberInfoEntityPrimaryKey(
+                        groupId, memberName.toString()
+                    )
+                )
+            }
+            assertThat(persistedEntity).isNotNull
+        }
     }
 
     private fun persistRequest(

@@ -5,6 +5,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
+import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.helper.getConfig
@@ -19,14 +21,19 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
@@ -44,24 +51,26 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager,
+    dbConnectionManager: DbConnectionManager,
     @Reference(service = JpaEntitiesRegistry::class)
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = MemberInfoFactory::class)
-    private val memberInfoFactory: MemberInfoFactory,
+    memberInfoFactory: MemberInfoFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService,
+    keyEncodingService: KeyEncodingService,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider,
+    platformInfoProvider: PlatformInfoProvider,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
-    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) : MembershipPersistenceService {
 
     private companion object {
@@ -69,12 +78,15 @@ class MembershipPersistenceServiceImpl @Activate constructor(
 
         const val GROUP_NAME = "membership.db.persistence"
         const val CLIENT_NAME = "membership.db.persistence"
+        const val ASYNC_GROUP_NAME = "membership.db.persistence.async"
 
         private val clock: Clock = UTCClock()
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<MembershipPersistenceService>(::handleEvent)
     private var rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse>? = null
+    private var asyncSubscription:
+        StateAndEventSubscription<String, MembershipPersistenceAsyncRequestState, MembershipPersistenceAsyncRequest>? = null
 
     private var dependencyServiceHandle: RegistrationHandle? = null
     private var subHandle: RegistrationHandle? = null
@@ -130,6 +142,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         configHandle = null
         rpcSubscription?.close()
         rpcSubscription = null
+        asyncSubscription?.close()
+        asyncSubscription = null
     }
 
     private fun handleRegistrationStatusChangedEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
@@ -155,13 +169,27 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         }
     }
 
+    private val handlers by lazy {
+        HandlerFactories(
+            clock,
+            dbConnectionManager,
+            jpaEntitiesRegistry,
+            memberInfoFactory,
+            cordaAvroSerializationFactory,
+            virtualNodeInfoReadService,
+            keyEncodingService,
+            platformInfoProvider,
+            allowedCertificatesReaderWriterService,
+        )
+    }
+
     private fun handleConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling config changed event.")
         subHandle?.close()
         subHandle = null
         rpcSubscription?.close()
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        rpcSubscription = subscriptionFactory.createRPCSubscription(
+        val firstSubscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
                 groupName = GROUP_NAME,
                 clientName = CLIENT_NAME,
@@ -170,20 +198,38 @@ class MembershipPersistenceServiceImpl @Activate constructor(
                 responseType = MembershipPersistenceResponse::class.java
             ),
             responderProcessor = MembershipPersistenceRPCProcessor(
-                clock,
-                dbConnectionManager,
-                jpaEntitiesRegistry,
-                memberInfoFactory,
-                cordaAvroSerializationFactory,
-                virtualNodeInfoReadService,
-                keyEncodingService,
-                platformInfoProvider,
-                allowedCertificatesReaderWriterService,
+                handlers
             ),
             messagingConfig = messagingConfig
         ).also {
+            rpcSubscription = it
             it.start()
-            subHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
         }
+        asyncSubscription?.close()
+        val secondSubscription = subscriptionFactory.createStateAndEventSubscription(
+            subscriptionConfig = SubscriptionConfig(
+                groupName = ASYNC_GROUP_NAME,
+                eventTopic = MEMBERSHIP_DB_ASYNC_TOPIC,
+            ),
+            processor = MembershipPersistenceAsyncProcessor(
+                handlers
+            ),
+            messagingConfig = messagingConfig,
+            stateAndEventListener = MembershipPersistenceAsyncRetryManager(
+                coordinatorFactory = coordinatorFactory,
+                publisherFactory = publisherFactory,
+                messagingConfig = messagingConfig,
+                clock = clock,
+            )
+        ).also {
+            it.start()
+        }
+        asyncSubscription = secondSubscription
+        subHandle = coordinator.followStatusChangesByName(
+            setOf(
+                firstSubscription.subscriptionName,
+                secondSubscription.subscriptionName,
+            )
+        )
     }
 }
