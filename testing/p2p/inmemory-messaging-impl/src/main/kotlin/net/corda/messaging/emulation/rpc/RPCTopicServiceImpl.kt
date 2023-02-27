@@ -2,7 +2,6 @@ package net.corda.messaging.emulation.rpc
 
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Component
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
@@ -16,9 +15,10 @@ class RPCTopicServiceImpl(
     private val topics = mutableMapOf<String, RPCProducerConsumerLink<*, *>>()
 
     override fun <REQUEST, RESPONSE> subscribe(topic: String, consumer: RPCResponderProcessor<REQUEST, RESPONSE>) {
-        val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics.computeIfAbsent(topic) {
+        @Suppress("unchecked_cast")
+        val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = topics.computeIfAbsent(topic) {
             RPCProducerConsumerLink<REQUEST, RESPONSE>()
-        })
+        } as RPCProducerConsumerLink<REQUEST, RESPONSE>
         link.addConsumer(consumer)
     }
 
@@ -26,7 +26,8 @@ class RPCTopicServiceImpl(
         if (!topics.containsKey(topic)) {
             return
         } else {
-            val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics[topic])
+            @Suppress("unchecked_cast")
+            val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = topics[topic] as RPCProducerConsumerLink<REQUEST, RESPONSE>
             link.removeConsumer(consumer)
 
             if (link.consumerList.isEmpty()) {
@@ -44,7 +45,8 @@ class RPCTopicServiceImpl(
             return
         }
 
-        val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics[topic])
+        @Suppress("unchecked_cast")
+        val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = topics[topic] as RPCProducerConsumerLink<REQUEST, RESPONSE>
 
         executorService.submit {
             link.handleRequest(request, requestCompletion)

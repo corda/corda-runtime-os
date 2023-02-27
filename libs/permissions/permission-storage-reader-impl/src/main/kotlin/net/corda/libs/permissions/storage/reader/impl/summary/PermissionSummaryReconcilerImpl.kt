@@ -4,7 +4,7 @@ import net.corda.libs.permissions.storage.common.converter.toAvroPermissionSumma
 import net.corda.libs.permissions.storage.reader.repository.UserLogin
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
 import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 

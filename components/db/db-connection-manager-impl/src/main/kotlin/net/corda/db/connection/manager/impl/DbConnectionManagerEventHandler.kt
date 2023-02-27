@@ -10,8 +10,8 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.minutes
+import net.corda.utilities.debug
+import net.corda.utilities.minutes
 import org.slf4j.LoggerFactory
 
 class DbConnectionManagerEventHandler(

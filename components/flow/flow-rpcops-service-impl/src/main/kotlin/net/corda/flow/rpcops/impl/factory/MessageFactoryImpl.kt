@@ -55,7 +55,7 @@ class MessageFactoryImpl : MessageFactory {
                 flowStatus.error.errorType,
                 flowStatus.error.errorMessage
             ) else null,
-            Instant.now()
+            flowStatus.lastUpdateTimestamp
         )
     }
 

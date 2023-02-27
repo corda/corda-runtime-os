@@ -16,8 +16,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -36,7 +34,7 @@ import org.slf4j.LoggerFactory
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -94,7 +92,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             val request = NotarisationRequest(txDetails.inputs, txDetails.id)
 
-            logger.trace { "Received notarization request for transaction ${request.transactionId}" }
+            if (logger.isTraceEnabled) {
+                logger.trace("Received notarization request for transaction {}", request.transactionId)
+            }
 
             val otherMemberInfo = memberLookup.lookup(session.counterparty)
                 ?: throw IllegalStateException("Could not find counterparty on the network: ${session.counterparty}")
@@ -111,7 +111,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             verifyTransaction(requestPayload)
 
-            logger.trace { "Requesting uniqueness check for transaction ${txDetails.id}" }
+            if (logger.isTraceEnabled) {
+                logger.trace("Requesting uniqueness check for transaction {}", txDetails.id)
+            }
 
             val uniquenessResult = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
@@ -122,9 +124,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 txDetails.timeWindow.until
             )
 
-            logger.debug {
-                "Uniqueness check completed for transaction ${txDetails.id}, result is: ${uniquenessResult}. Sending response " +
-                        "to ${session.counterparty}"
+            if (logger.isDebugEnabled) {
+                logger.debug("Uniqueness check completed for transaction {}, result is: {}. Sending response to {}",
+                    txDetails.id, uniquenessResult, session.counterparty)
             }
 
             val signature = if (uniquenessResult is UniquenessCheckResultSuccess) {

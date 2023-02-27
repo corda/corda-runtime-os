@@ -17,13 +17,13 @@ import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
-import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_ENTITY_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_GROUP_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_ROLE_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_USER_TOPIC
+import net.corda.schema.Schemas.Permissions.PERMISSIONS_USER_SUMMARY_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_ENTITY_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_GROUP_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_ROLE_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_USER_TOPIC
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.permissions.Group as AvroGroup

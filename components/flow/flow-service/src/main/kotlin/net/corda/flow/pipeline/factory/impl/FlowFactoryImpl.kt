@@ -14,7 +14,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,13 +29,10 @@ class FlowFactoryImpl @Activate constructor(
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         return try {
-            val flowClass: Class<ClientStartableFlow> =
-                uncheckedCast(
-                    sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
-                        startFlowEvent.startContext.flowClassName,
-                        ClientStartableFlow::class.java
-                    )
-                )
+            val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
+                startFlowEvent.startContext.flowClassName,
+                ClientStartableFlow::class.java
+            )
             val logic = flowClass.getDeclaredConstructor().newInstance()
             val args = ClientRequestBodyImpl(flowFiberService)
 
@@ -55,11 +51,9 @@ class FlowFactoryImpl @Activate constructor(
         contextProperties: Map<String, String>
     ): FlowLogicAndArgs {
         return try {
-            val flowClass: Class<ResponderFlow> = uncheckedCast(
-                sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
-                    flowStartContext.flowClassName,
-                    ResponderFlow::class.java
-                )
+            val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
+                flowStartContext.flowClassName,
+                ResponderFlow::class.java
             )
 
             val flowSession = flowSessionFactory.createInitiatedFlowSession(
