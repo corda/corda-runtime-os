@@ -8,8 +8,8 @@ import net.corda.httprpc.server.impl.apigen.processing.Parameter
 import net.corda.httprpc.server.impl.apigen.processing.ParameterType
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.utils.mapTo
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import net.corda.v5.base.util.trace
 import java.net.URLDecoder
 import java.util.function.Function
 

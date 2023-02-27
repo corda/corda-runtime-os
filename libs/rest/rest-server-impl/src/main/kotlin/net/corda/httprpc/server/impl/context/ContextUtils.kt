@@ -11,7 +11,7 @@ import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.security.InvocationContext
 import net.corda.httprpc.security.RestAuthContext
-import net.corda.httprpc.security.rpcContext
+import net.corda.httprpc.security.restContext
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.context.ClientRequestContext.Companion.METHOD_SEPARATOR
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
@@ -20,10 +20,10 @@ import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
 import net.corda.httprpc.server.impl.security.RestAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.CredentialResolver
 import net.corda.metrics.CordaMetrics
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
@@ -100,7 +100,7 @@ internal object ContextUtils {
     fun RouteInfo.invokeHttpMethod(): (Context) -> Unit {
         return { ctx ->
             val ctxMethod = ctx.method()
-            withMDC(rpcContext()?.principal ?: "<anonymous>", ctxMethod, ctx.path()) {
+            withMDC(restContext()?.principal ?: "<anonymous>", ctxMethod, ctx.path()) {
                 val methodLogger = ctxMethod.loggerFor()
                 methodLogger.info("Servicing $ctxMethod request to '${ctx.path()}'")
                 methodLogger.debug { "Invoke method \"${method.method.name}\" for route info." }

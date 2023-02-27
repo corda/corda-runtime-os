@@ -39,11 +39,11 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
-import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -468,9 +468,20 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
         when (val typedRequest = request.request) {
-            is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
-            is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
-            is VirtualNodeDBResetRequest -> resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeCreateRequest -> {
+                logger.info("Handling virtual node creation request for ${typedRequest.x500Name}, ${typedRequest.cpiFileChecksum}")
+                createVirtualNode(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeStateChangeRequest -> {
+                logger.info(
+                    "Handling change virtual node state request for ${typedRequest.holdingIdentityShortHash} to ${typedRequest.newState}"
+                )
+                changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeDBResetRequest -> {
+                logger.info("Handling virtual node db reset request for ${typedRequest.holdingIdentityShortHashes.joinToString()}")
+                resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            }
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }

@@ -54,11 +54,11 @@ import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.P2P.Companion.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
-import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
-import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
+import net.corda.schema.Schemas.P2P.GATEWAY_TLS_TRUSTSTORES
+import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.registry.deserialize
@@ -66,8 +66,8 @@ import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIterable

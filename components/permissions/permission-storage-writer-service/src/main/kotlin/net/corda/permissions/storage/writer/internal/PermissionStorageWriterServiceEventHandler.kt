@@ -17,7 +17,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_MGMT_REQ_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.VisibleForTesting

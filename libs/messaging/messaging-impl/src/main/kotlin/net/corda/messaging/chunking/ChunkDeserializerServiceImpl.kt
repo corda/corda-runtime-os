@@ -10,7 +10,7 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messaging.api.chunking.ChunkDeserializerService
 import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory

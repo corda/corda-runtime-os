@@ -25,7 +25,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.PermissionValidationService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_MGMT_REQ_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.REST_CONFIG

@@ -26,6 +26,7 @@ dependencies {
     implementation project(':libs:sandbox-types')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:uniqueness:common')
+    implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:virtual-node-info')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

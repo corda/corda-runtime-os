@@ -81,9 +81,9 @@ import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo

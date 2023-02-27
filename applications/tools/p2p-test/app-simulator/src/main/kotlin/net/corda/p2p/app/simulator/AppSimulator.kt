@@ -23,8 +23,8 @@ import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenEnumParam
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenIntParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenStrParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getTopicCreationParameter
-import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.utilities.time.Clock

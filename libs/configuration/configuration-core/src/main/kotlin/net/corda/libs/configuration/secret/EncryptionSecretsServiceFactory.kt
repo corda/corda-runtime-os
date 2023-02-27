@@ -2,7 +2,6 @@ package net.corda.libs.configuration.secret
 
 import com.typesafe.config.Config
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 
@@ -20,7 +19,10 @@ class EncryptionSecretsServiceFactory : SecretsServiceFactory {
 
     override fun create(secretsServiceConfig: Config): EncryptionSecretsService {
         if (!secretsServiceConfig.hasPath(SECRET_PASSPHRASE_KEY) || !secretsServiceConfig.hasPath(SECRET_SALT_KEY)) {
-            logger.debug { "Configuration not suitable for EncryptionSecretsService: ${secretsServiceConfig.root().render()}}" }
+            if (logger.isDebugEnabled) {
+                logger.debug("Configuration not suitable for EncryptionSecretsService: {}",
+                             secretsServiceConfig.root().render())
+            }
             throw SecretsConfigurationException("Could not create EncryptionSecretsService with the given configuration. " +
                     "Ensure `$SECRET_PASSPHRASE_KEY` and `$SECRET_SALT_KEY` has been provided.")
         }

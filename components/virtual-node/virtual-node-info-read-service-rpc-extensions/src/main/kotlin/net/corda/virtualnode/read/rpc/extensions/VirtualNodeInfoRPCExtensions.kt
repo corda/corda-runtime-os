@@ -134,3 +134,15 @@ fun ShortHash.Companion.parseOrThrow(holdingIdentityShortHash: String): ShortHas
         throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
     }
 }
+
+/**
+ * Attempts to create a key id [ShortHash] from specified hex string. Converts thrown [ShortHashException] if
+ * [ShortHash.of] fails to http manageable [BadRequestException].
+ */
+fun createKeyIdOrHttpThrow(keyIdHexString: String): ShortHash {
+    try {
+        return ShortHash.of(keyIdHexString)
+    } catch (e: ShortHashException) {
+        throw BadRequestException("Invalid key id hex string: ${e.message}")
+    }
+}

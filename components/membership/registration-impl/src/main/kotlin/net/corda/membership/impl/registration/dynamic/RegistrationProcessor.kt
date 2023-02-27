@@ -59,7 +59,7 @@ class RegistrationProcessor(
     override val eventValueClass = RegistrationCommand::class.java
 
     companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val memberTypeChecker = MemberTypeChecker(membershipGroupReaderProvider)
