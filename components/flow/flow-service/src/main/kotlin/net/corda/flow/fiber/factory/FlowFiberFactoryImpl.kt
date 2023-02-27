@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
+import net.corda.flow.fiber.FiberExceptionConstants
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
