@@ -35,7 +35,7 @@ class MembershipPackageFactory(
     private val idFactory: () -> String,
 ) {
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
     private fun DigitalSignature.WithKey.toAvro() =
         CryptoSignatureWithKey.newBuilder()

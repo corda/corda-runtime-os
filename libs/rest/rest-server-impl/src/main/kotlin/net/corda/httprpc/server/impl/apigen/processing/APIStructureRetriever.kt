@@ -14,8 +14,6 @@ import net.corda.httprpc.server.impl.apigen.models.ResponseBody
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.httprpc.tools.annotations.validation.RestInterfaceValidator
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import net.corda.httprpc.durablestream.api.isFiniteDurableStreamsMethod
 import net.corda.httprpc.PluggableRestResource
@@ -29,6 +27,8 @@ import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.annotations.extensions.title
 import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.httprpc.tools.responseDescription
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import java.lang.reflect.Method
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
@@ -38,7 +38,7 @@ import kotlin.reflect.jvm.kotlinFunction
  * [APIStructureRetriever] scans through the class, method and parameter annotations of the passed [PluggableRestResource] list,
  * generating a list of [Resource].
  */
-@Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown")
+@Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class APIStructureRetriever(private val opsImplList: List<PluggableRestResource<*>>) {
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

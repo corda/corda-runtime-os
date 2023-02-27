@@ -34,7 +34,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.Sche
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.HttpPathUtils.toOpenApiPath
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
 

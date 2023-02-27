@@ -1,6 +1,5 @@
 package net.corda.utilities.reflection
 
-import net.corda.v5.base.util.uncheckedCast
 import java.lang.reflect.Field
 import java.lang.reflect.Member
 import java.lang.reflect.Modifier
@@ -56,7 +55,8 @@ val <T : Any> Class<T>.kotlinObjectInstance: T?
             field?.let {
                 if (it.type == this && it.isPublicStaticFinal) {
                     it.isAccessible = true
-                    return uncheckedCast(it.get(null))
+                    @Suppress("unchecked_cast")
+                    return it.get(null) as? T
                 } else {
                     null
                 }

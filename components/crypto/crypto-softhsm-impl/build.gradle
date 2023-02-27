@@ -26,6 +26,7 @@ dependencies {
     implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:utilities')
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")

@@ -5,8 +5,8 @@ package net.corda.e2etest.utilities
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.ResponseCode
+import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.seconds
 import java.io.File
 import java.net.URLEncoder.encode
 import java.nio.charset.Charset.defaultCharset

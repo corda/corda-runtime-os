@@ -70,7 +70,9 @@ class RegistrationManagementServiceTest {
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock()
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
+        on { createAvroDeserializer(any(), any<Class<*>>()) } doReturn mock()
+    }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock()
     private val membershipQueryClient: MembershipQueryClient = mock()
 

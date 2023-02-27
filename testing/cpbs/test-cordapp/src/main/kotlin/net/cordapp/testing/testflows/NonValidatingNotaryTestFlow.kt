@@ -9,7 +9,6 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.hours
 import net.corda.v5.crypto.containsAny
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
@@ -19,6 +18,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -134,7 +134,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
         val timeWindowUpperBoundOffsetMs = requestMessage["timeWindowUpperBoundOffsetMs"]?.toLong()
             ?: run {
                 log.info("timeWindowUpperBoundOffsetMs not provided, defaulting to 1 hour")
-                1.hours.toMillis()
+                Duration.ofHours(1).toMillis()
             }
 
         return NotarisationTestFlowParameters(

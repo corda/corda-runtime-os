@@ -2,7 +2,6 @@ package net.corda.ledger.common.data.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 
@@ -63,7 +62,7 @@ class TransactionMetadataImpl (private val properties: Map<String, Any>) : Trans
 
     override fun getNumberOfComponentGroups(): Int {
         val value = this[NUMBER_OF_COMPONENT_GROUPS]
-        return value?.let { uncheckedCast(it) } ?: throw CordaRuntimeException(
+        return value as? Int ?: throw CordaRuntimeException(
             "Transaction metadata representation error: expected int representing the number of component groups but found [$value]"
         )
     }

@@ -31,6 +31,7 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(":notary-plugins:notary-plugin-common")
     implementation project(":osgi-framework-api")

@@ -26,6 +26,7 @@ dependencies {
     cordaProvided 'net.corda:corda-application'
     cordaProvided "org.osgi:osgi.core"
 
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'javax.persistence:javax.persistence-api'
 }
 
