@@ -15,9 +15,11 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda:corda-base'
+    api 'net.corda:corda-base'
+    api 'net.corda:corda-application'
+    api 'net.corda:corda-serialization'
     implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     // Concluded this is the one acceptable dependency in addition to kotlin.
     implementation 'org.slf4j:slf4j-api'
 

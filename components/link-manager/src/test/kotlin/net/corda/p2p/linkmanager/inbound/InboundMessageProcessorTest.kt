@@ -745,6 +745,9 @@ class InboundMessageProcessorTest {
     fun `UnauthenticatedMessage will produce message in P2P in topic`() {
         val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
             on { messageId } doReturn "messageId"
+            on { source } doReturn myIdentity.toAvro()
+            on { destination } doReturn remoteIdentity.toAvro()
+            on { subsystem } doReturn "application-v1"
         }
         val unauthenticatedMessage = mock<UnauthenticatedMessage> {
             on { header } doReturn unauthenticatedMessageHeader

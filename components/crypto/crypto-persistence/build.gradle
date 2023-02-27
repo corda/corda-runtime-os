@@ -10,7 +10,7 @@ dependencies {
 
     api 'javax.persistence:javax.persistence-api'
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -24,6 +24,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-config-impl")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:virtual-node:virtual-node-info')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

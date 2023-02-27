@@ -1,26 +1,29 @@
 package net.corda.chunking
 
 import com.google.common.jimfs.Jimfs
-import net.corda.chunking.impl.ChunkReaderImpl
-import net.corda.chunking.impl.ChunkWriterImpl
-import net.corda.chunking.impl.ChunkWriterImpl.Companion.MB
-import net.corda.data.chunking.Chunk
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.UUID
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.MB
+import net.corda.chunking.impl.ChunkBuilderServiceImpl
+import net.corda.chunking.impl.ChunkReaderImpl
+import net.corda.chunking.impl.ChunkWriterImpl
+import net.corda.data.chunking.Chunk
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 class ChunkReadingTest {
     private lateinit var fs: FileSystem
 
     private val chunkReaderFactory = ChunkReaderFactoryImpl
-    
+    private val chunkBuilderService = ChunkBuilderServiceImpl()
+
     @BeforeEach
     fun beforeEach() {
         fs = Jimfs.newFileSystem()
@@ -78,7 +81,7 @@ class ChunkReadingTest {
 
         val chunkCount = 5
 
-        val writer = ChunkWriterImpl(32 + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD).apply {
+        val writer = ChunkWriterImpl(32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, chunkBuilderService).apply {
             // guaranteed to be in order in this test
             onChunk(chunks::add)
         }
@@ -100,7 +103,7 @@ class ChunkReadingTest {
     @Test
     fun `can read out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(32 + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD).apply {
+        val writer = ChunkWriterImpl(32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
 
@@ -143,8 +146,8 @@ class ChunkReadingTest {
     @Test
     fun `can read overlapping files with out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
-        val chunkSize = 32 + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD //bytes
-        val writer = ChunkWriterImpl(chunkSize).apply {
+        val chunkSize = 32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD //bytes
+        val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
 
@@ -194,13 +197,13 @@ class ChunkReadingTest {
         }
 
         val divisor = 10
-        val chunkSize = (loremIpsum.length / divisor) + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD
+        val chunkSize = (loremIpsum.length / divisor) + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
         assertThat(chunkSize * 10)
             .withFailMessage("The test string should not be a multiple of $divisor so that we have a final odd sized chunk ")
             .isNotEqualTo(loremIpsum.length)
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(chunkSize).apply {
+        val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
 
@@ -242,8 +245,8 @@ class ChunkReadingTest {
         val path = createEmptyFile(0)
         val ourFileName = randomFileName()
         val chunks = mutableListOf<Chunk>()
-        val chunkSize = 32 + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD //bytes
-        val writer = ChunkWriterImpl(chunkSize).apply {
+        val chunkSize = 32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD //bytes
+        val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
         writer.write(ourFileName, Files.newInputStream(path))

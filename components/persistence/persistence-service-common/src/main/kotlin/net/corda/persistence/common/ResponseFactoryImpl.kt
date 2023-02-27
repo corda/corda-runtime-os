@@ -3,12 +3,12 @@ package net.corda.persistence.common
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
-import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.NullParameterException
-import net.corda.persistence.common.exceptions.VirtualNodeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -33,7 +33,7 @@ class ResponseFactoryImpl @Activate constructor(
     }
 
     override fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception) = when (exception) {
-        is NotReadyException, is VirtualNodeException ->
+        is CpkNotAvailableException, is VirtualNodeException ->
             transientErrorResponse(externalEventContext, exception)
         is NotSerializableException ->
             platformErrorResponse(externalEventContext, exception)

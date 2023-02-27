@@ -5,7 +5,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -62,7 +62,11 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
     }
 
     private fun areAllSessionsConfirmed(checkpoint: FlowCheckpoint, waitingFor: SessionConfirmation): Boolean {
-        return flowSessionManager.doAllSessionsHaveStatus(checkpoint, waitingFor.sessionIds, SessionStateType.CONFIRMED)
+        return flowSessionManager.doAllSessionsHaveStatusIn(
+            checkpoint,
+            waitingFor.sessionIds,
+            listOf(SessionStateType.CONFIRMED, SessionStateType.CLOSING)
+        )
     }
 
     private fun waitingForSessionsToClose(

@@ -11,6 +11,7 @@ import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -32,9 +33,10 @@ class DbConnectionOpsImpl(
     override fun getClusterDataSource(): CloseableDataSource =
         dbConnectionsRepository.getClusterDataSource()
 
-    override fun createDatasource(connectionId: UUID): CloseableDataSource =
-        dbConnectionsRepository.create(connectionId) ?:
-            throw DBConfigurationException("Details for $connectionId cannot be found")
+    override fun createDatasource(connectionId: UUID): CloseableDataSource {
+        logger.debug { "Creating datasource for connection $connectionId" }
+        return dbConnectionsRepository.create(connectionId) ?: throw DBConfigurationException("Details for $connectionId cannot be found")
+    }
 
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         dbConnectionsRepository.create(name, privilege)

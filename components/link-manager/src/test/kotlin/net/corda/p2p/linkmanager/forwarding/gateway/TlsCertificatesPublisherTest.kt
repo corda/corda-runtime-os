@@ -72,7 +72,6 @@ class TlsCertificatesPublisherTest {
         createTestHoldingIdentity("CN=Alice, O=Bob Corp, L=LDN, C=GB", "Group1",),
         listOf("one", "two"),
         "id1",
-        "id2",
         mock(),
         mock()
     )

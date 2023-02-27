@@ -24,7 +24,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":libs:membership:membership-impl")
@@ -34,4 +34,5 @@ dependencies {
     testImplementation "net.corda:corda-serialization"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 }

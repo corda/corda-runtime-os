@@ -5,24 +5,25 @@ import java.nio.ByteBuffer
 import java.security.DigestInputStream
 import java.util.UUID
 import net.corda.chunking.Checksum
+import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.ChunkWriteCallback
 import net.corda.chunking.ChunkWriter
-import net.corda.chunking.toAvro
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+
 
 /**
  * Chunks up a binary into smaller parts and passes them to the supplied callback.
  */
-internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val properties: Map<String, String?>? = null) : ChunkWriter {
+internal class ChunkWriterImpl(
+    maxAllowedMessageSize: Int,
+    private val chunkBuilderService: ChunkBuilderService,
+    private val properties: Map<String, String?>? = null,
+) : ChunkWriter {
     companion object {
-        const val KB = 1024
-        const val MB = 1024 * KB
-
-        const val CORDA_MESSAGE_OVERHEAD = 1024 * 10
 
         private fun Map<String, String?>.toAvro(): KeyValuePairList {
             return KeyValuePairList.newBuilder().setItems(
@@ -34,7 +35,8 @@ internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val prope
     var chunkWriteCallback: ChunkWriteCallback? = null
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
-    val chunkSize = maxAllowedMessageSize - CORDA_MESSAGE_OVERHEAD
+    //add extra overhead to avoid message bus level chunking
+    val chunkSize = maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 
     override fun write(fileName: String, inputStream: InputStream): ChunkWriter.Request {
         if (chunkWriteCallback == null) {
@@ -91,16 +93,7 @@ internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val prope
         checksum: SecureHash,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
-        Chunk().also {
-            it.requestId = identifier
-            it.fileName = fileName
-            it.partNumber = chunkNumber
-            // Must be zero size or you break the code
-            it.data = ByteBuffer.wrap(ByteArray(0))
-            it.offset = offset
-            it.checksum = checksum.toAvro()
-            it.properties = properties?.toAvro()
-        }
+        chunkBuilderService.buildFinalChunk(identifier, chunkNumber, checksum, offset, properties?.toAvro(), fileName)
     )
 
     private fun writeChunk(
@@ -110,14 +103,7 @@ internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val prope
         byteBuffer: ByteBuffer,
         offset: Long
     ) = chunkWriteCallback!!.onChunk(
-        Chunk().also {
-            it.requestId = identifier
-            it.fileName = fileName
-            it.partNumber = chunkNumber
-            it.data = byteBuffer
-            it.offset = offset
-            it.properties = properties?.toAvro()
-        }
+        chunkBuilderService.buildChunk(identifier, chunkNumber, byteBuffer, offset, properties?.toAvro(), fileName)
     )
 
     override fun onChunk(onChunkWriteCallback: ChunkWriteCallback) {
@@ -127,5 +113,3 @@ internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val prope
         chunkWriteCallback = onChunkWriteCallback
     }
 }
-
-

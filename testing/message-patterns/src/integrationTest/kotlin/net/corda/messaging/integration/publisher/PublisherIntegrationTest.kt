@@ -19,6 +19,7 @@ import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.utilities.concurrent.getOrThrow
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -54,6 +55,11 @@ class PublisherIntegrationTest {
     @BeforeEach
     fun beforeEach() {
         topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
+    }
+
+    @AfterEach
+    fun afterEach() {
+        topicUtils.close()
     }
 
     @Test

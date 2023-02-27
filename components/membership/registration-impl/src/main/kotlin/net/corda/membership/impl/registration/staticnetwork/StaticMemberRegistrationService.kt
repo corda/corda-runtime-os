@@ -54,10 +54,12 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -118,6 +120,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -156,10 +160,9 @@ class StaticMemberRegistrationService @Activate constructor(
         registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ): MembershipRequestRegistrationResult {
+    ) {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
-            return MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
+            throw MembershipRegistrationException(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
             )
         }
@@ -172,9 +175,17 @@ class StaticMemberRegistrationService @Activate constructor(
                     context
                 )
         } catch (ex: MembershipSchemaValidationException) {
-            return MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. The registration context is invalid: " + ex.message
+            throw InvalidMembershipRegistrationException(
+                "Registration failed. The registration context is invalid: " + ex.message,
+                ex,
+            )
+        }
+        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
+        val alreadyRegisteredMember = membershipGroupReader.lookup(member.x500Name)
+        if (alreadyRegisteredMember?.isActive == true) {
+            throw InvalidMembershipRegistrationException(
+                "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
+                    "Can not re-register."
             )
         }
         try {
@@ -199,14 +210,19 @@ class StaticMemberRegistrationService @Activate constructor(
             persistGroupParameters(memberInfo, staticMemberList)
 
             persistRegistrationRequest(registrationId, memberInfo)
+        } catch (e: InvalidMembershipRegistrationException) {
+            logger.warn("Registration failed. Reason:", e)
+            throw e
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Registration failed. Reason:", e)
+            throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
+        } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
+            logger.warn("Registration failed. Reason:", e)
+            throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason:", e)
-            return MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: ${e.message}"
-            )
+            throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         }
-        return MembershipRequestRegistrationResult(SUBMITTED)
     }
 
     private fun List<Record<*, *>>.publish() {
@@ -226,7 +242,7 @@ class StaticMemberRegistrationService @Activate constructor(
         val groupParameters = groupParametersFactory.create(groupParametersList)
 
         // Persist group parameters for this member, and publish to Kafka.
-        persistenceClient.persistGroupParameters(holdingIdentity, groupParameters)
+        persistenceClient.persistGroupParameters(holdingIdentity, groupParameters).getOrThrow()
         groupParametersWriterService.put(holdingIdentity, groupParameters)
 
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
@@ -240,7 +256,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     .map { HoldingIdentity(it, memberInfo.groupId) }
                     .filter { virtualNodeInfoReadService.get(it) != null }
                     .forEach {
-                        persistenceClient.persistGroupParameters(it, groupParameters)
+                        persistenceClient.persistGroupParameters(it, groupParameters).getOrThrow()
                         groupParametersWriterService.put(it, groupParameters)
                     }
             }.join()
@@ -263,7 +279,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     KeyValuePairList(emptyList())
                 )
             )
-        )
+        ).getOrThrow()
     }
 
     /**
@@ -374,7 +390,6 @@ class StaticMemberRegistrationService @Activate constructor(
          */
         val hostedIdentity = HostedIdentityEntry(
             net.corda.data.identity.HoldingIdentity(memberName.toString(), groupId),
-            memberId.value,
             memberId.value,
             listOf(DUMMY_CERTIFICATE),
             DUMMY_PUBLIC_SESSION_KEY,

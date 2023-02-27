@@ -9,10 +9,10 @@ import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.utxo.StateRef
@@ -154,7 +154,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("groupIndices", groupIndices)
             .setParameter(
                 "transactionIds",
-                stateRefs.map { it.transactionHash.toString() })
+                stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
             .resultListAsTuples()
@@ -211,7 +211,7 @@ class UtxoRepositoryImpl @Activate constructor(
             WHERE transaction_id in (:transactionIds)
             AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
         )
-            .setParameter("transactionIds", stateRefs.map { it.transactionHash.toString() })
+            .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .executeUpdate()
     }

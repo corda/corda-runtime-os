@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger UTXO transaction verifier'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda:corda-ledger-utxo'
+
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:utilities')
+
+    testImplementation project(':testing:ledger:ledger-utxo-testkit')
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+}

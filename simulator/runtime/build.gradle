@@ -18,7 +18,7 @@ dependencies {
     api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
     api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-application:$cordaApiVersion"
     implementation "net.corda:corda-ledger-consensual"
 
@@ -38,6 +38,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-serialization-impl")
     implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(':libs:utilities')
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

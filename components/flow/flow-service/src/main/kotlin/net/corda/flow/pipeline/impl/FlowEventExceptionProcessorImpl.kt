@@ -8,7 +8,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -196,6 +196,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                     )
                 )
             }
+            val errorEvents = flowSessionManager.getSessionErrorEventRecords(context.checkpoint, context.config, exceptionHandlingStartTime)
             val cleanupEvents = createCleanupEventsForSessions(
                 getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
                 checkpoint.sessions.filterNot { it.hasScheduledCleanup }
@@ -206,7 +207,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             flowEventContextConverter.convert(
                 context.copy(
-                    outputRecords = cleanupEvents + statusRecord,
+                    outputRecords = errorEvents + cleanupEvents + statusRecord,
                     sendToDlq = false // killed flows do not go to DLQ
                 )
             )

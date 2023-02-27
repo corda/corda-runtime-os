@@ -1,7 +1,7 @@
 package net.corda.ledger.common.data.transaction.serializer.amqp.tests
 
 import net.corda.ledger.common.integration.test.CommonLedgerIntegrationTest
-import net.corda.v5.application.serialization.deserialize
+import net.corda.utilities.serialization.deserialize
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

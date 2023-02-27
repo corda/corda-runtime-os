@@ -63,9 +63,6 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -73,6 +70,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -84,12 +86,15 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -189,7 +194,7 @@ class StaticMemberRegistrationServiceTest {
         on {
             generateKeyPair(any(), any(), eq("${charlieId.value}-LEDGER"), any(), any<Map<String, String>>())
         } doReturn charlieKey
-        on { lookup(any(), any()) } doReturn listOf(cryptoSigningKey)
+        on { lookupKeysByIds(any(), any()) } doReturn listOf(cryptoSigningKey)
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
@@ -231,7 +236,10 @@ class StaticMemberRegistrationServiceTest {
     private val mockContext: Map<String, String> = mock {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
-    private val persistenceClient = mock<MembershipPersistenceClient>()
+    private val persistenceClient = mock<MembershipPersistenceClient> {
+        on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(mock())
+        on { persistRegistrationRequest(any(), any()) }  doReturn MembershipPersistenceResult.success()
+    }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
     }
@@ -262,6 +270,9 @@ class StaticMemberRegistrationServiceTest {
         on { create(any()) } doReturn mockGroupParameters
     }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
+    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
+        on { getGroupReader(any()) } doReturn mock()
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -281,6 +292,7 @@ class StaticMemberRegistrationServiceTest {
         groupParametersFactory,
         virtualNodeInfoReadService,
         groupParametersWriterService,
+        membershipGroupReaderProvider,
     )
 
     private fun setUpPublisher() {
@@ -298,7 +310,7 @@ class StaticMemberRegistrationServiceTest {
             setUpPublisher()
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            val registrationResult = registrationService.register(registrationId, alice, mockContext)
+            registrationService.register(registrationId, alice, mockContext)
             verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
             verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
@@ -350,8 +362,6 @@ class StaticMemberRegistrationServiceTest {
             val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
             assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)
             assertEquals(alice.x500Name.toString(), hostedIdentityPublished.holdingIdentity.x500Name)
-
-            assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
         }
 
         @Test
@@ -424,21 +434,69 @@ class StaticMemberRegistrationServiceTest {
 
             assertThat(status.firstValue).isEqualTo(mockGroupParameters)
         }
+
+        @Test
+        fun `registration pass when the member is not active`() {
+            val memberInfo = mock<MemberInfo> {
+                on { isActive } doReturn false
+            }
+            val reader = mock<MembershipGroupReader> {
+                on { lookup(any()) } doReturn memberInfo
+            }
+            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            setUpPublisher()
+            registrationService.start()
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+        }
+
+        @Test
+        fun `registration pass when the member is not found`() {
+            val reader = mock<MembershipGroupReader> {
+                on { lookup(any()) } doReturn null
+            }
+            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            setUpPublisher()
+            registrationService.start()
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+        }
     }
 
     @Nested
     inner class FailedRegistrationTests {
         @Test
+        fun `it fails when the member is active`() {
+            val memberInfo = mock<MemberInfo> {
+                on { isActive } doReturn true
+            }
+            val reader = mock<MembershipGroupReader> {
+                on { lookup(any()) } doReturn memberInfo
+            }
+            whenever(membershipGroupReaderProvider.getGroupReader(any())).thenReturn(reader)
+            setUpPublisher()
+            registrationService.start()
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+        }
+
+        @Test
         fun `registration fails when name field is empty in the GroupPolicy file`() {
             setUpPublisher()
             registrationService.start()
-            val registrationResult = registrationService.register(registrationId, bob, mockContext)
-            assertEquals(
-                MembershipRequestRegistrationResult(
-                    NOT_SUBMITTED,
-                    "Registration failed. Reason: Member's name is not provided in static member list."
-                ),
-                registrationResult
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, bob, mockContext)
+            }
+
+            assertThat(exception).hasMessageContaining(
+                "Registration failed. Reason: Member's name is not provided in static member list."
             )
             registrationService.stop()
         }
@@ -447,14 +505,13 @@ class StaticMemberRegistrationServiceTest {
         fun `registration fails when static network is missing`() {
             setUpPublisher()
             registrationService.start()
-            val registrationResult = registrationService.register(registrationId, charlie, mockContext)
-            assertEquals(
-                MembershipRequestRegistrationResult(
-                    NOT_SUBMITTED,
-                    "Registration failed. Reason: Could not find static member list in group policy file."
-                ),
-                registrationResult
-            )
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, charlie, mockContext)
+            }
+
+            assertThat(exception)
+                .hasMessage("Registration failed. Reason: Could not find static member list in group policy file.")
             registrationService.stop()
         }
 
@@ -462,27 +519,26 @@ class StaticMemberRegistrationServiceTest {
         fun `registration fails when static network is empty`() {
             setUpPublisher()
             registrationService.start()
-            val registrationResult = registrationService.register(registrationId, eric, mockContext)
-            assertEquals(
-                MembershipRequestRegistrationResult(
-                    NOT_SUBMITTED,
-                    "Registration failed. Reason: Static member list inside the group policy file cannot be empty."
-                ),
-                registrationResult
-            )
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, eric, mockContext)
+            }
+
+            assertThat(exception)
+                .hasMessage("Registration failed. Reason: Static member list inside the group policy file cannot be empty.")
             registrationService.stop()
         }
 
         @Test
         fun `registration fails when coordinator is not running`() {
             setUpPublisher()
-            val registrationResult = registrationService.register(registrationId, alice, mockContext)
-            assertEquals(
-                MembershipRequestRegistrationResult(
-                    NOT_SUBMITTED,
-                    "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
-                ),
-                registrationResult
+
+            val exception = assertThrows<MembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+
+            assertThat(exception).hasMessage(
+                "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
             )
         }
 
@@ -490,15 +546,16 @@ class StaticMemberRegistrationServiceTest {
         fun `registration fails when registering member is not in the static member list`() {
             setUpPublisher()
             registrationService.start()
-            val registrationResult = registrationService.register(registrationId, daisy, mockContext)
-            assertEquals(
-                MembershipRequestRegistrationResult(
-                    NOT_SUBMITTED,
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, daisy, mockContext)
+            }
+
+            assertThat(exception)
+                .hasMessage(
                     "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB " +
-                            "is not listed in the static member list."
-                ),
-                registrationResult
-            )
+                        "is not listed in the static member list."
+                )
             registrationService.stop()
         }
 
@@ -506,13 +563,13 @@ class StaticMemberRegistrationServiceTest {
         fun `registration fails when key scheme is not provided in context`() {
             setUpPublisher()
             registrationService.start()
-            val registrationResult = registrationService.register(registrationId, alice, mock())
-            assertEquals(
-                MembershipRequestRegistrationResult(
-                    NOT_SUBMITTED,
-                    "Registration failed. Reason: Key scheme must be specified."
-                ),
-                registrationResult
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mock())
+            }
+
+            assertThat(exception).hasMessage(
+                "Registration failed. Reason: Key scheme must be specified."
             )
             registrationService.stop()
         }
@@ -526,9 +583,9 @@ class StaticMemberRegistrationServiceTest {
                 "corda.roles.0" to "notary",
             )
 
-            val registrationResult = registrationService.register(registrationId, alice, context)
-
-            assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, context)
+            }
         }
 
         @Test
@@ -552,12 +609,14 @@ class StaticMemberRegistrationServiceTest {
             )
 
             registrationService.start()
-            val result = registrationService.register(registrationId, alice, mockContext)
-            assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(NOT_SUBMITTED)
-                it.assertThat(result.message).contains(err)
-                it.assertThat(result.message).contains(errReason)
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mockContext)
             }
+
+            assertThat(exception)
+                .hasMessageContaining(err)
+                .hasMessageContaining(errReason)
             registrationService.stop()
         }
 
@@ -567,10 +626,11 @@ class StaticMemberRegistrationServiceTest {
             registrationService.start()
             whenever(virtualNodeInfoReadService.get((alice))).thenReturn(null)
 
-            val registrationResult = registrationService.register(registrationId, alice, mockContext)
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mockContext)
+            }
 
-            assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
-            assertThat(registrationResult.message).isNotNull.contains("Could not find virtual node")
+            assertThat(exception).hasMessageContaining("Could not find virtual node")
         }
     }
 
@@ -587,9 +647,9 @@ class StaticMemberRegistrationServiceTest {
                 "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
             )
 
-            val registrationResult = registrationService.register(registrationId, alice, context)
-
-            assertThat(registrationResult.outcome).isEqualTo(SUBMITTED)
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, context)
+            }
         }
 
         @Test
@@ -601,9 +661,9 @@ class StaticMemberRegistrationServiceTest {
                 "corda.roles.0" to "nop",
             )
 
-            val registrationResult = registrationService.register(registrationId, alice, context)
-
-            assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, context)
+            }
         }
 
         @Test

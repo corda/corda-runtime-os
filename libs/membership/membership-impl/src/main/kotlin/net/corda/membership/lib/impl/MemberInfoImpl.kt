@@ -18,8 +18,8 @@ import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
 class MemberInfoImpl(
-    override val memberProvidedContext: MemberContext,
-    override val mgmProvidedContext: MGMContext,
+    private val memberProvidedContext: MemberContext,
+    private val mgmProvidedContext: MGMContext,
 ) : MemberInfo {
 
     init {
@@ -28,17 +28,14 @@ class MemberInfoImpl(
         require(softwareVersion.isNotEmpty()) { "Node software version must not be blank." }
     }
 
-    override val name: MemberX500Name get() = memberProvidedContext.parse(PARTY_NAME)
-
-    override val sessionInitiationKey: PublicKey get() = memberProvidedContext.parse(PARTY_SESSION_KEY)
-
-    override val ledgerKeys: List<PublicKey> get() = memberProvidedContext.parseList(LEDGER_KEYS)
-
-    override val platformVersion: Int get() = memberProvidedContext.parse(PLATFORM_VERSION)
-
-    override val serial: Long get() = mgmProvidedContext.parse(SERIAL)
-
-    override val isActive: Boolean get() = mgmProvidedContext.parse(STATUS, String::class.java) == MEMBER_STATUS_ACTIVE
+    override fun getMemberProvidedContext() = memberProvidedContext
+    override fun getMgmProvidedContext() = mgmProvidedContext
+    override fun getName(): MemberX500Name = memberProvidedContext.parse(PARTY_NAME)
+    override fun getSessionInitiationKey(): PublicKey = memberProvidedContext.parse(PARTY_SESSION_KEY)
+    override fun getLedgerKeys(): List<PublicKey> = memberProvidedContext.parseList(LEDGER_KEYS)
+    override fun getPlatformVersion(): Int = memberProvidedContext.parse(PLATFORM_VERSION)
+    override fun getSerial(): Long = mgmProvidedContext.parse(SERIAL)
+    override fun isActive(): Boolean = mgmProvidedContext.parse(STATUS, String::class.java) == MEMBER_STATUS_ACTIVE
 
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is MemberInfoImpl) return false

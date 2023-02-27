@@ -13,11 +13,13 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
@@ -31,7 +33,7 @@ import org.slf4j.LoggerFactory
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
 // TODO CORE-7292 What is the best way to define the protocol
-@InitiatedBy(protocol = "non-validating-notary")
+@InitiatedBy(protocol = "net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {
@@ -50,20 +52,26 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @CordaInject
     private lateinit var memberLookup: MemberLookup
 
+    @CordaInject
+    private lateinit var transactionSignatureService: TransactionSignatureService
+
     /**
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
+    @Suppress("LongParameterList")
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
         serializationService: SerializationService,
         signatureVerifier: DigitalSignatureVerificationService,
-        memberLookup: MemberLookup
+        memberLookup: MemberLookup,
+        transactionSignatureService: TransactionSignatureService
     ) : this() {
         this.clientService = clientService
         this.serializationService = serializationService
         this.signatureVerifier = signatureVerifier
         this.memberLookup = memberLookup
+        this.transactionSignatureService = transactionSignatureService
     }
 
     /**
@@ -106,28 +114,33 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             logger.trace { "Requesting uniqueness check for transaction ${txDetails.id}" }
 
-            val uniquenessResponse = clientService.requestUniquenessCheck(
+            val uniquenessResult = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
                 txDetails.inputs.map { it.toString() },
                 txDetails.references.map { it.toString() },
                 txDetails.numOutputs,
                 txDetails.timeWindow.from,
-                txDetails.timeWindow.until,
-                requestPayload.notaryKey
+                txDetails.timeWindow.until
             )
 
             logger.debug {
-                "Uniqueness check completed for transaction ${txDetails.id}, result is: ${uniquenessResponse.result}. Sending response " +
+                "Uniqueness check completed for transaction ${txDetails.id}, result is: ${uniquenessResult}. Sending response " +
                         "to ${session.counterparty}"
             }
 
-            session.send(uniquenessResponse.toNotarisationResponse())
+            val signature = if (uniquenessResult is UniquenessCheckResultSuccess) {
+                transactionSignatureService.signBatch(listOf(txDetails), listOf(requestPayload.notaryKey)).first().first()
+            } else null
+
+            session.send(uniquenessResult.toNotarisationResponse(signature))
         } catch (e: Exception) {
-            logger.warn("Error while processing request from client. Cause: $e")
-            session.send(NotarisationResponse(
-                emptyList(),
-                NotaryErrorGeneralImpl("Error while processing request from client.", e)
-            ))
+            logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
+            session.send(
+                NotarisationResponse(
+                    emptyList(),
+                    NotaryErrorGeneralImpl("Error while processing request from client.", e)
+                )
+            )
         }
     }
 
@@ -162,6 +175,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             "Notary component could not be found on the transaction"
         }
 
+        requireNotNull(filteredTx.metadata) {
+            "Metadata component could not be found on the transaction"
+        }
+
         requireNotNull(filteredTx.timeWindow) {
             "Time window component could not be found on the transaction"
         }
@@ -180,6 +197,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
         return NonValidatingNotaryTransactionDetails(
             filteredTx.id,
+            filteredTx.metadata,
             outputStates.size,
             filteredTx.timeWindow!!,
             inputStates.values.values.toList(),
@@ -211,4 +229,5 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private inline fun <reified T> Any.castOrThrow(error: () -> String) = this as? T
         ?: throw java.lang.IllegalStateException(error())
+
 }

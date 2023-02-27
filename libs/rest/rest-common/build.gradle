@@ -12,7 +12,10 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api project(":libs:rest:rest")
+    implementation project(':libs:messaging:messaging')
+
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
 }

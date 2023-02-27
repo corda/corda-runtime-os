@@ -118,7 +118,6 @@ class CertificatesClientImpl @Activate constructor(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,
         sessionCertificateChainAlias: String?
     ) {
@@ -127,7 +126,6 @@ class CertificatesClientImpl @Activate constructor(
             tlsCertificateChainAlias = p2pTlsCertificateChainAlias,
             useClusterLevelTlsCertificateAndKey = useClusterLevelTlsCertificateAndKey,
             sessionCertificateChainAlias = sessionCertificateChainAlias,
-            useClusterLevelSessionCertificateAndKey = useClusterLevelSessionCertificateAndKey,
             sessionKeyId = sessionKeyId,
         )
 

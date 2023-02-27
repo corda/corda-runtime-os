@@ -1,24 +1,14 @@
 package net.corda.membership.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.data.KeyValuePairList
-import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.RegistrationRpcRequest
-import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
-import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus
-import net.corda.data.membership.rpc.response.RegistrationStatusResponse
-import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
@@ -39,14 +29,10 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.SYNC_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
-import net.corda.membership.lib.registration.RegistrationRequestStatus
-import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
 import net.corda.membership.registration.MembershipRegistrationException
-import net.corda.membership.registration.RegistrationProxy
-import net.corda.membership.registration.RegistrationStatusQueryException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -56,12 +42,9 @@ import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
-@Suppress("LongParameterList")
 class MemberOpsServiceProcessor(
-    private val registrationProxy: RegistrationProxy,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
@@ -76,16 +59,8 @@ class MemberOpsServiceProcessor(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val handlers = mapOf<Class<*>, (MemberOpsServiceProcessor) -> RpcHandler<*>>(
-            RegistrationRpcRequest::class.java to { it.RegistrationRequestHandler() },
             MGMGroupPolicyRequest::class.java to { it.MGMGroupPolicyRequestHandler() },
-            RegistrationStatusRpcRequest::class.java to { it.RegistrationStatusRequestHandler() },
-            RegistrationStatusSpecificRpcRequest::class.java to { it.RegistrationStatusSpecificRpcRequestHandler() },
         )
-
-        /**
-         * Temporarily hardcoded to 1.
-         */
-        private const val REGISTRATION_PROTOCOL_VERSION = 1
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {
@@ -125,85 +100,6 @@ class MemberOpsServiceProcessor(
         )
         @Suppress("UNCHECKED_CAST")
         return factory.invoke(this) as RpcHandler<Any>
-    }
-
-    private inner class RegistrationRequestHandler : RpcHandler<RegistrationRpcRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: RegistrationRpcRequest): Any {
-            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
-            val holdingIdentity =
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                    ?: throw MembershipRegistrationException(
-                        "Could not find holding identity associated with ${request.holdingIdentityId}"
-                    )
-            val registrationId = UUID.fromString(context.requestId)
-            val result = try {
-                registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
-            } catch (e: RegistrationProtocolSelectionException) {
-                logger.warn("Could not select registration protocol.", e)
-                null
-            } catch (e: IllegalStateException) {
-                logger.warn("Could not submit registration request.", e)
-                null
-            }
-            val registrationStatus = result?.outcome?.let {
-                RegistrationRpcStatus.valueOf(it.toString())
-            } ?: RegistrationRpcStatus.NOT_SUBMITTED
-            return RegistrationRpcResponse(
-                registrationId.toString(),
-                context.requestTimestamp,
-                registrationStatus,
-                result?.message,
-                REGISTRATION_PROTOCOL_VERSION,
-                KeyValuePairList(emptyList()),
-                KeyValuePairList(emptyList())
-            )
-        }
-    }
-
-    private fun RegistrationRequestStatus.toAvro(): RegistrationStatusDetails {
-        return RegistrationStatusDetails.newBuilder()
-            .setRegistrationSent(this.registrationSent)
-            .setRegistrationLastModified(this.registrationLastModified)
-            .setRegistrationStatus(this.status)
-            .setRegistrationId(this.registrationId)
-            .setRegistrationProtocolVersion(this.protocolVersion)
-            .setMemberProvidedContext(this.memberContext)
-            .build()
-    }
-
-    private inner class RegistrationStatusSpecificRpcRequestHandler : RpcHandler<RegistrationStatusSpecificRpcRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: RegistrationStatusSpecificRpcRequest): Any {
-            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
-            val holdingIdentity = virtualNodeInfoReadService
-                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: return RegistrationStatusResponse(null)
-            val response = membershipQueryClient.queryRegistrationRequestStatus(
-                viewOwningIdentity = holdingIdentity,
-                registrationId = request.requestId
-            ).getOrThrow()
-            val details = response?.toAvro()
-            return RegistrationStatusResponse(details)
-        }
-    }
-
-    private inner class RegistrationStatusRequestHandler : RpcHandler<RegistrationStatusRpcRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: RegistrationStatusRpcRequest): Any {
-            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
-            val holdingIdentity = virtualNodeInfoReadService
-                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw RegistrationStatusQueryException(
-                    "Could not find holding identity associated with ${request.holdingIdentityId}"
-                )
-            val response = membershipQueryClient.queryRegistrationRequestsStatus(
-                viewOwningIdentity = holdingIdentity,
-            ).getOrThrow()
-
-            return RegistrationsStatusResponse(
-                response.map {
-                    it.toAvro()
-                }
-            )
-        }
     }
 
     @Suppress("MaxLineLength")

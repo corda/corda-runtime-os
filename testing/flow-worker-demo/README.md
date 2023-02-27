@@ -3,8 +3,8 @@ This very simple HTTP demo app can be used to drive some of the example apps use
 
 #prerequisites
 to run the app you will need to have [NodeJs](https://nodejs.org/en/) installed
-At a minimum you need to have the `RPC Worker` and `Flow Worker` running and configured using the `Flow Worker Setup Tool`
-The RPC worker is expected to be running on `localhost:8888`
+At a minimum you need to have the `Rest Worker` and `Flow Worker` running and configured using the `Flow Worker Setup Tool`
+The Rest worker is expected to be running on `localhost:8888`
 
 cd to the `flow-worker-demo` folder
 

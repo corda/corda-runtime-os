@@ -3,20 +3,16 @@ package net.cordapp.testing.smoketests.flow
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.marshalling.parse
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -39,7 +35,7 @@ import java.util.UUID
 class RpcSmokeTestFlow : ClientStartableFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val commandMap: Map<String, (RpcSmokeTestInput) -> String> = mapOf(
@@ -99,8 +95,8 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     lateinit var signatureSpecService: SignatureSpecService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
-        val request = requestBody.getRequestBodyAs<RpcSmokeTestInput>(jsonMarshallingService)
+    override fun call(requestBody: ClientRequestBody): String {
+        val request = requestBody.getRequestBodyAs(jsonMarshallingService, RpcSmokeTestInput::class.java)
         return jsonMarshallingService.format(execute(request))
     }
 
@@ -204,7 +200,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         log.info("Creating session for '${x500}'...")
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
         log.info("Sending first time to session for '${x500}'...")
-        session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage("test 1"))
+        session.sendAndReceive(InitiatedSmokeTestMessage::class.java, InitiatedSmokeTestMessage("test 1"))
         log.info("Closing session for '${session}'...")
         session.close()
         log.info("Try and send on a closed session to generate an error '${session}'...")
@@ -256,7 +252,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
             log.info("Creating session '${session}' now sending and waiting for response ...")
             val response = session
-                .sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(messages[idx]))
+                .sendAndReceive(InitiatedSmokeTestMessage::class.java, InitiatedSmokeTestMessage(messages[idx]))
 
             log.info("Received response from session '${session}'.")
 
@@ -320,7 +316,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     @Suspendable
     private fun serialization(input: RpcSmokeTestInput): String {
         val serialized = serializationService.serialize(input.getValue("data"))
-        return serializationService.deserialize(serialized)
+        return serializationService.deserialize(serialized, String::class.java)
     }
 
     @Suspendable
@@ -463,14 +459,14 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         // this should output json with 2 fields each with test-string as the value
         val jsonString = jsonMarshallingService.format(JsonSerializationInput("test-string"))
         // this should combine both of those fields
-        val jsonOutput = jsonMarshallingService.parse<JsonSerializationOutput>(jsonString)
+        val jsonOutput = jsonMarshallingService.parse(jsonString, JsonSerializationOutput::class.java)
         // when the second serializer runs during format of JsonSerializationFlowOutput, we should see the combined value
         // outputted as "serialized-implicitly"
 
         // Second test checks platform custom serializer/deserializer of MemberX500Name, the serializer should be run
         // implicitly when JsonSerializationFlowOutput is formatted
         val memberX500NameString = input.getValue("vnode")
-        val memberX500NameDeserialized = jsonMarshallingService.parse<MemberX500Name>("\"$memberX500NameString\"")
+        val memberX500NameDeserialized = jsonMarshallingService.parse("\"$memberX500NameString\"", MemberX500Name::class.java)
 
         val output = JsonSerializationFlowOutput(
             firstTest = jsonOutput,

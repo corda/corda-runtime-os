@@ -1,23 +1,27 @@
 package net.corda.chunking
 
 import com.google.common.jimfs.Jimfs
-import net.corda.chunking.impl.ChunkWriterImpl
-import net.corda.chunking.impl.ChunkWriterImpl.Companion.KB
-import net.corda.chunking.impl.ChunkWriterImpl.Companion.MB
-import net.corda.data.chunking.Chunk
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.UUID
+import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
+import net.corda.chunking.Constants.Companion.KB
+import net.corda.chunking.Constants.Companion.MB
+import net.corda.chunking.impl.ChunkBuilderServiceImpl
+import net.corda.chunking.impl.ChunkWriterImpl
+import net.corda.data.chunking.Chunk
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 class ChunkWritingTest {
     lateinit var fs: FileSystem
+
+    private val chunkBuilderService: ChunkBuilderService = ChunkBuilderServiceImpl()
 
     @BeforeEach
     fun beforeEach() {
@@ -82,7 +86,7 @@ class ChunkWritingTest {
     @Test
     fun `multiple chunks are written`() {
         var count = 0
-        val writer = ChunkWriterImpl(32 * KB).apply {
+        val writer = ChunkWriterImpl(32 * KB, chunkBuilderService).apply {
             onChunk { count++ }
         }
 
@@ -98,7 +102,7 @@ class ChunkWritingTest {
     fun `ensure chunks are trimmed to minimum size`() {
         val chunkSize = 32 * KB
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(chunkSize + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD).apply {
+        val writer = ChunkWriterImpl(chunkSize + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD, chunkBuilderService).apply {
             onChunk { chunks.add(it) }
         }
 

@@ -239,7 +239,8 @@
                         "type",
                         "port",
                         "username",
-                        "database"                    
+                        "database",
+                        "schema"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -283,6 +284,15 @@
                                 "cordacluster"
                             ],
                             "minLength": 1
+                        },
+                        "schema": {
+                            "type": "string",
+                            "default": "CONFIG",
+                            "title": "the schema in which the cluster database config entities will be stored, passed to workers on startup",
+                            "examples": [
+                                "CONFIG"
+                            ],
+                            "minLength": 1
                         }
                     },
                     "examples": [{
@@ -295,7 +305,8 @@
                         "password": {
                             "value": "password"
                         },
-                        "database": "cordacluster"
+                        "database": "cordacluster",
+                        "schema": "CONFIG"
                     }]
                 }
             },
@@ -306,6 +317,7 @@
                     "port": 5432,
                     "user": "user",
                     "database": "cordacluster",
+                    "schema": "CONFIG",
                     "existingSecret": "postgresql-secret"
                 }
             }]
@@ -502,6 +514,32 @@
                     ],
                     "additionalProperties": false,
                     "properties": {
+                        "cluster": {
+                            "type": "object",
+                            "default": {},
+                            "title": "bootstrap cluster database configuration",
+                            "required": [
+                                "username",
+                                "password"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                }
+                            },
+                            "examples": [{
+                                "password": {
+                                    "value": "password"
+                                },
+                                "username": {
+                                    "value": "username"
+                                }
+                            }]
+                        },
                         "enabled": {
                             "type": "boolean",
                             "default": true,
@@ -516,10 +554,20 @@
                             "default": {},
                             "title": "crypto configuration",
                             "required": [
-                                "dbConnectionPool"
+                                "dbConnectionPool",
+                                "schema"
                             ],
                             "additionalProperties": false,
                             "properties": {
+                                "schema": {
+                                    "type": "string",
+                                    "default": "CRYPTO",
+                                    "title": "the schema in which the cluster database crypto entities will be stored",
+                                    "examples": [
+                                        "CRYPTO"
+                                    ],
+                                    "minLength": 1
+                                },
                                 "username": {
                                     "$ref": "#/$defs/config"
                                 },
@@ -550,6 +598,7 @@
                                 }
                             },
                             "examples": [{
+                                "schema": "CRYPTO",
                                 "password": {
                                     "value": "password"
                                 },
@@ -566,9 +615,19 @@
                             "default": {},
                             "title": "RBAC configuration",
                             "required": [
-                                "dbConnectionPool"
+                                "dbConnectionPool",
+                                "schema"
                             ],
                             "properties": {
+                                "schema": {
+                                    "type": "string",
+                                    "default": "RBAC",
+                                    "title": "the schema in which the cluster database rbac entities will be stored",
+                                    "examples": [
+                                        "RBAC"
+                                    ],
+                                    "minLength": 1
+                                },
                                 "username": {
                                     "$ref": "#/$defs/config"
                                 },
@@ -598,6 +657,7 @@
                                 }
                             },
                             "examples": [{
+                                "schema": "RBAC",
                                 "password": {
                                     "value": "password"
                                 },
@@ -657,11 +717,13 @@
                     "examples": [{
                         "enabled": true,
                         "crypto": {
+                            "schema": "CRYPTO",
                             "dbConnectionPool": {
                                 "maxSize": 5
                             }
                         },
                         "rbac": {
+                            "schema": "RBAC",
                             "dbConnectionPool": {
                                 "maxSize": 5
                             }
@@ -926,7 +988,7 @@
                 "db",
                 "flow",
                 "membership",
-                "rpc",
+                "rest",
                 "p2pLinkManager",
                 "p2pGateway"
             ],
@@ -1122,7 +1184,7 @@
                         }
                     ]
                 },
-                "rpc": {
+                "rest": {
                     "allOf": [
                         {
                             "$ref": "#/$defs/worker"
@@ -1145,7 +1207,7 @@
                                 "service": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "rpc worker service configuration",
+                                    "title": "REST worker service configuration",
                                     "required": [
                                         "type",
                                         "externalTrafficPolicy",
@@ -1157,7 +1219,7 @@
                                         "type": {
                                             "type": "string",
                                             "default": "",
-                                            "title": "the type for the RPC worker service",
+                                            "title": "the type for the REST worker service",
                                             "examples": [
                                                 "ClusterIP"
                                             ]
@@ -1165,7 +1227,7 @@
                                         "externalTrafficPolicy": {
                                             "type": "string",
                                             "default": "",
-                                            "title": "the traffic policy for the RPC worker service",
+                                            "title": "the traffic policy for the REST worker service",
                                             "examples": [
                                                 ""
                                             ]
@@ -1173,7 +1235,7 @@
                                         "loadBalancerSourceRanges": {
                                             "type": "array",
                                             "default": [],
-                                            "title": "the LoadBalancer source ranges to limit access to the RPC worker service",
+                                            "title": "the LoadBalancer source ranges to limit access to the REST worker service",
                                             "items": {},
                                             "examples": [
                                                 []
@@ -1182,7 +1244,7 @@
                                         "annotations": {
                                             "type": "object",
                                             "default": {},
-                                            "title": "the annotations for RPC worker service",
+                                            "title": "the annotations for REST worker service",
                                             "required": [],
                                             "properties": {},
                                             "examples": [
@@ -1204,7 +1266,7 @@
                                 {
                                     "image": {
                                         "registry": "corda-os-docker.software.r3.com",
-                                        "repository": "corda-os-rpc-worker",
+                                        "repository": "corda-os-rest-worker",
                                         "tag": ""
                                     },
                                     "replicaCount": 1,
@@ -1479,10 +1541,10 @@
                         }
                     }
                 },
-                "rpc": {
+                "rest": {
                     "image": {
                         "registry": "corda-os-docker.software.r3.com",
-                        "repository": "corda-os-rpc-worker",
+                        "repository": "corda-os-rest-worker",
                         "tag": ""
                     },
                     "replicaCount": 1,

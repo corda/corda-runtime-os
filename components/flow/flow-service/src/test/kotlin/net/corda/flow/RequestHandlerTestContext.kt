@@ -5,7 +5,7 @@ import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
@@ -59,4 +59,3 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
 
     val flowEventContext = FlowEventContext(flowCheckpoint, flowEvent, payload, flowConfig, recordList, mdcProperties = emptyMap())
 }
-

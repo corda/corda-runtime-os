@@ -10,6 +10,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.certificates.RevocationChecker
+import net.corda.p2p.gateway.messaging.internal.CommonComponents
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -37,21 +38,28 @@ class Gateway(
     avroSchemaRegistry: AvroSchemaRegistry
 ) : LifecycleWithDominoTile {
 
+    private val commonComponents = CommonComponents(
+        subscriptionFactory,
+        lifecycleCoordinatorFactory,
+        messagingConfiguration,
+        cryptoOpsClient,
+    )
     private val inboundMessageHandler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
         messagingConfiguration,
-        cryptoOpsClient,
-        avroSchemaRegistry
+        commonComponents,
+        avroSchemaRegistry,
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
         messagingConfiguration,
-        avroSchemaRegistry
+        avroSchemaRegistry,
+        commonComponents,
     )
     private val revocationChecker = RevocationChecker(
         subscriptionFactory,
@@ -61,7 +69,12 @@ class Gateway(
 
     @VisibleForTesting
     internal val children: Collection<DominoTile> =
-        listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile, revocationChecker.dominoTile)
+        listOf(
+            commonComponents.dominoTile,
+            inboundMessageHandler.dominoTile,
+            outboundMessageProcessor.dominoTile,
+            revocationChecker.dominoTile,
+        )
 
     override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
         dependentChildren = children.map { it.coordinatorName }, managedChildren = children.map { it.toNamedLifecycle() })

@@ -34,6 +34,7 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.crypto.softhsm.SoftCacheConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.interfaces.ECKey
@@ -91,7 +92,8 @@ class SoftCryptoServiceOperationsTests {
                 eventually { assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status) }
             }
             wrappingKeyAlias = UUID.randomUUID().toString()
-            wrappingKeyMap = TransientSoftWrappingKeyMap(
+            wrappingKeyMap = CachingSoftWrappingKeyMap(
+                SoftCacheConfig(0, 0),
                 wrappingKeyStore,
                 masterKey
             )

@@ -9,6 +9,8 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    implementation project(":libs:chunking:chunking-core")
+    implementation project(":libs:crypto:cipher-suite")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
@@ -22,7 +24,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 

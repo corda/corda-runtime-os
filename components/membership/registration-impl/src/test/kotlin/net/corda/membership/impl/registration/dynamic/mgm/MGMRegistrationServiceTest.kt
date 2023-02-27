@@ -68,8 +68,8 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
-import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -84,6 +84,7 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -91,6 +92,8 @@ import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -113,9 +116,9 @@ import java.util.concurrent.CompletableFuture
 class MGMRegistrationServiceTest {
     private companion object {
         const val SESSION_KEY_STRING = "1234"
-        const val SESSION_KEY_ID = "1"
+        const val SESSION_KEY_ID = "ABC123456789"
         const val ECDH_KEY_STRING = "5678"
-        const val ECDH_KEY_ID = "2"
+        const val ECDH_KEY_ID = "BBC123456789"
         const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
     }
 
@@ -154,8 +157,8 @@ class MGMRegistrationServiceTest {
         on { encodeAsString(ecdhKey) } doReturn ECDH_KEY_STRING
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookup(mgmId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
-        on { lookup(mgmId.value, listOf(ECDH_KEY_ID)) } doReturn listOf(ecdhCryptoSigningKey)
+        on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookupKeysByIds(mgmId.value, listOf(ShortHash.of(ECDH_KEY_ID))) } doReturn listOf(ecdhCryptoSigningKey)
     }
     private val gatewayConfiguration = mock<SmartConfig> {
         on { getConfig("sslConfig") } doReturn mock
@@ -320,14 +323,13 @@ class MGMRegistrationServiceTest {
             registrationService.start()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
 
-            val result = registrationService.register(registrationRequest, mgm, properties)
+            registrationService.register(registrationRequest, mgm, properties)
 
             verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
             val publishedList = capturedPublishedList.firstValue
             val publishedMgmInfo = publishedList.first()
             val publishedEvent = publishedList.last()
             assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
                 it.assertThat(publishedList).hasSize(2)
 
                 it.assertThat(publishedMgmInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
@@ -478,10 +480,11 @@ class MGMRegistrationServiceTest {
             testProperties["corda.group.pki.session"] = "NoPKI"
             testProperties.remove("corda.group.truststore.session.0")
             registrationService.start()
-            val result = registrationService.register(registrationRequest, mgm, testProperties)
-            assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+
+            assertDoesNotThrow {
+                registrationService.register(registrationRequest, mgm, testProperties)
             }
+
             registrationService.stop()
         }
     }
@@ -495,22 +498,21 @@ class MGMRegistrationServiceTest {
             whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
                 .doReturn(MembershipPersistenceResult.Failure("Nop"))
 
-            val result = registrationService.register(registrationRequest, mgm, properties)
-
-            assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message).isEqualTo("Registration failed, persistence error. Reason: Nop")
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationRequest, mgm, properties)
             }
+
+            assertThat(exception).hasMessageContaining("Registration failed, persistence error. Reason: Nop")
         }
 
         @Test
         fun `registration fails when coordinator is not running`() {
-            val registrationResult = registrationService.register(registrationRequest, mgm, mock())
-            assertThat(registrationResult).isEqualTo(
-                MembershipRequestRegistrationResult(
-                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. Reason: MGMRegistrationService is not running."
-                )
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationRequest, mgm, mock())
+            }
+
+            assertThat(exception).hasMessageContaining(
+                "Registration failed. Reason: MGMRegistrationService is not running."
             )
         }
 
@@ -521,9 +523,8 @@ class MGMRegistrationServiceTest {
             registrationService.start()
             properties.entries.apply {
                 for (index in indices) {
-                    val result = registrationService.register(registrationRequest, mgm, testProperties)
-                    assertSoftly {
-                        it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                    assertThrows<InvalidMembershipRegistrationException> {
+                        registrationService.register(registrationRequest, mgm, testProperties)
                     }
                     elementAt(index).let { testProperties.put(it.key, it.value) }
                 }
@@ -540,15 +541,15 @@ class MGMRegistrationServiceTest {
                             "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
                 )
             registrationService.start()
-            val result = registrationService.register(registrationRequest, mgm, testProperties)
-            assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message)
-                    .isEqualTo(
-                        "Onboarding MGM failed. " +
-                                "Provided TLS trust stores are incorrectly numbered."
-                    )
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationRequest, mgm, testProperties)
             }
+
+            assertThat(exception).hasMessage(
+                "Onboarding MGM failed. " +
+                        "Provided TLS trust stores are incorrectly numbered."
+            )
             registrationService.stop()
         }
 
@@ -573,12 +574,14 @@ class MGMRegistrationServiceTest {
             )
 
             registrationService.start()
-            val result = registrationService.register(registrationRequest, mgm, properties)
-            assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message).contains(err)
-                it.assertThat(result.message).contains(errReason)
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationRequest, mgm, properties)
             }
+
+            assertThat(exception)
+                .hasMessageContaining(err)
+                .hasMessageContaining(errReason)
             registrationService.stop()
         }
 
@@ -588,12 +591,11 @@ class MGMRegistrationServiceTest {
             registrationService.start()
             whenever(virtualNodeInfoReadService.get(eq(mgm))).doReturn(null)
 
-            val result = registrationService.register(registrationRequest, mgm, properties)
-
-            assertSoftly {
-                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-                it.assertThat(result.message).isNotNull.contains("Could not find virtual node info")
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationRequest, mgm, properties)
             }
+
+            assertThat(exception).hasMessageContaining("Could not find virtual node info")
         }
     }
 

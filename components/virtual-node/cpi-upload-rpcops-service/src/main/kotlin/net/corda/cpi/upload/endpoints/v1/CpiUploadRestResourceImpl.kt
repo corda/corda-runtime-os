@@ -11,6 +11,7 @@ import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
@@ -55,10 +56,13 @@ class CpiUploadRestResourceImpl @Activate constructor(
     override fun stop() = coordinator.stop()
 
     override fun cpi(upload: HttpFileUpload): CpiUploadRestResource.CpiUploadResponse {
-        logger.info("Uploading CPI: ${upload.fileName}")
+        val opName = "Uploading CPI: ${upload.fileName}"
+        logger.info(opName)
         requireRunning()
-        val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content)
-        logger.info("Request ID for uploading CPI ${upload.fileName} is ${cpiUploadRequestId}")
+        val cpiUploadRequestId = tryWithExceptionHandling(logger, opName) {
+            cpiUploadManager.uploadCpi(upload.fileName, upload.content)
+        }
+        logger.info("Request ID for uploading CPI ${upload.fileName} is $cpiUploadRequestId")
         return CpiUploadRestResource.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 

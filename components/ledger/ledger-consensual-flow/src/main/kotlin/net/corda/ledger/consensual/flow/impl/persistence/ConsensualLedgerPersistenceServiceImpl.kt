@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.flow.impl.persistence
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.common.flow.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -12,8 +12,8 @@ import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransac
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary

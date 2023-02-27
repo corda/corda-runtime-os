@@ -1,12 +1,11 @@
 package net.cordapp.demo.utxo
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -16,8 +15,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -27,11 +26,9 @@ import java.time.Instant
  * TODO expand description
  */
 
-@InitiatingFlow("utxo-flow-protocol")
+@InitiatingFlow(protocol = "utxo-flow-protocol")
 class UtxoDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>, val notary: String)
-
-    class TestCommand : Command
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -53,10 +50,10 @@ class UtxoDemoFlow : ClientStartableFlow {
     lateinit var notaryLookup: NotaryLookup
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Utxo flow demo starting...")
         try {
-            val request = requestBody.getRequestBodyAs<InputMessage>(jsonMarshallingService)
+            val request = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
 
             val myInfo = memberLookup.myInfo()
             val members = request.members.map { x500 ->
@@ -66,7 +63,8 @@ class UtxoDemoFlow : ClientStartableFlow {
             }
             val testUtxoState = TestUtxoState(
                 request.input,
-                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first()
+                members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first(),
+                request.members + listOf(myInfo.name.toString())
             )
 
             val notary = notaryLookup.notaryServices.single()
@@ -102,7 +100,7 @@ class UtxoDemoFlow : ClientStartableFlow {
     }
 }
 
-@InitiatedBy("utxo-flow-protocol")
+@InitiatedBy(protocol = "utxo-flow-protocol")
 class UtxoResponderFlow : ResponderFlow {
 
     private companion object {

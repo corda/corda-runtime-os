@@ -1,11 +1,11 @@
 package net.cordacon.example.rollcall
 
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RestRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -22,7 +22,7 @@ import net.cordacon.example.rollcall.utils.findStudents
 import org.slf4j.LoggerFactory
 
 
-@InitiatingFlow("roll-call")
+@InitiatingFlow(protocol = "roll-call")
 class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): ClientStartableFlow {
 
     private data class SessionAndRecipient(val flowSession: FlowSession, val receipient : MemberX500Name)
@@ -52,7 +52,7 @@ class RollCallFlow(val scriptMaker: ScriptMaker = BaseScriptMaker()): ClientStar
     lateinit var signingService: SigningService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Initiating roll call")
 
         val students = findStudents(memberLookup)

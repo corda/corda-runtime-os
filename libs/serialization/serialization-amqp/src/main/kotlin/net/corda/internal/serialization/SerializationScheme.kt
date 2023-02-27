@@ -87,7 +87,7 @@ open class SerializationFactoryImpl(
 
     private fun schemeFor(byteSequence: ByteSequence, target: SerializationContext.UseCase): Pair<SerializationScheme, CordaSerializationMagic> {
         // truncate sequence to at most magicSize, and make sure it's a copy to avoid holding onto large ByteArrays
-        val magic = CordaSerializationMagic(byteSequence.slice(start = 0, end = magicSize).copyBytes())
+        val magic = CordaSerializationMagic(byteSequence.slice(0, magicSize).copyBytes())
         val lookupKey = magic to target
         // ConcurrentHashMap.get() is lock free, but computeIfAbsent is not, even if the key is in the map already.
         return (

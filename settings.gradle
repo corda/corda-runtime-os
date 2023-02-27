@@ -70,10 +70,10 @@ include 'applications:workers:release:flow-worker'
 include 'applications:workers:release:member-worker'
 include 'applications:workers:release:p2p-gateway-worker'
 include 'applications:workers:release:p2p-link-manager-worker'
-include 'applications:workers:release:rpc-worker'
+include 'applications:workers:release:rest-worker'
 include 'applications:workers:worker-common'
 include 'applications:workers:workers-smoketest'
-include 'components:configuration:configuration-rpcops-service-impl'
+include 'components:configuration:configuration-rest-resource-service-impl'
 include 'components:configuration:configuration-read-service'
 include 'components:configuration:configuration-read-service-impl'
 include 'components:configuration:configuration-write-service'
@@ -138,8 +138,8 @@ include 'components:membership:membership-persistence-service'
 include 'components:membership:membership-persistence-service-impl'
 include 'components:membership:membership-group-read'
 include 'components:membership:membership-group-read-impl'
-include 'components:membership:membership-http-rpc'
-include 'components:membership:membership-http-rpc-impl'
+include 'components:membership:membership-rest'
+include 'components:membership:membership-rest-impl'
 include 'components:membership:membership-p2p'
 include 'components:membership:membership-p2p-impl'
 include 'components:membership:membership-service'
@@ -158,7 +158,7 @@ include 'components:permissions:permission-storage-reader-service'
 include 'components:permissions:permission-storage-writer-service'
 include 'components:permissions:permission-validation-service'
 include 'components:permissions:permission-validation-cache-service'
-include 'components:permissions:permission-rpc-ops-impl'
+include 'components:permissions:permission-rest-resource-impl'
 include 'components:persistence:entity-processor-service'
 include 'components:persistence:entity-processor-service-impl'
 include 'components:persistence:persistence-service-common'
@@ -258,6 +258,7 @@ include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:ledger-common-data'
 include 'libs:ledger:ledger-consensual-data'
 include 'libs:ledger:ledger-utxo-data'
+include 'libs:ledger:ledger-utxo-transaction-verifier'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:lifecycle-test-impl'
@@ -484,15 +485,15 @@ if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
 gradleEnterprise {
     server = gradleEnterpriseUrl
     allowUntrustedServer = false
+    def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
+    accessKey = apiKey
     buildScan {
-        def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
         if (apiKey?.trim()) {
             publishAlways()
             capture {
                 taskInputFiles = true
             }
             uploadInBackground = false
-            accessKey = apiKey
         }
     }
     buildCache {
@@ -500,19 +501,14 @@ gradleEnterprise {
             enabled = true
             removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
         }
-        remote(HttpBuildCache) {
-            url = "${gradleEnterpriseUrl}/cache/"
-            credentials {
-                username = settings.ext.find('BUILD_CACHE_CREDENTIALS_USR') ?: System.getenv('BUILD_CACHE_CREDENTIALS_USR')
-                password = settings.ext.find('BUILD_CACHE_CREDENTIALS_PSW') ?: System.getenv('BUILD_CACHE_CREDENTIALS_PSW')
-            }
+        remote(gradleEnterprise.buildCache) {
             // For the remote build cache we will populate cache only from Jenkins, all machines can pull from cache however.
             if (System.getenv().containsKey("JENKINS_URL")) {
                 push = true
                 enabled = true
             } else {
                 push = false
-                enabled = false
+                enabled = apiKey?.trim() ? true : false
             }
         }
     }

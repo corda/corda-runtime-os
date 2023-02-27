@@ -1,5 +1,6 @@
 package com.r3.corda.notary.plugin.common
 
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
@@ -10,6 +11,8 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRe
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
@@ -17,7 +20,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
-import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
 import net.corda.v5.membership.MemberInfo
 
 /**
@@ -76,12 +78,17 @@ fun generateRequestSignature(notarisationRequest: NotarisationRequest,
  * A helper function that will convert a [UniquenessCheckResponse] to a [NotarisationResponse].
  */
 @Suspendable
-fun LedgerUniquenessCheckResponse.toNotarisationResponse(): NotarisationResponse {
-    return when (val uniquenessResult = result) {
-        is UniquenessCheckResultSuccess -> NotarisationResponse(
-            listOf(signature!!),
-            null
-        )
+fun UniquenessCheckResult.toNotarisationResponse(signature: DigitalSignatureAndMetadata?): NotarisationResponse {
+    return when (val uniquenessResult = this) {
+        is UniquenessCheckResultSuccess -> {
+            require(signature != null) {
+                "If the uniqueness check result was successful, a signature must be provided!"
+            }
+            NotarisationResponse(
+                listOf(signature),
+                null
+            )
+        }
         is UniquenessCheckResultFailure -> NotarisationResponse(
             emptyList(),
             uniquenessResult.error.toNotaryError()
@@ -111,6 +118,10 @@ private fun UniquenessCheckError.toNotaryError(): NotaryError {
             timeWindowUpperBound
         )
         is UniquenessCheckErrorMalformedRequest -> NotaryErrorMalformedRequestImpl(errorText)
+        is UniquenessCheckErrorUnhandledException -> NotaryErrorGeneralImpl(
+            "Unhandled exception of type $unhandledExceptionType encountered during uniqueness checking with " +
+                    "message: $unhandledExceptionMessage"
+        )
         else -> NotaryErrorGeneralImpl(
             "Unknown error type received from uniqueness checker: ${this::class.java.canonicalName}"
         )

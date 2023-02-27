@@ -1,8 +1,9 @@
 package net.corda.ledger.consensual.data.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -41,6 +42,7 @@ class ConsensualLedgerTransactionImpl(
     }
 
     init{
+        verifyMetadata(wireTransaction.metadata)
         check(wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATES.ordinal].size ==
                 wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATE_TYPES.ordinal].size
         ) {

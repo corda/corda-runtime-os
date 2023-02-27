@@ -1,9 +1,8 @@
 package net.cordapp.testing.testflows
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.RestRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
@@ -21,7 +20,7 @@ import java.util.UUID
 class PersistenceFlow : ClientStartableFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -31,10 +30,10 @@ class PersistenceFlow : ClientStartableFlow {
     lateinit var persistenceService: PersistenceService
 
     @Suspendable
-    override fun call(requestBody: RestRequestBody): String {
+    override fun call(requestBody: ClientRequestBody): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)
+            val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, TestFlowInput::class.java)
 
             persistenceService.persist(123)
             persistenceService.remove(123)

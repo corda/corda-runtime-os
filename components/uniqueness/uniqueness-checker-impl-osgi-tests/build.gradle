@@ -18,7 +18,7 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-base'
     integrationTestImplementation 'net.corda:corda-config-schema'
     integrationTestImplementation 'net.corda:corda-topic-schema'
-    integrationTestImplementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    integrationTestImplementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
     integrationTestImplementation "org.mockito:mockito-core:$mockitoVersion"
     integrationTestImplementation 'org.slf4j:slf4j-api'
@@ -49,6 +49,7 @@ dependencies {
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

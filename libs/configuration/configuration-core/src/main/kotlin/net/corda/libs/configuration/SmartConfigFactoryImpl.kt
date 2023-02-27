@@ -1,6 +1,7 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.libs.configuration.secret.SecretsLookupService
 import net.corda.libs.configuration.secret.SecretsService
@@ -21,7 +22,11 @@ class SmartConfigFactoryImpl(
         return SmartConfigImpl(config, this, secretsLookupService)
     }
 
-    override fun makeSecret(plainText: String): SmartConfig {
-        return SmartConfigImpl(secretsCreateService.createValue(plainText), this, secretsLookupService)
+    override fun makeSecret(plainText: String, key: String): SmartConfig {
+        return SmartConfigImpl(secretsCreateService.createValue(plainText, key), this, secretsLookupService)
+    }
+
+    override fun empty(): SmartConfig {
+        return create(ConfigFactory.empty())
     }
 }

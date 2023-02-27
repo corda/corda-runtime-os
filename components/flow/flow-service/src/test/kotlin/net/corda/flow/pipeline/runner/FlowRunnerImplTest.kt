@@ -29,7 +29,7 @@ import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.v5.application.flows.RestRequestBody
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
@@ -99,9 +99,9 @@ class FlowRunnerImplTest {
             startContext = flowStartContext
             flowStartArgs = startArgs
         }
-        val restRequestBody = mock<RestRequestBody>()
-        whenever(restRequestBody.getRequestBody()).thenReturn(startArgs)
-        val logicAndArgs = ClientStartedFlow(clientFlow, restRequestBody)
+        val clientRequestBody = mock<ClientRequestBody>()
+        whenever(clientRequestBody.requestBody).thenReturn(startArgs)
+        val logicAndArgs = ClientStartedFlow(clientFlow, clientRequestBody)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
         whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(logicAndArgs)

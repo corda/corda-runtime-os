@@ -35,6 +35,12 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
+import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
@@ -50,9 +56,11 @@ class FlowEventPipelineImplTest {
         payload = retryStartFlow
     }
 
+    private val mockHoldingIdentity = mock<HoldingIdentity>()
     private val checkpoint = mock<FlowCheckpoint>().apply {
         whenever(waitingFor).thenReturn(waitingForWakeup)
         whenever(inRetryState).thenReturn(false)
+        whenever(holdingIdentity).thenReturn(mockHoldingIdentity)
     }
 
     private val inputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
@@ -88,6 +96,11 @@ class FlowEventPipelineImplTest {
         whenever(runFlow(any(), any())).thenReturn(runFlowFiberFuture)
     }
 
+    private val virtualNodeInfo = mock<VirtualNodeInfo>()
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
+        whenever(get(any())).thenReturn(virtualNodeInfo)
+    }
+
     private fun buildPipeline(output: FlowIORequest<*>? = null): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
             mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
@@ -96,6 +109,7 @@ class FlowEventPipelineImplTest {
             flowRunner,
             flowGlobalPostProcessor,
             inputContext,
+            virtualNodeInfoReadService,
             output
         )
     }
@@ -127,6 +141,27 @@ class FlowEventPipelineImplTest {
 
         assertEquals(retryHandlerOutputContext, pipeline.eventPreProcessing().context)
         verify(startFlowEventHandler).preProcess(argThat { this.inputEvent == retryEvent && this.inputEventPayload == retryEvent.payload })
+    }
+
+    @Test
+    fun `pipeline exits if flow operational status is inactive`() {
+        val mockCheckpoint = mock<FlowCheckpoint> {
+            whenever(it.doesExist).thenReturn(true)
+            whenever(it.holdingIdentity).thenReturn(mockHoldingIdentity)
+        }
+        val mockContext = mock<FlowEventContext<Any>> {
+            whenever(it.checkpoint).thenReturn(mockCheckpoint)
+        }
+        val pipeline = FlowEventPipelineImpl(mapOf(), mapOf(), mapOf(), mock(), mock(), mockContext, virtualNodeInfoReadService)
+
+        val mockVirtualNode = mock<VirtualNodeInfo> {
+            whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        }
+        whenever(virtualNodeInfoReadService.get(mockHoldingIdentity)).thenReturn(mockVirtualNode)
+
+        assertThrows<FlowMarkedForKillException> {
+            pipeline.virtualNodeFlowOperationalChecks()
+        }
     }
 
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")

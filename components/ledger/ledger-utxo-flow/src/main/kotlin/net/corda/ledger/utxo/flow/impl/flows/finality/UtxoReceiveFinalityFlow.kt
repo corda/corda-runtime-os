@@ -3,17 +3,18 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
@@ -23,14 +24,16 @@ class UtxoReceiveFinalityFlow(
 ) : UtxoFinalityBase() {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log: Logger = LoggerFactory.getLogger(UtxoReceiveFinalityFlow::class.java)
     }
+
+    override val log: Logger = UtxoReceiveFinalityFlow.log
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         val initialTransaction = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
-        verifyExistingSignatures(initialTransaction)
+        verifyExistingSignatures(initialTransaction, session)
         verifyTransaction(initialTransaction)
         var transaction = if (validateTransaction(initialTransaction)) {
             log.trace { "Successfully validated transaction: $transactionId" }
@@ -40,6 +43,7 @@ class UtxoReceiveFinalityFlow(
             session.send(payload)
             transaction
         } else {
+            log.warn("Failed to validate transaction: ${initialTransaction.id}")
             persistInvalidTransaction(initialTransaction)
             val payload = Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Transaction validation failed for transaction $transactionId when signature was requested"
@@ -57,19 +61,10 @@ class UtxoReceiveFinalityFlow(
 
     @Suspendable
     private fun receiveTransactionAndBackchain(): UtxoSignedTransactionInternal {
-        val initialTransaction = session.receive<UtxoSignedTransactionInternal>()
+        val initialTransaction = session.receive(UtxoSignedTransactionInternal::class.java)
         log.debug { "Beginning receive finality for transaction: ${initialTransaction.id}" }
         flowEngine.subFlow(TransactionBackchainResolutionFlow(initialTransaction, session))
         return initialTransaction
-    }
-
-    @Suspendable
-    private fun verifyExistingSignatures(initialTransaction: UtxoSignedTransactionInternal) {
-        initialTransaction.signatures.forEach {
-            verifySignature(initialTransaction.id, it) { message ->
-                session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
-            }
-        }
     }
 
     @Suspendable
@@ -100,16 +95,10 @@ class UtxoReceiveFinalityFlow(
     }
 
     @Suspendable
-    private fun persistInvalidTransaction(transaction: UtxoSignedTransactionInternal) {
-        log.warn("Failed to validate transaction: ${transaction.id}")
-        persistenceService.persist(transaction, TransactionStatus.INVALID)
-        log.debug { "Recorded transaction as invalid: ${transaction.id}" }
-    }
-
-    @Suspendable
     private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): UtxoSignedTransactionInternal {
         log.debug { "Waiting for other parties' signatures for transaction: ${transaction.id}" }
-        val otherPartiesSignatures = session.receive<List<DigitalSignatureAndMetadata>>()
+        @Suppress("unchecked_cast")
+        val otherPartiesSignatures = session.receive(List::class.java) as List<DigitalSignatureAndMetadata>
         var signedTransaction = transaction
         otherPartiesSignatures
             .filter { it !in transaction.signatures }
@@ -120,26 +109,38 @@ class UtxoReceiveFinalityFlow(
         return signedTransaction
     }
 
+    @Suspendable
     private fun verifyAllReceivedSignatures(transaction: UtxoSignedTransactionInternal) {
         log.debug { "Verifying signatures of transaction: ${transaction.id}" }
-        transaction.verifySignatures()
+        try {
+            transaction.verifySignatures()
+        } catch (e: Exception) {
+            persistInvalidTransaction(transaction)
+            throw e
+        }
     }
 
     @Suspendable
     private fun receiveNotarySignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): UtxoSignedTransactionInternal {
         log.debug { "Waiting for Notary's signature for transaction: ${transaction.id}" }
-        val notarySignaturesPayload = session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
+        @Suppress("unchecked_cast")
+        val notarySignaturesPayload = session.receive(Payload::class.java) as Payload<List<DigitalSignatureAndMetadata>>
 
         val notarySignatures = notarySignaturesPayload.getOrThrow { failure ->
             val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
                     "${transaction.id} with message: ${failure.message}"
             log.warn(message)
+            val reason = failure.reason
+            if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.UNRECOVERABLE) {
+                persistInvalidTransaction(transaction)
+            }
             CordaRuntimeException(message)
         }
 
         if (notarySignatures.isEmpty()) {
             val message = "No notary signature received for transaction: ${transaction.id}"
             log.warn(message)
+            persistInvalidTransaction(transaction)
             throw CordaRuntimeException(message)
 
         }

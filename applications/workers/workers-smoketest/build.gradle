@@ -61,7 +61,7 @@ kotlin {
 
 dependencies {
     // NO CORDA DEPENDENCIES!!
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
     // Avoid having the schema names and keys scattered across projects
@@ -72,6 +72,7 @@ dependencies {
     cpis project(path: ':testing:cpbs:test-cordapp', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:mgm', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
     cpiWithoutChangelogs project(path: ':testing:cpbs:test-cordapp-without-changelogs', configuration: 'cordaCPB')
     upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
@@ -143,8 +144,8 @@ tasks.register('smokeTest', Test) {
     // E.g. during Jenkins pipeline setup.
     systemProperty "cryptoWorkerHealthHttp",
             project.getProperties().getOrDefault("cryptoWorkerHealthHttp",combinedWorker ? null : "http://localhost:7001/")
-    systemProperty "rpcWorkerHealthHttp",
-            project.getProperties().getOrDefault("rpcWorkerHealthHttp",combinedWorker ? null : "http://localhost:7002/")
+    systemProperty "restWorkerHealthHttp",
+            project.getProperties().getOrDefault("restWorkerHealthHttp",combinedWorker ? null : "http://localhost:7002/")
     systemProperty "flowWorkerHealthHttp",
             project.getProperties().getOrDefault("flowWorkerHealthHttp",combinedWorker ? null : "http://localhost:7003/")
     systemProperty "dbWorkerHealthHttp",

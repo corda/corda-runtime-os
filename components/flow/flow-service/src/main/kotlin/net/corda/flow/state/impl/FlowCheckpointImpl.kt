@@ -15,12 +15,13 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.virtualnode.HoldingIdentity
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
     private val checkpoint: Checkpoint,
-    config: SmartConfig,
+    private val config: SmartConfig,
     instantProvider: () -> Instant
 ) : FlowCheckpoint {
 
@@ -118,6 +119,9 @@ class FlowCheckpointImpl(
     override val flowContext: FlowContext
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.flowContext
+
+    override val maxMessageSize: Long
+        get() = config.getLong(MAX_ALLOWED_MSG_SIZE)
 
     override fun initFlowState(flowStartContext: FlowStartContext) {
         if (flowStateManager != null) {

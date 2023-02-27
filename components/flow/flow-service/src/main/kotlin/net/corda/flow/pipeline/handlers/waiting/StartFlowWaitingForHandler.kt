@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.handlers.waiting
 
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import org.osgi.service.component.annotations.Component
 
 object WaitingForStartFlow

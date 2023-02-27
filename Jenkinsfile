@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@knguyen/CORE-9883/improve_pr_comment') _
+@Library('corda-shared-build-pipeline-steps@notick/pr-comment-fix') _
 
 cordaPipeline(
     dailyBuildCron: 'H H/6 * * *',

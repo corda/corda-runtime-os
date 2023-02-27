@@ -2,14 +2,17 @@
   "$schema": "https://json-schema.org/draft/2019-09/schema",
   "$id": "https://corda.net/schema/transaction-metadata.json",
   "unevaluatedProperties": false,
+  "additionalProperties": false,
   "title": "Root",
   "type": "object",
   "required": [
-    "ledgerModel",
-    "ledgerVersion",
     "cpiMetadata",
     "cpkMetadata",
     "digestSettings",
+    "ledgerModel",
+    "ledgerVersion",
+    "numberOfComponentGroups",
+    "platformVersion",
     "schemaVersion"
   ],
   "properties": {
@@ -27,6 +30,10 @@
       "description": "Settings relating to the Merkle tree digest algorithms.",
       "type": "object",
       "required": [
+        "batchMerkleTreeDigestProviderName",
+        "batchMerkleTreeDigestAlgorithmName",
+        "batchMerkleTreeDigestOptionsLeafPrefixB64",
+        "batchMerkleTreeDigestOptionsNodePrefixB64",
         "rootMerkleTreeDigestProviderName",
         "rootMerkleTreeDigestAlgorithmName",
         "rootMerkleTreeDigestOptionsLeafPrefixB64",
@@ -36,6 +43,44 @@
         "componentMerkleTreeEntropyAlgorithmName"
       ],
       "properties": {
+        "batchMerkleTreeDigestProviderName": {
+          "title": "Batch Merkle tree digest provider name",
+          "type": "string",
+          "description": "Class name of the digest provider for the batch Merkle tree.",
+          "default": "",
+          "examples": [
+            "TweakableHashDigestProvider"
+          ],
+          "pattern": "^.*$"
+        },
+        "batchMerkleTreeDigestAlgorithmName": {
+          "title": "Batch Merkle tree digest algorithm name",
+          "type": "string",
+          "description": "Algorithm name of the digest provider for the batch Merkle tree.",
+          "default": "",
+          "examples": [
+            "SHA-256D"
+          ],
+          "pattern": "^.*$"
+        },
+        "batchMerkleTreeDigestOptionsLeafPrefixB64": {
+          "title": "Batch Merkle tree digest options leaf prefix base64 encoded",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "bGVhZg=="
+          ],
+          "pattern": "^.*$"
+        },
+        "batchMerkleTreeDigestOptionsNodePrefixB64": {
+          "title": "Batch Merkle tree digest options node prefix base64 encoded",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "bm9kZQ=="
+          ],
+          "pattern": "^.*$"
+        },
         "rootMerkleTreeDigestProviderName": {
           "title": "Root Merkle tree digest provider name",
           "type": "string",
@@ -115,8 +160,7 @@
     "cpiMetadata": {
       "title": "CPI metadata",
       "$ref": "#/definitions/package_metadata"
-    }
-    ,
+    },
     "cpkMetadata": {
       "title": "CPK metadata",
       "type": "array",
@@ -124,13 +168,22 @@
       "items":{
         "title": "Items",
         "$ref": "#/definitions/package_metadata"
-      }
+      },
+      "minItems": 1
     },
     "numberOfComponentGroups": {
       "title": "Number of component groups",
       "description": "The number of component groups contained in the transaction",
       "type": "integer",
-      "default": 0
+      "default": 1
+    },
+    "platformVersion": {
+      "title": "Active platform version at the time of the creation of the transaction",
+      "type": "integer",
+      "default": "",
+      "examples": [
+        1
+      ]
     },
     "schemaVersion": {
       "title": "Metadata schema version",
@@ -139,31 +192,23 @@
       "examples": [
         1
       ]
+    },
+    "transactionSubtype": {
+      "title": "Transaction subtype",
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        null,
+        "NOTARY_CHANGE",
+        "GENERAL"
+      ]
     }
   },
   "allOf": [
-    {
-      "if": {
-        "properties": {
-          "ledgerModel": {
-            "const": "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl"
-          }
-        }
-      },
-      "then": {
-        "required": [ "transactionSubtype" ],
-        "properties": {
-          "transactionSubtype": {
-            "title": "Transaction subtype",
-            "type": "string",
-            "enum": [
-              "NOTARY_CHANGE",
-              "GENERAL"
-            ]
-          }
-        }
-      }
-    }
+    { "$ref": "#/definitions/if-consensual-ledger" },
+    { "$ref": "#/definitions/if-utxo-ledger" }
   ],
   "definitions": {
     "package_metadata": {
@@ -211,6 +256,50 @@
         }
       },
       "additionalProperties": false
+    },
+    "if-consensual-ledger": {
+      "if": {
+        "properties": {
+          "ledgerModel": {
+            "const": "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "transactionSubtype": {
+            "title": "Transaction subtype",
+            "type": "null",
+            "enum": [
+              null
+            ]
+          }
+        }
+      }
+    },
+    "if-utxo-ledger": {
+      "if": {
+        "properties": {
+          "ledgerModel": {
+            "const": "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "transactionSubtype": {
+            "title": "Transaction subtype",
+            "type": "string",
+            "enum": [
+              "NOTARY_CHANGE",
+              "GENERAL"
+            ]
+          }
+        },
+        "required": [
+          "transactionSubtype"
+        ]
+      }
     }
   }
 }

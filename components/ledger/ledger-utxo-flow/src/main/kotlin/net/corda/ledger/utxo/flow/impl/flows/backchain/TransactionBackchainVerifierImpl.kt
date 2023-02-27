@@ -3,7 +3,8 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerifier
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.base.annotations.Suspendable
@@ -24,11 +25,13 @@ import org.slf4j.LoggerFactory
 )
 class TransactionBackchainVerifierImpl @Activate constructor(
     @Reference(service = UtxoLedgerPersistenceService::class)
-    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService
+    private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
+    @Reference(service = UtxoLedgerTransactionVerificationService::class)
+    private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService
 ) : TransactionBackchainVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable
@@ -36,11 +39,13 @@ class TransactionBackchainVerifierImpl @Activate constructor(
         val sortedTransactions = topologicalSort.complete().iterator()
 
         for (transactionId in sortedTransactions) {
-            val transaction = utxoLedgerPersistenceService.find(transactionId, UNVERIFIED)
+            val transaction = utxoLedgerPersistenceService.find(transactionId, UNVERIFIED) as UtxoSignedTransactionInternal?
                 ?: throw CordaRuntimeException("Transaction does not exist locally") // TODO what to do if transaction disappears
             try {
                 log.trace { "Backchain resolution of $resolvingTransactionId - Verifying transaction $transactionId" }
-                UtxoLedgerTransactionVerifier(transaction.toLedgerTransaction()).verify()
+                transaction.verifySignatures()
+                transaction.verifyNotarySignatureAttached()
+                utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
                 log.trace { "Backchain resolution of $resolvingTransactionId - Verified transaction $transactionId" }
             } catch (e: Exception) {
                 // TODO revisit what exceptions get caught

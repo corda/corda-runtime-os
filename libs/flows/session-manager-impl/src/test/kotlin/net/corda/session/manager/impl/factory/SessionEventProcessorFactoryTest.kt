@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl.factory
 
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionAck
@@ -7,8 +8,8 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.session.manager.SessionManagerException
-import net.corda.test.flow.util.buildSessionEvent
 import net.corda.session.manager.impl.processor.SessionAckProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
@@ -18,14 +19,26 @@ import net.corda.session.manager.impl.processor.SessionErrorProcessorReceive
 import net.corda.session.manager.impl.processor.SessionErrorProcessorSend
 import net.corda.session.manager.impl.processor.SessionInitProcessorReceive
 import net.corda.session.manager.impl.processor.SessionInitProcessorSend
+import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.time.Instant
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class SessionEventProcessorFactoryTest {
 
-    private val sessionEventProcessorFactory = SessionEventProcessorFactory()
+    private val messagingChunkFactory: MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
+        whenever(createChunkSerializerService(any())).thenReturn(mock())
+    }
+    private val sessionEventProcessorFactory = SessionEventProcessorFactory(messagingChunkFactory)
+
+    private companion object {
+        val maxMsgSize = 1000000L
+    }
 
     @Test
     fun testCreateEventReceivedProcessorOutboundMessage() {
@@ -41,7 +54,7 @@ class SessionEventProcessorFactoryTest {
     fun testCreateEventToSendProcessorInboundMessage() {
         assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventToSendProcessor(
-                "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()), null, Instant.now()
+                "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()), null, Instant.now(), maxMsgSize
             )
         }
     }
@@ -49,9 +62,10 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundDataMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData()), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData()), null, Instant.now(), maxMsgSize
         )
 
+        verify(messagingChunkFactory, times(1)).createChunkSerializerService(any())
         assertThat(processor::class.java).isEqualTo(SessionDataProcessorSend::class.java)
     }
 
@@ -81,7 +95,8 @@ class SessionEventProcessorFactoryTest {
             "key",
             buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionError(ExceptionEnvelope())),
             null,
-            Instant.now()
+            Instant.now(),
+            maxMsgSize
         )
 
         assertThat(processor::class.java).isEqualTo(SessionErrorProcessorSend::class.java)
@@ -99,7 +114,7 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundInitMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit()), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit()), null, Instant.now(), maxMsgSize
         )
 
         assertThat(processor::class.java).isEqualTo(SessionInitProcessorSend::class.java)
@@ -118,7 +133,7 @@ class SessionEventProcessorFactoryTest {
     fun testOutboundAckMessage() {
         assertThrows<NotImplementedError> {
             sessionEventProcessorFactory.createEventToSendProcessor(
-                "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionAck()), null, Instant.now()
+                "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionAck()), null, Instant.now(), maxMsgSize
             )
         }
     }
@@ -135,7 +150,7 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundCloseMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose()), null, Instant.now()
+            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose()), null, Instant.now(), maxMsgSize
         )
 
         assertThat(processor::class.java).isEqualTo(SessionCloseProcessorSend::class.java)

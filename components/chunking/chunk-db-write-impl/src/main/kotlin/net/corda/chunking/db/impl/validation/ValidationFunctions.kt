@@ -2,12 +2,12 @@ package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
-import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
+import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
@@ -97,7 +97,7 @@ fun CpiPersistence.persistCpiToDatabase(
     groupId: String,
     fileInfo: FileInfo,
     requestId: RequestId,
-    changelogsExtractedFromCpi: List<CpkDbChangeLogEntity>,
+    changelogsExtractedFromCpi: List<CpkDbChangeLog>,
     log: Logger
 ): CpiMetadataEntity {
     // Cannot compare the CPI.metadata.hash to our checksum above
@@ -171,9 +171,9 @@ fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) ->
     val groupId = try {
         getGroupIdFromJson(this.metadata.groupPolicy!!)
         // catch specific exceptions, and wrap them up so as to capture the request ID
-        // This exception will end up going over Kafka and being picked up by the RPC worker,
+        // This exception will end up going over Kafka and being picked up by the REST worker,
         // which then matches by class name,  so we cannot use subtypes of ValidationException without
-        // introducing knowledge of specific failure modes into the RPC worker
+        // introducing knowledge of specific failure modes into the REST worker
     } catch (e: GroupPolicyIdNotFoundException) {
         throw ValidationException("Unable to upload CPI due to group ID not found", requestId)
     } catch (e: GroupPolicyParseException) {
@@ -204,5 +204,5 @@ fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
  *
  * @return list of entities containing liquibase scripts ready for insertion into database
  */
-fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLogEntity> =
-    LiquibaseExtractor().extractLiquibaseEntitiesFromCpi(this)
+fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLog> =
+    LiquibaseScriptExtractor().extract(this)

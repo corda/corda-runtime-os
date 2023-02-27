@@ -241,7 +241,7 @@ class MembershipPackageFactoryTest {
         return mock {
             on { mgmProvidedContext } doReturn mgmContext
             on { memberProvidedContext } doReturn memberContext
-            on { name } doReturn MemberX500Name.Companion.parse("C=GB,L=London,O=$memberName")
+            on { name } doReturn MemberX500Name.parse("C=GB,L=London,O=$memberName")
         }
     }
 }

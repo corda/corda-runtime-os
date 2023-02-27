@@ -30,8 +30,8 @@ internal class PersistApprovalRuleHandler(
             }
             val entity = ApprovalRulesEntity(
                 request.ruleId,
-                request.rule,
                 request.ruleType.name,
+                request.rule,
                 request.label
             )
             em.persist(entity)

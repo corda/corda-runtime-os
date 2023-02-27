@@ -5,7 +5,7 @@ import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.component.test.utils.generateKeyPair
-import net.corda.crypto.config.impl.createTestCryptoConfig
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.CI
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
@@ -13,7 +13,6 @@ import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.SigningServiceFactory
@@ -21,6 +20,7 @@ import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -43,6 +43,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -76,7 +77,12 @@ class CryptoOpsBusProcessorTests {
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
-            mapOf(ConfigKeys.CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt")))
+            mapOf(
+                ConfigKeys.CRYPTO_CONFIG to
+                        SmartConfigFactory.createWithoutSecurityServices().create(
+                            createDefaultCryptoConfig("pass", "salt")
+                        )
+            )
         )
         private val basicContext = KeyValuePairList(
             listOf(
@@ -164,7 +170,7 @@ class CryptoOpsBusProcessorTests {
     @Test
     fun `Should return empty list for unknown key id`() {
         val keyEnc = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
-        val response = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(keyEnc)))
+        val response = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(keyEnc))))
         assertEquals(0, response.keys.size)
     }
 
@@ -188,7 +194,7 @@ class CryptoOpsBusProcessorTests {
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val keys = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
+        val keys = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(publicKeyIdFromBytes(info.publicKey)))))
         assertEquals(1, keys.keys.size)
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(keys.keys[0].publicKey.array()))
         // lookup
@@ -225,7 +231,7 @@ class CryptoOpsBusProcessorTests {
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
-        val findResult1 = process<CryptoSigningKeys>(ByIdsRpcQuery(listOf(publicKeyIdFromBytes(info.publicKey))))
+        val findResult1 = process<CryptoSigningKeys>(ByIdsRpcQuery(ShortHashes(listOf(publicKeyIdFromBytes(info.publicKey)))))
         assertEquals(1, findResult1.keys.size)
         assertEquals(publicKey, factory.schemeMetadata.decodePublicKey(findResult1.keys[0].publicKey.array()))
         // lookup

@@ -8,14 +8,12 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
-import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.cordapp.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
 import org.slf4j.LoggerFactory
 
-@InitiatingFlow("subflow-protocol")
+@InitiatingFlow(protocol = "subflow-protocol")
 class InitiatingSubFlowSmokeTestFlow(
     private val x500Name: MemberX500Name,
     private val initiateSessionInInitiatingFlow: Boolean,
@@ -51,7 +49,7 @@ class InlineSubFlowSmokeTestFlow(
 ) : SubFlow<InitiatedSmokeTestMessage> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable
@@ -61,13 +59,13 @@ class InlineSubFlowSmokeTestFlow(
             session.send(InitiatedSmokeTestMessage("Initiate"))
         }
         val initiatedSmokeTestMessage =
-            session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(message))
+            session.sendAndReceive(InitiatedSmokeTestMessage::class.java, InitiatedSmokeTestMessage(message))
         log.info("SubFlow - Received response from session '$session'.")
         return initiatedSmokeTestMessage
     }
 }
 
-@InitiatedBy("subflow-protocol")
+@InitiatedBy(protocol = "subflow-protocol")
 class InitiatingSubFlowResponderSmokeTestFlow : ResponderFlow {
 
     private companion object {
@@ -76,9 +74,9 @@ class InitiatingSubFlowResponderSmokeTestFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        session.receive<InitiatedSmokeTestMessage>()
+        session.receive(InitiatedSmokeTestMessage::class.java)
         log.info("SubFlow - Initiated.")
-        val received = session.receive<InitiatedSmokeTestMessage>()
+        val received = session.receive(InitiatedSmokeTestMessage::class.java)
         log.info("SubFlow - Received message from session '$session'.")
         session.send(InitiatedSmokeTestMessage("echo:${received.message}"))
         log.info("SubFlow - Sent message to session '$session'.")

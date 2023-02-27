@@ -44,7 +44,7 @@ dependencies {
     api 'net.corda:corda-base'
     api 'net.corda:corda-crypto'
     api 'net.corda:corda-crypto-extensions'
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation project(':libs:utilities')
     implementation project(":libs:packaging:packaging-core")

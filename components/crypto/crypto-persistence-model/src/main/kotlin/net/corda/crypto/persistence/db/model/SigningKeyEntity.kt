@@ -33,11 +33,17 @@ class SigningKeyEntity(
     var tenantId: String,
 
     /**
-     * The key id, which is calculated as SHA256 converted to HEX string with only first 12 characters if it.
+     * The short key id, which is calculated as SHA256 converted to HEX string with only first 12 characters if it.
      */
     @Id
     @Column(name = "key_id", nullable = false, updatable = false, length = 12)
     var keyId: String,
+
+    /**
+     * The full key id, which is calculated as SHA256 converted to HEX string.
+     */
+    @Column(name = "full_key_id", nullable = false, updatable = false)
+    var fullKeyId: String,
 
     /**
      * When the key was generated.

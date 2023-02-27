@@ -55,4 +55,9 @@ interface DbConnectionManager : DbConnectionOps, DataSourceFactory, Lifecycle {
      *                                  or if the configuration does not allow access.
      */
     fun bootstrap(config: SmartConfig)
+
+    /**
+     * Test all connections, returns true if all connections are working.
+     */
+    fun testAllConnections(): Boolean
 }

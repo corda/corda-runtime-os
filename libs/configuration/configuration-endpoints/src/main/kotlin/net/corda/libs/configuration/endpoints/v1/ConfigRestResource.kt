@@ -4,7 +4,7 @@ import net.corda.httprpc.RestResource
 import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.HttpPUT
 import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
@@ -40,7 +40,7 @@ interface ConfigRestResource : RestResource {
                 for which no configuration has yet been stored."""
     )
     fun updateConfig(
-        @RestRequestBodyParameter(description = """
+        @ClientRequestBodyParameter(description = """
             Details of the updated configuration. Includes:
             - `section`: the section of the configuration to be updated.
             - `config`: the updated configuration in JSON or HOCON format.

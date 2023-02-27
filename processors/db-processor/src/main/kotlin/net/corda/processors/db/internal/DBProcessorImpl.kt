@@ -258,7 +258,7 @@ class DBProcessorImpl @Activate constructor(
     }
 
     private fun onStopEvent() {
-        reconcilers.close()
+        reconcilers.stop()
     }
 
     data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent

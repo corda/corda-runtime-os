@@ -10,7 +10,7 @@ import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
-import net.corda.e2etest.utilities.registerMember
+import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -79,15 +79,15 @@ class UtxoLedgerTests {
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
         assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
-        registerMember(aliceHoldingId)
-        registerMember(bobHoldingId)
-        registerMember(charlieHoldingId)
+        registerStaticMember(aliceHoldingId)
+        registerStaticMember(bobHoldingId)
+        registerStaticMember(charlieHoldingId)
 
-        registerMember(notaryHoldingId, true)
+        registerStaticMember(notaryHoldingId, true)
     }
 
     @Test
-    fun `Utxo Ledger - create a transaction containing states and finalize it`() {
+    fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`() {
         val input = "test input"
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
@@ -119,7 +119,40 @@ class UtxoLedgerTests {
             assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
             assertThat(parsedResult.transaction.participants).hasSize(3)
         }
+
+        val evolvedMessage = "evolved input"
+        val evolveRequestId = startRpcFlow(
+            bobHoldingId,
+            mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0"),
+            "net.cordapp.demo.utxo.UtxoDemoEvolveFlow"
+        )
+        val evolveFlowResult = awaitRpcFlowFinished(bobHoldingId, evolveRequestId)
+
+        val parsedEvolveFlowResult = objectMapper
+            .readValue(evolveFlowResult.flowResult!!, EvolveResponse::class.java)
+        assertThat(parsedEvolveFlowResult.transactionId).isNotNull()
+        assertThat(parsedEvolveFlowResult.errorMessage).isNull()
+        assertThat(evolveFlowResult.flowError).isNull()
+
+        // Peek into the last transaction
+
+        val peekFlowId =  startRpcFlow(
+            bobHoldingId,
+            mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
+            "net.cordapp.demo.utxo.PeekTransactionFlow")
+
+        val peekFlowResult = awaitRpcFlowFinished(bobHoldingId, peekFlowId)
+        assertThat(peekFlowResult.flowError).isNull()
+        assertThat(peekFlowResult.flowResult).isNotNull()
+
+        val parsedPeekFlowResult = objectMapper
+            .readValue(peekFlowResult.flowResult, PeekTransactionResponse::class.java)
+
+        assertThat(parsedPeekFlowResult.errorMessage).isNull()
+        assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
+        assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
+
 
     @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
@@ -146,4 +179,16 @@ class UtxoLedgerTests {
         val transaction: UtxoTransactionResult?,
         val errorMessage: String?
     )
+
+    data class EvolveResponse(
+        val transactionId: String?,
+        val errorMessage: String?)
+
+    data class PeekTransactionResponse(
+        val inputs: List<TestUtxoStateResult>,
+        val outputs: List<TestUtxoStateResult>,
+        val errorMessage: String?
+    )
+
 }
+

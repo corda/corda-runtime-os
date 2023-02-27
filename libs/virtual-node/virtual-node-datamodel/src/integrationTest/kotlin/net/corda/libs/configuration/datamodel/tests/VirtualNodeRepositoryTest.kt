@@ -30,9 +30,11 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.streams.toList
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
+import net.corda.libs.virtualnode.datamodel.entities.OperationType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeRepositoryTest {
@@ -177,7 +179,7 @@ class VirtualNodeRepositoryTest {
     @Test
     fun `put throws when Holding Identity does not exist`() {
         val hi = HoldingIdentity(
-            MemberX500Name.Companion.parse("C=GB,L=London,O=Test"),
+            MemberX500Name.parse("C=GB,L=London,O=Test"),
             "group"
         )
         val cpiId = CpiIdentifier("cpi ${UUID.randomUUID()}", "1.0", TestRandom.secureHash())
@@ -248,11 +250,7 @@ class VirtualNodeRepositoryTest {
         assertThat(upgradeVirtualNodeInfo.cpiIdentifier.signerSummaryHash).isEqualTo(signerSummaryHash)
 
         val foundEntity = entityManagerFactory.createEntityManager().transaction {
-            val query = "from ${VirtualNodeEntity::class.java.simpleName} vnode JOIN FETCH vnode.operationInProgress " +
-                    "where vnode.holdingIdentityId = :holdingIdentity"
-            it.createQuery(query, VirtualNodeEntity::class.java)
-                .setParameter("holdingIdentity", holdingIdentityShortHash)
-                .singleResult
+            it.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
         }
 
         assertThat(foundEntity).isNotNull
@@ -275,7 +273,8 @@ class VirtualNodeRepositoryTest {
         val operationId = UUID.randomUUID().toString()
         val requestId = UUID.randomUUID().toString()
 
-        val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS, Instant.now())
+        val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE, Instant.now())
         val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString(), operation)
 
         entityManagerFactory.createEntityManager().transaction {
@@ -298,5 +297,48 @@ class VirtualNodeRepositoryTest {
         assertThat(foundOperation.data).isEqualTo("data")
         assertThat(foundOperation.state).isEqualTo(VirtualNodeOperationState.COMPLETED)
         assertThat(foundOperation.latestUpdateTimestamp).isNotNull
+    }
+
+    @Test
+    fun `fail upgrade with failing migrations`() {
+        val signerSummaryHash = TestRandom.secureHash()
+        val testName = "Testing ${UUID.randomUUID()}"
+        val operationId = UUID.randomUUID().toString()
+        val requestId = UUID.randomUUID().toString()
+
+        val operation = VirtualNodeOperationEntity(operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE, Instant.now())
+        val vnode = VNodeTestUtils.newVNode(entityManagerFactory, testName, "v1", signerSummaryHash.toString(), operation)
+
+        entityManagerFactory.createEntityManager().transaction {
+            VirtualNodeRepositoryImpl().failedMigrationsOperation(
+                it,
+                vnode.holdingIdentityId,
+                requestId,
+                "data",
+                Instant.now(),
+                "Migrations didn't go so well",
+                VirtualNodeOperationType.UPGRADE
+            )
+        }
+
+        val foundEntity = entityManagerFactory.createEntityManager().transaction {
+            it.find(VirtualNodeEntity::class.java, vnode.holdingIdentityId)
+        }
+
+        assertThat(foundEntity).isNotNull
+        assertThat(foundEntity.operationInProgress).isNotNull
+        assertThat(foundEntity.operationInProgress!!.id).isEqualTo(operationId)
+
+        val foundOperation = entityManagerFactory.createEntityManager().transaction {
+            it.find(VirtualNodeOperationEntity::class.java, operationId)
+        }
+
+        assertThat(foundOperation).isNotNull
+        assertThat(foundOperation.requestId).isEqualTo(requestId)
+        assertThat(foundOperation.data).isEqualTo("data")
+        assertThat(foundOperation.state).isEqualTo(VirtualNodeOperationState.MIGRATIONS_FAILED)
+        assertThat(foundOperation.latestUpdateTimestamp).isNotNull
+        assertThat(foundOperation.errors).isEqualTo("Migrations didn't go so well")
     }
 }

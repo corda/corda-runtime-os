@@ -40,7 +40,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
 
@@ -56,7 +57,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "1",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
         val client2 = connectionManager
@@ -65,7 +67,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "2",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
 
@@ -84,7 +87,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "1",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
         val client2 = connectionManager
@@ -93,7 +97,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "1",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
 
@@ -110,7 +115,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
         val client2 = connectionManager
@@ -119,7 +125,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3001"),
                     "",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
 
@@ -139,7 +146,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
 
@@ -151,7 +159,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
         assertThat(client1).isNotSameAs(client2)
@@ -170,7 +179,8 @@ class ConnectionManagerTest {
                     URI("http://www.r3.com:3000"),
                     "",
                     null,
-                    trustStore
+                    trustStore,
+                    null,
                 )
             )
 

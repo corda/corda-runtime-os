@@ -10,7 +10,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
@@ -32,6 +32,9 @@ dependencies {
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:virtual-node:virtual-node-info')
+
+    api project(":components:crypto:crypto-softhsm-impl")
 
     testImplementation 'net.corda:corda-application'
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

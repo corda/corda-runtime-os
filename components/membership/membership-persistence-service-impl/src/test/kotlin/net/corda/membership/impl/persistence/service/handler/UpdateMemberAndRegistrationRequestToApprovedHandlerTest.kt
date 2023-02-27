@@ -45,6 +45,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.LockModeType
 
 class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     private val clock = TestClock(Instant.ofEpochMilli(0))
@@ -96,6 +97,9 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             )
         } doReturn factory
     }
+    private val requestEntity = mock<RegistrationRequestEntity> {
+        on { status } doReturn RegistrationStatus.SENT_TO_MGM.name
+    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
     private val service = PersistenceHandlerServices(
@@ -122,7 +126,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                         groupId = member.groupId,
                         memberX500Name = member.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
             )
         ).doReturn(null)
         val context = MembershipRequestContext(
@@ -153,10 +158,17 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                         groupId = member.groupId,
                         memberX500Name = member.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE)
             )
         ).doReturn(entity)
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(null)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE)
+            )
+        ).doReturn(null)
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
@@ -191,11 +203,17 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                         groupId = member.groupId,
                         memberX500Name = member.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
             )
         ).doReturn(entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
@@ -240,11 +258,17 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                         groupId = member.groupId,
                         memberX500Name = member.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
             )
         ).doReturn(entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
@@ -284,11 +308,17 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                         groupId = member.groupId,
                         memberX500Name = member.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
             )
         ).doReturn(entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
@@ -322,11 +352,17 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                         groupId = member.groupId,
                         memberX500Name = member.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
             )
         ).doReturn(entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
@@ -362,11 +398,17 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                         groupId = member.groupId,
                         memberX500Name = member.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
             )
         ).doReturn(entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
@@ -385,6 +427,52 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
 
     @Test
+    fun `invoke will not update a declined request`() {
+        whenever(requestEntity.status).doReturn(RegistrationStatus.DECLINED.name)
+        val mgmContextBytes = byteArrayOf(1, 10)
+        whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
+            KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING)))
+        )
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
+        val entity = mock<MemberInfoEntity> {
+            on { mgmContext } doReturn mgmContextBytes
+        }
+        val requestId = "requestId"
+        whenever(
+            entityManager.find(
+                eq(MemberInfoEntity::class.java),
+                eq(
+                    MemberInfoEntityPrimaryKey(
+                        groupId = member.groupId,
+                        memberX500Name = member.x500Name,
+                    )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(entity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
+        val context = MembershipRequestContext(
+            clock.instant(),
+            "id",
+            HoldingIdentity(member.x500Name.toString(), "group"),
+        )
+        val request = UpdateMemberAndRegistrationRequestToApproved(
+            HoldingIdentity(member.x500Name.toString(), "group"),
+            requestId,
+        )
+
+        assertThrows<MembershipPersistenceException> {
+            handler.invoke(context, request)
+        }
+    }
+
+    @Test
     fun `invoke returns the correct data`() {
         val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         val entity = mock<MemberInfoEntity> {
@@ -400,11 +488,17 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
                         groupId = member.groupId,
                         memberX500Name = member.x500Name,
                     )
-                )
+                ),
+                eq(LockModeType.PESSIMISTIC_WRITE),
             )
         ).doReturn(entity)
-        val requestEntity = mock<RegistrationRequestEntity>()
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(requestId))).doReturn(requestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(requestId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(requestEntity)
         val context = MembershipRequestContext(
             clock.instant(),
             "id",

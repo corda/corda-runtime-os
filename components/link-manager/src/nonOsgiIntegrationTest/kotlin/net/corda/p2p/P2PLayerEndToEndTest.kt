@@ -468,8 +468,8 @@ class P2PLayerEndToEndTest {
         keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
         private val endpointInfo = object: EndpointInfo {
-            override val protocolVersion = ProtocolConstants.PROTOCOL_VERSION
-            override val url = "https://$p2pAddress:$p2pPort$URL_PATH"
+            override fun getProtocolVersion() = ProtocolConstants.PROTOCOL_VERSION
+            override fun getUrl() = "https://$p2pAddress:$p2pPort$URL_PATH"
         }
 
         private val sslConfig = SslConfiguration(
@@ -678,7 +678,6 @@ class P2PLayerEndToEndTest {
                     HostedIdentityEntry(
                         info.identity.id.toAvro(),
                         TLS_KEY_TENANT_ID,
-                        info.identity.x500Name,
                         info.tlsCertificatesPem,
                         info.keyPair.public.toPem(),
                         null

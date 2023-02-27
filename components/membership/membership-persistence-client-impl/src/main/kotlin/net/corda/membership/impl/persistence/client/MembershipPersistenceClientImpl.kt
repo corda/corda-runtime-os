@@ -4,10 +4,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
+import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
+import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
@@ -247,7 +249,7 @@ class MembershipPersistenceClientImpl(
         ).execute()
 
         return when (val payload = result.payload) {
-            is UpdateMemberAndRegistrationRequestResponse -> MembershipPersistenceResult.success()
+            null -> MembershipPersistenceResult.success()
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
         }
@@ -324,6 +326,23 @@ class MembershipPersistenceClientImpl(
         }
     }
 
+    override fun consumePreAuthToken(
+        mgmHoldingIdentity: HoldingIdentity,
+        ownerX500Name: MemberX500Name,
+        preAuthTokenId: UUID
+    ): MembershipPersistenceResult<Unit> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(mgmHoldingIdentity.toAvro()),
+            ConsumePreAuthToken(preAuthTokenId.toString(), ownerX500Name.toString())
+        ).execute()
+
+        return when (val payload = result.payload) {
+            null -> MembershipPersistenceResult.success()
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+        }
+    }
+
     override fun revokePreAuthToken(
         mgmHoldingIdentity: HoldingIdentity,
         preAuthTokenId: UUID,
@@ -361,11 +380,13 @@ class MembershipPersistenceClientImpl(
     }
 
     override fun deleteApprovalRule(
-        viewOwningIdentity: HoldingIdentity, ruleId: String
+        viewOwningIdentity: HoldingIdentity,
+        ruleId: String,
+        ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            DeleteApprovalRule(ruleId)
+            DeleteApprovalRule(ruleId, ruleType)
         ).execute()
         return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
             null -> MembershipPersistenceResult.success()

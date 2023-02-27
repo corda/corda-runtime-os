@@ -6,11 +6,9 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
-import net.corda.v5.application.flows.set
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 
@@ -65,7 +63,7 @@ fun launchContextPropagationFlows(
 ): String {
     val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
 
-    flowEngine.flowContextProperties.set("user1", "user1-set")
+    flowEngine.flowContextProperties.put("user1", "user1-set")
     val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
     val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
     val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
@@ -149,22 +147,22 @@ class ContextPropagationMainSubFlow : SubFlow<MainSubFlowOutput> {
 
         // Set context here so we can check this never makes it back to the parent flow, but does make it to the
         // initiated flow
-        flowEngine.flowContextProperties.set("user2", "user2-set")
+        flowEngine.flowContextProperties.put("user2", "user2-set")
 
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
 
         val session = flowMessaging.initiateFlow(flowEngine.virtualNodeName) { flowContextProperties ->
             // user session specific context property
-            flowContextProperties["user3"] = "user3-set"
+            flowContextProperties.put("user3", "user3-set")
         }
 
         // Initiated flow will send its context back via a message
-        val initiatedFlowOutput = session.receive<InitiatedFlowOutput>()
+        val initiatedFlowOutput = session.receive(InitiatedFlowOutput::class.java)
 
         // Check user 2 is preserved here, even though it is overwritten in the initiated sub flow
         val user2 = flowEngine.flowContextProperties.get("user2") ?: ERROR_VALUE
         // This should never make it out of this flow
-        flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationMainSubFlow")
+        flowEngine.flowContextProperties.put("user2", "user2-set-ContextPropagationMainSubFlow")
 
         // user3 is session specific
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
@@ -196,7 +194,7 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
         // This should never make it out of this flow, but should make it into the sub flow
-        flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationInitiatedFlow")
+        flowEngine.flowContextProperties.put("user2", "user2-set-ContextPropagationInitiatedFlow")
 
         val subFlowOutput = flowEngine.subFlow(ContextPropagationInitiatedSubFlow())
 
@@ -229,8 +227,8 @@ class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
         val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
         // These should never make it out of this flow
-        flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationInitiatedSubFlow")
-        flowEngine.flowContextProperties.set("user3", "user3-set-ContextPropagationInitiatedSubFlow")
+        flowEngine.flowContextProperties.put("user2", "user2-set-ContextPropagationInitiatedSubFlow")
+        flowEngine.flowContextProperties.put("user3", "user3-set-ContextPropagationInitiatedSubFlow")
 
         return FlowOutput(
             platform = account,

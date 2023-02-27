@@ -5,7 +5,7 @@ import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.annotations.HttpGET
 import net.corda.httprpc.annotations.RestPathParameter
 import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestRequestBodyParameter
+import net.corda.httprpc.annotations.ClientRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRestResource
 
 @HttpRestResource(
@@ -34,7 +34,7 @@ interface CpiUploadRestResource : RestResource {
         responseDescription = "The ID for the CPI upload request"
     )
     fun cpi(
-        @RestRequestBodyParameter(
+        @ClientRequestBodyParameter(
             description = "The CPI file to be uploaded.",
             required = true
         )

@@ -45,6 +45,8 @@ interface OutputAssertions {
 
     fun flowResumedWith(value: Any?)
 
+    fun flowResumedWithData(value: Map<String, ByteArray>)
+
     fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>)
 
     fun wakeUpEvent()
@@ -70,6 +72,8 @@ interface OutputAssertions {
     fun entityRequestSent(expectedRequestPayload: Any)
 
     fun noEntityRequestSent()
+
+    fun flowKilledStatus(flowTerminatedReason: String)
 }
 
 inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

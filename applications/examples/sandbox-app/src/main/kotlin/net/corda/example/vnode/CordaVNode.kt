@@ -5,6 +5,14 @@ import co.paralleluniverse.fibers.instrument.QuasarInstrumentor
 import com.sun.management.HotSpotDiagnosticMXBean
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.lang.management.ManagementFactory
+import java.time.Duration.ofSeconds
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -26,6 +34,7 @@ import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -40,14 +49,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 import org.slf4j.LoggerFactory
-import java.lang.management.ManagementFactory
-import java.time.Duration.ofSeconds
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit.SECONDS
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
 
 const val VNODE_SERVICE = "vnode"
 const val SHUTDOWN_GRACE = 30L
@@ -94,6 +95,7 @@ class CordaVNode @Activate constructor(
                 .withValue(SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
                 .withValue(SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
                 .withValue(SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(972800))
             smartConfig = configFactory.create(config)
         }
     }

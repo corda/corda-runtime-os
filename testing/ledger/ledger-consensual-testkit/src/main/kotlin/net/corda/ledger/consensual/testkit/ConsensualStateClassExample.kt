@@ -9,7 +9,12 @@ class ConsensualStateClassExample(
     val testField: String,
     override val participants: List<PublicKey>
 ) : ConsensualState {
-    override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
+    override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {
+        if (testField == "throw") {
+            throw IllegalStateException("State verification failed")
+        }
+    }
+
     override fun equals(other: Any?): Boolean =
         (this === other) || (
             (other is ConsensualStateClassExample) &&

@@ -38,6 +38,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.LockModeType
 
 class UpdateRegistrationRequestStatusHandlerTest {
     private val clock = TestClock(Instant.ofEpochSecond(0))
@@ -112,7 +113,13 @@ class UpdateRegistrationRequestStatusHandlerTest {
     @Test
     fun `invoke throws exception when registration request cannot be found`() {
         val registrationId = "regId"
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(null)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(registrationId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(null)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
         assertThrows<MembershipPersistenceException> {
@@ -124,9 +131,15 @@ class UpdateRegistrationRequestStatusHandlerTest {
     fun `invoke updates registration request status`() {
         val registrationId = "regId"
         val registrationRequestEntity = mock<RegistrationRequestEntity> {
-            on { status } doReturn "NEW"
+            on { status } doReturn "SENT_TO_MGM"
         }
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(registrationId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
         clock.setTime(Instant.ofEpochMilli(500))
@@ -143,7 +156,13 @@ class UpdateRegistrationRequestStatusHandlerTest {
         val registrationRequestEntity = mock<RegistrationRequestEntity> {
             on { status } doReturn "APPROVED"
         }
-        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
+        whenever(
+            entityManager.find(
+                eq(RegistrationRequestEntity::class.java),
+                eq(registrationId),
+                eq(LockModeType.PESSIMISTIC_WRITE),
+            )
+        ).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
         clock.setTime(Instant.ofEpochMilli(500))

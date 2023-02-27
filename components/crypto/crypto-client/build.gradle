@@ -8,7 +8,7 @@ description 'Crypto components clients'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:crypto:crypto-core')
 
@@ -16,6 +16,7 @@ dependencies {
 
     api project(':libs:crypto:cipher-suite')
     api project(":libs:lifecycle:lifecycle")
+    api project(':libs:virtual-node:virtual-node-info')
 }
 
 
