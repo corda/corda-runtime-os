@@ -469,12 +469,13 @@ internal class VirtualNodeWriterProcessor(
     ) {
         when (val typedRequest = request.request) {
             is VirtualNodeCreateRequest -> {
-                logger.info("Handling virtual node creation for ${typedRequest.x500Name}, ${typedRequest.cpiFileChecksum}")
+                logger.info("Handling virtual node creation request for ${typedRequest.x500Name}, ${typedRequest.cpiFileChecksum}")
                 createVirtualNode(request.timestamp, typedRequest, respFuture)
             }
             is VirtualNodeStateChangeRequest -> {
-                logger.info("Handling change virtual node state request " +
-                        "for ${typedRequest.holdingIdentityShortHash} to ${typedRequest.newState}")
+                logger.info(
+                    "Handling change virtual node state request for ${typedRequest.holdingIdentityShortHash} to ${typedRequest.newState}"
+                )
                 changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
             }
             is VirtualNodeDBResetRequest -> {
