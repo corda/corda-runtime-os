@@ -14,33 +14,44 @@ ignore:
   SNYK-JAVA-ORGJETBRAINSKOTLIN-2393744:
     - '*':
         reason: >-
-          This vulnerability relates to information exposure via creation of temporary
-          files via Kotlin functions with insecure permissions. Corda does not use any
-          of the vulnerable functions so it not susceptible to this vulnerability.
+          This vulnerability relates to information exposure via creation of
+          temporary files via Kotlin functions with insecure permissions. Corda
+          does not use any of the vulnerable functions so it not susceptible to
+          this vulnerability.
         expires: 2023-06-19T10:40:55.991Z
         created: 2022-09-22T10:40:55.995Z
   SNYK-JAVA-COMFASTERXMLJACKSONCORE-3038424:
     - '*':
         reason: >-
-          Corda5 Shippable artifacts do not make use of dokka-core, which is where this
-          dependency originates, this is used at compile / build time only for Kdoc 
-          generation and not shipped in any of our releasable artifacts.
+          Corda5 Shippable artifacts do not make use of dokka-core, which is
+          where this dependency originates, this is used at compile / build time
+          only for Kdoc generation and not shipped in any of our releasable
+          artifacts.
         expires: 2023-06-19T10:40:55.991Z
         created: 2022-12-20T10:40:55.995Z
   SNYK-JAVA-ORGJSOUP-2989728:
     - '*':
         reason: >-
-          Corda5 Shippable artifacts do not make use of dokka-core, which is where this
-          dependency originates, this is used at compile / build time only for Kdoc
-          generation and not shipped in any of our releasable artifacts.
+          Corda5 Shippable artifacts do not make use of dokka-core, which is
+          where this dependency originates, this is used at compile / build time
+          only for Kdoc generation and not shipped in any of our releasable
+          artifacts.
         expires: 2023-06-19T10:40:55.991Z
         created: 2022-12-20T10:40:55.995Z
   SNYK-JAVA-COMFASTERXMLJACKSONCORE-3038426:
     - '*':
         reason: >-
-          Corda5 Shippable artifacts do not make use of dokka-core, which is where this
-          dependency originates, this is used at compile / build time only for Kdoc
-          generation and not shipped in any of our releasable artifacts.
+          Corda5 Shippable artifacts do not make use of dokka-core, which is
+          where this dependency originates, this is used at compile / build time
+          only for Kdoc generation and not shipped in any of our releasable
+          artifacts.
         expires: 2023-06-19T10:40:55.991Z
         created: 2022-12-20T10:40:55.995Z
+  SNYK-JAVA-ORGYAML-3152153:
+    - '*':
+        reason: >-
+          We are not exposed because we don’t accept yaml based input in any of
+          the components affected.
+        expires: 2023-06-19T15:49:59.760Z
+        created: 2023-02-24T15:49:59.763Z
 patch: {}
