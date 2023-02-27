@@ -11,10 +11,10 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
-import net.corda.membership.httprpc.v1.MemberRegistrationRestResource
-import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
-import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
+import net.corda.membership.rest.v1.MemberRegistrationRestResource
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
+import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.virtualnode.ShortHash
