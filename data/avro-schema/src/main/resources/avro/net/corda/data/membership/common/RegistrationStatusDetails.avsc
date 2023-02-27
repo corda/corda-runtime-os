@@ -39,6 +39,11 @@
       "name": "memberProvidedContext",
       "doc": "Member provided context submitted for registration.",
       "type": "net.corda.data.KeyValuePairList"
+    },
+    {
+      "name": "reason",
+      "doc": "Reason why the request is in the status specified by [registrationStatus].",
+      "type": ["string", "null"]
     }
   ]
 }

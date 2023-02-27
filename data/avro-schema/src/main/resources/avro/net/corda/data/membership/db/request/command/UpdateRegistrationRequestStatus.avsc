@@ -16,6 +16,11 @@
       "name": "registrationStatus",
       "doc": "The new status for this registration request.",
       "type": "net.corda.data.membership.common.RegistrationStatus"
+    },
+    {
+      "name": "reason",
+      "doc": "Reason for the new status for this registration request.",
+      "type": ["string", "null"]
     }
   ]
 }

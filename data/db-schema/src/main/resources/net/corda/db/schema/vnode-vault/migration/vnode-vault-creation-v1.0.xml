@@ -76,6 +76,9 @@
             <column name="context" type="VARBINARY(1048576)">
                 <constraints nullable="false"/>
             </column>
+            <column name="reason" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
         </createTable>
         <addPrimaryKey columnNames="registration_id"
                        constraintName="vnode_registration_request_pk"
