@@ -1,6 +1,10 @@
 package net.corda.membership.impl.registration
 
 import com.typesafe.config.ConfigFactory
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroDeserializer
@@ -73,10 +77,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MemberRegistrationIntegrationTest {
@@ -129,7 +129,7 @@ class MemberRegistrationIntegrationTest {
                 )
             )
         const val messagingConf = """
-            componentVersion="5.1"#
+            componentVersion="5.1"
             maxAllowedMessageSize = 1000000
             subscription {
                 consumer {

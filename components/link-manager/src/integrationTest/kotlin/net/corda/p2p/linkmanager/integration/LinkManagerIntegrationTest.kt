@@ -71,7 +71,7 @@ class LinkManagerIntegrationTest {
                 producer {
                     close.timeout = 6000
                 }
-            }`
+            }
       """
         private const val cryptoConf = """
         dummy=1
