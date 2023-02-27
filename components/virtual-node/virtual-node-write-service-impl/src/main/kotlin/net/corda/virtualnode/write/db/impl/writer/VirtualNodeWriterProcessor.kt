@@ -392,13 +392,13 @@ internal class VirtualNodeWriterProcessor(
                 if (nodeInfo != null) {
                     val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
                     if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
-                        if (!migrationUtility.isVaultSchemaAndTargetCpiInSync(
-                                stateChangeRequest.holdingIdentityShortHash,
-                                changelogsPerCpk,
-                                nodeInfo.vaultDmlConnectionId
-                            )
+                        val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
+                            stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
                         )
+                        if (!inSync) {
+                            logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
                             throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
+                        }
                     }
                 } else {
                     throw VirtualNodeDbException("Unable to fetch node info")
