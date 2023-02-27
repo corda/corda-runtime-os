@@ -14,6 +14,7 @@ import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,7 +43,7 @@ class NetworkRestResourceImpl @Activate constructor(
                 ShortHash.parseOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
                 request.useClusterLevelTlsCertificateAndKey != false,
-                request.sessionKeyId,
+                request.sessionKeyId?.let { createKeyIdOrHttpThrow(it) },
                 request.sessionCertificateChainAlias
             )
         } catch (e: CertificatesResourceNotFoundException) {
