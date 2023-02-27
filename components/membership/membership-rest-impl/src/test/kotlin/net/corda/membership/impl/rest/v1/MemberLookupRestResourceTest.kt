@@ -53,7 +53,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 class MemberLookupRestResourceTest {
     companion object {

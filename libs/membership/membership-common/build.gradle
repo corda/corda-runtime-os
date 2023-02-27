@@ -17,7 +17,6 @@ dependencies {
     api "net.corda:corda-membership"
     api project(":libs:membership:membership-datamodel")
     api project(":libs:virtual-node:virtual-node-info")
-    api project(":libs:crypto:crypto-core")
     implementation project(':libs:crypto:cipher-suite')
     implementation project(":libs:utilities")
     implementation project(':libs:configuration:configuration-core')

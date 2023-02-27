@@ -40,7 +40,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:db:db-connection-manager")
-    implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:db:db-admin')
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
