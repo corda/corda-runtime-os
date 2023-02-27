@@ -1,9 +1,14 @@
 package net.corda.interop.service.impl
 
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.interop.InteropMessage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.UnauthenticatedMessage
+import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -26,11 +31,16 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
 import java.time.Instant
 
 @Suppress("unused")
 @Component(service = [InteropMemberRegistrationService::class])
-class HardcodedInteropMemberRegistrationService @Activate constructor(): InteropMemberRegistrationService {
+class HardcodedInteropMemberRegistrationService @Activate constructor(
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+): InteropMemberRegistrationService {
 
     companion object {
         private const val ALICE_ALTER_EGO_X500 = "CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB"
@@ -113,5 +123,19 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(): Interop
                 hostedIdentity
             )
         }
+    }
+
+    override fun seedMessage() : List<Record<*,*>> {
+        val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
+        val key = "seed-message-1"
+        val header = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), "interop", "123")
+        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\"," +
+                " \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
+
+        val interopMessage = InteropMessage("1", payload)
+
+        return listOf(Record(
+            Schemas.P2P.P2P_IN_TOPIC, key,
+            AppMessage(UnauthenticatedMessage(header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))))))
     }
 }

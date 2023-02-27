@@ -42,7 +42,7 @@ class InteropService @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = InteropMemberRegistrationService::class)
     private val registrationService: InteropMemberRegistrationService
-    ) : Lifecycle {
+) : Lifecycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -105,10 +105,12 @@ class InteropService @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         publisher?.start()
-        logger.info("Publishing member infos")
-        publisher?.publish(registrationService.createDummyMemberInfo())
-        logger.info("Publishing hosted identities")
-        publisher?.publish(registrationService.createDummyHostedIdentity())
+        //logger.info("Publishing member infos")
+        //publisher?.publish(registrationService.createDummyMemberInfo())
+        //logger.info("Publishing hosted identities")
+        //publisher?.publish(registrationService.createDummyHostedIdentity())
+        logger.info("Publishing seed message")
+        publisher?.publish(registrationService.seedMessage())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
