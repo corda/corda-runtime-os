@@ -14,6 +14,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
@@ -70,8 +71,9 @@ class PersistGroupParametersHandlerTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
     }
     private val transaction = mock<EntityTransaction>()
+    private val currentEntity = GroupParametersEntity(1, "test".toByteArray())
     private val resultList = listOf(
-        GroupParametersEntity(1, "test".toByteArray())
+        currentEntity
     )
     private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
         on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
@@ -98,6 +100,13 @@ class PersistGroupParametersHandlerTest {
         on { criteriaBuilder } doReturn criteriaBuilder
         on { createQuery(eq(query)) } doReturn groupParametersQuery
         on { transaction } doReturn transaction
+        on {
+            find(
+                GroupParametersEntity::class.java,
+                1,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        } doReturn currentEntity
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
@@ -133,37 +142,27 @@ class PersistGroupParametersHandlerTest {
 
     @Test
     fun `invoke return the correct version`() {
+        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray())).doReturn(mockGroupParameters)
+
         val result = handler.invoke(requestContext, request)
+
         assertThat(result).isEqualTo(PersistGroupParametersResponse(mockGroupParameters))
     }
 
     @Test
     fun `persisting group parameters is successful when there was nothing persisted previously`() {
-        val previousEntry: TypedQuery<GroupParametersEntity> = mock {
-            on { setLockMode(LockModeType.PESSIMISTIC_WRITE) } doReturn mock
-            on { resultList } doReturn emptyList()
-        }
-        val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
-            on { setMaxResults(1) } doReturn previousEntry
-        }
-        whenever(entityManager.createQuery(eq(query))).doReturn(groupParametersQuery)
+        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray())).doReturn(mockGroupParameters)
+        whenever(
+            entityManager.find(
+                GroupParametersEntity::class.java,
+                1,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(null)
 
         val result = handler.invoke(requestContext, request)
+
         assertThat(result).isEqualTo(PersistGroupParametersResponse(mockGroupParameters))
-    }
-
-    @Test
-    fun `invoke with lower epoch than previous group parameters throws exception`() {
-        val request = mock<PersistGroupParameters> {
-            on { groupParameters } doReturn KeyValuePairList(
-                listOf(
-                    KeyValuePair(EPOCH_KEY, "0")
-                )
-            )
-        }
-
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
-        assertThat(ex.message).contains("can not persist")
     }
 
     @Test
@@ -180,7 +179,7 @@ class PersistGroupParametersHandlerTest {
     fun `invoke with same parameters should not persist anything`() {
         val parameters = KeyValuePairList(
             listOf(
-                KeyValuePair(EPOCH_KEY, "1")
+                KeyValuePair(EPOCH_KEY, "1"),
             )
         )
         val request = PersistGroupParameters(
@@ -216,5 +215,30 @@ class PersistGroupParametersHandlerTest {
             handler.invoke(requestContext, request)
         }
         assertThat(exception).hasMessageContaining("already exist with different parameters")
+    }
+
+    @Test
+    fun `invoke different parameters that differ only by time should do nothing`() {
+        val requestParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, "1"),
+                KeyValuePair(MODIFIED_TIME_KEY, "103"),
+            )
+        )
+        val persistedParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair(EPOCH_KEY, "1"),
+                KeyValuePair(MODIFIED_TIME_KEY, "1001"),
+            )
+        )
+        val request = PersistGroupParameters(
+            requestParameters
+        )
+        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray()))
+            .doReturn(persistedParameters)
+
+        handler.invoke(requestContext, request)
+
+        verify(entityManager, never()).persist(any())
     }
 }

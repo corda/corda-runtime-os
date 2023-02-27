@@ -9,6 +9,7 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.EPOCH_KEY
+import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
@@ -46,9 +47,32 @@ internal class PersistGroupParametersHandler(
         request: PersistGroupParameters
     ): PersistGroupParametersResponse {
         val persistedGroupParameters = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+
+            // Find the current parameters
             val groupParameters = request.groupParameters
             val epochFromRequest = groupParameters.toMap()[EPOCH_KEY]?.toInt()
                 ?: throw MembershipPersistenceException("Cannot persist group parameters - epoch not found.")
+            val currentEntity = em.find(
+                GroupParametersEntity::class.java,
+                epochFromRequest,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+            if (currentEntity != null) {
+                val currentParameters = deserializeProperties(currentEntity.parameters).toMap()
+                if (groupParameters.toMap().removeTime() != currentParameters.removeTime()) {
+                    throw MembershipPersistenceException(
+                        "Group parameters with epoch=$epochFromRequest already exist with different parameters."
+                    )
+                }
+            } else {
+                val entity = GroupParametersEntity(
+                    epoch = epochFromRequest,
+                    parameters = serializeProperties(groupParameters),
+                )
+                em.persist(entity)
+            }
+
+            // Find the latest parameters
             val criteriaBuilder = em.criteriaBuilder
             val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
             val root = queryBuilder.from(GroupParametersEntity::class.java)
@@ -60,36 +84,12 @@ internal class PersistGroupParametersHandler(
                 .setMaxResults(1)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .resultList
-                .firstOrNull()
-            if (latestGroupParameters != null) {
-                val latestEpoc = latestGroupParameters.epoch
-                if (latestEpoc == epochFromRequest) {
-                    val currentParameters = deserializeProperties(latestGroupParameters.parameters).toMap()
-                    if (groupParameters.toMap() != currentParameters) {
-                        throw MembershipPersistenceException(
-                            "Group parameters with epoch=$epochFromRequest already exist with different parameters."
-                        )
-                    } else {
-                        // Nothing to do
-                        return@transaction groupParameters
-                    }
-                }
-                if (latestEpoc > epochFromRequest) {
-                    throw MembershipPersistenceException(
-                        "Latest group parameters epoch is $latestEpoc can not persist epoc $epochFromRequest."
-                    )
-                }
-            }
-
-            val entity = GroupParametersEntity(
-                epoch = epochFromRequest,
-                parameters = serializeProperties(groupParameters),
-            )
-            em.persist(entity)
-
-            groupParameters
+                .first()
+            deserializeProperties(latestGroupParameters.parameters)
         }
 
         return PersistGroupParametersResponse(persistedGroupParameters)
     }
+
+    private fun Map<String, String>.removeTime(): Map<String, String>  = this.filterKeys { it != MODIFIED_TIME_KEY }
 }
