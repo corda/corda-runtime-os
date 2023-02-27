@@ -15,7 +15,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.utilities.debug
 import net.corda.utilities.trace
-import net.corda.utilities.exceptions.CordaRuntimeException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.LoggerFactory
 
