@@ -1249,7 +1249,7 @@ class MembershipQueryClientImplTest {
     }
 
     @Nested
-    inner class QueryQueuedRegistrationRequestsTests {
+    inner class QueryQueuedRegistrationRequestTests {
         @Test
         fun `returns the correct data in case of successful valid result`() {
             postConfigChangedEvent()

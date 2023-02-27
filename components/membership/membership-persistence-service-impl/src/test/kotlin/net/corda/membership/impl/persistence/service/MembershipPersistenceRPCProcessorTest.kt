@@ -23,7 +23,7 @@ import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
-import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
@@ -666,7 +666,7 @@ class MembershipPersistenceRPCProcessorTest {
     fun `query oldest queued registration request returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
-            QueryQueuedRegistrationRequests(membersHoldingIdentity.shortHash.value)
+            QueryQueuedRegistrationRequest(membersHoldingIdentity.shortHash.value)
         )
 
         processor.onNext(rq, responseFuture)

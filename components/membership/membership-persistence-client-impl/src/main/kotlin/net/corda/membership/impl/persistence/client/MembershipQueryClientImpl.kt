@@ -13,7 +13,7 @@ import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
-import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
@@ -303,7 +303,7 @@ class MembershipQueryClientImpl(
     ): MembershipQueryResult<RegistrationStatusDetails?> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryQueuedRegistrationRequests(registeringIdentity.shortHash.value)
+            QueryQueuedRegistrationRequest(registeringIdentity.shortHash.value)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestQueryResponse -> MembershipQueryResult.Success(payload.registrationRequest)

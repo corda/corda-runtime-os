@@ -6,7 +6,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequests
+import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -109,7 +109,7 @@ class QueryQueuedRegistrationRequestHandlerTest {
     private val context: MembershipRequestContext = mock {
         on { holdingIdentity } doReturn viewOwner
     }
-    private val request: QueryQueuedRegistrationRequests = mock {
+    private val request: QueryQueuedRegistrationRequest = mock {
         on { requestSubjectShortHash } doReturn memberShortHash.value
     }
 
