@@ -1,7 +1,7 @@
 package net.corda.libs.cpi.datamodel.repository
 
 import net.corda.libs.cpi.datamodel.CpkFile
-import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.v5.crypto.SecureHash
 import javax.persistence.EntityManager
 import javax.persistence.NonUniqueResultException

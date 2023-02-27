@@ -10,7 +10,7 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.entities.findAllCpiMetadata
 import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.orm.EntityManagerConfiguration

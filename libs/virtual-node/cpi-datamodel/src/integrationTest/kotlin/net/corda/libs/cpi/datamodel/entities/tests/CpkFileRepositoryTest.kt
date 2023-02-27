@@ -9,7 +9,7 @@ import org.mockito.kotlin.whenever
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.TypedQuery
-import net.corda.libs.cpi.datamodel.entities.CpkFileEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
 import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.eq
