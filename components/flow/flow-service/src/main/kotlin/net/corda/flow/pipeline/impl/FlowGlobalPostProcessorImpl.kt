@@ -135,7 +135,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             // assume whatever the previous retry was it has now cleared
             log.debug("The Flow was in a retry state that has now cleared.")
             checkpoint.markRetrySuccess()
-            context.isRetryEvent = false
         }
 
         // If the flow has been completed, no need to update the status
