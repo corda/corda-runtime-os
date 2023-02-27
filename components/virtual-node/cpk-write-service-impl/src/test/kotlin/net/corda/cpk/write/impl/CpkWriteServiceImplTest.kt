@@ -157,7 +157,7 @@ class CpkWriteServiceImplTest {
         val cpkData = byteArrayOf(0x01, 0x02, 0x03)
         val cpkChecksum = secureHash(cpkData)
         val cpkStorage = mock<CpkStorage>()
-        whenever(cpkStorage.getAllCpkFileIds()).thenReturn(listOf(cpkChecksum))
+        whenever(cpkStorage.getAllCpkFileIds(emptyList())).thenReturn(listOf(cpkChecksum))
         whenever(cpkStorage.getCpkFileById(cpkChecksum)).thenReturn(CpkFile(cpkChecksum, cpkData))
 
         val configChangedEvent = ConfigChangedEvent(
