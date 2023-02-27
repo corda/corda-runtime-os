@@ -2,7 +2,11 @@ package net.corda.virtualnode.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
-import net.corda.lifecycle.*
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.debug
