@@ -468,9 +468,20 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
         when (val typedRequest = request.request) {
-            is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
-            is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
-            is VirtualNodeDBResetRequest -> resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeCreateRequest -> {
+                logger.info("Handling virtual node creation request for ${typedRequest.x500Name}, ${typedRequest.cpiFileChecksum}")
+                createVirtualNode(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeStateChangeRequest -> {
+                logger.info(
+                    "Handling change virtual node state request for ${typedRequest.holdingIdentityShortHash} to ${typedRequest.newState}"
+                )
+                changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeDBResetRequest -> {
+                logger.info("Handling virtual node db reset request for ${typedRequest.holdingIdentityShortHashes.joinToString()}")
+                resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            }
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
