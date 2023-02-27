@@ -12,6 +12,7 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
