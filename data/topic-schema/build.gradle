@@ -1,7 +1,7 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
-    id 'corda.common-publishing'
     id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
 }
 
 description 'Definition of Topics'

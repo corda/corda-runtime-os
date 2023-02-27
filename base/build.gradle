@@ -1,20 +1,20 @@
 plugins {
     id 'corda-api.common-library'
-    id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
+    id 'corda.java-only'
 }
 
 description 'Corda Base'
 
 dependencies {
     implementation platform(project(':corda-api'))
-    api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     // Concluded this is the one acceptable dependency in addition to kotlin.
     // We are also returning `Logger` from extensions methods like `Any.contextLogger()` hance "api"
     api 'org.slf4j:slf4j-api'
 
     compileOnly 'org.osgi:osgi.annotation'
 
+    testApi 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
 

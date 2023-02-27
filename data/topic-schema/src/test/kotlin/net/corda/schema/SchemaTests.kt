@@ -8,10 +8,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.File
-import kotlin.reflect.KProperty1
-import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.typeOf
+import kotlin.reflect.KProperty0
+import kotlin.reflect.full.staticProperties
 
 class SchemaTests {
     // Setup jackson mapper to support yaml with null values
@@ -43,21 +41,16 @@ class SchemaTests {
     // Scan companion objects for constant definitions
     private val memberMap by lazy {
         Schemas::class.nestedClasses
-            .filter { it.simpleName != null && !it.isCompanion }
-            .associate { it.simpleName!! to (it.companionObject ?: it) }
+            .filter { it.simpleName != null }
+            .associateBy { it.simpleName!! }
             .mapValues { (_, cls) ->
-                cls.memberProperties
-                    .filter { property ->
-                        property.returnType == typeOf<String>()
-                    }.map { property ->
-                        @Suppress("UNCHECKED_CAST")
-                        property as KProperty1<Any?, String>
-                    }
+                cls.staticProperties
+                    .filterIsInstance<KProperty0<String>>()
                     .map { property ->
-                        if (property.isConst && !cls.isCompanion) {
+                        if (property.isConst) {
                             property.call()
                         } else {
-                            property.get(cls.objectInstance)
+                            property.get()
                         }
                     }
             }

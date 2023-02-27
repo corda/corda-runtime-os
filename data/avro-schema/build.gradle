@@ -3,22 +3,20 @@ import groovy.io.FileType
 import groovy.text.SimpleTemplateEngine
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
+    id 'java-library'
+    id 'corda.java-only'
     id 'corda.common-publishing'
     id "com.github.davidmc24.gradle.plugin.avro-base"
     id 'biz.aQute.bnd.builder'
-    id 'java-library'
 }
 
 dependencies {
     api "org.apache.avro:avro:$avroVersion"
 
     implementation platform(project(':corda-api'))
-    implementation project(":base")
-    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-
+    implementation project(':base')
+    compileOnly 'org.jetbrains:annotations'
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly 'org.osgi:osgi.core'
 }
 
 description 'Data Model Definitions'
@@ -109,7 +107,7 @@ import org.osgi.annotation.bundle.Export;
 }
 // endregion
 
-tasks.named("compileKotlin") {
+tasks.named("compileJava") {
     dependsOn generateOSGiPackageInfo
 }
 

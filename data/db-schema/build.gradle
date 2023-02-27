@@ -1,15 +1,17 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
-    id 'corda.common-publishing'
     id 'corda-api.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
 }
 
 description 'Definition of Database Schema'
 
 dependencies {
-    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform(project(':corda-api'))
 
+    compileOnly 'org.jetbrains:annotations'
     compileOnly 'org.osgi:osgi.annotation'
+
+    testImplementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }
 

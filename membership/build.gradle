@@ -9,6 +9,7 @@ description 'Corda Membership'
 dependencies {
     api platform(project(':corda-api'))
 
+    compileOnly 'org.jetbrains:annotations'
     compileOnly 'org.osgi:osgi.annotation'
 
     api project(':base')
