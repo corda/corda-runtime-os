@@ -1,8 +1,8 @@
 package net.corda.libs.permissions.endpoints.v1.role.impl
 
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
-import net.corda.httprpc.security.RestAuthContext
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.security.RestAuthContext
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
@@ -19,7 +19,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.httprpc.ResponseCode
+import net.corda.rest.ResponseCode
 import net.corda.permissions.management.PermissionManagementService
 import org.junit.jupiter.api.Assertions.assertNotNull
 

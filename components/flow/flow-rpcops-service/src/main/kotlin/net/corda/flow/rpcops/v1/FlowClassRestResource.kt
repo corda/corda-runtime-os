@@ -1,10 +1,10 @@
 package net.corda.flow.rpcops.v1
 
 import net.corda.flow.rpcops.v1.types.response.StartableFlowsResponse
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.HttpRestResource
 
 /** Rest operations for getting flow information from a vNode. */
 @HttpRestResource(

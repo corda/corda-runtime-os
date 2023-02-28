@@ -1,7 +1,7 @@
-package net.corda.httprpc.client.stream
+package net.corda.rest.client.stream
 
-import net.corda.httprpc.durablestream.DurableCursorTransferObject
-import net.corda.httprpc.durablestream.DurableStreamContext
+import net.corda.rest.durablestream.DurableCursorTransferObject
+import net.corda.rest.durablestream.DurableStreamContext
 import org.apache.commons.lang3.reflect.TypeUtils
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type

@@ -1,6 +1,6 @@
-package net.corda.libs.config.net.corda.httprpc.ssl.impl
+package net.corda.libs.config.net.corda.rest.ssl.impl
 
-import net.corda.httprpc.ssl.impl.SslCertReadServiceStubImpl
+import net.corda.rest.ssl.impl.SslCertReadServiceStubImpl
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

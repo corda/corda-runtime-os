@@ -1,9 +1,9 @@
-package net.corda.httprpc.server.config.impl
+package net.corda.rest.server.config.impl
 
-import net.corda.httprpc.server.config.AzureAdSettingsProvider
-import net.corda.httprpc.server.config.SsoSettingsProvider
-import net.corda.httprpc.server.config.models.AzureAdSettings
-import net.corda.httprpc.server.config.models.SsoSettings
+import net.corda.rest.server.config.AzureAdSettingsProvider
+import net.corda.rest.server.config.SsoSettingsProvider
+import net.corda.rest.server.config.models.AzureAdSettings
+import net.corda.rest.server.config.models.SsoSettings
 
 internal class SsoObjectSettingsProvider(private val settings: SsoSettings) : SsoSettingsProvider {
     private class AzureAdObjectSettingsProvider(private val settings: AzureAdSettings) : AzureAdSettingsProvider {

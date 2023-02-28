@@ -1,9 +1,9 @@
-package net.corda.httprpc.client.connect
+package net.corda.rest.client.connect
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.client.RestConnection
-import net.corda.httprpc.client.RestConnectionListener
-import net.corda.httprpc.client.auth.credentials.CredentialsProvider
+import net.corda.rest.RestResource
+import net.corda.rest.client.RestConnection
+import net.corda.rest.client.RestConnectionListener
+import net.corda.rest.client.auth.credentials.CredentialsProvider
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory

@@ -1,8 +1,8 @@
 package net.corda.configuration.rest.impl.exception
 
 import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.httprpc.ResponseCode
-import net.corda.httprpc.exception.HttpApiException
+import net.corda.rest.ResponseCode
+import net.corda.rest.exception.HttpApiException
 
 /**
  * Config version related exceptions.

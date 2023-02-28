@@ -1,12 +1,12 @@
-package net.corda.httprpc.client.processing
+package net.corda.rest.client.processing
 
-import net.corda.httprpc.annotations.HttpDELETE
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.isRestEndpointAnnotation
-import net.corda.httprpc.tools.HttpVerb
-import net.corda.httprpc.tools.isStaticallyExposedGet
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.isRestEndpointAnnotation
+import net.corda.rest.tools.HttpVerb
+import net.corda.rest.tools.isStaticallyExposedGet
 import java.lang.reflect.Method
 
 internal val Method.endpointHttpVerb: HttpVerb

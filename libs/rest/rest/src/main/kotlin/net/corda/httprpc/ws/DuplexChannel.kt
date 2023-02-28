@@ -1,11 +1,11 @@
-package net.corda.httprpc.ws
+package net.corda.rest.ws
 
 import java.lang.Exception
 import java.util.concurrent.Future
 
 /**
  * Channel to facilitate full duplex (i.e. two-way communication) like WebSockets protocol.
- * This is a special type which is meant to be used as a first parameter in [net.corda.httprpc.annotations.HttpWS] endpoint
+ * This is a special type which is meant to be used as a first parameter in [net.corda.rest.annotations.HttpWS] endpoint
  * which will be exposed as a Websocket endpoint.
  */
 interface DuplexChannel : AutoCloseable {

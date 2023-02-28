@@ -2,8 +2,8 @@ package net.corda.applications.workers.rest.http
 
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.client.RestClient
+import net.corda.rest.RestResource
+import net.corda.rest.client.RestClient
 
 /**
  * Toolkit for REST E2E tests execution

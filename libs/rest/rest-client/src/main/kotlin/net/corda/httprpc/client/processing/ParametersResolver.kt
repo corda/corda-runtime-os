@@ -1,11 +1,11 @@
-package net.corda.httprpc.client.processing
+package net.corda.rest.client.processing
 
 import java.io.InputStream
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 import java.net.URLEncoder
-import net.corda.httprpc.HttpFileUpload
+import net.corda.rest.HttpFileUpload
 
 internal data class WebRequest<T>(
     val path: String,

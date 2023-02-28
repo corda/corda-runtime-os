@@ -6,7 +6,7 @@ import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
-import net.corda.httprpc.client.exceptions.PermissionException
+import net.corda.rest.client.exceptions.PermissionException
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll

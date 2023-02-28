@@ -1,4 +1,4 @@
-package net.corda.httprpc
+package net.corda.rest
 
 /**
  * [RestResource] is a marker interface to indicate a class that contains HTTP endpoints.

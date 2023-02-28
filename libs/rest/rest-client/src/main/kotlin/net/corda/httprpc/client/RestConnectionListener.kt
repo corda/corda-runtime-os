@@ -1,7 +1,7 @@
-package net.corda.httprpc.client
+package net.corda.rest.client
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.client.auth.credentials.CredentialsProvider
+import net.corda.rest.RestResource
+import net.corda.rest.client.auth.credentials.CredentialsProvider
 
 /**
  * Can be attached to [RestClient] to be informed about connection and disconnection events.
