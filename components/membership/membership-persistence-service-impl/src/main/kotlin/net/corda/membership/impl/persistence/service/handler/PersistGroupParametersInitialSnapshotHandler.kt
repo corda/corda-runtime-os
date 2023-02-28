@@ -60,7 +60,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                 keyValuePairListDeserializer.deserialize(it.parameters)
             }
             currentGroupParameters?.let {
-                if (it.get(MPV_KEY) != activePlatformVersion) {
+                if (it.items.find { item -> item.key == MPV_KEY }?.value != activePlatformVersion) {
                     throw MembershipPersistenceException("Group parameters already exists with a different platform version.")
                 }
                 return@transaction currentGroupParameters
