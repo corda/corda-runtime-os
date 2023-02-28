@@ -2,8 +2,8 @@ package net.corda.applications.workers.rest
 
 import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
-import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
-import net.corda.httprpc.response.ResponseEntity
+import net.corda.rest.client.exceptions.MissingRequestedResourceException
+import net.corda.rest.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType

@@ -1,12 +1,12 @@
 package net.corda.libs.permissions.endpoints.common
 
 
-import net.corda.httprpc.exception.HttpApiException
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.rest.exception.HttpApiException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import java.util.concurrent.TimeoutException
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException

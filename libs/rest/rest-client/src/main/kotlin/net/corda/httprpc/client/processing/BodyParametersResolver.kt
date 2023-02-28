@@ -1,15 +1,15 @@
-package net.corda.httprpc.client.processing
+package net.corda.rest.client.processing
 
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.ClientRequestBodyParameter
-import net.corda.httprpc.client.serialization.objectMapper
-import net.corda.httprpc.tools.annotations.extensions.name
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.RestQueryParameter
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.client.serialization.objectMapper
+import net.corda.rest.tools.annotations.extensions.name
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 
-private val log = LoggerFactory.getLogger("net.corda.httprpc.client.internal.processing.BodyParametersResolver.kt")
+private val log = LoggerFactory.getLogger("net.corda.rest.client.internal.processing.BodyParametersResolver.kt")
 
 internal fun Method.bodyParametersFrom(methodArguments: Array<out Any?>, extraParameters: Map<String, Any?> = emptyMap()): String {
     log.trace { """Method body parameters from "$methodArguments".""" }

@@ -1,10 +1,10 @@
 package net.corda.membership.rest.v1
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.ClientRequestBodyParameter
-import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 
 /**

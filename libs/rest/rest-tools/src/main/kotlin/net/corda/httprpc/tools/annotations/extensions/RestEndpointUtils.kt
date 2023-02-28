@@ -1,11 +1,11 @@
-package net.corda.httprpc.tools.annotations.extensions
+package net.corda.rest.tools.annotations.extensions
 
-import net.corda.httprpc.annotations.HttpDELETE
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.HttpWS
-import net.corda.httprpc.tools.isStaticallyExposedGet
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpWS
+import net.corda.rest.tools.isStaticallyExposedGet
 import java.lang.reflect.Method
 
 fun HttpPOST.title(annotated: Method): String = this.title.takeIf { it.isNotBlank() } ?: annotated.name

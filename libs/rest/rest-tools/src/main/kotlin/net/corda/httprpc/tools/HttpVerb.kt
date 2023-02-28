@@ -1,4 +1,4 @@
-package net.corda.httprpc.tools
+package net.corda.rest.tools
 
 enum class HttpVerb {
     GET,

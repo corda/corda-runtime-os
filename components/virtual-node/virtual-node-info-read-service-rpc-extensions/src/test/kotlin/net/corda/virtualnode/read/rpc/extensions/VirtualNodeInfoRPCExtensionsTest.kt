@@ -3,8 +3,8 @@ package net.corda.virtualnode.read.rpc.extensions
 import net.corda.crypto.core.ShortHash
 import java.time.Instant
 import java.util.UUID
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity

@@ -1,6 +1,6 @@
-package net.corda.httprpc.tools.annotations.extensions
+package net.corda.rest.tools.annotations.extensions
 
-import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.rest.annotations.HttpRestResource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

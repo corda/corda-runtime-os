@@ -1,10 +1,10 @@
-package net.corda.httprpc.client.stream
+package net.corda.rest.client.stream
 
-import net.corda.httprpc.durablestream.api.PositionManager
+import net.corda.rest.durablestream.api.PositionManager
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Simple implementation of [PositionManager] that holds [net.corda.httprpc.durablestream.api.DurableCursor] position in memory.
+ * Simple implementation of [PositionManager] that holds [net.corda.rest.durablestream.api.DurableCursor] position in memory.
  */
 class InMemoryPositionManager : PositionManager {
 

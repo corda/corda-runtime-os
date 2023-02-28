@@ -1,7 +1,7 @@
-package net.corda.httprpc.response
+package net.corda.rest.response
 
-import net.corda.httprpc.ResponseCode
-import net.corda.httprpc.RestResource
+import net.corda.rest.ResponseCode
+import net.corda.rest.RestResource
 
 /**
  * This class can be used as a return type in [RestResource] endpoints to allow control over the status code returned in

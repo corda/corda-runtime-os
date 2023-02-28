@@ -1,14 +1,14 @@
 package net.corda.libs.virtualnode.endpoints.v1
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.ClientRequestBodyParameter
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.asynchronous.v1.AsyncResponse
-import net.corda.httprpc.response.ResponseEntity
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.asynchronous.v1.AsyncResponse
+import net.corda.rest.response.ResponseEntity
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest

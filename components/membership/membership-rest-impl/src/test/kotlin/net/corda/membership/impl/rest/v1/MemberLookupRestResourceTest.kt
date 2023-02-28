@@ -1,8 +1,8 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.impl.converter.PublicKeyConverter
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
@@ -30,7 +30,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.httprpc.exception.BadRequestException
+import net.corda.rest.exception.BadRequestException
 import net.corda.crypto.core.ShortHash
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY

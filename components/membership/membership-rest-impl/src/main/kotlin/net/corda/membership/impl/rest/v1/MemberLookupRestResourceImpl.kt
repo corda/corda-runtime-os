@@ -1,9 +1,9 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

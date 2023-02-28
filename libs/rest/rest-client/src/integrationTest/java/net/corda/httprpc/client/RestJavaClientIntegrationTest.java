@@ -1,11 +1,11 @@
-package net.corda.httprpc.client;
+package net.corda.rest.client;
 
-import net.corda.httprpc.client.config.RestClientConfig;
-import net.corda.httprpc.server.config.models.RestServerSettings;
-import net.corda.httprpc.server.impl.RestServerImpl;
-import net.corda.httprpc.test.CustomSerializationAPIImpl;
-import net.corda.httprpc.test.TestHealthCheckAPI;
-import net.corda.httprpc.test.TestHealthCheckAPIImpl;
+import net.corda.rest.client.config.RestClientConfig;
+import net.corda.rest.server.config.models.RestServerSettings;
+import net.corda.rest.server.impl.RestServerImpl;
+import net.corda.rest.test.CustomSerializationAPIImpl;
+import net.corda.rest.test.TestHealthCheckAPI;
+import net.corda.rest.test.TestHealthCheckAPIImpl;
 import net.corda.utilities.NetworkHostAndPort;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

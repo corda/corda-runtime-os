@@ -1,10 +1,10 @@
-package net.corda.httprpc.client.config
+package net.corda.rest.client.config
 
-import net.corda.httprpc.client.auth.credentials.BearerTokenCredentialsProvider
-import net.corda.httprpc.client.auth.credentials.BearerTokenProvider
-import net.corda.httprpc.client.auth.credentials.CredentialsProvider
-import net.corda.httprpc.client.auth.scheme.AuthenticationScheme
-import net.corda.httprpc.client.auth.scheme.BearerTokenAuthenticationScheme
+import net.corda.rest.client.auth.credentials.BearerTokenCredentialsProvider
+import net.corda.rest.client.auth.credentials.BearerTokenProvider
+import net.corda.rest.client.auth.credentials.CredentialsProvider
+import net.corda.rest.client.auth.scheme.AuthenticationScheme
+import net.corda.rest.client.auth.scheme.BearerTokenAuthenticationScheme
 
 internal data class BearerTokenAuthenticationConfig(val tokenProvider: BearerTokenProvider) : AuthenticationConfig {
     private val provider by lazy {
