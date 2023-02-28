@@ -4,10 +4,10 @@ import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.components.rest.RestGateway.Companion.INTERNAL_PLUGGABLE_REST_RESOURCES
 import net.corda.components.rest.internal.RestGatewayEventHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.server.factory.RestServerFactory
-import net.corda.httprpc.ssl.SslCertReadServiceFactory
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.server.factory.RestServerFactory
+import net.corda.rest.ssl.SslCertReadServiceFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

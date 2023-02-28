@@ -8,7 +8,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.httprpc.exception.BadRequestException
+import net.corda.rest.exception.BadRequestException
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.grouppolicy.GroupPolicyProvider

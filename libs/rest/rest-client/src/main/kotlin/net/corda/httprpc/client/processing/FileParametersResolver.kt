@@ -1,15 +1,15 @@
-package net.corda.httprpc.client.processing
+package net.corda.rest.client.processing
 
 import java.io.InputStream
-import net.corda.httprpc.annotations.ClientRequestBodyParameter
-import net.corda.httprpc.tools.annotations.extensions.name
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.tools.annotations.extensions.name
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
-import net.corda.httprpc.HttpFileUpload
+import net.corda.rest.HttpFileUpload
 
-private val log = LoggerFactory.getLogger("net.corda.httprpc.client.internal.processing.FileParametersResolver.kt")
+private val log = LoggerFactory.getLogger("net.corda.rest.client.internal.processing.FileParametersResolver.kt")
 
 internal fun Method.filesFrom(methodArguments: Array<out Any?>): Map<String, List<RestClientFileUpload>> {
     log.trace { """Extracting files from method arguments "$methodArguments".""" }

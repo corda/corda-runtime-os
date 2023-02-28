@@ -1,6 +1,6 @@
-package net.corda.httprpc.client.stream
+package net.corda.rest.client.stream
 
-import net.corda.httprpc.durablestream.api.PositionManager
+import net.corda.rest.durablestream.api.PositionManager
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.div
 import org.assertj.core.api.AbstractThrowableAssert

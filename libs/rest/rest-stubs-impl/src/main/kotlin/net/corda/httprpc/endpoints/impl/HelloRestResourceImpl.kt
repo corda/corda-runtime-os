@@ -1,11 +1,11 @@
-package net.corda.httprpc.endpoints.impl
+package net.corda.rest.endpoints.impl
 
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.RestQueryParameter
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import org.slf4j.LoggerFactory
 import org.osgi.service.component.annotations.Component
 

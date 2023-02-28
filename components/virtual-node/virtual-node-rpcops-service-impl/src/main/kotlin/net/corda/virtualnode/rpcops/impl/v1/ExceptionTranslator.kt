@@ -1,10 +1,10 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.HttpApiException
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.HttpApiException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import org.slf4j.LoggerFactory

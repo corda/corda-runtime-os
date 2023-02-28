@@ -1,6 +1,6 @@
-package net.corda.httprpc.client.config
+package net.corda.rest.client.config
 
-import net.corda.httprpc.client.auth.credentials.BearerTokenProvider
+import net.corda.rest.client.auth.credentials.BearerTokenProvider
 
 data class RestClientConfig internal constructor(
     val enableSSL: Boolean,

@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.connect.remote
+package net.corda.rest.client.connect.remote
 
 import kong.unirest.GenericType
 import kong.unirest.HttpRequest
@@ -10,17 +10,17 @@ import kong.unirest.Unirest
 import kong.unirest.UnirestException
 import kong.unirest.apache.ApacheClient
 import kong.unirest.jackson.JacksonObjectMapper
-import net.corda.httprpc.client.auth.RequestContext
-import net.corda.httprpc.client.exceptions.InternalErrorException
-import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
-import net.corda.httprpc.client.exceptions.PermissionException
-import net.corda.httprpc.client.exceptions.RequestErrorException
-import net.corda.httprpc.client.processing.RestClientFileUpload
-import net.corda.httprpc.client.processing.WebRequest
-import net.corda.httprpc.client.processing.WebResponse
-import net.corda.httprpc.client.serialization.objectMapper
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
-import net.corda.httprpc.tools.HttpVerb
+import net.corda.rest.client.auth.RequestContext
+import net.corda.rest.client.exceptions.InternalErrorException
+import net.corda.rest.client.exceptions.MissingRequestedResourceException
+import net.corda.rest.client.exceptions.PermissionException
+import net.corda.rest.client.exceptions.RequestErrorException
+import net.corda.rest.client.processing.RestClientFileUpload
+import net.corda.rest.client.processing.WebRequest
+import net.corda.rest.client.processing.WebResponse
+import net.corda.rest.client.serialization.objectMapper
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.trace
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy

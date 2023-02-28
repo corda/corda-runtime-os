@@ -1,12 +1,12 @@
-package net.corda.httprpc.tools.annotations.validation
+package net.corda.rest.tools.annotations.validation
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.tools.annotations.validation.EndpointNameConflictValidator.Companion.error
-import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.RestQueryParameter
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.tools.annotations.validation.EndpointNameConflictValidator.Companion.error
+import net.corda.rest.tools.annotations.validation.utils.EndpointType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

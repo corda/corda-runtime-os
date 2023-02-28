@@ -1,4 +1,4 @@
-package net.corda.httprpc.durablestream.api;
+package net.corda.rest.durablestream.api;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

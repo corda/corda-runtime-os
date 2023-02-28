@@ -2,13 +2,13 @@ package net.corda.components.rest.internal
 
 import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.server.RestServer
-import net.corda.httprpc.server.factory.RestServerFactory
-import net.corda.httprpc.ssl.KeyStoreInfo
-import net.corda.httprpc.ssl.SslCertReadService
-import net.corda.httprpc.ssl.SslCertReadServiceFactory
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.server.RestServer
+import net.corda.rest.server.factory.RestServerFactory
+import net.corda.rest.ssl.KeyStoreInfo
+import net.corda.rest.ssl.SslCertReadService
+import net.corda.rest.ssl.SslCertReadServiceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator

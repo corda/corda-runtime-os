@@ -3,8 +3,8 @@ package net.corda.virtualnode.read.rpc.extensions
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHash.Companion.LENGTH
 import net.corda.crypto.core.ShortHashException
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

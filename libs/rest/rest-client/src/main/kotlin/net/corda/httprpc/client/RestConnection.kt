@@ -1,6 +1,6 @@
-package net.corda.httprpc.client
+package net.corda.rest.client
 
-import net.corda.httprpc.RestResource
+import net.corda.rest.RestResource
 import net.corda.v5.base.annotations.DoNotImplement
 
 /**

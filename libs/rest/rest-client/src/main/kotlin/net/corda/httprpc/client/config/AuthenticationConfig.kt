@@ -1,7 +1,7 @@
-package net.corda.httprpc.client.config
+package net.corda.rest.client.config
 
-import net.corda.httprpc.client.auth.credentials.CredentialsProvider
-import net.corda.httprpc.client.auth.scheme.AuthenticationScheme
+import net.corda.rest.client.auth.credentials.CredentialsProvider
+import net.corda.rest.client.auth.scheme.AuthenticationScheme
 
 /**
  * Provides authentication information for REST calls.

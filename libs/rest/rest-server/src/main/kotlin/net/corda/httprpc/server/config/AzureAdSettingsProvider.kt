@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.config
+package net.corda.rest.server.config
 
 interface AzureAdSettingsProvider {
     companion object {

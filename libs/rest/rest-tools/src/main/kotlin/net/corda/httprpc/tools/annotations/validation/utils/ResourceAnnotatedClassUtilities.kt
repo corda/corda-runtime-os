@@ -1,15 +1,15 @@
-package net.corda.httprpc.tools.annotations.validation.utils
+package net.corda.rest.tools.annotations.validation.utils
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpDELETE
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpPUT
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.HttpWS
-import net.corda.httprpc.annotations.isRestEndpointAnnotation
-import net.corda.httprpc.tools.annotations.extensions.path
-import net.corda.httprpc.tools.isStaticallyExposedGet
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.HttpWS
+import net.corda.rest.annotations.isRestEndpointAnnotation
+import net.corda.rest.tools.annotations.extensions.path
+import net.corda.rest.tools.isStaticallyExposedGet
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import kotlin.reflect.full.createInstance

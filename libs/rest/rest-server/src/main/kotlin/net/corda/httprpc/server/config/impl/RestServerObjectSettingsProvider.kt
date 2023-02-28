@@ -1,8 +1,8 @@
-package net.corda.httprpc.server.config.impl
+package net.corda.rest.server.config.impl
 
-import net.corda.httprpc.server.config.RestServerSettingsProvider
-import net.corda.httprpc.server.config.SsoSettingsProvider
-import net.corda.httprpc.server.config.models.RestServerSettings
+import net.corda.rest.server.config.RestServerSettingsProvider
+import net.corda.rest.server.config.SsoSettingsProvider
+import net.corda.rest.server.config.models.RestServerSettings
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 
