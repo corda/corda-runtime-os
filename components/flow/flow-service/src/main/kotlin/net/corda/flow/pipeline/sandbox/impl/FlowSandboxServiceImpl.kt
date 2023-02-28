@@ -48,10 +48,10 @@ class FlowSandboxServiceImpl @Activate constructor(
         const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
     }
 
-    override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Collection<SecureHash>): FlowSandboxGroupContext {
+    override fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): FlowSandboxGroupContext {
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,
-            cpkFileHashes.toSet(),
+            cpkFileHashes,
             SandboxGroupType.FLOW,
             null
         )

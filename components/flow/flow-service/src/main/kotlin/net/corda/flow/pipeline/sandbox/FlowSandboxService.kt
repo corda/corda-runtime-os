@@ -17,5 +17,5 @@ interface FlowSandboxService {
      * @return a FlowSandboxGroupContext.
      */
 
-    fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Collection<SecureHash>): FlowSandboxGroupContext
+    fun get(holdingIdentity: HoldingIdentity, cpkFileHashes: Set<SecureHash>): FlowSandboxGroupContext
 }
