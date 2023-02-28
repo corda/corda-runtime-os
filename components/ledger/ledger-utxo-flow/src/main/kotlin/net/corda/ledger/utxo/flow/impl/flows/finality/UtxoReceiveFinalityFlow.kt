@@ -131,7 +131,7 @@ class UtxoReceiveFinalityFlow(
                     "${transaction.id} with message: ${failure.message}"
             log.warn(message)
             val reason = failure.reason
-            if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.UNRECOVERABLE) {
+            if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
                 persistInvalidTransaction(transaction)
             }
             CordaRuntimeException(message)
