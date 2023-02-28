@@ -60,8 +60,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         return if (interopMessage != null) {
             val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
             logger.info("Converted interop message to facade request : $facadeRequest")
-            if((interopMessage.messageId.toIntOrNull() ?: 0) > 10) return null
-            val message : InteropMessage = InteropMessageTransformer.getInteropMessage(
+            if ((interopMessage.messageId.toIntOrNull() ?: 0) > 10) return null
+            val message: InteropMessage = InteropMessageTransformer.getInteropMessage(
                 interopMessage.messageId.incrementOrUuid(), facadeRequest)
             logger.info("Converted facade request to interop message : $message")
             val result = generateAppMessage(header, message, cordaAvroSerializer)
@@ -102,7 +102,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         }
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
-    data class CommonHeader(val destination: net.corda.data.identity.HoldingIdentity,
-                            val source: net.corda.data.identity.HoldingIdentity, val ttl: Instant? = null,
+    data class CommonHeader(val source: net.corda.data.identity.HoldingIdentity,
+                            val destination: net.corda.data.identity.HoldingIdentity,
+                            val ttl: Instant? = null,
                             val messageId: String, val traceId: String? = null, val subsystem: String = SUBSYSTEM)
     }

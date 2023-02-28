@@ -133,7 +133,8 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        logger.info ("Processing outbound message ${message.header.messageId} to ${message.header.destination}." )
+        logger.info ("Processing outbound message ${message.header.messageId} from ${message.header.source} " +
+                "to ${message.header.destination}." )
 
         val discardReason = checkSourceAndDestinationValid(
             message.header.source, message.header.destination
@@ -152,7 +153,8 @@ internal class OutboundMessageProcessor(
             message.header.destination.toCorda()
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
-            logger.info ("Processing outbound message hosted locally ${message.header.messageId} to ${message.header.destination}." )
+            logger.info ("Processing outbound message hosted locally ${message.header.messageId} from ${message.header.source} " +
+                    "to ${message.header.destination}." )
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
         } else if (destMemberInfo != null) {
             val source = message.header.source.toCorda()
