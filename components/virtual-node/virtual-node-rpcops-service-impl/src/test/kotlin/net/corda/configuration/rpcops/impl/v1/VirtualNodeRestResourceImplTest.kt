@@ -2,7 +2,6 @@ package net.corda.configuration.rpcops.impl.v1
 
 import java.util.UUID
 import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.InvalidStateChangeException
 import net.corda.httprpc.security.CURRENT_REST_CONTEXT
 import net.corda.httprpc.security.RestAuthContext
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -144,17 +143,6 @@ class VirtualNodeRestResourceImplTest {
             }
 
             verify(mockDownCoordinator).isRunning
-        }
-    }
-
-    @Test
-    fun `cant update virtual node state to same state`() {
-        val vnodeResource =
-            VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), virtualNodeInfoReadService, mock(), mock(), mockClockFactory)
-        vnodeResource.start()
-
-        assertThrows<InvalidStateChangeException> {
-            vnodeResource.updateVirtualNodeState("ABCABC123123", "ACTIVE")
         }
     }
 

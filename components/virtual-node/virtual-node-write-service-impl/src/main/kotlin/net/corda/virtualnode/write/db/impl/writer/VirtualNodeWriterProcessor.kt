@@ -63,6 +63,9 @@ import kotlin.system.measureTimeMillis
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
+import net.corda.virtualnode.OperationalStatus
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -390,6 +393,22 @@ internal class VirtualNodeWriterProcessor(
                 val nodeInfo = virtualNodeRepository.find(entityManager, shortHash)
 
                 if (nodeInfo != null) {
+
+                    val inMaintenance = listOf(nodeInfo.flowOperationalStatus,
+                        nodeInfo.flowStartOperationalStatus,
+                        nodeInfo.flowP2pOperationalStatus,
+                        nodeInfo.vaultDbOperationalStatus).any { it == OperationalStatus.INACTIVE }
+
+                    val newState = VirtualNodeStateTransitions.valueOf(stateChangeRequest.newState.uppercase())
+
+                    // Compare new state to current stat
+                    when(inMaintenance) {
+                        true -> if(newState == VirtualNodeStateTransitions.MAINTENANCE) 
+                            throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+                        false -> if(newState == VirtualNodeStateTransitions.ACTIVE)
+                            throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+                    }
+
                     val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
                     if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
                         val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(

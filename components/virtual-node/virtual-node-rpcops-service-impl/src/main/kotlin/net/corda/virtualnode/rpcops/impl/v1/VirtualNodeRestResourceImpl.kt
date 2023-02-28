@@ -59,10 +59,12 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 import java.lang.IllegalArgumentException
-import net.corda.httprpc.exception.InvalidStateChangeException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.InvalidStateChangeException
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
@@ -376,24 +378,14 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
     }
+
     private fun validateStateChange(virtualNodeShortId: String, newState: String) {
-        val state = try {
-            VirtualNodeMaintenanceState.valueOf(newState.uppercase())
+        try {
+            VirtualNodeStateTransitions.valueOf(newState.uppercase())
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
         }
-        val virtualNode = getVirtualNode(virtualNodeShortId)
-
-        val inMaintenance = listOf(virtualNode.flowOperationalStatus,
-            virtualNode.flowStartOperationalStatus,
-            virtualNode.flowP2pOperationalStatus,
-            virtualNode.vaultDbOperationalStatus).any { it == OperationalStatus.INACTIVE }
-
-        // Compare new state to current state
-        when(inMaintenance) {
-            true -> if(state == VirtualNodeMaintenanceState.MAINTENANCE) throw InvalidStateChangeException("VirtualNode", virtualNodeShortId, newState)
-            false -> if(state == VirtualNodeMaintenanceState.ACTIVE) throw InvalidStateChangeException("VirtualNode", virtualNodeShortId, newState)
-        }
+        getVirtualNode(virtualNodeShortId)
     }
 
     private fun handleFailure(exception: ExceptionEnvelope?): java.lang.Exception {
@@ -404,7 +396,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         logger.warn(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
-        return InternalServerException(exception.errorMessage)
+        return when(exception.errorType) {
+            InvalidStateChangeRuntimeException::class.java.name ->  InvalidStateChangeException(exception.errorMessage)
+            else -> InternalServerException(exception.errorMessage)
+        }
     }
 
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =
