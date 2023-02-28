@@ -1,4 +1,4 @@
-package net.corda.httprpc
+package net.corda.rest
 
 import java.io.InputStream
 
@@ -8,7 +8,7 @@ import java.io.InputStream
  *
  * To add file upload to an [RestResource] endpoint, declare a parameter with this type on the function with the
  * request body annotation
- * [net.corda.httprpc.annotations.ClientRequestBodyParameter].
+ * [net.corda.rest.annotations.ClientRequestBodyParameter].
  *
  * Alternatively, if the extra metadata is not necessary and only the file content is required, you can use declare
  * a parameter of type

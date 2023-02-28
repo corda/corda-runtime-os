@@ -4,8 +4,8 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.v1.FlowClassRestResource
 import net.corda.flow.rpcops.v1.types.response.StartableFlowsResponse
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.DependentComponents

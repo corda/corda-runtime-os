@@ -1,8 +1,8 @@
-package net.corda.httprpc.client
+package net.corda.rest.client
 
-import net.corda.httprpc.server.RestServer
-import net.corda.httprpc.server.config.models.RestContext
-import net.corda.httprpc.test.utils.FakeSecurityManager
+import net.corda.rest.server.RestServer
+import net.corda.rest.server.config.models.RestContext
+import net.corda.rest.test.utils.FakeSecurityManager
 
 abstract class RestIntegrationTestBase {
     internal companion object {

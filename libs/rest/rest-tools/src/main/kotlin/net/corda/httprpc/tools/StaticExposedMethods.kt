@@ -1,6 +1,6 @@
-package net.corda.httprpc.tools
+package net.corda.rest.tools
 
-import net.corda.httprpc.ws.DuplexChannel
+import net.corda.rest.ws.DuplexChannel
 import java.lang.reflect.Method
 
 /**

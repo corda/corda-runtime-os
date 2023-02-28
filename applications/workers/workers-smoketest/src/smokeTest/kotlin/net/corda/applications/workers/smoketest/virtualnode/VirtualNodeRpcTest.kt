@@ -16,7 +16,7 @@ import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJson
 import net.corda.e2etest.utilities.truncateLongHash
-import net.corda.httprpc.ResponseCode.CONFLICT
+import net.corda.rest.ResponseCode.CONFLICT
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull

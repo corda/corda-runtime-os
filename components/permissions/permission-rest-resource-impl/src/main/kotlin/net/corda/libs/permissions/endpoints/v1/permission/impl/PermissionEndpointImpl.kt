@@ -1,10 +1,10 @@
 package net.corda.libs.permissions.endpoints.v1.permission.impl
 
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto

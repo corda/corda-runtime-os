@@ -1,7 +1,7 @@
-package net.corda.httprpc.client.auth
+package net.corda.rest.client.auth
 
-import net.corda.httprpc.client.auth.scheme.AuthenticationScheme
-import net.corda.httprpc.client.config.AuthenticationConfig
+import net.corda.rest.client.auth.scheme.AuthenticationScheme
+import net.corda.rest.client.config.AuthenticationConfig
 
 /**
  * Analog of Apache HTTP's HttpContext can be extended to support storing state for challenge response based schemes

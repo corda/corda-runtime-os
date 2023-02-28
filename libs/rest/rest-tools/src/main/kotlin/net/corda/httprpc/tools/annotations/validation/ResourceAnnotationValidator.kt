@@ -1,7 +1,7 @@
-package net.corda.httprpc.tools.annotations.validation
+package net.corda.rest.tools.annotations.validation
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpRestResource
 
 /**
  * Validates that every class validated is annotated with [HttpRestResource]

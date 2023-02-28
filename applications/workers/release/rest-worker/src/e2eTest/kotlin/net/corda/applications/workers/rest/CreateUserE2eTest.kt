@@ -2,7 +2,7 @@ package net.corda.applications.workers.rest
 
 import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
-import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
+import net.corda.rest.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.test.util.eventually
@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceAlreadyExistsException
 
 @SkipWhenRestEndpointUnavailable
 class CreateUserE2eTest {

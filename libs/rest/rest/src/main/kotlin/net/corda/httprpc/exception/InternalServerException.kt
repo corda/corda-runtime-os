@@ -1,6 +1,6 @@
-package net.corda.httprpc.exception
+package net.corda.rest.exception
 
-import net.corda.httprpc.ResponseCode
+import net.corda.rest.ResponseCode
 
 /**
  * The server encountered an internal error which prevented it from fulfilling the request.

@@ -1,4 +1,4 @@
-package net.corda.httprpc.annotations
+package net.corda.rest.annotations
 
 fun Annotation.isRestParameterAnnotation() =
     this is RestPathParameter ||
