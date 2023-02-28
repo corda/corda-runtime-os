@@ -1,10 +1,10 @@
-package net.corda.httprpc.server.factory
+package net.corda.rest.server.factory
 
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.security.read.RestSecurityManager
-import net.corda.httprpc.server.RestServer
-import net.corda.httprpc.server.config.models.RestServerSettings
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.security.read.RestSecurityManager
+import net.corda.rest.server.RestServer
+import net.corda.rest.server.config.models.RestServerSettings
 import java.nio.file.Path
 import java.util.function.Supplier
 

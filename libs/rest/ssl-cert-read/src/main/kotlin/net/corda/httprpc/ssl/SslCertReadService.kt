@@ -1,4 +1,4 @@
-package net.corda.httprpc.ssl
+package net.corda.rest.ssl
 
 import net.corda.lifecycle.Lifecycle
 import java.nio.file.Path

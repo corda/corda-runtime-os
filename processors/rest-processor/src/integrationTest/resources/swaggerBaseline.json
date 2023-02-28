@@ -4699,6 +4699,11 @@
           "memberInfoSubmitted" : {
             "$ref" : "#/components/schemas/MemberInfoSubmitted"
           },
+          "reason" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
           "registrationId" : {
             "type" : "string",
             "nullable" : false,

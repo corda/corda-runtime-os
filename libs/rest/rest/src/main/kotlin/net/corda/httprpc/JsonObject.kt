@@ -1,4 +1,4 @@
-package net.corda.httprpc
+package net.corda.rest
 
 /**
  * Interface which can be used in HTTP request / response objects to indicate a field is a JSON value, object or array. Request payloads

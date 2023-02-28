@@ -1,6 +1,6 @@
-package net.corda.httprpc.tools.annotations.validation
+package net.corda.rest.tools.annotations.validation
 
-import net.corda.httprpc.RestResource
+import net.corda.rest.RestResource
 
 /**
  * This class is responsible for applying validations to an interface or list of interfaces that are expected to be exposed via REST.

@@ -1,10 +1,10 @@
 package net.corda.db.connection.manager
 
+import net.corda.crypto.core.ShortHash
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
-import net.corda.virtualnode.ShortHash
 import java.time.Instant
 
 /**

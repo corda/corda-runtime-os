@@ -2,7 +2,7 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
 import kong.unirest.UnirestException
-import net.corda.httprpc.ResponseCode.OK
+import net.corda.rest.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.fail

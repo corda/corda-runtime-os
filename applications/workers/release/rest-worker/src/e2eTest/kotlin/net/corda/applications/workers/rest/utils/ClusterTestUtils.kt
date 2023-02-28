@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.JsonObject
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.JsonObject
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters

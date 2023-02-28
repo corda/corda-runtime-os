@@ -1,6 +1,6 @@
 package net.corda.flow.rpcops.v1.types.request
 
-import net.corda.httprpc.JsonObject
+import net.corda.rest.JsonObject
 
 /**
  * Request sent to start a flow

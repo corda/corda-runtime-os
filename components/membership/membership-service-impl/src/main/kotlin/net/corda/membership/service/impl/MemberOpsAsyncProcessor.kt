@@ -1,5 +1,6 @@
 package net.corda.membership.service.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.MembershipAsyncRequestState
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
@@ -12,7 +13,6 @@ import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -118,6 +118,7 @@ internal class MemberOpsAsyncProcessor(
                 holdingIdentity,
                 registrationId.toString(),
                 RegistrationStatus.INVALID,
+                e.message?.take(255),
             )
             logger.warn("Registration ${request.requestId} failed. Invalid registration request.", e)
             Outcome.FAILED_CANNOT_RETRY
@@ -131,6 +132,7 @@ internal class MemberOpsAsyncProcessor(
                     holdingIdentity,
                     registrationId.toString(),
                     RegistrationStatus.INVALID,
+                    e.message?.take(255),
                 )
                 logger.warn("Registration ${request.requestId} failed too many times. Will not retry again", e)
                 Outcome.FAILED_CANNOT_RETRY

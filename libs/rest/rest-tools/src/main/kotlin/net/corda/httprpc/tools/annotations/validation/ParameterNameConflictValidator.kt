@@ -1,12 +1,12 @@
-package net.corda.httprpc.tools.annotations.validation
+package net.corda.rest.tools.annotations.validation
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.annotations.ClientRequestBodyParameter
-import net.corda.httprpc.annotations.isRestParameterAnnotation
-import net.corda.httprpc.tools.annotations.validation.utils.endpoints
-import net.corda.httprpc.tools.annotations.validation.utils.getParameterName
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.RestQueryParameter
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.isRestParameterAnnotation
+import net.corda.rest.tools.annotations.validation.utils.endpoints
+import net.corda.rest.tools.annotations.validation.utils.getParameterName
 import java.lang.reflect.Parameter
 
 /**

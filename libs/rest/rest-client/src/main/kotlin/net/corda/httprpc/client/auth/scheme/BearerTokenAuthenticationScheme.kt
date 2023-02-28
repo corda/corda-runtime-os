@@ -1,9 +1,9 @@
-package net.corda.httprpc.client.auth.scheme
+package net.corda.rest.client.auth.scheme
 
 import kong.unirest.HeaderNames.AUTHORIZATION
 import kong.unirest.HttpRequest
-import net.corda.httprpc.client.auth.RequestContext
-import net.corda.httprpc.client.auth.credentials.BearerTokenCredentials
+import net.corda.rest.client.auth.RequestContext
+import net.corda.rest.client.auth.credentials.BearerTokenCredentials
 
 internal class BearerTokenAuthenticationScheme : AuthenticationScheme {
     override fun authenticate(credentials: Any, request: HttpRequest<*>, context: RequestContext) {

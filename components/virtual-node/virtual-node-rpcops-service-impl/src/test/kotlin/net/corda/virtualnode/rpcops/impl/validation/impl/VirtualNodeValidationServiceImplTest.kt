@@ -1,11 +1,11 @@
 package net.corda.virtualnode.rpcops.impl.validation.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.crypto.core.ShortHash
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -14,7 +14,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.lang.IllegalArgumentException
-import net.corda.httprpc.exception.BadRequestException
+import net.corda.rest.exception.BadRequestException
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 

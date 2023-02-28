@@ -1,7 +1,7 @@
-package net.corda.httprpc.client.auth.scheme
+package net.corda.rest.client.auth.scheme
 
 import kong.unirest.HttpRequest
-import net.corda.httprpc.client.auth.RequestContext
+import net.corda.rest.client.auth.RequestContext
 
 /**
  * Represents an HTTP authentication scheme like Basic or Bearer

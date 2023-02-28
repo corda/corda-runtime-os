@@ -1,6 +1,6 @@
-package net.corda.httprpc.tools.annotations.extensions
+package net.corda.rest.tools.annotations.extensions
 
-import net.corda.httprpc.annotations.RestQueryParameter
+import net.corda.rest.annotations.RestQueryParameter
 import java.lang.reflect.Parameter
 
 fun RestQueryParameter.name(annotated: Parameter) = this.name.takeIf { it.isNotBlank() } ?: annotated.name.lowercase()
