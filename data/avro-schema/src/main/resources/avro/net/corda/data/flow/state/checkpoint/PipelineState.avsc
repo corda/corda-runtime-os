@@ -20,6 +20,14 @@
       "type": ["null", "net.corda.data.ExceptionEnvelope"],
       "default": null,
       "doc": "Used for platform generated errors reported back to user code."
+    },
+    {
+      "name": "cpkFileHashes",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.crypto.SecureHash"
+      },
+      "doc": "Array of stored cpkFileHashes from the Virtual Node."
     }
   ]
 }
