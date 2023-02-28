@@ -7,6 +7,7 @@ import net.corda.crypto.core.CryptoTenants.RPC_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -19,6 +20,7 @@ import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOr
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [PluggableRestResource::class])
 class HsmRestResourceImpl @Activate constructor(
@@ -31,6 +33,8 @@ class HsmRestResourceImpl @Activate constructor(
 ) : HsmRestResource, PluggableRestResource<HsmRestResource>, Lifecycle {
 
     companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
         private fun HSMAssociationInfo.expose() =
             HsmAssociationInfo(
                 id = this.id,
@@ -49,24 +53,42 @@ class HsmRestResourceImpl @Activate constructor(
 
     override fun assignedHsm(tenantId: String, category: String): HsmAssociationInfo? {
         verifyTenantId(tenantId)
-        return hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
+        return tryWithExceptionHandling(
+            logger,
+            "Find HSM",
+            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
+        ) {
+            hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
+        }
     }
 
     override fun assignSoftHsm(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
-        return hsmRegistrationClient.assignSoftHSM(
-            tenantId,
-            category.toCategory()
-        ).expose()
+        return tryWithExceptionHandling(
+            logger,
+            "Assign Soft HSM",
+            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
+        ) {
+            hsmRegistrationClient.assignSoftHSM(
+                tenantId,
+                category.toCategory()
+            ).expose()
+        }
     }
 
     override fun assignHsm(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
-        return hsmRegistrationClient.assignHSM(
-            tenantId,
-            category.toCategory(),
-            emptyMap()
-        ).expose()
+        return tryWithExceptionHandling(
+            logger,
+            "Assign HSM",
+            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
+        ) {
+            hsmRegistrationClient.assignHSM(
+                tenantId,
+                category.toCategory(),
+                emptyMap()
+            ).expose()
+        }
     }
 
     override val targetInterface = HsmRestResource::class.java

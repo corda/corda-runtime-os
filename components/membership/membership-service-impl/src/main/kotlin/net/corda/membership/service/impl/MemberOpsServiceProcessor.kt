@@ -1,6 +1,7 @@
 package net.corda.membership.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -38,7 +39,6 @@ import net.corda.utilities.parse
 import net.corda.utilities.parseList
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

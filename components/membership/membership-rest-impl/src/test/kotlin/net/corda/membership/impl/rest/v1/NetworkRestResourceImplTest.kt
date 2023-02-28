@@ -1,5 +1,6 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.crypto.core.ShortHash
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -11,7 +12,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
