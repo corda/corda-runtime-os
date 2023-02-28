@@ -1,5 +1,6 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.crypto.core.ShortHash
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -17,7 +18,6 @@ import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

@@ -1,5 +1,6 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.crypto.core.ShortHash
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
@@ -15,7 +16,6 @@ import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate

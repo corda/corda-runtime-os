@@ -11,6 +11,8 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.rest.PluggableRestResource
@@ -27,8 +29,6 @@ import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

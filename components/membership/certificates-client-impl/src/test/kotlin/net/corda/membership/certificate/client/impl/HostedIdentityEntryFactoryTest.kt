@@ -5,6 +5,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -16,7 +17,6 @@ import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro

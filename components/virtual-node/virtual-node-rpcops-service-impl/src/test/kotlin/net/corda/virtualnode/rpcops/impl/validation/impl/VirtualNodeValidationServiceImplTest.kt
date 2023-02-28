@@ -1,11 +1,11 @@
 package net.corda.virtualnode.rpcops.impl.validation.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.ShortHash
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
