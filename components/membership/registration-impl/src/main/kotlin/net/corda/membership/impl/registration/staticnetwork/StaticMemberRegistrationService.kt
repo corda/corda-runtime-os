@@ -288,7 +288,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun validateNotaryDetails(
         registeringMember: StaticMember,
         staticMemberList: List<StaticMember>,
-        notaryInfo: Collection<Pair<String, String>>
+        notaryInfo: Collection<Pair<String, String>>,
+        membershipGroupReader: MembershipGroupReader,
     ) {
         val serviceName = notaryInfo.firstOrNull { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }?.second
         //The notary service x500 name is different from the notary virtual node being registered.
@@ -298,6 +299,10 @@ class StaticMemberRegistrationService @Activate constructor(
         //The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
         require(staticMemberList.none { it.name == serviceName }) {
             "Notary service name invalid: There is a virtual node having the same name $serviceName."
+        }
+        // Allow only a single notary virtual node under each notary service.
+        require(membershipGroupReader.lookup().none { it.notaryDetails?.serviceName.toString() == serviceName }) {
+            throw InvalidMembershipRegistrationException("Notary service '$serviceName' already exists.")
         }
     }
 
@@ -344,7 +349,7 @@ class StaticMemberRegistrationService @Activate constructor(
         // validate if provided notary details are correct to fail-fast,
         // before assigning more HSMs, generating other keys for member
         if(notaryInfo.isNotEmpty()) {
-            validateNotaryDetails(staticMemberInfo, staticMemberList, notaryInfo)
+            validateNotaryDetails(staticMemberInfo, staticMemberList, notaryInfo, membershipGroupReader)
         }
 
         hsmRegistrationClient.assignSoftHSM(memberId, LEDGER)
@@ -389,12 +394,6 @@ class StaticMemberRegistrationService @Activate constructor(
                 SERIAL to staticMemberInfo.serial,
             )
         )
-
-        memberInfo.notaryDetails?.let { notary ->
-            require(membershipGroupReader.lookup().none { it.notaryDetails?.serviceName == notary.serviceName }) {
-                throw InvalidMembershipRegistrationException("Notary service '${notary.serviceName}' already exists.")
-            }
-        }
 
         return memberInfo to staticMemberList.map {
             val owningMemberHoldingIdentity = HoldingIdentity(MemberX500Name.parse(it.name!!), groupPolicy.groupId)
