@@ -62,9 +62,11 @@ class StartRegistrationHandlerTest {
     private companion object {
         val clock = TestClock(Instant.ofEpochSecond(0))
         val registrationId = UUID(0, 1).toString()
-        val x500Name = MemberX500Name.parse("O=Tester,L=London,C=GB")
+        val aliceX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
+        val bobX500Name = MemberX500Name.parse("O=Bob,L=London,C=GB")
         val groupId = UUID(0, 1).toString()
-        val holdingIdentity = HoldingIdentity(x500Name.toString(), groupId)
+        val aliceHoldingIdentity = HoldingIdentity(aliceX500Name.toString(), groupId)
+        val bobHoldingIdentity = HoldingIdentity(bobX500Name.toString(), groupId)
 
         val mgmX500Name = MemberX500Name.parse("O=TestMGM,L=London,C=GB")
         val mgmHoldingIdentity = HoldingIdentity(mgmX500Name.toString(), groupId)
@@ -80,7 +82,7 @@ class StartRegistrationHandlerTest {
             )
         )
 
-        val startRegistrationCommand = getStartRegistrationCommand(holdingIdentity, memberContext)
+        val startRegistrationCommand = getStartRegistrationCommand(aliceHoldingIdentity, memberContext)
 
         fun getStartRegistrationCommand(holdingIdentity: HoldingIdentity, memberContext: KeyValuePairList) =
             RegistrationCommand(
@@ -125,7 +127,7 @@ class StartRegistrationHandlerTest {
         on { entries } doReturn emptySet()
     }
     private val memberInfo: MemberInfo = mock {
-        on { name } doReturn x500Name
+        on { name } doReturn aliceX500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
@@ -187,7 +189,7 @@ class StartRegistrationHandlerTest {
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
             assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertRegistrationStarted()
@@ -214,7 +216,7 @@ class StartRegistrationHandlerTest {
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
@@ -226,12 +228,12 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if target member is an mgm`() {
-        whenever(memberTypeChecker.isMgm(holdingIdentity.toCorda())).doReturn(true)
+        whenever(memberTypeChecker.isMgm(aliceHoldingIdentity.toCorda())).doReturn(true)
 
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
@@ -245,7 +247,7 @@ class StartRegistrationHandlerTest {
                 null,
                 Record(
                     testTopic, testTopicKey, getStartRegistrationCommand(
-                        holdingIdentity,
+                        aliceHoldingIdentity,
                         KeyValuePairList(
                             emptyList()
                         )
@@ -255,7 +257,7 @@ class StartRegistrationHandlerTest {
         ) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
@@ -304,7 +306,7 @@ class StartRegistrationHandlerTest {
         ) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
@@ -325,7 +327,7 @@ class StartRegistrationHandlerTest {
         ) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
             assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertRegistrationStarted()
@@ -338,7 +340,7 @@ class StartRegistrationHandlerTest {
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertDeclinedRegistration()
@@ -352,12 +354,19 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `invoke returns follow on records when role is set to notary`() {
+        val notaryServiceName = MemberX500Name.parse("O=NotaryService,L=London,C=GB")
         val notaryDetails = MemberNotaryDetails(
-            x500Name,
+            notaryServiceName,
             "Notary Plugin A",
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                mgmHoldingIdentity.toCorda(),
+                listOf(HoldingIdentity(notaryServiceName.toString(), groupId).toCorda())
+            )
+        ).thenReturn(MembershipQueryResult.Success(emptyList()))
 
         val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
 
@@ -367,7 +376,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if role is set to notary but notary keys are missing`() {
         val notaryDetails = MemberNotaryDetails(
-            x500Name,
+            aliceX500Name,
             null,
             emptyList()
         )
@@ -381,7 +390,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if role is set to notary and notary service plugin type is specified but blank`() {
         val notaryDetails = MemberNotaryDetails(
-            x500Name,
+            aliceX500Name,
             " ",
             listOf(mock())
         )
@@ -389,6 +398,46 @@ class StartRegistrationHandlerTest {
 
         val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
 
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if notary service name is the same as the virtual node name`() {
+        val notaryDetails = MemberNotaryDetails(
+            aliceX500Name,
+            "pluginType",
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if notary service name is the same as an existing member's virtual node name`() {
+        val notaryDetails = MemberNotaryDetails(
+            aliceX500Name,
+            "pluginType",
+            listOf(mock())
+        )
+        val bobInfo: MemberInfo = mock {
+            on { name } doReturn bobX500Name
+            on { isActive } doReturn true
+            on { memberProvidedContext } doReturn memberMemberContext
+            on { mgmProvidedContext } doReturn memberMgmContext
+        }
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        whenever(memberInfoFactory.create(any<SortedMap<String, String?>>(), any())).thenReturn(bobInfo)
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                mgmHoldingIdentity.toCorda(),
+                listOf(HoldingIdentity(aliceX500Name.toString(), groupId).toCorda())
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(memberInfo)))
+
+        val registrationCommand = getStartRegistrationCommand(bobHoldingIdentity, memberContext)
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, registrationCommand))
         result.assertDeclinedRegistration()
     }
 

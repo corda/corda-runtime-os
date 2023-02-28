@@ -28,6 +28,7 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
@@ -285,6 +286,22 @@ class StaticMemberRegistrationService @Activate constructor(
         )
     }
 
+    private fun validateNotaryDetails(
+        registeringMember: StaticMember,
+        staticMemberList: List<StaticMember>,
+        notaryInfo: Collection<Pair<String, String>>
+    ) {
+        val serviceName = notaryInfo.firstOrNull { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }?.second
+        //The notary service x500 name is different from the notary virtual node being registered.
+        require(registeringMember.name != serviceName) {
+            "Notary service name invalid: Notary service name $serviceName and virtual node name cannot be the same."
+        }
+        //The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
+        require(staticMemberList.none { it.name == serviceName }) {
+            "Notary service name invalid: There is a virtual node having the same name $serviceName."
+        }
+    }
+
     /**
      * Parses the static member list template, creates the MemberInfo for the registering member and the records for the
      * kafka publisher.
@@ -302,9 +319,12 @@ class StaticMemberRegistrationService @Activate constructor(
         val memberName = registeringMember.x500Name
         val memberId = registeringMember.shortHash.value
 
-        val staticMemberInfo = staticMemberList.firstOrNull {
+        val staticMemberInfo = staticMemberList.singleOrNull {
             MemberX500Name.parse(it.name!!) == memberName
-        } ?: throw IllegalArgumentException("Our membership $memberName is not listed in the static member list.")
+        } ?: throw IllegalArgumentException(
+            "Our membership $memberName is either not listed in the static member list or there is another member " +
+                    "with the same name."
+        )
 
         validateStaticMemberDeclaration(staticMemberInfo)
         // single key scheme used for both session and ledger key
@@ -314,6 +334,19 @@ class StaticMemberRegistrationService @Activate constructor(
             keyScheme,
             memberId,
         )
+
+        fun configureNotaryKey(): List<KeyDetails> {
+            hsmRegistrationClient.assignSoftHSM(memberId, NOTARY)
+            return listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
+        }
+
+        val notaryInfo = roles.toMemberInfo(::configureNotaryKey)
+        // validate if provided notary details are correct to fail-fast,
+        // before assigning more HSMs, generating other keys for member
+        if(notaryInfo.isNotEmpty()) {
+            validateNotaryDetails(staticMemberInfo, staticMemberList, notaryInfo)
+        }
+
         hsmRegistrationClient.assignSoftHSM(memberId, LEDGER)
         val ledgerKey = keysFactory.getOrGenerateKeyPair(LEDGER)
 
@@ -332,11 +365,6 @@ class StaticMemberRegistrationService @Activate constructor(
 
         val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
 
-        fun configureNotaryKey(): List<KeyDetails> {
-            hsmRegistrationClient.assignSoftHSM(memberId, NOTARY)
-            return listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
-        }
-
         @Suppress("SpreadOperator")
         val memberContext = mapOf(
             PARTY_NAME to memberName.toString(),
@@ -346,7 +374,7 @@ class StaticMemberRegistrationService @Activate constructor(
             LEDGER_KEYS_KEY.format(0) to ledgerKey.pem,
             LEDGER_KEY_HASHES_KEY.format(0) to ledgerKey.hash.toString(),
             *convertEndpoints(staticMemberInfo).toTypedArray(),
-            *roles.toMemberInfo(::configureNotaryKey).toTypedArray(),
+            *notaryInfo.toTypedArray(),
             SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
             PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
             MEMBER_CPI_NAME to cpi.name,

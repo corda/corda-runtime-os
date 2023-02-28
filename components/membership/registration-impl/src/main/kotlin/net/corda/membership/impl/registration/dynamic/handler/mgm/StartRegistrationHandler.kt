@@ -103,7 +103,8 @@ internal class StartRegistrationHandler(
                 existingMemberInfo is MembershipQueryResult.Success
                         && (existingMemberInfo.payload.isEmpty()
                         || !existingMemberInfo.payload.sortedBy { it.modifiedTime }.last().isActive)
-            ) { "The latest member info for given member is in 'Active' status" }
+            ) { "The latest member info for given member is in 'Active' status or " +
+                    "there is a member with the same name." }
 
             // The group ID matches the group ID of the MGM
             validateRegistrationRequest(
@@ -116,7 +117,7 @@ internal class StartRegistrationHandler(
             ) { "Registering member has not specified any endpoints" }
 
             // Validate role-specific information if any role is set
-            validateRoleInformation(pendingMemberInfo)
+            validateRoleInformation(mgmHoldingId, pendingMemberInfo)
 
             // Persist pending member info
             val persistMemberInfoRequest =
@@ -205,7 +206,7 @@ internal class StartRegistrationHandler(
         )
     }
 
-    private fun validateRoleInformation(member: MemberInfo) {
+    private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {
         // If role is set to notary, notary details are specified
         member.notaryDetails?.let { notary ->
             validateRegistrationRequest(
@@ -216,6 +217,18 @@ internal class StartRegistrationHandler(
                     it.isNotBlank()
                 ) { "Registering member has specified an invalid notary service plugin type." }
             }
+            // The notary service x500 name is different from the notary virtual node being registered.
+            validateRegistrationRequest(
+                member.name != notary.serviceName
+            ) { "The virtual node `${member.name}` and the notary service `${notary.serviceName}`" +
+                    " name cannot be the same." }
+            // The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
+            validateRegistrationRequest(
+                membershipQueryClient.queryMemberInfo(
+                    mgmHoldingId,
+                    listOf(HoldingIdentity(notary.serviceName, member.groupId))
+                ).getOrThrow().firstOrNull() == null
+            ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
         }
     }
 
