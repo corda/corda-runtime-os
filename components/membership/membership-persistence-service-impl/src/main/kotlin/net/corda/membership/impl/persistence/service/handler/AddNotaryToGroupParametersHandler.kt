@@ -81,7 +81,15 @@ internal class AddNotaryToGroupParametersHandler(
                 // Add new notary service
                 addNewNotaryService(parametersMap, notary, keyEncodingService, logger)
             }
-            val entity = GroupParametersEntity(epoch!!, serializeProperties(groupParameters!!))
+            // Only an MGM should be calling this function and so a signature is not set since it's signed when
+            // distributed.
+            val entity = GroupParametersEntity(
+                epoch = epoch!!,
+                parameters = serializeProperties(groupParameters!!),
+                signaturePublicKey = null,
+                signatureContext = null,
+                signatureContent = null
+            )
 
             em.persist(entity)
 

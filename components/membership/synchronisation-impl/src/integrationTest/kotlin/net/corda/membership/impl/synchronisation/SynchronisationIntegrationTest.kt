@@ -19,15 +19,15 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.membership.GroupParameters
+import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SignedMemberships
-import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
@@ -190,7 +190,7 @@ class SynchronisationIntegrationTest {
         val membershipPackageDeserializer: CordaAvroDeserializer<MembershipPackage> by lazy {
             cordaAvroSerializationFactory.createAvroDeserializer({}, MembershipPackage::class.java)
         }
-        val keyValueDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy{
+        val keyValueDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
             cordaAvroSerializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
         }
         val clock: Clock = TestClock(Instant.ofEpochSecond(100))
@@ -367,23 +367,24 @@ class SynchronisationIntegrationTest {
         }
 
         @Suppress("SpreadOperator")
-        private fun createTestMemberInfo(holdingIdentity: HoldingIdentity, sessionInitKey: PublicKey): MemberInfo = memberInfoFactory.create(
-            sortedMapOf(
-                MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
-                MemberInfoExtension.PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionInitKey),
-                MemberInfoExtension.GROUP_ID to groupId,
-                String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
-                String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",
-                MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
-                MemberInfoExtension.PLATFORM_VERSION to PLATFORM_VERSION,
-            ),
-            sortedMapOf(
-                MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
-                MemberInfoExtension.MODIFIED_TIME to clock.instant().toString(),
-                MemberInfoExtension.SERIAL to "1",
-            )
+        private fun createTestMemberInfo(holdingIdentity: HoldingIdentity, sessionInitKey: PublicKey): MemberInfo =
+            memberInfoFactory.create(
+                sortedMapOf(
+                    MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
+                    MemberInfoExtension.PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionInitKey),
+                    MemberInfoExtension.GROUP_ID to groupId,
+                    String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
+                    String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",
+                    MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
+                    MemberInfoExtension.PLATFORM_VERSION to PLATFORM_VERSION,
+                ),
+                sortedMapOf(
+                    MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
+                    MemberInfoExtension.MODIFIED_TIME to clock.instant().toString(),
+                    MemberInfoExtension.SERIAL to "1",
+                )
 
-        )
+            )
     }
 
     @Test
@@ -441,7 +442,8 @@ class SynchronisationIntegrationTest {
                 val appMessage = v as? AppMessage ?: return@getTestProcessor
                 val authenticatedMessage = appMessage.message as? AuthenticatedMessage ?: return@getTestProcessor
                 val membershipPackage =
-                    membershipPackageDeserializer.deserialize(authenticatedMessage.payload.array()) ?: return@getTestProcessor
+                    membershipPackageDeserializer.deserialize(authenticatedMessage.payload.array())
+                        ?: return@getTestProcessor
                 completableResult.complete(membershipPackage)
             },
             messagingConfig = bootConfig
@@ -449,7 +451,7 @@ class SynchronisationIntegrationTest {
             completableResult.getOrThrow(Duration.ofSeconds(5))
         }
 
-        assertSoftly { it ->
+        assertSoftly {
             it.assertThat(membershipPackage).isNotNull
             it.assertThat(membershipPackage.distributionType).isEqualTo(DistributionType.SYNC)
             it.assertThat(membershipPackage.memberships.memberships).hasSize(2)
@@ -541,14 +543,16 @@ class SynchronisationIntegrationTest {
                 withKey.context.toWire()
             )
         }
-        val wireGroupParameters = WireGroupParameters(ByteBuffer.wrap(serializedGroupParameters), mgmSignatureGroupParameters)
+        val signedGroupParameters = SignedGroupParameters(
+            ByteBuffer.wrap(serializedGroupParameters),
+            mgmSignatureGroupParameters
+        )
 
         val membershipPackage = MembershipPackage.newBuilder()
             .setDistributionType(DistributionType.STANDARD)
             .setCurrentPage(0)
             .setPageCount(1)
-            .setCpiAllowList(null)
-            .setGroupParameters(wireGroupParameters)
+            .setGroupParameters(signedGroupParameters)
             .setMemberships(
                 membership
             )
@@ -571,11 +575,11 @@ class SynchronisationIntegrationTest {
         ).also { it.start() }
 
         // Start subscription to check published group parameters
-        val completableResult2 = CompletableFuture<GroupParameters>()
+        val completableResult2 = CompletableFuture<PersistentGroupParameters>()
         val groupParametersSubscription = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("group_parameters_test_receiver", GROUP_PARAMETERS_TOPIC),
             getTestProcessor { v ->
-                completableResult2.complete(v as GroupParameters)
+                completableResult2.complete(v as PersistentGroupParameters)
             },
             messagingConfig = bootConfig
         ).also { it.start() }
@@ -633,7 +637,8 @@ class SynchronisationIntegrationTest {
                 it.assertThat(memberPublished.modifiedTime).isEqualTo(clock.instant().toString())
             }
 
-            it.assertThat(membershipPersistenceClient.getPersistedGroupParameters()!!.toAvro()).isEqualTo(groupParameters)
+            it.assertThat(membershipPersistenceClient.getPersistedGroupParameters()!!.toAvro())
+                .isEqualTo(groupParameters)
         }
 
         // Receive and assert on group parameters
@@ -646,9 +651,13 @@ class SynchronisationIntegrationTest {
             it.assertThat(result2).isNotNull
             it.assertThat(result2)
                 .isNotNull
-                .isInstanceOf(GroupParameters::class.java)
+                .isInstanceOf(PersistentGroupParameters::class.java)
+
             with(result2) {
-                it.assertThat(this.groupParameters).isEqualTo(groupParameters)
+                it.assertThat(
+                    keyValueDeserializer.deserialize(this.groupParameters.groupParameters.array())
+                ).isEqualTo(groupParameters)
+                it.assertThat(this.groupParameters.mgmSignature).isNotNull
                 it.assertThat(this.viewOwner).isEqualTo(requester)
             }
         }

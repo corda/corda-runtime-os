@@ -267,7 +267,7 @@ class StaticMemberRegistrationServiceTest {
     }
     private val mockGroupParameters: GroupParameters = mock()
     private val groupParametersFactory: GroupParametersFactory = mock {
-        on { create(any()) } doReturn mockGroupParameters
+        on { create(any<KeyValuePairList>()) } doReturn mockGroupParameters
     }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {

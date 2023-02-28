@@ -3,7 +3,8 @@ package net.corda.membership.impl.read.subscription
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
+import net.corda.data.membership.PersistentGroupParameters
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersFactory
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.nio.ByteBuffer
 import java.time.Instant
 
 class GroupParametersProcessorTest {
@@ -35,24 +37,36 @@ class GroupParametersProcessorTest {
             MPV_KEY to "1",
             MODIFIED_TIME_KEY to time.toString()
         )
-        val testEntriesList = convertToKeyValuePairList(testEntries)
         val updatedTestEntries = mapOf(
             EPOCH_KEY to "2",
             MPV_KEY to "2",
             MODIFIED_TIME_KEY to clock.instant().toString()
         )
+
+        val testEntriesList = convertToKeyValuePairList(testEntries)
         val updatedTestEntriesList = convertToKeyValuePairList(updatedTestEntries)
-        val aliceAvroGroupParams: GroupParametersAvro = mock {
+
+        val signedGroupParametersBytes: ByteArray = "original-signed".toByteArray()
+        val updatedSignedGroupParametersBytes: ByteArray = "updated-signed".toByteArray()
+
+        val signedGroupParameters: SignedGroupParameters = mock {
+            on { groupParameters } doReturn ByteBuffer.wrap(signedGroupParametersBytes)
+        }
+        val updatedSignedGroupParameters: SignedGroupParameters = mock {
+            on { groupParameters } doReturn ByteBuffer.wrap(updatedSignedGroupParametersBytes)
+        }
+
+        val aliceAvroGroupParams: PersistentGroupParameters = mock {
             on { viewOwner } doReturn alice
-            on { groupParameters } doReturn testEntriesList
+            on { groupParameters } doReturn signedGroupParameters
         }
-        val bobAvroGroupParams: GroupParametersAvro = mock {
+        val bobAvroGroupParams: PersistentGroupParameters = mock {
             on { viewOwner } doReturn bob
-            on { groupParameters } doReturn testEntriesList
+            on { groupParameters } doReturn signedGroupParameters
         }
-        val updatedBobAvroGroupParams: GroupParametersAvro = mock {
+        val updatedBobAvroGroupParams: PersistentGroupParameters = mock {
             on { viewOwner } doReturn bob
-            on { groupParameters } doReturn updatedTestEntriesList
+            on { groupParameters } doReturn updatedSignedGroupParameters
         }
 
         val groupParams: GroupParameters = mock {
@@ -63,8 +77,8 @@ class GroupParametersProcessorTest {
         }
 
         val groupParametersFactory: GroupParametersFactory = mock {
-            on { create(testEntriesList) } doReturn groupParams
-            on { create(updatedTestEntriesList) } doReturn updatedGroupParams
+            on { create(signedGroupParameters) } doReturn groupParams
+            on { create(updatedSignedGroupParameters) } doReturn updatedGroupParams
         }
 
         private fun convertToKeyValuePairList(data: Map<String, String>) = KeyValuePairList(
@@ -86,7 +100,7 @@ class GroupParametersProcessorTest {
 
     @Test
     fun `value class is GroupParameters`() {
-        assertThat(groupParametersProcessor.valueClass).isEqualTo(GroupParametersAvro::class.java)
+        assertThat(groupParametersProcessor.valueClass).isEqualTo(PersistentGroupParameters::class.java)
     }
 
     @Test

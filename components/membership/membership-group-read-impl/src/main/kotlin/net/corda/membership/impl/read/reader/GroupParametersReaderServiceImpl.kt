@@ -2,6 +2,7 @@ package net.corda.membership.impl.read.reader
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.PersistentGroupParameters
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,7 +31,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
 
 
 @Component(service = [GroupParametersReaderService::class])
@@ -42,7 +42,8 @@ class GroupParametersReaderServiceImpl internal constructor(
     private val groupParametersCache: MemberDataCache<GroupParameters>,
 ) : GroupParametersReaderService {
 
-    @Activate constructor(
+    @Activate
+    constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = ConfigurationReadService::class)
@@ -50,7 +51,7 @@ class GroupParametersReaderServiceImpl internal constructor(
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = GroupParametersFactory::class)
-        groupParametersFactory: GroupParametersFactory,
+        groupParametersFactory: GroupParametersFactory
     ) : this(
         coordinatorFactory,
         configurationReadService,
@@ -72,12 +73,14 @@ class GroupParametersReaderServiceImpl internal constructor(
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
+
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
+
     // for watching the state of the subscription
     private var subscriptionHandle: RegistrationHandle? = null
 
-    private var groupParamsSubscription: CompactedSubscription<String, GroupParametersAvro>? = null
+    private var groupParamsSubscription: CompactedSubscription<String, PersistentGroupParameters>? = null
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -115,14 +118,15 @@ class GroupParametersReaderServiceImpl internal constructor(
 
     private inner class ActiveImpl : InnerGroupParametersReaderService {
         override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
-            val recordList: List<VersionedRecord<HoldingIdentity, GroupParameters>> = groupParametersCache.getAll().map {
-                object : VersionedRecord<HoldingIdentity, GroupParameters> {
-                    override val version = it.value.epoch
-                    override val isDeleted = false
-                    override val key = it.key
-                    override val value = it.value
+            val recordList: List<VersionedRecord<HoldingIdentity, GroupParameters>> =
+                groupParametersCache.getAll().map {
+                    object : VersionedRecord<HoldingIdentity, GroupParameters> {
+                        override val version = it.value.epoch
+                        override val isDeleted = false
+                        override val key = it.key
+                        override val value = it.value
+                    }
                 }
-            }
             return recordList.stream()
         }
 
@@ -194,6 +198,7 @@ class GroupParametersReaderServiceImpl internal constructor(
                     activate(coordinator)
                 }
             }
+
             else -> {
                 deactivate(coordinator, "Dependencies are down.")
             }

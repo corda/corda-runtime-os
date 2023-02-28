@@ -18,6 +18,7 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:membership:membership-persistence-client')
 
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:layered-property-map')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-common')

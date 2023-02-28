@@ -4,7 +4,13 @@ import com.typesafe.config.ConfigFactory
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentGroupParameters
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -28,8 +34,8 @@ import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
@@ -46,6 +52,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
@@ -90,10 +97,25 @@ class GroupParametersWriterServiceTest {
         on { createPublisher(any(), any()) } doReturn mockPublisher
     }
 
+    private val keyBytes = "key-bytes".toByteArray()
+    private val keyEncodingService: KeyEncodingService = mock {
+        on { encodeAsByteArray(any()) } doReturn keyBytes
+    }
+    private val serializedGroupParameters = "group-params".toByteArray()
+    private val cordaAvroSerialiser: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(any()) } doReturn serializedGroupParameters
+    }
+
+    private val cordaAvroSerialisationFactory: CordaAvroSerializationFactory = mock {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn cordaAvroSerialiser
+    }
+
     private val writerService = GroupParametersWriterServiceImpl(
         coordinatorFactory,
         configurationReadService,
-        publisherFactory
+        publisherFactory,
+        keyEncodingService,
+        cordaAvroSerialisationFactory
     )
 
     private fun postStartEvent() {
@@ -240,7 +262,7 @@ class GroupParametersWriterServiceTest {
         fun `put publishes records to kafka`() {
             postConfigChangedEvent()
 
-            val capturedPublishedList = argumentCaptor<List<Record<String, GroupParameters>>>()
+            val capturedPublishedList = argumentCaptor<List<Record<String, PersistentGroupParameters>>>()
             whenever(mockPublisher.publish(capturedPublishedList.capture()))
                 .doReturn(listOf(CompletableFuture.completedFuture(Unit)))
 
@@ -261,7 +283,15 @@ class GroupParametersWriterServiceTest {
                 val record = result.first()
                 it.assertThat(record.topic).isEqualTo(GROUP_PARAMETERS_TOPIC)
                 it.assertThat(record.key).isEqualTo(ownerId)
-                it.assertThat(record.value).isEqualTo(params.toAvro(viewOwner))
+                it.assertThat(record.value).isInstanceOf(PersistentGroupParameters::class.java)
+                val publishedParams = record.value as PersistentGroupParameters
+                it.assertThat(publishedParams.viewOwner).isEqualTo(viewOwner.toAvro())
+
+                publishedParams.groupParameters
+                it.assertThat(publishedParams.groupParameters.groupParameters)
+                    .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
+
+                it.assertThat(publishedParams.groupParameters.mgmSignature).isNull()
             }
         }
 

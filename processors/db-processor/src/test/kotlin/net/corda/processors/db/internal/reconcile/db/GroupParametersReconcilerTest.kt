@@ -58,7 +58,10 @@ class GroupParametersReconcilerTest {
     private val serialisedGroupParameters = "foo-bar".toByteArray()
     private val groupParametersEntity = GroupParametersEntity(
         9,
-        serialisedGroupParameters
+        serialisedGroupParameters,
+        null,
+        null,
+        null
     )
 
     private val tx1: EntityTransaction = mock()

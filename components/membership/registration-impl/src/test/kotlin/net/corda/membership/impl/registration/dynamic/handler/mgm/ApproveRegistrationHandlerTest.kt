@@ -120,7 +120,7 @@ class ApproveRegistrationHandlerTest {
         on { epoch } doReturn 6
     }
     private val groupParametersFactory: GroupParametersFactory = mock {
-        on { create(any()) } doReturn persistedGroupParameters
+        on { create(any<KeyValuePairList>()) } doReturn persistedGroupParameters
     }
 
     private val handler = ApproveRegistrationHandler(

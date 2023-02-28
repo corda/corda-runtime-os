@@ -3,6 +3,7 @@ package net.corda.membership.impl.read.reader
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.PersistentGroupParameters
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -39,7 +40,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.util.stream.Collectors
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
 
 class GroupParametersReaderServiceImplTest {
     private companion object {
@@ -58,7 +58,7 @@ class GroupParametersReaderServiceImplTest {
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
     private val subscriptionCoordinatorName = LifecycleCoordinatorName("SUB")
-    private val groupParamsSubscription: CompactedSubscription<String, GroupParametersAvro> = mock {
+    private val groupParamsSubscription: CompactedSubscription<String, PersistentGroupParameters> = mock {
         on { subscriptionName } doReturn subscriptionCoordinatorName
     }
 
@@ -76,7 +76,7 @@ class GroupParametersReaderServiceImplTest {
     }
     private val subscriptionFactory: SubscriptionFactory = mock {
         on {
-            createCompactedSubscription(any(), any<CompactedProcessor<String, GroupParametersAvro>>(), any())
+            createCompactedSubscription(any(), any<CompactedProcessor<String, PersistentGroupParameters>>(), any())
         } doReturn groupParamsSubscription
     }
     private val groupParametersFactory: GroupParametersFactory = mock()

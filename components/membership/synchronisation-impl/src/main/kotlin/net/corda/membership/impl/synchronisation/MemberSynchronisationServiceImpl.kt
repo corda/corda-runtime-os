@@ -57,7 +57,6 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -250,22 +249,14 @@ class MemberSynchronisationServiceImpl internal constructor(
         private fun delayToNextRequestInMilliSeconds(): Long {
             // Add noise to prevent all the members to ask for sync in the same time
             return maxDelayBetweenRequestsInMillis -
-                (random.nextDouble() * 0.1 * maxDelayBetweenRequestsInMillis).toLong()
+                    (random.nextDouble() * 0.1 * maxDelayBetweenRequestsInMillis).toLong()
         }
 
         private fun parseGroupParameters(
             membershipPackage: MembershipPackage
-        ): GroupParameters {
-            return with(membershipPackage.groupParameters) {
-                val groupParametersBytes = groupParameters.array()
-                val parametersList = deserializer.deserialize(groupParametersBytes)
-                    ?: throw CordaRuntimeException("Failed to deserialize group parameters from received membership package.")
-                verifier.verify(
-                    mgmSignature,
-                    groupParametersBytes,
-                )
-                groupParametersFactory.create(parametersList)
-            }
+        ) = with(membershipPackage.groupParameters) {
+            verifier.verify(mgmSignature, groupParameters.array())
+            groupParametersFactory.create(this)
         }
 
         override fun cancelCurrentRequestAndScheduleNewOne(
@@ -354,7 +345,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                 // TODO - CORE-5813 - trigger sync protocol.
                 logger.warn(
                     "Cannot recover from failure to process membership updates. ${viewOwningMember.x500Name}" +
-                        " cannot initiate sync protocol with MGM as this is not implemented."
+                            " cannot initiate sync protocol with MGM as this is not implemented."
                 )
             }
         }
@@ -419,7 +410,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         }
         logger.info(
             "Member ${request.member} had not received membership package for a while now, " +
-                "asking MGM to send sync package"
+                    "asking MGM to send sync package"
         )
         try {
             val groupReader = membershipGroupReaderProvider.getGroupReader(request.member)
@@ -469,6 +460,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                     setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
                 )
             }
+
             else -> {
                 deactivate(coordinator)
                 configHandle?.close()

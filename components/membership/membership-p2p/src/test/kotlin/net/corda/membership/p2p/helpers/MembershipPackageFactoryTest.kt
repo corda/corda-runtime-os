@@ -139,7 +139,6 @@ class MembershipPackageFactoryTest {
                     clock.instant(),
                 )
             )
-            it.assertThat(membershipPackage.cpiAllowList).isNull()
             with(membershipPackage.groupParameters) {
                 it.assertThat(this.groupParameters).isEqualTo(ByteBuffer.wrap(groupParametersBytes))
                 it.assertThat(this.mgmSignature).isEqualTo(

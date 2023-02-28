@@ -11,13 +11,13 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SignedMemberships
-import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -189,13 +189,13 @@ class MemberSynchronisationServiceImplTest {
         on { hashCheck } doReturn hash
     }
     private val mgmSignatureGroupParameters = mock<CryptoSignatureWithKey>()
-    private val wireGroupParameters = mock<WireGroupParameters> {
+    private val signedGroupParameters = mock<SignedGroupParameters> {
         on { mgmSignature } doReturn mgmSignatureGroupParameters
         on { groupParameters } doReturn ByteBuffer.wrap(GROUP_PARAMETERS_BYTES)
     }
     private val membershipPackage: MembershipPackage = mock {
         on { memberships } doReturn signedMemberships
-        on { groupParameters } doReturn wireGroupParameters
+        on { groupParameters } doReturn signedGroupParameters
     }
     private val synchronisationMetadata = mock<SynchronisationMetaData> {
         on { member } doReturn member.toAvro()
@@ -241,7 +241,7 @@ class MemberSynchronisationServiceImplTest {
     private val persistenceClient = mock<MembershipPersistenceClient>()
     private val groupParameters = mock<GroupParameters>()
     private val groupParametersFactory = mock<GroupParametersFactory> {
-        on { create(any()) } doReturn groupParameters
+        on { create(any<SignedGroupParameters>()) } doReturn groupParameters
     }
     private val groupParametersWriterService = mock<GroupParametersWriterService>()
     private val synchronisationService = MemberSynchronisationServiceImpl(

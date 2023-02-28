@@ -7,12 +7,12 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
-import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
@@ -73,8 +73,8 @@ class MembershipPackageFactory(
                 .setMgmSignature(mgmSignature)
                 .build()
         }
-        val wireGroupParameters = serializer.serialize(groupParameters.toAvro())?.let {
-            WireGroupParameters(
+        val signedGroupParameters = serializer.serialize(groupParameters.toAvro())?.let {
+            SignedGroupParameters(
                 ByteBuffer.wrap(it),
                 mgmSigner.sign(it).toAvro()
             )
@@ -87,8 +87,7 @@ class MembershipPackageFactory(
             .setDistributionType(type)
             .setCurrentPage(0)
             .setPageCount(1)
-            .setCpiAllowList(null)
-            .setGroupParameters(wireGroupParameters)
+            .setGroupParameters(signedGroupParameters)
             .setMemberships(
                 membership
             )

@@ -40,7 +40,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters,
-    ): MembershipPersistenceResult<KeyValuePairList> = MembershipPersistenceResult.Success(KeyValuePairList())
+    ): MembershipPersistenceResult<Unit> = MembershipPersistenceResult.success()
 
     override fun addNotaryToGroupParameters(
         viewOwningIdentity: HoldingIdentity,

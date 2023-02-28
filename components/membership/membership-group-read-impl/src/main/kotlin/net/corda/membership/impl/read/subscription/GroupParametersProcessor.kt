@@ -1,46 +1,62 @@
 package net.corda.membership.impl.read.subscription
 
-import net.corda.data.KeyValuePairList
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
+import net.corda.data.membership.PersistentGroupParameters
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.membership.impl.read.cache.MemberDataCache
+import net.corda.membership.lib.FailedGroupParametersDeserialization
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.toCorda
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class GroupParametersProcessor(
     private val groupParametersCache: MemberDataCache<GroupParameters>,
-    private val groupParametersFactory: GroupParametersFactory,
-) : CompactedProcessor<String, GroupParametersAvro> {
+    private val groupParametersFactory: GroupParametersFactory
+) : CompactedProcessor<String, PersistentGroupParameters> {
+
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+    }
+
     override val keyClass: Class<String>
         get() = String::class.java
 
-    override val valueClass: Class<GroupParametersAvro>
-        get() = GroupParametersAvro::class.java
+    override val valueClass: Class<PersistentGroupParameters>
+        get() = PersistentGroupParameters::class.java
 
     override fun onNext(
-        newRecord: Record<String, GroupParametersAvro>,
-        oldValue: GroupParametersAvro?,
-        currentData: Map<String, GroupParametersAvro>
+        newRecord: Record<String, PersistentGroupParameters>,
+        oldValue: PersistentGroupParameters?,
+        currentData: Map<String, PersistentGroupParameters>
     ) {
         newRecord.value?.let {
-            groupParametersCache.put(
-                it.viewOwner.toCorda(),
-                createGroupParameters(it.groupParameters)
-            )
+            try {
+                groupParametersCache.put(
+                    it.viewOwner.toCorda(),
+                    createGroupParameters(it.groupParameters)
+                )
+            } catch (ex: FailedGroupParametersDeserialization) {
+                logger.error("Failed to deserialise group parameters. Group parameters cache was not updated.", ex)
+            }
         }
     }
 
-    override fun onSnapshot(currentData: Map<String, GroupParametersAvro>) {
+    override fun onSnapshot(currentData: Map<String, PersistentGroupParameters>) {
         currentData.entries.forEach {
-            groupParametersCache.put(
-                it.value.viewOwner.toCorda(),
-                createGroupParameters(it.value.groupParameters)
-            )
+            try {
+                groupParametersCache.put(
+                    it.value.viewOwner.toCorda(),
+                    createGroupParameters(it.value.groupParameters)
+                )
+            } catch (ex: FailedGroupParametersDeserialization) {
+                logger.error("Failed to deserialise group parameters. Group parameters cache was not updated.", ex)
+            }
         }
     }
 
-    private fun createGroupParameters(groupParamsEntries: KeyValuePairList): GroupParameters =
-        groupParametersFactory.create(groupParamsEntries)
+    private fun createGroupParameters(signedGroupParameters: SignedGroupParameters) =
+        groupParametersFactory.create(signedGroupParameters)
 }

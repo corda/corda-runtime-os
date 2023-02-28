@@ -576,7 +576,10 @@ class MembershipPersistenceTest {
                             KeyValuePair(MPV_KEY, "5000")
                         )
                     )
-                )!!
+                )!!,
+                null,
+                null,
+                null
             )
             it.persist(entity)
         }
@@ -618,7 +621,10 @@ class MembershipPersistenceTest {
                             KeyValuePair(MPV_KEY, "5000")
                         )
                     )
-                )!!
+                )!!,
+                null,
+                null,
+                null
             )
             it.persist(entity)
         }
@@ -735,7 +741,10 @@ class MembershipPersistenceTest {
                             KeyValuePair("corda.notary.service.0.plugin", notaryServicePlugin)
                             )
                         )
-                    )!!
+                    )!!,
+                null,
+                null,
+                null
                 )
             it.persist(entity)
         }
@@ -824,7 +833,10 @@ class MembershipPersistenceTest {
                             KeyValuePair("corda.notary.service.0.keys.0", oldNotaryKey)
                         )
                     )
-                )!!
+                )!!,
+                null,
+                null,
+                null
             )
             it.persist(entity)
         }

@@ -43,6 +43,9 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             val entity = GroupParametersEntity(
                 epoch = 1,
                 parameters = serializeProperties(groupParameters),
+                signaturePublicKey = null,
+                signatureContext = null,
+                signatureContent = null
             )
             em.persist(entity)
 

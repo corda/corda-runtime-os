@@ -35,7 +35,16 @@ class GroupParametersEntity(
     val epoch: Int,
 
     @Column(name = "parameters", nullable = false, updatable = false)
-    val parameters: ByteArray
+    val parameters: ByteArray,
+
+    @Column(name = "signature_public_key", nullable = true, updatable = false, columnDefinition = "BLOB")
+    val signaturePublicKey: ByteArray?,
+
+    @Column(name = "signature_context", nullable = true, updatable = false, columnDefinition = "BLOB")
+    val signatureContext: ByteArray?,
+
+    @Column(name = "signature_content", nullable = true, updatable = false, columnDefinition = "BLOB")
+    val signatureContent: ByteArray?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (other === this) return true

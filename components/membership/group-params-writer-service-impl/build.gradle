@@ -18,6 +18,7 @@ dependencies {
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:membership:group-params-writer-service')
+    implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:layered-property-map')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:messaging:messaging')

@@ -156,7 +156,7 @@ internal class MembershipPersistenceRPCProcessor(
     private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
         val factory = handlerFactories[requestClass] ?: throw MembershipPersistenceException(
             "No handler has been registered to handle the persistence request received." +
-                "Request received: [$requestClass]"
+                    "Request received: [$requestClass]"
         )
         return factory.invoke() as PersistenceHandler<Any, Any>
     }

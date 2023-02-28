@@ -86,9 +86,9 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<KeyValuePairList> {
+    ): MembershipPersistenceResult<Unit> {
         persistedGroupParameters = groupParameters
-        return MembershipPersistenceResult.Success(groupParameters.toAvro())
+        return MembershipPersistenceResult.success()
     }
 
     override fun addNotaryToGroupParameters(

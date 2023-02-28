@@ -3,6 +3,9 @@ package net.corda.membership.impl.persistence.client
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -15,9 +18,9 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.ConsumePreAuthToken
+import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.MutualTlsAddToAllowedCertificates
 import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCertificates
-import net.corda.data.membership.db.request.command.DeleteApprovalRule
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
@@ -151,6 +154,14 @@ class MembershipPersistenceClientImplTest {
     )
 
     private val memberInfoFactory = mock<MemberInfoFactory>()
+    private val keyEncodingService = mock<KeyEncodingService>()
+    private val serialisedParams = "serialised-params".toByteArray()
+    private val serialiser = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(any()) } doReturn serialisedParams
+    }
+    private val cordaAvroSerialisationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serialiser
+    }
 
     private val testConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
@@ -190,6 +201,8 @@ class MembershipPersistenceClientImplTest {
             publisherFactory,
             configurationReadService,
             memberInfoFactory,
+            keyEncodingService,
+            cordaAvroSerialisationFactory,
             clock
         )
 
@@ -576,7 +589,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Success(groupParameters.toAvro()))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.success())
         }
 
         @Test
@@ -589,20 +602,7 @@ class MembershipPersistenceClientImplTest {
 
             val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
 
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Placeholder error"))
-        }
-
-        @Test
-        fun `persistGroupParameters returns failure for unexpected result`() {
-            val groupParameters = mock<GroupParameters>()
-            postConfigChangedEvent()
-            mockPersistenceResponse(
-                null,
-            )
-
-            val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
-
-            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<KeyValuePairList>("Unexpected response: null"))
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Unit>("Placeholder error"))
         }
 
         @Test
@@ -618,10 +618,17 @@ class MembershipPersistenceClientImplTest {
 
             membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
 
-            val parameters = (argument.firstValue.request as? PersistGroupParameters)?.groupParameters?.items
-            assertThat(parameters).containsExactly(
-                KeyValuePair("a", "b")
-            )
+            val sentParams = (argument.firstValue.request as? PersistGroupParameters)?.groupParameters
+            assertThat(sentParams)
+                .isNotNull
+
+            assertThat(sentParams?.groupParameters)
+                .isNotNull
+                .isEqualTo(ByteBuffer.wrap(serialisedParams))
+
+            assertThat(sentParams?.mgmSignature)
+                .isNull()
+
         }
     }
 
@@ -782,7 +789,8 @@ class MembershipPersistenceClientImplTest {
         fun `deleteApprovalRule returns error in case of failure`() {
             postConfigChangedEvent()
             mockPersistenceResponse(
-                PersistenceFailedResponse("Placeholder error"),            )
+                PersistenceFailedResponse("Placeholder error"),
+            )
 
             val result = membershipPersistenceClient.deleteApprovalRule(
                 ourHoldingIdentity,
@@ -898,7 +906,7 @@ class MembershipPersistenceClientImplTest {
                     .isEqualTo(ourHoldingIdentity.toAvro())
 
                 assertThat(firstValue.request).isInstanceOf(UpdateMemberAndRegistrationRequestToDeclined::class.java)
-                with (firstValue.request as UpdateMemberAndRegistrationRequestToDeclined) {
+                with(firstValue.request as UpdateMemberAndRegistrationRequestToDeclined) {
                     assertThat(member).isEqualTo(bob.toAvro())
                     assertThat(registrationId).isEqualTo(registrationRequestId)
                 }
@@ -1080,7 +1088,8 @@ class MembershipPersistenceClientImplTest {
         fun `generatePreAuthToken returns the token correctly`() {
             mockPersistenceResponse()
 
-            val response = membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+            val response =
+                membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         }
@@ -1089,7 +1098,8 @@ class MembershipPersistenceClientImplTest {
         fun `generatePreAuthToken return failure after failure`() {
             mockPersistenceResponse(PersistenceFailedResponse("Placeholder error"))
 
-            val response = membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+            val response =
+                membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1098,7 +1108,8 @@ class MembershipPersistenceClientImplTest {
         fun `generatePreAuthToken return failure after unknown result`() {
             mockPersistenceResponse("Placeholder error")
 
-            val response = membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
+            val response =
+                membershipPersistenceClient.generatePreAuthToken(ourHoldingIdentity, uuid, ourX500Name, ttl, remarks)
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
         }
@@ -1122,7 +1133,8 @@ class MembershipPersistenceClientImplTest {
             val mockToken = mock<PreAuthToken>()
             mockPersistenceResponse(RevokePreAuthTokenResponse(mockToken))
 
-            val response = membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark).getOrThrow()
+            val response =
+                membershipPersistenceClient.revokePreAuthToken(ourHoldingIdentity, uuid, removalRemark).getOrThrow()
 
             assertThat(response).isEqualTo(mockToken)
         }

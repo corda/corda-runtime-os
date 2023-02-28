@@ -93,7 +93,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
     private val previousEntry: TypedQuery<GroupParametersEntity> = mock {
         on { resultList } doReturn resultList
-        on { singleResult } doReturn GroupParametersEntity(EPOCH, "test".toByteArray())
+        on { singleResult } doReturn GroupParametersEntity(EPOCH, "test".toByteArray(), null, null, null)
     }
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
         on { setMaxResults(1) } doReturn previousEntry
@@ -192,6 +192,9 @@ class AddNotaryToGroupParametersHandlerTest {
             assertThat(firstValue).isInstanceOf(GroupParametersEntity::class.java)
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
+            assertThat(entity.signatureContent).isNull()
+            assertThat(entity.signatureContext).isNull()
+            assertThat(entity.signaturePublicKey).isNull()
             val persistedParameters = serializeCaptor.firstValue
             assertThat(persistedParameters.items.size).isEqualTo(5)
             assertThat(persistedParameters.items.containsAll(
@@ -262,6 +265,9 @@ class AddNotaryToGroupParametersHandlerTest {
             assertThat(firstValue).isInstanceOf(GroupParametersEntity::class.java)
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
+            assertThat(entity.signatureContent).isNull()
+            assertThat(entity.signatureContext).isNull()
+            assertThat(entity.signaturePublicKey).isNull()
             val persistedParameters = serializeCaptor.firstValue
             assertThat(persistedParameters.items.size).isEqualTo(6)
             assertThat(persistedParameters.items.containsAll(

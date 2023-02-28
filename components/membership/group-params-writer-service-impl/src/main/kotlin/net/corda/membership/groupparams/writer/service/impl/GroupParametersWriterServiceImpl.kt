@@ -3,6 +3,12 @@ package net.corda.membership.groupparams.writer.service.impl
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.PersistentGroupParameters
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,6 +21,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.bytes
+import net.corda.membership.lib.signature
+import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -29,7 +38,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import net.corda.data.membership.GroupParameters as GroupParametersAvro
+import java.nio.ByteBuffer
 
 @Component(service = [GroupParametersWriterService::class])
 class GroupParametersWriterServiceImpl @Activate constructor(
@@ -39,10 +48,18 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerialisationFactory: CordaAvroSerializationFactory,
 ) : GroupParametersWriterService {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SERVICE = "GroupParametersWriterService"
+    }
+
+    private val keyValuePairSerialiser = cordaAvroSerialisationFactory.createAvroSerializer<KeyValuePairList> {
+        logger.error("Failed to serialise group parameters.")
     }
 
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<GroupParametersWriterService>()
@@ -189,9 +206,18 @@ class GroupParametersWriterServiceImpl @Activate constructor(
         ).also { it.start() }
         activate(coordinator)
     }
-}
 
-fun GroupParameters.toAvro(owner: HoldingIdentity) = GroupParametersAvro(
-    owner.toAvro(),
-    this.toAvro()
-)
+    private fun GroupParameters.toAvro(owner: HoldingIdentity) = PersistentGroupParameters(
+        owner.toAvro(),
+        SignedGroupParameters(
+            ByteBuffer.wrap(bytes ?: keyValuePairSerialiser.serialize(toAvro())),
+            signature?.let {
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.by)),
+                    ByteBuffer.wrap(it.bytes),
+                    it.context.toWire()
+                )
+            }
+        )
+    )
+}
