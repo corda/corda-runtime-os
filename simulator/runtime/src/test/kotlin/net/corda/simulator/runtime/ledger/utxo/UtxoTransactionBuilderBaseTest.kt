@@ -1,6 +1,10 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
+import net.corda.simulator.entities.UtxoTransactionOutputEntity
+import net.corda.simulator.entities.UtxoTransactionOutputEntityId
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
+import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.simulator.runtime.testutils.generateKeys
 import net.corda.v5.application.crypto.SigningService
@@ -12,15 +16,15 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateRef
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.lang.IllegalStateException
 import java.security.PublicKey
 import java.time.Clock
 import java.time.Instant
@@ -53,11 +57,29 @@ class UtxoTransactionBuilderBaseTest {
         )
         val command = TestUtxoCommand()
         val output = TestUtxoState("StateData", publicKeys)
+        val serializer = BaseSerializationService()
+        val refState = TestUtxoState("ReferenceState", publicKeys)
+        val outputEntity = UtxoTransactionOutputEntity(
+            "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
+            TestUtxoState::class.java.canonicalName,
+            serializer.serialize(listOf<EncumbranceGroupImpl>()).bytes,
+            serializer.serialize(refState).bytes,
+            0,
+            false
+        )
+        whenever(persistenceService.find(eq(UtxoTransactionOutputEntity::class.java),
+            eq(UtxoTransactionOutputEntityId(
+                "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D", 0))))
+            .thenReturn(outputEntity)
+
         val tx = builder.addCommand(command)
             .addSignatories(listOf(publicKeys[0]))
             .addOutputState(output)
             .setNotary(notary)
             .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+            .addReferenceState(
+                StateRef.parse("SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D:0")
+            )
             .toSignedTransaction()
 
         assertThat(tx.notary, `is`(notary))
@@ -72,6 +94,9 @@ class UtxoTransactionBuilderBaseTest {
         assertThat(tx.signatures[0].by, `is`(publicKeys[0]))
         assertThat(String(tx.signatures[0].signature.bytes), `is`("My fake signed things"))
         assertThat(tx.signatures[0].metadata.timestamp, `is`(Instant.EPOCH))
+        assertThat(ledgerTx.referenceStateRefs.size, `is`(1))
+        assertThat(ledgerTx.referenceStateRefs[0], `is`(StateRef.parse(
+            "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D:0")))
     }
 
     @Test
@@ -82,30 +107,41 @@ class UtxoTransactionBuilderBaseTest {
             configuration = mock()
         )
 
-        assertThrows<IllegalStateException>{
-            builder.toSignedTransaction()
+        assertThatThrownBy { builder.toSignedTransaction() }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("The notary of UtxoTransactionBuilder must not be null.")
+
+        assertThatThrownBy { builder.setNotary(notary).toSignedTransaction() }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("The time window of UtxoTransactionBuilder must not be null.")
+
+        assertThatThrownBy {
+            builder.setNotary(notary)
+            .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+            .toSignedTransaction()
         }
-        assertThrows<IllegalStateException>{
-            builder.setNotary(notary).toSignedTransaction()
-        }
-        assertThrows<IllegalStateException>{
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("At least one signatory signing key must be applied to the current transaction.")
+
+        assertThatThrownBy {
             builder.setNotary(notary)
                 .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
-                .toSignedTransaction()
-        }
-        assertThrows<IllegalStateException>{
-            builder.setNotary(notary)
-                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
-                .addOutputState(TestUtxoState("StateData", publicKeys))
-                .toSignedTransaction()
-        }
-        assertThrows<IllegalStateException>{
-            builder.setNotary(notary)
-                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
-                .addOutputState(TestUtxoState("StateData", publicKeys))
                 .addSignatories(publicKeys)
                 .toSignedTransaction()
         }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("At least one input state, or " +
+                    "one output state must be applied to the current transaction.")
+
+        assertThatThrownBy {
+            builder.setNotary(notary)
+                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .addSignatories(publicKeys)
+                .addOutputState(TestUtxoState("StateData", publicKeys))
+                .toSignedTransaction()
+        }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("At least one command must be applied to the current transaction.")
     }
 
     class TestUtxoState(

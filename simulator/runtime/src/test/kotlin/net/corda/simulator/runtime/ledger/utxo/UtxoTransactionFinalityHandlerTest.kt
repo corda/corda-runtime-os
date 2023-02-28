@@ -1,5 +1,8 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import net.corda.ledger.utxo.data.state.EncumbranceGroupImpl
+import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.simulator.runtime.messaging.BaseMemberInfo
 import net.corda.simulator.runtime.notary.SimTimeWindow
@@ -16,19 +19,22 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.BelongsToContract
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
-import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.getOutputStates
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.kotlin.any
@@ -203,10 +209,85 @@ class UtxoTransactionFinalityHandlerTest {
         val finalizer = UtxoTransactionFinalityHandler(
             mock(), signingService, signingService, persistenceService, mock())
 
-        assertThrows<CordaRuntimeException> {
-            finalizer.finalizeTransaction(signedTransaction, mock())
-        }
+        assertThatThrownBy{finalizer.finalizeTransaction(signedTransaction, mock())}
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("The following contract verification requirements were not met")
+    }
 
+    @Test
+    fun `should fail on faulty encumbrance with duplicate inputs`(){
+        val persistenceService = mock<PersistenceService>()
+        val signingService = mock<SigningService>()
+        val signedTransaction = mock<UtxoSignedTransaction>()
+        val ledgerTx = mock<UtxoLedgerTransaction>()
+        val duplicateStateAndRefs = listOf(
+                StateAndRefImpl(
+                    TransactionStateImpl(
+                        TestUtxoState("S1", publicKeys),
+                        notary,
+                        EncumbranceGroupImpl(
+                            1, "some-tag"
+                        )),
+                    StateRef(SecureHash.parse(txIds[0]), 0)),
+                StateAndRefImpl(
+                    TransactionStateImpl(
+                        TestUtxoState("S1", publicKeys),
+                        notary,
+                        EncumbranceGroupImpl(
+                            1, "some-tag"
+                        )),
+                    StateRef(SecureHash.parse(txIds[0]), 0))
+            )
+        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTx)
+        whenever(ledgerTx.inputStateAndRefs).thenReturn(duplicateStateAndRefs)
+        whenever(ledgerTx.id).thenReturn(SecureHash.parse(txIds[1]))
+
+        val finalizer = UtxoTransactionFinalityHandler(
+            mock(), signingService, signingService, persistenceService, mock())
+
+        assertThatThrownBy { finalizer.finalizeTransaction(signedTransaction, mock())  }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Encumbrance check failed")
+            .hasMessageContaining("0 is used 2 times as input!")
+    }
+
+    @Test
+    fun `should fail on faulty encumbrance`(){
+        val persistenceService = mock<PersistenceService>()
+        val signingService = mock<SigningService>()
+        val signedTransaction = mock<UtxoSignedTransaction>()
+        val ledgerTx = mock<UtxoLedgerTransaction>()
+        whenever(signedTransaction.toLedgerTransaction()).thenReturn(ledgerTx)
+        whenever(ledgerTx.id).thenReturn(SecureHash.parse(txIds[1]))
+
+        val finalizer = UtxoTransactionFinalityHandler(
+            mock(), signingService, signingService, persistenceService, mock())
+
+        val faultyEncumbranceStateAndRefs = listOf(
+            StateAndRefImpl(
+                TransactionStateImpl(
+                    TestUtxoState("S1", publicKeys),
+                    notary,
+                    EncumbranceGroupImpl(
+                        3, "some-tag"
+                    )),
+                StateRef(SecureHash.parse(txIds[0]), 0)),
+            StateAndRefImpl(
+                TransactionStateImpl(
+                    TestUtxoState("S2", publicKeys),
+                    notary,
+                    EncumbranceGroupImpl(
+                        3, "some-tag"
+                    )),
+                StateRef(SecureHash.parse(txIds[0]), 1))
+        )
+
+        whenever(ledgerTx.inputStateAndRefs).thenReturn(faultyEncumbranceStateAndRefs)
+        assertThatThrownBy { finalizer.finalizeTransaction(signedTransaction, mock())  }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Encumbrance check failed")
+            .hasMessageContaining("0 is part of encumbrance group some-tag, but only 2 " +
+                    "states out of 3 encumbered states are present as inputs.")
     }
 
     private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
@@ -228,4 +309,9 @@ class UtxoTransactionFinalityHandlerTest {
                 throw IllegalArgumentException("Faulty State Detected")
         }
     }
+
+    private val txIds = listOf(
+        "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9D",
+        "SHA-256:9407A4B8D56871A27AD9AE800D2AC78D486C25C375CEE80EE7997CB0E6105F9E"
+    )
 }

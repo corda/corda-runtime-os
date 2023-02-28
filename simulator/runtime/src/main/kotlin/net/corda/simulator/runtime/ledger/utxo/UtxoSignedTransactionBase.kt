@@ -119,6 +119,7 @@ class UtxoSignedTransactionBase(
             )
         }
 
+        //Filter relevant outputs
         val relevantIndexes = this.outputStateAndRefs.withIndex().filter { (_, stateAndRef) ->
             val contract = stateAndRef.state.contractType.getConstructor().newInstance()
             contract.isRelevant(stateAndRef.state.contractState, keys)

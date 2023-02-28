@@ -51,7 +51,6 @@ class UtxoTransactionFinalityHandler(
         return persist(notarizedTx)
     }
 
-
     fun receiveFinality(session: FlowSession, validator: UtxoTransactionValidator): UtxoSignedTransaction {
         val signedTransaction = session.receive<UtxoSignedTransactionBase>()
         backchainHandler.receiveBackChain(signedTransaction, session)
@@ -88,7 +87,6 @@ class UtxoTransactionFinalityHandler(
                 entity
             }
         }
-
         persistenceService.merge(updatedEntities.filterNotNull())
     }
 
@@ -168,7 +166,7 @@ class UtxoTransactionFinalityHandler(
 
     private fun checkEncumbranceGroup(txId: SecureHash, encumbranceTag: String, stateInfos: List<EncumbranceInfo>)
             : List<String> {
-        // Check that no input states have been duplicated to fool our counting
+        // Check that no input states have been duplicated
         val duplicationFailures = stateInfos.groupBy { it.stateIndex }.filter { it.value.size > 1 }.map { (index, infos) ->
                 "Encumbrance check failed: State $txId, $index " +
                         "is used ${infos.size} times as input!"

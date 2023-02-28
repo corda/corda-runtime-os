@@ -109,7 +109,6 @@ class IssueLandTitleResponderFlow: ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         utxoLedgerService.receiveFinality(session) {}
-
     }
 }
 

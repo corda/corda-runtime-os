@@ -89,7 +89,7 @@ class SimUtxoLedgerService(
     }
 
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
-        TODO("Not yet implemented")
+        return UtxoFilteredTransactionBuilderBase(signedTransaction as UtxoSignedTransactionBase)
     }
 
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {

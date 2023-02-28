@@ -54,7 +54,7 @@ data class UtxoTransactionBuilderBase(
         tag: String,
         contractStates: Iterable<ContractState>
     ): UtxoTransactionBuilder {
-        TODO("Not yet implemented")
+        return copy(outputStates = outputStates + contractStates.map { it.withEncumbrance(tag) })
     }
 
     override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {

@@ -71,7 +71,6 @@ class FetchLandTitleFlow : ClientStartableFlow {
                 landTitleList.add(landTitle)
             }
         }
-
         return jsonMarshallingService.format(landTitleList)
     }
 }

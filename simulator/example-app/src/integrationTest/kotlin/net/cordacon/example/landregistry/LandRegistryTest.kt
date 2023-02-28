@@ -24,8 +24,12 @@ class LandRegistryTest {
 
         val simulator = Simulator()
         val nodes = listOf(issuer, owner).map {
-            val node = simulator.createVirtualNode(it, IssueLandTitleFlow::class.java,
-                IssueLandTitleResponderFlow::class.java, FetchLandTitleFlow::class.java)
+            val node = simulator.createVirtualNode(
+                it,
+                IssueLandTitleFlow::class.java,
+                IssueLandTitleResponderFlow::class.java,
+                FetchLandTitleFlow::class.java
+            )
             node.generateKey("${it.commonName}-key", HsmCategory.LEDGER, "any-scheme")
             node
         }
@@ -66,7 +70,6 @@ class LandRegistryTest {
         assertThat(ownerLandTitle[0]["titleNumber"], `is`("T001"))
         assertThat(ownerLandTitle[0]["issuer"], `is`("CN=Alice, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
         assertThat(ownerLandTitle[0]["owner"], `is`("CN=Bob, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
-
     }
 
     @Test
@@ -74,9 +77,14 @@ class LandRegistryTest {
         val simulator = Simulator()
 
         val nodes = listOf(issuer, owner, newOwner).map {
-            val node = simulator.createVirtualNode(it, IssueLandTitleFlow::class.java,
-                IssueLandTitleResponderFlow::class.java, TransferLandTitleFlow::class.java,
-                TransferLandTitleResponderFlow::class.java, FetchLandTitleFlow::class.java)
+            val node = simulator.createVirtualNode(
+                it,
+                IssueLandTitleFlow::class.java,
+                IssueLandTitleResponderFlow::class.java,
+                TransferLandTitleFlow::class.java,
+                TransferLandTitleResponderFlow::class.java,
+                FetchLandTitleFlow::class.java
+            )
             node.generateKey("${it.commonName}-key", HsmCategory.LEDGER, "any-scheme")
             node
         }
