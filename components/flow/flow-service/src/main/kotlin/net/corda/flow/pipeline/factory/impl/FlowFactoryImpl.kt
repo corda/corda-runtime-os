@@ -33,7 +33,9 @@ class FlowFactoryImpl @Activate constructor(
                 startFlowEvent.startContext.flowClassName,
                 ClientStartableFlow::class.java
             )
-            val logic = flowClass.getDeclaredConstructor().newInstance()
+            // Fails here
+            val ctor = flowClass.getDeclaredConstructor()
+            val logic = ctor.newInstance()
             val args = ClientRequestBodyImpl(flowFiberService)
 
             ClientStartedFlow(logic, args)
