@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.interop.data.FacadeFlowMapping
+import net.corda.interop.data.FacadeMethodMapping
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -56,12 +57,30 @@ class FacadeToFlowMapperService @Activate constructor(
         if (content.trim().isEmpty()) {
             throw IllegalStateException("Failed to fetch facade to flow mapping.")
         } else {
-            return getFacadeMapping(content).facadeFlowMapping
-                .first { it.facadeId == facadeId }
-                .facadeMethodMapping
-                .first { it.facadeMethod == facadeName }
-                .flowName
+            val facadeFlowMapping = getFacadeMapping(content)
+            checkNotNull(facadeFlowMapping.facadeFlowMapping) { "Failed to find facadeFlowMapping $facadeFlowMapping" }
+            val facadeMethodMapping = findMappingByFacadeId(facadeFlowMapping, facadeId)
+            val facadeToFlowFirstItem = findMappingByFacadeName(facadeMethodMapping, facadeName)
+            return facadeToFlowFirstItem.flowName
         }
+    }
+
+    private fun findMappingByFacadeName(
+        facadeMethodMapping: List<FacadeMethodMapping>,
+        facadeName: String
+    ) = try {
+        facadeMethodMapping.filterNotNull().first { it.facadeMethod == facadeName }
+    } catch (e: NoSuchElementException) {
+        throw IllegalStateException("Failed to find facade to flow mapping for facadeName : $facadeName")
+    }
+
+    private fun findMappingByFacadeId(
+        facadeFlowMapping: FacadeFlowMapping,
+        facadeId: String
+    ) = try {
+        facadeFlowMapping.facadeFlowMapping.filterNotNull().first { it.facadeId == facadeId }.facadeMethodMapping
+    } catch (e: NoSuchElementException) {
+        throw IllegalStateException("Failed to find facade to flow mapping for facadeId : $facadeId")
     }
 
     private fun getFacadeMapping(content: String): FacadeFlowMapping = try {
