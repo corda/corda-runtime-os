@@ -8,8 +8,7 @@ import net.corda.v5.crypto.exceptions.CryptoException
  * Signals that there is a throttling by a downstream service, such as HSM or any other and provides parameters which
  * can be used to retry the operation which caused that.
  */
-@CordaSerializable
-open class CryptoThrottlingException : CryptoException {
+class CryptoThrottlingException : CryptoException {
     companion object {
         /**
          * Creates an instance of the exception with the message
@@ -111,7 +110,7 @@ open class CryptoThrottlingException : CryptoException {
         this.backoff = backoff
     }
 
-    open fun getBackoff(attempt: Int): Long =
+    fun getBackoff(attempt: Int): Long =
         if (attempt < 1 || attempt > backoff.size) {
             -1
         } else {
