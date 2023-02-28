@@ -127,7 +127,7 @@ fun E2eCluster.uploadCpi(
                 size = cpiJar.size.toLong(),
             )
             val id = cpi(upload).id
-            eventually(allowAllExceptions = true) {
+            eventually(retryAllExceptions = true) {
                 val status = status(id)
                 assertThat(status.status).isEqualTo("OK")
                 status.cpiFileChecksum
@@ -244,7 +244,7 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 1.minutes, allowAllExceptions = true) {
+                eventually(duration = 1.minutes, retryAllExceptions = true) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .isEqualTo(RegistrationStatus.APPROVED)
@@ -505,7 +505,7 @@ fun E2eCluster.assertAllMembersAreInMemberList(
     eventually(
         waitBetween = 2.seconds,
         duration = 60.seconds,
-        allowAllExceptions = true,
+        retryAllExceptions = true,
     ) {
         val groupId = getGroupId(member.holdingId)
         lookupMembers(member.holdingId).also { result ->

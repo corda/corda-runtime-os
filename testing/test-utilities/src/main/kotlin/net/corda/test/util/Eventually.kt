@@ -10,7 +10,7 @@ import java.time.Duration
  * @param waitBetween How long to wait before retrying the test condition. The default is 1/10th of a second.
  * @param waitBefore How long to wait before trying the test condition for the first time. It's assumed that [eventually]
  * is being used because the condition is not _immediately_ fulfilled, so this defaults to the value of [waitBetween].
- * @param allowAllExceptions if true all exceptions will be caught for a retry. If false only assertion
+ * @param retryAllExceptions if true all exceptions will be caught for a retry. If false only assertion
  *   exception will be caught.
  * @param test A test which should pass within the given [duration].
  *
@@ -20,13 +20,13 @@ fun <R> eventually(
     duration: Duration = Duration.ofSeconds(5),
     waitBetween: Duration = Duration.ofMillis(100),
     waitBefore: Duration = waitBetween,
-    allowAllExceptions: Boolean = false,
+    retryAllExceptions: Boolean = false,
     test: () -> R,
 ): R {
     val exceptionHandler = ExceptionHandler(
         duration,
         waitBetween,
-        allowAllExceptions,
+        retryAllExceptions,
     )
     if (!waitBefore.isZero) Thread.sleep(waitBefore.toMillis())
 
@@ -55,8 +55,8 @@ private class ExceptionHandler(
         if ((e is AssertionError) || (allowAllExceptions)) {
             if (!waitBetween.isZero) {
                 Thread.sleep(waitBetween.toMillis())
-                times++
             }
+            times++
         } else {
             throw e
         }
