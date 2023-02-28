@@ -55,17 +55,15 @@ class ConsensualLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun finalize(
         signedTransaction: ConsensualSignedTransaction,
-        sessions: Iterable<FlowSession>
+        sessions: List<FlowSession>
     ): ConsensualSignedTransaction {
-        val distinctSessions = sessions.distinctBy { it.counterparty }
-
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
         */
         val consensualFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                ConsensualFinalityFlow(signedTransaction as ConsensualSignedTransactionInternal, distinctSessions)
+                ConsensualFinalityFlow(signedTransaction as ConsensualSignedTransactionInternal, sessions)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

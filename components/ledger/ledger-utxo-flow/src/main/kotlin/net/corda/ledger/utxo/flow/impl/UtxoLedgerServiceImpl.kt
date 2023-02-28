@@ -93,10 +93,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun finalize(
-        signedTransaction: UtxoSignedTransaction, sessions: Iterable<FlowSession>
+        signedTransaction: UtxoSignedTransaction,
+        sessions: List<FlowSession>
     ): UtxoSignedTransaction {
-        val distinctSessions = sessions.distinctBy { it.counterparty }
-
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
@@ -105,7 +104,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 UtxoFinalityFlow(
                     signedTransaction as UtxoSignedTransactionInternal,
-                    distinctSessions,
+                    sessions,
                     getPluggableNotaryClientFlow(signedTransaction.notary)
                 )
             })
