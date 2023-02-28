@@ -36,11 +36,11 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
     ): List<Record<*, *>> {
         val outputEvents = mutableListOf<Record<*, *>>()
         events.forEach { appMessage ->
-            val authMessage = appMessage.value?.message
+            val unAuthMessage = appMessage.value?.message
             //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
-            if (authMessage != null && authMessage is UnauthenticatedMessage && authMessage.header.subsystem == SUBSYSTEM) {
-                val header = with(authMessage.header) { CommonHeader(source, destination, null, messageId) }
-                getOutputRecord(header, authMessage.payload, appMessage.key)?.let { outputRecord ->
+            if (unAuthMessage != null && unAuthMessage is UnauthenticatedMessage && unAuthMessage.header.subsystem == SUBSYSTEM) {
+                val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
+                getOutputRecord(header, unAuthMessage.payload, appMessage.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
                 }
             }
@@ -95,10 +95,10 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
     }
 
     private fun String.incrementOrUuid() = try {
-            "${toInt() + 1}"
-        } catch (e: NumberFormatException) {
-            "${UUID.randomUUID()}"
-        }
+        "${toInt() + 1}"
+    } catch (e: NumberFormatException) {
+        "${UUID.randomUUID()}"
+    }
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
     data class CommonHeader(val destination: net.corda.data.identity.HoldingIdentity,
