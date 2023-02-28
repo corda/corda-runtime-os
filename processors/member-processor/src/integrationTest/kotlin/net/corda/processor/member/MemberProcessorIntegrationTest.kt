@@ -20,7 +20,6 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.membership.certificate.publisher.MembersClientCertificatePublisher
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -368,7 +367,7 @@ class MemberProcessorIntegrationTest {
      */
     @Test
     fun `Register and view static member list`() {
-        register(registrationProxy, aliceHoldingIdentity)
+        register(registrationProxy, aliceHoldingIdentity, publisher)
 
         val aliceGroupReader = eventually {
             membershipGroupReaderProvider.getGroupReader(aliceHoldingIdentity).also {
@@ -379,7 +378,7 @@ class MemberProcessorIntegrationTest {
 
         assertLookupSize(aliceGroupReader, 1)
 
-        register(registrationProxy, bobHoldingIdentity)
+        register(registrationProxy, bobHoldingIdentity, publisher)
 
         val aliceMemberInfo = lookup(aliceGroupReader, aliceX500Name)
         val bobMemberInfo = lookup(aliceGroupReader, bobX500Name)

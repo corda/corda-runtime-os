@@ -18,6 +18,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
@@ -179,6 +180,36 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override val asyncClient: AsyncMembershipPersistenceClient
-        get() = TODO("Not yet implemented")
+    override val asyncClient: AsyncMembershipPersistenceClient by lazy {
+        object : AsyncMembershipPersistenceClient {
+            override fun persistMemberInfo(
+                viewOwningIdentity: HoldingIdentity,
+                memberInfos: Collection<MemberInfo>,
+            ): Collection<Record<*, *>> = emptyList()
+
+            override fun createPersistRegistrationRequest(
+                viewOwningIdentity: HoldingIdentity,
+                registrationRequest: RegistrationRequest,
+            ): Collection<Record<*, *>> = emptyList()
+
+            override fun setMemberAndRegistrationRequestAsApprovedRequest(
+                viewOwningIdentity: HoldingIdentity,
+                approvedMember: HoldingIdentity,
+                registrationRequestId: String,
+            ): Collection<Record<*, *>> = emptyList()
+
+            override fun setMemberAndRegistrationRequestAsDeclinedRequest(
+                viewOwningIdentity: HoldingIdentity,
+                declinedMember: HoldingIdentity,
+                registrationRequestId: String,
+            ): Collection<Record<*, *>> = emptyList()
+
+            override fun setRegistrationRequestStatusRequest(
+                viewOwningIdentity: HoldingIdentity,
+                registrationId: String,
+                registrationRequestStatus: RegistrationStatus,
+                reason: String?,
+            ): Collection<Record<*, *>> = emptyList()
+        }
+    }
 }

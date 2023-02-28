@@ -201,14 +201,16 @@ class MemberProcessorTestUtils {
          */
         fun register(
             registrationProxy: RegistrationProxy,
-            holdingIdentity: HoldingIdentity
+            holdingIdentity: HoldingIdentity,
+            publisher: Publisher,
         ) {
             val context = mapOf(KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME)
             return eventually(
                 waitBetween = Duration.ofMillis(1000)
             ) {
                 assertDoesNotThrow {
-                    registrationProxy.register(UUID.randomUUID(), holdingIdentity, context)
+                    val records = registrationProxy.register(UUID.randomUUID(), holdingIdentity, context)
+                    publisher.publish(records.toList())
                 }
             }
         }
