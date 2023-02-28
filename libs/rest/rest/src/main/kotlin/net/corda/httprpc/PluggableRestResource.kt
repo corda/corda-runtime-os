@@ -1,4 +1,4 @@
-package net.corda.httprpc
+package net.corda.rest
 
 /**
  * Defines an interface for `RestResource` that can be discovered during startup.

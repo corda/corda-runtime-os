@@ -1,10 +1,10 @@
-package net.corda.httprpc.tools.annotations.validation
+package net.corda.rest.tools.annotations.validation
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpDELETE
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpWS
-import net.corda.httprpc.tools.annotations.validation.utils.isBodyParameter
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpWS
+import net.corda.rest.tools.annotations.validation.utils.isBodyParameter
 import java.lang.reflect.Method
 
 /**

@@ -14,7 +14,7 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(':libs:configuration:configuration-validation')
-    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':libs:crypto:crypto-core')
 
     api project(":libs:configuration:configuration-core")
     api project(':libs:db:db-core')

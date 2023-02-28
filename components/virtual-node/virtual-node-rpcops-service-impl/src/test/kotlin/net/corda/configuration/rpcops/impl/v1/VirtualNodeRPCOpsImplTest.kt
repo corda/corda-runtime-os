@@ -1,7 +1,7 @@
 package net.corda.configuration.rpcops.impl.v1
 
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
-import net.corda.httprpc.security.RestAuthContext
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.security.RestAuthContext
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.utilities.time.ClockFactory

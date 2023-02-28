@@ -1,4 +1,4 @@
 @Export
-package net.corda.httprpc.exception;
+package net.corda.rest.exception;
 
 import org.osgi.annotation.bundle.Export;

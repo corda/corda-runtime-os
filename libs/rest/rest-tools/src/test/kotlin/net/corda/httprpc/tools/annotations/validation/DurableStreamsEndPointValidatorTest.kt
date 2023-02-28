@@ -1,11 +1,11 @@
-package net.corda.httprpc.tools.annotations.validation
+package net.corda.rest.tools.annotations.validation
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.HttpRestResource
-import net.corda.httprpc.durablestream.api.DurableCursorBuilder
-import net.corda.httprpc.durablestream.api.FiniteDurableCursorBuilder
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.durablestream.api.DurableCursorBuilder
+import net.corda.rest.durablestream.api.FiniteDurableCursorBuilder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 

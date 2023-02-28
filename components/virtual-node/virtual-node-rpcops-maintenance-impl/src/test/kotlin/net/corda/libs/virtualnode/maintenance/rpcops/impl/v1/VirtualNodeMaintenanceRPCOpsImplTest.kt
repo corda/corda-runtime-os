@@ -2,9 +2,9 @@ package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
 import net.corda.chunking.ChunkWriter
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
-import net.corda.httprpc.security.RestAuthContext
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.security.RestAuthContext
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

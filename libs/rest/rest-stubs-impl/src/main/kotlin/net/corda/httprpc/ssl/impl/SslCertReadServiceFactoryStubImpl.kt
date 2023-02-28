@@ -1,7 +1,7 @@
-package net.corda.httprpc.ssl.impl
+package net.corda.rest.ssl.impl
 
-import net.corda.httprpc.ssl.SslCertReadService
-import net.corda.httprpc.ssl.SslCertReadServiceFactory
+import net.corda.rest.ssl.SslCertReadService
+import net.corda.rest.ssl.SslCertReadServiceFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope

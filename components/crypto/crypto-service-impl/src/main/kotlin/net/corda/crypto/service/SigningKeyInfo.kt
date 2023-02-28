@@ -1,6 +1,6 @@
 package net.corda.crypto.service
 
-import net.corda.virtualnode.ShortHash
+import net.corda.crypto.core.ShortHash
 import java.time.Instant
 
 @Suppress("LongParameterList")

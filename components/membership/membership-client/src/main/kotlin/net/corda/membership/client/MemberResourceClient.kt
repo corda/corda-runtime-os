@@ -1,10 +1,10 @@
 package net.corda.membership.client
 
+import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
-import net.corda.virtualnode.ShortHash
 
 /**
  * The member ops client to perform group operations.

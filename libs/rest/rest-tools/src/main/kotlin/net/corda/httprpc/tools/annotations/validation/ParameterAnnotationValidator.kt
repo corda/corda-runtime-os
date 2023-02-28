@@ -1,8 +1,8 @@
-package net.corda.httprpc.tools.annotations.validation
+package net.corda.rest.tools.annotations.validation
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.isRestParameterAnnotation
-import net.corda.httprpc.tools.annotations.validation.utils.endpoints
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.isRestParameterAnnotation
+import net.corda.rest.tools.annotations.validation.utils.endpoints
 import java.lang.reflect.Method
 
 /**

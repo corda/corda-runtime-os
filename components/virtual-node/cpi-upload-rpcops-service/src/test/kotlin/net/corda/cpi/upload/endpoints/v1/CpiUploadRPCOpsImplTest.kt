@@ -19,8 +19,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
 import java.util.UUID
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.exception.InvalidInputDataException
 import org.junit.jupiter.api.assertThrows
 
 class CpiUploadRPCOpsImplTest {
