@@ -55,6 +55,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
@@ -204,6 +205,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 keyScheme,
                 roles,
                 staticMemberList,
+                membershipGroupReader,
             )
             (records + createHostedIdentity(member, groupPolicy)).publish()
 
@@ -293,6 +295,7 @@ class StaticMemberRegistrationService @Activate constructor(
         keyScheme: String,
         roles: Collection<MemberRole>,
         staticMemberList: List<StaticMember>,
+        membershipGroupReader: MembershipGroupReader,
     ): Pair<MemberInfo, List<Record<String, PersistentMemberInfo>>> {
         validateStaticMemberList(staticMemberList)
 
@@ -358,6 +361,12 @@ class StaticMemberRegistrationService @Activate constructor(
                 SERIAL to staticMemberInfo.serial,
             )
         )
+
+        memberInfo.notaryDetails?.let { notary ->
+            require(membershipGroupReader.lookup().none { it.notaryDetails?.serviceName == notary.serviceName }) {
+                throw InvalidMembershipRegistrationException("Notary service '${notary.serviceName}' already exists.")
+            }
+        }
 
         return memberInfo to staticMemberList.map {
             val owningMemberHoldingIdentity = HoldingIdentity(MemberX500Name.parse(it.name!!), groupPolicy.groupId)
