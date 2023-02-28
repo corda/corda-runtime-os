@@ -1,25 +1,24 @@
 package net.cordapp.demo.utxo
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.days
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.cordapp.demo.utxo.contract.TestCommand
 import net.cordapp.demo.utxo.contract.TestUtxoState
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.time.Duration
 
 @InitiatingFlow(protocol = "utxo-evolve-protocol")
 class UtxoDemoEvolveFlow : ClientStartableFlow {
@@ -48,7 +47,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Utxo flow demo starting...")
         val response = try {
-            val request = requestBody.getRequestBodyAs<EvolveMessage>(jsonMarshallingService)
+            val request = requestBody.getRequestBodyAs(jsonMarshallingService, EvolveMessage::class.java)
 
             val inputTx = utxoLedgerService.findLedgerTransaction(SecureHash.parse(request.transactionId)) ?:
                 throw EvolveFlowError( "Failed to find transaction ${request.transactionId}")
@@ -79,7 +78,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 .addOutputState(output)
                 .addInputState(input.ref)
                 .setNotary(input.state.notary)
-                .setTimeWindowUntil(Instant.now().plusMillis(1.days.toMillis()))
+                .setTimeWindowUntil(Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addSignatories(output.participants)
                 .toSignedTransaction()
 

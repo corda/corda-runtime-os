@@ -20,8 +20,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.millis
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.millis
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate

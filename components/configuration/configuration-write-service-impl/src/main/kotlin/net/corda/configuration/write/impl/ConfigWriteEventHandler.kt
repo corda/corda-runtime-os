@@ -15,7 +15,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */

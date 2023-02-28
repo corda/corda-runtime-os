@@ -1,9 +1,8 @@
 package net.cordapp.testing.testflows
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.ClientRequestBody
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
@@ -34,7 +33,7 @@ class PersistenceFlow : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)
+            val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, TestFlowInput::class.java)
 
             persistenceService.persist(123)
             persistenceService.remove(123)

@@ -32,8 +32,8 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.UnauthenticatedMessage
 import net.corda.data.p2p.app.UnauthenticatedMessageHeader
-import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.v5.membership.MGMContext

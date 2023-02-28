@@ -11,23 +11,25 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.httprpc.v1.KeysRestResource
-import net.corda.membership.httprpc.v1.types.response.KeyMetaData
-import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
+import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.types.response.KeyMetaData
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.ShortHashException
+import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -85,7 +87,7 @@ class KeysRestResourceImpl @Activate constructor(
             return tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
                 cryptoOpsClient.lookupKeysByIds(
                     tenantId = tenantId,
-                    keyIds = ids.map { ShortHash.of(it) }
+                    keyIds = ids.map { createKeyIdOrHttpThrow(it) }
                 )
             }.associate { it.id to it.toMetaData() }
         }
@@ -183,7 +185,7 @@ class KeysRestResourceImpl @Activate constructor(
                 tryWithExceptionHandling(
                     logger,
                     "generate key pair for tenant $tenantId",
-                    ignoredExceptions = listOf(
+                    untranslatedExceptions = setOf(
                         KeyAlreadyExistsException::class.java,
                         InvalidParamsException::class.java
                     )
@@ -210,7 +212,7 @@ class KeysRestResourceImpl @Activate constructor(
         val key = tryWithExceptionHandling(logger, "lookup keys for tenant $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                keyIds = listOf(ShortHash.of(keyId))
+                keyIds = listOf(createKeyIdOrHttpThrow(keyId))
             )
         }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
 

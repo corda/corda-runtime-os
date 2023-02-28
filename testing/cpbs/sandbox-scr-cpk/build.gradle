@@ -22,5 +22,6 @@ dependencies {
     cordaProvided 'org.jetbrains:annotations'
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided "org.osgi:osgi.core"
 }

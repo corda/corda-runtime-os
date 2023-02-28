@@ -60,6 +60,7 @@ class CpiValidatorImpl(
         publisher.update(requestId, "Verifying CPI")
         fileInfo.verifyCpi(certificateExtractor.getAllCertificates(), requestId)
 
+        // Read the cpi from a file
         publisher.update(requestId, "Validating CPI")
         val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir, requestId)
 
@@ -97,12 +98,12 @@ class CpiValidatorImpl(
             requestId = requestId
         )
 
-        publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
-        val changelogsExtractedFromCpi = cpi.extractLiquibaseScripts()
+        publisher.update(requestId, "Extracting Liquibase scripts from CPKs in CPI")
+        val liquibaseScripts = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity =
-            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, changelogsExtractedFromCpi, log)
+            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, liquibaseScripts, log)
 
         publisher.update(requestId, "Notifying flow workers")
         val cpiMetadata = CpiMetadata(

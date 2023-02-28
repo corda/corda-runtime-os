@@ -10,7 +10,6 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -79,11 +78,11 @@ class SendReceiveAllMessagingFlow(
             log.info("Session received all data: ${it.int} ")
         }
 
-        sessionOne.receive<MyClass>().let {
+        sessionOne.receive(MyClass::class.java).let {
             receivedNumSum+=it.int
         }
 
-        sessionTwo.receive<MyClass>().let {
+        sessionTwo.receive(MyClass::class.java).let {
             receivedNumSum+=it.int
         }
 
@@ -124,7 +123,7 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         log.info("I have been called [${flowEngine.flowId}]")
 
-        val received = session.receive<MyClass>()
+        val received = session.receive(MyClass::class.java)
         log.info("Receive from send map from peer: $received")
         if (received.int == 2) {
             session.send(MyOtherClass( 1, "this is a new object 1", received.int))
@@ -132,13 +131,14 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
             session.send(received.copy(string = "this is a new object 1"))
         }
 
-        val received2 = session.receive<MyClass>()
+        val received2 = session.receive(MyClass::class.java)
         log.info("Receive from send all from peer: $received2")
         session.send(received2.copy(string = "this is a new object 2"))
 
 
-        val received3 = session.receive<MyClass>()
-        log.info("Receive from send from peer: $received3")
+        val received3 = session.receive(MyClass::class.java)
+        //this string is so large it activates chunking so do not log it
+        log.info("Receive from send from peer. Message size: ${received3.string.length}")
         session.send(received3.copy(string = "this is a new object 3"))
         log.info("Closing session")
 

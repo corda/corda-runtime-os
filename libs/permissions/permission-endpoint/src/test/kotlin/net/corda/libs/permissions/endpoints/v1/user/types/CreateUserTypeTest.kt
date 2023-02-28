@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
-import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.rest.exception.InvalidInputDataException
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

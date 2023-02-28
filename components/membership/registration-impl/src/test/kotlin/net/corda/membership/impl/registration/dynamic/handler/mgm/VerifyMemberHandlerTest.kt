@@ -25,6 +25,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -116,6 +117,7 @@ class VerifyMemberHandlerTest {
             any(),
             any(),
             any(),
+            anyOrNull(),
         )
 
         assertThat(result.outputStates).hasSize(1)
@@ -133,6 +135,7 @@ class VerifyMemberHandlerTest {
             any(),
             any(),
             any(),
+            anyOrNull(),
         )
 
         assertThat(result.outputStates).hasSize(1)

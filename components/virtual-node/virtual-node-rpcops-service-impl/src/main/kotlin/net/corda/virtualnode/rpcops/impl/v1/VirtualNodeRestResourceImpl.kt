@@ -3,6 +3,7 @@ package net.corda.virtualnode.rpcops.impl.v1
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -13,13 +14,14 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
-import net.corda.httprpc.asynchronous.v1.AsyncResponse
-import net.corda.httprpc.response.ResponseEntity
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.asynchronous.v1.AsyncResponse
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.response.ResponseEntity
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
@@ -39,13 +41,12 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.debug
 import net.corda.utilities.time.ClockFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
@@ -55,6 +56,7 @@ import net.corda.virtualnode.rpcops.impl.validation.impl.VirtualNodeValidationSe
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import java.time.Instant
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -79,7 +81,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
 
     private companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
@@ -203,10 +205,8 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
     override fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
         val shortHash = ShortHash.parseOrThrow(holdingIdentityShortHash)
         val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortHash)
+            ?: throw ResourceNotFoundException("VirtualNode with shortHash $holdingIdentityShortHash could not be found.")
 
-        if (virtualNode == null) {
-            throw ResourceNotFoundException("VirtualNode with shortHash $holdingIdentityShortHash could not be found.")
-        }
         return virtualNode.toEndpointType()
     }
 
@@ -218,13 +218,15 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
 
-        val requestId = sendAsynchronousRequest(
-            Instant.now(),
-            virtualNodeShortId,
-            currentCpi.fileChecksum.toHexString(),
-            targetCpi.fileChecksum.toHexString(),
-            CURRENT_REST_CONTEXT.get().principal
-        )
+        val requestId = tryWithExceptionHandling(logger, "Upgrade vNode") {
+            sendAsynchronousRequest(
+                Instant.now(),
+                virtualNodeShortId,
+                currentCpi.fileChecksum.toHexString(),
+                targetCpi.fileChecksum.toHexString(),
+                CURRENT_REST_CONTEXT.get().principal
+            )
+        }
 
         return ResponseEntity.accepted(AsyncResponse(requestId))
     }
@@ -303,7 +305,9 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
                 )
             )
         }
-        val resp = sendAndReceive(rpcRequest)
+        val resp = tryWithExceptionHandling(logger, "Create vNode") {
+            sendAndReceive(rpcRequest)
+        }
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeCreateResponse -> {
                 // Convert response into expected type
@@ -355,7 +359,9 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
             )
         )
         // Actually send request and await response message on bus
-        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
+        val resp = tryWithExceptionHandling(logger, "Update vNode state") {
+            sendAndReceive(rpcRequest)
+        }
         logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
 
         return when (val resolvedResponse = resp.responseType) {

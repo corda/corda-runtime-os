@@ -1,12 +1,11 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
-import com.r3.corda.notary.plugin.common.NotaryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.notary.plugin.factory.PluggableNotaryClientFlowFactory
+import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -34,13 +33,14 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
-import net.corda.v5.ledger.notary.plugin.core.NotaryError
+import net.corda.v5.ledger.notary.plugin.core.NotaryException
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -49,9 +49,11 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -72,7 +74,7 @@ class UtxoFinalityFlowTest {
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
-    private val pluggableNotaryClientFlowFactory = mock<PluggableNotaryClientFlowFactory>()
+    private val virtualNodeSelectorService = mock<NotaryVirtualNodeSelectorService>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -163,10 +165,6 @@ class UtxoFinalityFlowTest {
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
         whenever(ledgerTransaction.metadata).thenReturn(metadata)
-
-        whenever(pluggableNotaryClientFlowFactory.create(eq(notaryService), any<UtxoSignedTransaction>())).thenReturn(
-            pluggableNotaryClientFlow
-        )
 
         // Composite key containing both of the notary VNode keys
         whenever(notaryServiceKey.leafKeys).thenReturn(setOf(publicKeyNotaryVNode1, publicKeyNotaryVNode2))
@@ -301,11 +299,14 @@ class UtxoFinalityFlowTest {
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
         @CordaSerializable
-        data class TestNotaryError(
-            val errorText: String
-        ) : NotaryError, CordaRuntimeException(errorText)
+        class TestNotaryExceptionFatal(
+            errorText: String,
+            txId: SecureHash? = null
+        ) : NotaryExceptionFatal(errorText, txId)
 
-        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(NotaryException(TestNotaryError("notarisation error")))
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(
+            TestNotaryExceptionFatal("notarisation error", null)
+        )
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(NotaryException::class.java)
@@ -336,9 +337,9 @@ class UtxoFinalityFlowTest {
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarization failed permanently with Unable to notarise transaction <Unknown> :" +
-                        " TestNotaryError(errorText=notarisation error).",
-                FinalityNotarizationFailureType.UNRECOVERABLE.value
+                "Notarization failed permanently with Unable to notarise transaction <Unknown>:" +
+                        " notarisation error.",
+                FinalityNotarizationFailureType.FATAL.value
             ), sessions
         )
     }
@@ -370,11 +371,18 @@ class UtxoFinalityFlowTest {
         )
         whenever(updatedTxAllSigs.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
-        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(CordaRuntimeException("notarisation error"))
+        @CordaSerializable
+        class TestNotaryExceptionNonFatal(
+            errorText: String,
+            txId: SecureHash? = null
+        ) : NotaryExceptionUnknown(errorText, txId)
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow))
+            .thenThrow(TestNotaryExceptionNonFatal("notarisation error"))
 
         assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessage("notarisation error")
+            .hasMessage("Unable to notarise transaction <Unknown>: notarisation error")
 
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice1))
         verify(transactionSignatureService).verifySignature(any(), eq(signatureAlice2))
@@ -401,8 +409,8 @@ class UtxoFinalityFlowTest {
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarization failed with notarisation error.",
-                FinalityNotarizationFailureType.OTHER.value
+                "Notarization failed with Unable to notarise transaction <Unknown>: notarisation error.",
+                FinalityNotarizationFailureType.UNKNOWN.value
             ), sessions
         )
     }
@@ -854,15 +862,22 @@ class UtxoFinalityFlowTest {
     }
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
-        val flow = UtxoFinalityFlow(signedTransaction, sessions)
+        val flow = spy(UtxoFinalityFlow(
+            signedTransaction,
+            sessions,
+            pluggableNotaryClientFlow.javaClass
+        ))
+
+        doReturn(pluggableNotaryClientFlow).whenever(flow).newPluggableNotaryClientFlowInstance(any())
+
         flow.memberLookup = memberLookup
         flow.transactionSignatureService = transactionSignatureService
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging
         flow.persistenceService = persistenceService
         flow.transactionVerificationService = transactionVerificationService
-        flow.pluggableNotaryClientFlowFactory = pluggableNotaryClientFlowFactory
         flow.flowEngine = flowEngine
+        flow.virtualNodeSelectorService = virtualNodeSelectorService
         flow.call()
     }
 

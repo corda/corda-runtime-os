@@ -9,7 +9,7 @@ import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
-import net.corda.v5.application.serialization.deserialize
+import net.corda.utilities.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions

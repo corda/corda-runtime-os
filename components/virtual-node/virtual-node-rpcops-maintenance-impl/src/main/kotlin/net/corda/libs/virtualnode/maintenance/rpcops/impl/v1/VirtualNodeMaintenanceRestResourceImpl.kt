@@ -10,10 +10,11 @@ import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
@@ -29,9 +30,9 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.debug
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
@@ -130,10 +131,12 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
-        val cpiUploadRequestId = cpiUploadRPCOpsService.cpiUploadManager.uploadCpi(
-            upload.fileName, upload.content,
-            mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
-        )
+        val cpiUploadRequestId = tryWithExceptionHandling(logger,"Force CPI upload") {
+            cpiUploadRPCOpsService.cpiUploadManager.uploadCpi(
+                upload.fileName, upload.content,
+                mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
+            )
+        }
         return CpiUploadRestResource.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
@@ -149,7 +152,9 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                 actor
             )
         )
-        val resp: VirtualNodeManagementResponse = sendAndReceive(request)
+        val resp = tryWithExceptionHandling(logger, "Re-sync vNode DB") {
+            sendAndReceive(request)
+        }
         when (val resolvedResponse = resp.responseType) {
             is VirtualNodeDBResetResponse -> Unit // We don't want to do anything with this
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)

@@ -16,13 +16,14 @@ import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import java.util.Collections.unmodifiableList
+import java.util.Collections.unmodifiableMap
 
 /**
  * Simple implementation, requires alignment with other serialization such as that used
@@ -74,7 +75,21 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
     override fun <T> parseList(input: String, clazz: Class<T>): List<T> {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                mapper.readValue(input, mapper.typeFactory.constructCollectionType(List::class.java, clazz))
+                unmodifiableList(mapper.readValue(
+                    input, mapper.typeFactory.constructCollectionType(List::class.java, clazz)
+                ))
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
+    }
+
+    override fun <K, V> parseMap(input: String, keyClass: Class<K>, valueClass: Class<V>): Map<K, V> {
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                unmodifiableMap(mapper.readValue(
+                    input, mapper.typeFactory.constructMapType(LinkedHashMap::class.java, keyClass, valueClass)
+                ))
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
@@ -104,7 +119,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
         // convenient. Because we have no type information available at compile time we need to be very unspecific about
         // what our deserializer can support. This has no effect at runtime because type erasure precludes Jackson
         // knowing anything about these types except via typeless Class objects once the code is compiled.
-        module.addDeserializer(uncheckedCast(jsonDeserializerAdaptor.deserializingType), jsonDeserializerAdaptor)
+        @Suppress("unchecked_cast")
+        module.addDeserializer(jsonDeserializerAdaptor.deserializingType as Class<Any>, jsonDeserializerAdaptor)
         mapper.registerModule(module)
 
         return true

@@ -1,10 +1,21 @@
 package net.corda.libs.permissions.storage.reader.impl
 
 import net.corda.data.permissions.ChangeDetails
+import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.PermissionAssociation
+import net.corda.data.permissions.Permission as AvroPermission
+import net.corda.data.permissions.PermissionType as AvroPermissionType
+import net.corda.data.permissions.Property as AvroProperty
+import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.User as AvroUser
 import net.corda.data.permissions.RoleAssociation
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
+import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
+import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
+import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
+import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.model.Group
@@ -16,32 +27,21 @@ import net.corda.permissions.model.RoleGroupAssociation
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_ENTITY_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_GROUP_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_ROLE_TOPIC
-import net.corda.schema.Schemas.Rest.Companion.REST_PERM_USER_TOPIC
+import net.corda.schema.Schemas.Permissions.PERMISSIONS_USER_SUMMARY_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_ENTITY_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_GROUP_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_ROLE_TOPIC
+import net.corda.schema.Schemas.Rest.REST_PERM_USER_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.libs.permissions.management.cache.PermissionManagementCache
-import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
-import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
-import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
-import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
-import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
-import org.mockito.kotlin.any
 import java.util.concurrent.atomic.AtomicReference
-import net.corda.data.permissions.Group as AvroGroup
-import net.corda.data.permissions.Permission as AvroPermission
-import net.corda.data.permissions.PermissionType as AvroPermissionType
-import net.corda.data.permissions.Property as AvroProperty
-import net.corda.data.permissions.Role as AvroRole
-import net.corda.data.permissions.User as AvroUser
 
 class PermissionStorageReaderImplTest {
 

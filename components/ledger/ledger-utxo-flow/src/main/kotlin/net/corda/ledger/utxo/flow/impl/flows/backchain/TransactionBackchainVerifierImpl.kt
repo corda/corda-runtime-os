@@ -7,9 +7,9 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.utilities.trace
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -31,7 +31,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
 ) : TransactionBackchainVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable

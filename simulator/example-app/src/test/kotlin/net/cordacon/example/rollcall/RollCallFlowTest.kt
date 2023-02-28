@@ -5,7 +5,6 @@ import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.receive
 import net.cordacon.example.rollcall.utils.ScriptMaker
 import net.cordacon.example.utils.createMember
 import org.hamcrest.MatcherAssert.assertThat
@@ -23,7 +22,7 @@ class RollCallFlowTest {
 
     companion object {
         private fun receiveAndSendResponse(session: FlowSession, response: String) {
-            session.receive<Any>()
+            session.receive(Any::class.java)
             session.send(RollCallResponse(response))
         }
     }
@@ -48,7 +47,7 @@ class RollCallFlowTest {
 
         val truancyOfficeFlow = mock<ResponderFlow>()
         whenever(truancyOfficeFlow.call(any())).then {
-            it.getArgument<FlowSession>(0).receive<TruancyRecord>()
+            it.getArgument<FlowSession>(0).receive(TruancyRecord::class.java)
         }
         simulator.createInstanceNode(truancyOffice, "truancy-record", truancyOfficeFlow)
 
@@ -79,7 +78,7 @@ class RollCallFlowTest {
         lateinit var receivedRecord: TruancyRecord
         whenever(truancyOfficeFlow.call(any())).then {
             val flowSession = it.getArgument<FlowSession>(0)
-            receivedRecord = flowSession.receive()
+            receivedRecord = flowSession.receive(TruancyRecord::class.java)
             receivedRecord
         }
 

@@ -25,9 +25,10 @@ import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestCompactedProcessor
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.millis
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -68,6 +69,11 @@ class CompactedSubscriptionIntegrationTest {
     @BeforeEach
     fun beforeEach() {
         topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
+    }
+
+    @AfterEach
+    fun afterEach() {
+        topicUtils.close()
     }
 
     @Test

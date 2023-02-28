@@ -33,7 +33,7 @@ class VirtualNodeReconciler(
         Stream.of(ClusterReconciliationContext(dbConnectionManager))
     }
 
-    override fun close() {
+    override fun stop() {
         dbReconciler?.stop()
         dbReconciler = null
         reconciler?.stop()

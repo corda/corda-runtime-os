@@ -4,12 +4,11 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
@@ -22,7 +21,7 @@ class TransactionBackchainReceiverFlow(
 ) : SubFlow<TopologicalSort> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -45,9 +44,11 @@ class TransactionBackchainReceiverFlow(
                 "Backchain resolution of $resolvingTransactionId - Requesting the content of transactions $batch from transaction backchain"
             }
 
-            val retrievedTransactions = session.sendAndReceive<List<UtxoSignedTransaction>>(
+            @Suppress("unchecked_cast")
+            val retrievedTransactions = session.sendAndReceive(
+                List::class.java,
                 TransactionBackchainRequest.Get(batch)
-            )
+            ) as List<UtxoSignedTransaction>
 
             log.trace { "Backchain resolution of $resolvingTransactionId - Received content for transactions $batch" }
 

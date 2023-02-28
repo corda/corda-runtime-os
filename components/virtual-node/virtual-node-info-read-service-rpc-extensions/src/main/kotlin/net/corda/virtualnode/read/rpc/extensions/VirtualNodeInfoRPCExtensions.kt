@@ -1,11 +1,11 @@
 package net.corda.virtualnode.read.rpc.extensions
 
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHash.Companion.LENGTH
+import net.corda.crypto.core.ShortHashException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.ShortHash.Companion.LENGTH
-import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
@@ -132,5 +132,17 @@ fun ShortHash.Companion.parseOrThrow(holdingIdentityShortHash: String): ShortHas
         parse(holdingIdentityShortHash)
     } catch (e: ShortHashException) {
         throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+    }
+}
+
+/**
+ * Attempts to create a key id [ShortHash] from specified hex string. Converts thrown [ShortHashException] if
+ * [ShortHash.of] fails to http manageable [BadRequestException].
+ */
+fun createKeyIdOrHttpThrow(keyIdHexString: String): ShortHash {
+    try {
+        return ShortHash.of(keyIdHexString)
+    } catch (e: ShortHashException) {
+        throw BadRequestException("Invalid key id hex string: ${e.message}")
     }
 }

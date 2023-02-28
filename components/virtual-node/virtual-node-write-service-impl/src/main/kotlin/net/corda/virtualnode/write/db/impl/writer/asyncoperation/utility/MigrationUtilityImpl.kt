@@ -1,12 +1,11 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility
 
+import net.corda.crypto.core.ShortHash
 import java.util.UUID
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
@@ -23,7 +22,7 @@ internal class MigrationUtilityImpl(
 
     override fun runVaultMigrations(
         virtualNodeShortHash: ShortHash,
-        migrationChangeLogs: List<CpkDbChangeLogEntity>,
+        migrationChangeLogs: List<CpkDbChangeLog>,
         vaultDdlConnectionId: UUID
     ) {
         migrationChangeLogs
@@ -37,13 +36,12 @@ internal class MigrationUtilityImpl(
 
     override fun isVaultSchemaAndTargetCpiInSync(
         virtualNodeShortHash: String,
-        cpkChangelogs: List<CpkDbChangeLogEntity>,
+        cpkChangelogs: List<CpkDbChangeLog>,
         vaultDmlConnectionId: UUID
     ): Boolean {
-
         val missingCpks = mutableListOf<String>()
         cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
-            val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+            val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs)
             dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
                 missingCpks.addAll(
                     liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk)
@@ -60,10 +58,10 @@ internal class MigrationUtilityImpl(
     }
 
     private fun runCpkMigrations(
-        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLogEntity>
+        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: String, changeLogs: List<CpkDbChangeLog>
     ) {
         logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
-        val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs.map { CpkDbChangeLog(it.id.filePath, it.content) })
+        val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
         try {
             liquibaseSchemaMigrator.updateDb(dataSource.connection, allChangeLogsForCpk, tag = cpkFileChecksum)
         } catch (e: Exception) {

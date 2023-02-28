@@ -47,6 +47,10 @@ class DBTopicUtils(
         }
     }
 
+    override fun close() {
+        entityManagerFactory.close()
+    }
+
     private fun referenceTopicsConfig(): Config = ConfigFactory.parseString(
         """
         topics = [

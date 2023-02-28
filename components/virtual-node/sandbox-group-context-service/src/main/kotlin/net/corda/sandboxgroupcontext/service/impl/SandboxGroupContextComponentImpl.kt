@@ -19,7 +19,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate

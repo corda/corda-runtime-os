@@ -5,7 +5,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
@@ -54,7 +53,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -368,8 +366,6 @@ class MembershipPersistenceRPCProcessorTest {
                 .isInstanceOf(MemberInfoQueryResponse::class.java)
             assertThat((payload as MemberInfoQueryResponse).members)
                 .isInstanceOf(List::class.java)
-            assertThat(uncheckedCast<Any, List<PersistentMemberInfo>>((payload as MemberInfoQueryResponse).members))
-                .isNotNull
                 .isEmpty()
 
             with(context) {
@@ -417,7 +413,8 @@ class MembershipPersistenceRPCProcessorTest {
             uRqContext,
             UpdateRegistrationRequestStatus(
                 ourRegistrationId,
-                RegistrationStatus.APPROVED
+                RegistrationStatus.APPROVED,
+                "test reason"
             )
         )
 

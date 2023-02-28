@@ -10,17 +10,18 @@ import net.corda.flow.rpcops.v1.FlowRestResource
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ForbiddenException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.ServiceUnavailableException
-import net.corda.httprpc.response.ResponseEntity
-import net.corda.httprpc.security.CURRENT_REST_CONTEXT
-import net.corda.httprpc.ws.DuplexChannel
-import net.corda.httprpc.ws.WebSocketValidationException
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ForbiddenException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.ws.DuplexChannel
+import net.corda.rest.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
@@ -34,8 +35,8 @@ import net.corda.permissions.validation.PermissionValidationService
 import net.corda.rbac.schema.RbacKeys
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
-import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
@@ -144,8 +145,8 @@ class FlowRestResourceImpl @Activate constructor(
             throw InvalidInputDataException(msg, details)
         }
 
-        val rpcContext = CURRENT_REST_CONTEXT.get()
-        val principal = rpcContext.principal
+        val restContext = CURRENT_REST_CONTEXT.get()
+        val principal = restContext.principal
 
         if (!permissionValidationService.permissionValidator.authorizeUser(principal,
                 "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}")) {
@@ -171,11 +172,15 @@ class FlowRestResourceImpl @Activate constructor(
         )
 
         val recordFutures = try {
-            publisher!!.publish(records)
+            tryWithExceptionHandling(
+                log,
+                "Publishing start flow events",
+                untranslatedExceptions = setOf(CordaMessageAPIFatalException::class.java)
+            ) {
+                publisher!!.publish(records)
+            }
         } catch (ex: CordaMessageAPIFatalException) {
             throw markFatalAndReturnFailureException(ex)
-        } catch (ex: Exception) {
-            throw failureException(ex)
         }
         waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsTerminal ->
             if (failureIsTerminal) {

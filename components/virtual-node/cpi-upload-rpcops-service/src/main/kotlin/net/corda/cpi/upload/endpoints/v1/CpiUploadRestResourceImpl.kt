@@ -5,12 +5,13 @@ import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.chunking.UploadStatus
-import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
@@ -18,7 +19,7 @@ import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -55,10 +56,13 @@ class CpiUploadRestResourceImpl @Activate constructor(
     override fun stop() = coordinator.stop()
 
     override fun cpi(upload: HttpFileUpload): CpiUploadRestResource.CpiUploadResponse {
-        logger.info("Uploading CPI: ${upload.fileName}")
+        val opName = "Uploading CPI: ${upload.fileName}"
+        logger.info(opName)
         requireRunning()
-        val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content)
-        logger.info("Request ID for uploading CPI ${upload.fileName} is ${cpiUploadRequestId}")
+        val cpiUploadRequestId = tryWithExceptionHandling(logger, opName) {
+            cpiUploadManager.uploadCpi(upload.fileName, upload.content)
+        }
+        logger.info("Request ID for uploading CPI ${upload.fileName} is $cpiUploadRequestId")
         return CpiUploadRestResource.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 

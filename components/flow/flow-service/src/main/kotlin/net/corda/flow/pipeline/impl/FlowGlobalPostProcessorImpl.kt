@@ -6,7 +6,7 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -130,10 +130,12 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             return listOf()
         }
 
-        // If we reach the post-processing step with a retry set we
-        // assume whatever the previous retry was it has now cleared
-        log.debug("The Flow was in a retry state that has now cleared.")
-        checkpoint.markRetrySuccess()
+        if (context.isRetryEvent) {
+            // If we reach the post-processing step with a retry set we
+            // assume whatever the previous retry was it has now cleared
+            log.debug("The Flow was in a retry state that has now cleared.")
+            checkpoint.markRetrySuccess()
+        }
 
         // If the flow has been completed, no need to update the status
         if (!checkpoint.doesExist) {

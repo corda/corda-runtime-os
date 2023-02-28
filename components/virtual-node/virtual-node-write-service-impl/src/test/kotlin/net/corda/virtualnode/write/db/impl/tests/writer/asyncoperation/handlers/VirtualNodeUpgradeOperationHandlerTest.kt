@@ -1,15 +1,16 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
+import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
@@ -30,8 +31,8 @@ import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -49,15 +50,17 @@ class VirtualNodeUpgradeOperationHandlerTest {
     }
     private val vnodeId = "123456789011"
 
-    private val mockChangelog1 = mock<CpkDbChangeLogEntity> { changelog ->
-        whenever(changelog.id).thenReturn(CpkDbChangeLogKey("cpk1", "dog.xml"))
+    private val mockChangelog1 = mock<CpkDbChangeLog> { changelog ->
+        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier("", "cpk1"))
+        whenever(changelog.content).thenReturn( "dog.xml")
     }
-    private val mockChangelog2 = mock<CpkDbChangeLogEntity> { changelog ->
-        whenever(changelog.id).thenReturn(CpkDbChangeLogKey("cpk1", "cat.xml"))
+    private val mockChangelog2 = mock<CpkDbChangeLog> { changelog ->
+        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier("","cpk1"))
+        whenever(changelog.content).thenReturn( "cat.xml")
     }
     private val cpkDbChangelogs = listOf(mockChangelog1, mockChangelog2)
-    private val getCurrentChangelogsForCpi = mock<(EntityManager, String, String, String) -> List<CpkDbChangeLogEntity>> {
-        whenever(it(any(), any(), any(), any())).thenReturn(cpkDbChangelogs)
+    private val mockCpkDbChangeLogRepository = mock<CpkDbChangeLogRepository> {
+        whenever(it.findByCpiId(any(), any())).thenReturn(cpkDbChangelogs)
     }
 
     private val handler = VirtualNodeUpgradeOperationHandler(
@@ -65,7 +68,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         oldVirtualNodeEntityRepository,
         virtualNodeInfoPublisher,
         migrationUtility,
-        getCurrentChangelogsForCpi,
+        mockCpkDbChangeLogRepository,
         virtualNodeRepository
     )
 
