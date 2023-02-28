@@ -23,7 +23,6 @@ import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
-import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
@@ -34,7 +33,6 @@ import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
-import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.preauth.PreAuthToken
@@ -97,14 +95,12 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val requestId = UUID.randomUUID().toString()
     private val ourX500Name = MemberX500Name.parse("O=Alice, L=London, C=GB").toString()
-    private val groupId = UUID.randomUUID().toString()
+    private val ourGroupId = UUID.randomUUID().toString()
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val preAuthTokenId = UUID.randomUUID().toString()
-    private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, groupId)
+    private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, ourGroupId)
     private val context = "context".toByteArray()
     private val vaultDmlConnectionId = UUID(30, 0)
-    private val membersHoldingIdentity =
-        createTestHoldingIdentity(MemberX500Name.parse("O=Bob, L=London, C=GB").toString(), groupId)
 
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
@@ -165,7 +161,6 @@ class MembershipPersistenceRPCProcessorTest {
         on { select(registrationRequestRoot) } doReturn mock
         on { where() } doReturn mock
         on { where(any()) } doReturn mock
-        on { where(any(), any()) } doReturn mock
         on { orderBy(order) } doReturn mock
     }
     private val registrationRequestQuery = mock<TypedQuery<RegistrationRequestEntity>> {
@@ -177,8 +172,6 @@ class MembershipPersistenceRPCProcessorTest {
         on { createQuery(RegistrationRequestEntity::class.java) } doReturn registrationRequestsQuery
         on { equal(ruleTypePath, ApprovalRuleType.STANDARD.name) } doReturn predicate
         on { equal(ruleRegexPath, DUMMY_RULE) } doReturn predicate
-        on { equal(shortHashPath, membersHoldingIdentity.shortHash.value) } doReturn predicate
-        on { equal(statusPath, RegistrationStatus.NEW.name) } doReturn predicate
         on { and(predicate, predicate) } doReturn predicate
         on { `in`(statusPath) } doReturn inStatus
         on { asc(createdPath) } doReturn order
@@ -550,7 +543,7 @@ class MembershipPersistenceRPCProcessorTest {
     fun `query registration requests returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
-            QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL))
+            QueryRegistrationRequests(null, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null)
         )
 
         processor.onNext(rq, responseFuture)
@@ -663,26 +656,4 @@ class MembershipPersistenceRPCProcessorTest {
         }
     }
 
-    @Test
-    fun `query oldest queued registration request returns success`() {
-        val rq = MembershipPersistenceRequest(
-            rqContext,
-            QueryQueuedRegistrationRequest(membersHoldingIdentity.shortHash.value)
-        )
-
-        processor.onNext(rq, responseFuture)
-
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
-                assertThat(payload).isEqualTo(RegistrationRequestQueryResponse(null))
-            }
-        }
-    }
 }

@@ -55,6 +55,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import org.assertj.core.api.Assertions.`as`
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -78,11 +79,9 @@ class MembershipQueryClientImplTest {
     lateinit var membershipQueryClient: MembershipQueryClient
 
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
-    private val groupId = "Group ID 1"
-    private val ourHoldingIdentity = HoldingIdentity(ourX500Name, groupId)
+    private val ourGroupId = "Group ID 1"
+    private val ourHoldingIdentity = HoldingIdentity(ourX500Name, ourGroupId)
     private val ourMemberInfo: MemberInfo = mock()
-
-    private val membersHoldingidentity = HoldingIdentity(MemberX500Name.parse("O=Bob,L=London,C=GB"), groupId)
 
     private val lifecycleEventCaptor = argumentCaptor<LifecycleEventHandler>()
 
@@ -485,15 +484,15 @@ class MembershipQueryClientImplTest {
 
         @Test
         fun `it will returns the correct data in case of successful result`() {
-            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", groupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
-            val holdingId1 = createTestHoldingIdentity("O=Alice ,L=London, C=GB", groupId)
+            val holdingId1 = createTestHoldingIdentity("O=Alice ,L=London, C=GB", ourGroupId)
             val signature1 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk1".toByteArray()),
                 ByteBuffer.wrap("ct1".toByteArray()),
                 KeyValuePairList(emptyList()),
             )
-            val holdingId2 = createTestHoldingIdentity("O=Donald ,L=London, C=GB", groupId)
+            val holdingId2 = createTestHoldingIdentity("O=Donald ,L=London, C=GB", ourGroupId)
             val signature2 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk2".toByteArray()),
                 ByteBuffer.wrap("ct2".toByteArray()),
@@ -537,7 +536,7 @@ class MembershipQueryClientImplTest {
 
         @Test
         fun `it will return error for failure`() {
-            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", groupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -562,7 +561,7 @@ class MembershipQueryClientImplTest {
         }
         @Test
         fun `it will return error for invalid reply`() {
-            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", groupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -1244,89 +1243,6 @@ class MembershipQueryClientImplTest {
 
             val result = membershipQueryClient.queryPreAuthTokens(ourHoldingIdentity, null, null, true)
 
-            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
-        }
-    }
-
-    @Nested
-    inner class QueryQueuedRegistrationRequestTests {
-        @Test
-        fun `returns the correct data in case of successful valid result`() {
-            postConfigChangedEvent()
-            val request = RegistrationStatusDetails(
-                clock.instant(),
-                clock.instant(),
-                RegistrationStatus.NEW,
-                "id 1",
-                1,
-                KeyValuePairList(listOf(KeyValuePair("key", "value")))
-            )
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
-                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
-                    MembershipResponseContext(
-                        requestTimestamp,
-                        requestId,
-                        clock.instant(),
-                        holdingIdentity
-                    )
-                }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        RegistrationRequestQueryResponse(request)
-                    )
-                )
-            }
-
-            val result = membershipQueryClient.queryQueuedRegistrationRequest(ourHoldingIdentity, membersHoldingidentity)
-            assertThat(result.getOrThrow()).isEqualTo(request)
-        }
-
-        @Test
-        fun `returns an error when the result is not right`() {
-            postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
-                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
-                    MembershipResponseContext(
-                        requestTimestamp,
-                        requestId,
-                        clock.instant(),
-                        holdingIdentity
-                    )
-                }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        null
-                    )
-                )
-            }
-
-            val result = membershipQueryClient.queryQueuedRegistrationRequest(ourHoldingIdentity, membersHoldingidentity)
-            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
-        }
-
-        @Test
-        fun `returns an error when persistence fails`() {
-            postConfigChangedEvent()
-            whenever(rpcSender.sendRequest(any())).thenAnswer {
-                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
-                    MembershipResponseContext(
-                        requestTimestamp,
-                        requestId,
-                        clock.instant(),
-                        holdingIdentity
-                    )
-                }
-                CompletableFuture.completedFuture(
-                    MembershipPersistenceResponse(
-                        context,
-                        PersistenceFailedResponse("fail")
-                    )
-                )
-            }
-
-            val result = membershipQueryClient.queryQueuedRegistrationRequest(ourHoldingIdentity, membersHoldingidentity)
             assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
         }
     }

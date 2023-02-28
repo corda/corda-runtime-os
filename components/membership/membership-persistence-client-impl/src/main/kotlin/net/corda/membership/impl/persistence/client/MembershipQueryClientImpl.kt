@@ -165,11 +165,12 @@ class MembershipQueryClientImpl(
     override fun queryRegistrationRequestsStatus(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name?,
-        statuses: List<RegistrationStatus>
+        statuses: List<RegistrationStatus>,
+        limit: Int?
     ): MembershipQueryResult<List<RegistrationRequestStatus>> {
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses)
+            QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit)
         ).execute()
         return when (val payload = result.payload) {
             is RegistrationRequestsQueryResponse -> {
@@ -294,20 +295,6 @@ class MembershipQueryClientImpl(
         return when (val payload = result.payload) {
             is ApprovalRulesQueryResponse -> MembershipQueryResult.Success(payload.rules)
             else -> MembershipQueryResult.Failure("Failed to retrieve approval rules.")
-        }
-    }
-
-    override fun queryQueuedRegistrationRequest(
-        viewOwningIdentity: HoldingIdentity,
-        registeringIdentity: HoldingIdentity
-    ): MembershipQueryResult<RegistrationStatusDetails?> {
-        val result = MembershipPersistenceRequest(
-            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryQueuedRegistrationRequest(registeringIdentity.shortHash.value)
-        ).execute()
-        return when (val payload = result.payload) {
-            is RegistrationRequestQueryResponse -> MembershipQueryResult.Success(payload.registrationRequest)
-            else -> MembershipQueryResult.Failure("Failed to retrieve queued registration requests.")
         }
     }
 }

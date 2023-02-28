@@ -59,13 +59,15 @@ interface MembershipQueryClient : Lifecycle {
      * @param viewOwningIdentity The holding identity whose view is being requested.
      * @param requestSubjectX500Name Optional. X.500 name of the subject of the registration request.
      * @param statuses Requests in the specified statuses will be included in the query result.
+     * @param limit Limit the number of results returned.
      *
      * @return a query result with a matching registration request if the query executed successfully.
      */
     fun queryRegistrationRequestsStatus(
         viewOwningIdentity: HoldingIdentity,
         requestSubjectX500Name: MemberX500Name? = null,
-        statuses: List<RegistrationStatus> = RegistrationStatus.values().toList()
+        statuses: List<RegistrationStatus> = RegistrationStatus.values().toList(),
+        limit: Int? = null
     ): MembershipQueryResult<List<RegistrationRequestStatus>>
 
     /**
@@ -130,21 +132,5 @@ interface MembershipQueryClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         ruleType: ApprovalRuleType
     ): MembershipQueryResult<Collection<ApprovalRuleDetails>>
-
-    /**
-     * Query for a given member's queued registration requests having `NEW` status, returns the request which
-     * was the oldest based on creation time.
-     *
-     * @param viewOwningIdentity The holding identity whose view we want to check.
-     * @param registeringIdentity The registering member's identity, whose requests we want to see.
-     *
-     * @return a query result with the oldest request submitted by [registeringIdentity] if
-     * the query executed successfully.
-     * Null is returned if there weren't any queued requests submitted by given member.
-     */
-    fun queryQueuedRegistrationRequest(
-        viewOwningIdentity: HoldingIdentity,
-        registeringIdentity: HoldingIdentity
-    ): MembershipQueryResult<RegistrationStatusDetails?>
 }
 

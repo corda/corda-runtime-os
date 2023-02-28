@@ -53,7 +53,6 @@ import net.corda.membership.impl.persistence.service.handler.QueryGroupPolicyHan
 import net.corda.membership.impl.persistence.service.handler.QueryMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatureHandler
 import net.corda.membership.impl.persistence.service.handler.QueryPreAuthTokenHandler
-import net.corda.membership.impl.persistence.service.handler.QueryQueuedRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestsHandler
 import net.corda.membership.impl.persistence.service.handler.RevokePreAuthTokenHandler
@@ -123,7 +122,6 @@ internal class MembershipPersistenceRPCProcessor(
         PersistApprovalRule::class.java to { PersistApprovalRuleHandler(persistenceHandlerServices) },
         DeleteApprovalRule::class.java to { DeleteApprovalRuleHandler(persistenceHandlerServices) },
         QueryApprovalRules::class.java to { QueryApprovalRulesHandler(persistenceHandlerServices) },
-        QueryQueuedRegistrationRequest::class.java to { QueryQueuedRegistrationRequestHandler(persistenceHandlerServices) },
     )
 
     override fun onNext(

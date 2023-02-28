@@ -1244,7 +1244,7 @@ class MembershipPersistenceTest {
     }
 
     @Test
-    fun `queryQueuedRegistrationRequest retrieves the oldest registration request`() {
+    fun `queryRegistrationRequest retrieves the oldest queued registration request`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
         }
@@ -1263,15 +1263,17 @@ class MembershipPersistenceTest {
             persistRequest(registeringHoldingIdentity, id, RegistrationStatus.NEW)
         }
 
-        val result = membershipQueryClient.queryQueuedRegistrationRequest(
+        val result = membershipQueryClient.queryRegistrationRequestsStatus(
             viewOwningHoldingIdentity,
-            registeringHoldingIdentity
+            registeringHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.NEW),
+            1
         ).getOrThrow()
-        assertThat(result?.registrationId).isEqualTo(queuedRegistrationIds.first())
+        assertThat(result.singleOrNull()?.registrationId).isEqualTo(queuedRegistrationIds.first())
     }
 
     @Test
-    fun `queryQueuedRegistrationRequest returns null when there were no queued requests`() {
+    fun `queryRegistrationRequest returns empty list when there were no queued requests`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
         }
@@ -1283,11 +1285,13 @@ class MembershipPersistenceTest {
         val registrationId = randomUUID().toString()
         persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.PENDING_MANUAL_APPROVAL)
 
-        val result = membershipQueryClient.queryQueuedRegistrationRequest(
+        val result = membershipQueryClient.queryRegistrationRequestsStatus(
             viewOwningHoldingIdentity,
-            registeringHoldingIdentity
+            registeringHoldingIdentity.x500Name,
+            listOf(RegistrationStatus.NEW),
+            1
         ).getOrThrow()
-        assertThat(result).isNull()
+        assertThat(result).isEmpty()
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
