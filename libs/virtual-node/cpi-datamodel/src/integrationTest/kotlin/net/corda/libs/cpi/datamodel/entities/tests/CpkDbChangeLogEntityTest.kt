@@ -166,7 +166,7 @@ class CpkDbChangeLogEntityTest {
     fun `when CPI is merged with new CPKs, old orphaned CPK changesets are no longer associated with the CPI and shared CPK works`() {
         val cpiName = UUID.randomUUID().toString()
         val cpiVersion = UUID.randomUUID().toString()
-        val cpiSignerSummaryHash = TestObject.randomChecksum().toString()
+        val cpiSignerSummaryHash = TestObject.genRandomChecksum().toString()
         val cpkRand = UUID.randomUUID()
 
         val cpk1 = cpk { }

@@ -3,19 +3,20 @@ package net.corda.libs.cpi.datamodel.entities.tests
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
 import java.util.UUID
+import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
 import net.corda.v5.crypto.SecureHash
 
 object TestObject {
-    private fun randomChecksumString(): String {
+    private fun genRandomChecksumString(): String {
         return "SHA-256:" + List(64) {
             (('a'..'f') + ('A'..'F') + ('0'..'9')).random()
         }.joinToString("")
     }
 
-    fun randomChecksum(): SecureHash {
-        return SecureHash.parse(randomChecksumString())
+    fun genRandomChecksum(): SecureHash {
+        return SecureHash.parse(genRandomChecksumString())
     }
 
     fun createCpi(id: String, cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String, cpks: Set<CpiCpkEntity>) =
@@ -49,6 +50,14 @@ object TestObject {
         signerSummaryHash: String,
     ) = CpkMetadataEntity(cpkFileChecksum, name, version, signerSummaryHash, "1.0", "{}")
 
+    fun genRandomCpkFile() =
+        createCpkFile(SecureHash("SHA1", "cpk-checksum-${UUID.randomUUID()}".toByteArray()), ByteArray(2000))
+
+    fun createCpkFile(
+        fileChecksum: SecureHash,
+        data: ByteArray
+    ) =  CpkFile(fileChecksum, data, 0)
+
     fun createCpiCpkEntity(
         cpiName: String = "test-cpi-${UUID.randomUUID()}.cpk", cpiVersion: String, cpiSignerSummaryHash: String,
         cpkName: String, cpkVersion: String, cpkSignerSummaryHash: String,
@@ -65,7 +74,7 @@ object TestObject {
         val cpiVersion = "1.0"
         val cpiSignerSummaryHash = SecureHash("SHA1","test-cpi-hash".toByteArray()).toString()
         val cpkList: List<CpiCpkEntity> = (1..numberOfCpks).map {
-            val cpkFileChecksum = randomChecksum()
+            val cpkFileChecksum = genRandomChecksum()
             val cpkName = UUID.randomUUID().toString()
             val cpkId = "test-cpk-$cpkName.cpk"
             createCpiCpkEntity(
