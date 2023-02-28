@@ -2,7 +2,7 @@ package com.r3.corda.notary.plugin.nonvalidating.server
 
 import com.r3.corda.notary.plugin.common.NotarisationRequest
 import com.r3.corda.notary.plugin.common.NotarisationResponse
-import com.r3.corda.notary.plugin.common.NotaryErrorGeneralImpl
+import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.toNotarisationResponse
 import com.r3.corda.notary.plugin.common.validateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory
  * The server-side implementation of the non-validating notary logic.
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
-// TODO CORE-7292 What is the best way to define the protocol
 @InitiatedBy(protocol = "net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
@@ -82,7 +81,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * 4. Request uniqueness checking using the [LedgerUniquenessCheckerClientService]
      * 5. Send the [NotarisationResponse][com.r3.corda.notary.plugin.common.NotarisationResponse]
      * back to the client including the specific
-     * [NotaryError][net.corda.v5.ledger.notary.plugin.core.NotaryError] if applicable
+     * [NotaryException][net.corda.v5.ledger.notary.plugin.core.NotaryException] if applicable
      */
     @Suspendable
     override fun call(session: FlowSession) {
@@ -134,13 +133,14 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 transactionSignatureService.signBatch(listOf(txDetails), listOf(requestPayload.notaryKey)).first().first()
             } else null
 
-            session.send(uniquenessResult.toNotarisationResponse(signature))
+            session.send(uniquenessResult.toNotarisationResponse(txDetails.id, signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
             session.send(
                 NotarisationResponse(
                     emptyList(),
-                    NotaryErrorGeneralImpl("Error while processing request from client.", e)
+                    NotaryExceptionGeneral("Error while processing request from client. " +
+                            "Please contact notary operator for further details.")
                 )
             )
         }

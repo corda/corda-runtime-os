@@ -204,7 +204,7 @@ class UtxoReceiveFinalityFlowTest {
         whenever(session.receive(Payload::class.java)).thenReturn(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
                 "Notarisation error",
-                FinalityNotarizationFailureType.UNRECOVERABLE.value
+                FinalityNotarizationFailureType.FATAL.value
             )
         )
 

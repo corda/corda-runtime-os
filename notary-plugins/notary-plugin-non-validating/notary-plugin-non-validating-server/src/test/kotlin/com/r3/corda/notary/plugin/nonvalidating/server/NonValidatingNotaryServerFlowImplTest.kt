@@ -2,8 +2,8 @@ package com.r3.corda.notary.plugin.nonvalidating.server
 
 import com.r3.corda.notary.plugin.common.NotarisationRequestSignature
 import com.r3.corda.notary.plugin.common.NotarisationResponse
-import com.r3.corda.notary.plugin.common.NotaryErrorGeneral
-import com.r3.corda.notary.plugin.common.NotaryErrorReferenceStateUnknown
+import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
+import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
@@ -119,12 +119,9 @@ class NonValidatingNotaryServerFlowImplTest {
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
             assertThat(responseFromServer.first().signatures).isEmpty()
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat(responseError.cause).hasStackTraceContaining(
-                "The publicKeys do not have any private counterparts available."
-            )
         }
     }
 
@@ -155,12 +152,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat(responseError.cause).hasStackTraceContaining(
-                "Sig error"
-            )
         }
     }
 
@@ -172,8 +166,8 @@ class NonValidatingNotaryServerFlowImplTest {
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
             assertThat(responseFromServer.first().signatures).isEmpty()
-            assertThat(responseError).isInstanceOf(NotaryErrorReferenceStateUnknown::class.java)
-            assertThat((responseError as NotaryErrorReferenceStateUnknown).unknownStates).isEmpty()
+            assertThat(responseError).isInstanceOf(NotaryExceptionReferenceStateUnknown::class.java)
+            assertThat((responseError as NotaryExceptionReferenceStateUnknown).unknownStates).isEmpty()
         }
     }
 
@@ -184,12 +178,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat(responseError.cause).hasStackTraceContaining(
-                "Uniqueness checker cannot be reached"
-            )
         }
     }
 
@@ -224,12 +215,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText).contains(
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
                 "Error while processing request from client"
-            )
-            assertThat((responseError).cause).hasStackTraceContaining(
-                "Time window component could not be found on the transaction"
             )
         }
     }
@@ -241,12 +229,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText).contains(
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
                 "Error while processing request from client"
-            )
-            assertThat((responseError).cause).hasStackTraceContaining(
-                "Notary component could not be found on the transaction"
             )
         }
     }
@@ -263,12 +248,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText).contains(
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
                 "Error while processing request from client"
-            )
-            assertThat((responseError).cause).hasStackTraceContaining(
-                "Could not fetch input states from the filtered transaction"
             )
         }
     }
@@ -283,10 +265,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat((responseError).cause).hasStackTraceContaining("DUMMY ERROR")
         }
     }
 
@@ -302,8 +283,8 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Unhandled exception of type java.lang.IllegalArgumentException encountered during " +
                         "uniqueness checking with message: Unhandled error!")
         }
@@ -322,12 +303,9 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryErrorGeneral::class.java)
-            assertThat((responseError as NotaryErrorGeneral).errorText)
+            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+            assertThat((responseError as NotaryExceptionGeneral).errorText)
                 .contains("Error while processing request from client")
-            assertThat((responseError).cause).hasStackTraceContaining(
-                "Notary server identity does not match with the one attached to the transaction"
-            )
         }
     }
 

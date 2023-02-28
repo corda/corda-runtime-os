@@ -12,6 +12,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
@@ -206,6 +207,14 @@ class CryptoOpsBusProcessorTests {
         testSigning(publicKey, data)
     }
 
+    @Test
+    fun `generate key should throw InvalidParamsException if invalid scheme name`() {
+        // generate
+        val exception = assertFailsWith<ExecutionException> {
+            process<CryptoPublicKey>(GenerateKeyPairCommand(LEDGER, newAlias(), null, "InvalidSchema", basicContext))
+        }
+        assertThat(exception.cause).isInstanceOf(InvalidParamsException::class.java)
+    }
 
     @Test
     fun `Second attempt to generate key with same alias should throw KeyAlreadyExistsException`() {
@@ -292,6 +301,16 @@ class CryptoOpsBusProcessorTests {
         assertEquals(externalId, info.externalId)
         // signing
         testSigning(publicKey, data)
+    }
+
+    @Test
+    fun `generate fresh key pair should throw InvalidParamsException if invalid scheme name`() {
+        // generate
+        val externalId = UUID.randomUUID().toString()
+        val exception = assertFailsWith<ExecutionException> {
+            process<CryptoPublicKey>(GenerateFreshKeyRpcCommand(CI, externalId, "InvalidSchema", basicContext))
+        }
+        assertThat(exception.cause).isInstanceOf(InvalidParamsException::class.java)
     }
 
     @Test

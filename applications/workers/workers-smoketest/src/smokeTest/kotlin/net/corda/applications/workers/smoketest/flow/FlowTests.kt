@@ -787,7 +787,7 @@ class FlowTests {
             assertAll({
                 assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
                 assertThat(issuanceResult.flowError?.message).contains("Unable to notarise transaction")
-                assertThat(issuanceResult.flowError?.message).contains("NotaryErrorTimeWindowOutOfBounds")
+                assertThat(issuanceResult.flowError?.message).contains("Time Window Out of Bounds")
             })
         }
     }
@@ -882,7 +882,7 @@ class FlowTests {
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
                 assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-                assertThat(consumeResult.flowError?.message).contains("NotaryErrorInputStateConflict")
+                assertThat(consumeResult.flowError?.message).contains("Input State Conflict")
             })
         }
     }
@@ -1038,7 +1038,7 @@ class FlowTests {
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
                 assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
-                assertThat(consumeResult.flowError?.message).contains("NotaryErrorReferenceStateConflict")
+                assertThat(consumeResult.flowError?.message).contains("Reference State Conflict")
             })
         }
     }
