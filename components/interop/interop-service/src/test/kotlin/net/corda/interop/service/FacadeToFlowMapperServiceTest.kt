@@ -33,7 +33,7 @@ internal class FacadeToFlowMapperServiceTest {
         val facadeMethod = "say-hello"
 
         //when
-        val flowName = facadeToFlowMapperService.getFlowName( holdingIdentity, facadeId, facadeMethod)
+        val flowName = facadeToFlowMapperService.getFlowName(holdingIdentity, facadeId, facadeMethod)
 
         //then
         Assertions.assertEquals(flowName, "com.net.corda.flow.SayHelloFlow")

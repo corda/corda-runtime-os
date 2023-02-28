@@ -3,6 +3,7 @@ package net.corda.interop.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.interop.data.FacadeFlowMapping
 import net.corda.virtualnode.HoldingIdentity
@@ -38,8 +39,7 @@ class FacadeToFlowMapperService @Activate constructor(
         // the assumption is we will get the required facade to flow mapping configuration as a part of CPIMetaData.
         // The following code snippet suggests how we can read it and when it will be available.
         val vNodeInfo = virtualNodeInfoReadService.get(destinationIdentity)
-        var content: String
-        if (vNodeInfo != null) {
+        val content = if (vNodeInfo != null) {
             checkNotNull(vNodeInfo) {
                 "Failed to find the virtual node info for holder '${destinationIdentity}' in ${virtualNodeInfoReadService::class.java}"
             }
@@ -48,21 +48,25 @@ class FacadeToFlowMapperService @Activate constructor(
             check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}'" }
             // In below code we are assuming that we will read the content from first CPK Metadata
             // If the packaging team will change the solution in the future, then we need make appropriate changes.
-            content = cpiMetadata.cpksMetadata.first().cordappManifest.attributes[FACADE_TO_FLOW_MAPPING]?:""
+            cpiMetadata.cpksMetadata.first().cordappManifest.attributes[FACADE_TO_FLOW_MAPPING] ?: ""
         } else {
-            content = this::class.java.getResource("/dummy-facade-to-flow-config.yaml")?.readText().toString()
+            this::class.java.getResource("/dummy-facade-to-flow-config.yaml")?.readText().toString()
         }
 
         if (content.trim().isEmpty()) {
             throw IllegalStateException("Failed to fetch facade to flow mapping.")
         } else {
-            return mapper.readValue(
-                content,
-                FacadeFlowMapping::class.java
-            ).facadeFlowMapping
-                .first { it.facadeId == facadeId }.facadeMethodMapping
+            return getFacadeMapping(content).facadeFlowMapping
+                .first { it.facadeId == facadeId }
+                .facadeMethodMapping
                 .first { it.facadeMethod == facadeName }
                 .flowName
         }
+    }
+
+    private fun getFacadeMapping(content: String): FacadeFlowMapping = try {
+        mapper.readValue(content, FacadeFlowMapping::class.java)
+    } catch (e: MissingKotlinParameterException) {
+        throw IllegalStateException("Unable to parse the facade to flow mapping : $e")
     }
 }
