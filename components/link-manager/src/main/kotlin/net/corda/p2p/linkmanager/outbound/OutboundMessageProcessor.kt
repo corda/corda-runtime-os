@@ -76,6 +76,8 @@ internal class OutboundMessageProcessor(
     }
 
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
+        logger.info("Processing outbound messages ${events.size}.")
+
         val records = mutableListOf<Record<String, *>>()
         for (event in events) {
             records += processEvent(event)
@@ -132,7 +134,7 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        logger.debug { "Processing outbound message ${message.header.messageId} to ${message.header.destination}." }
+        logger.info ("Processing outbound message ${message.header.messageId} to ${message.header.destination}." )
 
         val discardReason = checkSourceAndDestinationValid(
             message.header.source, message.header.destination
@@ -186,10 +188,10 @@ internal class OutboundMessageProcessor(
         messageAndKey: AuthenticatedMessageAndKey,
         isReplay: Boolean = false
     ): List<Record<String, *>> {
-        logger.info  (
+        logger.trace {
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
-        )
+        }
 
         val discardReason = checkSourceAndDestinationValid(
             messageAndKey.message.header.source, messageAndKey.message.header.destination

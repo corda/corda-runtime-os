@@ -48,6 +48,7 @@ internal class InboundMessageProcessor(
     private var logger = LoggerFactory.getLogger(this::class.java.name)
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
+        logger.info("Processing inbound messages ${events.size}.")
         val records = mutableListOf<Record<*, *>>()
         for (event in events) {
             val message = event.value
