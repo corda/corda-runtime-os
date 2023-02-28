@@ -1,4 +1,4 @@
-package net.corda.interop.service
+package net.corda.interop.service.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.data.interop.InteropMessage

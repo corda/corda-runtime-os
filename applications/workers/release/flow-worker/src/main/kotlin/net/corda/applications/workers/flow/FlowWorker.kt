@@ -15,6 +15,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
+import net.corda.processors.interop.InteropProcessor
 import net.corda.processors.verification.VerificationProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,6 +43,8 @@ class FlowWorker @Activate constructor(
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
+    @Reference(service = InteropProcessor::class)
+    private val interopProcessor: InteropProcessor
 ) : Application {
 
     private companion object {
@@ -72,12 +75,14 @@ class FlowWorker @Activate constructor(
 
         flowProcessor.start(config)
         verificationProcessor.start(config)
+        interopProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Flow worker stopping.")
         flowProcessor.stop()
         verificationProcessor.stop()
+        interopProcessor.stop()
         workerMonitor.stop()
     }
 }
