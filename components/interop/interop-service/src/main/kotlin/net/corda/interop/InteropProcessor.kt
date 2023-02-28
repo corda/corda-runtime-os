@@ -35,12 +35,12 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         events: List<Record<String, AppMessage>>
     ): List<Record<*, *>> {
         val outputEvents = mutableListOf<Record<*, *>>()
-        events.forEach { appMessage ->
-            val unAuthMessage = appMessage.value?.message
+        events.forEach { record ->
+            val unAuthMessage = record.value?.message
             //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
             if (unAuthMessage != null && unAuthMessage is UnauthenticatedMessage && unAuthMessage.header.subsystem == SUBSYSTEM) {
                 val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
-                getOutputRecord(header, unAuthMessage.payload, appMessage.key)?.let { outputRecord ->
+                getOutputRecord(header, unAuthMessage.payload, record.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
                 }
             }
@@ -60,7 +60,9 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         return if (interopMessage != null) {
             val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
             logger.info("Converted interop message to facade request : $facadeRequest")
-            if ((interopMessage.messageId.toIntOrNull() ?: 0) > 10) return null
+            //TODO temporary logic for seed messages only, to process the first 10 messages as more is not required
+            // this check will be phased out as part of eliminating seed messages in CORE-10446
+            if (key.startsWith("seed-message") && (interopMessage.messageId.toIntOrNull() ?: 0) > 10) return null
             val message : InteropMessage = InteropMessageTransformer.getInteropMessage(
                 interopMessage.messageId.incrementOrUuid(), facadeRequest)
             logger.info("Converted facade request to interop message : $message")
