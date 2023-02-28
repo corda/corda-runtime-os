@@ -29,7 +29,6 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             KeyValuePairList::class.java
         )
 
-
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
         return keyValuePairListSerializer.serialize(context) ?: throw MembershipPersistenceException(
             "Failed to serialize key value pair list."
