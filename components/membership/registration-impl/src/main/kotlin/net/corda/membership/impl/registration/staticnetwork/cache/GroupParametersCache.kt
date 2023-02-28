@@ -56,7 +56,7 @@ class GroupParametersCache(
         val created = AtomicBoolean(false)
         return cache.computeIfAbsent(holdingIdentity.groupId) {
             created.set(true)
-            createGroupParametersSnapshot(holdingIdentity)
+            createGroupParametersSnapshot()
         }.let {
             if (created.get()) {
                 it to it.toPublishRecords(holdingIdentity.groupId)
@@ -95,16 +95,14 @@ class GroupParametersCache(
         }
     }
 
-    private fun createGroupParametersSnapshot(holdingIdentity: HoldingIdentity): KeyValuePairList {
+    private fun createGroupParametersSnapshot(): KeyValuePairList {
         return KeyValuePairList(
             listOf(
                 KeyValuePair(EPOCH_KEY, "1"),
                 KeyValuePair(MPV_KEY, platformInfoProvider.activePlatformVersion.toString()),
                 KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
             )
-        ).apply {
-            set(holdingIdentity.groupId, this)
-        }
+        )
     }
 
     private fun KeyValuePairList.toPublishRecords(groupId: String): Collection<Record<*, *>> {

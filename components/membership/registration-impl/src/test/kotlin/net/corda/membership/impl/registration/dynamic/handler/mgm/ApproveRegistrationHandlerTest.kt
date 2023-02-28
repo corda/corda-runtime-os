@@ -33,6 +33,7 @@ import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -245,14 +246,25 @@ class ApproveRegistrationHandlerTest {
     @Test
     fun `invoke publishes group parameters to kafka if approved member has notary role set `() {
         val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro())
+        val records = listOf(
+            Record(
+                "topic",
+                "key",
+                "value"
+            )
+        )
         val groupParametersCaptor = argumentCaptor<GroupParameters>()
         val holdingIdentityCaptor = argumentCaptor<HoldingIdentity>()
+        whenever(writerService.createRecords(holdingIdentityCaptor.capture(), groupParametersCaptor.capture()))
+            .doReturn(records)
 
-        handler.invoke(state, key, command)
+        val response = handler.invoke(state, key, command)
 
-        verify(writerService).put(holdingIdentityCaptor.capture(), groupParametersCaptor.capture())
-        assertThat(groupParametersCaptor.firstValue).isEqualTo(persistedGroupParameters)
-        assertThat(holdingIdentityCaptor.firstValue).isEqualTo(mgm.holdingIdentity)
+        assertSoftly {
+            assertThat(groupParametersCaptor.firstValue).isEqualTo(persistedGroupParameters)
+            assertThat(holdingIdentityCaptor.firstValue).isEqualTo(mgm.holdingIdentity)
+            assertThat(response.outputStates).containsAll(records)
+        }
     }
 
     @Test

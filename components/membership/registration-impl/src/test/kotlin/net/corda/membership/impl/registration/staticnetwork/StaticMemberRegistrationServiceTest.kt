@@ -56,7 +56,6 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
-import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
@@ -68,6 +67,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -94,9 +94,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -228,9 +228,11 @@ class StaticMemberRegistrationServiceTest {
     private val mockContext: Map<String, String> = mock {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
+    private val asyncMembershipPersistenceClient = mock<AsyncMembershipPersistenceClient>()
     private val persistenceClient = mock<MembershipPersistenceClient> {
         on { persistGroupParameters(any(), any()) } doReturn MembershipPersistenceResult.Success(mock())
         on { persistRegistrationRequest(any(), any()) }  doReturn MembershipPersistenceResult.success()
+        on { asyncClient } doReturn asyncMembershipPersistenceClient
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -300,8 +302,7 @@ class StaticMemberRegistrationServiceTest {
         fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
             setUpPublisher()
             registrationService.start()
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            registrationService.register(registrationId, alice, mockContext)
+            val publishedList = registrationService.register(registrationId, alice, mockContext).toList()
             verify(hsmRegistrationClient).assignSoftHSM(aliceId.value, LEDGER)
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
 
@@ -311,13 +312,14 @@ class StaticMemberRegistrationServiceTest {
             }
             registrationService.stop()
 
-            val publishedList = capturedPublishedList.firstValue
-            assertEquals(4, publishedList.size)
+            assertThat(publishedList)
+                .hasSize(5)
 
             publishedList.take(3).forEach {
-                assertTrue(it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value)
-                        || it.key.startsWith(charlieId.value))
-                assertTrue(it.key.endsWith(aliceId.value))
+                val key = it.key.toString()
+                assertTrue(key.startsWith(aliceId.value) || key.startsWith(bobId.value)
+                        || key.startsWith(charlieId.value))
+                assertTrue(key.endsWith(aliceId.value))
             }
 
             val publishedInfo = publishedList.first()
@@ -375,19 +377,21 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration persist the status`() {
-            val status = argumentCaptor<RegistrationRequest>()
+            val record = Record("topic", "key", "value")
             whenever(
-                persistenceClient.persistRegistrationRequest(
+                asyncMembershipPersistenceClient.createPersistRegistrationRequest(
                     eq(alice),
-                    status.capture()
+                    argThat {
+                        status == RegistrationStatus.APPROVED
+                    }
                 )
-            ).doReturn(MembershipPersistenceResult.success())
+            ).doReturn(listOf(record))
             setUpPublisher()
             registrationService.start()
 
-            registrationService.register(registrationId, alice, mockContext)
+            val records = registrationService.register(registrationId, alice, mockContext)
 
-            assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+            assertThat(records).contains(record)
         }
 
         @Test
@@ -413,16 +417,16 @@ class StaticMemberRegistrationServiceTest {
         @Test
         fun `registration publishes group parameters to Kafka for registering member`() {
             val knownIdentity = HoldingIdentity(aliceName, "test-group")
-            val status = argumentCaptor<GroupParameters>()
-            doNothing().whenever(groupParametersWriterService).put(any(), status.capture())
+            val record = Record("topic", "key", "value")
+            whenever(groupParametersWriterService.createRecords(any(), eq(mockGroupParameters))).doReturn(listOf(record))
             whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
             setUpPublisher()
             registrationService.start()
 
-            registrationService.register(registrationId, knownIdentity, mockContext)
+            val records = registrationService.register(registrationId, knownIdentity, mockContext)
 
-            assertThat(status.firstValue).isEqualTo(mockGroupParameters)
+            assertThat(records).contains(record)
         }
 
         @Test
@@ -658,7 +662,6 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration adds notary info to member info`() {
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             setUpPublisher()
             registrationService.start()
             val context = mapOf(
@@ -668,10 +671,12 @@ class StaticMemberRegistrationServiceTest {
                 "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
             )
 
-            registrationService.register(registrationId, alice, context)
+            val records = registrationService.register(registrationId, alice, context)
 
-            val persistentMemberPublished =
-                capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
+            val persistentMemberPublished = records
+                .map { it.value }
+                .filterIsInstance<PersistentMemberInfo>()
+                .first()
             val memberInfo = memberInfoFactory.create(
                 persistentMemberPublished.memberContext.toSortedMap(),
                 persistentMemberPublished.mgmContext.toSortedMap()
@@ -699,17 +704,19 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration without notary will not add notary to member info`() {
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             setUpPublisher()
             registrationService.start()
             val context = mapOf(
                 KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
             )
 
-            registrationService.register(registrationId, alice, context)
+            val records = registrationService.register(registrationId, alice, context)
 
-            val persistentMemberPublished =
-                capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
+            val persistentMemberPublished = records
+                .map { it.value }
+                .filterIsInstance<PersistentMemberInfo>()
+                .first()
+
             val memberInfo = memberInfoFactory.create(
                 persistentMemberPublished.memberContext.toSortedMap(),
                 persistentMemberPublished.mgmContext.toSortedMap()
@@ -760,9 +767,9 @@ class StaticMemberRegistrationServiceTest {
 
             registrationService.register(registrationId, bob, context)
 
-            verify(groupParametersWriterService).put(eq(bob), eq(mockGroupParameters))
-            verify(groupParametersWriterService).put(eq(alice), eq(mockGroupParameters))
-            verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockGroupParameters))
+            verify(groupParametersWriterService).createRecords(eq(bob), eq(mockGroupParameters))
+            verify(groupParametersWriterService).createRecords(eq(alice), eq(mockGroupParameters))
+            verify(groupParametersWriterService, never()).createRecords(eq(charlie), eq(mockGroupParameters))
         }
     }
 

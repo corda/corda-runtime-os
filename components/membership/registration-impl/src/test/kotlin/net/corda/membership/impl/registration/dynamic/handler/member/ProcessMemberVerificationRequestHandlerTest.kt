@@ -14,6 +14,7 @@ import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toAvro
@@ -26,7 +27,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 
@@ -48,7 +48,10 @@ class ProcessMemberVerificationRequestHandlerTest {
 
     private val response = argumentCaptor<VerificationResponse>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val asyncMembershipPersistenceClient = mock<AsyncMembershipPersistenceClient>()
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { asyncClient } doReturn asyncMembershipPersistenceClient
+    }
     private val memberTypeChecker = mock<MemberTypeChecker>()
     private val p2pMessage = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
@@ -122,7 +125,18 @@ class ProcessMemberVerificationRequestHandlerTest {
 
     @Test
     fun `handler persist the request status`() {
-        processMemberVerificationRequestHandler.invoke(
+        val records = listOf(
+            Record("topic", "key", "value")
+        )
+        whenever(
+            asyncMembershipPersistenceClient.setRegistrationRequestStatusRequest(
+                member.toCorda(),
+                REGISTRATION_ID,
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION
+            )
+        ).doReturn(records)
+
+        val response = processMemberVerificationRequestHandler.invoke(
             null,
             Record(
                 "dummyTopic",
@@ -133,10 +147,6 @@ class ProcessMemberVerificationRequestHandlerTest {
             )
         )
 
-        verify(membershipPersistenceClient).setRegistrationRequestStatus(
-            member.toCorda(),
-            REGISTRATION_ID,
-            RegistrationStatus.PENDING_MEMBER_VERIFICATION
-        )
+        assertThat(response.outputStates).containsAll(records)
     }
 }

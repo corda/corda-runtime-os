@@ -35,6 +35,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.messaging.api.records.Record
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
@@ -163,7 +164,10 @@ class MGMRegistrationMemberInfoHandlerTest {
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { create(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
     }
-    private val membershipPersistenceAsyncClient = mock<AsyncMembershipPersistenceClient>()
+    private val registrationRequest = Record("topic", "key", "value")
+    private val membershipPersistenceAsyncClient = mock<AsyncMembershipPersistenceClient> {
+        on { createPersistRegistrationRequest(any(), any()) } doReturn listOf(registrationRequest)
+    }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
             persistRegistrationRequest(any(), any())
@@ -221,7 +225,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        assertThat(result).isEqualTo(memberInfo)
+        assertThat(result.first).isEqualTo(memberInfo)
     }
 
     @Test
@@ -234,7 +238,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        verify(membershipPersistenceClient).persistRegistrationRequest(any(), any())
+        verify(membershipPersistenceAsyncClient).createPersistRegistrationRequest(any(), any())
         verify(membershipPersistenceAsyncClient).persistMemberInfo(any(), any())
         verify(cordaAvroSerializer).serialize(any())
         verify(memberInfoFactory).create(any(), any<SortedMap<String, String?>>())
@@ -359,27 +363,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
         verify(cryptoOpsClient).lookupKeysByIds(any(), any())
         verify(keyEncodingService).decodePublicKey(any<ByteArray>())
-    }
-
-    @Test
-    fun `expected exception thrown if registration request persistence fails`() {
-        whenever(
-            membershipPersistenceClient.persistRegistrationRequest(
-                eq(holdingIdentity), any()
-            )
-        ).doReturn(MembershipPersistenceResult.Failure(""))
-
-        assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersist(
-                registrationId,
-                holdingIdentity,
-                validTestContext
-            )
-        }
-        verify(membershipPersistenceClient).persistRegistrationRequest(
-            eq(holdingIdentity),
-            any()
-        )
     }
 
     @Test

@@ -13,14 +13,10 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationOutputPublisherTest {
 
@@ -37,17 +33,12 @@ class MGMRegistrationOutputPublisherTest {
         on { memberProvidedContext } doReturn memberContext
         on { name } doReturn holdingIdentity.x500Name
     }
-    private val recordPublishFuture: CompletableFuture<Unit> = mock {
-        on { get(any(), any()) } doAnswer {}
-    }
 
     private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher()
 
     @Test
     fun `Publish runs successfully`() {
         val publishedRecords = mgmRegistrationOutputPublisher.publish(memberInfo)
-
-        verify(recordPublishFuture).get(any(), any())
 
         assertThat(publishedRecords.map { it.topic }).containsExactlyInAnyOrder(
             MEMBER_LIST_TOPIC,

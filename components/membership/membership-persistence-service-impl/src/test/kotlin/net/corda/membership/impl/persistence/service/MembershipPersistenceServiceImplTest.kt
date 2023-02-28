@@ -6,6 +6,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
+import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfigFactory
@@ -23,8 +25,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -49,10 +53,15 @@ class MembershipPersistenceServiceImplTest {
 
     private lateinit var membershipPersistenceService: MembershipPersistenceService
 
-    private val subscriptionCoordinatorName = LifecycleCoordinatorName("SUB")
+    private val rpcSubscriptionCoordinatorName = LifecycleCoordinatorName("SUB")
+    private val asyncSubscriptionCoordinatorName = LifecycleCoordinatorName("SUB")
     private val rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse> = mock {
-        on { subscriptionName } doReturn subscriptionCoordinatorName
+        on { subscriptionName } doReturn rpcSubscriptionCoordinatorName
     }
+    private val asyncSubscription =
+        mock<StateAndEventSubscription<String, MembershipPersistenceAsyncRequestState, MembershipPersistenceAsyncRequest>> {
+            on { subscriptionName } doReturn asyncSubscriptionCoordinatorName
+        }
     private val subRegistrationHandle: RegistrationHandle = mock()
     private val registrationHandle: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
@@ -70,10 +79,21 @@ class MembershipPersistenceServiceImplTest {
 
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(eq(dependentComponents)) } doReturn registrationHandle
-        on { followStatusChangesByName(eq(setOf(subscriptionCoordinatorName))) } doReturn subRegistrationHandle
+        on { followStatusChangesByName(eq(setOf(rpcSubscriptionCoordinatorName))) } doReturn subRegistrationHandle
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), lifecycleHandlerCaptor.capture()) } doReturn coordinator
+        on {
+            createCoordinator(
+                eq(LifecycleCoordinatorName.forComponent<MembershipPersistenceService>()),
+                lifecycleHandlerCaptor.capture(),
+            )
+        } doReturn coordinator
+        on {
+            createCoordinator(
+                eq(LifecycleCoordinatorName.forComponent<MembershipPersistenceAsyncRetryManager>()),
+                any(),
+            )
+        } doReturn mock()
     }
 
     private val subscriptionFactory: SubscriptionFactory = mock {
@@ -84,8 +104,19 @@ class MembershipPersistenceServiceImplTest {
                 any()
             )
         } doReturn rpcSubscription
+        on {
+            createStateAndEventSubscription(
+                any(),
+                any<MembershipPersistenceAsyncProcessor>(),
+                any(),
+                any()
+            )
+        } doReturn asyncSubscription
     }
-    private val publisherFactory = mock<PublisherFactory>()
+    private val publisher = mock<Publisher>()
+    private val publisherFactory = mock<PublisherFactory> {
+        on { createPublisher(any(), any()) } doReturn publisher
+    }
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }

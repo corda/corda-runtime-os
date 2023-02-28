@@ -57,7 +57,7 @@ class GroupParametersCacheTest {
 
         groupParametersCache.set(knownGroupId, groupParameters)
 
-        assertThat(groupParametersCache.getOrCreateGroupParameters(knownIdentity)).isEqualTo(groupParameters)
+        assertThat(groupParametersCache.getOrCreateGroupParameters(knownIdentity).first).isEqualTo(groupParameters)
     }
 
     @Test

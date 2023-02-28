@@ -4,17 +4,23 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.UUID
 
 class PersistMemberRegistrationStateHandlerTest {
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val asyncMembershipPersistenceClient = mock<AsyncMembershipPersistenceClient>()
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { asyncClient } doReturn asyncMembershipPersistenceClient
+    }
     val command = PersistMemberRegistrationState(
         HoldingIdentity("O=Alice, L=London, C=GB", "GroupId"),
         SetOwnRegistrationStatus(
@@ -34,17 +40,22 @@ class PersistMemberRegistrationStateHandlerTest {
 
     @Test
     fun `invoke persist the member`() {
-        handler.invoke(
+        val records = listOf(Record("one", "two", "three"))
+        whenever(
+            asyncMembershipPersistenceClient.setRegistrationRequestStatusRequest(
+                command.member.toCorda(),
+                command.setStatusRequest.registrationId,
+                command.setStatusRequest.newStatus
+            )
+        ).doReturn(records)
+
+        val response = handler.invoke(
             command = command,
             key = "key",
             state = null
         )
 
-        verify(membershipPersistenceClient).setRegistrationRequestStatus(
-            command.member.toCorda(),
-            command.setStatusRequest.registrationId,
-            command.setStatusRequest.newStatus
-        )
+        assertThat(response.outputStates).isEqualTo(records)
     }
 
     @Test

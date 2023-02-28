@@ -13,9 +13,9 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.VERIFY_MEMBER_REQUEST
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -30,7 +30,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -55,14 +54,18 @@ class VerifyMemberHandlerTest {
         mgm
     )
 
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+    private val commandRecord = Record("topic", "key", "value")
+    private val asyncMembershipPersistenceClient = mock<AsyncMembershipPersistenceClient> {
         on {
-            setRegistrationRequestStatus(
+            setRegistrationRequestStatusRequest(
                 mgm.toCorda(),
                 REGISTRATION_ID,
-                RegistrationStatus.PENDING_MEMBER_VERIFICATION
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn listOf(commandRecord)
+    }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { asyncClient } doReturn asyncMembershipPersistenceClient
     }
     private val verificationRequestRecord = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
@@ -98,14 +101,9 @@ class VerifyMemberHandlerTest {
     fun `handler returns request message`() {
         val result = verifyMemberHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
-        verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
-            mgm.toCorda(),
-            REGISTRATION_ID,
-            RegistrationStatus.PENDING_MEMBER_VERIFICATION
-        )
-
-        assertThat(result.outputStates).hasSize(1)
+        assertThat(result.outputStates).hasSize(2)
             .contains(verificationRequestRecord)
+            .contains(commandRecord)
     }
 
     @Test
@@ -113,7 +111,7 @@ class VerifyMemberHandlerTest {
         whenever(memberTypeChecker.isMgm(member)).doReturn(true)
         val result = verifyMemberHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
-        verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
+        verify(asyncMembershipPersistenceClient, never()).setRegistrationRequestStatusRequest(
             any(),
             any(),
             any(),
@@ -131,7 +129,7 @@ class VerifyMemberHandlerTest {
         whenever(memberTypeChecker.isMgm(mgm)).doReturn(false)
         val result = verifyMemberHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
-        verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
+        verify(asyncMembershipPersistenceClient, never()).setRegistrationRequestStatusRequest(
             any(),
             any(),
             any(),

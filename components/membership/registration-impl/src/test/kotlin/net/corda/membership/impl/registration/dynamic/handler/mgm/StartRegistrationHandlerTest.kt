@@ -25,8 +25,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
@@ -105,7 +105,14 @@ class StartRegistrationHandlerTest {
 
     // test dependencies
     private lateinit var memberInfoFactory: MemberInfoFactory
-    lateinit var membershipPersistenceClient: MembershipPersistenceClient
+    private val asyncMembershipPersistenceClient = mock<AsyncMembershipPersistenceClient> {
+        on {
+            createPersistRegistrationRequest(any(), any())
+        } doReturn emptyList()
+    }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { asyncClient } doReturn asyncMembershipPersistenceClient
+    }
     private lateinit var membershipQueryClient: MembershipQueryClient
 
     private val memberMemberContext: MemberContext = mock {
@@ -156,9 +163,6 @@ class StartRegistrationHandlerTest {
         memberInfoFactory = mock {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
         }
-        membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
-        }
         membershipQueryClient = mock {
             on {
                 queryMemberInfo(
@@ -200,25 +204,6 @@ class StartRegistrationHandlerTest {
             verify = true,
             queryMemberInfo = true,
             persistMemberInfo = true
-        )
-    }
-
-    @Test
-    fun `declined if persistence of registration request fails`() {
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .doReturn(MembershipPersistenceResult.Failure("error"))
-
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
-            assertThat(updatedState).isNotNull
-            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
-
-            assertDeclinedRegistration()
-        }
-        verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
         )
     }
 
@@ -362,24 +347,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             verify = true,
             queryMemberInfo = true,
-        )
-    }
-
-    @Test
-    fun `declined if member info fails to persist`() {
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
-            assertThat(updatedState).isNotNull
-            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
-
-            assertDeclinedRegistration()
-        }
-        verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            queryMemberInfo = true,
-            persistMemberInfo = true
         )
     }
 
@@ -555,8 +522,8 @@ class StartRegistrationHandlerTest {
     ) {
         fun getVerificationMode(condition: Boolean) = if (condition) times(1) else never()
 
-        verify(membershipPersistenceClient, getVerificationMode(persistRegistrationRequest))
-            .persistRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), any())
+        verify(asyncMembershipPersistenceClient, getVerificationMode(persistRegistrationRequest))
+            .createPersistRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), any())
 
         verify(membershipQueryClient, getVerificationMode(queryMemberInfo))
             .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
@@ -564,6 +531,7 @@ class StartRegistrationHandlerTest {
         verify(memberTypeChecker, getVerificationMode(verify))
             .getMgmMemberInfo(eq(mgmHoldingIdentity.toCorda()))
 
-        println("QQQ TODO: $persistMemberInfo")
+        verify(asyncMembershipPersistenceClient, getVerificationMode(persistMemberInfo))
+            .persistMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
     }
 }

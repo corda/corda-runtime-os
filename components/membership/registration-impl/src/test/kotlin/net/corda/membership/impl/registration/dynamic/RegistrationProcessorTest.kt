@@ -24,7 +24,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
@@ -32,6 +31,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
@@ -115,8 +115,15 @@ class RegistrationProcessorTest {
     private lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
     private lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
     private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
-    lateinit var membershipPersistenceClient: MembershipPersistenceClient
-    private lateinit var membershipQueryClient: MembershipQueryClient
+    private val asyncMembershipPersistenceClient = mock<AsyncMembershipPersistenceClient> {
+        on {
+            createPersistRegistrationRequest(any(), any())
+        } doReturn emptyList()
+    }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { asyncClient } doReturn asyncMembershipPersistenceClient
+    }
+    lateinit var membershipQueryClient: MembershipQueryClient
 
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
@@ -167,9 +174,6 @@ class RegistrationProcessorTest {
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
             on { createAvroSerializer<Any>(any()) }.thenReturn(verificationRequestResponseSerializer)
-        }
-        membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
         }
         membershipQueryClient = mock {
             on {

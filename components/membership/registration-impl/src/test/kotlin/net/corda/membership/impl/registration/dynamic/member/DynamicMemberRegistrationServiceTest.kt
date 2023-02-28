@@ -1,8 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.member
 
-import com.typesafe.config.ConfigFactory
-import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
@@ -18,7 +17,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -27,7 +25,6 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
@@ -60,11 +57,8 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.UnauthenticatedMessage
@@ -72,6 +66,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.membership.persistence.client.AsyncMembershipPersistenceClient
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
@@ -88,7 +83,6 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -112,7 +106,6 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.cert.X509Certificate
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import javax.security.auth.x500.X500Principal
 
 class DynamicMemberRegistrationServiceTest {
@@ -123,7 +116,6 @@ class DynamicMemberRegistrationServiceTest {
         const val LEDGER_KEY_ID = "BBC123456789"
         const val NOTARY_KEY = "2020"
         const val NOTARY_KEY_ID = "CBC123456789"
-        const val PUBLISHER_CLIENT_ID = "dynamic-member-registration-service"
         const val GROUP_NAME = "dummy_group"
 
         val MEMBER_CONTEXT_BYTES = "2222".toByteArray()
@@ -177,9 +169,6 @@ class DynamicMemberRegistrationServiceTest {
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
         on { category } doReturn NOTARY
     }
-    private val mockPublisher = mock<Publisher>().apply {
-        whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
-    }
 
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(SESSION_KEY.toByteArray()) } doReturn sessionKey
@@ -219,10 +208,8 @@ class DynamicMemberRegistrationServiceTest {
     }
 
     private val componentHandle: RegistrationHandle = mock()
-    private val configHandle: Resource = mock()
-    private val testConfig =
-        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
     private val dependentComponents = setOf(
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
         LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
@@ -270,13 +257,17 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
-    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+    private val commandRecord = Record("topic", "key", "value")
+    private val asyncMembershipPersistenceClient = mock<AsyncMembershipPersistenceClient> {
         on {
-            persistRegistrationRequest(
+            createPersistRegistrationRequest(
                 any(),
                 any(),
             )
-        } doReturn MembershipPersistenceResult.success()
+        } doReturn listOf(commandRecord)
+    }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { asyncClient } doReturn asyncMembershipPersistenceClient
     }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
@@ -349,15 +340,13 @@ class DynamicMemberRegistrationServiceTest {
         )
     }
 
-    private fun postConfigChangedEvent() {
+    private fun postReadyEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(
-            ConfigChangedEvent(
-                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG),
-                mapOf(
-                    ConfigKeys.BOOT_CONFIG to testConfig,
-                    ConfigKeys.MESSAGING_CONFIG to testConfig
-                )
-            ), coordinator
+            RegistrationStatusChangeEvent(
+                mock(),
+                LifecycleStatus.UP
+            ),
+            coordinator
         )
     }
 
@@ -365,38 +354,44 @@ class DynamicMemberRegistrationServiceTest {
     inner class SuccessfulRegistrationTests {
         @Test
         fun `registration successfully builds unauthenticated message and publishes it`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-            registrationService.register(registrationResultId, member, context)
-            verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
-            val publishedMessageList = capturedPublishedList.firstValue
-            SoftAssertions.assertSoftly {
-                it.assertThat(publishedMessageList.size).isEqualTo(1)
-                val publishedMessage = publishedMessageList.first()
-                it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-                it.assertThat(publishedMessage.key).isEqualTo(memberId.value)
-                val unauthenticatedMessagePublished =
-                    (publishedMessage.value as AppMessage).message as UnauthenticatedMessage
-                it.assertThat(unauthenticatedMessagePublished.header.source).isEqualTo(member.toAvro())
-                it.assertThat(unauthenticatedMessagePublished.header.destination).isEqualTo(mgm.toAvro())
-                it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(UNAUTH_REQUEST_BYTES))
-            }
-            registrationService.stop()
+
+            val publishedMessageList = registrationService.register(registrationResultId, member, context)
+
+            assertThat(publishedMessageList)
+                .anySatisfy { record ->
+                    assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
+                    assertThat(record.key).isEqualTo(memberId.value)
+                    assertThat(record.value).isInstanceOf(AppMessage::class.java)
+                    val unauthenticatedMessagePublished = (record.value as? AppMessage)?.message as? UnauthenticatedMessage
+                    assertThat(unauthenticatedMessagePublished?.header?.source).isEqualTo(member.toAvro())
+                    assertThat(unauthenticatedMessagePublished?.header?.destination).isEqualTo(mgm.toAvro())
+                    assertThat(unauthenticatedMessagePublished?.payload).isEqualTo(ByteBuffer.wrap(UNAUTH_REQUEST_BYTES))
+                }
+        }
+        @Test
+        fun `registration successfully publish state update command`() {
+            postReadyEvent()
+            registrationService.start()
+
+            val publishedMessageList = registrationService.register(registrationResultId, member, context)
+
+            assertThat(publishedMessageList).contains(commandRecord)
         }
 
         @Test
         fun `registration successfully persist the status to new`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
             val status = argumentCaptor<RegistrationRequest>()
             whenever(
-                membershipPersistenceClient.persistRegistrationRequest(
+                asyncMembershipPersistenceClient.createPersistRegistrationRequest(
                     eq(member),
                     status.capture()
                 )
             ).doReturn(
-                MembershipPersistenceResult.success()
+                emptyList()
             )
 
             registrationService.register(registrationResultId, member, context)
@@ -406,7 +401,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration context is constructed as expected`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
             registrationService.register(registrationResultId, member, context)
 
@@ -443,7 +438,7 @@ class DynamicMemberRegistrationServiceTest {
             }
             whenever(locallyHostedIdentitiesService.getIdentityInfo(member)).doReturn(identityInfo)
 
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
             registrationService.register(registrationResultId, member, context)
 
@@ -479,7 +474,7 @@ class DynamicMemberRegistrationServiceTest {
             )
         )
         fun `registration fails when one context property is missing`(propertyName: String) {
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
             val testContext = context - propertyName
 
@@ -490,7 +485,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails when one or more context properties are numbered incorrectly`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             val testProperties =
                 context + mapOf(
                     "corda.ledger.keys.100.id" to "9999"
@@ -508,7 +503,7 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration fails if ledger key has the wrong category`() {
             whenever(ledgerCryptoSigningKey.category).doReturn(PRE_AUTH)
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
 
             assertThrows<InvalidMembershipRegistrationException> {
@@ -519,7 +514,7 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration fails if session key has the wrong category`() {
             whenever(sessionCryptoSigningKey.category).doReturn(LEDGER)
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
 
             assertThrows<InvalidMembershipRegistrationException> {
@@ -529,7 +524,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails if the registration context doesn't match the schema`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             val err = "ERROR-MESSAGE"
             val errReason = "ERROR-REASON"
             whenever(
@@ -561,7 +556,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails if mgm's ecdh key is missing`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             whenever(mgmInfo.ecdhKey).thenReturn(null)
             registrationService.start()
 
@@ -577,7 +572,7 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration fails if the session key spec is invalid`() {
             val registrationContext = context + ("corda.session.key.signature.spec" to "Nop")
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
 
             assertThrows<InvalidMembershipRegistrationException> {
@@ -588,7 +583,7 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration fails if the ledger key spec is invalid`() {
             val registrationContext = context + ("corda.ledger.keys.0.signature.spec" to "Nop")
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
 
             assertThrows<InvalidMembershipRegistrationException> {
@@ -598,7 +593,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails if virtual node info cannot be found`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
             val noVNodeMember = HoldingIdentity(
                 MemberX500Name.parse("O=Bob, C=IE, L=DUB"),
@@ -617,7 +612,7 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration context with mutual TLS will fail if the identity can not be found`() {
             whenever(gatewayConfiguration.getString("tlsType")).doReturn("MUTUAL")
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
 
             val exception = assertThrows<NotReadyMembershipRegistrationException> {
@@ -634,7 +629,7 @@ class DynamicMemberRegistrationServiceTest {
                 on { tlsCertificates } doReturn emptyList()
             }
             whenever(locallyHostedIdentitiesService.getIdentityInfo(member)).doReturn(identityInfo)
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
 
             val exception = assertThrows<NotReadyMembershipRegistrationException> {
@@ -649,7 +644,7 @@ class DynamicMemberRegistrationServiceTest {
     inner class NotaryRoleTests {
         @Test
         fun `registration fails when notary keys are numbered incorrectly`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             val testProperties =
                 context + mapOf(
                     "corda.roles.0" to "notary",
@@ -665,7 +660,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration pass when notary keys are numbered correctly`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             val testProperties =
                 context + mapOf(
                     "corda.roles.0" to "notary",
@@ -682,7 +677,7 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration fails when notary keys has the wrong category`() {
             whenever(notaryCryptoSigningKey.category).doReturn(SESSION_INIT)
-            postConfigChangedEvent()
+            postReadyEvent()
             val testProperties =
                 context + mapOf(
                     "corda.roles.0" to "notary",
@@ -700,7 +695,7 @@ class DynamicMemberRegistrationServiceTest {
         fun `registration adds notary information when notary role is set`() {
             val memberContext = argumentCaptor<KeyValuePairList>()
             whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
-            postConfigChangedEvent()
+            postReadyEvent()
             val testProperties =
                 context + mapOf(
                     "corda.roles.0" to "notary",
@@ -725,7 +720,7 @@ class DynamicMemberRegistrationServiceTest {
             val memberContext = argumentCaptor<KeyValuePairList>()
             whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
             val registrationContext = context - "corda.session.key.signature.spec"
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
 
             assertThrows<NotReadyMembershipRegistrationException> {
@@ -741,7 +736,7 @@ class DynamicMemberRegistrationServiceTest {
             val memberContext = argumentCaptor<KeyValuePairList>()
             whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
             val registrationContext = context - "corda.ledger.keys.0.signature.spec"
-            postConfigChangedEvent()
+            postReadyEvent()
             registrationService.start()
 
             registrationService.register(registrationResultId, member, registrationContext)
@@ -752,7 +747,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails when notary service is invalid`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             val testProperties =
                 context + mapOf(
                     "corda.roles" to "notary",
@@ -768,7 +763,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration pass when notary service is valid`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             val testProperties =
                 context + mapOf(
                     "corda.roles.0" to "notary",
@@ -784,7 +779,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails when notary keys are not provided`() {
-            postConfigChangedEvent()
+            postReadyEvent()
             val testProperties =
                 context + mapOf(
                     "corda.roles.0" to "notary",
@@ -839,25 +834,6 @@ class DynamicMemberRegistrationServiceTest {
 
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             verify(componentHandle, never()).close()
-            verify(configHandle, never()).close()
-            verify(mockPublisher, never()).close()
-        }
-
-        @Test
-        fun `registration status UP creates config handle and closes it first if it exists`() {
-            postStartEvent()
-            postRegistrationStatusChangeEvent(LifecycleStatus.UP)
-
-            val configArgs = argumentCaptor<Set<String>>()
-            verify(configHandle, never()).close()
-            assertThat(configArgs.firstValue)
-                .isEqualTo(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG))
-
-            postRegistrationStatusChangeEvent(LifecycleStatus.UP)
-            verify(configHandle).close()
-
-            postStopEvent()
-            verify(configHandle, times(2)).close()
         }
 
         @Test
@@ -872,28 +848,6 @@ class DynamicMemberRegistrationServiceTest {
             postRegistrationStatusChangeEvent(LifecycleStatus.ERROR)
 
             verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-        }
-
-        @Test
-        fun `config changed event creates publisher`() {
-            postConfigChangedEvent()
-
-            val configCaptor = argumentCaptor<PublisherConfig>()
-            verify(mockPublisher, never()).close()
-            verify(mockPublisher).start()
-            verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-
-            with(configCaptor.firstValue) {
-                assertThat(clientId).isEqualTo(PUBLISHER_CLIENT_ID)
-            }
-
-            postConfigChangedEvent()
-            verify(mockPublisher).close()
-            verify(mockPublisher, times(2)).start()
-            verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
-
-            postStopEvent()
-            verify(mockPublisher, times(3)).close()
         }
     }
 }
