@@ -12,6 +12,7 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
@@ -43,7 +44,6 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -227,7 +227,7 @@ class SigningKeyStoreImpl @Activate constructor(
             }?.let {
                 // This is to make sure cached key by short id (db one looks with full id so should be OK) is the actual
                 // requested key and not a different one that clashed on key id (short key id).
-                if (SecureHash.parse(it.fullId) == requestedFullKeyId) {
+                if (it.fullId == requestedFullKeyId) {
                     it
                 } else {
                     null
@@ -269,14 +269,14 @@ class SigningKeyStoreImpl @Activate constructor(
             return if (cachedKeys.size == requestedKeyIds.size) {
                 cachedKeys
             } else {
-                val notFound = requestedKeyIds - cachedKeys.mapTo(mutableSetOf()) { ShortHash.of(it.id) }
+                val notFound = requestedKeyIds - cachedKeys.mapTo(mutableSetOf()) { it.id }
                 val fetchedKeys =
                     entityManagerFactory(tenantId).use { em ->
                         signingKeysRepository.findKeysByIds(em, tenantId, notFound)
                     }
 
                 fetchedKeys.forEach {
-                    cache.put(CacheKey(tenantId, ShortHash.of(it.id)), it)
+                    cache.put(CacheKey(tenantId, it.id), it)
                 }
                 cachedKeys + fetchedKeys
             }
@@ -301,21 +301,21 @@ class SigningKeyStoreImpl @Activate constructor(
                         // TODO Clashed keys on short ids should be identified and removed from `requestedFullKeyIds` so we
                         //  don't look them up in DB since short key ids can't clash per tenant,
                         //  i.e. there can't be a different key with same short key id
-                        SecureHash.parse(it.fullId) in requestedFullKeyIds
+                        it.fullId in requestedFullKeyIds
                     }
 
             return if (cachedKeysByFullId.size == requestedFullKeyIds.size) {
                 cachedKeysByFullId
             } else {
                 val notFound =
-                    requestedFullKeyIds - cachedKeysByFullId.mapTo(mutableSetOf()) { SecureHash.parse(it.fullId) }
+                    requestedFullKeyIds - cachedKeysByFullId.mapTo(mutableSetOf()) { it.fullId }
                 // We look for keys in DB by their full key ids so not risking a clash here
                 val fetchedKeys =
                     entityManagerFactory(tenantId).use { em ->
                         signingKeysRepository.findKeysByFullIds(em, tenantId, notFound)
                     }
                 fetchedKeys.forEach {
-                    cache.put(CacheKey(tenantId, ShortHash.of(it.id)), it)
+                    cache.put(CacheKey(tenantId, it.id), it)
                 }
                 cachedKeysByFullId + fetchedKeys
             }

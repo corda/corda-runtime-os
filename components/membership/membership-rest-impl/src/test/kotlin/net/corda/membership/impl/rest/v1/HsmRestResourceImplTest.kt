@@ -7,6 +7,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.TLS
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.CryptoTenants.RPC_API
+import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -16,7 +17,6 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested

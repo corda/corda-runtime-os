@@ -2,6 +2,7 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -44,7 +45,6 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_ASYNC_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -347,7 +347,8 @@ class MemberResourceClientImpl @Activate constructor(
                         "registrationProtocolVersion" to this.protocolVersion.toString(),
                         *this.memberContext.items.map { it.key to it.value }.toTypedArray(),
                     )
-                )
+                ),
+                this.reason
             )
     }
 

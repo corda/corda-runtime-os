@@ -1,11 +1,11 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility
 
+import net.corda.crypto.core.ShortHash
 import java.util.UUID
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
@@ -39,7 +39,6 @@ internal class MigrationUtilityImpl(
         cpkChangelogs: List<CpkDbChangeLog>,
         vaultDmlConnectionId: UUID
     ): Boolean {
-
         val missingCpks = mutableListOf<String>()
         cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
             val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs)

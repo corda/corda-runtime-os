@@ -1,6 +1,7 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -8,7 +9,6 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

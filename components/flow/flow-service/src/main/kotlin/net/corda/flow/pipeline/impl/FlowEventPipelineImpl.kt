@@ -70,7 +70,8 @@ class FlowEventPipelineImpl(
             )
             context.copy(
                 inputEvent = context.checkpoint.retryEvent,
-                inputEventPayload = context.checkpoint.retryEvent.payload
+                inputEventPayload = context.checkpoint.retryEvent.payload,
+                isRetryEvent = true
             )
         } else {
             context

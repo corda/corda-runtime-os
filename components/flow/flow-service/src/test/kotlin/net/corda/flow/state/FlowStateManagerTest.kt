@@ -49,7 +49,7 @@ class FlowStateManagerTest {
     }
 
     @Test
-    fun `Rollback successfully restores sessions to initial state adding additional sessions`() {
+    fun `Rollback successfully restores sessions to initial state after adding additional sessions`() {
         val initialSessions = listOf(SessionState().apply {
             sessionId = "foo"
         })

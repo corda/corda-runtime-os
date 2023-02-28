@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.impl.tests
 
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
 import net.corda.crypto.persistence.impl.tests.infra.TestCryptoConnectionsFactory
@@ -11,7 +12,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.test.util.eventually
-import net.corda.virtualnode.ShortHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

@@ -1,4 +1,4 @@
-package net.corda.virtualnode
+package net.corda.crypto.core
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
