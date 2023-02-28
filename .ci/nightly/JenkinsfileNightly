@@ -12,5 +12,6 @@ cordaPipelineKubernetesAgent(
     runE2eTests: true,
     runResiliencyTests: true,
     gradleAdditionalArgs: '-Dscan.tag.Nightly-Build',
-    generateSbom: true
+    generateSbom: true,
+    javaVersion: '17'
 )
