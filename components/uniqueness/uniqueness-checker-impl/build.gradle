@@ -46,7 +46,6 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-orm')
     integrationTestImplementation project(':libs:db:db-orm-impl')
     integrationTestImplementation project(':libs:lifecycle:lifecycle')
-    integrationTestImplementation project(':libs:uniqueness:jpa-backing-store-datamodel')
     integrationTestImplementation project(':testing:db-testkit')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

@@ -42,7 +42,6 @@ dependencies {
     implementation project(":components:db:db-connection-manager")
     implementation project(':libs:db:db-admin')
     implementation project(':libs:db:db-admin-impl')
-    implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
 
@@ -63,7 +62,6 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-orm')
     integrationTestImplementation project(':libs:db:db-orm-impl')
     integrationTestImplementation project(':libs:lifecycle:lifecycle')
-    integrationTestImplementation project(':libs:uniqueness:jpa-backing-store-datamodel')
     integrationTestImplementation project(':testing:db-testkit')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
@@ -74,6 +72,12 @@ dependencies {
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
 }
 
 tasks.register('backingStoreBenchmark', Test) {
