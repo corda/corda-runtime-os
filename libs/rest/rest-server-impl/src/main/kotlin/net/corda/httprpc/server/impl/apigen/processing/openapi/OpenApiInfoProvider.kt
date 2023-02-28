@@ -15,8 +15,8 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.SchemaMode
 import net.corda.httprpc.server.config.RestServerSettingsProvider
 import net.corda.httprpc.server.impl.internal.SwaggerUIRenderer
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import net.corda.v5.base.util.trace
 
 /**
  * [OpenApiInfoProvider] is responsible for providing OpenAPI related values

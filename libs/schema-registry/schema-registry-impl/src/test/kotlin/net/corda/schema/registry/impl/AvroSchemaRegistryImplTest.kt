@@ -1,7 +1,7 @@
 package net.corda.schema.registry.impl
 
 import net.corda.data.AvroEnvelope
-import net.corda.data.AvroGeneratedMessageClasses.Companion.getAvroGeneratedMessageClasses
+import net.corda.data.AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses
 import net.corda.data.crypto.SecureHash
 import net.corda.data.test.EvolvedMessage
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -26,7 +26,7 @@ internal class AvroSchemaRegistryImplTest {
     private val secureHash = SecureHash("algorithm", ByteBuffer.wrap("1".toByteArray()))
     private val expectedSchemaFingerprint: ByteArray =
         SchemaNormalization.parsingFingerprint("SHA-256", secureHash.schema)
-    private val avroGeneratedMessages = getAvroGeneratedMessageClasses(AvroSchemaRegistryImpl::class.java)
+    private val avroGeneratedMessages = getAvroGeneratedMessageClasses()
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])

@@ -21,7 +21,7 @@ import net.corda.httprpc.client.processing.WebResponse
 import net.corda.httprpc.client.serialization.objectMapper
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.tools.HttpVerb
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients

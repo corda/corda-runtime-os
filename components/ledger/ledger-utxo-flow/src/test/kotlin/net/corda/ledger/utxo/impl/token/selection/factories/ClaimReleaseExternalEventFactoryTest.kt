@@ -7,7 +7,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.impl.token.selection.impl.PoolKey
 import net.corda.ledger.utxo.impl.token.selection.impl.toStateRef
-import net.corda.schema.Schemas.Services.Companion.TOKEN_CACHE_EVENT
+import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock

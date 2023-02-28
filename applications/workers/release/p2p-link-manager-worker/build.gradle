@@ -22,6 +22,7 @@ dependencies {
 
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
 
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")

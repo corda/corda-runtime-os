@@ -24,7 +24,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
+import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name

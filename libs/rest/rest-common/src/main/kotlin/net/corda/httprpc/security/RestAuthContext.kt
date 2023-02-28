@@ -15,7 +15,7 @@ val CURRENT_REST_CONTEXT: ThreadLocal<RestAuthContext> = CurrentRestContext()
  * Returns a context specific to the current rest call or <code>null</code> if not set.
  * The [RestAuthContext] includes permissions.
  */
-fun rpcContext(): RestAuthContext? = CURRENT_REST_CONTEXT.get()
+fun restContext(): RestAuthContext? = CURRENT_REST_CONTEXT.get()
 
 internal class CurrentRestContext : ThreadLocal<RestAuthContext>() {
 

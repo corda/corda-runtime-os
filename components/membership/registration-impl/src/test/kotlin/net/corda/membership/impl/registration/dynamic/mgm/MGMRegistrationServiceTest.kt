@@ -8,6 +8,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
@@ -74,8 +75,8 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.EVENT_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -84,7 +85,6 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat

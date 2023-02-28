@@ -4,11 +4,11 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory

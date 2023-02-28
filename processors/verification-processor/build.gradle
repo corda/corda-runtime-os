@@ -19,6 +19,7 @@ dependencies {
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:ledger:ledger-verification")
+    implementation project(':libs:utilities')
 
     runtimeOnly "net.corda:corda-avro-schema"
 

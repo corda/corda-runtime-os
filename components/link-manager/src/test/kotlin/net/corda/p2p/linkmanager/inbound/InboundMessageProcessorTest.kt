@@ -33,14 +33,14 @@ import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
-import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -745,6 +745,9 @@ class InboundMessageProcessorTest {
     fun `UnauthenticatedMessage will produce message in P2P in topic`() {
         val unauthenticatedMessageHeader = mock<UnauthenticatedMessageHeader> {
             on { messageId } doReturn "messageId"
+            on { source } doReturn myIdentity.toAvro()
+            on { destination } doReturn remoteIdentity.toAvro()
+            on { subsystem } doReturn "application-v1"
         }
         val unauthenticatedMessage = mock<UnauthenticatedMessage> {
             on { header } doReturn unauthenticatedMessageHeader

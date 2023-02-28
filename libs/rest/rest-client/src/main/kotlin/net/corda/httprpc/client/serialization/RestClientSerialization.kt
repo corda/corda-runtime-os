@@ -15,9 +15,8 @@ import net.corda.common.json.serialization.jacksonObjectMapper
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.durablestream.DurableCursorTransferObject
 import net.corda.httprpc.durablestream.api.Cursor
+import net.corda.utilities.trace
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.trace
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 
@@ -61,7 +60,7 @@ internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): SecureHash {
         log.trace { "Deserialize." }
         try {
-            return uncheckedCast(SecureHash.parse(parser.text))
+            return SecureHash.parse(parser.text)
                 .also { log.trace { "Deserialize completed." } }
         } catch (e: Exception) {
             "Invalid hash ${parser.text}: ${e.message}".let {

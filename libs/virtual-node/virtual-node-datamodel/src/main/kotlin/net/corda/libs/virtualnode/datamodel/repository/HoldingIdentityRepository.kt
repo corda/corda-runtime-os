@@ -1,7 +1,7 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
+import net.corda.crypto.core.ShortHash
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import java.util.*
 import javax.persistence.EntityManager
 

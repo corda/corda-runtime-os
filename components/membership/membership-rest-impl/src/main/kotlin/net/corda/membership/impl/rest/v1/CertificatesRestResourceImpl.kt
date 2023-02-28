@@ -7,6 +7,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.DefaultSignatureOIDMap
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
@@ -20,8 +21,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-import net.corda.membership.httprpc.v1.CertificatesRestResource
-import net.corda.membership.httprpc.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
@@ -30,8 +31,8 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
@@ -111,7 +112,7 @@ class CertificatesRestResourceImpl @Activate constructor(
         val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
                 tenantId = tenantId,
-                keyIds = listOf(ShortHash.of(keyId))
+                keyIds = listOf(createKeyIdOrHttpThrow(keyId))
             )
         }.firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
         val principal = when (key.category) {

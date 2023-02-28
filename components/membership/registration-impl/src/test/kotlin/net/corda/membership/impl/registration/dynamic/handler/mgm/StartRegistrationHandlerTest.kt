@@ -32,8 +32,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.parse
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.parse
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext

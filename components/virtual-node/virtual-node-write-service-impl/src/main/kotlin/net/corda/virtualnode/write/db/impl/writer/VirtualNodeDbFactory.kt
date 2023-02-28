@@ -1,8 +1,8 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.virtualnode.ShortHash
 
 internal interface VirtualNodeDbFactory {
     /**

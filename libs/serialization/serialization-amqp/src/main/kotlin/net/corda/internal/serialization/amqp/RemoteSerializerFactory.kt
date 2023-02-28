@@ -6,7 +6,7 @@ import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeDescriptor
 import net.corda.internal.serialization.model.TypeLoader
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import net.corda.v5.serialization.MissingSerializerException
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException

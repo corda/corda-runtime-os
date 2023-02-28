@@ -17,7 +17,6 @@ import net.corda.simulator.runtime.utils.publicKeyModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
-import net.corda.v5.base.util.uncheckedCast
 
 /**
  * A simple JsonMarshallingService, without the caching that Corda uses.
@@ -92,7 +91,8 @@ class SimpleJsonMarshallingService(
         customDeserializableClasses.add(jsonDeserializerAdaptor.deserializingType)
 
         val module = SimpleModule()
-        module.addDeserializer(uncheckedCast(jsonDeserializerAdaptor.deserializingType), jsonDeserializerAdaptor)
+        @Suppress("unchecked_cast")
+        module.addDeserializer(jsonDeserializerAdaptor.deserializingType as Class<Any>, jsonDeserializerAdaptor)
         objectMapper.registerModule(module)
         return true
     }

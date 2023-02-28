@@ -32,7 +32,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.MemberInfo
@@ -52,7 +52,7 @@ internal class StartRegistrationHandler(
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SERIAL_CONST = "1"
     }
 

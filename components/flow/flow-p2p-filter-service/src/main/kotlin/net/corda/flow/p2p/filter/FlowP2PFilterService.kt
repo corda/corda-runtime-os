@@ -15,7 +15,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

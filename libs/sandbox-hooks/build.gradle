@@ -16,7 +16,8 @@ dependencies {
     implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(":libs:sandbox")
+    implementation project(':libs:kotlin-heap-fix')
+    implementation project(':libs:sandbox')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"

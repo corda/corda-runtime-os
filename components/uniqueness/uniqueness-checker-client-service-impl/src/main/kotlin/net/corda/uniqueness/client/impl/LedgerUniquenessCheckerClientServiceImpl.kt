@@ -2,9 +2,9 @@ package net.corda.uniqueness.client.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.utilities.debug
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate

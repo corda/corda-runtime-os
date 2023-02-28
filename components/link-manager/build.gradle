@@ -43,6 +43,7 @@ dependencies {
     implementation project(':libs:crypto:cipher-suite')
     implementation project(":libs:crypto:crypto-utils")
     implementation project(":components:membership:membership-persistence-client")
+    implementation project(":libs:metrics")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

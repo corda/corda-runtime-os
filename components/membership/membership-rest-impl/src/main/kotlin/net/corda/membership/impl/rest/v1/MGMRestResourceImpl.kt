@@ -2,6 +2,7 @@ package net.corda.membership.impl.rest.v1
 
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
@@ -18,17 +19,17 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
-import net.corda.membership.httprpc.v1.MGMRestResource
-import net.corda.membership.httprpc.v1.types.request.ApprovalRuleRequestParams
-import net.corda.membership.httprpc.v1.types.request.PreAuthTokenRequest
-import net.corda.membership.httprpc.v1.types.request.ManualDeclinationReason
-import net.corda.membership.httprpc.v1.types.response.ApprovalRuleInfo
-import net.corda.membership.httprpc.v1.types.response.PreAuthToken
-import net.corda.membership.httprpc.v1.types.response.PreAuthTokenStatus
+import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.rest.v1.types.request.ManualDeclinationReason
+import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
+import net.corda.membership.rest.v1.types.response.PreAuthToken
+import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
-import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
-import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
+import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
+import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
+import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
@@ -36,8 +37,8 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -533,7 +534,8 @@ class MGMRestResourceImpl internal constructor(
                 registrationSent,
                 registrationLastModified,
                 status.fromAvro(),
-                MemberInfoSubmitted(memberContext.toMap())
+                MemberInfoSubmitted(memberContext.toMap()),
+                reason,
             )
 
         private fun net.corda.data.membership.common.RegistrationStatus.fromAvro() = when (this) {
@@ -650,6 +652,8 @@ class MGMRestResourceImpl internal constructor(
                 holdingIdentityNotFound(holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
+            } catch (e: CordaRPCAPIPartitionException) {
+                throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
             }
         }
     }

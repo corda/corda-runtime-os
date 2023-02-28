@@ -1,5 +1,6 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.crypto.core.ShortHash
 import net.corda.httprpc.PluggableRestResource
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
@@ -7,13 +8,12 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.httprpc.v1.MemberLookupRestResource
-import net.corda.membership.httprpc.v1.types.response.RestMemberInfo
-import net.corda.membership.httprpc.v1.types.response.RestMemberInfoList
+import net.corda.membership.rest.v1.MemberLookupRestResource
+import net.corda.membership.rest.v1.types.response.RestMemberInfo
+import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.membership.GroupParameters
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow

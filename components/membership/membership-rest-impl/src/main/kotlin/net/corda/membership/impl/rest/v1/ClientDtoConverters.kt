@@ -1,17 +1,17 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
-import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
-import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
-import net.corda.membership.httprpc.v1.types.response.RestRegistrationRequestStatus
-import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
-import net.corda.virtualnode.ShortHash
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
+import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
+import net.corda.membership.rest.v1.types.response.RegistrationStatus
+import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
 
 /**
@@ -46,6 +46,7 @@ fun RegistrationRequestStatusDto.fromDto() = RestRegistrationRequestStatus(
     this.registrationUpdated,
     this.registrationStatus.fromDto(),
     this.memberInfoSubmitted.fromDto(),
+    this.reason,
 )
 
 fun RegistrationStatusDto.fromDto() = when (this) {
