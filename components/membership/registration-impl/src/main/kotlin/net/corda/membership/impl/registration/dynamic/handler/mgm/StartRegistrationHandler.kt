@@ -232,9 +232,10 @@ internal class StartRegistrationHandler(
                     " name cannot be the same." }
             // The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
             validateRegistrationRequest(
-                membershipQueryClient.queryMemberInfo(mgmHoldingId).getOrThrow().firstOrNull {
-                    it.name == notary.serviceName
-                } == null
+                membershipQueryClient.queryMemberInfo(
+                    mgmHoldingId,
+                    listOf(HoldingIdentity(notary.serviceName, member.groupId))
+                ).getOrThrow().firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
         }
     }

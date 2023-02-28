@@ -289,9 +289,6 @@ class StaticMemberRegistrationService @Activate constructor(
         notaryInfo: Collection<Pair<String, String>>
     ) {
         val serviceName = notaryInfo.firstOrNull { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }?.second
-        require(serviceName.isNullOrEmpty()) {
-            "Notary service name invalid: Notary service name cannot be null or empty."
-        }
         //The notary service x500 name is different from the notary virtual node being registered.
         require(registeringMember.name != serviceName) {
             "Notary service name invalid: Notary service name $serviceName and virtual node name cannot be the same."

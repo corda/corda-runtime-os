@@ -391,14 +391,19 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `invoke returns follow on records when role is set to notary`() {
+        val notaryServiceName = MemberX500Name.parse("O=NotaryService,L=London,C=GB")
         val notaryDetails = MemberNotaryDetails(
-            MemberX500Name.parse("O=NotaryService,L=London,C=GB"),
+            notaryServiceName,
             "Notary Plugin A",
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        whenever(membershipQueryClient.queryMemberInfo(mgmHoldingIdentity.toCorda()))
-            .thenReturn(MembershipQueryResult.Success(listOf(memberInfo)))
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                mgmHoldingIdentity.toCorda(),
+                listOf(HoldingIdentity(notaryServiceName.toString(), groupId).toCorda())
+            )
+        ).thenReturn(MembershipQueryResult.Success(emptyList()))
 
         val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
 
@@ -461,8 +466,12 @@ class StartRegistrationHandlerTest {
         }
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
         whenever(memberInfoFactory.create(any<SortedMap<String, String?>>(), any())).thenReturn(bobInfo)
-        whenever(membershipQueryClient.queryMemberInfo(mgmHoldingIdentity.toCorda()))
-            .thenReturn(MembershipQueryResult.Success(listOf(memberInfo)))
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                mgmHoldingIdentity.toCorda(),
+                listOf(HoldingIdentity(aliceX500Name.toString(), groupId).toCorda())
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(memberInfo)))
 
         val registrationCommand = getStartRegistrationCommand(bobHoldingIdentity, memberContext)
         val result = handler.invoke(null, Record(testTopic, testTopicKey, registrationCommand))

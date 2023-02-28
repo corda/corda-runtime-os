@@ -796,7 +796,27 @@ class StaticMemberRegistrationServiceTest {
             val message = assertFailsWith<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, bob, context)
             }
-            assertThat(message.message).contains("There is a virtual node having the same name.")
+            assertThat(message.message).contains("There is a virtual node having the same name")
+        }
+
+        @Test
+        fun `registration fails when notary service name is blank`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, bob, context)
+            }
+            assertThat(message.message).contains("Notary must have a non-empty service name.")
         }
 
         @Test
@@ -816,7 +836,7 @@ class StaticMemberRegistrationServiceTest {
             val message = assertFailsWith<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, bob, context)
             }
-            assertThat(message.message).contains("Notary service name and virtual node name cannot be the same.")
+            assertThat(message.message).contains("and virtual node name cannot be the same")
         }
 
         @Test
