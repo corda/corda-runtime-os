@@ -1,6 +1,7 @@
 package net.corda.virtualnode.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -10,7 +11,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
 import net.corda.utilities.debug
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

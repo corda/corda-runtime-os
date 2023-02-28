@@ -1,4 +1,4 @@
-package net.corda.virtualnode
+package net.corda.crypto.core
 
 import net.corda.v5.crypto.SecureHash
 
@@ -9,7 +9,6 @@ import net.corda.v5.crypto.SecureHash
  *
  * @throws [ShortHashException] if it cannot construct the short hash from the given constructor argument.
  */
-// TODO consider moving `ShortHash` to some more generic crypto module?
 class ShortHash private constructor(val value: String) {
     companion object {
         const val LENGTH = 12 // fixed "forever" - changing this will break everything

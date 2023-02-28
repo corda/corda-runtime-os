@@ -41,6 +41,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
     val flowSandboxService = mock<FlowSandboxService>()
     val initiateFlowReqService = mock<InitiateFlowRequestService>()
+    val isRetryEvent = false
 
     init {
         flowStartContext.identity = holdingIdentity
@@ -57,5 +58,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         whenever(flowCheckpoint.holdingIdentity).thenReturn(holdingIdentity.toCorda())
     }
 
-    val flowEventContext = FlowEventContext(flowCheckpoint, flowEvent, payload, flowConfig, recordList, mdcProperties = emptyMap())
+    val flowEventContext = FlowEventContext(
+        flowCheckpoint,flowEvent, payload, flowConfig, isRetryEvent, recordList, mdcProperties = emptyMap()
+    )
 }

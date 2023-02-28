@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
@@ -37,7 +38,6 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
