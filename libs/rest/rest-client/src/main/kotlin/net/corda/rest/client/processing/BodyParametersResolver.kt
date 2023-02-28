@@ -9,7 +9,7 @@ import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 
-private val log = LoggerFactory.getLogger("net.corda.rest.client.internal.processing.BodyParametersResolver.kt")
+private val log = LoggerFactory.getLogger("net.corda.rest.client.processing.BodyParametersResolver.kt")
 
 internal fun Method.bodyParametersFrom(methodArguments: Array<out Any?>, extraParameters: Map<String, Any?> = emptyMap()): String {
     log.trace { """Method body parameters from "$methodArguments".""" }

@@ -9,7 +9,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import net.corda.rest.HttpFileUpload
 
-private val log = LoggerFactory.getLogger("net.corda.rest.client.internal.processing.FileParametersResolver.kt")
+private val log = LoggerFactory.getLogger("net.corda.rest.client.processing.FileParametersResolver.kt")
 
 internal fun Method.filesFrom(methodArguments: Array<out Any?>): Map<String, List<RestClientFileUpload>> {
     log.trace { """Extracting files from method arguments "$methodArguments".""" }

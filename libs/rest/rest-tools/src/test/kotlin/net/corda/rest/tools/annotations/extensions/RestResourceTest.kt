@@ -16,7 +16,7 @@ class RestResourceTest {
     }
 
     @Test
-    fun `path from HttpRpcResource annotation will be converted to lowercase`() {
+    fun `path from HttpRestResource annotation will be converted to lowercase`() {
         @HttpRestResource(
             path = "TestClassPath/"
         )
