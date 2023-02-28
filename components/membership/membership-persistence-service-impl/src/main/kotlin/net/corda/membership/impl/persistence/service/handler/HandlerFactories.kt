@@ -2,6 +2,7 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.ConsumePreAuthToken
@@ -87,12 +88,16 @@ internal class HandlerFactories(
         QueryApprovalRules::class.java to { QueryApprovalRulesHandler(persistenceHandlerServices) },
     )
 
-    fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
+    private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
         val factory = handlerFactories[requestClass] ?: throw MembershipPersistenceException(
             "No handler has been registered to handle the persistence request received." +
                 "Request received: [$requestClass]"
         )
         @Suppress("UNCHECKED_CAST")
         return factory.invoke() as PersistenceHandler<Any, Any>
+    }
+
+    fun <T : Any> handle(context: MembershipRequestContext, request: T): Any? {
+        return getHandler(request::class.java).invoke(context, request)
     }
 }

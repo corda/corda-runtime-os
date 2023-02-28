@@ -24,9 +24,7 @@ internal class MembershipPersistenceRPCProcessor(
     ) {
         logger.info("Processor received new RPC persistence request. Selecting handler.")
         val result = try {
-            val result = handlerFactories.getHandler(
-                request.request::class.java
-            ).invoke(
+            val result = handlerFactories.handle(
                 request.context,
                 request.request,
             )

@@ -32,7 +32,7 @@ internal class MembershipPersistenceAsyncProcessor(
             )
         }
         return try {
-            handlers.getHandler(request.request.javaClass).invoke(request.context, request.request)
+            handlers.handle(request.context, request.request)
             StateAndEventProcessor.Response(
                 updatedState = null,
                 responseEvents = emptyList(),
