@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 import java.lang.IllegalArgumentException
-import net.corda.httprpc.exception.InvalidStateChangeException
+import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 
