@@ -12,7 +12,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation project(':libs:rest:rest')
     implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(":libs:crypto:crypto-core")
+    implementation project(':libs:crypto:crypto-core')
     implementation project(":components:virtual-node:virtual-node-info-read-service")
 
     testImplementation project(":testing:test-utilities")

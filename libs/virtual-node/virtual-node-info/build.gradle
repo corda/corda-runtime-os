@@ -12,7 +12,7 @@ dependencies {
     api project(":libs:packaging:packaging")
     api "net.corda:corda-avro-schema"
 
-    api project(":libs:crypto:crypto-core")
+    api project(':libs:crypto:crypto-core')
     api project(':libs:packaging:packaging-core')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

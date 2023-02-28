@@ -47,7 +47,7 @@ dependencies {
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(':libs:crypto:certificate-generation')
-    integrationTestImplementation project(":libs:crypto:crypto-core")
+    integrationTestImplementation project(':libs:crypto:crypto-core')
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
