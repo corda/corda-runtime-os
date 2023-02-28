@@ -34,7 +34,7 @@ tasks.named("wrapper") {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-def javaVersion = VERSION_11
+def javaVersion = VERSION_17
 
 snyk {
     api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
