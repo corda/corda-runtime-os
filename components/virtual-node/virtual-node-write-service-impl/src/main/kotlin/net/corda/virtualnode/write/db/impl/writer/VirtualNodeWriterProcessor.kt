@@ -390,37 +390,37 @@ internal class VirtualNodeWriterProcessor(
             val updatedVirtualNode = em.use { entityManager ->
 
                 val shortHash = ShortHash.Companion.of(stateChangeRequest.holdingIdentityShortHash)
+
                 val nodeInfo = virtualNodeRepository.find(entityManager, shortHash)
+                    ?: throw VirtualNodeDbException("Unable to fetch node info")
 
-                if (nodeInfo != null) {
+                val inMaintenance = listOf(
+                    nodeInfo.flowOperationalStatus,
+                    nodeInfo.flowStartOperationalStatus,
+                    nodeInfo.flowP2pOperationalStatus,
+                    nodeInfo.vaultDbOperationalStatus
+                ).any { it == OperationalStatus.INACTIVE }
 
-                    val inMaintenance = listOf(nodeInfo.flowOperationalStatus,
-                        nodeInfo.flowStartOperationalStatus,
-                        nodeInfo.flowP2pOperationalStatus,
-                        nodeInfo.vaultDbOperationalStatus).any { it == OperationalStatus.INACTIVE }
+                val newState = VirtualNodeStateTransitions.valueOf(stateChangeRequest.newState.uppercase())
 
-                    val newState = VirtualNodeStateTransitions.valueOf(stateChangeRequest.newState.uppercase())
+                // Compare new state to current state
+                when (inMaintenance) {
+                    true -> if (newState == VirtualNodeStateTransitions.MAINTENANCE)
+                        throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
 
-                    // Compare new state to current stat
-                    when(inMaintenance) {
-                        true -> if(newState == VirtualNodeStateTransitions.MAINTENANCE) 
-                            throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
-                        false -> if(newState == VirtualNodeStateTransitions.ACTIVE)
-                            throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+                    false -> if (newState == VirtualNodeStateTransitions.ACTIVE)
+                        throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+                }
+
+                val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
+                if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
+                    val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
+                        stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
+                    )
+                    if (!inSync) {
+                        logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
+                        throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
                     }
-
-                    val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
-                    if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
-                        val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
-                            stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
-                        )
-                        if (!inSync) {
-                            logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
-                            throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
-                        }
-                    }
-                } else {
-                    throw VirtualNodeDbException("Unable to fetch node info")
                 }
 
                 virtualNodeRepository.updateVirtualNodeState(
