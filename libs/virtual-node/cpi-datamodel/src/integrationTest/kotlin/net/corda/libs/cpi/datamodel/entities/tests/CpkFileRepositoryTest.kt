@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CpkFileEntityTest {
+class CpkFileRepositoryTest {
 
     private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpk_file_db")
 
