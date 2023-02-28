@@ -25,7 +25,6 @@ import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
-import net.corda.data.membership.db.request.query.QueryQueuedRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
