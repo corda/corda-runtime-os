@@ -128,7 +128,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
     override fun seedMessage() : List<Record<*,*>> {
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
         val key = "seed-message-1"
-        val header = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), "interop", "123")
+        val header = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), "interop", "1")
         val payload = """
             {
                 "method": "org.corda.interop/platform/tokens/v1.0/reserve-tokens",
@@ -138,8 +138,15 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 
         val interopMessage = InteropMessage("1", payload)
 
+        val headerNoDestination = UnauthenticatedMessageHeader(
+            HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"),INTEROP_GROUP_ID).toAvro(),
+            memberList[1].toAvro(), "interop", "1")
+
         return listOf(Record(
             Schemas.P2P.P2P_IN_TOPIC, key,
-            AppMessage(UnauthenticatedMessage(header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))))))
+            AppMessage(UnauthenticatedMessage(header, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage))))),
+            Record(Schemas.P2P.P2P_IN_TOPIC, "seed-message-2",
+            AppMessage(UnauthenticatedMessage(headerNoDestination, ByteBuffer.wrap(interopMessageSerializer.serialize(interopMessage)))))
+        )
     }
 }

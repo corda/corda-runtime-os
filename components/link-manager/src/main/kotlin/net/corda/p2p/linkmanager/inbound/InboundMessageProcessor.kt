@@ -48,6 +48,7 @@ internal class InboundMessageProcessor(
     private var logger = LoggerFactory.getLogger(this::class.java.name)
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
+        logger.info("Processing inbound messages ${events.size}.")
         val records = mutableListOf<Record<*, *>>()
         for (event in events) {
             val message = event.value
@@ -68,9 +69,9 @@ internal class InboundMessageProcessor(
                     processSessionMessage(message)
                 }
                 is UnauthenticatedMessage -> {
-                    logger.debug {
+                    logger.info(
                         "Processing unauthenticated message ${payload.header.messageId}"
-                    }
+                    )
                     listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
                 }
                 else -> {
