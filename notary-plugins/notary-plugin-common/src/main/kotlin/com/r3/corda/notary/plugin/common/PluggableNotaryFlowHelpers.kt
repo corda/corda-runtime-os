@@ -16,10 +16,11 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.notary.plugin.core.NotaryError
+import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
 
 /**
@@ -75,10 +76,13 @@ fun generateRequestSignature(notarisationRequest: NotarisationRequest,
 }
 
 /**
- * A helper function that will convert a [UniquenessCheckResponse] to a [NotarisationResponse].
+ * A helper function that will convert a [UniquenessCheckResult] to a [NotarisationResponse].
  */
 @Suspendable
-fun UniquenessCheckResult.toNotarisationResponse(signature: DigitalSignatureAndMetadata?): NotarisationResponse {
+fun UniquenessCheckResult.toNotarisationResponse(
+    txId: SecureHash?,
+    signature: DigitalSignatureAndMetadata?
+): NotarisationResponse {
     return when (val uniquenessResult = this) {
         is UniquenessCheckResultSuccess -> {
             require(signature != null) {
@@ -91,39 +95,40 @@ fun UniquenessCheckResult.toNotarisationResponse(signature: DigitalSignatureAndM
         }
         is UniquenessCheckResultFailure -> NotarisationResponse(
             emptyList(),
-            uniquenessResult.error.toNotaryError()
+            uniquenessResult.error.toNotaryException(txId)
         )
         else -> NotarisationResponse(
             emptyList(),
-            NotaryErrorGeneralImpl(
-                "Unknown uniqueness check result: $uniquenessResult"
-            )
+            NotaryExceptionGeneral("Unknown uniqueness check result: $uniquenessResult")
         )
     }
 }
 
 /**
- * A helper function that will convert a [UniquenessCheckError] to a [NotaryError].
+ * A helper function that will convert a [UniquenessCheckError] to a [NotaryException].
  */
 @Suspendable
-private fun UniquenessCheckError.toNotaryError(): NotaryError {
+private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryException {
     return when (this) {
-        is UniquenessCheckErrorInputStateConflict -> NotaryErrorInputStateConflictImpl(conflictingStates)
-        is UniquenessCheckErrorInputStateUnknown -> NotaryErrorInputStateUnknownImpl(unknownStates)
-        is UniquenessCheckErrorReferenceStateConflict -> NotaryErrorReferenceStateConflictImpl(conflictingStates)
-        is UniquenessCheckErrorReferenceStateUnknown -> NotaryErrorReferenceStateUnknownImpl(unknownStates)
-        is UniquenessCheckErrorTimeWindowOutOfBounds -> NotaryErrorTimeWindowOutOfBoundsImpl(
+        is UniquenessCheckErrorInputStateConflict -> NotaryExceptionInputStateConflict(conflictingStates, txId)
+        is UniquenessCheckErrorInputStateUnknown -> NotaryExceptionInputStateUnknown(unknownStates, txId)
+        is UniquenessCheckErrorReferenceStateConflict -> NotaryExceptionReferenceStateConflict(conflictingStates, txId)
+        is UniquenessCheckErrorReferenceStateUnknown -> NotaryExceptionReferenceStateUnknown(unknownStates, txId)
+        is UniquenessCheckErrorTimeWindowOutOfBounds -> NotaryExceptionTimeWindowOutOfBounds(
             evaluationTimestamp,
             timeWindowLowerBound,
-            timeWindowUpperBound
+            timeWindowUpperBound,
+            txId
         )
-        is UniquenessCheckErrorMalformedRequest -> NotaryErrorMalformedRequestImpl(errorText)
-        is UniquenessCheckErrorUnhandledException -> NotaryErrorGeneralImpl(
+        is UniquenessCheckErrorMalformedRequest -> NotaryExceptionMalformedRequest(errorText, txId)
+        is UniquenessCheckErrorUnhandledException -> NotaryExceptionGeneral(
             "Unhandled exception of type $unhandledExceptionType encountered during uniqueness checking with " +
-                    "message: $unhandledExceptionMessage"
+                    "message: $unhandledExceptionMessage",
+            txId
         )
-        else -> NotaryErrorGeneralImpl(
-            "Unknown error type received from uniqueness checker: ${this::class.java.canonicalName}"
+        else -> NotaryExceptionGeneral(
+            "Unknown error type received from uniqueness checker: ${this::class.java.canonicalName}",
+            txId
         )
     }
 }

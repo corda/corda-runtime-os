@@ -2,7 +2,6 @@ package com.r3.corda.notary.plugin.nonvalidating.client
 
 import com.r3.corda.notary.plugin.common.NotarisationRequest
 import com.r3.corda.notary.plugin.common.NotarisationResponse
-import com.r3.corda.notary.plugin.common.NotaryException
 import com.r3.corda.notary.plugin.common.generateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -22,7 +21,7 @@ import org.slf4j.LoggerFactory
 
 /**
  * The client that is used for the non-validating notary logic. This class is very simple and uses the basic
- * send-and-receive logic and it will also initiate the server side of the non-validating notary.
+ * send-and-receive logic, and it will also initiate the server side of the non-validating notary.
  */
 @InitiatingFlow(protocol = "net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryClientFlowImpl(
@@ -108,10 +107,10 @@ class NonValidatingNotaryClientFlowImpl(
             }
             else -> {
                 if (log.isTraceEnabled) {
-                    log.trace("Received notarization error from notary service {} for transaction {}. Error: {}",
-                              stx.notary, stx.id, error)
+                    log.trace("Received notarization error from notary service {}. Error: {}",
+                        stx.notary, error)
                 }
-                throw NotaryException(error, stx.id)
+                throw error
             }
         }
     }
