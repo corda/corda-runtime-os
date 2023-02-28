@@ -263,8 +263,15 @@ class MemberRegistrationIntegrationTest {
             messagingConfig = bootConfig
         ).also { it.start() }
 
-        registrationProxy.usingLifecycle {
+        val records = registrationProxy.usingLifecycle {
             it.register(UUID.randomUUID(), member, context)
+        }
+
+        publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig).use {
+            it.start()
+            it.publish(records.toList()).forEach {
+                it.join()
+            }
         }
 
         // Wait for latch to countdown, so we know when processing has completed and results have been collected

@@ -931,9 +931,8 @@ class MembershipPersistenceTest {
     @Test
     fun `setMemberAndRegistrationRequestAsApproved update the member and registration request`() {
         // 1. Persist a member
-        val memberPersistentResult = persistMember(registeringX500Name)
+        persistMember(registeringX500Name)
 
-        assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val memberEntity = vnodeEmf.use {
             it.find(
                 MemberInfoEntity::class.java,
@@ -984,9 +983,8 @@ class MembershipPersistenceTest {
         // 1. Persist a member
         val registeringX500Name = MemberX500Name.parse("O=Charlie, C=GB, L=London")
         val registeringHoldingIdentity = HoldingIdentity(registeringX500Name, groupId)
-        val memberPersistentResult = persistMember(registeringX500Name)
+        persistMember(registeringX500Name)
 
-        assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val memberEntity = vnodeEmf.use {
             it.find(
                 MemberInfoEntity::class.java,
