@@ -134,7 +134,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
                 listOf(
                     KeyValuePair(EPOCH_KEY, "1"),
                     KeyValuePair(MPV_KEY, MPV.toString()),
-                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                    KeyValuePair(MODIFIED_TIME_KEY, (clock.instant().epochSecond + 5L).toString()),
                 )
             )
         )

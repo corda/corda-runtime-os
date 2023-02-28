@@ -61,7 +61,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             val currentGroupParameters = em.find(GroupParametersEntity::class.java, 1, LockModeType.PESSIMISTIC_WRITE)
             if (currentGroupParameters != null) {
                 val currentParameters = deserializeProperties(currentGroupParameters.parameters).toMap()
-                if (currentParameters != groupParameters.toMap()) {
+                if (currentParameters.removeTime() != groupParameters.toMap().removeTime()) {
                     throw MembershipPersistenceException(
                         "Group parameters initial snapshot already exist with different parameters."
                     )
@@ -80,4 +80,6 @@ internal class PersistGroupParametersInitialSnapshotHandler(
 
         return PersistGroupParametersResponse(persistedGroupParameters)
     }
+
+    private fun Map<String, String>.removeTime(): Map<String, String>  = this.filterKeys { it != MODIFIED_TIME_KEY }
 }
