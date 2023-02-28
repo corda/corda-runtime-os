@@ -137,7 +137,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
         val protocolName = notaryLookup.notaryServices.firstOrNull { it.name == notary.name }?.pluginClass
             ?: throw CordaRuntimeException(
-                "Plugin class not found for notary service " + "${notary.name} . This means that no notary service matching this name " + "has been registered on the network."
+                "Plugin class not found for notary service " +
+                        "${notary.name} . This means that no notary service matching this name " +
+                        "has been registered on the network."
             )
 
         val sandboxGroupContext = currentSandboxGroupContext.get()
@@ -155,7 +157,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
         if (!PluggableNotaryClientFlow::class.java.isAssignableFrom(flowClass)) {
             throw CordaRuntimeException(
-                "Notary client flow class $flowName is invalid because " + "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
+                "Notary client flow class $flowName is invalid because " +
+                        "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
             )
         }
 
