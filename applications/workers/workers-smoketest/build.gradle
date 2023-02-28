@@ -72,6 +72,7 @@ dependencies {
     cpis project(path: ':testing:cpbs:test-cordapp', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-utxo-demo-app', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:ledger-apples-example:ledger-utxo-apples-example-app', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:mgm', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
     cpiWithoutChangelogs project(path: ':testing:cpbs:test-cordapp-without-changelogs', configuration: 'cordaCPB')

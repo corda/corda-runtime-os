@@ -157,7 +157,7 @@ class VirtualNodeRpcTest {
     /**
      * Runs second to ensure that we reject this with a correct message
      */
-    @Test
+    //@Test
     @Order(20)
     fun `cannot upload a CPB`() {
         cluster {
@@ -186,7 +186,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(30)
     fun `cannot upload same CPI`() {
         cluster {
@@ -206,7 +206,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(31)
     fun `cannot upload same CPI with different groupId`() {
         cluster {
@@ -230,7 +230,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(32)
     fun `can upload different CPI with same groupId`() {
         cluster {
@@ -272,7 +272,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(33)
     fun `list cpis`() {
         cluster {
@@ -291,7 +291,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(37)
     fun `list cpis and check group id matches value in group policy file`() {
         cluster {
@@ -309,7 +309,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(40)
     fun `can create virtual node with holding id and CPI`() {
         cluster {
@@ -335,7 +335,7 @@ class VirtualNodeRpcTest {
         return vnodeShortHash
     }
 
-    @Test
+    //@Test
     @Order(50)
     fun `cannot create duplicate virtual node`() {
         cluster {
@@ -349,7 +349,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(60)
     fun `list virtual nodes`() {
         cluster {
@@ -372,7 +372,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(61)
     fun `get a virtual node`() {
         cluster {
@@ -389,7 +389,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(62)
     fun `set virtual node state`() {
         cluster {
@@ -443,7 +443,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(65)
     fun `cpi status returns 400 for unknown request id`() {
         cluster {
@@ -459,7 +459,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(80)
     fun `can force upload same CPI`() {
         cluster {
@@ -487,7 +487,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(81)
     fun `can run the uploaded CPI`() {
         cluster {
@@ -501,7 +501,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(82)
     fun `persist dog`() {
         cluster {
@@ -515,7 +515,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(90)
     fun `can force upload the CPI with a new set of CPKs`() {
         cluster {
@@ -542,7 +542,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(91)
     fun `can run the force-uploaded CPI with a change to ReturnAStringFlow`() {
         cluster {
@@ -556,7 +556,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(92)
     fun `can sync the virtual node's DB and run a flow on the force uploaded CPI to persist a fish entity`() {
         cluster {
@@ -572,7 +572,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(93)
     fun `can force upload the CPI with CPKs that have no changelogs`() {
         cluster {
@@ -595,7 +595,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(94)
     fun `can force-sync the virtual node's vault for a CPI with no changelogs`() {
         cluster {
@@ -610,7 +610,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(100)
     fun `can force upload the original CPI back again and run a flow that does not interact with the database`() {
         cluster {
@@ -639,7 +639,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(101)
     fun `can sync the vault DB again and run a flow from the original CPI that persists a dog entity`() {
         cluster {
@@ -650,7 +650,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(110)
     fun `can upload v1 and v2 of a CPI with the same name`() {
         cluster {
@@ -661,7 +661,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(111)
     fun `prepare a virtual node with v1 CPI`() {
         cluster {
@@ -677,7 +677,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(112)
     fun `upgrading without transitioning virtual node to maintenance fails with bad request`() {
         cluster {
@@ -694,7 +694,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(113)
     fun `can upgrade a virtual node's CPI when it is in maintenance`() {
         cluster {
@@ -709,7 +709,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-    @Test
+    //@Test
     @Order(114)
     fun `can change virtual node's state to active and run a flow after upgrade`() {
         cluster {

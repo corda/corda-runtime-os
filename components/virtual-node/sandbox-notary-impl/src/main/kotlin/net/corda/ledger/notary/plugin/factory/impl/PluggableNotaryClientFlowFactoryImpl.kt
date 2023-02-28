@@ -47,12 +47,7 @@ class PluggableNotaryClientFlowFactoryImpl @Activate constructor(
     override fun create(notaryService: Party, stx: UtxoSignedTransaction): PluggableNotaryClientFlow {
         // TODO CORE-8856 If we use a lambda here it will throw an exception for some reason.
         //  For now we use an old fashioned for loop but will need further investigation.
-        var pluginClass: String? = null
-        for (notaryInfo in notaryLookup.notaryServices) {
-            if (notaryInfo.name == notaryService.name) {
-                pluginClass = notaryInfo.pluginClass
-            }
-        }
+        val pluginClass = notaryLookup.notaryServices.filter { it.name == notaryService.name }.firstOrNull()?.pluginClass
 
         if (pluginClass == null) {
             throw CordaRuntimeException(
