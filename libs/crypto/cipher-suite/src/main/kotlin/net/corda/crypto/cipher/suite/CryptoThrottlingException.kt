@@ -1,6 +1,5 @@
 package net.corda.crypto.cipher.suite
 
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.exceptions.CryptoException
 
 
