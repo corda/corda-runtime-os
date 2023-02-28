@@ -56,7 +56,6 @@ class FacadeToFlowMapperService @Activate constructor(
             throw IllegalStateException("Failed to fetch facade to flow mapping.")
         } else {
             val facadeFlowMapping = getFacadeMapping(content)
-            checkNotNull(facadeFlowMapping.facadeFlowMapping) { "Failed to find facadeFlowMapping $facadeFlowMapping" }
             return facadeFlowMapping
                 .facadeFlowMapping
                 .firstOrNull { it.facadeId == facadeId }
