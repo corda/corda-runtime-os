@@ -512,7 +512,10 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `rollback - original state restored when checkpoint rolled back from init`() {
-        val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false))
+        val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false,
+            retryState = RetryState().apply {
+                retryCount = 1
+        }))
         val context = FlowStartContext().apply {
             statusKey = FlowKey(FLOW_ID_1, BOB_X500_HOLDING_IDENTITY)
             identity = BOB_X500_HOLDING_IDENTITY
@@ -533,8 +536,8 @@ class FlowCheckpointImplTest {
         assertThat(afterRollback?.flowState?.suspendedOn).isNull()
         assertThat(afterRollback?.flowState?.waitingFor).isNull()
         assertThat(afterRollback?.flowState?.sessions).isNull()
-        assertThat(afterRollback?.pipelineState?.cpkFileHashes).isNull()
-
+        assertThat(afterRollback?.pipelineState?.cpkFileHashes).isEmpty()
+        assertThat(afterRollback).isNotNull()
         validateUninitialisedCheckpointThrows(flowCheckpoint)
     }
 
