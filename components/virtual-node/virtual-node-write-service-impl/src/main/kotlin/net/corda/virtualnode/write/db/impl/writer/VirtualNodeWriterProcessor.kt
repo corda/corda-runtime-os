@@ -504,7 +504,10 @@ internal class VirtualNodeWriterProcessor(
                 logger.info("Handling virtual node db reset request for ${typedRequest.holdingIdentityShortHashes.joinToString()}")
                 resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
             }
-            is VirtualNodeOperationStatusRequest -> virtualNodeOperationStatusHandler.handle(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeOperationStatusRequest -> {
+                logger.info("Handling virtual node operation status request with id ${typedRequest.requestId}")
+                virtualNodeOperationStatusHandler.handle(request.timestamp, typedRequest, respFuture)
+            }
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
