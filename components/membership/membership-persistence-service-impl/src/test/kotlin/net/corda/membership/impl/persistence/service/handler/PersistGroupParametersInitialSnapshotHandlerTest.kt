@@ -54,7 +54,7 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
-        on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListDeserializer
+        on { createAvroDeserializer<KeyValuePairList>(any(), any())} doReturn keyValuePairListDeserializer
     }
     private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
     private val vaultDmlConnectionId = UUID(1, 2)
