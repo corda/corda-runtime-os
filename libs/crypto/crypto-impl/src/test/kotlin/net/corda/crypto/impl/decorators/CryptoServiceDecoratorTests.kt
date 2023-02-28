@@ -12,9 +12,9 @@ import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoRetryException
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
-import net.corda.v5.crypto.exceptions.CryptoRetryException
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
