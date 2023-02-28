@@ -1,4 +1,4 @@
 @Export
-package net.corda.httprpc.server.security;
+package net.corda.rest.server.security;
 
 import org.osgi.annotation.bundle.Export;

@@ -1,4 +1,4 @@
-package net.corda.httprpc
+package net.corda.rest
 
 /**
  * Use this enum when you want to customize the HTTP status code returned in success responses and error scenarios in HTTP APIs.

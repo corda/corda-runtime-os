@@ -1,14 +1,14 @@
 package net.corda.virtualnode.read.rpc.extensions
 
+import net.corda.crypto.core.ShortHash
 import java.time.Instant
 import java.util.UUID
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals

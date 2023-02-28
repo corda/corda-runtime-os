@@ -1,7 +1,7 @@
-package net.corda.httprpc.client.processing
+package net.corda.rest.client.processing
 
-import net.corda.httprpc.annotations.RestQueryParameter
-import net.corda.httprpc.tools.annotations.extensions.name
+import net.corda.rest.annotations.RestQueryParameter
+import net.corda.rest.tools.annotations.extensions.name
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 

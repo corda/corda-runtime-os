@@ -1,10 +1,10 @@
 package net.corda.crypto.persistence.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.ShortHash
 import javax.persistence.EntityManager
 
 object SigningKeysRepositoryImpl : SigningKeysRepository {
@@ -69,8 +69,8 @@ object SigningKeysRepositoryImpl : SigningKeysRepository {
 
 fun SigningKeyEntity.toSigningCachedKey(): SigningCachedKey =
     SigningCachedKey(
-        id = keyId,
-        fullId = fullKeyId,
+        id = ShortHash.parse(keyId),
+        fullId = SecureHash.parse(fullKeyId),
         tenantId = tenantId,
         category = category,
         alias = alias,

@@ -2,8 +2,8 @@ package net.corda.applications.workers.rest.utils
 
 import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.kafka.KafkaTestToolKit
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.client.RestClient
+import net.corda.rest.RestResource
+import net.corda.rest.client.RestClient
 
 interface E2eCluster {
     val members: List<E2eClusterMember>

@@ -6,8 +6,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
 import net.corda.flow.rpcops.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
-import net.corda.httprpc.ws.DuplexChannel
-import net.corda.httprpc.ws.WebSocketProtocolViolationException
+import net.corda.rest.ws.DuplexChannel
+import net.corda.rest.ws.WebSocketProtocolViolationException
 import net.corda.utilities.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory

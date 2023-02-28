@@ -6,7 +6,7 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.httprpc.ResponseCode
+import net.corda.rest.ResponseCode
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser

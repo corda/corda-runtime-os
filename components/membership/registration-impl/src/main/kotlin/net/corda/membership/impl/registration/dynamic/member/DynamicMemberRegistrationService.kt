@@ -8,6 +8,8 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
@@ -90,8 +92,6 @@ import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate

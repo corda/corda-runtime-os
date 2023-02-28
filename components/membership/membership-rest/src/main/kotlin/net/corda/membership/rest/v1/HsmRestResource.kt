@@ -1,10 +1,10 @@
 package net.corda.membership.rest.v1
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.annotations.HttpGET
-import net.corda.httprpc.annotations.HttpPOST
-import net.corda.httprpc.annotations.RestPathParameter
-import net.corda.httprpc.annotations.HttpRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 
 /**

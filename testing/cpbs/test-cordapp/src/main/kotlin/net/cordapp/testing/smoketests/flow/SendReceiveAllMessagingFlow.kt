@@ -137,7 +137,8 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
 
 
         val received3 = session.receive(MyClass::class.java)
-        log.info("Receive from send from peer: $received3")
+        //this string is so large it activates chunking so do not log it
+        log.info("Receive from send from peer. Message size: ${received3.string.length}")
         session.send(received3.copy(string = "this is a new object 3"))
         log.info("Closing session")
 

@@ -1,6 +1,6 @@
-package net.corda.httprpc.exception
+package net.corda.rest.exception
 
-import net.corda.httprpc.ResponseCode
+import net.corda.rest.ResponseCode
 
 /**
  * The server validation of request data failed, the server could not complete the request because validation on the user's input failed.

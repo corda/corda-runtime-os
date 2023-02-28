@@ -4,10 +4,11 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.httprpc.exception.BadRequestException
+import net.corda.rest.exception.BadRequestException
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -17,7 +18,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro

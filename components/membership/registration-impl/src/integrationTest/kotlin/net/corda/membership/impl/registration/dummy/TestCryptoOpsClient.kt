@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.dummy
 
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,7 +15,6 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

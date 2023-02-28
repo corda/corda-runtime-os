@@ -1,10 +1,10 @@
-package net.corda.httprpc.client
+package net.corda.rest.client
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.client.config.RestClientConfig
-import net.corda.httprpc.client.connect.RestClientProxyHandler
-import net.corda.httprpc.client.connect.RestConnectionListenerDistributor
-import net.corda.httprpc.client.connect.remote.RemoteUnirestClient
+import net.corda.rest.RestResource
+import net.corda.rest.client.config.RestClientConfig
+import net.corda.rest.client.connect.RestClientProxyHandler
+import net.corda.rest.client.connect.RestConnectionListenerDistributor
+import net.corda.rest.client.connect.remote.RemoteUnirestClient
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.utilities.trace

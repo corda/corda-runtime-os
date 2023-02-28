@@ -1,8 +1,8 @@
 package net.corda.applications.workers.rest.http
 
-import net.corda.httprpc.RestResource
-import net.corda.httprpc.client.RestClient
-import net.corda.httprpc.client.config.RestClientConfig
+import net.corda.rest.RestResource
+import net.corda.rest.client.RestClient
+import net.corda.rest.client.config.RestClientConfig
 import java.util.concurrent.atomic.AtomicInteger
 
 class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAddress: String) : TestToolkit {

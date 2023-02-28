@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.serialization
+package net.corda.rest.client.serialization
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParseException
@@ -12,9 +12,9 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.common.json.serialization.jacksonObjectMapper
-import net.corda.httprpc.JsonObject
-import net.corda.httprpc.durablestream.DurableCursorTransferObject
-import net.corda.httprpc.durablestream.api.Cursor
+import net.corda.rest.JsonObject
+import net.corda.rest.durablestream.DurableCursorTransferObject
+import net.corda.rest.durablestream.api.Cursor
 import net.corda.utilities.trace
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash

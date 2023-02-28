@@ -4,9 +4,9 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rest.http.TestToolkitProperty
 import net.corda.applications.workers.rest.http.SkipWhenRestEndpointUnavailable
-import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
-import net.corda.httprpc.client.exceptions.RequestErrorException
-import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.rest.client.exceptions.MissingRequestedResourceException
+import net.corda.rest.client.exceptions.RequestErrorException
+import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint

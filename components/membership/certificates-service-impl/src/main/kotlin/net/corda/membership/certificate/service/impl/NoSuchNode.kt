@@ -1,6 +1,6 @@
 package net.corda.membership.certificate.service.impl
 
-import net.corda.virtualnode.ShortHash
+import net.corda.crypto.core.ShortHash
 
 internal class NoSuchNode(holdingIdentityId: ShortHash) :
     CertificatesServiceException("No node named $holdingIdentityId")

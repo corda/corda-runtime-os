@@ -5,7 +5,7 @@ import java.util.UUID
 import java.util.stream.Stream
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.rpcops.v1.FlowClassRestResource
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

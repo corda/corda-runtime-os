@@ -1,9 +1,7 @@
 package com.r3.corda.notary.plugin.nonvalidating.client
 
 import com.r3.corda.notary.plugin.common.NotarisationResponse
-import com.r3.corda.notary.plugin.common.NotaryErrorInputStateConflict
-import com.r3.corda.notary.plugin.common.NotaryErrorInputStateConflictImpl
-import com.r3.corda.notary.plugin.common.NotaryException
+import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -105,7 +103,7 @@ class NonValidatingNotaryClientFlowImplTest {
         val mockSession = mock<FlowSession> {
             on { sendAndReceive(eq(NotarisationResponse::class.java), any()) } doReturn NotarisationResponse(
                 emptyList(),
-                NotaryErrorInputStateConflictImpl(emptyList())
+                NotaryExceptionReferenceStateUnknown(emptyList(), txId)
             )
         }
         val mockFlowMessaging = mock<FlowMessaging> {
@@ -114,11 +112,10 @@ class NonValidatingNotaryClientFlowImplTest {
 
         val client = createClient(mockFlowMessaging)
 
-        val ex = assertThrows<NotaryException> {
+        val ex = assertThrows<NotaryExceptionReferenceStateUnknown> {
             client.call()
         }
 
-        assertThat(ex.error).isInstanceOf(NotaryErrorInputStateConflict::class.java)
         assertThat(ex.txId).isEqualTo(txId)
     }
 

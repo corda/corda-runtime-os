@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.auth.credentials
+package net.corda.rest.client.auth.credentials
 
 interface CredentialsProvider {
     fun getCredentials(): Any
