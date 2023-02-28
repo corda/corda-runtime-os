@@ -42,12 +42,12 @@ internal class VirtualNodeValidationServiceImpl(
     }
 
     override fun validateCpiUpgradePrerequisites(currentCpi: CpiMetadata, upgradeCpi: CpiMetadata) {
-        require(upgradeCpi.cpiId.name == currentCpi.cpiId.name) {
-            "Upgrade CPI must have the same name as the current CPI."
+        if (upgradeCpi.cpiId.name != currentCpi.cpiId.name) {
+            throw BadRequestException("Upgrade CPI must have the same name as the current CPI.")
         }
 
-        require(upgradeCpi.cpiId.signerSummaryHash == currentCpi.cpiId.signerSummaryHash) {
-            "Upgrade CPI must have the same signature summary hash."
+        if (upgradeCpi.cpiId.signerSummaryHash != currentCpi.cpiId.signerSummaryHash) {
+            throw BadRequestException("Upgrade CPI must have the same signature summary hash.")
         }
     }
 
