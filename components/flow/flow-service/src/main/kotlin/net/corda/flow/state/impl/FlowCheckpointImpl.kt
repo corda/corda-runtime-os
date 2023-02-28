@@ -185,6 +185,7 @@ class FlowCheckpointImpl(
             // The flow was initialised as part of processing this event, so on rollback the flow state should be
             // removed. Next time the event is processed, the flow data will be recreated.
             flowStateManager = null
+            pipelineStateManager.clearCpkFileHashes()
         }
     }
 

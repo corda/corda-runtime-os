@@ -78,6 +78,10 @@ class PipelineStateManager(
         }
     }
 
+    fun clearCpkFileHashes() {
+        state.cpkFileHashes.clear()
+    }
+
     fun setPendingPlatformError(type: String, message: String) {
         state.pendingPlatformError = ExceptionEnvelope().apply {
             errorType = type

@@ -533,6 +533,7 @@ class FlowCheckpointImplTest {
         assertThat(afterRollback?.flowState?.suspendedOn).isNull()
         assertThat(afterRollback?.flowState?.waitingFor).isNull()
         assertThat(afterRollback?.flowState?.sessions).isNull()
+        assertThat(afterRollback?.pipelineState?.cpkFileHashes).isNull()
 
         validateUninitialisedCheckpointThrows(flowCheckpoint)
     }
