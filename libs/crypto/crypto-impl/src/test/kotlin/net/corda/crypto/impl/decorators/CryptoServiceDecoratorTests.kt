@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.cipher.suite.CryptoThrottlingException
 import net.corda.crypto.cipher.suite.GeneratedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
@@ -15,7 +16,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoRetryException
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import net.corda.v5.crypto.exceptions.CryptoThrottlingException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
