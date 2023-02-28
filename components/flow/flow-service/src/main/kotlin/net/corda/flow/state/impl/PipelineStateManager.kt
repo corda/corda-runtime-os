@@ -79,7 +79,7 @@ class PipelineStateManager(
     }
 
     fun clearCpkFileHashes() {
-        state.cpkFileHashes.clear()
+        state.cpkFileHashes = emptyList()
     }
 
     fun setPendingPlatformError(type: String, message: String) {
