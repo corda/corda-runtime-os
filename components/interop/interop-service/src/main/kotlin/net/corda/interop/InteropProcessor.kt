@@ -60,7 +60,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         return if (interopMessage != null) {
             val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
             logger.info("Converted interop message to facade request : $facadeRequest")
-            if((interopMessage.messageId.toIntOrNull() ?: 0) > 2) return null
+            if((interopMessage.messageId.toIntOrNull() ?: 0) > 10) return null
             val message : InteropMessage = InteropMessageTransformer.getInteropMessage(
                 interopMessage.messageId.incrementOrUuid(), facadeRequest)
             logger.info("Converted facade request to interop message : $message")

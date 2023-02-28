@@ -186,10 +186,10 @@ internal class OutboundMessageProcessor(
         messageAndKey: AuthenticatedMessageAndKey,
         isReplay: Boolean = false
     ): List<Record<String, *>> {
-        logger.trace {
+        logger.info  (
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
-        }
+        )
 
         val discardReason = checkSourceAndDestinationValid(
             messageAndKey.message.header.source, messageAndKey.message.header.destination
