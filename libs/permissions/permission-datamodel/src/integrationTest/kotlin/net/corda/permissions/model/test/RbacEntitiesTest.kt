@@ -27,7 +27,7 @@ import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class)
-class RpcRbacEntitiesTest {
+class RbacEntitiesTest {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
