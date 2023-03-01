@@ -50,8 +50,8 @@ class InitiateFlowRequestService @Activate constructor(
             flowSandboxService.get(checkpoint.holdingIdentity, checkpoint.cpkFileHashes).protocolStore
         } catch (e: Exception) {
             throw FlowTransientException(
-                "Failed to get the flow sandbox for identity ${checkpoint.holdingIdentity}: ${e.message}",
-                e
+                "Failed to get the flow sandbox for identity ${checkpoint.holdingIdentity}: " +
+                        (e.message?: "No exception message provided."), e
             )
         }
 

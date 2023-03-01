@@ -139,9 +139,13 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         polledRecords.forEach { consumerRecord ->
             val value = consumerRecord.value()
             val key = consumerRecord.key()
-            if (key is ChunkKey && value is Chunk) {
+            if (key is ChunkKey && value == null) {
                 log.trace {
-                    "Read chunk offset ${consumerRecord.offset()} and chunkId ${value.requestId} and partNumber ${value.partNumber}"
+                    "Ignoring cleaned up ChunkKey $key at offset ${consumerRecord.offset()}"
+                }
+            } else if (key is ChunkKey && value is Chunk) {
+                log.trace {
+                    "Read chunk with offset ${consumerRecord.offset()} and chunkId ${value.requestId} and partNumber ${value.partNumber}"
                 }
                 getCompleteRecord(key, value, consumerRecord, currentChunks)?.let {
                     log.trace { "Adding complete record with offset ${consumerRecord.offset()} and chunkId ${value.requestId}" }

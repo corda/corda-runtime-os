@@ -53,8 +53,12 @@ class KafkaTestToolKit(
         PlatformDigestServiceImpl(cipherSchemeMetadataImpl)
     }
 
+    private val chunkBuilderService by lazy {
+        ChunkBuilderServiceImpl()
+    }
+
     private val messagingChunkFactory by lazy {
-        MessagingChunkFactoryImpl(ChunkBuilderServiceImpl(), serializationFactory, platformDigestService)
+        MessagingChunkFactoryImpl(chunkBuilderService, serializationFactory, platformDigestService)
     }
 
     private val consumerBuilder by lazy {
@@ -102,7 +106,8 @@ class KafkaTestToolKit(
             coordinatorFactory,
             producerBuilder,
             consumerBuilder,
-            stateAndEventBuilder
+            stateAndEventBuilder,
+            messagingChunkFactory
         )
     }
 

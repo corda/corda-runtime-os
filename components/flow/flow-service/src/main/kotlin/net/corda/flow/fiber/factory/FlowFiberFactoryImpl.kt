@@ -38,7 +38,7 @@ class FlowFiberFactoryImpl : FlowFiberFactory {
             val flowFiber = FlowFiberImpl(id, logic, currentScheduler)
             return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
         } catch (e: Throwable) {
-            throw FlowFatalException(FiberExceptionConstants.UNABLE_TO_EXECUTE.format(e.message), e)
+            throw FlowFatalException(FiberExceptionConstants.UNABLE_TO_EXECUTE.format(e.message ?: "No exception message provided."), e)
         }
     }
 
