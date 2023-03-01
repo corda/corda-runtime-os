@@ -113,6 +113,8 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class SynchronisationIntegrationTest {
@@ -201,6 +203,7 @@ class SynchronisationIntegrationTest {
                     """
                 $INSTANCE_ID = 1
                 $BUS_TYPE = INMEMORY
+                $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
                 """
                 )
             )

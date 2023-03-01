@@ -109,6 +109,8 @@ import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
+import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipPersistenceTest {
@@ -127,6 +129,7 @@ class MembershipPersistenceTest {
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
             $BUS_TYPE = INMEMORY
+            $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
         """
         private const val MEMBER_CONTEXT_KEY = "key"
         private const val MEMBER_CONTEXT_VALUE = "value"
