@@ -3,7 +3,6 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.flow.event.SessionEvent
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
@@ -28,7 +27,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList", "Unused")
+@Suppress("LongParameterList")
 @Component(service = [InteropService::class], immediate = true)
 class InteropService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -40,7 +39,9 @@ class InteropService @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = InteropMemberRegistrationService::class)
+    private val registrationService: InteropMemberRegistrationService
 ) : Lifecycle {
 
     companion object {
@@ -52,10 +53,10 @@ class InteropService @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<InteropService>(::eventHandler)
-    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
     private var publisher: Publisher? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.info("$event")
         when (event) {
             is StartEvent -> {
                 coordinator.createManagedResource(REGISTRATION) {
@@ -96,14 +97,20 @@ class InteropService @Activate constructor(
                 it.start()
             }
         }
+        //TODO temporary code (commented and uncommented) to setup members of interop group,
+        // and send seed message in absence of a flow, this will be phased out later on by CORE-10446
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             PublisherConfig("interop-registration-service"),
             event.config.getConfig(MESSAGING_CONFIG)
         )
         publisher?.start()
-        publisher?.publish(InteropMemberRegistrationService().createDummyMemberInfo())
-        publisher?.publish(InteropMemberRegistrationService().createDummyHostedIdentity())
+        logger.info("Publishing member infos")
+        publisher?.publish(registrationService.createDummyMemberInfo())
+        logger.info("Publishing hosted identities")
+        publisher?.publish(registrationService.createDummyHostedIdentity())
+        //logger.info("Publishing seed message")
+        //publisher?.publish(registrationService.seedMessage())
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -118,6 +125,7 @@ class InteropService @Activate constructor(
         coordinator.stop()
     }
 
+    @Suppress("unused")
     @Deactivate
     fun close() {
         coordinator.close()

@@ -24,6 +24,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -65,6 +66,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = InteropGroupPolicyReader::class)
+    private val interopGroupPolicyReader: InteropGroupPolicyReader
 ) : GroupPolicyProvider {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -274,8 +277,13 @@ class GroupPolicyProviderImpl @Activate constructor(
                 "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
                         "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
             )
+        }
+        val groupPolicy: String? = metadata?.groupPolicy ?: interopGroupPolicyReader.getGroupPolicy(holdingIdentity)
+        if (groupPolicy == null) {
+            logger.warn("Could not get interop group policy for holding identity [${holdingIdentity}].")
             return null
         }
+
         fun persistedPropertyQuery(): LayeredPropertyMap? = try {
             membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
         } catch (e: MembershipQueryResult.QueryException) {
@@ -285,7 +293,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         return try {
             groupPolicyParser.parse(
                 holdingIdentity,
-                metadata.groupPolicy,
+                groupPolicy,
                 ::persistedPropertyQuery
             )
         } catch (e: BadGroupPolicyException) {
