@@ -70,6 +70,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDuplicatedVNodeName
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -110,6 +111,7 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -553,8 +555,8 @@ class StaticMemberRegistrationServiceTest {
 
             assertThat(exception)
                 .hasMessage(
-                    "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB " +
-                        "is not listed in the static member list."
+                    "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB is either not " +
+                            "listed in the static member list or there is another member with the same name."
                 )
             registrationService.stop()
         }
@@ -775,6 +777,87 @@ class StaticMemberRegistrationServiceTest {
             verify(groupParametersWriterService).put(eq(bob), eq(mockGroupParameters))
             verify(groupParametersWriterService).put(eq(alice), eq(mockGroupParameters))
             verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockGroupParameters))
+        }
+
+        @Test
+        fun `registration fails when there is a virtual node having the same name as the notary service`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to aliceName.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, bob, context)
+            }
+            assertThat(message.message).contains("There is a virtual node having the same name")
+        }
+
+        @Test
+        fun `registration fails when notary service name is blank`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, bob, context)
+            }
+            assertThat(message.message).contains("Notary must have a non-empty service name.")
+        }
+
+        @Test
+        fun `registration fails when the virtual node and notary service name is the same`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to bobName.toString(),
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, bob, context)
+            }
+            assertThat(message.message).contains("and virtual node name cannot be the same")
+        }
+
+        @Test
+        fun `registration fails when there are two virtual nodes in the static list having the same name`() {
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+
+            whenever(groupPolicyProvider.getGroupPolicy(alice))
+                .thenReturn(groupPolicyWithStaticNetworkAndDuplicatedVNodeName)
+            whenever(virtualNodeInfoReadService.get(alice)).thenReturn(buildTestVirtualNodeInfo(alice))
+            setUpPublisher()
+            registrationService.start()
+
+            val message = assertFailsWith<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, context)
+            }
+            assertThat(message.message).contains("or there is another member with the same name.")
         }
     }
 

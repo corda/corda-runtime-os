@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
-private val log = LoggerFactory.getLogger("net.corda.rest.client.internal.processing.FormParametersResolver.kt")
+private val log = LoggerFactory.getLogger("net.corda.rest.client.processing.FormParametersResolver.kt")
 
 internal fun Method.formParametersFrom(methodArguments: Array<out Any?>): Map<String, String> {
     log.trace { """Method form parameters from "$methodArguments".""" }

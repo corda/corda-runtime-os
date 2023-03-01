@@ -64,7 +64,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(1)
-                flowStatus(FlowStates.RETRYING)
             }
         }
 

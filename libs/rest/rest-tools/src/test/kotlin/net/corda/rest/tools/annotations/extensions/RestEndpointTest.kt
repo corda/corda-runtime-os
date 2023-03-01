@@ -24,7 +24,7 @@ class RestEndpointTest {
     }
 
     @Test
-    fun `path from HttpRpcGET annotation will be converted to lowercase`() {
+    fun `path from HttpGET annotation will be converted to lowercase`() {
 
         abstract class TestClass {
             @HttpGET(
@@ -52,7 +52,7 @@ class RestEndpointTest {
     }
 
     @Test
-    fun `path from HttpRpcPOST annotation will be converted to lowercase`() {
+    fun `path from HttpPOST annotation will be converted to lowercase`() {
 
         abstract class TestClass {
             @HttpPOST(
