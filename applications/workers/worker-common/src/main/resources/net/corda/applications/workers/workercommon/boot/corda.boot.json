@@ -34,28 +34,65 @@
       "properties": {
         "params": {
           "description": "Additional db params the worker is bootstrapped with.",
-          "type": "object"
+          "properties": {
+            "database" : {
+              "description": "Database params",
+              "properties": {
+                "jdbc": {
+                  "description": "The JDBC database info",
+                  "properties": {
+                    "url": {
+                      "description": "The JDBC URL used by the db worker",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "url_messagebus": {
+                      "description": "The JDBC UR for the message bus",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "directory" : {
+                      "description": "The JDBC directory",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "user": {
+                  "description": "Cluster admin username to connect to the database with.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "pass": {
+                  "description": "Cluster admin password to connect to the database with.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
         },
-        "jdbcUrl": {
-          "description": "The JDBC database URL",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "user": {
-          "description": "Cluster admin username to connect to the database with.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "pass": {
-          "description": "Cluster admin password to connect to the database with.",
-          "type": [
-            "string",
-            "null"
-          ]
+        "bus": {
+          "description": "Details about the bus if it is backed by a DB",
+          "properties": {
+            "busType" : {
+              "description": "The type of DB message bus. e.g INMEMORY or DATABASE",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
         }
       },
       "additionalProperties": false
