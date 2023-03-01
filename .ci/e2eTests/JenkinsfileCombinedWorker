@@ -70,7 +70,7 @@ pipeline {
         stage('check out') {
             steps {
                 script {
-                    if (params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null) { // CHANGE_ID only populated in PRs
+                    if ((params.COMMIT_TO_CHECKOUT && env.CHANGE_ID == null) && env.TAG_NAME == null ) {  // CHANGE_ID only populated in PRs
                         echo "Checking out commit ID from upstream job ${params.COMMIT_TO_CHECKOUT}"
                         sh 'git checkout "$COMMIT_TO_CHECKOUT"'
                     } else {
