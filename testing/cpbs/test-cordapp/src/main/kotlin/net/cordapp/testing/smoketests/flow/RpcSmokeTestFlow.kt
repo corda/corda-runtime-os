@@ -449,7 +449,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     private fun execute(input: RpcSmokeTestInput): RpcSmokeTestOutput {
         return RpcSmokeTestOutput(
             checkNotNull(input.command) { "No smoke test command received" },
-            checkNotNull(commandMap[input.command]) { "command not recognised" }.invoke(input)
+            checkNotNull(commandMap[input.command]) { "command '${input.command}' not recognised" }.invoke(input)
         )
     }
 
