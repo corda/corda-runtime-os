@@ -56,6 +56,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
@@ -204,6 +205,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 keyScheme,
                 roles,
                 staticMemberList,
+                membershipGroupReader,
             )
 
             records +
@@ -289,7 +291,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun validateNotaryDetails(
         registeringMember: StaticMember,
         staticMemberList: List<StaticMember>,
-        notaryInfo: Collection<Pair<String, String>>
+        notaryInfo: Collection<Pair<String, String>>,
+        membershipGroupReader: MembershipGroupReader,
     ) {
         val serviceName = notaryInfo.firstOrNull { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }?.second
         //The notary service x500 name is different from the notary virtual node being registered.
@@ -299,6 +302,10 @@ class StaticMemberRegistrationService @Activate constructor(
         //The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
         require(staticMemberList.none { it.name == serviceName }) {
             "Notary service name invalid: There is a virtual node having the same name $serviceName."
+        }
+        // Allow only a single notary virtual node under each notary service.
+        require(membershipGroupReader.lookup().none { it.notaryDetails?.serviceName.toString() == serviceName }) {
+            throw InvalidMembershipRegistrationException("Notary service '$serviceName' already exists.")
         }
     }
 
@@ -313,6 +320,7 @@ class StaticMemberRegistrationService @Activate constructor(
         keyScheme: String,
         roles: Collection<MemberRole>,
         staticMemberList: List<StaticMember>,
+        membershipGroupReader: MembershipGroupReader,
     ): Pair<MemberInfo, List<Record<String, PersistentMemberInfo>>> {
         validateStaticMemberList(staticMemberList)
 
@@ -344,7 +352,7 @@ class StaticMemberRegistrationService @Activate constructor(
         // validate if provided notary details are correct to fail-fast,
         // before assigning more HSMs, generating other keys for member
         if(notaryInfo.isNotEmpty()) {
-            validateNotaryDetails(staticMemberInfo, staticMemberList, notaryInfo)
+            validateNotaryDetails(staticMemberInfo, staticMemberList, notaryInfo, membershipGroupReader)
         }
 
         hsmRegistrationClient.assignSoftHSM(memberId, LEDGER)

@@ -59,5 +59,5 @@ interface DbConnectionManager : DbConnectionOps, DataSourceFactory, Lifecycle {
     /**
      * Test all connections, returns true if all connections are working.
      */
-    fun testAllConnections(): Boolean
+    fun testConnection(): Boolean
 }

@@ -71,7 +71,7 @@ class FakeDbConnectionManager(
         logger.info("Fake DbConnectionManager bootstrapped with $config")
     }
 
-    override fun testAllConnections(): Boolean {
+    override fun testConnection(): Boolean {
         return true
     }
 
