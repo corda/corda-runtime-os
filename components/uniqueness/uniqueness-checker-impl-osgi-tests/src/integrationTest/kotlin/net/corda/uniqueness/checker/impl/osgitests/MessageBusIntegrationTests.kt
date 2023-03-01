@@ -1,6 +1,11 @@
 package net.corda.uniqueness.checker.impl.osgitests
 
 import com.typesafe.config.ConfigFactory
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.util.*
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.CordaAvroSerializationFactory
@@ -53,11 +58,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.util.*
 
 /**
  * Tests the integration of the uniqueness checker component with the message bus. This duplicates
@@ -107,6 +107,7 @@ class MessageBusIntegrationTests {
                     """
                 ${BootConfig.INSTANCE_ID} = 1
                 ${MessagingConfig.Bus.BUS_TYPE} = INMEMORY
+                ${BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE} = 1000000
                 """
                 )
             )

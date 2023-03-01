@@ -55,6 +55,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
@@ -125,6 +126,7 @@ class MemberRegistrationIntegrationTest {
                     """
                 ${BootConfig.INSTANCE_ID} = 1
                 ${MessagingConfig.Bus.BUS_TYPE} = INMEMORY
+                $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
                 """
                 )
             )
