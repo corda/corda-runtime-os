@@ -54,11 +54,15 @@ internal class PersistMemberInfoHandler(
                     if (currentMemberInfo?.serialNumber == memberInfo.serial) {
                         val currentMemberContext = deserialize(currentMemberInfo.memberContext)
                         val currentMgmContext = deserialize(currentMemberInfo.mgmContext)
-                        if (currentMemberContext.items == it.memberContext.items) {
-                            throw MembershipPersistenceException("")
+                        if (currentMemberContext.items != it.memberContext.items) {
+                            throw MembershipPersistenceException(
+                                "Cannot update member info with same serial number: member context differs from original."
+                            )
                         }
                         if (currentMgmContext.items != it.mgmContext.items) {
-                            throw MembershipPersistenceException("")
+                            throw MembershipPersistenceException(
+                                "Cannot update member info with same serial: mgm context differs from original."
+                            )
                         }
                         return@forEach
                     }
