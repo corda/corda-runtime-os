@@ -33,19 +33,17 @@ class SimConsensualLedgerService(
     private val serializationService = BaseSerializationService()
 
     override fun finalize(
-        signedTransaction: ConsensualSignedTransaction,
+        transaction: ConsensualSignedTransaction,
         sessions: List<FlowSession>
     ): ConsensualSignedTransaction {
         @Suppress("unchecked_cast")
-        val finalSignedTransaction = sessions.fold(signedTransaction) {
-            tx, sess ->
-                sess.send(signedTransaction)
-            (tx as ConsensualSignedTransactionBase).addSignatures(sess.receive(List::class.java) as List<DigitalSignatureAndMetadata>)
+        val finalSignedTransaction = sessions.fold(transaction) { tx, sess ->
+            sess.send(transaction)
+            (tx as ConsensualSignedTransactionBase)
+                .addSignatures(sess.receive(List::class.java) as List<DigitalSignatureAndMetadata>)
         }
 
-        sessions.forEach {
-            it.send(finalSignedTransaction)
-        }
+        sessions.forEach { it.send(finalSignedTransaction) }
         persistenceService.persist((finalSignedTransaction as ConsensualSignedTransactionBase).toEntity())
         return finalSignedTransaction
     }

@@ -20,7 +20,7 @@ import java.util.Objects
 @Suppress("TooManyFunctions", "LongParameterList")
 class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    override var notary: Party? = null,
+    private var notary: Party? = null,
     override var timeWindow: TimeWindow? = null,
     override val attachments: MutableList<SecureHash> = mutableListOf(),
     override val commands: MutableList<Command> = mutableListOf(),
@@ -45,6 +45,10 @@ class UtxoTransactionBuilderImpl(
     override fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
         this.signatories += signatories
         return this
+    }
+
+    override fun addSignatories(vararg signatories: PublicKey): UtxoTransactionBuilder {
+        return addSignatories(signatories.toList())
     }
 
     override fun addInputState(stateRef: StateRef): UtxoTransactionBuilder {
@@ -113,6 +117,10 @@ class UtxoTransactionBuilderImpl(
             .groupBy { outputState -> outputState.encumbranceTag }
             .map { entry -> entry.key!! to entry.value.map { items -> items.contractState } }
             .toMap()
+    }
+
+    override fun getNotary(): Party? {
+        return notary
     }
 
     override fun setNotary(notary: Party): UtxoTransactionBuilder {

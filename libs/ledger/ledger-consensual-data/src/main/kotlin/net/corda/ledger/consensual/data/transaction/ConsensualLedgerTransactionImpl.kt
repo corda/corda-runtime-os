@@ -15,36 +15,11 @@ class ConsensualLedgerTransactionImpl(
     private val serializationService: SerializationService
 ) : ConsensualLedgerTransaction {
 
-    override val id: SecureHash
-        get() = wireTransaction.id
-
-    override val timestamp: Instant by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroup.TIMESTAMP.ordinal).first()
-        serializationService.deserialize(timeStampBytes)
-    }
-
-    override val requiredSignatories: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(ConsensualComponentGroup.SIGNATORIES.ordinal)
-            .map { serializationService.deserialize(it, PublicKey::class.java) }.toSet()
-    }
-
-    private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(ConsensualComponentGroup.OUTPUT_STATE_TYPES.ordinal)
-            .map { serializationService.deserialize(it) }
-    }
-
-    override val states: List<ConsensualState> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(ConsensualComponentGroup.OUTPUT_STATES.ordinal)
-            .map { serializationService.deserialize(it) }
-    }
-
-    init{
+    init {
         verifyMetadata(wireTransaction.metadata)
-        check(wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATES.ordinal].size ==
-                wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATE_TYPES.ordinal].size
+        check(
+            wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATES.ordinal].size ==
+                    wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATE_TYPES.ordinal].size
         ) {
             "The length of the output states and output state types component groups needs to be the same."
         }
@@ -60,5 +35,24 @@ class ConsensualLedgerTransactionImpl(
         return "ConsensualLedgerTransactionImpl(id=$id, requiredSignatories=$requiredSignatories, wireTransaction=$wireTransaction)"
     }
 
+    override fun getId(): SecureHash {
+        return wireTransaction.id
+    }
 
+    override fun getRequiredSignatories(): Set<PublicKey> {
+        return wireTransaction
+            .getComponentGroupList(ConsensualComponentGroup.SIGNATORIES.ordinal)
+            .map { serializationService.deserialize(it, PublicKey::class.java) }.toSet()
+    }
+
+    override fun getTimestamp(): Instant {
+        val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroup.TIMESTAMP.ordinal).first()
+        return serializationService.deserialize(timeStampBytes)
+    }
+
+    override fun getStates(): List<ConsensualState> {
+        return wireTransaction
+            .getComponentGroupList(ConsensualComponentGroup.OUTPUT_STATES.ordinal)
+            .map { serializationService.deserialize(it) }
+    }
 }
