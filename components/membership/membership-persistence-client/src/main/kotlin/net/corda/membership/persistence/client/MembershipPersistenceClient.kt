@@ -73,6 +73,8 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * The epoch of the new [groupParameters] to be persisted must be higher than that of previous group parameter versions.
      *
+     * This operation is idempotent.
+     *
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param groupParameters The group parameters to persist.
      *
