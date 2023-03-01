@@ -5,12 +5,12 @@ import java.security.MessageDigest
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpk.write.impl.services.db.CpkChecksumToData
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.data.chunking.Chunk
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -157,8 +157,8 @@ class CpkWriteServiceImplTest {
         val cpkData = byteArrayOf(0x01, 0x02, 0x03)
         val cpkChecksum = secureHash(cpkData)
         val cpkStorage = mock<CpkStorage>()
-        whenever(cpkStorage.getCpkIdsNotIn(emptyList())).thenReturn(listOf(cpkChecksum))
-        whenever(cpkStorage.getCpkDataByCpkId(cpkChecksum)).thenReturn(CpkChecksumToData(cpkChecksum, cpkData))
+        whenever(cpkStorage.getAllCpkFileIds(emptyList())).thenReturn(listOf(cpkChecksum))
+        whenever(cpkStorage.getCpkFileById(cpkChecksum)).thenReturn(CpkFile(cpkChecksum, cpkData))
 
         val configChangedEvent = ConfigChangedEvent(
             setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RECONCILIATION_CONFIG),

@@ -1,7 +1,5 @@
 package net.corda.flow.state.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -16,7 +14,10 @@ import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
@@ -110,6 +111,9 @@ class FlowCheckpointImpl(
     override val inRetryState: Boolean
         get() = pipelineStateManager.retryState != null
 
+    override val cpkFileHashes: Set<SecureHash>
+        get() = pipelineStateManager.cpkFileHashes
+
     override val retryEvent: FlowEvent
         get() = pipelineStateManager.retryEvent
 
@@ -123,7 +127,7 @@ class FlowCheckpointImpl(
     override val maxMessageSize: Long
         get() = config.getLong(MAX_ALLOWED_MSG_SIZE)
 
-    override fun initFlowState(flowStartContext: FlowStartContext) {
+    override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
@@ -145,6 +149,7 @@ class FlowCheckpointImpl(
 
         flowStateManager = FlowStateManager(flowState)
         nullableFlowStack = FlowStackImpl(flowState.flowStackItems)
+        pipelineStateManager.populateCpkFileHashes(cpkFileHashes)
     }
 
     override fun getSessionState(sessionId: String): SessionState? {
@@ -180,6 +185,7 @@ class FlowCheckpointImpl(
             // The flow was initialised as part of processing this event, so on rollback the flow state should be
             // removed. Next time the event is processed, the flow data will be recreated.
             flowStateManager = null
+            pipelineStateManager.clearCpkFileHashes()
         }
     }
 
