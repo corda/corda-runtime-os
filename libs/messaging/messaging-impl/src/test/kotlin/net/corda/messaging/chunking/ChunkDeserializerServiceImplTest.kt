@@ -25,9 +25,9 @@ class ChunkDeserializerServiceImplTest {
     private val id = "id"
     private val realKey = "realKey"
     private val realKeyBytes = realKey.toByteArray()
-    private val testChunkKey1 = ChunkKey(id, ByteBuffer.wrap(realKeyBytes), 1)
-    private val testChunkKey2 = ChunkKey(id, ByteBuffer.wrap(realKeyBytes), 2)
-    private val testFinalChunkKey = ChunkKey(id, ByteBuffer.wrap(realKeyBytes), 3)
+    private val testChunkKey1 = ChunkKey(ByteBuffer.wrap(realKeyBytes), 1)
+    private val testChunkKey2 = ChunkKey(ByteBuffer.wrap(realKeyBytes), 2)
+    private val testFinalChunkKey = ChunkKey(ByteBuffer.wrap(realKeyBytes), 3)
     private val firstChunkValue = "first"
     private val secondChunkValue = "second"
     private val completeValue = firstChunkValue + secondChunkValue
