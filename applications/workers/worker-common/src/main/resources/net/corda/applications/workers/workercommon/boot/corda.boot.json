@@ -49,7 +49,7 @@
                       ]
                     },
                     "url_messagebus": {
-                      "description": "The JDBC UR for the message bus",
+                      "description": "The JDBC URL for the message bus if the bus is backed by a DB",
                       "type": [
                         "string",
                         "null"
@@ -83,7 +83,7 @@
           }
         },
         "bus": {
-          "description": "Details about the bus if it is backed by a DB",
+          "description": "Details about the bus type if it is backed by a DB",
           "properties": {
             "busType" : {
               "description": "The type of DB message bus. e.g INMEMORY or DATABASE",
