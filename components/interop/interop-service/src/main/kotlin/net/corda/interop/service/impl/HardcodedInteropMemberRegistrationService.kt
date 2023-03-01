@@ -136,7 +136,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             }
         """.trimIndent()
 
-        val interopMessage = InteropMessage("1", payload)
+        val interopMessage = InteropMessage(key, payload)
 
         val headerNoDestination = UnauthenticatedMessageHeader(
             HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"),INTEROP_GROUP_ID).toAvro(),
