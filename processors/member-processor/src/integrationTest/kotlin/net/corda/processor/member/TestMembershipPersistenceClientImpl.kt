@@ -25,10 +25,12 @@ import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 import java.time.Instant
 import java.util.UUID
 
-@Component(service = [MembershipPersistenceClient::class])
+@ServiceRanking(Int.MAX_VALUE)
+@Component(service = [MembershipPersistenceClient::class, MembershipQueryClient::class])
 internal class TestMembershipPersistenceClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -121,9 +123,17 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         ruleType: ApprovalRuleType
     ) = MembershipPersistenceResult.success()
 
-    private val coordinator =
+    private val persistenceCoordinator =
         coordinatorFactory.createCoordinator(
             LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()
+        ) { event, coordinator ->
+            if (event is StartEvent) {
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+        }
+    private val queryCoordinator =
+        coordinatorFactory.createCoordinator(
+            LifecycleCoordinatorName.forComponent<MembershipQueryClient>()
         ) { event, coordinator ->
             if (event is StartEvent) {
                 coordinator.updateStatus(LifecycleStatus.UP)
@@ -176,10 +186,12 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override val isRunning = true
 
     override fun start() {
-        coordinator.start()
+        persistenceCoordinator.start()
+        queryCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        persistenceCoordinator.stop()
+        queryCoordinator.stop()
     }
 }

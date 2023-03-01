@@ -74,6 +74,9 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.registration.RegistrationRequestStatus
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -277,6 +280,15 @@ class StaticMemberRegistrationServiceTest {
     private val groupParametersFactory: GroupParametersFactory = mock {
         on { create(any()) } doReturn mockGroupParameters
     }
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on {
+            queryRegistrationRequestsStatus(
+                any(),
+                any(),
+                any(),
+            )
+        } doReturn MembershipQueryResult.Success(emptyList())
+    }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
     private val groupReader: MembershipGroupReader = mock()
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -302,6 +314,7 @@ class StaticMemberRegistrationServiceTest {
         virtualNodeInfoReadService,
         groupParametersWriterService,
         membershipGroupReaderProvider,
+        membershipQueryClient,
     )
 
     private fun setUpPublisher() {
@@ -445,22 +458,14 @@ class StaticMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `registration pass when the member is not active`() {
-            val memberInfo = mock<MemberInfo> {
-                on { isActive } doReturn false
-            }
-            whenever(groupReader.lookup(any())).thenReturn(memberInfo)
-            setUpPublisher()
-            registrationService.start()
-
-            assertDoesNotThrow {
-                registrationService.register(registrationId, alice, mockContext)
-            }
-        }
-
-        @Test
         fun `registration pass when the member is not found`() {
-            whenever(groupReader.lookup(any())).thenReturn(null)
+            whenever(
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    alice,
+                    aliceName,
+                    listOf(RegistrationStatus.APPROVED),
+                )
+            ).doReturn(MembershipQueryResult.Success(emptyList()))
             setUpPublisher()
             registrationService.start()
 
@@ -474,10 +479,16 @@ class StaticMemberRegistrationServiceTest {
     inner class FailedRegistrationTests {
         @Test
         fun `it fails when the member is active`() {
-            val memberInfo = mock<MemberInfo> {
-                on { isActive } doReturn true
+            val status = mock<RegistrationRequestStatus> {
+                on { registrationId } doReturn "ID"
             }
-            whenever(groupReader.lookup(any())).thenReturn(memberInfo)
+            whenever(
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    alice,
+                    aliceName,
+                    listOf(RegistrationStatus.APPROVED),
+                )
+            ).doReturn(MembershipQueryResult.Success(listOf(status)))
             setUpPublisher()
             registrationService.start()
 
