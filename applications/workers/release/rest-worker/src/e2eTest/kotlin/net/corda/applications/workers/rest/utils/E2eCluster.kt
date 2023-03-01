@@ -14,6 +14,8 @@ interface E2eCluster {
 
     val p2pUrl: String
 
+    fun addMember(memberToAdd: E2eClusterMember)
+
     fun addMembers(membersToAdd: List<E2eClusterMember>)
 
     val uniqueName: String
@@ -47,6 +49,10 @@ private class E2eClusterImpl(
 
     override val kafkaTestToolkit: KafkaTestToolKit by lazy {
         KafkaTestToolKit(testToolkit)
+    }
+
+    override fun addMember(memberToAdd: E2eClusterMember) {
+        members.add(memberToAdd)
     }
 
     override fun addMembers(membersToAdd: List<E2eClusterMember>) {

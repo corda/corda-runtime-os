@@ -5,6 +5,7 @@ import net.corda.applications.workers.rest.utils.E2eClusterBConfig
 import net.corda.applications.workers.rest.utils.E2eClusterCConfig
 import net.corda.applications.workers.rest.utils.E2eClusterFactory
 import net.corda.applications.workers.rest.utils.E2eClusterMember
+import net.corda.applications.workers.rest.utils.E2eClusterMemberRole
 import net.corda.applications.workers.rest.utils.allowClientCertificates
 import net.corda.applications.workers.rest.utils.assertAllMembersAreInMemberList
 import net.corda.applications.workers.rest.utils.setSslConfiguration
@@ -29,6 +30,9 @@ class MultiClusterDynamicNetworkTest {
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
             listOf(E2eClusterMember("O=Alice, L=London, C=GB, OU=${cluster.uniqueName}"))
+        )
+        cluster.addMember(
+            E2eClusterMember("C=GB, L=London, O=Notary-${cluster.uniqueName}", E2eClusterMemberRole.NOTARY)
         )
     }
 

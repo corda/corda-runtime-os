@@ -31,6 +31,7 @@ import net.corda.utilities.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.assertDoesNotThrow
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -45,6 +46,7 @@ const val HSM_CAT_SESSION = "SESSION_INIT"
 const val HSM_CAT_PRE_AUTH = "PRE_AUTH"
 const val HSM_CAT_LEDGER = "LEDGER"
 const val HSM_CAT_TLS = "TLS"
+const val HSM_CAT_NOTARY = "NOTARY"
 
 private class TestJsonObject(data: Map<String, Any?>) : JsonObject {
     val json = ObjectMapper()
@@ -233,7 +235,9 @@ fun E2eCluster.assignSoftHsm(
 ): HsmAssociationInfo {
     return clusterHttpClientFor(HsmRestResource::class.java)
         .use { client ->
-            client.start().proxy.assignSoftHsm(holdingId, cat)
+            eventually(duration = 10.seconds) {
+                assertDoesNotThrow { client.start().proxy.assignSoftHsm(holdingId, cat) }
+            }
         }
 }
 
@@ -375,6 +379,9 @@ fun E2eCluster.onboardMembers(
 
         assignSoftHsm(member.holdingId, HSM_CAT_SESSION)
         assignSoftHsm(member.holdingId, HSM_CAT_LEDGER)
+        if(member.isNotary()) {
+            assignSoftHsm(member.holdingId, HSM_CAT_NOTARY)
+        }
 
         if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
             val memberTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
@@ -394,6 +401,10 @@ fun E2eCluster.onboardMembers(
 
         val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
 
+        val memberNotaryKeyId = if(member.isNotary()) {
+            generateKeyPairIfNotExists(member.holdingId, HSM_CAT_NOTARY)
+        } else null
+
         if (useSessionCertificate) {
             setUpNetworkIdentity(member.holdingId, memberSessionKeyId, SESSION_CERT_ALIAS)
         } else {
@@ -405,9 +416,11 @@ fun E2eCluster.onboardMembers(
         register(
             member.holdingId,
             createMemberRegistrationContext(
+                member,
                 this,
                 memberSessionKeyId,
-                memberLedgerKeyId
+                memberLedgerKeyId,
+                memberNotaryKeyId
             )
         )
 

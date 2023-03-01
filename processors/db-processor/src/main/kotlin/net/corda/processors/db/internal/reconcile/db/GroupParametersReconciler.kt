@@ -2,6 +2,8 @@ package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,6 +23,7 @@ import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Stream
 import kotlin.concurrent.withLock
@@ -122,17 +125,26 @@ class GroupParametersReconciler(
             "Reconciliation information must be virtual node level for group parameters reconciliation"
         }
         return context.getOrCreateEntityManager().getCurrentGroupParameters()?.let { entity ->
-            val deserializedParams = cordaAvroDeserializer.deserialize(entity.parameters)
-                ?: throw CordaRuntimeException("Could not deserialize group parameters from the database entity.")
+            val signature = if(entity.signaturePublicKey != null && entity.signatureContent != null) {
+                CryptoSignatureWithKey(
+                    entity.signaturePublicKey!!.wrap(),
+                    entity.signatureContent!!.wrap(),
+                    entity.signatureContext?.let { cordaAvroDeserializer.deserialize(it) }
+                )
+            } else null
+            val signedGroupParameters = SignedGroupParameters(entity.parameters.wrap(), signature)
+            val params = groupParametersFactory.create(signedGroupParameters)
 
             Stream.of(
                 object : VersionedRecord<HoldingIdentity, GroupParameters> {
                     override val version = entity.epoch
                     override val isDeleted = false
                     override val key = context.virtualNodeInfo.holdingIdentity
-                    override val value = groupParametersFactory.create(deserializedParams)
+                    override val value = params
                 }
             )
         } ?: Stream.empty()
     }
+
+    private fun ByteArray.wrap() = ByteBuffer.wrap(this)
 }
