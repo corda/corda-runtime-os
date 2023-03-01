@@ -98,13 +98,14 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         )
     }
 
+    //Temporary code  to increment message id to debug the lifecycle of seed messages
     private fun String.incrementOrUuid() = try {
         if (this.contains("-")) {
             val text = this.substringBeforeLast('-')
             val number = this.substringAfterLast('-')
             "$text-${number.toInt() + 1}"
         } else
-        "${toInt() + 1}"
+            "${toInt() + 1}"
     } catch (e: NumberFormatException) {
         "${UUID.randomUUID()}"
     }
