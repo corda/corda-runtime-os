@@ -6,6 +6,7 @@ import net.corda.crypto.core.ShortHashException
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -32,6 +33,8 @@ internal class VirtualNodeValidationServiceImpl(
             && vnode.vaultDbOperationalStatus == OperationalStatus.INACTIVE
 
     override fun validateAndGetCpiByChecksum(cpiFileChecksum: String): CpiMetadata {
+        if(cpiFileChecksum.length > 12) throw InvalidInputDataException(
+            "Invalid holding identity short hash: Hex string has length of ${cpiFileChecksum.length} but should be 12 characters")
         val cpiByChecksum = cpiInfoReadService.getAll().filter {
             it.fileChecksum.toHexString().startsWith(cpiFileChecksum)
         }
