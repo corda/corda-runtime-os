@@ -10,6 +10,7 @@ cordaPipeline(
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false,
+    gitHubComments: true,
     combinedWorkere2eTests: false,
     // allow publishing artifacts to S3 bucket
     publishToMavenS3Repository: true,
