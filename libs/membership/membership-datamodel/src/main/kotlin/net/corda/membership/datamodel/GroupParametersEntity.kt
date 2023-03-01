@@ -37,13 +37,13 @@ class GroupParametersEntity(
     @Column(name = "parameters", nullable = false, updatable = false)
     val parameters: ByteArray,
 
-    @Column(name = "signature_public_key", nullable = true, updatable = false, columnDefinition = "BLOB")
+    @Column(name = "signature_public_key", nullable = true, updatable = false)
     val signaturePublicKey: ByteArray?,
 
-    @Column(name = "signature_context", nullable = true, updatable = false, columnDefinition = "BLOB")
+    @Column(name = "signature_context", nullable = true, updatable = false)
     val signatureContext: ByteArray?,
 
-    @Column(name = "signature_content", nullable = true, updatable = false, columnDefinition = "BLOB")
+    @Column(name = "signature_content", nullable = true, updatable = false)
     val signatureContent: ByteArray?,
 ) {
     override fun equals(other: Any?): Boolean {
