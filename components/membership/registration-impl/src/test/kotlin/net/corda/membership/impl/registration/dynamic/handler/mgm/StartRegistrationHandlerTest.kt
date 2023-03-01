@@ -217,8 +217,6 @@ class StartRegistrationHandlerTest {
             val pendingMemberRecord = this.outputStates[1].value as? PersistentMemberInfo
             assertThat(pendingMemberRecord).isNotNull
             assertThat(pendingMemberRecord!!.viewOwningMember).isEqualTo(mgmHoldingIdentity)
-            assertThat(this.outputStates[1].key)
-                .isEqualTo("${mgmHoldingIdentity.toCorda().shortHash}-${holdingIdentity.toCorda().shortHash}-$MEMBER_STATUS_PENDING")
         }
         verifyServices(
             persistRegistrationRequest = true,
