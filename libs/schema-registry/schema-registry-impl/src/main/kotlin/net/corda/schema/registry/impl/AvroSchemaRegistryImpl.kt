@@ -32,7 +32,7 @@ import java.util.zip.InflaterInputStream
 @Component(service = [AvroSchemaRegistry::class])
 class AvroSchemaRegistryImpl(
     private val options: Options = Options()
-): AvroSchemaRegistry {
+) : AvroSchemaRegistry {
 
     /**
      * The set of options available for the [AvroSchemaRegistryImpl].
@@ -84,16 +84,31 @@ class AvroSchemaRegistryImpl(
      * A cache of the fingerprints we've generated for prepending to the messages.  Used to save
      * regenerating the fingerprint each time.
      */
-    private val fingerprintsBySchema: ConcurrentHashMap<Schema, Fingerprint> =
-        ConcurrentHashMap<Schema, Fingerprint>()
+    private val fingerprintsBySchema: ConcurrentHashMap<Schema, Fingerprint> = ConcurrentHashMap<Schema, Fingerprint>()
+
+    /**
+     * [fingerprintsByClazz] is populated only with compile time class to fingerprint data, i.e. where the class or
+     * fingerprint is not coming in from an external source. External sources of schemas can mean there are multiple
+     * potential fingerprints per class, however this map will not reflect that, that information is only available
+     * in [clazzByFingerprint]
+     */
     private val fingerprintsByClazz: ConcurrentHashMap<Class<*>, Fingerprint> =
         ConcurrentHashMap<Class<*>, Fingerprint>()
 
     /**
+     * [clazzByFingerprint] is populated with every fingerprint, compile time or external. It is therefore likely to be
+     * bigger than [fingerprintsByClazz] and is not equal to the reverse mapping.
+     */
+    private val clazzByFingerprint: ConcurrentHashMap<Fingerprint, Class<*>> =
+        ConcurrentHashMap<Fingerprint, Class<*>>()
+
+    /**
      * Reverse mapping of [fingerprintsBySchema].
      */
-    private val schemasByFingerprint: ConcurrentHashMap<Fingerprint, Schema> =
-        ConcurrentHashMap<Fingerprint, Schema>()
+    private val schemasByFingerprint: ConcurrentHashMap<Fingerprint, Schema> = ConcurrentHashMap<Fingerprint, Schema>()
+
+    override val schemasByFingerprintSnapshot
+        get() = schemasByFingerprint.toMap()
 
     /**
      * Maps the things we'll need from a record by it's fingerprint.  Gives us the encoder/decoder on the class
@@ -105,8 +120,8 @@ class AvroSchemaRegistryImpl(
     private fun getFingerprint(schema: Schema): Fingerprint = fingerprintsBySchema[schema]
         ?: throw CordaRuntimeException("Could not find fingerprint for schema ${schema.fullName}")
 
-    private fun getFingerprint(clazz: Class<*>): Fingerprint = fingerprintsByClazz[clazz]
-        ?: throw CordaRuntimeException("Could not find fingerprint for class ${clazz.name}")
+    private fun getFingerprint(clazz: Class<*>): Fingerprint =
+        fingerprintsByClazz[clazz] ?: throw CordaRuntimeException("Could not find fingerprint for class ${clazz.name}")
 
     private fun getSchema(fingerprint: Fingerprint) = schemasByFingerprint[fingerprint]
         ?: throw CordaRuntimeException("Could not find schema for fingerprint ${toHexString(fingerprint.bytes())}")
@@ -148,7 +163,8 @@ class AvroSchemaRegistryImpl(
             }
 
             val decoder: (ByteArray, Schema, T?) -> T = { bytes, writerSchema, obj ->
-                val reader: SpecificDatumReader<T> = SpecificDatumReader(writerSchema, schema, SpecificData.getForClass(it))
+                val reader: SpecificDatumReader<T> =
+                    SpecificDatumReader(writerSchema, schema, SpecificData.getForClass(it))
                 val binaryDecoder = DecoderFactory.get().binaryDecoder(bytes, null)
                 reader.read(obj, binaryDecoder)
             }
@@ -158,10 +174,7 @@ class AvroSchemaRegistryImpl(
     }
 
     override fun <T : Any> addSchema(
-        schema: Schema,
-        clazz: Class<T>,
-        encoder: (T) -> ByteArray,
-        decoder: (ByteArray, Schema, T?) -> T
+        schema: Schema, clazz: Class<T>, encoder: (T) -> ByteArray, decoder: (ByteArray, Schema, T?) -> T
     ) = addSchemaLocal(schema, clazz, encoder, decoder)
 
     override fun addSchemaOnly(
@@ -169,28 +182,39 @@ class AvroSchemaRegistryImpl(
     ) = addSchemaLocal<Any>(schema, null, null, null)
 
     private fun <T : Any> addSchemaLocal(
-        schema: Schema,
-        clazz: Class<T>?,
-        encoder: ((T) -> ByteArray)?,
-        decoder: ((ByteArray, Schema, T?) -> T)?
+        schema: Schema, clazz: Class<T>?, encoder: ((T) -> ByteArray)?, decoder: ((ByteArray, Schema, T?) -> T)?
     ) {
         log.debug { "Adding Schema: ${schema.fullName} for class $clazz" }
         // Quick exit before we do the heavy fingerprint operation
         if (!fingerprintsBySchema.containsKey(schema)) {
             val fingerprint = Fingerprint(SchemaNormalization.parsingFingerprint("SHA-256", schema))
+            if (clazz == null) {
+                log.info("Adding Schema only for fingerprint: $fingerprint")
+            }
             // Strictly not necessary to use `ifAbsent` but it's a bit of extra protection against exceptions
             // from dual adds.
             fingerprintsBySchema.putIfAbsent(schema, fingerprint)
             schemasByFingerprint.putIfAbsent(fingerprint, schema)
-            if (clazz == null || encoder == null || decoder == null) {
-                log.debug { "Skipping class type, encoder, and decoder registration as one or more values are missing." }
-                return
+            if (clazz == null) {
+                // Class must be extracted from schema. We already have a list of compile time classes we support
+                // deserializing into, so we can search this list to find a name match.
+                fingerprintsByClazz.keys.firstOrNull { it.name == schema.fullName }?.let { classFromSchema ->
+                    clazzByFingerprint.putIfAbsent(fingerprint, classFromSchema)
+                } ?: log.info("Cannot find $clazz in schema registry, this schema will be ignored")
+                // Do not populate any other maps here, they are reserved for compile time classes
+            } else {
+                // Class is known at compile time
+                fingerprintsByClazz.putIfAbsent(clazz, fingerprint)
+                clazzByFingerprint.putIfAbsent(fingerprint, clazz)
+                if (encoder == null || decoder == null) {
+                    log.debug { "Skipping class type, encoder, and decoder registration as one or more values are missing." }
+                    return
+                }
+
+                recordDataByFingerprint.putIfAbsent(
+                    fingerprint, RecordData(encoder, decoder, clazz)
+                )
             }
-            fingerprintsByClazz.putIfAbsent(clazz, fingerprint)
-            recordDataByFingerprint.putIfAbsent(
-                fingerprint,
-                RecordData(encoder, decoder, clazz)
-            )
         }
     }
 
@@ -205,8 +229,9 @@ class AvroSchemaRegistryImpl(
                 encoder.invoke(obj)
             }
         } catch (ex: Throwable) {
-            log.error("Error invoking encoder serializing instance of class ${obj::class.java.name} with schema " +
-                    "${fingerprint.schema}")
+            log.error(
+                "Error invoking encoder serializing instance of class ${obj::class.java.name} with schema " + "${fingerprint.schema}"
+            )
             throw ex
         }
         val envelope = AvroEnvelope(MAGIC, fingerprint, options.toFlags(), ByteBuffer.wrap(payload))
@@ -237,7 +262,8 @@ class AvroSchemaRegistryImpl(
 
     override fun getClassType(bytes: ByteBuffer): Class<*> {
         val envelope = decodeAvroEnvelope(bytes.array())
-        return getRecordData(envelope.fingerprint).clazz
+        return clazzByFingerprint[envelope.fingerprint]
+            ?: throw CordaRuntimeException("Could not find class for fingerprint: ${envelope.fingerprint}")
     }
 
     private fun AvroEnvelope.encode(): ByteArray {

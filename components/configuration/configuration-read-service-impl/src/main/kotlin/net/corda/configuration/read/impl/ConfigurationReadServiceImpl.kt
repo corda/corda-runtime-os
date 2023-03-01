@@ -11,8 +11,10 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.Resource
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
+import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -34,10 +36,15 @@ class ConfigurationReadServiceImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigMerger::class)
-    private val configMerger: ConfigMerger
+    private val configMerger: ConfigMerger,
+    @Reference(service = AvroSchemaRegistry::class)
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory
 ) : ConfigurationReadService, ConfigReconcilerReader, ConfigurationGetService {
 
-    private val eventHandler = ConfigReadServiceEventHandler(subscriptionFactory, configMerger)
+    private val eventHandler
+        = ConfigReadServiceEventHandler(subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
 
     override val lifecycleCoordinatorName =
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()

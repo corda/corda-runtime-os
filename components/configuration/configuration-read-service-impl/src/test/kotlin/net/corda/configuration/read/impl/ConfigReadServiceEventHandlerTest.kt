@@ -75,13 +75,13 @@ internal class ConfigReadServiceEventHandlerTest {
     fun `BootstrapConfigProvided triggers SetupSubscription to be sent on new config`() {
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
         verify(coordinator).postEvent(capture(lifecycleEventCaptor))
-        assertThat(lifecycleEventCaptor.firstValue is SetupSubscription)
+        assertThat(lifecycleEventCaptor.firstValue is SetupConfigSubscription)
     }
 
     @Test
     fun `Event handler works when states in correct order`() {
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
-        configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
+        configReadServiceEventHandler.processEvent(SetupConfigSubscription(), coordinator)
         `when`(coordinator.status).thenReturn(LifecycleStatus.DOWN)
 
         verify(compactedSubscription).start()
@@ -100,7 +100,7 @@ internal class ConfigReadServiceEventHandlerTest {
         configReadServiceEventHandler.processEvent(StartEvent(), coordinator)
         // The first value captured will be from the BootstrapConfig being provided
         verify(coordinator, times(2)).postEvent(capture(lifecycleEventCaptor))
-        assertThat(lifecycleEventCaptor.secondValue is SetupSubscription)
+        assertThat(lifecycleEventCaptor.secondValue is SetupConfigSubscription)
     }
 
     @Test
@@ -113,7 +113,7 @@ internal class ConfigReadServiceEventHandlerTest {
     @Test
     fun `Stop event removes the subscription`() {
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(bootConfig), coordinator)
-        configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
+        configReadServiceEventHandler.processEvent(SetupConfigSubscription(), coordinator)
         configReadServiceEventHandler.processEvent(StopEvent(), coordinator)
         verify(compactedSubscription).close()
     }
@@ -181,7 +181,7 @@ internal class ConfigReadServiceEventHandlerTest {
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
         verify(coordinator, times(1)).postEvent(capture(lifecycleEventCaptor))
-        assertThat(lifecycleEventCaptor.firstValue is SetupSubscription)
+        assertThat(lifecycleEventCaptor.firstValue is SetupConfigSubscription)
     }
 
     @Test

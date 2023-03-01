@@ -174,6 +174,9 @@ internal class AvroSchemaRegistryImplTest {
 
         registry.addSchemaOnly(previousSchema)
 
+        // Check that the class type for the message resolves correctly to the EvolvedMessage type
+        assertThat(registry.getClassType(ByteBuffer.wrap(encoded))).isEqualTo(EvolvedMessage::class.java)
+
         val evolvedMessage = EvolvedMessage(0, "")
         val decoded = registry.deserialize<EvolvedMessage>(ByteBuffer.wrap(encoded), evolvedMessage)
         assertThat(decoded.flags).isEqualTo(5)
