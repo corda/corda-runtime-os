@@ -707,12 +707,16 @@ class VirtualNodeRpcTest {
             val cpiV2 = getCpiChecksum(upgradeTestingCpiName, "v2")
             val requestId = triggerVirtualNodeUpgrade(bobHoldingId, cpiV2)
 
-            val statusResponse = getVirtualNodeStatus(requestId!!)
-            val state = statusResponse["response"].single()["state"].textValue()
-            assertThat(state).isIn("COMPLETED", "IN_PROGRESS")
+            val statusAfterUpgrade = getVirtualNodeOperationStatus(requestId!!)
+            val operationState = statusAfterUpgrade["response"].single()["state"].textValue()
+            assertThat(operationState).isIn("COMPLETED", "IN_PROGRESS")
 
             eventuallyAssertVirtualNodeHasCpi(bobHoldingId, upgradeTestingCpiName, "v2")
             awaitVirtualNodeOperationCompletion(bobHoldingId)
+
+            val statusAfterCompletion = getVirtualNodeOperationStatus(requestId)
+            val operationStateAfterCompletion = statusAfterCompletion["response"].single()["state"].textValue()
+            assertThat(operationStateAfterCompletion).isEqualTo("COMPLETED")
         }
     }
 
@@ -740,7 +744,7 @@ class VirtualNodeRpcTest {
         return vNodeJson["requestId"].textValue()
     }
 
-    private fun ClusterBuilder.getVirtualNodeStatus(requestId: String): JsonNode {
+    private fun ClusterBuilder.getVirtualNodeOperationStatus(requestId: String): JsonNode {
         val operationStatus = assertWithRetry {
             command { getVNodeOperationStatus(requestId) }
             condition { it.code == 200 }
