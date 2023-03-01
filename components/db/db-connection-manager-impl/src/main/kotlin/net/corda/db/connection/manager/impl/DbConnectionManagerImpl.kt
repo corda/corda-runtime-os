@@ -77,11 +77,12 @@ class DbConnectionManagerImpl (
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 
-    override fun testAllConnections(): Boolean {
-        return dbConnectionsRepository?.testAllConnections() ?: run {
-            logger.warn("DB check scheduled while dbConnectionsRepository is null")
-            false
-        }
+    override fun testConnection(): Boolean = try {
+        checkDatabaseConnection(getClusterDataSource())
+        true
+    }  catch (e: DBConfigurationException) {
+        logger.debug("DB check failed", e)
+        false
     }
 
     override val isRunning: Boolean

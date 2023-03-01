@@ -6,7 +6,7 @@ import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
-import net.corda.flow.rpcops.FlowRPCOpsService
+import net.corda.flow.rest.FlowRestResourceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.DependentComponents
@@ -46,8 +46,8 @@ class RestProcessorImpl @Activate constructor(
     private val restGateway: RestGateway,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = FlowRPCOpsService::class)
-    private val flowRPCOpsService: FlowRPCOpsService,
+    @Reference(service = FlowRestResourceService::class)
+    private val flowRestResourceService: FlowRestResourceService,
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
     @Reference(service = CpiInfoReadService::class)
@@ -87,7 +87,7 @@ class RestProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configReadService,
         ::restGateway,
-        ::flowRPCOpsService,
+        ::flowRestResourceService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
         ::memberResourceClient,

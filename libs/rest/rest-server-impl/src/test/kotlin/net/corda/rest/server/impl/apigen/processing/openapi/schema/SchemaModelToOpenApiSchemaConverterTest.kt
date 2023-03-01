@@ -20,7 +20,7 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
             enum = listOf("A", "B", "C")
         )
 
-        val result = net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.convert(model)
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertEquals(3, result.enum.size)
         assertEquals("A", result.enum.first())
@@ -32,7 +32,7 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
             additionalProperties = SchemaModel(DataType.STRING, null)
         )
 
-        val result = net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.convert(model)
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertEquals("string", (result.additionalProperties as Schema<*>).type)
         assertEquals(null, (result.additionalProperties as Schema<*>).format)
@@ -44,7 +44,7 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
             additionalProperties = null
         )
 
-        val result = net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.convert(model)
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertEquals(null, result.additionalProperties)
     }
@@ -58,7 +58,7 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
             )
         )
 
-        val result = net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.convert(model)
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertEquals(2, result.properties.size)
     }
@@ -69,7 +69,7 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
             items = null
         )
 
-        val result = net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.convert(model)
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertNull((result as ArraySchema).items)
     }
@@ -80,7 +80,7 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
             enum = null
         )
 
-        val result = net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.convert(model)
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertNull(result.enum)
     }
@@ -89,7 +89,7 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
     fun `convert JsonObject succeeds`() {
         val model = JsonSchemaModel()
 
-        val result = net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.convert(model)
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", result.example)
         assertEquals("Can be any value - string, number, boolean, array or object.", result.description)

@@ -14,8 +14,17 @@ import java.util.Objects
  * @property ref The [StateRef] component of the current [StateAndRef].
  */
 data class StateAndRefImpl<out T : ContractState>(
-    override val state: TransactionState<T>, override val ref: StateRef
-) : StateAndRef<T> {
+    private val state: TransactionState<T>,
+    private val ref: StateRef
+) : StateAndRef<@UnsafeVariance T> {
+
+    override fun getState(): TransactionState<@UnsafeVariance T> {
+        return state
+    }
+
+    override fun getRef(): StateRef {
+        return ref
+    }
 
     /**
      * Determines whether the specified object is equal to the current object.
@@ -24,7 +33,11 @@ data class StateAndRefImpl<out T : ContractState>(
      * @return Returns true if the specified object is equal to the current object; otherwise, false.
      */
     override fun equals(other: Any?): Boolean {
-        return this === other || other != null && other is StateAndRefImpl<*> && other.ref == ref && other.state == state
+        return this === other
+                || other != null
+                && other is StateAndRefImpl<*>
+                && other.ref == ref
+                && other.state == state
     }
 
     /**

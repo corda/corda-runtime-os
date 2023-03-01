@@ -6,17 +6,18 @@ import java.security.PublicKey
 import java.util.Objects
 
 @BelongsToContract(UtxoContractExample::class)
-class UtxoStateClassExample(
-    val testField: String,
-    override val participants: List<PublicKey>
-) : ContractState {
-    override fun equals(other: Any?): Boolean =
-        (this === other) || (
-            (other is UtxoStateClassExample) &&
-                (other.testField == testField) &&
-                (other.participants.size == participants.size) &&
-                other.participants.containsAll(participants)
-            )
+class UtxoStateClassExample(val testField: String, private val participants: List<PublicKey>) : ContractState {
+
+    override fun getParticipants(): List<PublicKey> {
+        return participants
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return this === other
+                || other is UtxoStateClassExample
+                && other.testField == testField
+                && other.participants == participants
+    }
 
     override fun hashCode(): Int = Objects.hash(testField, participants)
 }

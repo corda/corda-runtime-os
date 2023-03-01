@@ -28,6 +28,7 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
@@ -55,6 +56,8 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
@@ -122,6 +125,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -180,11 +185,15 @@ class StaticMemberRegistrationService @Activate constructor(
                 ex,
             )
         }
-        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
-        val alreadyRegisteredMember = membershipGroupReader.lookup(member.x500Name)
-        if (alreadyRegisteredMember?.isActive == true) {
+        val latestStatuses = membershipQueryClient.queryRegistrationRequestsStatus(
+            member,
+            member.x500Name,
+            listOf(RegistrationStatus.APPROVED)
+        ).getOrThrow()
+        if (latestStatuses.isNotEmpty()) {
             throw InvalidMembershipRegistrationException(
                 "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
+                    "See registrations: ${latestStatuses.map { it.registrationId }}. " +
                     "Can not re-register."
             )
         }
@@ -198,12 +207,14 @@ class StaticMemberRegistrationService @Activate constructor(
                 requireNotNull(this) { "Could not find static member list in group policy file." }
                 map { StaticMember(it, endpointInfoFactory::create) }
             }
+            val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
             val (memberInfo, records) = parseMemberTemplate(
                 member,
                 groupPolicy,
                 keyScheme,
                 roles,
                 staticMemberList,
+                membershipGroupReader,
             )
             (records + createHostedIdentity(member, groupPolicy)).publish()
 
@@ -282,6 +293,27 @@ class StaticMemberRegistrationService @Activate constructor(
         ).getOrThrow()
     }
 
+    private fun validateNotaryDetails(
+        registeringMember: StaticMember,
+        staticMemberList: List<StaticMember>,
+        notaryInfo: Collection<Pair<String, String>>,
+        membershipGroupReader: MembershipGroupReader,
+    ) {
+        val serviceName = notaryInfo.firstOrNull { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }?.second
+        //The notary service x500 name is different from the notary virtual node being registered.
+        require(registeringMember.name != serviceName) {
+            "Notary service name invalid: Notary service name $serviceName and virtual node name cannot be the same."
+        }
+        //The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
+        require(staticMemberList.none { it.name == serviceName }) {
+            "Notary service name invalid: There is a virtual node having the same name $serviceName."
+        }
+        // Allow only a single notary virtual node under each notary service.
+        require(membershipGroupReader.lookup().none { it.notaryDetails?.serviceName.toString() == serviceName }) {
+            throw InvalidMembershipRegistrationException("Notary service '$serviceName' already exists.")
+        }
+    }
+
     /**
      * Parses the static member list template, creates the MemberInfo for the registering member and the records for the
      * kafka publisher.
@@ -293,15 +325,19 @@ class StaticMemberRegistrationService @Activate constructor(
         keyScheme: String,
         roles: Collection<MemberRole>,
         staticMemberList: List<StaticMember>,
+        membershipGroupReader: MembershipGroupReader,
     ): Pair<MemberInfo, List<Record<String, PersistentMemberInfo>>> {
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
         val memberId = registeringMember.shortHash.value
 
-        val staticMemberInfo = staticMemberList.firstOrNull {
+        val staticMemberInfo = staticMemberList.singleOrNull {
             MemberX500Name.parse(it.name!!) == memberName
-        } ?: throw IllegalArgumentException("Our membership $memberName is not listed in the static member list.")
+        } ?: throw IllegalArgumentException(
+            "Our membership $memberName is either not listed in the static member list or there is another member " +
+                    "with the same name."
+        )
 
         validateStaticMemberDeclaration(staticMemberInfo)
         // single key scheme used for both session and ledger key
@@ -311,6 +347,19 @@ class StaticMemberRegistrationService @Activate constructor(
             keyScheme,
             memberId,
         )
+
+        fun configureNotaryKey(): List<KeyDetails> {
+            hsmRegistrationClient.assignSoftHSM(memberId, NOTARY)
+            return listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
+        }
+
+        val notaryInfo = roles.toMemberInfo(::configureNotaryKey)
+        // validate if provided notary details are correct to fail-fast,
+        // before assigning more HSMs, generating other keys for member
+        if(notaryInfo.isNotEmpty()) {
+            validateNotaryDetails(staticMemberInfo, staticMemberList, notaryInfo, membershipGroupReader)
+        }
+
         hsmRegistrationClient.assignSoftHSM(memberId, LEDGER)
         val ledgerKey = keysFactory.getOrGenerateKeyPair(LEDGER)
 
@@ -329,11 +378,6 @@ class StaticMemberRegistrationService @Activate constructor(
 
         val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
 
-        fun configureNotaryKey(): List<KeyDetails> {
-            hsmRegistrationClient.assignSoftHSM(memberId, NOTARY)
-            return listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
-        }
-
         @Suppress("SpreadOperator")
         val memberContext = mapOf(
             PARTY_NAME to memberName.toString(),
@@ -343,7 +387,7 @@ class StaticMemberRegistrationService @Activate constructor(
             LEDGER_KEYS_KEY.format(0) to ledgerKey.pem,
             LEDGER_KEY_HASHES_KEY.format(0) to ledgerKey.hash.toString(),
             *convertEndpoints(staticMemberInfo).toTypedArray(),
-            *roles.toMemberInfo(::configureNotaryKey).toTypedArray(),
+            *notaryInfo.toTypedArray(),
             SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
             PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
             MEMBER_CPI_NAME to cpi.name,

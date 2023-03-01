@@ -11,7 +11,7 @@ import java.util.Objects
 class ConsensualTransactionBuilderImpl(
     private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    override val states: MutableList<ConsensualState> = mutableListOf(),
+    private val states: MutableList<ConsensualState> = mutableListOf(),
 ) : ConsensualTransactionBuilder {
 
     private var alreadySigned = false
@@ -45,5 +45,9 @@ class ConsensualTransactionBuilderImpl(
 
     override fun toString(): String {
         return "ConsensualTransactionBuilderImpl(states=$states)"
+    }
+
+    override fun getStates(): List<ConsensualState> {
+        return states
     }
 }
