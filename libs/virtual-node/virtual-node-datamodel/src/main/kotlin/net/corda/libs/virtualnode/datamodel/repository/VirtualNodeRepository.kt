@@ -25,6 +25,9 @@ interface VirtualNodeRepository {
      */
     fun find(entityManager: EntityManager, holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
 
+    /**
+     * Find a virtual node operation by the given operation requestId
+     */
     fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String) : List<VirtualNodeOperationDto>
 
     /**

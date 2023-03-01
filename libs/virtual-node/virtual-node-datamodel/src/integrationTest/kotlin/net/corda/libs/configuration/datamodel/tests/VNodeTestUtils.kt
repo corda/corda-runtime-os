@@ -4,8 +4,10 @@ import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
+import net.corda.libs.virtualnode.datamodel.entities.OperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
+import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
 import net.corda.orm.utils.transaction
 import net.corda.test.util.TestRandom
 import net.corda.v5.base.types.MemberX500Name
@@ -54,6 +56,28 @@ internal object VNodeTestUtils {
 
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }
         entityManagerFactory.createEntityManager().transaction { em -> return em.merge(virtualNode) }
+    }
+
+    fun newVNodeOperation(
+        entityManagerFactory: EntityManagerFactory,
+        requestId: String,
+        data: String,
+        state: VirtualNodeOperationState,
+        operationType: OperationType
+    ) {
+        val operation = VirtualNodeOperationEntity(
+            UUID.randomUUID().toString(),
+            requestId,
+            data,
+            state,
+            operationType,
+            Instant.now(),
+            Instant.now(),
+            Instant.now(),
+            null
+        )
+
+        entityManagerFactory.createEntityManager().transaction { em -> em.persist(operation) }
     }
 
     fun newDbConnection(connectionId: UUID, privilege: DbPrivilege) =

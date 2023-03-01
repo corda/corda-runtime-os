@@ -127,6 +127,28 @@ class VirtualNodeRepositoryTest {
     }
 
     @Test
+    fun findVirtualNodeOperationByRequestId() {
+        val requestId = UUID.randomUUID().toString()
+
+        VNodeTestUtils.newVNodeOperation(
+            entityManagerFactory,
+            requestId,
+            "data",
+            VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE
+        )
+
+        val virtualNodeOperation = entityManagerFactory.createEntityManager().use {
+            VirtualNodeRepositoryImpl().findVirtualNodeOperationByRequestId(it, requestId)
+        }
+
+        assertThat(virtualNodeOperation).isNotEmpty
+        assertNotNull(virtualNodeOperation[0].operationType)
+        assertNotNull(virtualNodeOperation[0].state)
+        assertEquals(virtualNodeOperation[0].requestData.toString(), "data")
+    }
+
+    @Test
     fun `find returns null if no vnode found`() {
         // "set up"
         val numberOfVNodes = 5
