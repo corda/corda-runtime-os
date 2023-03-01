@@ -15,7 +15,7 @@ public interface SignatureSpecService {
     /**
      * Works out a default signature spec for specified public key, given current security policies.
      *
-     * @param publicKey the public key to be used for signing
+     * @param publicKey The public key to be used for signing.
      *
      * @return An appropriate {@link SignatureSpec}, or {@code null} if nothing is available for the key type.
      */
@@ -26,10 +26,10 @@ public interface SignatureSpecService {
     /**
      * Works out a default signature spec for specified public key and digest algorithm given current security policies.
      *
-     * @param publicKey the public key to be used for signing
-     * @param digestAlgorithmName the digest algorithm to use, e.g. {@link DigestAlgorithmName#SHA2_256}
+     * @param publicKey The public key to be used for signing.
+     * @param digestAlgorithmName The digest algorithm to use, for example, {@link DigestAlgorithmName#SHA2_256}.
      *
-     * @return An appropriate {@link SignatureSpec}, or null if nothing is available for the key type
+     * @return An appropriate {@link SignatureSpec}, or null if nothing is available for the key type.
      */
     @Suspendable
     @Nullable
@@ -38,7 +38,7 @@ public interface SignatureSpecService {
     /**
      * Returns compatible signature specs for specified public key, given current security policies.
      *
-     * @param publicKey the public key to be used for signing
+     * @param publicKey The public key to be used for signing.
      */
     @Suspendable
     @NotNull
@@ -47,8 +47,8 @@ public interface SignatureSpecService {
     /**
      * Returns compatible signature specs for specified public key and digest algorithm, given current security policies.
      *
-     * @param publicKey the public key to be used for signing
-     * @param digestAlgorithmName the digest algorithm to use, e.g. [DigestAlgorithmName.SHA2_256]
+     * @param publicKey The public key to be used for signing.
+     * @param digestAlgorithmName The digest algorithm to use, for example, [DigestAlgorithmName.SHA2_256].
      */
     @Suspendable
     @NotNull
