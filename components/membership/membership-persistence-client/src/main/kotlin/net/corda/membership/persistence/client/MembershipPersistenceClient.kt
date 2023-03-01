@@ -56,6 +56,8 @@ interface MembershipPersistenceClient : Lifecycle {
      * the initial snapshot that contains basic fields defined in [GroupParameters]. The group parameters persisted in
      * this method do not contain other properties such as notary service information.
      *
+     * This operation is idempotent.
+     *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      *
      * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
@@ -74,7 +76,7 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param groupParameters The group parameters to persist.
      *
-     * @return The latest group parameters for that .
+     * @return The latest group parameters for that holding identity.
      */
     fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
@@ -89,6 +91,8 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * If adding a notary vnode to an existing notary service, the optional plugin name, if specified, must match
      * that of the notary service.
+     *
+     * This operation is idempotent.
      *
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param notary [MemberInfo] of the notary to be added.
