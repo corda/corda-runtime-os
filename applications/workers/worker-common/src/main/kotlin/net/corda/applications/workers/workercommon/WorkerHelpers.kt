@@ -127,7 +127,7 @@ class WorkerHelpers {
             //  - have database configuration records applied
             //  - have unspecified fields filled in with defaults from the schema. (This part is handled later)
 
-            return bootConfig
+            return bootConfigWithSecrets
         }
 
         /**
