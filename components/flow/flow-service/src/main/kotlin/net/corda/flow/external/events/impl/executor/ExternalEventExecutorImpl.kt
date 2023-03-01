@@ -7,7 +7,6 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -25,18 +24,17 @@ class ExternalEventExecutorImpl @Activate constructor(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
-        return uncheckedCast(
-            with(flowFiberService.getExecutingFiber()) {
-                suspend(
-                    FlowIORequest.ExternalEvent(
-                        requestId,
-                        factoryClass,
-                        parameters,
-                        externalContext(this)
-                    )
+        @Suppress("unchecked_cast")
+        return with(flowFiberService.getExecutingFiber()) {
+            suspend(
+                FlowIORequest.ExternalEvent(
+                    requestId,
+                    factoryClass,
+                    parameters,
+                    externalContext(this)
                 )
-            }
-        )
+            )
+        } as RESUME
     }
 
     private fun externalContext(flowFiber: FlowFiber): Map<String, String> =

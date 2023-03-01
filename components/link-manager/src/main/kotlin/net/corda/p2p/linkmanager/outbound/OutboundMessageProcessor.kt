@@ -27,10 +27,10 @@ import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.Component
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

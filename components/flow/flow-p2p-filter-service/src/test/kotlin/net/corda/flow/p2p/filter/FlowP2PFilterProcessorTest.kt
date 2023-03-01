@@ -14,7 +14,6 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas
-import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -90,8 +89,8 @@ class FlowP2PFilterProcessorTest {
 
         assertThat(output.size).isEqualTo(1)
         val first = output.first()
-        val flowMapperEvent: FlowMapperEvent = uncheckedCast(first.value)
-        val sessionEvent: SessionEvent = uncheckedCast(flowMapperEvent.payload)
+        val flowMapperEvent = first.value as FlowMapperEvent
+        val sessionEvent = flowMapperEvent.payload as SessionEvent
         assertThat(first.key).isEqualTo("$testValue-INITIATED")
         assertThat(sessionEvent.sessionId).isEqualTo("$testValue-INITIATED")
         assertThat(sessionEvent.messageDirection).isEqualTo(MessageDirection.INBOUND)

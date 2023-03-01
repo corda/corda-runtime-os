@@ -1,7 +1,7 @@
 package net.corda.components.rbac
 
-import net.corda.httprpc.security.read.RestSecurityManager
-import net.corda.httprpc.security.read.rbac.RBACSecurityManager
+import net.corda.rest.security.read.RestSecurityManager
+import net.corda.rest.security.read.rbac.RBACSecurityManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

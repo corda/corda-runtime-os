@@ -33,7 +33,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.MemberInfo
@@ -53,7 +53,7 @@ internal class StartRegistrationHandler(
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SERIAL_CONST = "1"
     }
 
@@ -108,7 +108,8 @@ internal class StartRegistrationHandler(
                 existingMemberInfo is MembershipQueryResult.Success
                         && (existingMemberInfo.payload.isEmpty()
                         || !existingMemberInfo.payload.sortedBy { it.modifiedTime }.last().isActive)
-            ) { "The latest member info for given member is in 'Active' status" }
+            ) { "The latest member info for given member is in 'Active' status or " +
+                    "there is a member with the same name." }
 
             // The group ID matches the group ID of the MGM
             validateRegistrationRequest(
@@ -121,7 +122,7 @@ internal class StartRegistrationHandler(
             ) { "Registering member has not specified any endpoints" }
 
             // Validate role-specific information if any role is set
-            validateRoleInformation(pendingMemberInfo)
+            validateRoleInformation(mgmHoldingId, pendingMemberInfo)
 
             // Persist pending member info
             membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
@@ -216,7 +217,7 @@ internal class StartRegistrationHandler(
         )
     }
 
-    private fun validateRoleInformation(member: MemberInfo) {
+    private fun validateRoleInformation(mgmHoldingId: HoldingIdentity, member: MemberInfo) {
         // If role is set to notary, notary details are specified
         member.notaryDetails?.let { notary ->
             validateRegistrationRequest(
@@ -227,6 +228,18 @@ internal class StartRegistrationHandler(
                     it.isNotBlank()
                 ) { "Registering member has specified an invalid notary service plugin type." }
             }
+            // The notary service x500 name is different from the notary virtual node being registered.
+            validateRegistrationRequest(
+                member.name != notary.serviceName
+            ) { "The virtual node `${member.name}` and the notary service `${notary.serviceName}`" +
+                    " name cannot be the same." }
+            // The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
+            validateRegistrationRequest(
+                membershipQueryClient.queryMemberInfo(
+                    mgmHoldingId,
+                    listOf(HoldingIdentity(notary.serviceName, member.groupId))
+                ).getOrThrow().firstOrNull() == null
+            ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
         }
     }
 

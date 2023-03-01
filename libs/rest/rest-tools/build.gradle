@@ -12,6 +12,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation project(':libs:rest:rest')
     implementation project(':libs:rest:rest-common')
+    implementation project(':libs:utilities')
 
     compileOnly "org.osgi:osgi.annotation"
 }

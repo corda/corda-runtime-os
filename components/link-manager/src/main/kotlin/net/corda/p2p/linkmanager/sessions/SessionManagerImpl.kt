@@ -71,13 +71,13 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourIdNotInMembe
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerHashNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.validationFailedWarning
-import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
-import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.trace
+import net.corda.utilities.trace
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda

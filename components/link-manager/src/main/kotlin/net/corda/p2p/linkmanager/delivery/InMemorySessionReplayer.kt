@@ -17,9 +17,10 @@ import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.util.debug
+import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")

@@ -13,7 +13,7 @@ group 'net.corda.cli.deployment'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
@@ -21,9 +21,9 @@ dependencies {
     kapt "org.pf4j:pf4j:$pf4jVersion"
     kapt "info.picocli:picocli:$picocliVersion"
 
-
     implementation project(":libs:configuration:configuration-core")
 
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"

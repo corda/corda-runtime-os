@@ -124,7 +124,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String,
-        registrationRequestStatus: RegistrationStatus
+        registrationRequestStatus: RegistrationStatus,
+        reason: String?,
     ): MembershipPersistenceResult<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)

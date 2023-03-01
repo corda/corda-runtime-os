@@ -129,7 +129,8 @@ class MembershipQueryClientImpl(
             registrationSent = this.registrationSent,
             registrationLastModified = this.registrationLastModified,
             protocolVersion = this.registrationProtocolVersion,
-            memberContext = this.memberProvidedContext
+            memberContext = this.memberProvidedContext,
+            reason = this.reason,
         )
     }
 

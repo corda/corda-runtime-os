@@ -28,6 +28,7 @@ internal class UpdateRegistrationRequestStatusHandler(
             } else {
                 registrationRequest.status = request.registrationStatus.name
                 registrationRequest.lastModified = clock.instant()
+                registrationRequest.reason = request.reason
                 em.merge(registrationRequest)
             }
         }

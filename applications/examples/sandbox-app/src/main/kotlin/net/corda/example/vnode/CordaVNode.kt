@@ -27,7 +27,7 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
@@ -169,7 +169,7 @@ class CordaVNode @Activate constructor(
             dumpHeap("loaded")
 
             // Checkpoint: We have created a sandbox for this CPI.
-            val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity)
+            val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity, vnodeInfo.cpiIdentifier)
             logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map(CpkMetadata::cpkId))
             dumpHeap("created")
 
