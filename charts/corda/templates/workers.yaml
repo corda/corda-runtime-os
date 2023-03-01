@@ -1,0 +1,15 @@
+{{- include "corda.worker" ( list $ .Values.workers.crypto "crypto"
+  ( dict "clusterDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
+) }}
+{{- include "corda.worker" ( list $ .Values.workers.db "db"
+  ( dict "clusterDbAccess" true )
+) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow "flow" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
+  ( dict "httpPort" 8080 )
+) }}
+{{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.rest "rest"
+  ( dict "httpPort" 8888 )
+) }}
