@@ -1,8 +1,8 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.api.CordaCliPlugin
-import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
-import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import org.pf4j.Extension
@@ -32,7 +32,7 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."]
     )
-    class NetworkPlugin : HttpRpcCommand(), CordaCliPlugin {
+    class NetworkPlugin : RestCommand(), CordaCliPlugin {
 
         @Suppress("LongParameterList")
         @CommandLine.Command(
@@ -79,7 +79,7 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
             require(holdingIdentityShortHash != null) { "Holding identity short hash was not provided." }
 
             var result: List<RestMemberInfo>
-            createHttpRpcClient(MemberLookupRestResource::class).use {
+            createRestClient(MemberLookupRestResource::class).use {
                 val connection = it.start()
                 with(connection.proxy) {
                     try {

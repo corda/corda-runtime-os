@@ -101,10 +101,10 @@ abstract class BaseOnboard : Runnable {
     var mtls: Boolean = false
 
     @Option(
-        names = ["--rpc-worker-deployment-name"],
-        description = ["The RPC worker deployment name (default to corda-rpc-worker)"]
+        names = ["--rest-worker-deployment-name"],
+        description = ["The REST worker deployment name (default to corda-rest-worker)"]
     )
-    var rpcWorkerDeploymentName: String = "corda-rpc-worker"
+    var restWorkerDeploymentName: String = "corda-rest-worker"
 
     @Option(
         names = ["--tls-certificate-subject"],
@@ -119,18 +119,18 @@ abstract class BaseOnboard : Runnable {
         ObjectMapper()
     }
 
-    private val rpcPassword by lazy {
+    private val restPassword by lazy {
         restPasswordFromClusterName(cordaClusterName)
     }
 
     private val url by lazy {
-        urlFromClusterName(cordaClusterName, rpcWorkerDeploymentName)
+        urlFromClusterName(cordaClusterName, restWorkerDeploymentName)
     }
 
     protected fun setupClient() {
         Unirest.config()
             .verifySsl(false)
-            .setDefaultBasicAuth("admin", rpcPassword)
+            .setDefaultBasicAuth("admin", restPassword)
             .defaultBaseUrl(url)
     }
 

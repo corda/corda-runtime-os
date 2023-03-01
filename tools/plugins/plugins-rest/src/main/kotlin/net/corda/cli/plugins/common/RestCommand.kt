@@ -3,25 +3,25 @@ package net.corda.cli.plugins.common
 import org.pf4j.ExtensionPoint
 import picocli.CommandLine.Option
 
-abstract class HttpRpcCommand : ExtensionPoint {
+abstract class RestCommand : ExtensionPoint {
 
     @Option(
         names = ["-t", "--target"],
         required = true,
-        description = ["The target address of the HTTP RPC Endpoint (e.g. `https://host:port`)"]
+        description = ["The target address of the REST Endpoint (e.g. `https://host:port`)"]
     )
     lateinit var targetUrl: String
 
     @Option(
         names = ["-u", "--user"],
-        description = ["HTTP RPC user name"],
+        description = ["REST user name"],
         required = true
     )
     lateinit var username: String
 
     @Option(
         names = ["-p", "--password"],
-        description = ["HTTP RPC password"],
+        description = ["REST password"],
         required = true
     )
     lateinit var password: String
@@ -36,7 +36,7 @@ abstract class HttpRpcCommand : ExtensionPoint {
     @Option(
         names = ["-y", "--yield"],
         required = false,
-        description = ["Duration in seconds to patiently wait till HTTP RPC connection will become available. " +
+        description = ["Duration in seconds to patiently wait till REST connection will become available. " +
                 "Defaults to 10 seconds if missing."]
     )
     var waitDurationSeconds: Int = 10
