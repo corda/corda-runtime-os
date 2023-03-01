@@ -705,6 +705,8 @@ workers:
     service:
       # -- the type for the REST worker service
       type: ClusterIP
+      # -- the HTTP port for the REST worker service
+      port: 443
       # -- the traffic policy for the REST worker service
       externalTrafficPolicy: ""
       # -- the LoadBalancer source ranges to limit access to the REST worker service

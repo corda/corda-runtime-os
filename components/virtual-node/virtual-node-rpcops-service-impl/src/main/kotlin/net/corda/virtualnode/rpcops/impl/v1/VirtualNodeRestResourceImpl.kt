@@ -61,6 +61,10 @@ import java.time.Instant
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
+import java.lang.IllegalArgumentException
+import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
@@ -348,7 +352,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
-        // TODO: Validate newState
+        validateStateChange(virtualNodeShortId, newState)
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
@@ -375,6 +379,15 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         }
     }
 
+    private fun validateStateChange(virtualNodeShortId: String, newState: String) {
+        try {
+            VirtualNodeStateTransitions.valueOf(newState.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
+        }
+        getVirtualNode(virtualNodeShortId)
+    }
+
     private fun handleFailure(exception: ExceptionEnvelope?): java.lang.Exception {
         if (exception == null) {
             logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
@@ -383,7 +396,10 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         logger.warn(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
-        return InternalServerException(exception.errorMessage)
+        return when(exception.errorType) {
+            InvalidStateChangeRuntimeException::class.java.name ->  InvalidStateChangeException(exception.errorMessage)
+            else -> InternalServerException(exception.errorMessage)
+        }
     }
 
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =

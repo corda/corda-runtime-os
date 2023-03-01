@@ -1224,6 +1224,14 @@
                                                 "ClusterIP"
                                             ]
                                         },
+                                        "port": {
+                                            "type": "integer",
+                                            "default": 443,
+                                            "title": "the HTTP port for the REST worker service",
+                                            "examples": [
+                                                443
+                                            ]
+                                        },
                                         "externalTrafficPolicy": {
                                             "type": "string",
                                             "default": "",
@@ -1255,6 +1263,7 @@
                                     "examples": [
                                         {
                                             "type": "ClusterIP",
+                                            "port": 443,
                                             "externalTrafficPolicy": "",
                                             "loadBalancerSourceRanges": [],
                                             "annotations": {}
@@ -1292,6 +1301,7 @@
                                     },
                                     "service": {
                                         "type": "ClusterIP",
+                                        "port": 443,
                                         "externalTrafficPolicy": "",
                                         "loadBalancerSourceRanges": [],
                                         "annotations": {}
@@ -1570,6 +1580,7 @@
                     },
                     "service": {
                         "type": "ClusterIP",
+                        "port": 443,
                         "externalTrafficPolicy": "",
                         "loadBalancerSourceRanges": [],
                         "annotations": {}
