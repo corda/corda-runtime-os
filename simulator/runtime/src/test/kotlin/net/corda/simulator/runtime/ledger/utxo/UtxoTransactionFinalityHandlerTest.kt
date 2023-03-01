@@ -18,19 +18,13 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.BelongsToContract
-import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
-import net.corda.v5.ledger.utxo.transaction.getOutputStates
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -41,7 +35,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.times
-import java.security.PublicKey
 import java.time.Instant
 
 class UtxoTransactionFinalityHandlerTest {
@@ -58,7 +51,7 @@ class UtxoTransactionFinalityHandlerTest {
         val serializationService = BaseSerializationService()
         val signingService = mock<SigningService>()
         val transaction = UtxoSignedTransactionBase(
-            listOf(toSignature(publicKeys[0])),
+            listOf(toSignatureWithMetadata(publicKeys[0])),
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
@@ -79,7 +72,7 @@ class UtxoTransactionFinalityHandlerTest {
 
         val sessions = publicKeys.minus(publicKeys[0]).map {
             val signature = DigitalSignatureAndMetadata(
-                toSignature(it).signature,
+                toSignatureWithMetadata(it).signature,
                 DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
             )
             val flowSession = mock<FlowSession>()
@@ -90,7 +83,7 @@ class UtxoTransactionFinalityHandlerTest {
         val memberLookup = mock<MemberLookup>()
         whenever(memberLookup.lookup(eq(notaryX500))).thenReturn(BaseMemberInfo(notaryX500, listOf(notary.owningKey)))
         whenever(signingService.sign(any(), eq(notary.owningKey), any()))
-            .thenReturn(toSignature(notary.owningKey).signature)
+            .thenReturn(toSignatureWithMetadata(notary.owningKey).signature)
         whenever(memberLookup.myInfo()).thenReturn(BaseMemberInfo(alice, listOf( publicKeys[0])))
 
         //When we call finality on the transaction
@@ -119,11 +112,11 @@ class UtxoTransactionFinalityHandlerTest {
         val serializationService = BaseSerializationService()
         val signingService = mock<SigningService>()
         publicKeys.forEach {
-            whenever(signingService.sign(any(), eq(it), any())).thenReturn(toSignature(it).signature)
+            whenever(signingService.sign(any(), eq(it), any())).thenReturn(toSignatureWithMetadata(it).signature)
         }
 
         val signedTransaction = UtxoSignedTransactionBase(
-            listOf(toSignature(publicKeys[0])),
+            listOf(toSignatureWithMetadata(publicKeys[0])),
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
@@ -156,7 +149,7 @@ class UtxoTransactionFinalityHandlerTest {
         val memberLookup = mock<MemberLookup>()
         whenever(memberLookup.lookup(eq(notaryX500))).thenReturn(BaseMemberInfo(notaryX500, listOf(notary.owningKey)))
         whenever(signingService.sign(any(), eq(notary.owningKey), any()))
-            .thenReturn(toSignature(notary.owningKey).signature)
+            .thenReturn(toSignatureWithMetadata(notary.owningKey).signature)
         whenever(memberLookup.myInfo()).thenReturn(BaseMemberInfo(alice, listOf( publicKeys[0])))
 
         //When we call finality on the transaction
@@ -183,12 +176,12 @@ class UtxoTransactionFinalityHandlerTest {
         val serializationService = BaseSerializationService()
         val signingService = mock<SigningService>()
         publicKeys.forEach {
-            whenever(signingService.sign(any(), eq(it), any())).thenReturn(toSignature(it).signature)
+            whenever(signingService.sign(any(), eq(it), any())).thenReturn(toSignatureWithMetadata(it).signature)
         }
 
         val faultyState = TestUtxoState("Faulty State", publicKeys)
         val signedTransaction = UtxoSignedTransactionBase(
-            listOf(toSignature(publicKeys[0])),
+            listOf(toSignatureWithMetadata(publicKeys[0])),
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
@@ -288,26 +281,6 @@ class UtxoTransactionFinalityHandlerTest {
             .hasMessageContaining("Encumbrance check failed")
             .hasMessageContaining("0 is part of encumbrance group some-tag, but only 2 " +
                     "states out of 3 encumbered states are present as inputs.")
-    }
-
-    private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
-        DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
-    )
-
-    @BelongsToContract(TestUtxoContract::class)
-    class TestUtxoState(
-        val name: String,
-        override val participants: List<PublicKey>
-    ) : ContractState
-
-    class TestUtxoCommand: Command
-
-    class TestUtxoContract: Contract {
-        override fun verify(transaction: UtxoLedgerTransaction) {
-            if(transaction.getOutputStates<TestUtxoState>().first().name == "Faulty State")
-                throw IllegalArgumentException("Faulty State Detected")
-        }
     }
 
     private val txIds = listOf(

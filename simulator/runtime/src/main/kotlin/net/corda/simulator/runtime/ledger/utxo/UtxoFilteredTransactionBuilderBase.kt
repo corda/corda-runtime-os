@@ -106,7 +106,7 @@ data class UtxoFilteredTransactionBuilderBase(
     }
 
     override fun withSignatories(): UtxoFilteredTransactionBuilder {
-        return withInputStates { true }
+        return withSignatories { true }
     }
 
     override fun withSignatories(predicate: Predicate<PublicKey>): UtxoFilteredTransactionBuilder {

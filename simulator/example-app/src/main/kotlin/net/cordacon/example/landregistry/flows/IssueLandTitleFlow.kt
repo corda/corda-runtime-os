@@ -14,6 +14,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.detailedLogger
@@ -56,7 +57,7 @@ class IssueLandTitleFlow: ClientStartableFlow {
             it.state.contractState.titleNumber == request.titleNumber
         }
         if(exists)
-            throw java.lang.IllegalArgumentException("Title Number: ${request.titleNumber} already exist.")
+            throw CordaRuntimeException("Title Number: ${request.titleNumber} already exist.")
 
         val myInfo = memberLookup.myInfo()
         val owner = memberLookup.lookup(request.owner)

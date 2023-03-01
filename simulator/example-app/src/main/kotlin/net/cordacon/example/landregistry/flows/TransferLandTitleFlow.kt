@@ -14,6 +14,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.detailedLogger
@@ -47,7 +48,7 @@ class TransferLandTitleFlow : ClientStartableFlow {
     override fun call(requestBody: RestRequestBody): String {
         val request = requestBody.getRequestBodyAs<TransferLandTitleRequest>(jsonMarshallingService)
         val owner = memberLookup.lookup(request.owner)
-            ?: throw IllegalArgumentException("Unknown holder: ${request.owner}.")
+            ?: throw CordaRuntimeException("Unknown holder: ${request.owner}.")
 
         val oldStateAndRef = utxoLedgerService.findUnconsumedStatesByType(LandTitleState::class.java).firstOrNull {
             it.state.contractState.titleNumber == request.titleNumber

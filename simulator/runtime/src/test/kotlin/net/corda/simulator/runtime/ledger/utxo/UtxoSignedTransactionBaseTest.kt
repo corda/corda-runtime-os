@@ -5,17 +5,11 @@ import net.corda.simulator.runtime.notary.SimTimeWindow
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.simulator.runtime.testutils.generateKeys
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.ContractState
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
@@ -23,10 +17,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.security.PublicKey
 import java.time.Instant
 
-//TODO Run test with inputs
+
 class UtxoSignedTransactionBaseTest {
     private val notaryX500 = MemberX500Name.parse("O=Notary,L=London,C=GB")
     private val config = SimulatorConfigurationBuilder.create().build()
@@ -206,16 +199,4 @@ class UtxoSignedTransactionBaseTest {
         // The final transaction should be signed with both the keys
         assertThat(txWithTwoSignatures.signatures.map {it.by}, `is`(publicKeys))
     }
-
-    private fun toSignatureWithMetadata(key: PublicKey, timestamp: Instant = Instant.now()) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
-        DigitalSignatureMetadata(timestamp, SignatureSpec("dummySignatureName"), mapOf())
-    )
-
-    class TestUtxoState(
-        val name: String,
-        override val participants: List<PublicKey>
-    ) : ContractState
-
-    class TestUtxoCommand: Command
 }

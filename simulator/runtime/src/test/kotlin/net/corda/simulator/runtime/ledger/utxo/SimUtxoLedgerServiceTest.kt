@@ -12,19 +12,13 @@ import net.corda.simulator.runtime.notary.SimTimeWindow
 import net.corda.simulator.runtime.serialization.BaseSerializationService
 import net.corda.simulator.runtime.testutils.generateKey
 import net.corda.simulator.runtime.testutils.generateKeys
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.days
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import net.corda.v5.membership.NotaryInfo
@@ -33,11 +27,10 @@ import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import java.security.PublicKey
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class SimUtxoLedgerServiceTest {
@@ -93,7 +86,7 @@ class SimUtxoLedgerServiceTest {
         // Given a persistence service in which we stored a transaction entity
         val serializationService = BaseSerializationService()
         val transaction = UtxoSignedTransactionBase(
-            publicKeys.map { toSignature(it) },
+            publicKeys.map { toSignatureWithMetadata(it) },
             UtxoStateLedgerInfo(
                 listOf(TestUtxoCommand()),
                 emptyList(),
@@ -198,24 +191,4 @@ class SimUtxoLedgerServiceTest {
 
     }
 
-    private fun toSignature(key: PublicKey) = DigitalSignatureAndMetadata(
-        DigitalSignature.WithKey(key, "some bytes".toByteArray(), mapOf()),
-        DigitalSignatureMetadata(Instant.now(), SignatureSpec("dummySignatureName"), mapOf())
-    )
-
-    class TestUtxoState(
-        val name: String,
-        override val participants: List<PublicKey>
-    ) : ContractState {
-        override fun equals(other: Any?): Boolean {
-            if(other !is TestUtxoState) return false
-            return name == other.name && participants == other.participants
-        }
-
-        override fun hashCode(): Int {
-            return name.hashCode()
-        }
-    }
-
-    class TestUtxoCommand: Command
 }

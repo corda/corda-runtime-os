@@ -14,8 +14,6 @@ import net.corda.v5.base.util.days
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.hamcrest.MatcherAssert.assertThat
@@ -25,7 +23,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.security.PublicKey
 import java.time.Clock
 import java.time.Instant
 
@@ -144,10 +141,4 @@ class UtxoTransactionBuilderBaseTest {
             .hasMessageContaining("At least one command must be applied to the current transaction.")
     }
 
-    class TestUtxoState(
-        val name: String,
-        override val participants: List<PublicKey>
-    ) : ContractState
-
-    class TestUtxoCommand: Command
 }
