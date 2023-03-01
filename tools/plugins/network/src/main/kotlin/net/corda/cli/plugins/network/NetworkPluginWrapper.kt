@@ -1,7 +1,7 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.api.CordaCliPlugin
-import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
@@ -79,7 +79,7 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
             require(holdingIdentityShortHash != null) { "Holding identity short hash was not provided." }
 
             var result: List<RestMemberInfo>
-            createHttpRpcClient(MemberLookupRestResource::class).use {
+            createRestClient(MemberLookupRestResource::class).use {
                 val connection = it.start()
                 with(connection.proxy) {
                     try {

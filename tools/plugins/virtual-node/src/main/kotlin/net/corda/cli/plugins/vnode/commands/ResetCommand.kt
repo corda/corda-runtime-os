@@ -1,6 +1,6 @@
 package net.corda.cli.plugins.vnode.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.rest.HttpFileUpload
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
@@ -52,7 +52,7 @@ class ResetCommand : RestCommand(), Runnable {
         }
         var virtualNodeMaintenanceResult: String
         val virtualNodeMaintenance =
-            createHttpRpcClient(VirtualNodeMaintenanceRestResource::class)
+            createRestClient(VirtualNodeMaintenanceRestResource::class)
 
         virtualNodeMaintenance.use {
             val connection = virtualNodeMaintenance.start()
@@ -84,7 +84,7 @@ class ResetCommand : RestCommand(), Runnable {
 
     @Suppress("NestedBlockDepth")
     private fun pollForOKStatus(virtualNodeMaintenanceResult: String) {
-        val cpiUploadClient = createHttpRpcClient(CpiUploadRestResource::class)
+        val cpiUploadClient = createRestClient(CpiUploadRestResource::class)
 
         cpiUploadClient.use {
             val connection = cpiUploadClient.start()
@@ -105,7 +105,7 @@ class ResetCommand : RestCommand(), Runnable {
     }
 
     private fun resyncVaults(virtualNodeShortIds: List<String>) {
-        createHttpRpcClient(VirtualNodeMaintenanceRestResource::class).use { client ->
+        createRestClient(VirtualNodeMaintenanceRestResource::class).use { client ->
             val virtualNodeMaintenance = client.start().proxy
             try {
                 virtualNodeShortIds.forEach { virtualNodeShortId ->

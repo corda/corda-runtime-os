@@ -1,6 +1,6 @@
 package net.corda.permissions.model
 
-enum class RPCPermissionOperation {
+enum class RESTPermissionOperation {
     USER_INSERT,
     USER_UPDATE,
     USER_DELETE,

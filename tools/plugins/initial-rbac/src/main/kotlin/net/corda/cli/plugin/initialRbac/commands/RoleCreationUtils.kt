@@ -1,6 +1,6 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -43,7 +43,7 @@ internal object RoleCreationUtils {
 
         val start = System.currentTimeMillis()
 
-        createHttpRpcClient(RoleEndpoint::class).use { roleEndpointClient ->
+        createRestClient(RoleEndpoint::class).use { roleEndpointClient ->
             val waitDuration = Duration.of(waitDurationSeconds.toLong(), ChronoUnit.SECONDS)
             val roleEndpoint = executeWithRetry(waitDuration, "Connect to role HTTP endpoint") {
                 roleEndpointClient.start().proxy
@@ -60,7 +60,7 @@ internal object RoleCreationUtils {
                 roleEndpoint.createRole(CreateRoleType(roleName, null)).responseBody.id
             }
 
-            createHttpRpcClient(PermissionEndpoint::class).use { permissionEndpointClient ->
+            createRestClient(PermissionEndpoint::class).use { permissionEndpointClient ->
                 val permissionEndpoint = executeWithRetry(waitDuration, "Start of permissions HTTP endpoint") {
                     permissionEndpointClient.start().proxy
                 }

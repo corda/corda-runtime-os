@@ -3,7 +3,7 @@ package net.corda.application.dbsetup
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.PermissionType
-import net.corda.permissions.model.RPCPermissionOperation
+import net.corda.permissions.model.RESTPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
@@ -31,7 +31,7 @@ fun buildRbacConfigSql(
         id = UUID.randomUUID().toString(),
         updateTimestamp = timeStamp,
         actorUser = requestUser,
-        changeType = RPCPermissionOperation.PERMISSION_INSERT,
+        changeType = RESTPermissionOperation.PERMISSION_INSERT,
         details = "Automated initial set-up"
     )
 
@@ -40,7 +40,7 @@ fun buildRbacConfigSql(
         id = UUID.randomUUID().toString(),
         updateTimestamp = timeStamp,
         actorUser = requestUser,
-        changeType = RPCPermissionOperation.ROLE_INSERT,
+        changeType = RESTPermissionOperation.ROLE_INSERT,
         details = "Automated initial set-up"
     )
     val user = createUser(
@@ -53,7 +53,7 @@ fun buildRbacConfigSql(
         id = UUID.randomUUID().toString(),
         updateTimestamp = timeStamp,
         actorUser = requestUser,
-        changeType = RPCPermissionOperation.USER_INSERT,
+        changeType = RESTPermissionOperation.USER_INSERT,
         details = "Automated initial set-up"
     )
 
@@ -67,7 +67,7 @@ fun buildRbacConfigSql(
         id = UUID.randomUUID().toString(),
         updateTimestamp = timeStamp,
         actorUser = requestUser,
-        changeType = RPCPermissionOperation.ADD_PERMISSION_TO_ROLE,
+        changeType = RESTPermissionOperation.ADD_PERMISSION_TO_ROLE,
         details = "Automated initial set-up"
     )
 
@@ -81,7 +81,7 @@ fun buildRbacConfigSql(
         id = UUID.randomUUID().toString(),
         updateTimestamp = timeStamp,
         actorUser = requestUser,
-        changeType = RPCPermissionOperation.ADD_ROLE_TO_USER,
+        changeType = RESTPermissionOperation.ADD_ROLE_TO_USER,
         details = "Automated initial set-up"
     )
 

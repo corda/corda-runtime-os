@@ -14,7 +14,7 @@ object RestClientUtils {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val errOut: Logger = LoggerFactory.getLogger("SystemErr")
 
-    fun <I : RestResource> RestCommand.createHttpRpcClient(rpcOps: KClass<I>): RestClient<I> {
+    fun <I : RestResource> RestCommand.createRestClient(restResource: KClass<I>): RestClient<I> {
         val localTargetUrl = if(targetUrl.endsWith("/")) {
             targetUrl.dropLast(1)
         } else {
@@ -22,7 +22,7 @@ object RestClientUtils {
         }
         return RestClient(
             baseAddress = "$localTargetUrl/api/v1/",
-            rpcOps.java,
+            restResource.java,
             RestClientConfig()
                 .enableSSL(true)
                 .minimumServerProtocolVersion(minimumServerProtocolVersion)

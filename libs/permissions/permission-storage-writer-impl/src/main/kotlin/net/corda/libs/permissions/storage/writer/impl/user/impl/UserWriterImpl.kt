@@ -9,7 +9,7 @@ import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidatio
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
-import net.corda.permissions.model.RPCPermissionOperation
+import net.corda.permissions.model.RESTPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
@@ -98,7 +98,7 @@ class UserWriterImpl(
             id = UUID.randomUUID().toString(),
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
-            changeType = RPCPermissionOperation.USER_INSERT,
+            changeType = RESTPermissionOperation.USER_INSERT,
             details = "User '${user.loginName}' created by '$requestUserId'."
         )
 
@@ -115,7 +115,7 @@ class UserWriterImpl(
             id = UUID.randomUUID().toString(),
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
-            changeType = RPCPermissionOperation.ADD_ROLE_TO_USER,
+            changeType = RESTPermissionOperation.ADD_ROLE_TO_USER,
             details = "Role '${role.id}' assigned to User '${user.loginName}' by '$requestUserId'. " +
                     "Created RoleUserAssociation '${association.id}'."
         )
@@ -141,7 +141,7 @@ class UserWriterImpl(
             id = UUID.randomUUID().toString(),
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
-            changeType = RPCPermissionOperation.DELETE_ROLE_FROM_USER,
+            changeType = RESTPermissionOperation.DELETE_ROLE_FROM_USER,
             details = "Role '$roleId' unassigned from User '${user.loginName}' by '$requestUserId'. " +
                     "Removed RoleUserAssociation '${association.id}'."
         )

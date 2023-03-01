@@ -23,7 +23,7 @@ class ChangeAudit(
 
     @Enumerated(value = EnumType.STRING)
     @Column(name = "change_type", nullable = false)
-    val changeType: RPCPermissionOperation,
+    val changeType: RESTPermissionOperation,
 
     @Column(name = "details", nullable = false)
     val details: String,

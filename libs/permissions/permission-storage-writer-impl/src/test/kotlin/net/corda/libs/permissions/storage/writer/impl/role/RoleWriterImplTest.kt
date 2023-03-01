@@ -11,7 +11,7 @@ import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.PermissionType
-import net.corda.permissions.model.RPCPermissionOperation
+import net.corda.permissions.model.RESTPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RolePermissionAssociation
 import org.assertj.core.api.Assertions.assertThat
@@ -103,7 +103,7 @@ class RoleWriterImplTest {
 
         val audit = capture.secondValue as ChangeAudit
         assertNotNull(audit)
-        assertEquals(RPCPermissionOperation.ROLE_INSERT, audit.changeType)
+        assertEquals(RESTPermissionOperation.ROLE_INSERT, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
     }
 
@@ -134,7 +134,7 @@ class RoleWriterImplTest {
 
         val audit = capture.secondValue as ChangeAudit
         assertNotNull(audit)
-        assertEquals(RPCPermissionOperation.ROLE_INSERT, audit.changeType)
+        assertEquals(RESTPermissionOperation.ROLE_INSERT, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
     }
 
@@ -170,7 +170,7 @@ class RoleWriterImplTest {
 
         val audit = capture.secondValue as ChangeAudit
         assertNotNull(audit)
-        assertEquals(RPCPermissionOperation.ADD_PERMISSION_TO_ROLE, audit.changeType)
+        assertEquals(RESTPermissionOperation.ADD_PERMISSION_TO_ROLE, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
     }
 
@@ -269,7 +269,7 @@ class RoleWriterImplTest {
 
         val audit = capture.thirdValue as ChangeAudit
         assertNotNull(audit)
-        assertEquals(RPCPermissionOperation.DELETE_PERMISSION_FROM_ROLE, audit.changeType)
+        assertEquals(RESTPermissionOperation.DELETE_PERMISSION_FROM_ROLE, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
     }
 

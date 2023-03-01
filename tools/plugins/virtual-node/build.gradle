@@ -20,7 +20,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-db-schema'
 
-    implementation project(":tools:plugins:plugins-http-rpc")
+    implementation project(":tools:plugins:plugins-rest")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
