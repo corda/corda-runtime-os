@@ -1,10 +1,7 @@
 package net.corda.interop.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.interop.data.FacadeFlowMapping
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -22,7 +19,7 @@ class FacadeToFlowMapperService @Activate constructor(
     companion object {
         private const val FACADE_TO_FLOW_MAPPING = "FACADE_TO_FLOW_MAPPING"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private val mapper = ObjectMapper(YAMLFactory()).registerModule(KotlinModule())
+        private val mapper = jacksonObjectMapper()
     }
 
     fun getFlowName(
@@ -56,17 +53,17 @@ class FacadeToFlowMapperService @Activate constructor(
             throw IllegalStateException("Failed to fetch facade to flow mapping.")
         } else {
             val facadeFlowMapping = getFacadeMapping(content)
-            return facadeFlowMapping
-                .facadeFlowMapping
-                .firstOrNull { it.facadeId == facadeId }
-                ?.facadeMethodMapping
-                ?.firstOrNull { it.facadeMethod == facadeName }
-                ?.flowName
+            checkNotNull(facadeFlowMapping) { "Failed to find the facade to flow mapping" }
+            val facadeIdMap = facadeFlowMapping[facadeId]
+            checkNotNull(facadeIdMap) { "Failed to find the facade to flow mapping for facadeId : $facadeId" }
+            val flowName = (facadeIdMap as MutableMap<*,*>)[facadeName]
+            checkNotNull(flowName) { "Failed to find the facade to flow mapping for facadeName : $facadeName" }
+            return flowName.toString()
         }
     }
 
-    private fun getFacadeMapping(content: String): FacadeFlowMapping = try {
-        mapper.readValue(content, FacadeFlowMapping::class.java)
+    private fun getFacadeMapping(content: String): MutableMap<*, *> = try {
+        mapper.readValue(content, MutableMap::class.java)
     } catch (e: Exception) {
         throw IllegalStateException("Unable to parse the facade to flow mapping : $e")
     }
