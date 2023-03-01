@@ -18,7 +18,7 @@ class InteropServiceImpl @Activate constructor(
 ) : InteropService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun callFacade(memberName: MemberX500Name, facadeName: String, methodName: String) {
+    override fun callFacade(memberName: MemberX500Name, facadeName: String, methodName: String, payload: String): String {
         TODO("Not yet implemented")
     }
 }
