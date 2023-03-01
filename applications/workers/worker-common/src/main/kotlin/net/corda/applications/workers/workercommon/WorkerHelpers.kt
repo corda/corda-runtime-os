@@ -87,11 +87,13 @@ class WorkerHelpers {
                 ConfigKeys.WORKSPACE_DIR to defaultParams.workspaceDir,
                 ConfigKeys.TEMP_DIR to defaultParams.tempDir
             )
+
+            //if we've requested a db message bus use that. default use kafka when not set
             val defaultMessagingParams = defaultParams.messagingParams
-            val messagingParams = if (defaultMessagingParams[BUS_TYPE] == BusType.KAFKA.name) {
-                defaultMessagingParams.mapKeys { (key, _) -> "$BOOT_KAFKA_COMMON.${key.trim()}" }
-            } else {
+            val messagingParams = if (defaultMessagingParams[BUS_TYPE] == BusType.DB.name) {
                 defaultMessagingParams.mapKeys { (key, _) -> "$BOOT_DB.${key.trim()}" }
+            } else {
+                defaultMessagingParams.mapKeys { (key, _) -> "$BOOT_KAFKA_COMMON.${key.trim()}" }
             }
 
             val config = ConfigFactory
