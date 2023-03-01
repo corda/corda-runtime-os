@@ -1,6 +1,6 @@
 package net.corda.permissions.model
 
-enum class RESTPermissionOperation {
+enum class RestPermissionOperation {
     USER_INSERT,
     USER_UPDATE,
     USER_DELETE,
