@@ -3742,11 +3742,11 @@
         }, {
           "name" : "newstate",
           "in" : "path",
-          "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
+          "description" : "State to transition virtual node instance into. Possible values are: MAINTENANCE and ACTIVE.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
+            "description" : "State to transition virtual node instance into. Possible values are: MAINTENANCE and ACTIVE.",
             "nullable" : false,
             "example" : "string"
           }
