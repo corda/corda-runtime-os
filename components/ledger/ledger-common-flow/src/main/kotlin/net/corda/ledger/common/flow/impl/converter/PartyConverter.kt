@@ -26,13 +26,12 @@ class PartyConverter @Activate constructor(
     override val type = Party::class.java
 
     override fun convert(context: ConversionContext): Party {
-        return Party(
-            name = context.value(NAME)?.let {
-                MemberX500Name.parse(it)
-            } ?: throw ValueNotFoundException("'$NAME' is null or missing"),
-            owningKey = context.value(SESSION_KEY)?.let {
-                keyEncodingService.decodePublicKey(it)
-            } ?: throw ValueNotFoundException("'$SESSION_KEY' is null or missing")
-        )
+        val name = context.value(NAME)?.let { MemberX500Name.parse(it) }
+            ?: throw ValueNotFoundException("'$NAME' is null or missing")
+
+        val key = context.value(SESSION_KEY)?.let { keyEncodingService.decodePublicKey(it) }
+            ?: throw ValueNotFoundException("'$SESSION_KEY' is null or missing")
+
+        return Party(name, key)
     }
 }

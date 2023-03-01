@@ -8,11 +8,15 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 
 class ConsensualTransactionBuilderBase(
-    override val states: List<ConsensualState>,
+    private val states: List<ConsensualState>,
     private val signingService: SigningService,
     private val memberLookup: MemberLookup,
     private val configuration: SimulatorConfiguration
 ) : ConsensualTransactionBuilder {
+
+    override fun getStates(): List<ConsensualState> {
+        return states
+    }
 
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder {
         return ConsensualTransactionBuilderBase(this.states.plus(states), signingService, memberLookup, configuration)
