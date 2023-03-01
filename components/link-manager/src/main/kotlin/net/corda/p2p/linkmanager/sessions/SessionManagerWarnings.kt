@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
+import net.corda.crypto.core.ShortHash
 import org.slf4j.Logger
 
 internal object SessionManagerWarnings {
