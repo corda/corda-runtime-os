@@ -3,12 +3,18 @@ plugins {
 }
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     contract {
         name "Apples utxo example contract"
         versionId 1
         vendor "R3"
+    }
+}
+
+tasks.named('compileKotlin') {
+    compilerOptions {
+        freeCompilerArgs.add '-Xstring-concat=inline'
     }
 }
 
