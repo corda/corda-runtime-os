@@ -14,8 +14,8 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
+import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionValidator
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -51,7 +51,6 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         // For consensual ledger, it is ok to just resolve here - all it does is lazy deserialization
         return persistenceService.find(id)?.toLedgerTransaction()
     }
-
 
     @Suspendable
     override fun finalize(

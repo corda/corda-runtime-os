@@ -6,7 +6,6 @@ import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.JsonObject
-import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -30,8 +29,6 @@ import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.assertDoesNotThrow
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -131,15 +128,8 @@ fun E2eCluster.uploadCpi(
                 size = cpiJar.size.toLong(),
             )
             val id = cpi(upload).id
-            eventually {
-                val status = try {
-                    // status() throws exceptions for certain Http errors rather than returning an error. This means we
-                    // must catch any errors expected due to asynchronicity here and fail them, so the eventually loop
-                    // can retry rather than stop the test with an unexpected exception at this point.
-                    status(id)
-                } catch(requestErrorException: RequestErrorException) {
-                    fail(requestErrorException)
-                }
+            eventually(retryAllExceptions = true) {
+                val status = status(id)
                 assertThat(status.status).isEqualTo("OK")
                 status.cpiFileChecksum
             }
@@ -235,8 +225,11 @@ fun E2eCluster.assignSoftHsm(
 ): HsmAssociationInfo {
     return clusterHttpClientFor(HsmRestResource::class.java)
         .use { client ->
-            eventually(duration = 10.seconds) {
-                assertDoesNotThrow { client.start().proxy.assignSoftHsm(holdingId, cat) }
+            eventually(
+                duration = 10.seconds,
+                retryAllExceptions = true
+            ) {
+                client.start().proxy.assignSoftHsm(holdingId, cat)
             }
         }
 }
@@ -257,7 +250,7 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 1.minutes) {
+                eventually(duration = 1.minutes, retryAllExceptions = true) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .isEqualTo(RegistrationStatus.APPROVED)
@@ -526,7 +519,8 @@ fun E2eCluster.assertAllMembersAreInMemberList(
 ) {
     eventually(
         waitBetween = 2.seconds,
-        duration = 60.seconds
+        duration = 60.seconds,
+        retryAllExceptions = true,
     ) {
         val groupId = getGroupId(member.holdingId)
         lookupMembers(member.holdingId).also { result ->

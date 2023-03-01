@@ -1,7 +1,7 @@
 package net.corda.cli.plugins.vnode.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
-import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.cli.plugins.common.RestCommand
 import net.corda.rest.HttpFileUpload
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
@@ -18,7 +18,7 @@ import java.io.File
         "The plugin purges any sandboxes running an overwritten version of a CPI and optionally ",
         "deletes vault data for the affected Virtual Nodes."]
 )
-class ResetCommand : HttpRpcCommand(), Runnable {
+class ResetCommand : RestCommand(), Runnable {
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -52,7 +52,7 @@ class ResetCommand : HttpRpcCommand(), Runnable {
         }
         var virtualNodeMaintenanceResult: String
         val virtualNodeMaintenance =
-            createHttpRpcClient(VirtualNodeMaintenanceRestResource::class)
+            createRestClient(VirtualNodeMaintenanceRestResource::class)
 
         virtualNodeMaintenance.use {
             val connection = virtualNodeMaintenance.start()
@@ -84,7 +84,7 @@ class ResetCommand : HttpRpcCommand(), Runnable {
 
     @Suppress("NestedBlockDepth")
     private fun pollForOKStatus(virtualNodeMaintenanceResult: String) {
-        val cpiUploadClient = createHttpRpcClient(CpiUploadRestResource::class)
+        val cpiUploadClient = createRestClient(CpiUploadRestResource::class)
 
         cpiUploadClient.use {
             val connection = cpiUploadClient.start()
@@ -105,7 +105,7 @@ class ResetCommand : HttpRpcCommand(), Runnable {
     }
 
     private fun resyncVaults(virtualNodeShortIds: List<String>) {
-        createHttpRpcClient(VirtualNodeMaintenanceRestResource::class).use { client ->
+        createRestClient(VirtualNodeMaintenanceRestResource::class).use { client ->
             val virtualNodeMaintenance = client.start().proxy
             try {
                 virtualNodeShortIds.forEach { virtualNodeShortId ->

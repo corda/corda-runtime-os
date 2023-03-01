@@ -74,6 +74,7 @@ class ConsensualLedgerRepositoryTest {
     companion object {
         private const val TESTING_DATAMODEL_CPB = "/META-INF/testing-datamodel.cpb"
         private const val TIMEOUT_MILLIS = 10000L
+
         // Truncating to millis as on Windows builds the micros are lost after fetching the data from Postgres
         private val TEST_CLOCK: Clock = TestClock(Instant.now().truncatedTo(ChronoUnit.MILLIS))
         private val seedSequence = AtomicInteger((0..Int.MAX_VALUE / 2).random())
@@ -104,7 +105,8 @@ class ConsensualLedgerRepositoryTest {
                 entityManagerFactory.createEntityManager(),
                 repository,
                 digestService,
-                TEST_CLOCK)
+                TEST_CLOCK
+            )
         }
     }
 
@@ -326,7 +328,14 @@ class ConsensualLedgerRepositoryTest {
         val entityFactory = ConsensualEntityFactory(entityManagerFactory)
         entityManagerFactory.transaction { em ->
             val dbExistingCpks = existingCpks.mapIndexed { i, cpk ->
-                entityFactory.createConsensualCpkEntity(cpk.fileChecksum, cpk.name, cpk.signerSummaryHash!!, cpk.version, "file$i".toByteArray(), Instant.now())
+                entityFactory.createConsensualCpkEntity(
+                    cpk.fileChecksum,
+                    cpk.name,
+                    cpk.signerSummaryHash!!,
+                    cpk.version,
+                    "file$i".toByteArray(),
+                    Instant.now()
+                )
             }.onEach(em::persist)
 
             entityFactory.createConsensualTransactionEntity(
@@ -343,11 +352,11 @@ class ConsensualLedgerRepositoryTest {
         val cpkChecksums = entityManagerFactory.transaction { em ->
             repository.findTransactionCpkChecksums(
                 em,
-                signedTransaction.wireTransaction.metadata.getCpkMetadata()
+                signedTransaction.wireTransaction.metadata.cpkMetadata
             )
         }
 
-        assertThat(cpkChecksums).isEqualTo(existingCpks.mapTo(LinkedHashSet(), CordaPackageSummary::fileChecksum))
+        assertThat(cpkChecksums).isEqualTo(existingCpks.mapTo(LinkedHashSet(), CordaPackageSummary::getFileChecksum))
     }
 
     private fun createSignedTransaction(
@@ -375,10 +384,10 @@ class ConsensualLedgerRepositoryTest {
     }
 
     private class TestConsensualTransactionReader(
-        val transactionContainer:  SignedTransactionContainer,
+        val transactionContainer: SignedTransactionContainer,
         override val account: String,
         override val status: TransactionStatus
-    ): ConsensualTransactionReader {
+    ) : ConsensualTransactionReader {
         override val id: SecureHash
             get() = transactionContainer.id
         override val privacySalt: PrivacySalt

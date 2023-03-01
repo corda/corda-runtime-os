@@ -8,7 +8,7 @@ import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidatio
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Permission
-import net.corda.permissions.model.RPCPermissionOperation
+import net.corda.permissions.model.RestPermissionOperation
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -50,7 +50,7 @@ class PermissionWriterImpl(
                 id = UUID.randomUUID().toString(),
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
-                changeType = RPCPermissionOperation.PERMISSION_INSERT,
+                changeType = RestPermissionOperation.PERMISSION_INSERT,
                 details = "Permission '${permission.id}' with name '$permissionName' created by '$requestUserId'."
             )
 

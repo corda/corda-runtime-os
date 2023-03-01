@@ -48,7 +48,13 @@ class UtxoLedgerTransactionContractVerifierTest {
         val validContractBState = stateAndRef<MyValidContractB>(TX_ID_3, 1)
         val validContractCState1 = stateAndRef<MyValidContractC>(TX_ID_2, 1)
         val validContractCState2 = stateAndRef<MyValidContractC>(TX_ID_1, 0)
-        whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, validContractCState1))
+        whenever(transaction.inputStateAndRefs).thenReturn(
+            listOf(
+                validContractAState,
+                validContractBState,
+                validContractCState1
+            )
+        )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
         verifyContracts(transactionFactory, transaction)
         // Called once for each of 3 contracts
@@ -64,7 +70,13 @@ class UtxoLedgerTransactionContractVerifierTest {
         val validContractBState = stateAndRef<MyValidContractB>(TX_ID_3, 1)
         val invalidContractAState = stateAndRef<MyInvalidContractA>(TX_ID_2, 1)
         val invalidContractBState = stateAndRef<MyInvalidContractB>(TX_ID_1, 0)
-        whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState, validContractBState, invalidContractAState))
+        whenever(transaction.inputStateAndRefs).thenReturn(
+            listOf(
+                validContractAState,
+                validContractBState,
+                invalidContractAState
+            )
+        )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
         assertThatThrownBy { verifyContracts(transactionFactory, transaction) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
@@ -79,22 +91,37 @@ class UtxoLedgerTransactionContractVerifierTest {
         val state = MyState()
         return StateAndRefImpl(
             object : TransactionState<MyState> {
-                override val contractState: MyState = state
-                override val contractStateType: Class<out MyState> = state::class.java
-                override val contractType: Class<out Contract> = C::class.java
-                override val notary: Party = utxoNotaryExample
-                override val encumbrance: EncumbranceGroup? = null
+                override fun getContractState(): MyState {
+                    return state
+                }
+
+                override fun getContractStateType(): Class<MyState> {
+                    return state.javaClass
+                }
+
+                override fun getContractType(): Class<out Contract> {
+                    return C::class.java
+                }
+
+                override fun getNotary(): Party {
+                    return utxoNotaryExample
+                }
+
+                override fun getEncumbranceGroup(): EncumbranceGroup? {
+                    return null
+                }
             },
             StateRef(transactionId, index)
         )
     }
 
     class MyState : ContractState {
-        override val participants: List<PublicKey> = emptyList()
+        override fun getParticipants(): List<PublicKey> {
+            return listOf()
+        }
     }
 
     class MyValidContractA : Contract {
-
         companion object {
             var EXECUTION_COUNT = 0
         }

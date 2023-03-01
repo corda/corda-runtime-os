@@ -107,6 +107,23 @@ fun generateMockChunkedConsumerRecordsList(
     return records
 }
 
+
+fun generateChunkedCleanupRecords(
+    numberOfRecords: Long,
+    topic: String,
+    partition: Int,
+    startOffset: Long = 0
+): ConsumerRecords<Any, Any?> {
+    val records = mutableListOf<ConsumerRecord<Any, Any?>>()
+    val id = UUID.randomUUID().toString()
+    for (i in 1 until numberOfRecords - 1) {
+        val record = ConsumerRecord<Any, Any?>(topic, partition, startOffset + i, buildChunkKey(id, i), null)
+        records.add(record)
+    }
+
+    return ConsumerRecords<Any, Any?>(mapOf(TopicPartition(topic, partition) to records))
+}
+
 fun buildChunk(id: String, data: String, partNumber: Long): Chunk {
     return Chunk.newBuilder()
         .setProperties(null)
@@ -133,7 +150,6 @@ fun buildFinalChunk(id: String, partNumber: Long): Chunk {
 
 fun buildChunkKey(id: String, partNumber: Long): ChunkKey {
     return ChunkKey.newBuilder()
-        .setRequestId(id)
         .setRealKey(ByteBuffer.wrap(id.toByteArray()))
         .setPartNumber(partNumber.toInt())
         .build()
