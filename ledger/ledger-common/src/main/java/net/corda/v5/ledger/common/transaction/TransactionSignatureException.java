@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Indicates a problem related to signatures of the transaction named by [transactionId].
+ * Indicates a problem related to signatures of the transaction named by {@link #getTransactionId()}.
  */
 public class TransactionSignatureException extends CordaRuntimeException {
     /**
@@ -25,8 +25,7 @@ public class TransactionSignatureException extends CordaRuntimeException {
     public TransactionSignatureException(
             @NotNull SecureHash transactionId,
             @NotNull String message,
-            @Nullable Throwable cause
-    ) {
+            @Nullable Throwable cause) {
         super(message, cause);
         this.transactionId = transactionId;
     }
