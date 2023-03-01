@@ -30,6 +30,8 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -48,6 +50,7 @@ internal class StartRegistrationHandler(
     private val memberTypeChecker: MemberTypeChecker,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : RegistrationHandler<StartRegistration> {
 
@@ -237,6 +240,11 @@ internal class StartRegistrationHandler(
                     listOf(HoldingIdentity(notary.serviceName, member.groupId))
                 ).getOrThrow().firstOrNull() == null
             ) { "There is a virtual node having the same name as the notary service ${notary.serviceName}." }
+            membershipGroupReaderProvider.getGroupReader(mgmHoldingId).groupParameters?.let { groupParameters ->
+                validateRegistrationRequest(groupParameters.notaries.none { it.name == notary.serviceName }) {
+                    "Notary service '${notary.serviceName}' already exists."
+                }
+            } ?: throw MembershipRegistrationException("Could not read group parameters of the membership group '${member.groupId}'.")
         }
     }
 

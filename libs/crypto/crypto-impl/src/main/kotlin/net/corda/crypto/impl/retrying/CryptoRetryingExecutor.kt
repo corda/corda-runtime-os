@@ -1,8 +1,8 @@
 package net.corda.crypto.impl.retrying
 
+import net.corda.crypto.core.CryptoRetryException
 import net.corda.crypto.core.isRecoverable
 import net.corda.utilities.debug
-import net.corda.v5.crypto.exceptions.CryptoRetryException
 import org.slf4j.Logger
 import java.util.UUID
 

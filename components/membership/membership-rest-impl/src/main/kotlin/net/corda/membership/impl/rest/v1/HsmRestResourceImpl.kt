@@ -16,7 +16,7 @@ import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
+import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

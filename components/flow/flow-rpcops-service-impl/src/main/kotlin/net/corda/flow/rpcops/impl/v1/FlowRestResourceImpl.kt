@@ -39,7 +39,7 @@ import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
+import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

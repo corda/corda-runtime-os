@@ -12,7 +12,7 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:flow:flow-rpcops-service')
     implementation project(":components:virtual-node:virtual-node-info-read-service")
-    implementation project(':components:virtual-node:virtual-node-info-read-service-rpc-extensions')
+    implementation project(':components:virtual-node:virtual-node-info-read-service-rest-extensions')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:permissions:permission-validation-service')
     implementation project(':libs:configuration:configuration-core')
