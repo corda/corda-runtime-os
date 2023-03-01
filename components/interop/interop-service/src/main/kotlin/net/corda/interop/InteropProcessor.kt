@@ -63,7 +63,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             //TODO temporary logic for seed messages only, to process the first 10 messages as more is not required
             // this check will be phased out as part of eliminating seed messages in CORE-10446
             if (interopMessage.messageId.startsWith("seed-message")
-                && (interopMessage.messageId.toIntOrNull() ?: 0 > 10)) return null
+                && (interopMessage.messageId.extractInt() ?: 0 > 10)) return null
             val message : InteropMessage = InteropMessageTransformer.getInteropMessage(
                 interopMessage.messageId.incrementOrUuid(), facadeRequest)
             logger.info("Converted facade request to interop message : $message")
@@ -98,7 +98,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         )
     }
 
-    //Temporary code  to increment message id to debug the lifecycle of seed messages
+    //Temporary function to increment message id to debug the lifecycle of seed messages
     private fun String.incrementOrUuid() = try {
         if (this.contains("-")) {
             val text = this.substringBeforeLast('-')
@@ -108,6 +108,16 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             "${toInt() + 1}"
     } catch (e: NumberFormatException) {
         "${UUID.randomUUID()}"
+    }
+
+    //Temporary function to filter number from messageId to debug the lifecycle of seed messages
+    private fun String.extractInt(): Int? = try {
+        if (this.contains("-"))
+            this.substringAfterLast('-').toInt()
+        else
+            null
+    } catch (e: NumberFormatException) {
+        null
     }
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader

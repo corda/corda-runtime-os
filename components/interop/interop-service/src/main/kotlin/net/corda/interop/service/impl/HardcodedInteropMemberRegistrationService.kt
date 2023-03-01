@@ -131,6 +131,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 
     override fun seedMessage() : List<Record<*,*>> {
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
+        val correctHeader = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), SUBSYSTEM, "1")
         val payload = """
             {
                 "method": "org.corda.interop/platform/tokens/v1.0/reserve-tokens",
@@ -138,9 +139,11 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             }
         """.trimIndent()
 
-        val correctHeader = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), SUBSYSTEM, "1")
-
         val headerNoDestination = UnauthenticatedMessageHeader(UNPUBLISHED_HOLDING_IDENTITY, memberList[1].toAvro(), SUBSYSTEM, "1")
+
+        val headerNoExistingGroup = UnauthenticatedMessageHeader(
+            HoldingIdentity(ALICE_X500_NAME, NON_EXISTING_GROUP).toAvro(),
+            HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, NON_EXISTING_GROUP).toAvro(), SUBSYSTEM, "1")
 
         return listOf(
             Record(
@@ -158,6 +161,15 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
                     UnauthenticatedMessage(
                         headerNoDestination,
                         ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("seed-message-no-dest-1", payload)))
+                    )
+                )
+            ),
+            Record(
+                Schemas.P2P.P2P_IN_TOPIC, "seed-message-no-policy-1",
+                AppMessage(
+                    UnauthenticatedMessage(
+                        headerNoExistingGroup,
+                        ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("seed-message-no-policy-1", payload)))
                     )
                 )
             )

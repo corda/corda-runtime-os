@@ -131,7 +131,7 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-        //TODO logger info level and source identity added temporarily for Interop Team, revert to debug as part of CORE-10683
+        //TODO new log statement added temporarily for Interop Team, revert to debug as part of CORE-10683
         logger.info ("Processing outbound message ${message.header.messageId} from ${message.header.source} " +
                 "to ${message.header.destination}." )
 
@@ -152,7 +152,7 @@ internal class OutboundMessageProcessor(
             message.header.destination.toCorda()
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
-            //TODO logger info level and source identity added temporarily for Interop Team, revert to debug as part of CORE-10683
+            //TODO new log statement added temporarily for Interop Team, revert to debug as part of CORE-10683
             logger.info ("Processing outbound message hosted locally ${message.header.messageId} from ${message.header.source} " +
                     "to ${message.header.destination}." )
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
