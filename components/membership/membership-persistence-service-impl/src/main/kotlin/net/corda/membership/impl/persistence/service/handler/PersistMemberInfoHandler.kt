@@ -7,9 +7,11 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
 
@@ -59,7 +61,7 @@ internal class PersistMemberInfoHandler(
                                 "Cannot update member info with same serial number: member context differs from original."
                             )
                         }
-                        if (currentMgmContext.items != it.mgmContext.items) {
+                        if (currentMgmContext.toMap().removeTime() != it.mgmContext.toMap().removeTime()) {
                             throw MembershipPersistenceException(
                                 "Cannot update member info with same serial: mgm context differs from original."
                             )
@@ -80,5 +82,8 @@ internal class PersistMemberInfoHandler(
                 }
             }
         }
+    }
+    private fun Map<String, String>.removeTime(): Map<String, String>  = this.filterKeys {
+        it != MemberInfoExtension.CREATION_TIME && it != MemberInfoExtension.MODIFIED_TIME
     }
 }

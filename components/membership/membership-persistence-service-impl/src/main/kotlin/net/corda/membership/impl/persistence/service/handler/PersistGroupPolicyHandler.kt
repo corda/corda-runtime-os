@@ -40,7 +40,7 @@ internal class PersistGroupPolicyHandler(
             em.createQuery(query).setLockMode(LockModeType.PESSIMISTIC_WRITE).setMaxResults(1).resultList.singleOrNull()?.let {
                 val lastProperties = keyValuePairListDeserializer.deserialize(it.properties)
                 if (lastProperties?.items != request.properties.items) {
-                    throw MembershipPersistenceException("")
+                    throw MembershipPersistenceException("Cannot update group policy: items differs from original.")
                 }
                 return@transaction it.version
             }
