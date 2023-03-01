@@ -276,8 +276,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
     fun `adding input states mutates and returns the current builder`() {
         val originalTransactionBuilder = utxoTransactionBuilder
 
-(??)        val mutatedTransactionBuilder = utxoTransactionBuilder.addInputState(inputState)
-(??)        assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(listOf(inputState))
+        val mutatedTransactionBuilder = utxoTransactionBuilder.addInputState(stateRef1)
+        assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(listOf(stateRef1))
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
             System.identityHashCode(
@@ -285,8 +285,8 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             )
         )
 
-(??)        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addInputStates(listOf(inputState))
-(??)        assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(listOf(inputState, inputState))
+        val mutatedTransactionBuilder2 = utxoTransactionBuilder.addInputStates(listOf(stateRef2))
+        assertThat((mutatedTransactionBuilder2 as UtxoTransactionBuilderInternal).inputStateRefs).isEqualTo(listOf(stateRef1, stateRef2))
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder2)).isEqualTo(
             System.identityHashCode(

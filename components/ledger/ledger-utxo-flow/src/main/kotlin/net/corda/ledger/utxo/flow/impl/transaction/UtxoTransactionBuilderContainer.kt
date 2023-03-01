@@ -12,10 +12,10 @@ import java.security.PublicKey
 data class UtxoTransactionBuilderContainer(
     var notary: Party? = null,
     var timeWindow: TimeWindow? = null,
-    val attachments: MutableList<SecureHash> = mutableListOf(),
-    val commands: MutableList<Command> = mutableListOf(),
-    val signatories: MutableList<PublicKey> = mutableListOf(),
-    val inputStateRefs: MutableList<StateRef> = mutableListOf(),
-    val referenceStateRefs: MutableList<StateRef> = mutableListOf(),
-    val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
+    val attachments: List<SecureHash> = listOf(),
+    val commands: List<Command> = listOf(),
+    val signatories: List<PublicKey> = listOf(),
+    val inputStateRefs: List<StateRef> = listOf(),
+    val referenceStateRefs: List<StateRef> = listOf(),
+    val outputStates: List<ContractStateAndEncumbranceTag> = listOf()
 )

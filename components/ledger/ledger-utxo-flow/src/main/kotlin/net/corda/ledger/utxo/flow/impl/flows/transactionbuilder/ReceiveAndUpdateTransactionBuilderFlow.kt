@@ -45,15 +45,15 @@ class ReceiveAndUpdateTransactionBuilderFlow(
                 .toSet()
 
         log.trace { "Waiting for transaction builder proposal." }
-        val payloadTransactionBuilder = session.receive(UtxoTransactionBuilderContainer::class.java)
-        updateProposedNotary(payloadTransactionBuilder)
-        updateProposedTimeWindow(payloadTransactionBuilder)
-        appendProposedAttachments(payloadTransactionBuilder)
-        appendProposedCommands(payloadTransactionBuilder)
-        appendProposedSignatories(payloadTransactionBuilder)
-        val newStateRefs = appendProposedInputStateRefs(payloadTransactionBuilder) +
-                appendProposedReferenceStateRefs(payloadTransactionBuilder)
-        appendProposedOutputStates(payloadTransactionBuilder)
+        val receivedTransactionBuilder = session.receive(UtxoTransactionBuilderContainer::class.java)
+        updateProposedNotary(receivedTransactionBuilder)
+        updateProposedTimeWindow(receivedTransactionBuilder)
+        appendProposedAttachments(receivedTransactionBuilder)
+        appendProposedCommands(receivedTransactionBuilder)
+        appendProposedSignatories(receivedTransactionBuilder)
+        val newStateRefs = appendProposedInputStateRefs(receivedTransactionBuilder) +
+                appendProposedReferenceStateRefs(receivedTransactionBuilder)
+        appendProposedOutputStates(receivedTransactionBuilder)
 
         log.trace { "Transaction builder proposals have been applied. Result: $updatedTransactionBuilder" }
 
@@ -61,7 +61,11 @@ class ReceiveAndUpdateTransactionBuilderFlow(
             .map { it.transactionId }
             .toSet() - knownTransactionIds
 
-        flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
+        if (newTransactionIds.isEmpty()) {
+            log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
+        } else {
+            flowEngine.subFlow(TransactionBackchainResolutionFlow(newTransactionIds, session))
+        }
 
         return updatedTransactionBuilder
     }

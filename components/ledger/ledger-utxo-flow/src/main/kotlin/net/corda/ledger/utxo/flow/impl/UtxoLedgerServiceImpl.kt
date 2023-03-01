@@ -184,7 +184,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun replyTransactionBuilderProposal(
+    override fun sendUpdatedTransactionBuilder(
         transactionBuilder: UtxoTransactionBuilder,
         session: FlowSession,
     ) {

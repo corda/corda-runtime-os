@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
 
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
+import net.corda.ledger.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.sandbox.CordaSystemFlow
@@ -10,8 +11,14 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TimeWindow
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 
 @CordaSystemFlow
 class SendTransactionBuilderDiffFlow(
@@ -27,20 +34,20 @@ class SendTransactionBuilderDiffFlow(
         val log: Logger = LoggerFactory.getLogger(SendTransactionBuilderDiffFlow::class.java)
     }
 
-    private val transactionBuilderDiff = UtxoTransactionBuilderContainer()
-
     @Suspendable
     override fun call() {
         log.trace { "Starting send transaction builder flow." }
 
-        proposeNotary()
-        proposeTimeWindow()
-        proposeAttachments()
-        proposeCommands()
-        proposeSignatories()
-        proposeInputStateRefs()
-        proposeReferenceStateRefs()
-        proposeOutputStates()
+        val transactionBuilderDiff = UtxoTransactionBuilderContainer(
+            proposeNotary(),
+            proposeTimeWindow(),
+            proposeAttachments(),
+            proposeCommands(),
+            proposeSignatories(),
+            proposeInputStateRefs(),
+            proposeReferenceStateRefs(),
+            proposeOutputStates()
+        )
 
         log.trace { "Sending proposed transaction builder parts." }
         session.send(transactionBuilderDiff)
@@ -49,54 +56,56 @@ class SendTransactionBuilderDiffFlow(
             (transactionBuilderDiff.inputStateRefs.toSet() + transactionBuilderDiff.referenceStateRefs.toSet())
                 .map { it.transactionId }
                 .toSet()
-        flowEngine.subFlow(TransactionBackchainSenderFlow(newTransactionIds, session))
-    }
-
-    private fun proposeNotary() {
-        if (originalTransactionalBuilder.notary == null && transactionBuilder.notary != null) {
-            transactionBuilderDiff.notary = transactionBuilder.notary
+        if (newTransactionIds.isEmpty()) {
+            log.trace { "There are no new states transferred, therefore no backchains need to be resolved." }
+        } else {
+            flowEngine.subFlow(TransactionBackchainSenderFlow(newTransactionIds, session))
         }
     }
 
-    private fun proposeTimeWindow() {
-        if (originalTransactionalBuilder.timeWindow == null && transactionBuilder.timeWindow != null) {
-            transactionBuilderDiff.timeWindow = transactionBuilder.timeWindow
+    private fun proposeNotary(): Party? {
+        return if (originalTransactionalBuilder.notary == null && transactionBuilder.notary != null) {
+            transactionBuilder.notary
+        } else {
+            null
         }
     }
 
-    private fun proposeAttachments() {
-        transactionBuilderDiff.attachments += transactionBuilder.attachments.filter {
-            it !in originalTransactionalBuilder.attachments
+    private fun proposeTimeWindow(): TimeWindow? {
+        return if (originalTransactionalBuilder.timeWindow == null && transactionBuilder.timeWindow != null) {
+            transactionBuilder.timeWindow
+        } else {
+            null
         }
     }
 
-    private fun proposeCommands() {
-        transactionBuilderDiff.commands += transactionBuilder.commands.filter {
-            it !in originalTransactionalBuilder.commands
-        }
+    private fun proposeAttachments(): List<SecureHash> {
+        return transactionBuilder.attachments -
+                originalTransactionalBuilder.attachments.toSet()
     }
 
-    private fun proposeSignatories() {
-        transactionBuilderDiff.signatories += transactionBuilder.signatories.filter {
-            it !in originalTransactionalBuilder.signatories
-        }
+    private fun proposeCommands(): List<Command> {
+        return transactionBuilder.commands -
+                originalTransactionalBuilder.commands.toSet()
     }
 
-    private fun proposeInputStateRefs() {
-        transactionBuilderDiff.inputStateRefs += transactionBuilder.inputStateRefs.filter {
-            it !in originalTransactionalBuilder.inputStateRefs
-        }
+    private fun proposeSignatories(): List<PublicKey> {
+        return transactionBuilder.signatories -
+                originalTransactionalBuilder.signatories.toSet()
     }
 
-    private fun proposeReferenceStateRefs() {
-        transactionBuilderDiff.referenceStateRefs += transactionBuilder.referenceStateRefs.filter {
-            it !in originalTransactionalBuilder.referenceStateRefs
-        }
+    private fun proposeInputStateRefs(): List<StateRef> {
+        return transactionBuilder.inputStateRefs -
+                originalTransactionalBuilder.inputStateRefs.toSet()
     }
 
-    private fun proposeOutputStates() {
-        transactionBuilderDiff.outputStates += transactionBuilder.outputStates.filter {
-            it !in originalTransactionalBuilder.outputStates
-        }
+    private fun proposeReferenceStateRefs(): List<StateRef> {
+        return transactionBuilder.referenceStateRefs -
+                originalTransactionalBuilder.referenceStateRefs.toSet()
+    }
+
+    private fun proposeOutputStates(): List<ContractStateAndEncumbranceTag> {
+        return transactionBuilder.outputStates -
+                originalTransactionalBuilder.outputStates.toSet()
     }
 }

@@ -28,7 +28,7 @@ class UtxoBaselinedTransactionBuilder(
         require(this.notary == null || this.notary == notary) {
             "Original notary cannot be overridden."
         }
-        this.notary = notary
+        super.setNotary(notary)
         return this
     }
 

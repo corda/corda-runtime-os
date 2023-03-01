@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
@@ -73,7 +74,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -83,7 +84,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer(notary = utxoNotaryExample))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -98,7 +99,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -108,7 +109,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer(timeWindow = utxoTimeWindowExample))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -119,7 +120,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -130,7 +131,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -141,7 +142,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -152,7 +153,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer(attachments = mutableListOf(hash2)))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -163,7 +164,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -174,7 +175,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -185,7 +186,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer(commands = mutableListOf(command2)))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -196,7 +197,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -207,7 +208,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -218,7 +219,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer(signatories = mutableListOf(anotherPublicKey)))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -229,7 +230,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -240,7 +241,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -262,7 +263,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -273,7 +274,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -295,7 +296,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -306,7 +307,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     @Test
@@ -317,7 +318,7 @@ class SendTransactonBuilderDiffFlowTest {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer(outputStates = mutableListOf(state2)))
-        verify(flowEngine).subFlow(TransactionBackchainSenderFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
     private fun callSendFlow() {

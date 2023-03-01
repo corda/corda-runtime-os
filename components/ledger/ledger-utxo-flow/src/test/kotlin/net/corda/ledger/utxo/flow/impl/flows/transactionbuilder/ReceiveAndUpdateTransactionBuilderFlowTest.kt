@@ -72,6 +72,9 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
         whenever(receivedTransactionBuilder.inputStateRefs).thenReturn(mutableListOf())
         whenever(receivedTransactionBuilder.referenceStateRefs).thenReturn(mutableListOf())
         whenever(receivedTransactionBuilder.outputStates).thenReturn(mutableListOf())
+
+        whenever(state1.contractState).thenReturn(mock())
+        whenever(state2.contractState).thenReturn(mock())
     }
 
     @Test
@@ -79,21 +82,21 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
         val returnedTransactionBuilder = callSendFlow()
 
         assertEquals(expectedTransactionBuilder, returnedTransactionBuilder)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `called with old notary null and receives new notary returns a builder with the new notary`() {
+    fun `called with original notary null and receives new notary returns a builder with the new notary`() {
         whenever(receivedTransactionBuilder.notary).thenReturn(utxoNotaryExample)
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).setNotary(utxoNotaryExample)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `called with old notary and receives a different new notary returns with the original notary`() {
+    fun `called with original notary and receives a different new notary returns with the original notary`() {
         val alternativeNotary = Party(
             MemberX500Name.parse("O=AnotherExampleNotaryService, L=London, C=GB"),
             anotherPublicKey
@@ -104,49 +107,50 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder, never()).setNotary(any())
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `called with old time window null and receives new time window return a builder with the new time window`() {
+    fun `called with original time window null and receives new time window return a builder with the new time window`() {
         whenever(receivedTransactionBuilder.timeWindow).thenReturn(utxoTimeWindowExample)
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `called with old time window and receives a different new time window returns with the original time window`() {
+    fun `Called with original time window and receives a different new time window returns with the original time window`() {
         whenever(originalTransactionalBuilder.timeWindow).thenReturn(utxoTimeWindowExample)
         whenever(receivedTransactionBuilder.timeWindow).thenReturn(TimeWindowUntilImpl(Instant.now()))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder, never()).setTimeWindowBetween(any(), any())
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `Receiving new attachment appends it`() {
-        whenever(receivedTransactionBuilder.attachments).thenReturn(mutableListOf(hash1))
+    fun `receiving new attachments appends it`() {
+        whenever(receivedTransactionBuilder.attachments).thenReturn(mutableListOf(hash1, hash2))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addAttachment(hash1)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(returnedTransactionBuilder).addAttachment(hash2)
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `Receiving existing attachment does not append it`() {
+    fun `receiving existing attachment does not append it`() {
         whenever(originalTransactionalBuilder.attachments).thenReturn(listOf(hash1))
         whenever(receivedTransactionBuilder.attachments).thenReturn(mutableListOf(hash1))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder, never()).addAttachment(any())
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
@@ -157,28 +161,29 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addAttachment(hash2)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `Receiving new commands appends it`() {
-        whenever(receivedTransactionBuilder.commands).thenReturn(mutableListOf(command1))
+    fun `receiving new commands appends it`() {
+        whenever(receivedTransactionBuilder.commands).thenReturn(mutableListOf(command1, command2))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addCommand(command1)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(returnedTransactionBuilder).addCommand(command2)
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `Receiving existing commands does not append it`() {
+    fun `receiving existing commands does not append it`() {
         whenever(originalTransactionalBuilder.commands).thenReturn(listOf(command1))
         whenever(receivedTransactionBuilder.commands).thenReturn(mutableListOf(command1))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder, never()).addCommand(any())
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
@@ -189,28 +194,28 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addCommand(command2)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `Receiving new signatories appends it`() {
-        whenever(receivedTransactionBuilder.signatories).thenReturn(mutableListOf(publicKeyExample))
+    fun `receiving new signatories appends it`() {
+        whenever(receivedTransactionBuilder.signatories).thenReturn(mutableListOf(publicKeyExample, anotherPublicKey))
 
         val returnedTransactionBuilder = callSendFlow()
 
-        verify(returnedTransactionBuilder).addSignatories(listOf(publicKeyExample))
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(returnedTransactionBuilder).addSignatories(listOf(publicKeyExample, anotherPublicKey))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `Receiving existing signatories does not append it`() {
+    fun `receiving existing signatories does not append it`() {
         whenever(originalTransactionalBuilder.signatories).thenReturn(listOf(publicKeyExample))
         whenever(receivedTransactionBuilder.signatories).thenReturn(mutableListOf(publicKeyExample))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addSignatories(listOf())
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
@@ -221,28 +226,35 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addSignatories(listOf(anotherPublicKey))
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `Receiving new input StateRefs appends it`() {
-        whenever(receivedTransactionBuilder.inputStateRefs).thenReturn(mutableListOf(stateRef1))
+    fun `receiving new input StateRefs appends it`() {
+        whenever(receivedTransactionBuilder.inputStateRefs).thenReturn(mutableListOf(stateRef1, stateRef2))
 
         val returnedTransactionBuilder = callSendFlow()
 
-        verify(returnedTransactionBuilder).addInputStates(listOf(stateRef1))
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(stateRef1.transactionId), session))
+        verify(returnedTransactionBuilder).addInputStates(listOf(stateRef1, stateRef2))
+        verify(flowEngine).subFlow(
+            TransactionBackchainResolutionFlow(
+                setOf(
+                    stateRef1.transactionId,
+                    stateRef2.transactionId
+                ), session
+            )
+        )
     }
 
     @Test
-    fun `Receiving existing input StateRefs does not append it`() {
+    fun `receiving existing input StateRefs does not append it`() {
         whenever(originalTransactionalBuilder.inputStateRefs).thenReturn(listOf(stateRef1))
         whenever(receivedTransactionBuilder.inputStateRefs).thenReturn(mutableListOf(stateRef1))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addInputStates(listOf())
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
@@ -257,24 +269,31 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
     }
 
     @Test
-    fun `Receiving new reference StateRefs appends it`() {
-        whenever(receivedTransactionBuilder.referenceStateRefs).thenReturn(mutableListOf(stateRef1))
+    fun `receiving new reference StateRefs appends it`() {
+        whenever(receivedTransactionBuilder.referenceStateRefs).thenReturn(mutableListOf(stateRef1, stateRef2))
 
         val returnedTransactionBuilder = callSendFlow()
 
-        verify(returnedTransactionBuilder).addReferenceStates(listOf(stateRef1))
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(stateRef1.transactionId), session))
+        verify(returnedTransactionBuilder).addReferenceStates(listOf(stateRef1, stateRef2))
+        verify(flowEngine).subFlow(
+            TransactionBackchainResolutionFlow(
+                setOf(
+                    stateRef1.transactionId,
+                    stateRef2.transactionId
+                ), session
+            )
+        )
     }
 
     @Test
-    fun `Receiving existing reference StateRefs does not append it`() {
+    fun `receiving existing reference StateRefs does not append it`() {
         whenever(originalTransactionalBuilder.referenceStateRefs).thenReturn(listOf(stateRef1))
         whenever(receivedTransactionBuilder.referenceStateRefs).thenReturn(mutableListOf(stateRef1))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addReferenceStates(listOf())
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
@@ -289,24 +308,25 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
     }
 
     @Test
-    fun `Receiving new outputs appends it`() {
-        whenever(receivedTransactionBuilder.outputStates).thenReturn(mutableListOf(state1))
+    fun `receiving new outputs appends it`() {
+        whenever(receivedTransactionBuilder.outputStates).thenReturn(mutableListOf(state1, state2))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addOutputState(state1.contractState)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(returnedTransactionBuilder).addOutputState(state2.contractState)
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
-    fun `Receiving existing outputs does not append it`() {
+    fun `receiving existing outputs does not append it`() {
         whenever(originalTransactionalBuilder.outputStates).thenReturn(listOf(state1))
         whenever(receivedTransactionBuilder.outputStates).thenReturn(mutableListOf(state1))
 
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder, never()).addOutputState(any())
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     @Test
@@ -317,7 +337,7 @@ class ReceiveAndUpdateTransactionBuilderFlowTest {
         val returnedTransactionBuilder = callSendFlow()
 
         verify(returnedTransactionBuilder).addOutputState(state2.contractState)
-        verify(flowEngine).subFlow(TransactionBackchainResolutionFlow(setOf(), session))
+        verify(flowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
     }
 
     private fun callSendFlow(): UtxoTransactionBuilderInternal {
