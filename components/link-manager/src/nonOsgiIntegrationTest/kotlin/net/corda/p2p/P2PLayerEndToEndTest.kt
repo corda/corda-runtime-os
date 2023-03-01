@@ -24,6 +24,7 @@ import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
@@ -94,7 +95,6 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ParameterizedSignatureSpec
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberContext

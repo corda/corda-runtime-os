@@ -1,5 +1,6 @@
 package com.r3.corda.notary.plugin.common
 
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -18,7 +19,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
