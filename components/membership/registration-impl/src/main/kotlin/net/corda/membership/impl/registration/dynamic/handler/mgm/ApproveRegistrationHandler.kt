@@ -24,8 +24,8 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda

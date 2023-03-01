@@ -1,5 +1,6 @@
 package net.corda.virtualnode
 
+import net.corda.crypto.core.ShortHash
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash

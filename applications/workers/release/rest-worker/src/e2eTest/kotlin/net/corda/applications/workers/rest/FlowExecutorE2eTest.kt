@@ -9,7 +9,7 @@ import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminPassword
 import net.corda.applications.workers.rest.utils.AdminPasswordUtil.adminUser
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

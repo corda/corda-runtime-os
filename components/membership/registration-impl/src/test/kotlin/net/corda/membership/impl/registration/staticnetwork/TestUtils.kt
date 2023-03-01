@@ -92,6 +92,31 @@ class TestUtils {
             ]
         """.trimIndent()
 
+        private val staticMemberTemplateWithDuplicatedVNodeName = """
+            [
+                {
+                    "$NAME": "$aliceName",
+                    "$MEMBER_STATUS": "$MEMBER_STATUS_ACTIVE",
+                    "${String.format(ENDPOINT_URL, 1)}": "$TEST_ENDPOINT_URL",
+                    "${String.format(ENDPOINT_PROTOCOL, 1)}": "$TEST_ENDPOINT_PROTOCOL"
+                },
+                {
+                    "$NAME": "$aliceName",
+                    "$MEMBER_STATUS": "$MEMBER_STATUS_ACTIVE",
+                    "${String.format(ENDPOINT_URL, 1)}": "$TEST_ENDPOINT_URL",
+                    "${String.format(ENDPOINT_PROTOCOL, 1)}": "$TEST_ENDPOINT_PROTOCOL"
+                },
+                {
+                    "$NAME": "$charlieName",
+                    "$MEMBER_STATUS": "$MEMBER_STATUS_SUSPENDED",
+                    "${String.format(ENDPOINT_URL, 1)}": "$TEST_ENDPOINT_URL",
+                    "${String.format(ENDPOINT_PROTOCOL, 1)}": "$TEST_ENDPOINT_PROTOCOL",
+                    "${String.format(ENDPOINT_URL, 2)}": "$TEST_ENDPOINT_URL",
+                    "${String.format(ENDPOINT_PROTOCOL, 2)}": "$TEST_ENDPOINT_PROTOCOL"   
+                }
+            ]
+        """.trimIndent()
+
 
         val groupPolicyWithStaticNetwork = MemberGroupPolicyImpl(
             ObjectMapper().readTree(
@@ -105,6 +130,36 @@ class TestUtils {
                         "$SESSION_KEY_POLICY": "$COMBINED",
                         "$STATIC_NETWORK": {
                             "$MEMBERS": $staticMemberTemplate
+                        }
+                    },
+                    "$P2P_PARAMETERS": {
+                        "$SESSION_PKI": "$NO_PKI",
+                        "$TLS_TRUST_ROOTS": [
+                            "$r3comCert"
+                        ],
+                        "$TLS_PKI": "$STANDARD",
+                        "$TLS_TYPE": "${ONE_WAY.groupPolicyName}",
+                        "$TLS_VERSION": "$VERSION_1_3",
+                        "$PROTOCOL_MODE": "$AUTH_ENCRYPT"
+                    },
+                    "$CIPHER_SUITE": {}
+                }
+            """.trimIndent()
+            )
+        )
+
+        val groupPolicyWithStaticNetworkAndDuplicatedVNodeName = MemberGroupPolicyImpl(
+            ObjectMapper().readTree(
+                """
+                {
+                    "$FILE_FORMAT_VERSION": 1,
+                    "$GROUP_ID": "$DUMMY_GROUP_ID",
+                    "$REGISTRATION_PROTOCOL": "com.foo.bar.RegistrationProtocol",
+                    "$SYNC_PROTOCOL": "com.foo.bar.SyncProtocol",
+                    "$PROTOCOL_PARAMETERS": {
+                        "$SESSION_KEY_POLICY": "$COMBINED",
+                        "$STATIC_NETWORK": {
+                            "$MEMBERS": $staticMemberTemplateWithDuplicatedVNodeName
                         }
                     },
                     "$P2P_PARAMETERS": {

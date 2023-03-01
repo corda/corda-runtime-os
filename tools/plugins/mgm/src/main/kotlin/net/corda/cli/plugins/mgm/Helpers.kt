@@ -4,7 +4,7 @@ import java.net.ServerSocket
 import kotlin.concurrent.thread
 
 internal object Helpers {
-    fun rpcPasswordFromClusterName(cordaClusterName: String?): String {
+    fun restPasswordFromClusterName(cordaClusterName: String?): String {
         return if (cordaClusterName != null) {
             val getSecret = ProcessBuilder().command(
                 "kubectl",

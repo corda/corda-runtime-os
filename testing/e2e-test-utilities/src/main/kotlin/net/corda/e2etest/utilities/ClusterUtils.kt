@@ -1,7 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.module.kotlin.contains
-import net.corda.httprpc.ResponseCode
+import net.corda.rest.ResponseCode
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat

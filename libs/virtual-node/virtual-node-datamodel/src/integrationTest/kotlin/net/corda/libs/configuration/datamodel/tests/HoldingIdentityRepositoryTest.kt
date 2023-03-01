@@ -1,19 +1,18 @@
 package net.corda.libs.configuration.datamodel.tests
 
+import net.corda.crypto.core.ShortHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
+import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.test.util.TestRandom
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test

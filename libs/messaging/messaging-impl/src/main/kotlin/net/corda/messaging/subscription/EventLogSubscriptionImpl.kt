@@ -26,8 +26,8 @@ import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalan
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
-import net.corda.v5.base.util.debug
+import net.corda.schema.Schemas.getStateAndEventDLQTopic
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 /**

@@ -10,6 +10,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
@@ -86,7 +87,6 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat

@@ -3,6 +3,7 @@ package net.corda.membership.impl.client
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
@@ -61,7 +62,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat

@@ -12,8 +12,7 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
-import net.corda.v5.base.util.trace
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
@@ -71,7 +70,8 @@ class FlowEventPipelineImpl(
             )
             context.copy(
                 inputEvent = context.checkpoint.retryEvent,
-                inputEventPayload = context.checkpoint.retryEvent.payload
+                inputEventPayload = context.checkpoint.retryEvent.payload,
+                isRetryEvent = true
             )
         } else {
             context
@@ -145,21 +145,23 @@ class FlowEventPipelineImpl(
     }
 
     private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {
-        return flowEventHandlers[event.payload::class.java]
-            ?.let { uncheckedCast(it) }
+        @Suppress("unchecked_cast")
+        return flowEventHandlers[event.payload::class.java] as? FlowEventHandler<Any>
             ?: throw FlowFatalException("${event.payload::class.java.name} does not have an associated flow event handler")
     }
 
     private fun getFlowWaitingForHandler(waitingFor: Any): FlowWaitingForHandler<Any> {
         // This [uncheckedCast] is required to pass the [waitingFor] into the returned [FlowWaitingForHandler] further in the pipeline.
-        return uncheckedCast(flowWaitingForHandlers[waitingFor::class.java])
+        @Suppress("unchecked_cast")
+        return flowWaitingForHandlers[waitingFor::class.java] as? FlowWaitingForHandler<Any>
             ?: throw FlowFatalException("${waitingFor::class.qualifiedName} does not have an associated flow status handler")
     }
 
     private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
         // This [uncheckedCast] is required to remove the [out] from the [FlowRequestHandler] that is extracted from the map.
         // The [out] cannot be kept as it leaks onto the [FlowRequestHandler] interface eventually leading to code that cannot compile.
-        return uncheckedCast(flowRequestHandlers[request::class.java])
+        @Suppress("unchecked_cast")
+        return flowRequestHandlers[request::class.java] as? FlowRequestHandler<FlowIORequest<*>>
             ?: throw FlowFatalException("${request::class.qualifiedName} does not have an associated flow request handler")
     }
 

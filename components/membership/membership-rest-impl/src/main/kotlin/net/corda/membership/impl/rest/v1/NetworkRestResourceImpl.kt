@@ -1,20 +1,23 @@
 package net.corda.membership.impl.rest.v1
 
-import net.corda.httprpc.PluggableRestResource
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.crypto.core.ShortHash
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
-import net.corda.membership.httprpc.v1.NetworkRestResource
-import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.NetworkRestResource
+import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.virtualnode.read.rest.extensions.createKeyIdOrHttpThrow
+import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -37,12 +40,13 @@ class NetworkRestResourceImpl @Activate constructor(
         holdingIdentityShortHash: String,
         request: HostedIdentitySetupRequest
     ) {
+        val operation = "set up locally hosted identities"
         try {
             certificatesClient.setupLocallyHostedIdentity(
                 ShortHash.parseOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
                 request.useClusterLevelTlsCertificateAndKey != false,
-                request.sessionKeyId,
+                request.sessionKeyId?.let { createKeyIdOrHttpThrow(it) },
                 request.sessionCertificateChainAlias
             )
         } catch (e: CertificatesResourceNotFoundException) {
@@ -51,8 +55,11 @@ class NetworkRestResourceImpl @Activate constructor(
             logger.warn(e.message)
             throw e
         } catch (e: SignatureException) {
-            logger.warn("Could not set up locally hosted identities", e)
+            logger.warn("Could not $operation", e)
             throw BadRequestException("The certificate was not signed by the correct certificate authority. ${e.message}")
+        } catch (e: CordaRPCAPIPartitionException) {
+            logger.warn("Could not $operation", e)
+            throw ServiceUnavailableException("Could not $operation: Repartition Event!")
         } catch (e: Throwable) {
             logger.warn("Could not publish to locally hosted identities", e)
             throw InternalServerException("Could not import certificate: ${e.message}")

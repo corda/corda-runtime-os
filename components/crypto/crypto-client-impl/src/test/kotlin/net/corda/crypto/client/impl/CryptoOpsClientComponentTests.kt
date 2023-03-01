@@ -19,6 +19,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTE
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
@@ -57,7 +58,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
-import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals

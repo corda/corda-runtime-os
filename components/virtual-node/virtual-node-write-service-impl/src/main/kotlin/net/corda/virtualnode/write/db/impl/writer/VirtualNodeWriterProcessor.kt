@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -26,7 +27,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
-import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
@@ -39,13 +40,12 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
-import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -63,6 +63,9 @@ import kotlin.system.measureTimeMillis
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
+import net.corda.virtualnode.OperationalStatus
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -387,21 +390,37 @@ internal class VirtualNodeWriterProcessor(
             val updatedVirtualNode = em.use { entityManager ->
 
                 val shortHash = ShortHash.Companion.of(stateChangeRequest.holdingIdentityShortHash)
-                val nodeInfo = virtualNodeRepository.find(entityManager, shortHash)
 
-                if (nodeInfo != null) {
-                    val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
-                    if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
-                        if (!migrationUtility.isVaultSchemaAndTargetCpiInSync(
-                                stateChangeRequest.holdingIdentityShortHash,
-                                changelogsPerCpk,
-                                nodeInfo.vaultDmlConnectionId
-                            )
-                        )
-                            throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
+                val nodeInfo = virtualNodeRepository.find(entityManager, shortHash)
+                    ?: throw VirtualNodeDbException("Unable to fetch node info")
+
+                val inMaintenance = listOf(
+                    nodeInfo.flowOperationalStatus,
+                    nodeInfo.flowStartOperationalStatus,
+                    nodeInfo.flowP2pOperationalStatus,
+                    nodeInfo.vaultDbOperationalStatus
+                ).any { it == OperationalStatus.INACTIVE }
+
+                val newState = VirtualNodeStateTransitions.valueOf(stateChangeRequest.newState.uppercase())
+
+                // Compare new state to current state
+                when (inMaintenance) {
+                    true -> if (newState == VirtualNodeStateTransitions.MAINTENANCE)
+                        throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+
+                    false -> if (newState == VirtualNodeStateTransitions.ACTIVE)
+                        throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+                }
+
+                val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
+                if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
+                    val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
+                        stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
+                    )
+                    if (!inSync) {
+                        logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
+                        throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
                     }
-                } else {
-                    throw VirtualNodeDbException("Unable to fetch node info")
                 }
 
                 virtualNodeRepository.updateVirtualNodeState(
@@ -468,9 +487,20 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
         when (val typedRequest = request.request) {
-            is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
-            is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
-            is VirtualNodeDBResetRequest -> resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeCreateRequest -> {
+                logger.info("Handling virtual node creation request for ${typedRequest.x500Name}, ${typedRequest.cpiFileChecksum}")
+                createVirtualNode(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeStateChangeRequest -> {
+                logger.info(
+                    "Handling change virtual node state request for ${typedRequest.holdingIdentityShortHash} to ${typedRequest.newState}"
+                )
+                changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeDBResetRequest -> {
+                logger.info("Handling virtual node db reset request for ${typedRequest.holdingIdentityShortHashes.joinToString()}")
+                resetVirtualNodeDb(request.timestamp, typedRequest, respFuture)
+            }
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }

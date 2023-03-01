@@ -12,8 +12,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
+import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")

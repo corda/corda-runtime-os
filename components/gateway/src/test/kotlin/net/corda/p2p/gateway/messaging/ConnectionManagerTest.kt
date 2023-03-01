@@ -4,7 +4,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.util.concurrent.Future
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.v5.base.util.seconds
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test

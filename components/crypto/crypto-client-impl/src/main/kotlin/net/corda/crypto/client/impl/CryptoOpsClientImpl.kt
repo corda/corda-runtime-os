@@ -6,6 +6,7 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
@@ -35,8 +36,8 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.debug
 import net.corda.v5.base.util.EncodingUtils.toBase58
-import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
@@ -45,7 +46,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
-import net.corda.virtualnode.ShortHash
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey

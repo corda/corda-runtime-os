@@ -4,8 +4,8 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.messaging.topic.utils.TopicUtils
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException

@@ -18,7 +18,7 @@ import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.provider.SchemaProvider
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.v5.base.versioning.Version
 import org.slf4j.LoggerFactory
 

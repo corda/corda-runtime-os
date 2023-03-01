@@ -16,8 +16,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
-import net.corda.v5.base.util.trace
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.RejectedExecutionException
@@ -225,7 +224,8 @@ class LifecycleCoordinatorImpl(
     }
 
     override fun <T: Resource> getManagedResource(name: String) : T? {
-        return uncheckedCast(processor.getManagedResource(name))
+        @Suppress("unchecked_cast")
+        return processor.getManagedResource(name) as? T
     }
 
     override fun closeManagedResources(resources: Set<String>?) = processor.closeManagedResources(resources)

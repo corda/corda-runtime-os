@@ -5,8 +5,8 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.httprpc.HttpFileUpload
-import net.corda.membership.httprpc.v1.CertificatesRestResource
+import net.corda.rest.HttpFileUpload
+import net.corda.membership.rest.v1.CertificatesRestResource
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest

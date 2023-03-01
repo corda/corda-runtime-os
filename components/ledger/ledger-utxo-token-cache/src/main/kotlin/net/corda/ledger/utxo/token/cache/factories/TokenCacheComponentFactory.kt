@@ -16,7 +16,6 @@ import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -68,6 +67,7 @@ class TokenCacheComponentFactory @Activate constructor(
     private inline fun <reified T : TokenEvent> createHandler(
         handler: TokenEventHandler<in T>
     ): Pair<Class<T>, TokenEventHandler<in TokenEvent>> {
-        return Pair(T::class.java, uncheckedCast(handler))
+        @Suppress("unchecked_cast")
+        return Pair(T::class.java, handler as TokenEventHandler<in TokenEvent>)
     }
 }

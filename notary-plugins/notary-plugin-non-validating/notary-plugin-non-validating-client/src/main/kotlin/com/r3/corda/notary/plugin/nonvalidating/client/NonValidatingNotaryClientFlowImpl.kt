@@ -2,7 +2,6 @@ package com.r3.corda.notary.plugin.nonvalidating.client
 
 import com.r3.corda.notary.plugin.common.NotarisationRequest
 import com.r3.corda.notary.plugin.common.NotarisationResponse
-import com.r3.corda.notary.plugin.common.NotaryException
 import com.r3.corda.notary.plugin.common.generateRequestSignature
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarisationPayload
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -14,7 +13,6 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.trace
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -23,7 +21,7 @@ import org.slf4j.LoggerFactory
 
 /**
  * The client that is used for the non-validating notary logic. This class is very simple and uses the basic
- * send-and-receive logic and it will also initiate the server side of the non-validating notary.
+ * send-and-receive logic, and it will also initiate the server side of the non-validating notary.
  */
 @InitiatingFlow(protocol = "net.corda.notary.NonValidatingNotary")
 class NonValidatingNotaryClientFlowImpl(
@@ -32,7 +30,7 @@ class NonValidatingNotaryClientFlowImpl(
 ) : PluggableNotaryClientFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -81,14 +79,18 @@ class NonValidatingNotaryClientFlowImpl(
      */
     @Suspendable
     override fun call(): List<DigitalSignatureAndMetadata> {
-        log.trace { "Notarizing transaction ${stx.id} with notary $notaryRepresentative" }
+        if (log.isTraceEnabled) {
+            log.trace("Notarizing transaction {} with notary {}", stx.id, notaryRepresentative)
+        }
 
         val session = flowMessaging.initiateFlow(notaryRepresentative.name)
 
         val payload = generatePayload(stx)
 
-        log.trace { "Sending notarization request to notary service ${stx.notary} via " +
-                "representative $notaryRepresentative for transaction ${stx.id}" }
+        if (log.isTraceEnabled) {
+            log.trace("Sending notarization request to notary service {} via " +
+                        "representative {} for transaction {}", stx.notary, notaryRepresentative, stx.id)
+        }
 
         val notarisationResponse = session.sendAndReceive(
             NotarisationResponse::class.java,
@@ -97,14 +99,18 @@ class NonValidatingNotaryClientFlowImpl(
 
         return when (val error = notarisationResponse.error) {
             null -> {
-                log.trace { "Received notarization response from notary service ${stx.notary} " +
-                        "for transaction ${stx.id}" }
+                if (log.isTraceEnabled) {
+                    log.trace("Received notarization response from notary service {} for transaction {}",
+                              stx.notary, stx.id)
+                }
                 notarisationResponse.signatures
             }
             else -> {
-                log.trace { "Received notarization error from notary service ${stx.notary} for " +
-                        "transaction ${stx.id}. Error: $error" }
-                throw NotaryException(error, stx.id)
+                if (log.isTraceEnabled) {
+                    log.trace("Received notarization error from notary service {}. Error: {}",
+                        stx.notary, error)
+                }
+                throw error
             }
         }
     }

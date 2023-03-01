@@ -19,7 +19,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

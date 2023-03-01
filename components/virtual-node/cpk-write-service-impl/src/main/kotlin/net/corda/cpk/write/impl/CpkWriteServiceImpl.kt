@@ -5,7 +5,6 @@ import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.write.CpkWriteService
-import net.corda.cpk.write.impl.services.db.CpkChecksumToData
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.cpk.write.impl.services.db.impl.DBCpkStorage
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
@@ -16,6 +15,7 @@ import net.corda.data.chunking.CpkChunkId
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -39,10 +39,10 @@ import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
 import net.corda.utilities.VisibleForTesting
+import net.corda.utilities.debug
+import net.corda.utilities.seconds
+import net.corda.utilities.trace
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.seconds
-import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -211,7 +211,7 @@ class CpkWriteServiceImpl @Activate constructor(
 
         val cpkStorage =
             this.cpkStorage ?: throw CordaRuntimeException("CPK Storage Service is not set")
-        val missingCpkIdsOnKafka = cpkStorage.getCpkIdsNotIn(cachedCpkIds)
+        val missingCpkIdsOnKafka = cpkStorage.getAllCpkFileIds(fileChecksumsToExclude = cachedCpkIds)
 
         // Make sure we use the same CPK publisher for all CPK publishing.
         this.cpkChunksPublisher?.let {
@@ -219,16 +219,16 @@ class CpkWriteServiceImpl @Activate constructor(
                 .forEach { cpkChecksum ->
                     // TODO probably replace the following logging with debug
                     logger.info("Putting missing CPK to Kafka: $cpkChecksum")
-                    val cpkChecksumData = cpkStorage.getCpkDataByCpkId(cpkChecksum)
-                    it.chunkAndPublishCpk(cpkChecksumData)
+                    val cpkFile = cpkStorage.getCpkFileById(cpkChecksum)
+                    it.chunkAndPublishCpk(cpkFile)
                 }
         } ?: throw CordaRuntimeException("CPK Chunks Publisher service is not set")
     }
 
-    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkChecksumToData: CpkChecksumToData) {
-        logger.debug { "Publishing CPK ${cpkChecksumToData.checksum}" }
-        val cpkChecksum = cpkChecksumToData.checksum
-        val cpkData = cpkChecksumToData.data
+    private fun CpkChunksPublisher.chunkAndPublishCpk(cpkFile: CpkFile) {
+        logger.debug { "Publishing CPK ${cpkFile.fileChecksum}" }
+        val cpkChecksum = cpkFile.fileChecksum
+        val cpkData = cpkFile.data
         val chunkWriter = maxAllowedKafkaMsgSize?.let {
             ChunkWriterFactory.create(it)
         } ?: throw CordaRuntimeException("maxAllowedKafkaMsgSize is not set")

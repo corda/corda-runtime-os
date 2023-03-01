@@ -2,7 +2,7 @@ package net.corda.virtualnode.write.db.impl.writer.asyncoperation
 
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import java.util.UUID
-import net.corda.virtualnode.ShortHash
+import net.corda.crypto.core.ShortHash
 
 /**
  * Utility for running migrations.

@@ -1,12 +1,12 @@
 package net.corda.processors.rest.internal
 
-import net.corda.components.rpc.RestGateway
+import net.corda.components.rest.RestGateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
-import net.corda.flow.rpcops.FlowRPCOpsService
+import net.corda.flow.rest.FlowRestResourceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.DependentComponents
@@ -27,7 +27,7 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rest.RestProcessor
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -46,8 +46,8 @@ class RestProcessorImpl @Activate constructor(
     private val restGateway: RestGateway,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = FlowRPCOpsService::class)
-    private val flowRPCOpsService: FlowRPCOpsService,
+    @Reference(service = FlowRestResourceService::class)
+    private val flowRestResourceService: FlowRestResourceService,
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
     @Reference(service = CpiInfoReadService::class)
@@ -87,7 +87,7 @@ class RestProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configReadService,
         ::restGateway,
-        ::flowRPCOpsService,
+        ::flowRestResourceService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
         ::memberResourceClient,

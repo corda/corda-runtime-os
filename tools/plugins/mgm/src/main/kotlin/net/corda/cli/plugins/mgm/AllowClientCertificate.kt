@@ -1,10 +1,10 @@
 package net.corda.cli.plugins.mgm
 
-import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.cli.plugins.mgm.Helpers.baseUrlFromClusterName
-import net.corda.cli.plugins.mgm.Helpers.rpcPasswordFromClusterName
-import net.corda.membership.httprpc.v1.MGMRestResource
+import net.corda.cli.plugins.mgm.Helpers.restPasswordFromClusterName
+import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -47,7 +47,7 @@ class AllowClientCertificate : Runnable {
     private inner class Command : HttpRpcCommand() {
         init {
             targetUrl = baseUrlFromClusterName(cordaClusterName, rpcWorkerDeploymentName)
-            password = rpcPasswordFromClusterName(cordaClusterName)
+            password = restPasswordFromClusterName(cordaClusterName)
             username = "admin"
         }
     } override fun run() {
