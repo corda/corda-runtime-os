@@ -57,8 +57,8 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             this::class.java.getResource("/dummy_session_key.pem")?.readText()
         private val memberList =
             listOf(HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID),
-                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_X500_NAME, NON_EXISTING_GROUP_ID),
-                HoldingIdentity(ALICE_OTHER_CLUSTER_X500, NON_EXISTING_GROUP_ID) )
+                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, NON_EXISTING_GROUP_ID), HoldingIdentity(ALICE_X500_NAME, NON_EXISTING_GROUP_ID),
+                HoldingIdentity(ALICE_OTHER_CLUSTER_X500, INTEROP_GROUP_ID))
     }
 
     //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
