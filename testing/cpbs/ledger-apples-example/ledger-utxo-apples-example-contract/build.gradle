@@ -12,12 +12,6 @@ cordapp {
     }
 }
 
-tasks.named('compileKotlin') {
-    compilerOptions {
-        freeCompilerArgs.add '-Xstring-concat=inline'
-    }
-}
-
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-ledger-utxo'
