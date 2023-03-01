@@ -32,7 +32,7 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
             additionalProperties = SchemaModel(DataType.STRING, null)
         )
 
-        val result = net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.convert(model)
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertEquals("string", (result.additionalProperties as Schema<*>).type)
         assertEquals(null, (result.additionalProperties as Schema<*>).format)
