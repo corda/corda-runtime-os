@@ -3,7 +3,6 @@ package net.cordapp.utxo.apples.contracts
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.v5.ledger.utxo.transaction.getOutputStates
 import net.cordapp.utxo.apples.states.AppleStamp
 
 class AppleStampContract : Contract {
@@ -19,7 +18,7 @@ class AppleStampContract : Contract {
         // Verify the transaction according to the intention of the transaction
         when (val command = transaction.commands.first()) {
             is Commands.Issue -> {
-                val output = transaction.getOutputStates<AppleStamp>().first()
+                val output = transaction.getOutputStates(AppleStamp::class.java).first()
                 require(transaction.outputContractStates.size == 1) {
                     "This transaction should only have one AppleStamp state as output"
                 }

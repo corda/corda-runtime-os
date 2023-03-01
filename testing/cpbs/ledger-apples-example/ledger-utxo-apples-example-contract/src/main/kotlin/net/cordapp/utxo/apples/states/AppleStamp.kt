@@ -15,5 +15,7 @@ data class AppleStamp(
     val stampDesc: String,
     val issuer: Party,
     val holder: Party,
-    override val participants: List<PublicKey>
-) : ContractState
+    private val participants: List<PublicKey>
+) : ContractState {
+    override fun getParticipants() = participants
+}

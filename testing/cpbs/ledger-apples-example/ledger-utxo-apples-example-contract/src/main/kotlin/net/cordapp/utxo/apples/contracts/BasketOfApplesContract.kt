@@ -3,8 +3,6 @@ package net.cordapp.utxo.apples.contracts
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.v5.ledger.utxo.transaction.getInputStates
-import net.corda.v5.ledger.utxo.transaction.getOutputStates
 import net.cordapp.utxo.apples.states.AppleStamp
 import net.cordapp.utxo.apples.states.BasketOfApples
 
@@ -20,7 +18,7 @@ class BasketOfApplesContract : Contract{
         when (val command = transaction.commands.first()) {
             is Commands.PackBasket -> {
                 // Retrieve the output state of the transaction
-                val output = transaction.getOutputStates<BasketOfApples>().first()
+                val output = transaction.getOutputStates(BasketOfApples::class.java).first()
                 require(transaction.outputContractStates.size == 1) {
                     "This transaction should only output one BasketOfApples state"
                 }
@@ -33,8 +31,8 @@ class BasketOfApplesContract : Contract{
             }
             is Commands.Redeem -> {
                 // Retrieve the input and output state of the transaction
-                val input = transaction.getInputStates<AppleStamp>().first()
-                val output = transaction.getOutputStates<BasketOfApples>().first()
+                val input = transaction.getInputStates(AppleStamp::class.java).first()
+                val output = transaction.getOutputStates(BasketOfApples::class.java).first()
                 require(transaction.inputContractStates.size == 2) {
                     "This transaction should consume two states"
                 }
