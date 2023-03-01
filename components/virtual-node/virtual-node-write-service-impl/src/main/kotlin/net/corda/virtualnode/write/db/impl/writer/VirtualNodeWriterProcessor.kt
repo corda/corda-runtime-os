@@ -27,7 +27,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
-import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
@@ -63,6 +63,9 @@ import kotlin.system.measureTimeMillis
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
+import net.corda.virtualnode.OperationalStatus
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -387,21 +390,37 @@ internal class VirtualNodeWriterProcessor(
             val updatedVirtualNode = em.use { entityManager ->
 
                 val shortHash = ShortHash.Companion.of(stateChangeRequest.holdingIdentityShortHash)
-                val nodeInfo = virtualNodeRepository.find(entityManager, shortHash)
 
-                if (nodeInfo != null) {
-                    val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
-                    if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
-                        val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
-                            stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
-                        )
-                        if (!inSync) {
-                            logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
-                            throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
-                        }
+                val nodeInfo = virtualNodeRepository.find(entityManager, shortHash)
+                    ?: throw VirtualNodeDbException("Unable to fetch node info")
+
+                val inMaintenance = listOf(
+                    nodeInfo.flowOperationalStatus,
+                    nodeInfo.flowStartOperationalStatus,
+                    nodeInfo.flowP2pOperationalStatus,
+                    nodeInfo.vaultDbOperationalStatus
+                ).any { it == OperationalStatus.INACTIVE }
+
+                val newState = VirtualNodeStateTransitions.valueOf(stateChangeRequest.newState.uppercase())
+
+                // Compare new state to current state
+                when (inMaintenance) {
+                    true -> if (newState == VirtualNodeStateTransitions.MAINTENANCE)
+                        throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+
+                    false -> if (newState == VirtualNodeStateTransitions.ACTIVE)
+                        throw InvalidStateChangeRuntimeException("VirtualNode", shortHash.value, newState.name)
+                }
+
+                val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
+                if (stateChangeRequest.newState.lowercase(Locale.getDefault()) == "active") {
+                    val inSync = migrationUtility.isVaultSchemaAndTargetCpiInSync(
+                        stateChangeRequest.holdingIdentityShortHash, changelogsPerCpk, nodeInfo.vaultDmlConnectionId
+                    )
+                    if (!inSync) {
+                        logger.info("Cannot set state to ACTIVE, db is not in sync with changelogs")
+                        throw VirtualNodeDbException("Cannot set state to ACTIVE, db is not in sync with changelogs")
                     }
-                } else {
-                    throw VirtualNodeDbException("Unable to fetch node info")
                 }
 
                 virtualNodeRepository.updateVirtualNodeState(

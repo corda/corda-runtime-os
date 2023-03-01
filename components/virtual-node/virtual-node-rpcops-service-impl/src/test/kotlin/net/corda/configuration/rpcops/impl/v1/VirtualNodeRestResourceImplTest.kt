@@ -1,12 +1,21 @@
 package net.corda.configuration.rpcops.impl.v1
 
+import java.util.UUID
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.utilities.time.ClockFactory
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRestResourceImpl
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -18,7 +27,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /** Tests of [VirtualNodeRestResourceImpl]. */
-class VirtualNodeRPCOpsImplTest {
+class VirtualNodeRestResourceImplTest {
     companion object {
         private const val actor = "test_principal"
 
@@ -44,6 +53,10 @@ class VirtualNodeRPCOpsImplTest {
         whenever(createUTCClock()) doReturn UTCClock()
     }
 
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
+        whenever(getByHoldingIdentityShortHash(any())) doReturn mockVnode()
+    }
+
     @Nested
     inner class LifecycleTests {
         private val mockDownCoordinator = mock<LifecycleCoordinator>().apply {
@@ -55,34 +68,34 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify coordinator is started on start`() {
-            val vnodeRpcOps =
+            val vnodeResource =
                 VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock(), mockClockFactory)
-            vnodeRpcOps.start()
+            vnodeResource.start()
 
             verify(mockCoordinator).start()
         }
 
         @Test
         fun `verify coordinator is stopped on stop`() {
-            val vnodeRpcOps =
+            val vnodeResource =
                 VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock(), mockClockFactory)
-            vnodeRpcOps.stop()
+            vnodeResource.stop()
 
             verify(mockCoordinator).stop()
         }
 
         @Test
         fun `verify coordinator isRunning defers to the coordinator`() {
-            val vnodeRpcOps =
+            val vnodeResource =
                 VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock(), mockClockFactory)
-            vnodeRpcOps.isRunning
+            vnodeResource.isRunning
 
             verify(mockCoordinator).isRunning
         }
 
         @Test
         fun `verify exception throw if getAllVirtualNodes is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeRestResourceImpl(
+            val vnodeMaintenanceResource = VirtualNodeRestResourceImpl(
                 mockDownCoordinatorFactory,
                 mock(),
                 mock(),
@@ -91,7 +104,7 @@ class VirtualNodeRPCOpsImplTest {
                 mockClockFactory
             )
             assertThrows<IllegalStateException> {
-                vnodeMaintenanceRpcOps.getAllVirtualNodes()
+                vnodeMaintenanceResource.getAllVirtualNodes()
             }
 
             verify(mockDownCoordinator).isRunning
@@ -99,7 +112,7 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify exception throw if createVirtualNode is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeRestResourceImpl(
+            val vnodeMaintenanceResource = VirtualNodeRestResourceImpl(
                 mockDownCoordinatorFactory,
                 mock(),
                 mock(),
@@ -108,7 +121,7 @@ class VirtualNodeRPCOpsImplTest {
                 mockClockFactory
             )
             assertThrows<IllegalStateException> {
-                vnodeMaintenanceRpcOps.createVirtualNode(mock())
+                vnodeMaintenanceResource.createVirtualNode(mock())
             }
 
             verify(mockDownCoordinator).isRunning
@@ -116,7 +129,7 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify exception throw if updateVirtualNodeState is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps =
+            val vnodeMaintenanceResource =
                 VirtualNodeRestResourceImpl(
                     mockDownCoordinatorFactory,
                     mock(),
@@ -126,10 +139,43 @@ class VirtualNodeRPCOpsImplTest {
                     mockClockFactory
                 )
             assertThrows<IllegalStateException> {
-                vnodeMaintenanceRpcOps.updateVirtualNodeState("someId", "someState")
+                vnodeMaintenanceResource.updateVirtualNodeState("someId", "someState")
             }
 
             verify(mockDownCoordinator).isRunning
         }
+    }
+
+    @Test
+    fun `cant set state of virtual node to non defined value`() {
+        val vnodeResource =
+            VirtualNodeRestResourceImpl(mockCoordinatorFactory, mock(), virtualNodeInfoReadService, mock(), mock(), mockClockFactory)
+        vnodeResource.start()
+
+        assertThrows<InvalidInputDataException> {
+            vnodeResource.updateVirtualNodeState("ABCABC123123", "BLAHBLAHBLAH")
+        }
+    }
+
+    private fun mockVnode(operational: OperationalStatus = OperationalStatus.ACTIVE): VirtualNodeInfo? {
+        return VirtualNodeInfo(
+            HoldingIdentity(MemberX500Name("test","IE","IE"), "group"),
+            CpiIdentifier("cpi","1", SecureHash.parse("SHA-256:1234567890")),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            operational,
+            operational,
+            operational,
+            operational,
+            null,
+            -1,
+            mock(),
+            false
+        )
     }
 }
