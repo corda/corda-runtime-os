@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Virtual Node Info Service RPC Extensions"
+description "Virtual Node Info Service REST Extensions"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

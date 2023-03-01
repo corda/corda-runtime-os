@@ -16,8 +16,8 @@ import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
-import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
-import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
+import net.corda.virtualnode.read.rest.extensions.createKeyIdOrHttpThrow
+import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
