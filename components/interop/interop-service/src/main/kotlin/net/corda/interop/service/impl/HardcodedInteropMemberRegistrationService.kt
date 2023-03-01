@@ -49,6 +49,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
         private val ALICE_X500_NAME = MemberX500Name.parse(ALICE_X500)
         private val ALICE_OTHER_CLUSTER_X500 = MemberX500Name.parse("CN=Alice from Other Cluster, O=Alice Corp, L=LDN, C=GB")
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        private const val NON_EXISTING_GROUP_ID = "non-existing-group"
         private const val SUBSYSTEM = "interop"
         private val DUMMY_CERTIFICATE =
             this::class.java.getResource("/dummy_certificate.pem")?.readText()
@@ -56,7 +57,8 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             this::class.java.getResource("/dummy_session_key.pem")?.readText()
         private val memberList =
             listOf(HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID),
-                HoldingIdentity(ALICE_OTHER_CLUSTER_X500, INTEROP_GROUP_ID))
+                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_X500_NAME, NON_EXISTING_GROUP_ID),
+                HoldingIdentity(ALICE_OTHER_CLUSTER_X500, NON_EXISTING_GROUP_ID) )
     }
 
     //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
@@ -150,15 +152,14 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 
         val unpublishedHoldingIdentity =
                 HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"), INTEROP_GROUP_ID)
-        val nonExistingGroupId = "non-existing-group"
 
         return listOf(
             createRecord("seed-message-correct-1", HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID),
                 HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID)),
             createRecord("seed-message-no-dest-1", unpublishedHoldingIdentity,
                 HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID)),
-            createRecord("seed-message-no-policy-1", HoldingIdentity(ALICE_X500_NAME, nonExistingGroupId),
-                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, nonExistingGroupId)),
+            createRecord("seed-message-no-policy-1", HoldingIdentity(ALICE_X500_NAME, NON_EXISTING_GROUP_ID),
+                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, NON_EXISTING_GROUP_ID)),
             createRecord("seed-message-other-cluster-1", HoldingIdentity(ALICE_OTHER_CLUSTER_X500, INTEROP_GROUP_ID),
                 HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID)))
     }
