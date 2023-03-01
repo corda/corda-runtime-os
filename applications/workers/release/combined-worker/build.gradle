@@ -29,11 +29,13 @@ quasar {
     excludePackages.addAll([
             'com.zaxxer.hikari**',
             'liquibase**',
+            'net.bytebuddy**',
             'net.corda.membership**',
             'org.eclipse.jetty**',
             'org.hibernate**',
             'org.jboss.logging',
-            'org.postgresql**'
+            'org.postgresql**',
+            'org.yaml.snakeyaml**'
     ])
 }
 
