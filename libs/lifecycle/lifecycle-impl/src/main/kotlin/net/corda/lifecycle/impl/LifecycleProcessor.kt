@@ -243,7 +243,7 @@ internal class LifecycleProcessor(
             val errorEvent = ErrorEvent(e)
             logger.info(
                 "$name Lifecycle: An error occurred during the processing of event $event by a lifecycle " +
-                        "coordinator: ${e.message}. Triggering user event handling.",
+                        "coordinator: ${e.message ?: "No exception message provided"}. Triggering user event handling.",
                 e
             )
             try {
@@ -254,7 +254,7 @@ internal class LifecycleProcessor(
             if (!errorEvent.isHandled) {
                 logger.error(
                     "$name Lifecycle: An unhandled error was encountered while processing $event in a lifecycle " +
-                            "coordinator: ${e.message}. This coordinator will now shut down.",
+                            "coordinator: ${e.message ?: "No exception message provided"}. This coordinator will now shut down.",
                     e
                 )
             }

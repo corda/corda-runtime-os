@@ -842,7 +842,7 @@ class FlowSessionManagerImplTest {
             MessageDirection.OUTBOUND,
             SESSION_ID,
             sequenceNum = null,
-            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "")),
+            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "No exception message provided.")),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
@@ -852,7 +852,7 @@ class FlowSessionManagerImplTest {
             MessageDirection.OUTBOUND,
             ANOTHER_SESSION_ID,
             sequenceNum = null,
-            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "")),
+            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "No exception message provided.")),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY

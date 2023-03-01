@@ -213,7 +213,8 @@ class LifecycleCoordinatorImpl(
         val coordinators = try {
             coordinatorNames.mapTo(LinkedHashSet(), registry::getCoordinator)
         } catch (e: LifecycleRegistryException) {
-            logger.error("Failed to register on coordinator as an invalid name was provided. ${e.message}", e)
+            logger.error("Failed to register on coordinator as an invalid name was provided. " +
+                        (e.message ?: "No exception message provided"), e)
             throw LifecycleException("Failed to register on a coordinator as an invalid name was provided", e)
         }
         return followStatusChanges(coordinators)

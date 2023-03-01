@@ -179,7 +179,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             if (!checkpoint.doesExist) {
                 return@withEscalation flowEventContextConverter.convert(
                     context.copy(
-                        outputRecords = createFlowKilledStatusRecord(checkpoint, exception.message),
+                        outputRecords = createFlowKilledStatusRecord(
+                            checkpoint, exception.message ?: "No exception message provided."
+                        ),
                         sendToDlq = false
                     )
                 )
@@ -201,7 +203,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
                 checkpoint.sessions.filterNot { it.hasScheduledCleanup }
             )
-            val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message)
+            val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message ?: "No exception message provided.")
 
             checkpoint.markDeleted()
 
