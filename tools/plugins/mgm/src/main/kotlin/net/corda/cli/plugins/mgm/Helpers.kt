@@ -29,8 +29,8 @@ internal object Helpers {
         }
     }
 
-    fun baseUrlFromClusterName(cordaClusterName: String?, rpcWorkerDeploymentName: String): String {
-        val rpcPort = if (cordaClusterName != null) {
+    fun baseUrlFromClusterName(cordaClusterName: String?, restWorkerDeploymentName: String): String {
+        val restPort = if (cordaClusterName != null) {
             val port = ServerSocket(0).use {
                 it.localPort
             }
@@ -39,7 +39,7 @@ internal object Helpers {
                 "port-forward",
                 "--namespace",
                 cordaClusterName,
-                "deployment/$rpcWorkerDeploymentName",
+                "deployment/$restWorkerDeploymentName",
                 "$port:8888"
             )
                 .inheritIO()
@@ -55,9 +55,9 @@ internal object Helpers {
         } else {
             8888
         }
-        return "https://localhost:$rpcPort"
+        return "https://localhost:$restPort"
     }
-    fun urlFromClusterName(cordaClusterName: String?, rpcWorkerDeploymentName: String): String {
-        return "${baseUrlFromClusterName(cordaClusterName, rpcWorkerDeploymentName)}/api/v1"
+    fun urlFromClusterName(cordaClusterName: String?, restWorkerDeploymentName: String): String {
+        return "${baseUrlFromClusterName(cordaClusterName, restWorkerDeploymentName)}/api/v1"
     }
 }

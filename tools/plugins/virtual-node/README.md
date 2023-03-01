@@ -15,9 +15,9 @@ $ corda-cli vnode reset -t https://localhost:8888 -u admin -p password --cpi myc
 ```
 
 Flags:
- - `-t` `--target` The target address of the HTTP RPC server (e.g. `https://host:port`)
- - `-u` `--user` rpc username
- - `-p` `--password` rpc password
+ - `-t` `--target` The target address of the REST server (e.g. `https://host:port`)
+ - `-u` `--user` REST username
+ - `-p` `--password` REST password
  - `-pv` `--protocol-version` NOT REQUIRED, defaults to 1
  - `-c` `--cpi` the cpi file to upload
  - `-w` `--wait` wait for the result, or have a result ID returned to be checked later.
