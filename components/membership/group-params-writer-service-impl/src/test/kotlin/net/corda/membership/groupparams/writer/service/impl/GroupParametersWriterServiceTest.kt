@@ -287,7 +287,6 @@ class GroupParametersWriterServiceTest {
                 val publishedParams = record.value as PersistentGroupParameters
                 it.assertThat(publishedParams.viewOwner).isEqualTo(viewOwner.toAvro())
 
-                publishedParams.groupParameters
                 it.assertThat(publishedParams.groupParameters.groupParameters)
                     .isEqualTo(ByteBuffer.wrap(serializedGroupParameters))
 

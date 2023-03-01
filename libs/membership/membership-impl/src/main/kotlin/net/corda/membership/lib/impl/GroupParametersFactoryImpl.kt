@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.FailedGroupParametersDeserialization
 import net.corda.membership.lib.GroupParametersFactory
@@ -14,7 +15,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 @Component(service = [GroupParametersFactory::class])
 class GroupParametersFactoryImpl @Activate constructor(
@@ -34,7 +34,7 @@ class GroupParametersFactoryImpl @Activate constructor(
         logger.error("Failed to deserialise group parameters to KeyValuePairList.")
     }, KeyValuePairList::class.java)
 
-    override fun create(parameters: AvroGroupParameters): GroupParameters {
+    override fun create(parameters: SignedGroupParameters): GroupParameters {
         val deserialisedParams = avroDeserializer.deserialize(parameters.groupParameters.array())
             ?: throw FailedGroupParametersDeserialization
         val groupParams = create(deserialisedParams)

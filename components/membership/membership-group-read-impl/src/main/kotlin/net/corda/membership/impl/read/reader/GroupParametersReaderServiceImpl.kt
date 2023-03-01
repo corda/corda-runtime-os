@@ -42,8 +42,7 @@ class GroupParametersReaderServiceImpl internal constructor(
     private val groupParametersCache: MemberDataCache<GroupParameters>,
 ) : GroupParametersReaderService {
 
-    @Activate
-    constructor(
+    @Activate constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = ConfigurationReadService::class)
@@ -51,7 +50,7 @@ class GroupParametersReaderServiceImpl internal constructor(
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = GroupParametersFactory::class)
-        groupParametersFactory: GroupParametersFactory
+        groupParametersFactory: GroupParametersFactory,
     ) : this(
         coordinatorFactory,
         configurationReadService,
@@ -73,10 +72,8 @@ class GroupParametersReaderServiceImpl internal constructor(
 
     // for watching the dependencies
     private var dependencyHandle: RegistrationHandle? = null
-
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
-
     // for watching the state of the subscription
     private var subscriptionHandle: RegistrationHandle? = null
 
@@ -118,15 +115,14 @@ class GroupParametersReaderServiceImpl internal constructor(
 
     private inner class ActiveImpl : InnerGroupParametersReaderService {
         override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, GroupParameters>> {
-            val recordList: List<VersionedRecord<HoldingIdentity, GroupParameters>> =
-                groupParametersCache.getAll().map {
-                    object : VersionedRecord<HoldingIdentity, GroupParameters> {
-                        override val version = it.value.epoch
-                        override val isDeleted = false
-                        override val key = it.key
-                        override val value = it.value
-                    }
+            val recordList: List<VersionedRecord<HoldingIdentity, GroupParameters>> = groupParametersCache.getAll().map {
+                object : VersionedRecord<HoldingIdentity, GroupParameters> {
+                    override val version = it.value.epoch
+                    override val isDeleted = false
+                    override val key = it.key
+                    override val value = it.value
                 }
+            }
             return recordList.stream()
         }
 
@@ -198,7 +194,6 @@ class GroupParametersReaderServiceImpl internal constructor(
                     activate(coordinator)
                 }
             }
-
             else -> {
                 deactivate(coordinator, "Dependencies are down.")
             }

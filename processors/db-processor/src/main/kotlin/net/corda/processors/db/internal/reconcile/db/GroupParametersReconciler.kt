@@ -127,12 +127,12 @@ class GroupParametersReconciler(
         return context.getOrCreateEntityManager().getCurrentGroupParameters()?.let { entity ->
             val signature = if(entity.signaturePublicKey != null && entity.signatureContent != null) {
                 CryptoSignatureWithKey(
-                    entity.signaturePublicKey!!.wrap(),
-                    entity.signatureContent!!.wrap(),
+                    entity.signaturePublicKey!!.buffer,
+                    entity.signatureContent!!.buffer,
                     entity.signatureContext?.let { cordaAvroDeserializer.deserialize(it) }
                 )
             } else null
-            val signedGroupParameters = SignedGroupParameters(entity.parameters.wrap(), signature)
+            val signedGroupParameters = SignedGroupParameters(entity.parameters.buffer, signature)
             val params = groupParametersFactory.create(signedGroupParameters)
 
             Stream.of(
@@ -146,5 +146,5 @@ class GroupParametersReconciler(
         } ?: Stream.empty()
     }
 
-    private fun ByteArray.wrap() = ByteBuffer.wrap(this)
+    private val ByteArray.buffer get() = ByteBuffer.wrap(this)
 }

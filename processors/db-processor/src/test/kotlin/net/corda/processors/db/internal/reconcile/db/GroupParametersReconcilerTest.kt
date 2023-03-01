@@ -5,7 +5,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
@@ -50,6 +49,7 @@ import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Order
 import javax.persistence.criteria.Path
 import javax.persistence.criteria.Root
+import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class GroupParametersReconcilerTest {
     private val vnode1 = buildVnodeInfo("O=Alice, L=London, C=GB", 0)
@@ -141,19 +141,25 @@ class GroupParametersReconcilerTest {
         on { get(persistenceUnitNameCaptor.capture()) } doReturn entitiesSet
     }
     private val groupParametersFactory: GroupParametersFactory = mock {
-        on { create(
-            eq(AvroGroupParameters(ByteBuffer.wrap(serialisedGroupParameters), null))
-        ) } doReturn groupParameters
-        on { create(
-            eq(AvroGroupParameters(
-                ByteBuffer.wrap(serialisedSignedGroupParameters),
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(signatureKey),
-                    ByteBuffer.wrap(signatureContent),
-                    deserializedSignatureContext
+        on {
+            create(
+                eq(AvroGroupParameters(ByteBuffer.wrap(serialisedGroupParameters), null))
+            )
+        } doReturn groupParameters
+        on {
+            create(
+                eq(
+                    AvroGroupParameters(
+                        ByteBuffer.wrap(serialisedSignedGroupParameters),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap(signatureKey),
+                            ByteBuffer.wrap(signatureContent),
+                            deserializedSignatureContext
+                        )
+                    )
                 )
-            ))
-        ) } doReturn signedGroupParameters as GroupParameters
+            )
+        } doReturn signedGroupParameters as GroupParameters
     }
 
     private val reconciler: Reconciler = mock()

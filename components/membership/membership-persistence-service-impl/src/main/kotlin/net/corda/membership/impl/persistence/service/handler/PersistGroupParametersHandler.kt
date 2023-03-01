@@ -29,7 +29,7 @@ internal class PersistGroupParametersHandler(
         )
     }
 
-    private fun deserializeProperties(context: ByteArray): KeyValuePairList {
+    private fun deserialize(context: ByteArray): KeyValuePairList {
         return keyValuePairListDeserializer.deserialize(context) ?: throw MembershipPersistenceException(
             "Failed to deserialize key value pair list."
         )
@@ -41,19 +41,15 @@ internal class PersistGroupParametersHandler(
     ) {
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val serialisedGroupParameters = request.groupParameters.groupParameters.array()
-            val groupParameters = deserializeProperties(serialisedGroupParameters)
+            val groupParameters = deserialize(serialisedGroupParameters)
             val epochFromRequest = groupParameters.toMap()[EPOCH_KEY]?.toInt()
                 ?: throw MembershipPersistenceException("Cannot persist group parameters - epoch not found.")
-
             val criteriaBuilder = em.criteriaBuilder
-            val queryBuilder = criteriaBuilder
-                .createQuery(GroupParametersEntity::class.java)
-            val root = queryBuilder
-                .from(GroupParametersEntity::class.java)
+            val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
+            val root = queryBuilder.from(GroupParametersEntity::class.java)
             val query = queryBuilder
                 .select(root)
                 .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
-
             // if there is any data in the db, updated group parameters epoch should always be
             // larger than the existing group parameters epoch
             with(em.createQuery(query).setMaxResults(1).resultList) {

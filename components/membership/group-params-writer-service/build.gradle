@@ -11,7 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     api project(':components:reconciliation:reconciliation')
-    api project(':libs:membership:membership-common')
     api project(':libs:virtual-node:virtual-node-info')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

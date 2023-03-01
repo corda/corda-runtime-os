@@ -114,12 +114,24 @@ fun addNewNotaryService(
     return newEpoch to KeyValuePairList(parametersWithUpdatedEpoch + newService)
 }
 
+/**
+ * Returns the serialised bytes representing the group parameters if available. In dynamic networks,
+ * this should also be provided to members by the MGM.
+ * The MGM's view of group parameters is not signed since it signs on distribution and the parameters
+ * in static networks are not signed since there is no MGM.
+ */
 val GroupParameters.bytes: ByteArray?
     get() = when (this) {
         is SignedGroupParameters -> bytes
         else -> null
     }
 
+/**
+ * Returns the MGM's signature over group parameters if available. In dynamic networks,
+ * this should also be provided to members by the MGM.
+ * The MGM's view of group parameters is not signed since it signs on distribution and the parameters
+ * in static networks are not signed since there is no MGM.
+ */
 val GroupParameters.signature: DigitalSignature.WithKey?
     get() = when (this) {
         is SignedGroupParameters -> signature
@@ -127,8 +139,8 @@ val GroupParameters.signature: DigitalSignature.WithKey?
     }
 
 /**
- * Returns the [SecureHash] of the group parameters: SHA-256 hash of the group parameters sorted
- * alphabetically by key. Sorting the properties is essential to ensure a consistent hash.
+ * Returns the [SecureHash] of the group parameters sorted alphabetically by key.
+ * Sorting the properties is essential to ensure a consistent hash.
  */
 val GroupParameters.hash: SecureHash
     get() = entries
