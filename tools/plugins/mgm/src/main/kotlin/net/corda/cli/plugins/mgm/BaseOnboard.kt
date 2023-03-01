@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import kong.unirest.HttpResponse
 import kong.unirest.Unirest
 import kong.unirest.json.JSONObject
-import net.corda.cli.plugins.mgm.Helpers.rpcPasswordFromClusterName
+import net.corda.cli.plugins.mgm.Helpers.restPasswordFromClusterName
 import net.corda.cli.plugins.mgm.Helpers.urlFromClusterName
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
@@ -120,7 +120,7 @@ abstract class BaseOnboard : Runnable {
     }
 
     private val rpcPassword by lazy {
-        rpcPasswordFromClusterName(cordaClusterName)
+        restPasswordFromClusterName(cordaClusterName)
     }
 
     private val url by lazy {
