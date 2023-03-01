@@ -47,17 +47,16 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
         private const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         private val ALICE_ALTER_EGO_X500_NAME = MemberX500Name.parse(ALICE_ALTER_EGO_X500)
         private val ALICE_X500_NAME = MemberX500Name.parse(ALICE_X500)
+        private val ALICE_OTHER_CLUSTER_X500 = MemberX500Name.parse("CN=Alice from Other Cluster, O=Alice Corp, L=LDN, C=GB")
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-        private val UNPUBLISHED_HOLDING_IDENTITY
-            = HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"), INTEROP_GROUP_ID).toAvro()
-        private const val NON_EXISTING_GROUP = "non-existing-group"
         private const val SUBSYSTEM = "interop"
         private val DUMMY_CERTIFICATE =
             this::class.java.getResource("/dummy_certificate.pem")?.readText()
         private val DUMMY_PUBLIC_SESSION_KEY =
             this::class.java.getResource("/dummy_session_key.pem")?.readText()
         private val memberList =
-            listOf(HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID))
+            listOf(HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID),
+                HoldingIdentity(ALICE_OTHER_CLUSTER_X500, INTEROP_GROUP_ID))
     }
 
     //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
@@ -131,7 +130,6 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 
     override fun seedMessage() : List<Record<*,*>> {
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
-        val correctHeader = UnauthenticatedMessageHeader(memberList.first().toAvro(), memberList[1].toAvro(), SUBSYSTEM, "1")
         val payload = """
             {
                 "method": "org.corda.interop/platform/tokens/v1.0/reserve-tokens",
@@ -139,40 +137,29 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             }
         """.trimIndent()
 
-        val headerNoDestination = UnauthenticatedMessageHeader(UNPUBLISHED_HOLDING_IDENTITY, memberList[1].toAvro(), SUBSYSTEM, "1")
-
-        val headerNoExistingGroup = UnauthenticatedMessageHeader(
-            HoldingIdentity(ALICE_X500_NAME, NON_EXISTING_GROUP).toAvro(),
-            HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, NON_EXISTING_GROUP).toAvro(), SUBSYSTEM, "1")
-
-        return listOf(
+        fun createRecord(key: String, destination: HoldingIdentity, source: HoldingIdentity) =
             Record(
-                Schemas.P2P.P2P_IN_TOPIC, "seed-message-correct-1",
+                Schemas.P2P.P2P_IN_TOPIC, key,
                 AppMessage(
                     UnauthenticatedMessage(
-                        correctHeader,
-                        ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("seed-message-correct-1", payload)))
-                    )
-                )
-            ),
-            Record(
-                Schemas.P2P.P2P_IN_TOPIC, "seed-message-no-dest-1",
-                AppMessage(
-                    UnauthenticatedMessage(
-                        headerNoDestination,
-                        ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("seed-message-no-dest-1", payload)))
-                    )
-                )
-            ),
-            Record(
-                Schemas.P2P.P2P_IN_TOPIC, "seed-message-no-policy-1",
-                AppMessage(
-                    UnauthenticatedMessage(
-                        headerNoExistingGroup,
-                        ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage("seed-message-no-policy-1", payload)))
+                        UnauthenticatedMessageHeader(destination.toAvro(), source.toAvro(), SUBSYSTEM, "1"),
+                        ByteBuffer.wrap(interopMessageSerializer.serialize(InteropMessage(key, payload)))
                     )
                 )
             )
-        )
+
+        val unpublishedHoldingIdentity =
+                HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"), INTEROP_GROUP_ID)
+        val nonExistingGroupId = "non-existing-group"
+
+        return listOf(
+            createRecord("seed-message-correct-1", HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID),
+                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID)),
+            createRecord("seed-message-no-dest-1", unpublishedHoldingIdentity,
+                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID)),
+            createRecord("seed-message-no-policy-1", HoldingIdentity(ALICE_X500_NAME, nonExistingGroupId),
+                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, nonExistingGroupId)),
+            createRecord("seed-message-other-cluster-1", HoldingIdentity(ALICE_OTHER_CLUSTER_X500, INTEROP_GROUP_ID),
+                HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID)))
     }
 }

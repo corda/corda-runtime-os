@@ -153,7 +153,7 @@ internal class OutboundMessageProcessor(
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             //TODO new log statement added temporarily for Interop Team, revert to debug as part of CORE-10683
-            logger.info ("Processing outbound message hosted locally ${message.header.messageId} from ${message.header.source} " +
+            logger.info ("Sending outbound message hosted locally ${message.header.messageId} from ${message.header.source} " +
                     "to ${message.header.destination}." )
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
         } else if (destMemberInfo != null) {
@@ -169,7 +169,7 @@ internal class OutboundMessageProcessor(
 
             val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, destMemberInfo, groupPolicy)
             //TODO logger info level and source identity added temporarily for Interop Team, revert to debug as part of CORE-10683
-            logger.info ("Processing outbound message ${message.header.messageId} to ${message.header.destination} " +
+            logger.info ("Sending outbound message ${message.header.messageId} to ${message.header.destination} " +
                     "for ${linkOutMessage.header.address}." )
             return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         } else {
