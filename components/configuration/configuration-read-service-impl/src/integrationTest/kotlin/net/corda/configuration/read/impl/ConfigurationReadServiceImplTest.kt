@@ -1,6 +1,8 @@
 package net.corda.configuration.read.impl
 
 import com.typesafe.config.ConfigFactory
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -15,6 +17,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
@@ -30,8 +33,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -43,6 +44,7 @@ class ConfigurationReadServiceImplTest {
             $INSTANCE_ID = 1
             $BUS_TYPE = DATABASE
             $BOOT_JDBC_URL = $JDBC_URL_DATA
+            $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000000
         """
 
         private const val DB_CONFIG_STRING = """

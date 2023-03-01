@@ -35,6 +35,7 @@ dependencies {
     integrationTestImplementation project(":testing:test-utilities")
     integrationTestImplementation project(":libs:lifecycle:registry")
 
+    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
