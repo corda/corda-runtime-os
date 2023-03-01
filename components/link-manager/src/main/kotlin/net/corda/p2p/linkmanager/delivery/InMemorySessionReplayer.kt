@@ -20,7 +20,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
-import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
