@@ -14,6 +14,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-merger')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:schema-registry:schema-registry')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"

@@ -1,5 +1,6 @@
 package net.corda.schema.registry
 
+import net.corda.data.Fingerprint
 import org.apache.avro.Schema
 import java.nio.ByteBuffer
 
@@ -85,6 +86,8 @@ interface AvroSchemaRegistry {
      * @return the class type of the object encoded in [bytes].
      */
     fun getClassType(bytes: ByteBuffer) : Class<*>
+
+    val schemasByFingerprintSnapshot: Map<Fingerprint, Schema>
 }
 
 /**

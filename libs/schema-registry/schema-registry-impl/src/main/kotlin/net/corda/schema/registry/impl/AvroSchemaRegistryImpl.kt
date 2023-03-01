@@ -95,7 +95,10 @@ class AvroSchemaRegistryImpl(
     private val schemasByFingerprint: ConcurrentHashMap<Fingerprint, Schema> =
         ConcurrentHashMap<Fingerprint, Schema>()
 
-    /**
+    override val schemasByFingerprintSnapshot
+        get() = schemasByFingerprint.toMap()
+
+            /**
      * Maps the things we'll need from a record by it's fingerprint.  Gives us the encoder/decoder on the class
      * as well as the reader schema for deserializing.
      */

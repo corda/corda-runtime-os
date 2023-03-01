@@ -10,6 +10,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     api "org.apache.avro:avro:$avroVersion"
+    api "net.corda:corda-avro-schema"
 }
 
 description 'Schema Registry Library API'

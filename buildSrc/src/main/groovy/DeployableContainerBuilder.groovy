@@ -317,7 +317,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             }
         } else{
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "latest-local")
+            tagContainer(builder, "latest-local-old")
             gitAndVersionTag(builder, gitRevision)
         }
     }
