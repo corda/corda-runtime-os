@@ -16,7 +16,7 @@ dependencies {
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation "org.assertj:assertj-core:$assertjVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    implementation project(':components:flow:flow-rpcops-service')
+    implementation project(':components:flow:flow-rest-resource-service')
     implementation project(':libs:crypto:certificate-generation')
     implementation project(':libs:crypto:crypto-utils')
     implementation project(':tools:plugins:package')
