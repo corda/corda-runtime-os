@@ -55,7 +55,6 @@ class PackApplesFlow : ClientStartableFlow {
         )
 
         // Create the transaction
-        @Suppress("DEPRECATION")
         val transaction = utxoLedgerService.getTransactionBuilder()
             .setNotary(notary)
             .addOutputState(basket)
