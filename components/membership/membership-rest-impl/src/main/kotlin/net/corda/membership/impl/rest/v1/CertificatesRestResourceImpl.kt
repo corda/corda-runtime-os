@@ -32,10 +32,10 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.read.rpc.extensions.createKeyIdOrHttpThrow
-import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
-import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
-import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
+import net.corda.virtualnode.read.rest.extensions.createKeyIdOrHttpThrow
+import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
+import net.corda.virtualnode.read.rest.extensions.ofOrThrow
+import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.apache.commons.validator.routines.InetAddressValidator
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier

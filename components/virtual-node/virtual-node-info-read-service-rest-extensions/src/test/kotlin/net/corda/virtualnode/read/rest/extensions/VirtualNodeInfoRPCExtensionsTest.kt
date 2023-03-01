@@ -1,4 +1,4 @@
-package net.corda.virtualnode.read.rpc.extensions
+package net.corda.virtualnode.read.rest.extensions
 
 import net.corda.crypto.core.ShortHash
 import java.time.Instant
