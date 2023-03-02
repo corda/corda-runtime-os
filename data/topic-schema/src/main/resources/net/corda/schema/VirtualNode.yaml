@@ -76,13 +76,6 @@ topics:
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
-  VirtualNodeOperationStatusTopic:
-    name: virtual.node.operation.status
-    consumers:
-      - db
-    producers:
-      - rest
-    config:
   VirtualNodeAsyncRequestTopic:
     name: virtual.node.async.request
     consumers:

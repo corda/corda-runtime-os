@@ -237,7 +237,6 @@ public final class Schemas {
 
         public static final String VIRTUAL_NODE_INFO_TOPIC = "virtual.node.info";
         public static final String VIRTUAL_NODE_ASYNC_REQUEST_TOPIC = "virtual.node.async.request";
-        public static final String VIRTUAL_NODE_OPERATION_STATUS_TOPIC = "virtual.node.operation.status";
         public static final String VIRTUAL_NODE_CREATION_REQUEST_TOPIC = "virtual.node.creation.request";
         public static final String VIRTUAL_NODE_CREATION_REQUEST_RESPONSE_TOPIC = getRPCResponseTopic(VIRTUAL_NODE_CREATION_REQUEST_TOPIC);
         public static final String CPI_INFO_TOPIC = "cpi.info";
