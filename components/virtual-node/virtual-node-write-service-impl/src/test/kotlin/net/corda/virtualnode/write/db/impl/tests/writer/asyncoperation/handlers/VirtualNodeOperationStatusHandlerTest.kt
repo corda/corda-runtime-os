@@ -3,16 +3,12 @@ package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
-import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.core.CloseableDataSource
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -49,7 +45,8 @@ class VirtualNodeOperationStatusHandlerTest {
 
     @Test
     fun `OperationStatus handler returns VirtualNodeOperationStatusResponse if operation found`() {
-        whenever(virtualNodeRepository.findVirtualNodeOperationByRequestId(em, requestId.toString())).thenReturn(listOf(virtualNodeOperationDto))
+        whenever(virtualNodeRepository.findVirtualNodeOperationByRequestId(em, requestId.toString()))
+            .thenReturn(listOf(virtualNodeOperationDto))
 
         val respFuture = CompletableFuture<VirtualNodeManagementResponse>()
 
