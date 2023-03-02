@@ -65,6 +65,8 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -95,6 +97,8 @@ class MGMResourceClientTest {
         const val RULE_LABEL = "rule-label"
         const val RULE_ID = "rule-id"
         const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
+        const val SERIAL = 1
+        const val REASON = "test"
 
         val RULE_TYPE = ApprovalRuleType.STANDARD
         val memberName = MemberX500Name.parse("CN=Member,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
@@ -1358,6 +1362,154 @@ class MGMResourceClientTest {
             val revokedToken = mgmResourceClient.revokePreAuthToken(shortHash, tokenId, null)
 
             assertThat(revokedToken).isEqualTo(token)
+        }
+    }
+
+    @Nested
+    inner class SuspendMemberTests {
+        @BeforeEach
+        fun setUp() = mgmResourceClient.start()
+
+        @AfterEach
+        fun tearDown() = mgmResourceClient.stop()
+
+        @Test
+        fun `suspendMember should send the correct request`() {
+            setUpRpcSender(null)
+            whenever(
+                membershipPersistenceClient.suspendMember(
+                    holdingIdentity,
+                    memberName,
+                    SERIAL,
+                    REASON
+                )
+            ).doReturn(
+                MembershipPersistenceResult.success()
+            )
+
+            mgmResourceClient.suspendMember(
+                shortHash,
+                memberName,
+                SERIAL,
+                REASON
+            )
+
+            verify(membershipPersistenceClient).suspendMember(
+                holdingIdentity,
+                memberName,
+                SERIAL,
+                REASON
+            )
+        }
+
+        @Test
+        fun `suspendMember should fail if the member cannot be found`() {
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.suspendMember(
+                    ShortHash.of("000000000000"),
+                    memberName
+                )
+            }
+        }
+
+        @Test
+        fun `suspendMember should fail if the member cannot be read`() {
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.suspendMember(shortHash, memberName)
+            }
+        }
+
+        @Test
+        fun `suspendMember should fail if the member is not the MGM`() {
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.suspendMember(shortHash, memberName)
+            }
+        }
+    }
+
+    @Nested
+    inner class ActivateMemberTests {
+        @BeforeEach
+        fun setUp() = mgmResourceClient.start()
+
+        @AfterEach
+        fun tearDown() = mgmResourceClient.stop()
+
+        @Test
+        fun `activateMember should send the correct request`() {
+            setUpRpcSender(null)
+            whenever(
+                membershipPersistenceClient.activateMember(
+                    holdingIdentity,
+                    memberName,
+                    SERIAL,
+                    REASON
+                )
+            ).doReturn(
+                MembershipPersistenceResult.success()
+            )
+
+            mgmResourceClient.activateMember(
+                shortHash,
+                memberName,
+                SERIAL,
+                REASON
+            )
+
+            verify(membershipPersistenceClient).activateMember(
+                holdingIdentity,
+                memberName,
+                SERIAL,
+                REASON
+            )
+        }
+
+        @Test
+        fun `activateMember should fail if the member cannot be found`() {
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.activateMember(
+                    ShortHash.of("000000000000"),
+                    memberName
+                )
+            }
+        }
+
+        @Test
+        fun `activateMember should fail if the member cannot be read`() {
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.activateMember(shortHash, memberName)
+            }
+        }
+
+        @Test
+        fun `activateMember should fail if the member is not the MGM`() {
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.activateMember(shortHash, memberName)
+            }
         }
     }
 }

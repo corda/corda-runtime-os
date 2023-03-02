@@ -190,7 +190,7 @@ interface MGMResourceClient : Lifecycle {
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
     fun suspendMember(
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         memberX500Name: MemberX500Name,
         serialNumber: Int? = null,
         reason: String? = null,
@@ -210,7 +210,7 @@ interface MGMResourceClient : Lifecycle {
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
     fun activateMember(
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         memberX500Name: MemberX500Name,
         serialNumber: Int? = null,
         reason: String? = null,

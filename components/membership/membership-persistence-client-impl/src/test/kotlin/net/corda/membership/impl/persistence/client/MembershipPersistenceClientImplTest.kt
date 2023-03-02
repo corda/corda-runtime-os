@@ -12,6 +12,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.ConsumePreAuthToken
@@ -24,6 +25,7 @@ import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
+import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
@@ -91,6 +93,8 @@ class MembershipPersistenceClientImplTest {
         const val RULE_ID = "rule-id"
         const val RULE_REGEX = "rule-regex"
         const val RULE_LABEL = "rule-label"
+        const val SERIAL = 5
+        const val REASON = "test"
     }
 
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
@@ -1202,6 +1206,148 @@ class MembershipPersistenceClientImplTest {
             )
 
             assertThat(response).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+    }
+
+    @Nested
+    inner class SuspendMemberTests {
+        @BeforeEach
+        fun setUp() = postConfigChangedEvent()
+
+        @Test
+        fun `suspendMember returns the correct result`() {
+            mockPersistenceResponse()
+
+            val result = membershipPersistenceClient.suspendMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                null,
+                null
+            )
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.success())
+        }
+
+        @Test
+        fun `suspendMember returns error in case of failure`() {
+            mockPersistenceResponse(
+                PersistenceFailedResponse("Placeholder error"),
+            )
+
+            val result = membershipPersistenceClient.suspendMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                null,
+                null
+            )
+
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `suspendMember returns failure for unexpected result`() {
+            mockPersistenceResponse(
+                null,
+            )
+
+            val result = membershipPersistenceClient.suspendMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                null,
+                null
+            )
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Unit>("Unexpected response: null"))
+        }
+
+        @Test
+        fun `suspendMember sends the correct data`() {
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.suspendMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                SERIAL,
+                REASON
+            )
+
+            val sentRequest = (argument.firstValue.request as? SuspendMember)!!
+            assertThat(sentRequest.suspendedMember).isEqualTo(bobX500Name.toString())
+            assertThat(sentRequest.serialNumber).isEqualTo(SERIAL)
+            assertThat(sentRequest.reason).isEqualTo(REASON)
+        }
+    }
+
+    @Nested
+    inner class ActivateMemberTests {
+        @BeforeEach
+        fun setUp() = postConfigChangedEvent()
+
+        @Test
+        fun `activateMember returns the correct result`() {
+            mockPersistenceResponse()
+
+            val result = membershipPersistenceClient.activateMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                null,
+                null
+            )
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.success())
+        }
+
+        @Test
+        fun `activateMember returns error in case of failure`() {
+            mockPersistenceResponse(
+                PersistenceFailedResponse("Placeholder error"),
+            )
+
+            val result = membershipPersistenceClient.activateMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                null,
+                null
+            )
+
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `activateMember returns failure for unexpected result`() {
+            mockPersistenceResponse(
+                null,
+            )
+
+            val result = membershipPersistenceClient.activateMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                null,
+                null
+            )
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Unit>("Unexpected response: null"))
+        }
+
+        @Test
+        fun `activateMember sends the correct data`() {
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.activateMember(
+                ourHoldingIdentity,
+                bobX500Name,
+                SERIAL,
+                REASON
+            )
+
+            val sentRequest = (argument.firstValue.request as? ActivateMember)!!
+            assertThat(sentRequest.activatedMember).isEqualTo(bobX500Name.toString())
+            assertThat(sentRequest.serialNumber).isEqualTo(SERIAL)
+            assertThat(sentRequest.reason).isEqualTo(REASON)
         }
     }
 }

@@ -10,6 +10,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
+import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddPreAuthToken
 import net.corda.data.membership.db.request.command.ConsumePreAuthToken
 import net.corda.data.membership.db.request.command.DeleteApprovalRule
@@ -17,6 +18,7 @@ import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
+import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
@@ -86,6 +88,8 @@ class MembershipPersistenceRPCProcessorTest {
         const val DUMMY_ID = "rule-id"
         const val DUMMY_RULE = "corda.*"
         const val DUMMY_LABEL = "label1"
+        const val SERIAL = 5
+        const val REASON = "test"
     }
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
@@ -634,6 +638,50 @@ class MembershipPersistenceRPCProcessorTest {
         val rq = MembershipPersistenceRequest(
             rqContext,
             ConsumePreAuthToken(preAuthTokenId, ourX500Name)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNull()
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `suspend member returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            SuspendMember(ourX500Name, SERIAL, REASON)
+        )
+
+        processor.onNext(rq, responseFuture)
+
+        assertThat(responseFuture).isCompleted
+        with(responseFuture.get()) {
+            assertThat(payload).isNull()
+
+            with(context) {
+                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                assertThat(requestId).isEqualTo(rqContext.requestId)
+                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+            }
+        }
+    }
+
+    @Test
+    fun `activate member returns success`() {
+        val rq = MembershipPersistenceRequest(
+            rqContext,
+            ActivateMember(ourX500Name, SERIAL, REASON)
         )
 
         processor.onNext(rq, responseFuture)
