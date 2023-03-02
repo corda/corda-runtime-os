@@ -18,10 +18,7 @@ val ALICE_X500_HOLDING_ID = HoldingIdentity(ALICE_X500_NAME, "g1")
 
 fun String.toSecureHash(): SecureHash {
     val algorithm = DigestAlgorithmName.SHA2_256.name
-    return SecureHash(
-        algorithm = algorithm,
-        bytes = MessageDigest.getInstance(algorithm).digest(this.toByteArray())
-    )
+    return SecureHash(algorithm, MessageDigest.getInstance(algorithm).digest(this.toByteArray()))
 }
 
 fun String.toStateRef(): StateRef {

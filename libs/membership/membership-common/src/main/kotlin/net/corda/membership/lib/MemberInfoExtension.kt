@@ -205,10 +205,13 @@ class MemberInfoExtension {
          */
         @JvmStatic
         val MemberInfo.sessionKeyHash: PublicKeyHash
-            get() = memberProvidedContext.parseOrNull(SESSION_KEY_HASH) ?: sessionInitiationKey.calculateHash().also {
-                logger.warn("Calculating the session key hash for $name in group $groupId. " +
-                        "It is preferable to store this hash in the member context to avoid calculating on each access.")
-            }
+            get() = memberProvidedContext.parseOrNull(SESSION_KEY_HASH) ?: PublicKeyHash.calculate(sessionInitiationKey)
+                .also {
+                    logger.warn(
+                        "Calculating the session key hash for $name in group $groupId. " +
+                                "It is preferable to store this hash in the member context to avoid calculating on each access."
+                    )
+                }
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic

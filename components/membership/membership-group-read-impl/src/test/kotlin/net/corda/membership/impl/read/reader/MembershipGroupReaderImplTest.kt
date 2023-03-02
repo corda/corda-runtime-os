@@ -1,5 +1,6 @@
 package net.corda.membership.impl.read.reader
 
+import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
@@ -12,7 +13,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.read.GroupParametersReaderService
-import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext

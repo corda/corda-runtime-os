@@ -3,10 +3,8 @@ package net.corda.crypto.impl
 import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.utilities.exactAdd
 import net.corda.v5.base.types.ByteArrays.sequence
-import net.corda.v5.crypto.COMPOSITE_KEY_CHILDREN_LIMIT
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
-import net.corda.v5.crypto.keys
 import org.bouncycastle.asn1.ASN1EncodableVector
 import org.bouncycastle.asn1.ASN1Encoding
 import org.bouncycastle.asn1.ASN1Integer
@@ -72,8 +70,8 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         // If we want PublicKey we only keep one key, otherwise it will lead to semantically equivalent trees
         // but having different structures.
         require(children.size > 1) { "CompositeKey must consist of two or more child nodes." }
-        require(children.size <= COMPOSITE_KEY_CHILDREN_LIMIT) {
-            "CompositeKey must consist of less or equal than $COMPOSITE_KEY_CHILDREN_LIMIT child nodes."
+        require(children.size <= CompositeKey.COMPOSITE_KEY_CHILDREN_LIMIT) {
+            "CompositeKey must consist of less or equal than ${CompositeKey.COMPOSITE_KEY_CHILDREN_LIMIT} child nodes."
         }
         // We should ensure threshold is positive, because smaller allowable weight for a node key is 1.
         require(threshold > 0) {
@@ -90,15 +88,15 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     // when recursion is used (i.e. in isFulfilledBy()).
     // An IdentityHashMap Vs HashMap is used, because a graph cycle causes infinite loop on the CompositeKey.hashCode().
     private fun cycleDetection(visitedMap: IdentityHashMap<CompositeKeyImpl, Boolean>) {
-        for ((node) in children) {
-            if (node is CompositeKeyImpl) {
+        for (child in children) {
+            if (child.node is CompositeKeyImpl) {
                 val curVisitedMap = IdentityHashMap<CompositeKeyImpl, Boolean>()
                 curVisitedMap.putAll(visitedMap)
                 // We can't print the node details, because doing so involves serializing the node, which we can't
                 // do because of the cyclic graph.
-                require(!curVisitedMap.contains(node)) { "Cycle detected for CompositeKey" }
-                curVisitedMap[node] = true
-                node.cycleDetection(curVisitedMap)
+                require(!curVisitedMap.contains(child.node)) { "Cycle detected for CompositeKey" }
+                curVisitedMap[child.node as CompositeKeyImpl] = true
+                (child.node as CompositeKeyImpl).cycleDetection(curVisitedMap)
             }
         }
     }
@@ -116,10 +114,10 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         visitedMap[this] = true
         cycleDetection(visitedMap) // Graph cycle testing on the root node.
         checkConstraints()
-        for ((node, _) in children) {
-            if (node is CompositeKeyImpl) {
+        for (child in children) {
+            if (child.node is CompositeKeyImpl) {
                 // We don't need to check for cycles on the rest of the nodes (testing on the root node is enough).
-                node.checkConstraints()
+                (child.node as CompositeKeyImpl).checkConstraints()
             }
         }
         validated = true
@@ -129,9 +127,9 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     // Unlike similar solutions that use long conversion, this approach takes advantage of the minimum weight being 1.
     private fun totalWeight(): Int {
         var sum = 0
-        for ((_, weight) in children) {
-            require(weight > 0) { "Non-positive weight: $weight detected." }
-            sum = sum exactAdd weight // Add and check for integer overflow.
+        for (child in children) {
+            require(child.weight > 0) { "Non-positive weight: ${child.weight} detected." }
+            sum = sum exactAdd child.weight // Add and check for integer overflow.
         }
         return sum
     }
@@ -169,11 +167,11 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     // Return true when and if the threshold requirement is met.
     private fun checkFulfilledBy(keysToCheck: Iterable<PublicKey>): Boolean {
         var totalWeight = 0
-        children.forEach { (node, weight) ->
-            if (node is CompositeKeyImpl) {
-                if (node.checkFulfilledBy(keysToCheck)) totalWeight += weight
+        children.forEach { child ->
+            if (child.node is CompositeKeyImpl) {
+                if ((child.node as CompositeKeyImpl).checkFulfilledBy(keysToCheck)) totalWeight += child.weight
             } else {
-                if (node in keysToCheck) totalWeight += weight
+                if (child.node in keysToCheck) totalWeight += child.weight
             }
             if (totalWeight >= threshold) return true
         }
@@ -196,8 +194,8 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     /**
      * Set of all leaf keys of that [CompositeKey].
      */
-    override val leafKeys: Set<PublicKey>
-        get() = children.flatMap { it.node.keys }.toSet() // Uses PublicKey.keys extension.
+    override fun getLeafKeys(): Set<PublicKey> =
+        children.flatMap { it.node.keys }.toSet() // Uses PublicKey.keys extension.
 
     /**
      * Compares the two given instances of the [CompositeKey] based on the content.

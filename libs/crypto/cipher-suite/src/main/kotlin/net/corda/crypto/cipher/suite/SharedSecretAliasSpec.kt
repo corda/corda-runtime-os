@@ -18,5 +18,5 @@ class SharedSecretAliasSpec(
     override val otherPublicKey: PublicKey
 ) : SharedSecretSpec {
     override fun toString(): String =
-        "$keyScheme,hsmAlias=$hsmAlias,otherPublicKey=${otherPublicKey.publicKeyId()}"
+        "$keyScheme,hsmAlias=$hsmAlias,otherPublicKey=${PublicKeyHash.calculate(otherPublicKey).id}"
 }

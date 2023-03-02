@@ -9,7 +9,7 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.containsAny
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.StateRef
@@ -96,7 +96,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             // Since we are not calling finality flow for consuming transactions we need to verify that the signature
             // is actually part of the notary service's composite key
             signatures.forEach {
-                require(notaryServiceParty.owningKey.containsAny(listOf(it.by))) {
+                require(KeyUtils.containsAny(notaryServiceParty.owningKey, listOf(it.by))) {
                     "The plugin responded with a signature that is not part of the notary service's composite key."
                 }
             }
@@ -114,7 +114,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
      * [NotarisationTestFlowParameters] object so it is easily accessible and this way the parsing
      * logic is separated from the main flow logic in [call].
      */
-    @Suppress("ComplexMethod")
+    @Suppress("CyclomaticComplexMethod")
     @Suspendable
     private fun extractParameters(requestBody: ClientRequestBody): NotarisationTestFlowParameters {
         val requestMessage = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)

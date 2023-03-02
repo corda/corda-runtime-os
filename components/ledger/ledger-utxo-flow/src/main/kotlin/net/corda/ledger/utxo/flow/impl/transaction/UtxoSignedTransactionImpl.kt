@@ -8,8 +8,8 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
@@ -118,7 +118,7 @@ data class UtxoSignedTransactionImpl(
         }.map { it.by }.toSet()
 
         // isFulfilledBy() helps to make this working with CompositeKeys.
-        return signatories.filterNot { it.isFulfilledBy(appliedSignatories) }.toSet()
+        return signatories.filterNot { KeyUtils.isFulfilledBy(it, appliedSignatories) }.toSet()
     }
 
     @Suspendable
@@ -137,7 +137,7 @@ data class UtxoSignedTransactionImpl(
         }.map { it.by }.toSet()
 
         // isFulfilledBy() helps to make this working with CompositeKeys.
-        val missingSignatories = signatories.filterNot { it.isFulfilledBy(appliedSignatories) }.toSet()
+        val missingSignatories = signatories.filterNot { KeyUtils.isFulfilledBy(it, appliedSignatories) }.toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,
@@ -149,7 +149,7 @@ data class UtxoSignedTransactionImpl(
 
     @Suspendable
     override fun verifyNotarySignatureAttached() {
-        if (!notary.owningKey.isFulfilledBy(signatures.map { it.by })) {
+        if (!KeyUtils.isFulfilledBy(notary.owningKey, signatures.map { it.by })) {
             throw TransactionSignatureException(
                 id,
                 "There are no notary signatures attached to the transaction.",

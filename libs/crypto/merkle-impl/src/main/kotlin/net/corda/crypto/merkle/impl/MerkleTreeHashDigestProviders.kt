@@ -105,7 +105,7 @@ open class NonceHashDigestProvider(
 
         override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
             require(nonce == null) { "Nonce must be null" }
-            return SecureHash.deserialize(bytes, digestService)
+            return deserialize(bytes, digestService)
         }
 
         override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
@@ -166,13 +166,13 @@ private fun MerkleTreeHashDigestProvider.checkMatchingAlgorithms(left: SecureHas
 
 const val SERIALIZATION_SEPARATOR: Char = ':'
 
-internal fun SecureHash.Companion.deserialize(bytes: ByteArray, digestService: DigestService): SecureHash {
+internal fun SecureHash.deserialize(bytes: ByteArray, digestService: DigestService): SecureHash {
     val idxOfSeparator = bytes.indexOf(SERIALIZATION_SEPARATOR.code.toByte())
     if (idxOfSeparator == -1) {
         throw IllegalArgumentException("Provided argument: $bytes should be of format algorithm:bytes")
     }
     val digestAlgorithmName = DigestAlgorithmName(String(bytes.take(idxOfSeparator).toByteArray()))
-    val data = bytes.drop(idxOfSeparator+1).toByteArray()
+    val data = bytes.drop(idxOfSeparator + 1).toByteArray()
     val digestLength = digestService.digestLength(digestAlgorithmName)
     return when (data.size) {
         digestLength -> SecureHash(digestAlgorithmName.name, data)
