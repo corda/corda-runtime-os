@@ -3,6 +3,7 @@ package net.corda.interop
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
@@ -41,7 +42,9 @@ class InteropService @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = InteropMemberRegistrationService::class)
-    private val registrationService: InteropMemberRegistrationService
+    private val registrationService: InteropMemberRegistrationService,
+    @Reference(service = InteropFacadeToFlowMapperService::class)
+    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
 ) : Lifecycle {
 
     companion object {
@@ -90,7 +93,7 @@ class InteropService @Activate constructor(
         coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
-                InteropProcessor(cordaAvroSerializationFactory),
+                InteropProcessor(cordaAvroSerializationFactory, facadeToFlowMapperService),
                 messagingConfig,
                 null
             ).also {

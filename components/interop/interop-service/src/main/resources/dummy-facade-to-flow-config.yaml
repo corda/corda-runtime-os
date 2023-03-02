@@ -5,6 +5,6 @@
   },
   "org.corda.interop/platform/tokens/v1.0": {
     "get-balance": "com.net.corda.flow.GetBalanceFlow",
-    "get-token": "com.net.corda.flow.GetTokenFlow"
+    "reserve-tokens": "com.net.corda.flow.ReserveTokenFlow"
   }
 }

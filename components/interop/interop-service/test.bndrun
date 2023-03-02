@@ -35,6 +35,8 @@
     bnd.identity;id='org.postgresql.jdbc',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='slf4j.simple',\
+    bnd.identity;id='net.corda.virtual-node-info-read-service-fake',\
+    bnd.identity;id='net.corda.cpi-info-read-service-fake',\
     bnd.identity;id='junit-platform-launcher'
 
 -runstartlevel: \

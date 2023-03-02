@@ -1,7 +1,8 @@
-package net.corda.interop.service
+package net.corda.interop.service.impl
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -9,20 +10,20 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
-@Component(service = [FacadeToFlowMapperService::class])
-class FacadeToFlowMapperService @Activate constructor(
+@Component(service = [InteropFacadeToFlowMapperService::class])
+class FacadeToFlowMapperServiceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService
-) {
+) : InteropFacadeToFlowMapperService {
     companion object {
         private const val FACADE_TO_FLOW_MAPPING = "FACADE_TO_FLOW_MAPPING"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val mapper = jacksonObjectMapper()
     }
 
-    fun getFlowName(
+    override fun getFlowName(
         destinationIdentity: HoldingIdentity,
         facadeId: String,
         facadeName: String
