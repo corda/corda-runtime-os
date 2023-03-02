@@ -10,6 +10,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
+@Suppress("UNCHECKED_CAST")
 @Component(service = [InteropFacadeToFlowMapperService::class])
 class FacadeToFlowMapperServiceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -57,7 +58,7 @@ class FacadeToFlowMapperServiceImpl @Activate constructor(
             checkNotNull(facadeFlowMapping) { "Failed to find the facade to flow mapping" }
             val facadeIdMap = facadeFlowMapping[facadeId]
             checkNotNull(facadeIdMap) { "Failed to find the facade to flow mapping for facadeId : $facadeId" }
-            val flowName = (facadeIdMap as MutableMap<*,*>)[facadeName]
+            val flowName = (facadeIdMap as MutableMap<String, String>)[facadeName]
             checkNotNull(flowName) { "Failed to find the facade to flow mapping for facadeName : $facadeName" }
             return flowName.toString()
         }
