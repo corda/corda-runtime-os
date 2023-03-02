@@ -459,7 +459,7 @@ class MembershipPersistenceClientImplTest {
             PersistGroupPolicyResponse(103),
         )
 
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
         assertThat(result).isEqualTo(MembershipPersistenceResult.Success(103))
     }
@@ -472,7 +472,7 @@ class MembershipPersistenceClientImplTest {
             PersistenceFailedResponse("Placeholder error"),
         )
 
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
         assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
     }
@@ -485,7 +485,7 @@ class MembershipPersistenceClientImplTest {
             null,
         )
 
-        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        val result = membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
         assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
     }
@@ -501,7 +501,7 @@ class MembershipPersistenceClientImplTest {
         val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
         whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
 
-        membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
+        membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy, 1L)
 
         val properties = (argument.firstValue.request as? PersistGroupPolicy)?.properties?.items
         assertThat(properties).containsExactly(

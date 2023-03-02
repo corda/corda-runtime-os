@@ -128,12 +128,13 @@ class MembershipPersistenceClientImpl(
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
+        version: Long
     ): MembershipPersistenceResult<Int> {
         logger.info("Persisting group policy.")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
-            PersistGroupPolicy(groupPolicy.toAvro())
+            PersistGroupPolicy(groupPolicy.toAvro(), version)
         ).execute()
         return when (val response = result.payload) {
             is PersistGroupPolicyResponse -> MembershipPersistenceResult.Success(response.version)

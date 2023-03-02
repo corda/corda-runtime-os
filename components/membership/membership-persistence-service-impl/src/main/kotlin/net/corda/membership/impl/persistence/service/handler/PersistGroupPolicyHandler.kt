@@ -5,7 +5,6 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
-import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
@@ -13,7 +12,7 @@ import javax.persistence.LockModeType
 
 internal class PersistGroupPolicyHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<PersistGroupPolicy, PersistGroupPolicyResponse>(persistenceHandlerServices) {
+) : BasePersistenceHandler<PersistGroupPolicy, Unit>(persistenceHandlerServices) {
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
@@ -29,32 +28,24 @@ internal class PersistGroupPolicyHandler(
         )
     }
 
-    override fun invoke(context: MembershipRequestContext, request: PersistGroupPolicy): PersistGroupPolicyResponse {
-        val version = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val criteriaBuilder = em.criteriaBuilder
-            val queryBuilder = criteriaBuilder.createQuery(GroupPolicyEntity::class.java)
-            val root = queryBuilder.from(GroupPolicyEntity::class.java)
-            val query = queryBuilder
-                .select(root)
-                .orderBy(criteriaBuilder.desc(root.get<String>("version")))
-            em.createQuery(query).setLockMode(LockModeType.PESSIMISTIC_WRITE).setMaxResults(1).resultList.singleOrNull()?.let {
-                val lastProperties = keyValuePairListDeserializer.deserialize(it.properties)
-                if (lastProperties?.items != request.properties.items) {
-                    throw MembershipPersistenceException("Cannot update group policy: items differs from original.")
+    override fun invoke(context: MembershipRequestContext, request: PersistGroupPolicy) {
+        transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+            if (request.version > 1) {
+                em.find(GroupPolicyEntity::class.java, request.version, LockModeType.PESSIMISTIC_WRITE).let {
+                    val persistedProperties = keyValuePairListDeserializer.deserialize(it.properties)
+                    if (persistedProperties != request.properties.items) {
+                        throw MembershipPersistenceException("Cannot update group policy: items differ from original.")
+                    }
+                    return@transaction
                 }
-                return@transaction it.version
             }
 
             val entity = GroupPolicyEntity(
-                version = null,
+                version = request.version,
                 createdAt = clock.instant(),
                 properties = serializeProperties(request.properties),
             )
             em.persist(entity)
-
-            entity.version
         }
-
-        return PersistGroupPolicyResponse(version)
     }
 }

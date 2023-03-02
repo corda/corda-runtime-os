@@ -217,8 +217,9 @@ class MembershipPersistenceTest {
             override fun persistGroupPolicy(
                 viewOwningIdentity: HoldingIdentity,
                 groupPolicy: LayeredPropertyMap,
+                version: Long
             ) = safeCall {
-                membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy)
+                membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy, version)
             }
 
             override fun persistGroupParameters(
@@ -527,20 +528,6 @@ class MembershipPersistenceTest {
             assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
         }
-    }
-    @Test
-    @Disabled
-    fun `persistGroupPolicy will increase the version every persistance`() {
-        val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
-        val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1)
-        assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        val version1 = (persisted1 as? MembershipPersistenceResult.Success<Int>)?.payload !!
-
-        val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
-        val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2)
-        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        val version2 = (persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload
-        assertThat(version2).isEqualTo(version1 + 1)
     }
 
     @Test

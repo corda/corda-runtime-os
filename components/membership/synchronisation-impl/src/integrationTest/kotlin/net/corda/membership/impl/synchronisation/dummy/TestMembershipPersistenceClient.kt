@@ -66,7 +66,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
-        groupPolicy: LayeredPropertyMap
+        groupPolicy: LayeredPropertyMap,
+        version: Long
     ): MembershipPersistenceResult<Int> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)

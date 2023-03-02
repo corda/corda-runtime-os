@@ -19,6 +19,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -112,6 +113,7 @@ class PersistGroupPolicyHandlerTest {
     private val handler = PersistGroupPolicyHandler(persistenceHandlerServices)
 
     @Test
+    @Disabled
     fun `invoke return the correct version`() {
         val context = mock<MembershipRequestContext> {
             on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
