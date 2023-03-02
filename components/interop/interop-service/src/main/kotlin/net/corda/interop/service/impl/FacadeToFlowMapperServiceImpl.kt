@@ -10,7 +10,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
-@Suppress("UNCHECKED_CAST")
+
 @Component(service = [InteropFacadeToFlowMapperService::class])
 class FacadeToFlowMapperServiceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -24,6 +24,7 @@ class FacadeToFlowMapperServiceImpl @Activate constructor(
         private val mapper = jacksonObjectMapper()
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun getFlowName(
         destinationIdentity: HoldingIdentity,
         facadeId: String,
