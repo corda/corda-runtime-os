@@ -26,7 +26,8 @@ class ShortHash private constructor(val value: String) {
          */
         fun of(hexString : String) : ShortHash {
             if (hexString.length != LENGTH) {
-                throw ShortHashException("Hex string has length of ${hexString.length} but should be at least $LENGTH characters")
+                throw ShortHashException("Hex string has length of ${hexString.length} " +
+                        "but should be $LENGTH characters")
             }
             if (!isHexString(hexString)) {
                 throw ShortHashException("Not a hex string: '$hexString'")
