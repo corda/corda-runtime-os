@@ -43,11 +43,8 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 ): InteropMemberRegistrationService {
 
     companion object {
-        private const val ALICE_ALTER_EGO_X500 = "CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB"
-        private const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
-        private val ALICE_ALTER_EGO_X500_NAME = MemberX500Name.parse(ALICE_ALTER_EGO_X500)
-        private val ALICE_X500_NAME = MemberX500Name.parse(ALICE_X500)
-        private val ALICE_OTHER_CLUSTER_X500 = MemberX500Name.parse("CN=Alice from Other Cluster, O=Alice Corp, L=LDN, C=GB")
+        private val ALICE_ALTER_EGO_X500_NAME = MemberX500Name.parse("CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB")
+        private val ALICE_X500_NAME = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB")
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
         private const val NON_EXISTING_GROUP_ID = "non-existing-group"
         private const val SUBSYSTEM = "interop"
@@ -55,23 +52,36 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             this::class.java.getResource("/dummy_certificate.pem")?.readText()
         private val DUMMY_PUBLIC_SESSION_KEY =
             this::class.java.getResource("/dummy_session_key.pem")?.readText()
-        private val memberList =
-            listOf(HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID), HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID),
-                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, NON_EXISTING_GROUP_ID), HoldingIdentity(ALICE_X500_NAME, NON_EXISTING_GROUP_ID),
-                HoldingIdentity(ALICE_OTHER_CLUSTER_X500, INTEROP_GROUP_ID))
+
+        private val membersOfInteropGroup =
+            listOf(ALICE_X500_NAME, ALICE_ALTER_EGO_X500_NAME).map { HoldingIdentity(it, INTEROP_GROUP_ID) }
+        private val memberFromOtherClusterOfInteropGroup =
+            HoldingIdentity(MemberX500Name.parse("CN=Alice from Other Cluster, O=Alice Corp, L=LDN, C=GB"), INTEROP_GROUP_ID)
+        private val unpublishedMemberOfInteropGroup =
+            HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"), INTEROP_GROUP_ID)
+
+        private val membersOfNonExistingGroup =
+          listOf(ALICE_X500_NAME, ALICE_ALTER_EGO_X500_NAME).map { HoldingIdentity(it, NON_EXISTING_GROUP_ID) }
     }
+    //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
+    override fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>>
+        = createDummyMemberInfo(membersOfInteropGroup + listOf(memberFromOtherClusterOfInteropGroup), INTEROP_GROUP_ID) +
+            createDummyMemberInfo(membersOfNonExistingGroup, NON_EXISTING_GROUP_ID)
 
     //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
-    override fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>> {
+    override fun createDummyHostedIdentity(): List<Record<String, HostedIdentityEntry>>
+            = createDummyHostedIdentity(membersOfInteropGroup) + createDummyHostedIdentity(membersOfNonExistingGroup)
+
+    private fun createDummyMemberInfo(identities : List<HoldingIdentity>, groupId: String): List<Record<String, PersistentMemberInfo>> {
         val memberInfoList = mutableListOf<Record<String, PersistentMemberInfo>>()
-        memberList.forEach {member ->
+        identities.forEach { member ->
             val memberContext = listOf(
                 KeyValuePair(PARTY_NAME, member.x500Name.toString()),
                 KeyValuePair(String.format(URL_KEY, "0"), "http://localhost:8080"),
                 KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 KeyValuePair(PARTY_SESSION_KEY, DUMMY_CERTIFICATE),
                 KeyValuePair(SESSION_KEY_HASH, "9DEA9C982267BD142162ADC141C1C11C2F547C3C37B4C693A3EA3A017C2C6563"),
-                KeyValuePair(GROUP_ID, INTEROP_GROUP_ID),
+                KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(LEDGER_KEYS_KEY.format(0), DUMMY_PUBLIC_SESSION_KEY),
                 KeyValuePair(
                     LEDGER_KEY_HASHES_KEY.format(0),
@@ -79,27 +89,19 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
                 ),
                 KeyValuePair(LEDGER_KEY_SIGNATURE_SPEC.format(0), "SHA256withECDSA"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
-                KeyValuePair(PLATFORM_VERSION, "5000"),
-                //TODO : Following info may not be required for interops group,
-                // need to investigate that LinkManager is happy without this info.
-//            KeyValuePair(MEMBER_CPI_NAME, "calculator.cpi"),
-//            KeyValuePair(MEMBER_CPI_VERSION, "1.0.0.0-SNAPSHOT"),
-//            KeyValuePair(
-//                MEMBER_CPI_SIGNER_HASH,
-//                "SHA-256:367DDC08BB0BFBC8B338E2B8DC17EB1715A542386E6FE2376A9FB9EBC80A3DEC"
-//            )
+                KeyValuePair(PLATFORM_VERSION, "5000")
             ).sorted()
             val mgmContext = listOf(
                 KeyValuePair(STATUS, "ACTIVE"),
                 KeyValuePair(MODIFIED_TIME, Instant.now().toString()),
                 KeyValuePair(MemberInfoExtension.SERIAL, "1"),
             ).sorted()
-            memberInfoList.addAll(memberList.map {
+            memberInfoList.addAll(identities.map { viewOwningMember ->
                 Record(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
-                    "${it.shortHash}-${member.shortHash.value}",
+                    "${viewOwningMember.shortHash}-${member.shortHash.value}",
                     PersistentMemberInfo(
-                        it.toAvro(),
+                        viewOwningMember.toAvro(),
                         KeyValuePairList(memberContext),
                         KeyValuePairList(mgmContext)
                     )
@@ -109,9 +111,8 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
         return memberInfoList
     }
 
-    override fun createDummyHostedIdentity(): List<Record<String, HostedIdentityEntry>> {
-        return memberList.map {
-            val registeringMember = it
+    private fun createDummyHostedIdentity(identities: List<HoldingIdentity>): List<Record<String, HostedIdentityEntry>>
+        = identities.map { registeringMember ->
             val hostedIdentity = HostedIdentityEntry(
                 net.corda.data.identity.HoldingIdentity(
                     registeringMember.x500Name.toString(),
@@ -128,7 +129,6 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
                 hostedIdentity
             )
         }
-    }
 
     override fun seedMessage() : List<Record<*,*>> {
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }
@@ -150,17 +150,10 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
                 )
             )
 
-        val unpublishedHoldingIdentity =
-                HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"), INTEROP_GROUP_ID)
-
         return listOf(
-            createRecord("seed-message-correct-1", HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID),
-                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID)),
-            createRecord("seed-message-no-dest-1", unpublishedHoldingIdentity,
-                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, INTEROP_GROUP_ID)),
-            createRecord("seed-message-no-policy-1", HoldingIdentity(ALICE_X500_NAME, NON_EXISTING_GROUP_ID),
-                HoldingIdentity(ALICE_ALTER_EGO_X500_NAME, NON_EXISTING_GROUP_ID)),
-            createRecord("seed-message-other-cluster-1", HoldingIdentity(ALICE_OTHER_CLUSTER_X500, INTEROP_GROUP_ID),
-                HoldingIdentity(ALICE_X500_NAME, INTEROP_GROUP_ID)))
+            createRecord("seed-message-correct-1", membersOfInteropGroup[0], membersOfInteropGroup[1]),
+            createRecord("seed-message-no-dest-1", unpublishedMemberOfInteropGroup, membersOfInteropGroup[0]),
+            createRecord("seed-message-other-cluster-1", memberFromOtherClusterOfInteropGroup, membersOfInteropGroup[0]),
+            createRecord("seed-message-no-policy-1", membersOfNonExistingGroup[0], membersOfNonExistingGroup[1]))
     }
 }
