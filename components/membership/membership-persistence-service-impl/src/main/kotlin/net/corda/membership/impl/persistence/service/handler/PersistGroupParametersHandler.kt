@@ -9,7 +9,6 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
@@ -59,7 +58,7 @@ internal class PersistGroupParametersHandler(
             )
             if (currentEntity != null) {
                 val currentParameters = deserializeProperties(currentEntity.parameters).toMap()
-                if (groupParameters.toMap().removeTime() != currentParameters.removeTime()) {
+                if (groupParameters.toMap() != currentParameters) {
                     throw MembershipPersistenceException(
                         "Group parameters with epoch=$epochFromRequest already exist with different parameters."
                     )
@@ -90,6 +89,4 @@ internal class PersistGroupParametersHandler(
 
         return PersistGroupParametersResponse(persistedGroupParameters)
     }
-
-    private fun Map<String, String>.removeTime(): Map<String, String>  = this.filterKeys { it != MODIFIED_TIME_KEY }
 }

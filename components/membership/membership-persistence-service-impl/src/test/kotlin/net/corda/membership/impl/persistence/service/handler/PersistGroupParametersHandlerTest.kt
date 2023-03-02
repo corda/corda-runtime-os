@@ -216,29 +216,4 @@ class PersistGroupParametersHandlerTest {
         }
         assertThat(exception).hasMessageContaining("already exist with different parameters")
     }
-
-    @Test
-    fun `invoke different parameters that differ only by time should do nothing`() {
-        val requestParameters = KeyValuePairList(
-            listOf(
-                KeyValuePair(EPOCH_KEY, "1"),
-                KeyValuePair(MODIFIED_TIME_KEY, "103"),
-            )
-        )
-        val persistedParameters = KeyValuePairList(
-            listOf(
-                KeyValuePair(EPOCH_KEY, "1"),
-                KeyValuePair(MODIFIED_TIME_KEY, "1001"),
-            )
-        )
-        val request = PersistGroupParameters(
-            requestParameters
-        )
-        whenever(keyValuePairListDeserializer.deserialize("test".toByteArray()))
-            .doReturn(persistedParameters)
-
-        handler.invoke(requestContext, request)
-
-        verify(entityManager, never()).persist(any())
-    }
 }
