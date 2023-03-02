@@ -16,12 +16,14 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.membership.MemberInfo
+import java.security.MessageDigest
+import java.security.PublicKey
 
 /**
  * Verifies that the correct notarisation request was signed by the counterparty.
@@ -131,4 +133,15 @@ private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryExc
             txId
         )
     }
+}
+
+private const val SHORT_KEY_ID_LENGTH = 12
+
+private fun PublicKey.publicKeyId(): String {
+    val digestAlgorithm = DigestAlgorithmName.SHA2_256.name
+    val fullKeyId = SecureHash(
+        digestAlgorithm,
+        MessageDigest.getInstance(digestAlgorithm).digest(encoded)
+    )
+    return fullKeyId.toHexString().substring(0, SHORT_KEY_ID_LENGTH)
 }

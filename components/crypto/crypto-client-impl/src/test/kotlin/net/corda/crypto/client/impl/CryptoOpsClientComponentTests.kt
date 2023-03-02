@@ -3,6 +3,7 @@ package net.corda.crypto.client.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.component.test.utils.SendActResult
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
@@ -56,7 +57,6 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
-import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals

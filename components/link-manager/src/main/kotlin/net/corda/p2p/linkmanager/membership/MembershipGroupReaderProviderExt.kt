@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.membership
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.virtualnode.HoldingIdentity
 
 fun MembershipGroupReaderProvider.lookup(
