@@ -9,8 +9,8 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.calculateHash
-import net.corda.v5.crypto.publicKeyId
+import net.corda.crypto.cipher.suite.calculateHash
+import net.corda.crypto.cipher.suite.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

@@ -4,6 +4,13 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
+import java.net.BindException
+import java.net.ServerSocket
+import java.net.URL
+import java.security.KeyStore
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random.Default.nextInt
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.config.Configuration
@@ -34,6 +41,7 @@ import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
@@ -42,13 +50,6 @@ import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
-import java.net.BindException
-import java.net.ServerSocket
-import java.net.URL
-import java.security.KeyStore
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.random.Random.Default.nextInt
 
 open class TestBase {
     companion object {
@@ -149,6 +150,7 @@ open class TestBase {
                 val bootstrapper = ConfigFactory.empty()
                     .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(nextInt()))
                     .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+                    .withValue(BOOT_MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }

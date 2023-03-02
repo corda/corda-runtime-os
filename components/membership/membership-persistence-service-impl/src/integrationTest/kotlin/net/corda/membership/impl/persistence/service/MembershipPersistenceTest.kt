@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.service
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -84,7 +85,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
@@ -109,6 +109,8 @@ import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
+import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipPersistenceTest {
@@ -127,11 +129,13 @@ class MembershipPersistenceTest {
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
             $BUS_TYPE = INMEMORY
+            $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
         """
         private const val MEMBER_CONTEXT_KEY = "key"
         private const val MEMBER_CONTEXT_VALUE = "value"
         private const val messagingConf = """
             componentVersion="5.1"
+            maxAllowedMessageSize = 1000000
             subscription {
                 consumer {
                     close.timeout = 6000

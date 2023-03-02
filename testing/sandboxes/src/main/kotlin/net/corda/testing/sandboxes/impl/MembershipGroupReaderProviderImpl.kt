@@ -1,11 +1,11 @@
 package net.corda.testing.sandboxes.impl
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity

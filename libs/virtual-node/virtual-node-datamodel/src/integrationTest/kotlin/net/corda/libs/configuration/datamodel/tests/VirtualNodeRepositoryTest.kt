@@ -327,8 +327,7 @@ class VirtualNodeRepositoryTest {
         }
 
         assertThat(foundEntity).isNotNull
-        assertThat(foundEntity.operationInProgress).isNotNull
-        assertThat(foundEntity.operationInProgress!!.id).isEqualTo(operationId)
+        assertThat(foundEntity.operationInProgress).isNull()
 
         val foundOperation = entityManagerFactory.createEntityManager().transaction {
             it.find(VirtualNodeOperationEntity::class.java, operationId)
