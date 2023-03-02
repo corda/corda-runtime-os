@@ -150,7 +150,7 @@ class MemberInfoExtension {
         /**
          * Interop alias identity mapping
          */
-        const val INTEROP_ALIAS_MAPPING = "corda.interop.mapping"
+        const val INTEROP_ALIAS_MAPPING = "corda.interop.alias.identity"
 
 
         /** Key name for TLS certificate subject. */

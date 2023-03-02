@@ -78,7 +78,7 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                 KeyValuePair(PLATFORM_VERSION, "5000"),
                 KeyValuePair(INTEROP_ROLE, "interop"),
-                KeyValuePair(INTEROP_ALIAS_MAPPING, "O=Alice,L=London,C=GB@Gold"),
+                KeyValuePair(INTEROP_ALIAS_MAPPING, "O=Alice,L=London,C=GB"),
                 //TODO : Following info may not be required for interops group,
                 // need to investigate that LinkManager is happy without this info.
 //            KeyValuePair(MEMBER_CPI_NAME, "calculator.cpi"),
