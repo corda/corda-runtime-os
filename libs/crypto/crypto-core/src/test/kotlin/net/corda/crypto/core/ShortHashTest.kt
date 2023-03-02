@@ -9,21 +9,21 @@ class ShortHashTest {
     @Test
     fun `can create short hash`() {
         assertDoesNotThrow {
-            ShortHash.of("12345678901234567890")
+            ShortHash.of("123456789012")
         }
     }
 
     @Test
     fun `can create short hash from hex string in lower case`() {
         assertDoesNotThrow {
-            ShortHash.of("1234567890abcdef")
+            ShortHash.of("1234567890ab")
         }
     }
 
     @Test
     fun `can create short hash from hex string in caps`() {
         assertDoesNotThrow {
-            ShortHash.of("1234567890ABCDEF")
+            ShortHash.of("1234567890AB")
         }
     }
 
@@ -32,6 +32,14 @@ class ShortHashTest {
         // 11 chars < 12 REQUIRED
         assertThrows<ShortHashException> {
             ShortHash.of("12345678901")
+        }
+    }
+
+    @Test
+    fun `cannot create short hash if too long`() {
+        // 11 chars < 12 REQUIRED
+        assertThrows<ShortHashException> {
+            ShortHash.of("1234567890123")
         }
     }
 
