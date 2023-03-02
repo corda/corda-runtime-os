@@ -12,6 +12,7 @@ import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.request.ManualDeclinationReason
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
@@ -419,5 +420,59 @@ interface MGMRestResource : RestResource {
             description = "Reason for declining the specified registration request"
         )
         reason: ManualDeclinationReason
+    )
+
+    /**
+     * The [suspendMember] method enables you to suspend a member. A suspended member is blocked from communicating
+     * with other members of the group, and will not see any updates related to the group or the other members.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.suspendMember("58B6030FABDD", SuspendMemberParameters("O=Alice, L=London, C=GB"))
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param suspensionParams Parameters for suspending a member. See [SuspensionActivationParameters] for more details.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/suspend"
+    )
+    fun suspendMember(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+        @ClientRequestBodyParameter(
+            description = "Parameters for suspending a member."
+        )
+        suspensionParams: SuspensionActivationParameters
+    )
+
+    /**
+     * The [activateMember] method enables you to activate a previously suspended member. An activated member is
+     * allowed to communicate with other members of the group again, and is able to receive updates related to the
+     * group or the other members.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.activateMember("58B6030FABDD", SuspendMemberParameters("O=Alice, L=London, C=GB"))
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param activationParams Parameters for activating a member. See [SuspensionActivationParameters] for more details.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/activate"
+    )
+    fun activateMember(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+
+        @ClientRequestBodyParameter(
+            description = "Parameters for activating a suspended member."
+        )
+        activationParams: SuspensionActivationParameters
     )
 }

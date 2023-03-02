@@ -163,6 +163,24 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         }
     }
 
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ): MembershipPersistenceResult<Unit> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ): MembershipPersistenceResult<Unit> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
     override fun mutualTlsAddCertificateToAllowedList(
         mgmHoldingIdentity: HoldingIdentity,
         subject: String,

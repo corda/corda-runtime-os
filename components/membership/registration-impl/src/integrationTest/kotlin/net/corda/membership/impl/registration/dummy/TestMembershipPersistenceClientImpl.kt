@@ -113,6 +113,14 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         ruleType: ApprovalRuleType,
     ) = MembershipPersistenceResult.success()
 
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ) = MembershipPersistenceResult.success()
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ) = MembershipPersistenceResult.success()
+
     override val isRunning = true
 
     override fun start() {}

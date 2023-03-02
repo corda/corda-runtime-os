@@ -394,4 +394,16 @@ class MembershipPersistenceClientImpl(
             else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
     }
+
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ): MembershipPersistenceResult<Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ): MembershipPersistenceResult<Unit> {
+        TODO("Not yet implemented")
+    }
 }

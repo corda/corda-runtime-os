@@ -123,6 +123,14 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         ruleType: ApprovalRuleType
     ) = MembershipPersistenceResult.success()
 
+    override fun suspendMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ) = MembershipPersistenceResult.success()
+
+    override fun activateMember(
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ) = MembershipPersistenceResult.success()
+
     private val persistenceCoordinator =
         coordinatorFactory.createCoordinator(
             LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()

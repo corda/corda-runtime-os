@@ -175,4 +175,45 @@ interface MGMResourceClient : Lifecycle {
         approve: Boolean,
         reason: String? = null,
     )
+
+    /**
+     * Suspends a member.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param memberX500Name X.500 name of the member being suspended.
+     * @param serialNumber Optional. Serial number of the member's [MemberInfo].
+     * @param reason Optional. Reason for suspension.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     * @throws [IllegalArgumentException] If the specified member is not found, or is not currently active.
+     */
+    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    fun suspendMember(
+        holdingIdentityShortHash: String,
+        memberX500Name: MemberX500Name,
+        serialNumber: Int? = null,
+        reason: String? = null,
+    )
+
+    /**
+     * Activates a previously suspended member.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param memberX500Name X.500 name of the member being activated.
+     * @param serialNumber Optional. Serial number of the member's [MemberInfo].
+     * @param reason Optional. Reason for activation.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     * @throws [IllegalArgumentException] If the specified member is not found, or is not currently suspended.
+     */
+    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    fun activateMember(
+        holdingIdentityShortHash: String,
+        memberX500Name: MemberX500Name,
+        serialNumber: Int? = null,
+        reason: String? = null,
+    )
+
 }

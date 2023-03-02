@@ -143,6 +143,14 @@ class MGMResourceClientImpl @Activate constructor(
             approve: Boolean,
             reason: String?,
         )
+
+        fun suspendMember(
+            holdingIdentityShortHash: String, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        )
+
+        fun activateMember(
+            holdingIdentityShortHash: String, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        )
     }
 
     private var impl: InnerMGMResourceClient = InactiveImpl
@@ -219,6 +227,14 @@ class MGMResourceClientImpl @Activate constructor(
     override fun reviewRegistrationRequest(
         holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
     ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, approve, reason)
+
+    override fun suspendMember(
+        holdingIdentityShortHash: String, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ) = impl.suspendMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
+
+    override fun activateMember(
+        holdingIdentityShortHash: String, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+    ) = impl.activateMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -321,6 +337,14 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun suspendMember(
+            holdingIdentityShortHash: String, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun activateMember(
+            holdingIdentityShortHash: String, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -508,6 +532,18 @@ class MGMResourceClientImpl @Activate constructor(
             } else {
                 publishApprovalDecision(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
             }
+        }
+
+        override fun suspendMember(
+            holdingIdentityShortHash: String, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        ) {
+            TODO("Not yet implemented")
+        }
+
+        override fun activateMember(
+            holdingIdentityShortHash: String, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        ) {
+            TODO("Not yet implemented")
         }
 
         private fun publishApprovalDecision(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {

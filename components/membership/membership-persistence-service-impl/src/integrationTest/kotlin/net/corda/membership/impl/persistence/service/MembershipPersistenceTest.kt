@@ -345,6 +345,22 @@ class MembershipPersistenceTest {
                 )
             }
 
+            override fun suspendMember(
+                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+            ) = safeCall {
+                membershipPersistenceClient.suspendMember(
+                    viewOwningIdentity, memberX500Name, serialNumber, reason
+                )
+            }
+
+            override fun activateMember(
+                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+            ) = safeCall {
+                membershipPersistenceClient.activateMember(
+                    viewOwningIdentity, memberX500Name, serialNumber, reason
+                )
+            }
+
             fun <T> safeCall(func: () -> T): T {
                 return eventually {
                     assertDoesNotThrow {

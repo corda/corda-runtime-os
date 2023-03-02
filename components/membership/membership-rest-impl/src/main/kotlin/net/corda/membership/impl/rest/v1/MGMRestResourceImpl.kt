@@ -37,6 +37,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
@@ -146,6 +147,10 @@ class MGMRestResourceImpl internal constructor(
         fun approveRegistrationRequest(holdingIdentityShortHash: String, requestId: String)
 
         fun declineRegistrationRequest(holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason)
+
+        fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters)
+
+        fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
     }
 
     override val protocolVersion = 1
@@ -234,6 +239,12 @@ class MGMRestResourceImpl internal constructor(
     override fun declineRegistrationRequest(
         holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
     ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
+
+    override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
+        impl.suspendMember(holdingIdentityShortHash, suspensionParams)
+
+    override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
+        impl.activateMember(holdingIdentityShortHash, activationParams)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -325,6 +336,16 @@ class MGMRestResourceImpl internal constructor(
 
         override fun declineRegistrationRequest(
             holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
+        ): Unit = throwNotRunningException()
+
+        override fun suspendMember(
+            holdingIdentityShortHash: String,
+            suspensionParams: SuspensionActivationParameters
+        ): Unit = throwNotRunningException()
+
+        override fun activateMember(
+            holdingIdentityShortHash: String,
+            activationParams: SuspensionActivationParameters
         ): Unit = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
@@ -526,6 +547,20 @@ class MGMRestResourceImpl internal constructor(
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException("${e.message}")
             }
+        }
+
+        override fun suspendMember(
+            holdingIdentityShortHash: String,
+            suspensionParams: SuspensionActivationParameters
+        ) {
+            TODO("Not yet implemented")
+        }
+
+        override fun activateMember(
+            holdingIdentityShortHash: String,
+            activationParams: SuspensionActivationParameters
+        ) {
+            TODO("Not yet implemented")
         }
 
         private fun RegistrationRequestStatus.toRest() =

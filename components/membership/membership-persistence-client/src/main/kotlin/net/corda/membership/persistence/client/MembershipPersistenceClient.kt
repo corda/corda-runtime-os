@@ -273,4 +273,34 @@ interface MembershipPersistenceClient : Lifecycle {
         ruleId: String,
         ruleType: ApprovalRuleType
     ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Suspends a member.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param memberX500Name X.500 name of the member being suspended.
+     * @param serialNumber Serial number of the member's [MemberInfo].
+     * @param reason Reason for suspension.
+     */
+    fun suspendMember(
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Int?,
+        reason: String?,
+    ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Activates a previously suspended member.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param memberX500Name X.500 name of the member being activated.
+     * @param serialNumber Serial number of the member's [MemberInfo].
+     * @param reason Reason for activation.
+     */
+    fun activateMember(
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Int?,
+        reason: String?,
+    ): MembershipPersistenceResult<Unit>
 }
