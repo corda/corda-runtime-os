@@ -208,7 +208,9 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         failedOperation.latestUpdateTimestamp = Instant.now()
         failedOperation.state = VirtualNodeOperationState.MIGRATIONS_FAILED
         failedOperation.errors = reason
+        virtualNode.operationInProgress = null
 
+        entityManager.merge(failedOperation)
         entityManager.merge(virtualNode)
     }
 

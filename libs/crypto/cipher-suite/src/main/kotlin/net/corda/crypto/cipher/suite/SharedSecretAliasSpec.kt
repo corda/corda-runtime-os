@@ -1,7 +1,6 @@
 package net.corda.crypto.cipher.suite
 
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
-import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 
 /**

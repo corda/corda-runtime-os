@@ -6,6 +6,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
@@ -34,7 +35,6 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
