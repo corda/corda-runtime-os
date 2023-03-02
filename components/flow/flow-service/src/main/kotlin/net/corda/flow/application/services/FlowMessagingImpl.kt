@@ -11,6 +11,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
@@ -31,7 +32,9 @@ class FlowMessagingImpl @Activate constructor(
     @Reference(service = FlowSessionFactory::class)
     private val flowSessionFactory: FlowSessionFactory,
     @Reference(service = SerializationServiceInternal::class)
-    private val serializationService: SerializationServiceInternal
+    private val serializationService: SerializationServiceInternal,
+    @Reference(service = MemberLookup::class)
+    private val memberLookup: MemberLookup
 ) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
@@ -110,6 +113,10 @@ class FlowMessagingImpl @Activate constructor(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
+        memberLookup.lookup(x500Name) ?: throw CordaRuntimeException(
+            "Cannot initiate flow with [$x500Name] as this identity doesn't exist within our membership group."
+        )
+
         val sessionId = UUID.randomUUID().toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
