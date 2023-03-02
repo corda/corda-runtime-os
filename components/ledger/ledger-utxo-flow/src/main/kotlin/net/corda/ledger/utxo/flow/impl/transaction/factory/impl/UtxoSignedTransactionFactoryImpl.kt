@@ -4,18 +4,17 @@ import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
+import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
-import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -23,6 +22,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -34,9 +34,7 @@ import java.security.PublicKey
 //TODO impl impl in package name
 
 @Suppress("LongParameterList")
-@Component(
-    service = [UtxoSignedTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE
-)
+@Component(service = [UtxoSignedTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
@@ -126,13 +124,15 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             utxoTransactionBuilder.outputStates.mapNotNull { it.encumbranceTag }.groupingBy { it }.eachCount()
 
         val outputTransactionStates = utxoTransactionBuilder.outputStates.map {
-            it.toTransactionState(utxoTransactionBuilder.notary!!, it.encumbranceTag?.let{tag -> encumbranceGroupSizes[tag]})
+            it.toTransactionState(
+                utxoTransactionBuilder.notary!!,
+                it.encumbranceTag?.let { tag -> encumbranceGroupSizes[tag] })
         }
 
         val outputsInfo = outputTransactionStates.map {
             UtxoOutputInfoComponent(
-                it.encumbrance?.tag,
-                it.encumbrance?.size,
+                it.encumbranceGroup?.tag,
+                it.encumbranceGroup?.size,
                 utxoTransactionBuilder.notary!!,
                 currentSandboxGroup.getEvolvableTag(it.contractStateType),
                 currentSandboxGroup.getEvolvableTag(it.contractType)

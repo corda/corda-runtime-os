@@ -39,7 +39,7 @@ import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.read.rpc.extensions.parseOrThrow
+import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

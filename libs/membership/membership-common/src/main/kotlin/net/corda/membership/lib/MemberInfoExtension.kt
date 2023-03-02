@@ -1,5 +1,7 @@
 package net.corda.membership.lib
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
@@ -7,9 +9,7 @@ import net.corda.utilities.parse
 import net.corda.utilities.parseList
 import net.corda.utilities.parseOrNull
 import net.corda.utilities.parseSet
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity

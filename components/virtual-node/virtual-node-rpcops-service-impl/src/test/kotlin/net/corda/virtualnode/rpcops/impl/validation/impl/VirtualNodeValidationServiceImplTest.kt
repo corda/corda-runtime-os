@@ -115,7 +115,7 @@ class VirtualNodeValidationServiceImplTest {
             whenever(it.cpiId).thenReturn(cpiId2)
         }
 
-        assertThrows<IllegalArgumentException> {
+        assertThrows<BadRequestException> {
             validationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
         }
     }
@@ -132,7 +132,7 @@ class VirtualNodeValidationServiceImplTest {
             whenever(it.cpiId).thenReturn(cpiId2)
         }
 
-        assertThrows<IllegalArgumentException> {
+        assertThrows<BadRequestException> {
             validationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
         }
     }

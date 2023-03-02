@@ -6,7 +6,7 @@ import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
-import net.corda.libs.virtualnode.datamodel.VirtualNodeNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -208,7 +208,9 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         failedOperation.latestUpdateTimestamp = Instant.now()
         failedOperation.state = VirtualNodeOperationState.MIGRATIONS_FAILED
         failedOperation.errors = reason
+        virtualNode.operationInProgress = null
 
+        entityManager.merge(failedOperation)
         entityManager.merge(virtualNode)
     }
 

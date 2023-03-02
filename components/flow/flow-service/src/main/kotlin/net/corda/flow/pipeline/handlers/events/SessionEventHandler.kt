@@ -93,7 +93,7 @@ class SessionEventHandler @Activate constructor(
                 // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
                 // will get the right failure eventually, so this is fine for now.
                 throw FlowTransientException(
-                    "Failed to create the flow sandbox: ${e.message}",
+                    "Failed to create the flow sandbox: ${e.message ?: "No exception message provided."}",
                     e
                 )
             }

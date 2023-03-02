@@ -3,6 +3,8 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -16,6 +18,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -39,11 +42,14 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDistinctKeys
+import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDuplicatedVNodeName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -56,39 +62,36 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
+import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
+import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetworkAndDuplicatedVNodeName
-import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
-import net.corda.membership.lib.notary.MemberNotaryDetails
-import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.registration.InvalidMembershipRegistrationException
-import net.corda.membership.registration.MembershipRegistrationException
-import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -277,6 +280,15 @@ class StaticMemberRegistrationServiceTest {
     private val groupParametersFactory: GroupParametersFactory = mock {
         on { create(any()) } doReturn mockGroupParameters
     }
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on {
+            queryRegistrationRequestsStatus(
+                any(),
+                any(),
+                any(),
+            )
+        } doReturn MembershipQueryResult.Success(emptyList())
+    }
     private val groupParametersWriterService: GroupParametersWriterService = mock()
     private val groupReader: MembershipGroupReader = mock()
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
@@ -302,6 +314,7 @@ class StaticMemberRegistrationServiceTest {
         virtualNodeInfoReadService,
         groupParametersWriterService,
         membershipGroupReaderProvider,
+        membershipQueryClient,
     )
 
     private fun setUpPublisher() {
@@ -460,7 +473,13 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration pass when the member is not found`() {
-            whenever(groupReader.lookup(any(), any())).thenReturn(null)
+            whenever(
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    alice,
+                    aliceName,
+                    listOf(RegistrationStatus.APPROVED),
+                )
+            ).doReturn(MembershipQueryResult.Success(emptyList()))
             setUpPublisher()
             registrationService.start()
 
@@ -474,10 +493,16 @@ class StaticMemberRegistrationServiceTest {
     inner class FailedRegistrationTests {
         @Test
         fun `it fails when the member is active`() {
-            val memberInfo = mock<MemberInfo> {
-                on { isActive } doReturn true
+            val status = mock<RegistrationRequestStatus> {
+                on { registrationId } doReturn "ID"
             }
-            whenever(groupReader.lookup(any(), any())).thenReturn(memberInfo)
+            whenever(
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    alice,
+                    aliceName,
+                    listOf(RegistrationStatus.APPROVED),
+                )
+            ).doReturn(MembershipQueryResult.Success(listOf(status)))
             setUpPublisher()
             registrationService.start()
 

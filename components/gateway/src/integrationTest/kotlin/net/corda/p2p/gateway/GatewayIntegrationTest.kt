@@ -3,6 +3,29 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigValueFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import java.io.StringWriter
+import java.net.ConnectException
+import java.net.HttpURLConnection.HTTP_BAD_REQUEST
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.net.URI
+import java.net.http.HttpResponse.BodyHandlers
+import java.nio.ByteBuffer
+import java.security.KeyStore
+import java.security.cert.X509Certificate
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
+import kotlin.concurrent.thread
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
@@ -61,6 +84,7 @@ import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.registry.deserialize
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
@@ -81,29 +105,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
 import org.slf4j.LoggerFactory
-import java.io.StringWriter
-import java.net.ConnectException
-import java.net.HttpURLConnection.HTTP_BAD_REQUEST
-import java.net.InetSocketAddress
-import java.net.Socket
-import java.net.URI
-import java.net.http.HttpResponse.BodyHandlers
-import java.nio.ByteBuffer
-import java.security.KeyStore
-import java.security.cert.X509Certificate
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManagerFactory
-import javax.net.ssl.X509TrustManager
-import kotlin.concurrent.thread
 import java.net.http.HttpClient as JavaHttpClient
 import java.net.http.HttpRequest as JavaHttpRequest
 
@@ -124,6 +125,7 @@ class GatewayIntegrationTest : TestBase() {
 
     private val messagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.getAndIncrement()))
+        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
 
     private val avroSchemaRegistry = AvroSchemaRegistryImpl()
 

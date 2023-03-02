@@ -63,13 +63,46 @@ class TokenClaimFactoryImpl @Activate constructor(
     }
 
     private data class ClaimedTokenImpl(
-        override val stateRef: StateRef,
-        override val tokenType: String,
-        override val issuerHash: SecureHash,
-        override val notaryX500Name: MemberX500Name,
-        override val symbol: String,
-        override var tag: String?,
-        override var ownerHash: SecureHash?,
-        override val amount: BigDecimal
-    ) : ClaimedToken
+        private val stateRef: StateRef,
+        private val tokenType: String,
+        private val issuerHash: SecureHash,
+        private val notaryX500Name: MemberX500Name,
+        private val symbol: String,
+        private var tag: String?,
+        private var ownerHash: SecureHash?,
+        private val amount: BigDecimal
+    ) : ClaimedToken {
+
+        override fun getStateRef(): StateRef {
+            return stateRef
+        }
+
+        override fun getTokenType(): String {
+            return tokenType
+        }
+
+        override fun getIssuerHash(): SecureHash {
+            return issuerHash
+        }
+
+        override fun getNotaryX500Name(): MemberX500Name {
+            return notaryX500Name
+        }
+
+        override fun getSymbol(): String {
+            return symbol
+        }
+
+        override fun getTag(): String? {
+            return tag
+        }
+
+        override fun getOwnerHash(): SecureHash? {
+            return ownerHash
+        }
+
+        override fun getAmount(): BigDecimal {
+            return amount
+        }
+    }
 }

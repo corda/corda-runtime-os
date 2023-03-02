@@ -50,7 +50,7 @@ class ConsensualSignedTransactionBaseTest {
         )
         val signedByTwoTx = signedByOneTx.addSignature(publicKeys[1])
         val signedByAllTx = signedByTwoTx.addSignatures(listOf(signatures[2]))
-        assertThat(signedByAllTx.signatures.map {it.by}, `is`(publicKeys))
+        assertThat(signedByAllTx.signatures.map { it.by }, `is`(publicKeys))
     }
 
     @Test
@@ -80,10 +80,12 @@ class ConsensualSignedTransactionBaseTest {
         val ledgerInfo = ConsensualStateLedgerInfo(listOf(MyConsensualState(publicKeys)), Instant.EPOCH)
         val signingService = mock<SigningService>()
 
-        whenever(signingService.sign(
-            any(),
-            eq(publicKeys[0]),
-            any())
+        whenever(
+            signingService.sign(
+                any(),
+                eq(publicKeys[0]),
+                any()
+            )
         ).thenReturn(toSignatureWithMetadata(publicKeys[0]).signature)
 
         val unsignedTx = ConsensualSignedTransactionBase(
@@ -117,7 +119,8 @@ class ConsensualSignedTransactionBaseTest {
             entity,
             signingService,
             BaseSerializationService(),
-            config)
+            config
+        )
 
         assertThat(retrievedTx.signatures, `is`(tx.signatures))
         assertThat(retrievedTx.toLedgerTransaction(), `is`(tx.toLedgerTransaction()))
@@ -152,7 +155,12 @@ class ConsensualSignedTransactionBaseTest {
     )
 
     @CordaSerializable
-    data class MyConsensualState(override val participants: List<PublicKey>) : ConsensualState {
+    data class MyConsensualState(private val participants: List<PublicKey>) : ConsensualState {
+
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
 }

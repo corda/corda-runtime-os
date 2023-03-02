@@ -18,6 +18,7 @@
 
 -runrequires: \
     bnd.identity;id='net.corda.lifecycle-impl',\
+    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.configuration-core',\
     bnd.identity;id='${project.archivesBaseName}-tests',\

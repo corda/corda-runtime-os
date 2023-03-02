@@ -105,7 +105,7 @@ class UtxoLedgerTransactionVerifierTest {
 
     @Test
     fun `throws an exception when input and reference states don't have the same notary`() {
-        val anotherNotary = utxoNotaryExample.copy(owningKey = mock())
+        val anotherNotary = Party(utxoNotaryExample.name, mock())
         whenever(inputTransactionState.notary).thenReturn(anotherNotary)
         whenever(referenceTransactionState.notary).thenReturn(utxoNotaryExample)
         assertThatThrownBy { verifier.verify() }
@@ -115,7 +115,7 @@ class UtxoLedgerTransactionVerifierTest {
 
     @Test
     fun `throws an exception when input and reference states don't have the same notary passed into the verification`() {
-        val anotherNotary = utxoNotaryExample.copy(owningKey = mock())
+        val anotherNotary = Party(utxoNotaryExample.name, mock())
         whenever(inputTransactionState.notary).thenReturn(anotherNotary)
         whenever(referenceTransactionState.notary).thenReturn(anotherNotary)
         assertThatThrownBy { verifier.verify() }
@@ -147,11 +147,25 @@ class UtxoLedgerTransactionVerifierTest {
         val state = UtxoLedgerTransactionContractVerifierTest.MyState()
         return StateAndRefImpl(
             object : TransactionState<UtxoLedgerTransactionContractVerifierTest.MyState> {
-                override val contractState: UtxoLedgerTransactionContractVerifierTest.MyState = state
-                override val contractStateType: Class<out UtxoLedgerTransactionContractVerifierTest.MyState> = state::class.java
-                override val contractType: Class<out Contract> = C::class.java
-                override val notary: Party = utxoNotaryExample
-                override val encumbrance: EncumbranceGroup? = null
+                override fun getContractState(): UtxoLedgerTransactionContractVerifierTest.MyState {
+                    return state
+                }
+
+                override fun getContractStateType(): Class<UtxoLedgerTransactionContractVerifierTest.MyState> {
+                    return state.javaClass
+                }
+
+                override fun getContractType(): Class<out Contract> {
+                    return C::class.java
+                }
+
+                override fun getNotary(): Party {
+                    return utxoNotaryExample
+                }
+
+                override fun getEncumbranceGroup(): EncumbranceGroup? {
+                    return null
+                }
             },
             StateRef(transactionId, index)
         )

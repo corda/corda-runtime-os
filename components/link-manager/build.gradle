@@ -91,6 +91,7 @@ dependencies {
     nonOsgiIntegrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
     integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")

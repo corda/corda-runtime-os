@@ -40,7 +40,8 @@ class FlowFactoryImpl @Activate constructor(
         } catch (e: Exception) {
             throw FlowFatalException(
                 "Could not create ${startFlowEvent.startContext.flowClassName} for " +
-                        "virtual node ${startFlowEvent.startContext.identity}: ${e.message}", e
+                        "virtual node ${startFlowEvent.startContext.identity}: " +
+                        (e.message ?: "No exception message provided."), e
             )
         }
     }

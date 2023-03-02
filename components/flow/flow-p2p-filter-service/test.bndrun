@@ -25,6 +25,7 @@
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.messaging-impl',\
+    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.db-message-bus-impl',\
     bnd.identity;id='net.corda.db-orm-impl',\
     bnd.identity;id='net.corda.schema-registry-impl',\

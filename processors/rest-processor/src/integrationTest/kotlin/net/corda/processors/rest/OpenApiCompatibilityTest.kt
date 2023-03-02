@@ -2,8 +2,8 @@ package net.corda.processors.rpc
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
-import net.corda.flow.rpcops.v1.FlowClassRestResource
-import net.corda.flow.rpcops.v1.FlowRestResource
+import net.corda.flow.rest.v1.FlowClassRestResource
+import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.RestResource
 import net.corda.rest.server.config.models.RestContext

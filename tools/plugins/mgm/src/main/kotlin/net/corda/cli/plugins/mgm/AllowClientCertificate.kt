@@ -1,9 +1,9 @@
 package net.corda.cli.plugins.mgm
 
-import net.corda.cli.plugins.common.RestClientUtils.createHttpRpcClient
-import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.mgm.Helpers.baseUrlFromClusterName
-import net.corda.cli.plugins.mgm.Helpers.rpcPasswordFromClusterName
+import net.corda.cli.plugins.mgm.Helpers.restPasswordFromClusterName
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -39,15 +39,15 @@ class AllowClientCertificate : Runnable {
     var subjects: Collection<String> = emptyList()
 
     @Option(
-        names = ["--rpc-worker-deployment-name"],
-        description = ["The RPC worker deployment name (default to corda-rpc-worker)"]
+        names = ["--rest-worker-deployment-name"],
+        description = ["The REST worker deployment name (default to corda-rest-worker)"]
     )
-    var rpcWorkerDeploymentName: String = "corda-rpc-worker"
+    var restWorkerDeploymentName: String = "corda-rest-worker"
 
-    private inner class Command : HttpRpcCommand() {
+    private inner class Command : RestCommand() {
         init {
-            targetUrl = baseUrlFromClusterName(cordaClusterName, rpcWorkerDeploymentName)
-            password = rpcPasswordFromClusterName(cordaClusterName)
+            targetUrl = baseUrlFromClusterName(cordaClusterName, restWorkerDeploymentName)
+            password = restPasswordFromClusterName(cordaClusterName)
             username = "admin"
         }
     } override fun run() {
@@ -58,7 +58,7 @@ class AllowClientCertificate : Runnable {
 
         val command = Command()
 
-        command.createHttpRpcClient(MGMRestResource::class).use { client ->
+        command.createRestClient(MGMRestResource::class).use { client ->
             println("Allowing certificates...")
             client.start().also { connection ->
                 val mgm = connection.proxy

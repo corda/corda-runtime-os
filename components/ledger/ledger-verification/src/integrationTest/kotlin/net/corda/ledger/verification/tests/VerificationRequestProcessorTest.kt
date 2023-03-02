@@ -131,7 +131,8 @@ class VerificationRequestProcessorTest {
     fun `successfully verifies transaction contracts`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
-        val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
+        val cpksMetadata =
+            cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
@@ -165,7 +166,8 @@ class VerificationRequestProcessorTest {
     fun `unsuccessfully verifies transaction contracts`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
-        val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
+        val cpksMetadata =
+            cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
@@ -203,7 +205,8 @@ class VerificationRequestProcessorTest {
     fun `returns error after when CPK not available`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
-        val cpksMetadata = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
+        val cpksMetadata =
+            cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
         val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
         val verificationSandboxService = virtualNodeService.verificationSandboxService
         val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
@@ -287,12 +290,12 @@ class VerificationRequestProcessorTest {
         transaction: UtxoLedgerTransactionContainer,
         cpksSummaries: List<CordaPackageSummary>
     ) = TransactionVerificationRequest(
-            Instant.now(),
-            holdingIdentity.toAvro(),
-            ctx.serialize(transaction),
-            cpksSummaries,
-            EXTERNAL_EVENT_CONTEXT
-        )
+        Instant.now(),
+        holdingIdentity.toAvro(),
+        ctx.serialize(transaction),
+        cpksSummaries,
+        EXTERNAL_EVENT_CONTEXT
+    )
 
     private fun SandboxGroupContext.serialize(obj: Any) =
         ByteBuffer.wrap(getSerializationService().serialize(obj).bytes)
@@ -305,21 +308,22 @@ class VerificationRequestProcessorTest {
             )
 
     @BelongsToContract(TestContract::class)
-    class TestState(
-        val valid: Boolean,
-        override val participants: List<PublicKey>
-    ) : ContractState
+    class TestState(val valid: Boolean, private val participants: List<PublicKey>) : ContractState {
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
+    }
 
     class TestContract : Contract {
         override fun verify(transaction: UtxoLedgerTransaction) {
-            require (transaction.inputStateRefs.isNotEmpty()) {
+            require(transaction.inputStateRefs.isNotEmpty()) {
                 "At least one input expected"
             }
-            require (transaction.outputStateAndRefs.isNotEmpty()) {
+            require(transaction.outputStateAndRefs.isNotEmpty()) {
                 "At least one output expected"
             }
             val state = transaction.outputStateAndRefs.first().state.contractState as TestState
-            require (state.valid) {
+            require(state.valid) {
                 VERIFICATION_ERROR_MESSAGE
             }
         }
