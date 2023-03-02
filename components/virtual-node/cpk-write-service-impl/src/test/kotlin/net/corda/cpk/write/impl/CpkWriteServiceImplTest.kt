@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -86,7 +87,10 @@ class CpkWriteServiceImplTest {
             .thenReturn(registration)
 
         cpkWriteServiceImpl.processEvent(StartEvent(), coordinator)
-        assertNotNull(cpkWriteServiceImpl.configReadServiceRegistration)
+        verify(coordinator).createManagedResource(
+            argThat { equals(CpkWriteServiceImpl.REGISTRATION) },
+            any<() -> RegistrationHandle>()
+        )
     }
 
     @Test
@@ -94,7 +98,10 @@ class CpkWriteServiceImplTest {
         whenever(configReadService.registerComponentForUpdates(any(), any())).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        assertNotNull(cpkWriteServiceImpl.configSubscription)
+        verify(coordinator).createManagedResource(
+            argThat { equals(CpkWriteServiceImpl.Companion.CONFIG_HANDLE) },
+            any<() -> RegistrationHandle>()
+        )
     }
 
     @Test
@@ -215,8 +222,8 @@ class CpkWriteServiceImplTest {
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
 
-        assertNull(cpkWriteServiceImpl.configReadServiceRegistration)
-        assertNull(cpkWriteServiceImpl.configSubscription)
+        assertNull(coordinator.getManagedResource(CpkWriteServiceImpl.Companion.REGISTRATION))
+        assertNull(coordinator.getManagedResource(CpkWriteServiceImpl.Companion.CONFIG_HANDLE))
         assertNull(cpkWriteServiceImpl.cpkChecksumsCache)
         assertNull(cpkWriteServiceImpl.cpkChunksPublisher)
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)

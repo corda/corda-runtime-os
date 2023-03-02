@@ -22,7 +22,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -72,14 +71,11 @@ class CpkWriteServiceImpl @Activate constructor(
 
         const val CPK_WRITE_GROUP = "cpk.writer"
         const val CPK_WRITE_CLIENT = "$CPK_WRITE_GROUP.client"
+        const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        const val REGISTRATION = "REGISTRATION"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpkWriteService>(this)
-
-    @VisibleForTesting
-    internal var configReadServiceRegistration: RegistrationHandle? = null
-    @VisibleForTesting
-    internal var configSubscription: AutoCloseable? = null
 
     @VisibleForTesting
     internal var timeout: Duration? = null
@@ -114,14 +110,14 @@ class CpkWriteServiceImpl @Activate constructor(
      * to tell us when it is ready so we can register ourselves to handle config updates.
      */
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        configReadServiceRegistration?.close()
-        configReadServiceRegistration =
+        coordinator.createManagedResource(REGISTRATION) {
             coordinator.followStatusChangesByName(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                     LifecycleCoordinatorName.forComponent<DbConnectionManager>()
                 )
             )
+        }
     }
 
     /**
@@ -133,15 +129,16 @@ class CpkWriteServiceImpl @Activate constructor(
         coordinator: LifecycleCoordinator
     ) {
         if (event.status == LifecycleStatus.UP) {
-            configSubscription?.close()
-            configSubscription = configReadService.registerComponentForUpdates(
-                coordinator,
-                setOf(
-                    BOOT_CONFIG,
-                    MESSAGING_CONFIG,
-                    RECONCILIATION_CONFIG,
+            coordinator.createManagedResource(CONFIG_HANDLE) {
+                configReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(
+                        BOOT_CONFIG,
+                        MESSAGING_CONFIG,
+                        RECONCILIATION_CONFIG,
+                    )
                 )
-            )
+            }
             coordinator.updateStatus(LifecycleStatus.UP)
             scheduleNextReconciliationTask(coordinator)
         } else {
@@ -200,8 +197,6 @@ class CpkWriteServiceImpl @Activate constructor(
      * Close the registration.
      */
     private fun onStopEvent() {
-        configReadServiceRegistration?.close()
-        configReadServiceRegistration = null
         closeResources()
     }
 
@@ -259,8 +254,6 @@ class CpkWriteServiceImpl @Activate constructor(
 
     private fun closeResources() {
         coordinator.cancelTimer(timerKey)
-        configSubscription?.close()
-        configSubscription = null
         cpkChecksumsCache?.close()
         cpkChecksumsCache = null
         cpkChunksPublisher?.close()
