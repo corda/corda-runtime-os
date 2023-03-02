@@ -17,7 +17,7 @@ import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 //Based on FlowP2PFilter
 @Suppress("Unused")
