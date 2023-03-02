@@ -5,13 +5,6 @@ plugins {
 
 description 'Backing store component implementation'
 
-configurations {
-    backingStoreBenchmarkApi.extendsFrom integrationTestApi
-    backingStoreBenchmarkCompileOnly.extendsFrom integrationTestCompileOnly
-    backingStoreBenchmarkImplementation.extendsFrom integrationTestImplementation
-    backingStoreBenchmarkRuntimeOnly.extendsFrom integrationTestRuntimeOnly
-}
-
 sourceSets {
     backingStoreBenchmark {
         kotlin {
@@ -22,6 +15,23 @@ sourceSets {
         }
         compileClasspath += main.output + test.output
         runtimeClasspath += main.output + test.output
+    }
+}
+
+
+kotlin {
+    target {
+        compilations.backingStoreBenchmark {
+            // Needed to expose internal JPA entity classes to this task
+            associateWith compilations.test
+
+            configurations {
+                backingStoreBenchmarkApi.extendsFrom integrationTestApi
+                backingStoreBenchmarkCompileOnly.extendsFrom integrationTestCompileOnly
+                backingStoreBenchmarkImplementation.extendsFrom integrationTestImplementation
+                backingStoreBenchmarkRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+            }
+        }
     }
 }
 

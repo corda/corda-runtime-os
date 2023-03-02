@@ -40,6 +40,7 @@ dependencies {
     integrationTestApi project(":components:db:db-connection-manager")
     integrationTestImplementation 'net.corda:corda-crypto'
     integrationTestImplementation 'net.corda:corda-db-schema'
+    integrationTestImplementation project(':components:uniqueness:backing-store-impl').sourceSets.integrationTest.output
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':libs:db:db-admin-impl')
     integrationTestImplementation project(':libs:db:db-core')
