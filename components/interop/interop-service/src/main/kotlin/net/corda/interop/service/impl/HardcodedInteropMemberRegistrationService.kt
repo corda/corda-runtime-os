@@ -43,34 +43,25 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
 ): InteropMemberRegistrationService {
 
     companion object {
-        private val ALICE_ALTER_EGO_X500_NAME = MemberX500Name.parse("CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB")
-        private val ALICE_X500_NAME = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        private val ALICE_ALTER_EGO_X500 = MemberX500Name.parse("CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB")
+        private val ALICE_X500 = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB")
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-        private const val NON_EXISTING_GROUP_ID = "non-existing-group"
         private const val SUBSYSTEM = "interop"
         private val DUMMY_CERTIFICATE =
             this::class.java.getResource("/dummy_certificate.pem")?.readText()
         private val DUMMY_PUBLIC_SESSION_KEY =
             this::class.java.getResource("/dummy_session_key.pem")?.readText()
-
-        private val membersOfInteropGroup =
-            listOf(ALICE_X500_NAME, ALICE_ALTER_EGO_X500_NAME).map { HoldingIdentity(it, INTEROP_GROUP_ID) }
-        private val memberFromOtherClusterOfInteropGroup =
-            HoldingIdentity(MemberX500Name.parse("CN=Alice from Other Cluster, O=Alice Corp, L=LDN, C=GB"), INTEROP_GROUP_ID)
-        private val unpublishedMemberOfInteropGroup =
-            HoldingIdentity(MemberX500Name.parse("CN=Jonny, O=R3, L=LDN, C=GB"), INTEROP_GROUP_ID)
-
-        private val membersOfNonExistingGroup =
-          listOf(ALICE_X500_NAME, ALICE_ALTER_EGO_X500_NAME).map { HoldingIdentity(it, NON_EXISTING_GROUP_ID) }
+        private val memberList =
+            listOf(ALICE_X500, ALICE_ALTER_EGO_X500).map { HoldingIdentity(it, INTEROP_GROUP_ID) }
     }
-    //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
-    override fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>>
-        = createDummyMemberInfo(membersOfInteropGroup + listOf(memberFromOtherClusterOfInteropGroup), INTEROP_GROUP_ID) +
-            createDummyMemberInfo(membersOfNonExistingGroup, NON_EXISTING_GROUP_ID)
 
     //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
-    override fun createDummyHostedIdentity(): List<Record<String, HostedIdentityEntry>>
-            = createDummyHostedIdentity(membersOfInteropGroup) + createDummyHostedIdentity(membersOfNonExistingGroup)
+    override fun createDummyMemberInfo(): List<Record<String, PersistentMemberInfo>> =
+        createDummyMemberInfo(memberList, INTEROP_GROUP_ID)
+
+    //Below method is to push the dummy interops member data to MEMBER_LIST_TOPIC
+    override fun createDummyHostedIdentity(): List<Record<String, HostedIdentityEntry>> =
+        createDummyHostedIdentity(memberList)
 
     private fun createDummyMemberInfo(identities : List<HoldingIdentity>, groupId: String): List<Record<String, PersistentMemberInfo>> {
         val memberInfoList = mutableListOf<Record<String, PersistentMemberInfo>>()
@@ -151,9 +142,6 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
             )
 
         return listOf(
-            createRecord("seed-message-correct-1", membersOfInteropGroup[0], membersOfInteropGroup[1]),
-            createRecord("seed-message-no-dest-1", unpublishedMemberOfInteropGroup, membersOfInteropGroup[0]),
-            createRecord("seed-message-other-cluster-1", memberFromOtherClusterOfInteropGroup, membersOfInteropGroup[0]),
-            createRecord("seed-message-no-policy-1", membersOfNonExistingGroup[0], membersOfNonExistingGroup[1]))
+            createRecord("seed-message-correct-1", memberList[0], memberList[1]))
     }
 }
