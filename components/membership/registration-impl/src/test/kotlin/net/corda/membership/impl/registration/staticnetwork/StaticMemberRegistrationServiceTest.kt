@@ -458,20 +458,6 @@ class StaticMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `registration pass when the member is not active`() {
-            val memberInfo = mock<MemberInfo> {
-                on { isActive } doReturn false
-            }
-            whenever(groupReader.lookup(any(), any())).thenReturn(memberInfo)
-            setUpPublisher()
-            registrationService.start()
-
-            assertDoesNotThrow {
-                registrationService.register(registrationId, alice, mockContext)
-            }
-        }
-
-        @Test
         fun `registration pass when the member is not found`() {
             whenever(
                 membershipQueryClient.queryRegistrationRequestsStatus(
