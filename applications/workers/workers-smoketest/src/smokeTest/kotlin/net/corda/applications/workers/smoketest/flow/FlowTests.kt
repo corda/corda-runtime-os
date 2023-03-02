@@ -786,7 +786,7 @@ class FlowTests {
         ) { issuanceResult ->
             assertAll({
                 assertThat(issuanceResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-                assertThat(issuanceResult.flowError?.message).contains("Unable to notarise transaction")
+                assertThat(issuanceResult.flowError?.message).contains("Unable to notarize transaction")
                 assertThat(issuanceResult.flowError?.message).contains("Time Window Out of Bounds")
             })
         }
@@ -881,7 +881,7 @@ class FlowTests {
         ) { consumeResult ->
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-                assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
+                assertThat(consumeResult.flowError?.message).contains("Unable to notarize transaction")
                 assertThat(consumeResult.flowError?.message).contains("Input State Conflict")
             })
         }
@@ -922,7 +922,7 @@ class FlowTests {
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
                 // This will fail when building the transaction BEFORE reaching the plugin logic so we don't
-                // expect notarisation error here
+                // expect notarization error here
                 assertThat(consumeResult.flowError?.message).contains(
                     "Could not find StateRef $unknownStateRef " +
                             "when resolving reference states."
@@ -985,7 +985,7 @@ class FlowTests {
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
                 // This will fail when building the transaction BEFORE reaching the plugin logic so we don't
-                // expect notarisation error here
+                // expect notarization error here
                 assertThat(consumeResult.flowError?.message).contains(
                     "Could not find StateRef $unknownStateRef " +
                             "when resolving input states."
@@ -1037,7 +1037,7 @@ class FlowTests {
         ) { consumeResult ->
             assertAll({
                 assertThat(consumeResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-                assertThat(consumeResult.flowError?.message).contains("Unable to notarise transaction")
+                assertThat(consumeResult.flowError?.message).contains("Unable to notarize transaction")
                 assertThat(consumeResult.flowError?.message).contains("Reference State Conflict")
             })
         }
@@ -1125,7 +1125,7 @@ class FlowTests {
     }
 
     /**
-     * Generates an issuance transaction with the given amount of output states, runs it through the notarisation flow,
+     * Generates an issuance transaction with the given amount of output states, runs it through the notarization flow,
      * then runs the given [validateResult] block on the flow result.
      */
     private fun issueStatesAndValidateResult(
@@ -1154,7 +1154,7 @@ class FlowTests {
     }
 
     /**
-     * Consumes the provided states as either input or ref states, and runs it through the notarisation flow,
+     * Consumes the provided states as either input or ref states, and runs it through the notarization flow,
      * then runs the given [validateResult] block on the flow result.
      */
     private fun consumeStatesAndValidateResult(
