@@ -21,13 +21,13 @@ internal val secureHashComparator = Comparator.nullsFirst(
 /**
  * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
  */
-fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME) : SecureHash {
+fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256) : SecureHash {
     val md = MessageDigest.getInstance(algo.name)
     md.update(this)
     return SecureHash(algo.name, md.digest())
 }
 
-fun InputStream.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME,
+fun InputStream.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
                      buffer: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE)
 ): SecureHash {
     val md = MessageDigest.getInstance(algo.name)
@@ -46,7 +46,7 @@ fun InputStream.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_AL
  * [MessageDigest.update] with the data that needs to be hashed
  * @return the resulting [SecureHash]
  */
-internal inline fun hash(algorithm : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME, withDigestAction : (MessageDigest) -> Unit) : SecureHash {
+internal inline fun hash(algorithm : DigestAlgorithmName = DigestAlgorithmName.SHA2_256, withDigestAction : (MessageDigest) -> Unit) : SecureHash {
     val md = MessageDigest.getInstance(algorithm.name)
     withDigestAction(md)
     return SecureHash(algorithm.name, md.digest())

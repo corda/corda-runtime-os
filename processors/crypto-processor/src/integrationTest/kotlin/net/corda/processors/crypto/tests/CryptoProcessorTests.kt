@@ -4,13 +4,13 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.cipher.suite.publicKeyId
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
@@ -72,7 +72,6 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
-import net.corda.v5.crypto.sha256Bytes
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jcajce.provider.util.DigestFactory
