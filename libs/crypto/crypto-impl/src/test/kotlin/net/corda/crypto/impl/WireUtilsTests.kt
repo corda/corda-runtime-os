@@ -3,7 +3,7 @@ package net.corda.crypto.impl
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
 import net.corda.crypto.cipher.suite.schemes.SerializedAlgorithmParameterSpec
-import net.corda.crypto.core.sha256Bytes
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
@@ -200,10 +200,7 @@ class WireUtilsTests {
         val serializer = mock<AlgorithmParameterSpecEncodingService> {
             on { serialize(any()) } doReturn SerializedAlgorithmParameterSpec("class1", paramBytes)
         }
-        val origin = ParameterizedSignatureSpec(
-            signatureName = "name1",
-            params = algSpec
-        )
+        val origin = ParameterizedSignatureSpec("name1", algSpec)
         val result = origin.toWire(serializer)
         assertEquals("name1", result.signatureName)
         assertNull(result.customDigestName)

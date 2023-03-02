@@ -15,7 +15,7 @@ import java.util.jar.JarEntry
 import java.util.jar.Manifest
 
 internal val secureHashComparator = Comparator.nullsFirst(
-    Comparator.comparing(SecureHash::algorithm)
+    Comparator.comparing(SecureHash::getAlgorithm)
         .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) })
 
 /**

@@ -96,7 +96,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             // Since we are not calling finality flow for consuming transactions we need to verify that the signature
             // is actually part of the notary service's composite key
             signatures.forEach {
-                require(KeyUtils.containsAny(notaryServiceParty.owningKey, listOf(it.by))) {
+                require(KeyUtils.isKeyInSet(notaryServiceParty.owningKey, listOf(it.by))) {
                     "The plugin responded with a signature that is not part of the notary service's composite key."
                 }
             }

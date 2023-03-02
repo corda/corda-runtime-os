@@ -62,17 +62,17 @@ class CompositeKeyImplTests {
 
     @Test
     fun `(Alice) fulfilled by Alice signature`() {
-        assertTrue { KeyUtils.isFulfilledBy(alicePublicKey, aliceSignature.by) }
-        assertFalse { KeyUtils.isFulfilledBy(alicePublicKey, charlieSignature.by) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(alicePublicKey, aliceSignature.by) }
+        assertFalse { KeyUtils.isKeyFulfilledBy(alicePublicKey, charlieSignature.by) }
     }
 
     @Test
     fun `(Alice or Bob) fulfilled by either signature`() {
         val aliceOrBob = target.createFromKeys(alicePublicKey, bobPublicKey)
-        assertTrue { KeyUtils.isFulfilledBy(aliceOrBob, aliceSignature.by) }
-        assertTrue { KeyUtils.isFulfilledBy(aliceOrBob, bobSignature.by) }
-        assertTrue { KeyUtils.isFulfilledBy(aliceOrBob, listOf(aliceSignature.by, bobSignature.by)) }
-        assertFalse { KeyUtils.isFulfilledBy(aliceOrBob, charlieSignature.by) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, aliceSignature.by) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, bobSignature.by) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceOrBob, listOf(aliceSignature.by, bobSignature.by)) }
+        assertFalse { KeyUtils.isKeyFulfilledBy(aliceOrBob, charlieSignature.by) }
     }
 
 
@@ -80,15 +80,15 @@ class CompositeKeyImplTests {
     fun `(Alice and Bob) fulfilled by Alice, Bob signatures`() {
         val aliceAndBob = target.createFromKeys(alicePublicKey, bobPublicKey)
         val signatures = listOf(aliceSignature, bobSignature)
-        assertTrue { KeyUtils.isFulfilledBy(aliceAndBob, signatures.byKeys()) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceAndBob, signatures.byKeys()) }
     }
 
     @Test
     fun `(Alice and Bob) requires both signatures to fulfil`() {
         val aliceAndBob = target.createFromKeys(alicePublicKey, bobPublicKey, threshold = null)
-        assertFalse { KeyUtils.isFulfilledBy(aliceAndBob, listOf(aliceSignature).byKeys()) }
-        assertFalse { KeyUtils.isFulfilledBy(aliceAndBob, listOf(bobSignature).byKeys()) }
-        assertTrue { KeyUtils.isFulfilledBy(aliceAndBob, listOf(aliceSignature, bobSignature).byKeys()) }
+        assertFalse { KeyUtils.isKeyFulfilledBy(aliceAndBob, listOf(aliceSignature).byKeys()) }
+        assertFalse { KeyUtils.isKeyFulfilledBy(aliceAndBob, listOf(bobSignature).byKeys()) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceAndBob, listOf(aliceSignature, bobSignature).byKeys()) }
     }
 
     @Test
@@ -98,7 +98,7 @@ class CompositeKeyImplTests {
 
         val signatures = listOf(aliceSignature, bobSignature)
 
-        assertTrue { KeyUtils.isFulfilledBy(aliceAndBobOrCharlie, signatures.byKeys()) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(aliceAndBobOrCharlie, signatures.byKeys()) }
     }
     
     @Test
@@ -106,7 +106,7 @@ class CompositeKeyImplTests {
         assertEquals(target.createFromKeys(alicePublicKey), alicePublicKey)
         val node1 = target.createFromKeys(alicePublicKey, bobPublicKey) // threshold = 1
         val node2 = target.createFromKeys(alicePublicKey, bobPublicKey, threshold = 2)
-        assertFalse(KeyUtils.isFulfilledBy(node2, alicePublicKey))
+        assertFalse(KeyUtils.isKeyFulfilledBy(node2, alicePublicKey))
         // Ordering by weight.
         val tree1 = target.create(CompositeKeyNodeAndWeight(node1, 13), CompositeKeyNodeAndWeight(node2, 27))
         val tree2 = target.create(CompositeKeyNodeAndWeight(node2, 27), CompositeKeyNodeAndWeight(node1, 13))
@@ -288,7 +288,7 @@ class CompositeKeyImplTests {
         val signatures = listOf(rsaSignature, k1Signature, r1Signature, edSignature1, edSignature2)
 
         // One signature is missing.
-        assertTrue { KeyUtils.isFulfilledBy(compositeKey, signatures.byKeys()) }
+        assertTrue { KeyUtils.isKeyFulfilledBy(compositeKey, signatures.byKeys()) }
         val signaturesWithoutRSA = listOf(k1Signature, r1Signature, edSignature1, edSignature2)
         assertFalse { compositeKey.isFulfilledBy(signaturesWithoutRSA.byKeys()) }
     }

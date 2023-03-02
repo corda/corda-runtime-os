@@ -1,5 +1,6 @@
 package net.corda.crypto.client.hsm.impl
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.component.test.utils.SendActResult
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
@@ -9,7 +10,6 @@ import net.corda.crypto.component.test.utils.reportDownComponents
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
-import net.corda.crypto.core.sha256Bytes
 import net.corda.data.KeyValuePair
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoResponseContext

@@ -1,8 +1,8 @@
 package net.corda.ledger.common.data.transaction
 
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NONCE_NAME
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import java.util.Base64
 
 const val BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY = "batchMerkleTreeDigestProviderName"

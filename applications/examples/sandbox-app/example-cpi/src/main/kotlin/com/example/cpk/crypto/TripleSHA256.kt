@@ -19,7 +19,7 @@ private class TripleSHA256Digest : DigestAlgorithm {
         const val ALGORITHM = "SHA-256-TRIPLE"
     }
 
-    override fun getAlgortihm() = ALGORITHM
+    override fun getAlgorithm() = ALGORITHM
     override fun getDigestLength() = 32
     override fun digest(bytes: ByteArray): ByteArray = bytes.sha256Bytes().sha256Bytes().sha256Bytes()
 

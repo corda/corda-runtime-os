@@ -1,8 +1,8 @@
 package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.fullPublicKeyIdFromBytes
-import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY

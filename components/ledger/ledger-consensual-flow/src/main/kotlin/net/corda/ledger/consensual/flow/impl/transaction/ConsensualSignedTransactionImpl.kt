@@ -69,7 +69,7 @@ class ConsensualSignedTransactionImpl(
         }.map { it.by }.toSet()
         val requiredSignatories = this.toLedgerTransaction().requiredSignatories
         return requiredSignatories.filter {
-            !KeyUtils.isFulfilledBy(
+            !KeyUtils.isKeyFulfilledBy(
                 it,
                 appliedSignatories
             ) // isFulfilledBy() helps to make this working with CompositeKeys.
@@ -94,7 +94,7 @@ class ConsensualSignedTransactionImpl(
         // isFulfilledBy() helps to make this working with CompositeKeys.
         val missingSignatories = toLedgerTransaction()
             .requiredSignatories
-            .filterNot { KeyUtils.isFulfilledBy(it, appliedSignatories) }
+            .filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }
             .toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(

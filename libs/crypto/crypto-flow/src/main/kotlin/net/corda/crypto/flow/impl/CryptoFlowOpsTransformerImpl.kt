@@ -215,5 +215,5 @@ class CryptoFlowOpsTransformerImpl(
 private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: DigestService): SecureHash =
     digestService.hash(
         keyEncodingService.encodeAsByteArray(this),
-        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
+        DigestAlgorithmName.SHA2_256
     )

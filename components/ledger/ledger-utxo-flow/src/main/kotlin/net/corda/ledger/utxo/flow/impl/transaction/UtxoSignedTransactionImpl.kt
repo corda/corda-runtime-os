@@ -118,7 +118,7 @@ data class UtxoSignedTransactionImpl(
         }.map { it.by }.toSet()
 
         // isFulfilledBy() helps to make this working with CompositeKeys.
-        return signatories.filterNot { KeyUtils.isFulfilledBy(it, appliedSignatories) }.toSet()
+        return signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
     }
 
     @Suspendable
@@ -137,7 +137,7 @@ data class UtxoSignedTransactionImpl(
         }.map { it.by }.toSet()
 
         // isFulfilledBy() helps to make this working with CompositeKeys.
-        val missingSignatories = signatories.filterNot { KeyUtils.isFulfilledBy(it, appliedSignatories) }.toSet()
+        val missingSignatories = signatories.filterNot { KeyUtils.isKeyFulfilledBy(it, appliedSignatories) }.toSet()
         if (missingSignatories.isNotEmpty()) {
             throw TransactionMissingSignaturesException(
                 id,
@@ -149,7 +149,7 @@ data class UtxoSignedTransactionImpl(
 
     @Suspendable
     override fun verifyNotarySignatureAttached() {
-        if (!KeyUtils.isFulfilledBy(notary.owningKey, signatures.map { it.by })) {
+        if (!KeyUtils.isKeyFulfilledBy(notary.owningKey, signatures.map { it.by })) {
             throw TransactionSignatureException(
                 id,
                 "There are no notary signatures attached to the transaction.",

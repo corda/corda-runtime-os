@@ -65,7 +65,7 @@ class CPKTests {
                 ?: throw IllegalStateException("corda_dev_cpk.cer not found")
         ) as X509Certificate
 
-        val sha256Name = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+        val sha256Name = DigestAlgorithmName.SHA2_256.name
         SecureHash(
             sha256Name,
             run {
@@ -334,9 +334,9 @@ class CPKTests {
 
     @Test
     fun `signers summary hash is computed correctly`() {
-        val md = MessageDigest.getInstance(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name)
+        val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
         md.update(cordaDevCertSummaryHash.toString().toByteArray())
-        val expectedHash = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, md.digest())
+        val expectedHash = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest())
         Assertions.assertEquals(expectedHash, workflowCPK.metadata.cpkId.signerSummaryHash)
     }
 }

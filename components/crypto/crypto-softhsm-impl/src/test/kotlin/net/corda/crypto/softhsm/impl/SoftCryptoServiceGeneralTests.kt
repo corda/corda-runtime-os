@@ -15,11 +15,11 @@ import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.softhsm.PRIVATE_KEY_ENCODING_VERSION
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
 import net.corda.v5.crypto.CordaOID
-import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.X25519_CODE_NAME
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

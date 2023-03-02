@@ -1,11 +1,11 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
-import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.service.HSMService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList

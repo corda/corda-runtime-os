@@ -53,7 +53,7 @@ class SecureHashSerializationTests {
             58,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
-        val deserialized = SecureHash.deserialize(sha256serialized, digestService)
+        val deserialized = deserialize(sha256serialized, digestService)
         assertArrayEquals(cut.bytes, deserialized.bytes)
         assertEquals(cut.algorithm, deserialized.algorithm)
         assertEquals(cut, deserialized)
@@ -65,7 +65,7 @@ class SecureHashSerializationTests {
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
         assertThrows(IllegalArgumentException::class.java) {
-            SecureHash.deserialize(sha256serialized, digestService)
+            deserialize(sha256serialized, digestService)
         }
     }
 
@@ -76,7 +76,7 @@ class SecureHashSerializationTests {
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
         assertThrows(IllegalArgumentException::class.java) {
-            SecureHash.deserialize(sha256serialized, digestService)
+            deserialize(sha256serialized, digestService)
         }
     }
 
@@ -87,7 +87,7 @@ class SecureHashSerializationTests {
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21)
         assertThrows(IllegalArgumentException::class.java) {
-            SecureHash.deserialize(sha256serialized, digestService)
+            deserialize(sha256serialized, digestService)
         }
     }
 
@@ -98,7 +98,7 @@ class SecureHashSerializationTests {
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83, -83)
         assertThrows(IllegalArgumentException::class.java) {
-            SecureHash.deserialize(sha256serialized, digestService)
+            deserialize(sha256serialized, digestService)
         }
     }
 }

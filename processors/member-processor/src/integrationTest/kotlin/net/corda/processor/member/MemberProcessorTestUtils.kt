@@ -2,9 +2,6 @@ package net.corda.processor.member
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.cipher.suite.calculateHash
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
@@ -33,7 +30,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.millis
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -47,6 +44,9 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertDoesNotThrow
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
 
 class MemberProcessorTestUtils {
     companion object {

@@ -1,6 +1,6 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.core.sha256Bytes
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import java.io.InputStream

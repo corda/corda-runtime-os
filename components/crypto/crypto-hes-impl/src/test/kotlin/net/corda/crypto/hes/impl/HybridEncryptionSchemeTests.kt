@@ -3,8 +3,8 @@ package net.corda.crypto.hes.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.component.test.utils.generateKeyPair
-import net.corda.crypto.core.sha256Bytes
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.hes.impl.infra.TestCryptoOpsClient
@@ -12,10 +12,10 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.EncodingUtils.toHex
-import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SM2_CODE_NAME
-import net.corda.v5.crypto.X25519_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.SM2_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
 import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll

@@ -88,7 +88,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     // when recursion is used (i.e. in isFulfilledBy()).
     // An IdentityHashMap Vs HashMap is used, because a graph cycle causes infinite loop on the CompositeKey.hashCode().
     private fun cycleDetection(visitedMap: IdentityHashMap<CompositeKeyImpl, Boolean>) {
-        for ((node) in children) {
+        for (node in children.map { it.node }) {
             if (node is CompositeKeyImpl) {
                 val curVisitedMap = IdentityHashMap<CompositeKeyImpl, Boolean>()
                 curVisitedMap.putAll(visitedMap)
@@ -117,7 +117,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         for (child in children) {
             if (child.node is CompositeKeyImpl) {
                 // We don't need to check for cycles on the rest of the nodes (testing on the root node is enough).
-                child.node.checkConstraints()
+                (child.node as CompositeKeyImpl).checkConstraints()
             }
         }
         validated = true
@@ -128,7 +128,7 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     private fun totalWeight(): Int {
         var sum = 0
         for (child in children) {
-            require(child.weight > 0) { "Non-positive weight: $weight detected." }
+            require(child.weight > 0) { "Non-positive weight: ${child.weight} detected." }
             sum = sum exactAdd child.weight // Add and check for integer overflow.
         }
         return sum
@@ -167,7 +167,9 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
     // Return true when and if the threshold requirement is met.
     private fun checkFulfilledBy(keysToCheck: Iterable<PublicKey>): Boolean {
         var totalWeight = 0
-        children.forEach { (node, weight) ->
+        children.forEach {
+            val node = it.node
+            val weight = it.weight
             if (node is CompositeKeyImpl) {
                 if (node.checkFulfilledBy(keysToCheck)) totalWeight += weight
             } else {

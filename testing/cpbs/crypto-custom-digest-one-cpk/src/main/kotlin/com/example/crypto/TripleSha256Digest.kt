@@ -1,5 +1,6 @@
 package com.example.crypto
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import java.io.InputStream
@@ -11,8 +12,8 @@ class TripleSha256Digest : DigestAlgorithm {
         const val STREAM_BUFFER_SIZE = DEFAULT_BUFFER_SIZE
     }
 
-    override val algorithm = ALGORITHM
-    override val digestLength = 32
+    override fun getAlgorithm() = ALGORITHM
+    override fun getDigestLength() = 32
     override fun digest(bytes: ByteArray): ByteArray = bytes.sha256Bytes().sha256Bytes().sha256Bytes()
     override fun digest(inputStream: InputStream): ByteArray {
         val messageDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)

@@ -23,11 +23,13 @@ private fun createNonce(random: SecureRandom): ByteArray {
 // and SHA2-256 double hashing throughout
 // Nonce is just null for this style of provider
 class DefaultHashDigestProvider(
-    override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+    private val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
     private val digestService: DigestService
 ) : MerkleTreeHashDigestProvider {
     private val ZERO_BYTE = ByteArray(1) { 0 }
     private val ONE_BYTE = ByteArray(1) { 1 }
+
+    override fun getDigestAlgorithmName() = digestAlgorithmName
 
     override fun leafNonce(index: Int): ByteArray? = null
 
@@ -45,7 +47,7 @@ class DefaultHashDigestProvider(
 // Simple variant of standard hashing, for use where Merkle trees are used in different roles and
 // need to be different to protect against copy-paste attacks
 class TweakableHashDigestProvider(
-    override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+    private val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
     private val digestService: DigestService,
     private val leafPrefix: ByteArray,
     private val nodePrefix: ByteArray
@@ -61,6 +63,8 @@ class TweakableHashDigestProvider(
             "Node prefix cannot be empty"
         }
     }
+
+    override fun getDigestAlgorithmName() = digestAlgorithmName
 
     override fun leafNonce(index: Int): ByteArray? = null
 
@@ -78,7 +82,7 @@ class TweakableHashDigestProvider(
 // This doesn't support log audit proofs as it uses depth in the node hashes
 // However, it is suited to low entropy leaves, such as blockchain transactions
 open class NonceHashDigestProvider(
-    override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+    private val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
     private val digestService: DigestService,
     val entropy: ByteArray,
     ) : MerkleTreeHashDigestProviderWithSizeProofSupport {
@@ -98,9 +102,11 @@ open class NonceHashDigestProvider(
     ): NonceHashDigestProvider(digestAlgorithmName, digestService, ByteArray(0))
 
     class SizeOnlyVerify(
-        override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+        private val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
         private val digestService: DigestService
     ): MerkleTreeHashDigestProvider {
+        override fun getDigestAlgorithmName() = digestAlgorithmName
+
         override fun leafNonce(index: Int): ByteArray? = null
 
         override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
@@ -154,6 +160,8 @@ open class NonceHashDigestProvider(
     override fun hashCode(): Int {
         return 31 * digestAlgorithmName.hashCode() + entropy.contentHashCode()
     }
+
+    override fun getDigestAlgorithmName() = digestAlgorithmName
 }
 
 private fun MerkleTreeHashDigestProvider.checkMatchingAlgorithms(left: SecureHash, right: SecureHash){
@@ -166,7 +174,7 @@ private fun MerkleTreeHashDigestProvider.checkMatchingAlgorithms(left: SecureHas
 
 const val SERIALIZATION_SEPARATOR: Char = ':'
 
-internal fun SecureHash.deserialize(bytes: ByteArray, digestService: DigestService): SecureHash {
+internal fun deserialize(bytes: ByteArray, digestService: DigestService): SecureHash {
     val idxOfSeparator = bytes.indexOf(SERIALIZATION_SEPARATOR.code.toByte())
     if (idxOfSeparator == -1) {
         throw IllegalArgumentException("Provided argument: $bytes should be of format algorithm:bytes")
