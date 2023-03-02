@@ -47,7 +47,7 @@ class FacadeToFlowMapperServiceImpl @Activate constructor(
             // If the packaging team will change the solution in the future, then we need make appropriate changes.
             cpiMetadata.cpksMetadata.first().cordappManifest.attributes[FACADE_TO_FLOW_MAPPING] ?: ""
         } else {
-            this::class.java.getResource("/dummy-facade-to-flow-config.yaml")?.readText().toString()
+            this::class.java.getResource("/dummy-facade-to-flow-config.json")?.readText().toString()
         }
 
         if (content.trim().isEmpty()) {
