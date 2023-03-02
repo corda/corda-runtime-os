@@ -18,7 +18,7 @@ class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
 
     @BeforeEach
     fun beforeEach() {
-        utxoBaselinedTransactionBuilder = UtxoBaselinedTransactionBuilder(utxoSignedTransactionFactory, utxoTransactionBuilder)
+        utxoBaselinedTransactionBuilder = UtxoBaselinedTransactionBuilder(utxoTransactionBuilder)
     }
 
     @Test

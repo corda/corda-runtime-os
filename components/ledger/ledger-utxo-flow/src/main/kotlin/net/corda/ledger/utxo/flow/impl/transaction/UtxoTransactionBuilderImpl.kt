@@ -18,7 +18,7 @@ import java.time.Instant
 import java.util.Objects
 
 @Suppress("TooManyFunctions", "LongParameterList")
-open class UtxoTransactionBuilderImpl(
+class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     private var notary: Party? = null,
     override var timeWindow: TimeWindow? = null,

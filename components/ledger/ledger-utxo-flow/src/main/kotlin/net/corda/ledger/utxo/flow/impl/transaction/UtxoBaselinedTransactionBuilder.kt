@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -10,25 +9,22 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.time.Instant
 import java.util.Objects
 
-class UtxoBaselinedTransactionBuilder(
-    utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    val baselineTransactionBuilder: UtxoTransactionBuilderInternal
-) : UtxoTransactionBuilderImpl(
-    utxoSignedTransactionFactory,
-    baselineTransactionBuilder.notary,
-    baselineTransactionBuilder.timeWindow,
-    baselineTransactionBuilder.attachments.toMutableList(),
-    baselineTransactionBuilder.commands.toMutableList(),
-    baselineTransactionBuilder.signatories.toMutableList(),
-    baselineTransactionBuilder.inputStateRefs.toMutableList(),
-    baselineTransactionBuilder.referenceStateRefs.toMutableList(),
-    baselineTransactionBuilder.outputStates.toMutableList()
-) {
+class UtxoBaselinedTransactionBuilder
+private constructor(
+    val baselineTransactionBuilder: UtxoTransactionBuilderInternal,
+    private val currentTransactionBuilder: UtxoTransactionBuilderInternal,
+) : UtxoTransactionBuilderInternal by currentTransactionBuilder {
+
+    constructor(transactionBuilderInternal: UtxoTransactionBuilderInternal) : this(
+        transactionBuilderInternal.copy(),
+        transactionBuilderInternal
+    )
+
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
         require(this.notary == null || this.notary == notary) {
             "Original notary cannot be overridden."
         }
-        super.setNotary(notary)
+        currentTransactionBuilder.setNotary(notary)
         return this
     }
 
@@ -37,7 +33,7 @@ class UtxoBaselinedTransactionBuilder(
         require(this.timeWindow == null || this.timeWindow == timeWindow) {
             "Original time window cannot be overridden."
         }
-        this.timeWindow = timeWindow
+        currentTransactionBuilder.setTimeWindowUntil(timeWindow.until)
         return this
     }
 
@@ -46,7 +42,7 @@ class UtxoBaselinedTransactionBuilder(
         require(this.timeWindow == null || this.timeWindow == timeWindow) {
             "Original time window cannot be overridden."
         }
-        this.timeWindow = timeWindow
+        currentTransactionBuilder.setTimeWindowBetween(timeWindow.from, timeWindow.until)
         return this
     }
 

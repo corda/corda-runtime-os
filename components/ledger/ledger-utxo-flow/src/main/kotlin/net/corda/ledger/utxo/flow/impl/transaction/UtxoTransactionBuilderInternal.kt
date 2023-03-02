@@ -21,5 +21,5 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder {
      *
      * @return A copy of the current transaction builder.
      */
-    fun copy(): UtxoTransactionBuilder
+    fun copy(): UtxoTransactionBuilderInternal
 }

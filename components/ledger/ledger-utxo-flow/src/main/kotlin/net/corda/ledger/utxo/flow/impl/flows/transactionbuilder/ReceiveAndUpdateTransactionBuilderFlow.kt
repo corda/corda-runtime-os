@@ -28,7 +28,7 @@ class ReceiveAndUpdateTransactionBuilderFlow(
         val log: Logger = LoggerFactory.getLogger(ReceiveAndUpdateTransactionBuilderFlow::class.java)
     }
 
-    private val updatedTransactionBuilder = originalTransactionBuilder.copy() as UtxoTransactionBuilderInternal
+    private val updatedTransactionBuilder = originalTransactionBuilder.copy()
 
     @Suspendable
     override fun call(): UtxoTransactionBuilder {

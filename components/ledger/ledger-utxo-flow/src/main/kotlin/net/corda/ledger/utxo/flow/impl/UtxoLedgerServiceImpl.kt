@@ -178,7 +178,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
             )
         )
         return UtxoBaselinedTransactionBuilder(
-            utxoSignedTransactionFactory,
             receivedTransactionBuilder as UtxoTransactionBuilderInternal
         )
     }
