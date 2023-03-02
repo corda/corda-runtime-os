@@ -8,6 +8,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 
 /**
@@ -23,6 +24,11 @@ interface VirtualNodeRepository {
      * Find a virtual node identified by the given holdingIdentity short hash
      */
     fun find(entityManager: EntityManager, holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
+
+    /**
+     * Find a virtual node operation by the given operation requestId
+     */
+    fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String) : List<VirtualNodeOperationDto>
 
     /**
      * Persist a holding identity with the given holdingId and CPI.
