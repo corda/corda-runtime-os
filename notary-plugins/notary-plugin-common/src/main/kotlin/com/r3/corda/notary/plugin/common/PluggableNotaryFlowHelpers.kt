@@ -139,9 +139,9 @@ private const val SHORT_KEY_ID_LENGTH = 12
 
 private fun PublicKey.publicKeyId(): String {
     val digestAlgorithm = DigestAlgorithmName.SHA2_256.name
-    val keyFullId = SecureHash(
+    val fullKeyId = SecureHash(
         digestAlgorithm,
         MessageDigest.getInstance(digestAlgorithm).digest(encoded)
     )
-    return keyFullId.toHexString().substring(0, SHORT_KEY_ID_LENGTH)
+    return fullKeyId.toHexString().substring(0, SHORT_KEY_ID_LENGTH)
 }
