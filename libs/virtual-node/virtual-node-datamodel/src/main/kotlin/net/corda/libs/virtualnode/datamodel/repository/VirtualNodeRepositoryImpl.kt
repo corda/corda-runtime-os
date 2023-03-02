@@ -15,6 +15,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
@@ -54,6 +55,31 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             .resultList
             .singleOrNull()
             ?.toVirtualNodeInfo()
+    }
+
+    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto> {
+        entityManager.transaction {
+            val operationStatuses = entityManager.createQuery(
+                "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId " +
+                        "order by latestUpdateTimestamp desc",
+                VirtualNodeOperationEntity::class.java
+            )
+                .setParameter("requestId", requestId)
+                .resultList
+
+            return operationStatuses.map {
+                VirtualNodeOperationDto(
+                    it.requestId,
+                    it.data,
+                    it.operationType.name,
+                    it.requestTimestamp,
+                    it.latestUpdateTimestamp,
+                    it.heartbeatTimestamp,
+                    it.state.name,
+                    it.errors
+                )
+            }
+        }
     }
 
     /**
@@ -208,7 +234,9 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         failedOperation.latestUpdateTimestamp = Instant.now()
         failedOperation.state = VirtualNodeOperationState.MIGRATIONS_FAILED
         failedOperation.errors = reason
+        virtualNode.operationInProgress = null
 
+        entityManager.merge(failedOperation)
         entityManager.merge(virtualNode)
     }
 
