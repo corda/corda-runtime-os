@@ -28,7 +28,7 @@ class UtxoTransactionBuilderImpl(
     override val inputStateRefs: MutableList<StateRef> = mutableListOf(),
     override val referenceStateRefs: MutableList<StateRef> = mutableListOf(),
     override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
-) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
+) : UtxoTransactionBuilderInternal {
 
     private var alreadySigned = false
 
@@ -254,5 +254,27 @@ class UtxoTransactionBuilderImpl(
                 "referenceStateRefs=$referenceStateRefs, " +
                 "outputStates=$outputStates" +
                 ")"
+    }
+
+    /**
+     * Appends transaction builder components to a transaction builder.
+     * It only appends the new components.
+     * Also, notary and time window of the original takes precedence.
+     * Those will not be overwritten regardless of there are new values.
+     */
+    override fun append(other: UtxoTransactionBuilderContainer): UtxoTransactionBuilderImpl {
+        val diff = other - this
+
+        return UtxoTransactionBuilderImpl(
+            this.utxoSignedTransactionFactory,
+            this.notary ?: diff.getNotary(),
+            this.timeWindow ?: diff.timeWindow,
+            (this.attachments + diff.attachments.distinct()).toMutableList(),
+            (this.commands + diff.commands.distinct()).toMutableList(),
+            (this.signatories + diff.signatories.distinct()).toMutableList(),
+            (this.inputStateRefs + diff.inputStateRefs.distinct()).toMutableList(),
+            (this.referenceStateRefs + diff.referenceStateRefs.distinct()).toMutableList(),
+            (this.outputStates + diff.outputStates.distinct()).toMutableList()
+        )
     }
 }

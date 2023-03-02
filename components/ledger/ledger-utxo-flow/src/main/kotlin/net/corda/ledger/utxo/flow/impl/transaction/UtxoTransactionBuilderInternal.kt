@@ -1,25 +1,21 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
-import java.security.PublicKey
 
-interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder {
-    val timeWindow: TimeWindow?
-    val attachments: List<SecureHash>
-    val commands: List<Command>
-    val signatories: List<PublicKey>
-    val inputStateRefs: List<StateRef>
-    val referenceStateRefs: List<StateRef>
-    val outputStates: List<ContractStateAndEncumbranceTag>
-
+interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransactionBuilderData {
     /**
      * Returns another transaction builder with the same content.
      *
      * @return A copy of the current transaction builder.
      */
     fun copy(): UtxoTransactionBuilderInternal
+
+    /**
+     * Appends transaction builder components to a transaction builder.
+     * It only appends the new components.
+     * Also, notary and time window of the original takes precedence.
+     * Those will not be overwritten regardless of if there are new values.
+     *
+     */
+    fun append(other: UtxoTransactionBuilderContainer): UtxoTransactionBuilderInternal
 }

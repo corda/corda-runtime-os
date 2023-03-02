@@ -58,6 +58,7 @@ class SendTransactonBuilderDiffFlowTest {
         whenever(transactionBuilder.inputStateRefs).thenReturn(listOf())
         whenever(transactionBuilder.referenceStateRefs).thenReturn(listOf())
         whenever(transactionBuilder.outputStates).thenReturn(listOf())
+        whenever(transactionBuilder.minus(any())).thenCallRealMethod()
 
         whenever(originalTransactionalBuilder.notary).thenReturn(null)
         whenever(originalTransactionalBuilder.timeWindow).thenReturn(null)

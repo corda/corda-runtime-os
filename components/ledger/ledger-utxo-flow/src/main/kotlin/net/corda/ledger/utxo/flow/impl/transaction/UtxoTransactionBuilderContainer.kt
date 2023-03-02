@@ -10,12 +10,16 @@ import java.security.PublicKey
 
 @CordaSerializable
 data class UtxoTransactionBuilderContainer(
-    var notary: Party? = null,
-    var timeWindow: TimeWindow? = null,
-    val attachments: List<SecureHash> = listOf(),
-    val commands: List<Command> = listOf(),
-    val signatories: List<PublicKey> = listOf(),
-    val inputStateRefs: List<StateRef> = listOf(),
-    val referenceStateRefs: List<StateRef> = listOf(),
-    val outputStates: List<ContractStateAndEncumbranceTag> = listOf()
-)
+    private val notary: Party? = null,
+    override val timeWindow: TimeWindow? = null,
+    override val attachments: List<SecureHash> = listOf(),
+    override val commands: List<Command> = listOf(),
+    override val signatories: List<PublicKey> = listOf(),
+    override val inputStateRefs: List<StateRef> = listOf(),
+    override val referenceStateRefs: List<StateRef> = listOf(),
+    override val outputStates: List<ContractStateAndEncumbranceTag> = listOf()
+) : UtxoTransactionBuilderData {
+    override fun getNotary(): Party? {
+        return notary
+    }
+}

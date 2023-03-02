@@ -13,6 +13,9 @@ import java.security.KeyPairGenerator
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 
+/**
+ * All the other methods are not tested because they delegate to another UtxoTransactionBuilder implementation.
+ */
 class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
     private lateinit var utxoBaselinedTransactionBuilder: UtxoBaselinedTransactionBuilder
 
