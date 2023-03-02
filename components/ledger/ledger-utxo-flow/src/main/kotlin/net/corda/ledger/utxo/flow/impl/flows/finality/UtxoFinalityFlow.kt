@@ -18,6 +18,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.AccessController
 import java.security.PrivilegedExceptionAction
@@ -45,6 +46,9 @@ class UtxoFinalityFlow(
 
     @CordaInject
     lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
+
+    @CordaInject
+    private lateinit var visibilityChecker: VisibilityChecker
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -270,7 +274,7 @@ class UtxoFinalityFlow(
 
     @Suspendable
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
-        val relevantStatesIndexes = transaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
+        val relevantStatesIndexes = transaction.getVisibleStateIndexes(visibilityChecker)
         persistenceService.persist(transaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded notarized transaction $transactionId" }
     }

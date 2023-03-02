@@ -10,9 +10,11 @@ import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import org.slf4j.Logger
@@ -27,6 +29,9 @@ class UtxoReceiveFinalityFlow(
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(UtxoReceiveFinalityFlow::class.java)
     }
+
+    @CordaInject
+    private lateinit var visibilityChecker: VisibilityChecker
 
     override val log: Logger = UtxoReceiveFinalityFlow.log
 
@@ -157,7 +162,7 @@ class UtxoReceiveFinalityFlow(
 
     @Suspendable
     private fun persistNotarizedTransaction(notarizedTransaction: UtxoSignedTransactionInternal) {
-        val relevantStatesIndexes = notarizedTransaction.getRelevantStatesIndexes(memberLookup.getMyLedgerKeys())
+        val relevantStatesIndexes = notarizedTransaction.getVisibleStateIndexes(visibilityChecker)
         persistenceService.persist(notarizedTransaction, TransactionStatus.VERIFIED, relevantStatesIndexes)
         log.debug { "Recorded transaction with all parties' and the notary's signature ${notarizedTransaction.id}" }
     }
