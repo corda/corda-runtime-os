@@ -3638,6 +3638,43 @@
         }
       }
     },
+    "/virtualnode/status/{requestid}" : {
+      "get" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method returns the VirtualNodeOperationStatus for a given operation request id.",
+        "operationId" : "get_virtualnode_status__requestid_",
+        "parameters" : [ {
+          "name" : "requestid",
+          "in" : "path",
+          "description" : "The requestId for the operation; obtained during node creation/upgrade",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The requestId for the operation; obtained during node creation/upgrade",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "VirtualNodeOperationStatus for the specified virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VirtualNodeOperationStatuses"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/virtualnode/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
@@ -4066,6 +4103,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4204,6 +4242,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -4484,6 +4523,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4527,6 +4567,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4563,6 +4604,7 @@
             "example" : "string"
           },
           "status" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -4716,6 +4758,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "APPROVED" ]
@@ -5020,16 +5063,19 @@
             "example" : "string"
           },
           "flowOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -5058,6 +5104,7 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -5071,6 +5118,69 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          }
+        }
+      },
+      "VirtualNodeOperationStatus" : {
+        "required" : [ "latestUpdateTimestamp", "operationData", "requestId", "requestTimestamp", "state" ],
+        "type" : "object",
+        "properties" : {
+          "errors" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "heartbeatTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "latestUpdateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "operationData" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "requestTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "state" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "VirtualNodeOperationStatuses" : {
+        "required" : [ "requestId", "response" ],
+        "type" : "object",
+        "properties" : {
+          "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "response" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/VirtualNodeOperationStatus"
+            }
           }
         }
       },

@@ -11,6 +11,8 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
+import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
@@ -27,6 +29,8 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatus
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.lifecycle.DependentComponents
@@ -233,6 +237,41 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
         }
 
         return ResponseEntity.accepted(AsyncResponse(requestId))
+    }
+
+    override fun getVirtualNodeOperationStatus(requestId: String): VirtualNodeOperationStatuses {
+        val instant = clock.instant()
+
+        // Send request for update to kafka, processed by the db worker in VirtualNodeWriterProcessor
+        val rpcRequest = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeOperationStatusRequest(requestId)
+        )
+
+        // Actually send request and await response message on bus
+        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
+
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeOperationStatusResponse -> {
+                resolvedResponse.run {
+                    val statuses = this.operationHistory.map{
+                        VirtualNodeOperationStatus(
+                            it.requestId,
+                            it.requestData,
+                            it.requestTimestamp,
+                            it.latestUpdateTimestamp,
+                            it.heartbeatTimestamp,
+                            it.state,
+                            it.errors
+                        )
+                    }
+
+                    VirtualNodeOperationStatuses(this.requestId, statuses)
+                }
+            }
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
     }
 
     private fun sendAsynchronousRequest(

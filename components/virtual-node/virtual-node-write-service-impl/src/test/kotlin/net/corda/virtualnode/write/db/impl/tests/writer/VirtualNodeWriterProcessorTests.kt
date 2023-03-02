@@ -45,6 +45,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -255,6 +256,9 @@ class VirtualNodeWriterProcessorTests {
     fun `publishes correct virtual node info to Kafka`() {
         val expectedRecord = Record(VIRTUAL_NODE_INFO_TOPIC, vnodeInfo.holdingIdentity, vnodeInfo)
 
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
+
         val publisher = getPublisher()
         val processor = VirtualNodeWriterProcessor(
             publisher,
@@ -263,9 +267,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
@@ -290,6 +295,9 @@ class VirtualNodeWriterProcessorTests {
             )
         )
 
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
+
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
             connectionManager,
@@ -297,9 +305,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf(changelog)),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
 
@@ -314,6 +323,10 @@ class VirtualNodeWriterProcessorTests {
         val vNodeRepo = mock<VirtualNodeEntityRepository> {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaDataWithMGM)
         }
+
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
+
         val processor = VirtualNodeWriterProcessor(
             publisher,
             connectionManager,
@@ -321,9 +334,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
@@ -364,6 +378,9 @@ class VirtualNodeWriterProcessorTests {
         val vNodeRepo = mock<VirtualNodeEntityRepository> {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
+
         val processor = VirtualNodeWriterProcessor(
             publisher,
             connectionManager,
@@ -371,9 +388,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
@@ -415,6 +433,8 @@ class VirtualNodeWriterProcessorTests {
                 )
             )
         }
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
 
         val publisher = getPublisher()
         val processor = VirtualNodeWriterProcessor(
@@ -424,9 +444,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
 
@@ -469,6 +490,9 @@ class VirtualNodeWriterProcessorTests {
             )
         )
 
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
+
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
             connectionManager,
@@ -476,9 +500,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
@@ -495,6 +520,9 @@ class VirtualNodeWriterProcessorTests {
             ""
         )
 
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
+
         val processor = VirtualNodeWriterProcessor(
             getErroringPublisher(),
             connectionManager,
@@ -502,9 +530,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(
@@ -524,6 +553,9 @@ class VirtualNodeWriterProcessorTests {
             )
         )
 
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
+
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
             connectionManager,
@@ -531,9 +563,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), request))
@@ -704,6 +737,10 @@ class VirtualNodeWriterProcessorTests {
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getCpiMetadataByChecksum(any())).thenReturn(null)
         }
+
+        val virtualNodeRepository = virtualNodeRepositoryMock()
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, virtualNodeRepository)
+
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
             connectionManager,
@@ -711,9 +748,10 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
-            virtualNodeRepository = virtualNodeRepositoryMock(),
+            virtualNodeRepository = virtualNodeRepository,
             migrationUtility = migrationUtilityMock()
         )
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
@@ -741,6 +779,8 @@ class VirtualNodeWriterProcessorTests {
         val vnodeRepo = mock<VirtualNodeRepository> {
             on { find(any(), any()) }.doReturn(mock())
         }
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, vnodeRepo)
+
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
             connectionManager,
@@ -748,6 +788,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepositoryMock(),
             virtualNodeRepository = vnodeRepo,
@@ -775,6 +816,7 @@ class VirtualNodeWriterProcessorTests {
         val vnodeRepo = mock<VirtualNodeRepository> {
             on { find(any(), any()) }.doReturn(null)
         }
+        val virtualNodeOperationStatusHandler = VirtualNodeOperationStatusHandler(connectionManager, vnodeRepo)
 
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
@@ -783,6 +825,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock,
+            virtualNodeOperationStatusHandler,
             changeLogsRepository = cpkDbChangeLogRepositoryMock(listOf()),
             holdingIdentityRepository = holdingIdentityRepository,
             virtualNodeRepository = vnodeRepo,
