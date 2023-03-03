@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.common.Party
@@ -24,6 +25,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
+@CordaSerializable
 class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
     val filteredTransaction: FilteredTransaction
