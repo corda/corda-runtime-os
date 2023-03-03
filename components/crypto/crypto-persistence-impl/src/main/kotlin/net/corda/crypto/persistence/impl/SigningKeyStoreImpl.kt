@@ -259,7 +259,7 @@ class SigningKeyStoreImpl @Activate constructor(
 
         fun lookupByKeyIds(tenantId: String, requestedKeyIds: Set<ShortHash>): Collection<SigningCachedKey> {
             require(requestedKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
-                "The number of ids exceeds ${KEY_LOOKUP_INPUT_ITEMS_LIMIT}"
+                "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
             }
 
             val cachedKeys =
@@ -284,7 +284,7 @@ class SigningKeyStoreImpl @Activate constructor(
 
         fun lookupByFullKeyIds(tenantId: String, requestedFullKeyIds: Set<SecureHash>): Collection<SigningCachedKey> {
             require(requestedFullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
-                "The number of ids exceeds ${KEY_LOOKUP_INPUT_ITEMS_LIMIT}"
+                "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
             }
 
             // cache is using short key ids so convert to find cached keys
