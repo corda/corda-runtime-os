@@ -35,3 +35,5 @@ fun fullPublicKeyIdFromBytes(publicKey: ByteArray): String =
 
 fun PublicKey.fullId(): String =
     fullPublicKeyIdFromBytes(this.encoded)
+
+const val KEY_LOOKUP_INPUT_ITEMS_LIMIT = 20

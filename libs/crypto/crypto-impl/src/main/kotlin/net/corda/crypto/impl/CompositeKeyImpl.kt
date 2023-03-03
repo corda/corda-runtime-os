@@ -29,6 +29,7 @@ fun CompositeKeyNodeAndWeight.toASN1Primitive(): ASN1Primitive {
 class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNodeAndWeight>) : CompositeKey {
     companion object {
         const val KEY_ALGORITHM = "COMPOSITE"
+        const val COMPOSITE_KEY_CHILDREN_LIMIT = 20
 
         // Required for sorting [children] list. To ensure a deterministic way of adding children required for equality
         // checking, [children] list is sorted during construction. A DESC ordering in the [NodeAndWeight.weight] field
@@ -70,8 +71,8 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         // If we want PublicKey we only keep one key, otherwise it will lead to semantically equivalent trees
         // but having different structures.
         require(children.size > 1) { "CompositeKey must consist of two or more child nodes." }
-        require(children.size <= CompositeKey.COMPOSITE_KEY_CHILDREN_LIMIT) {
-            "CompositeKey must consist of less or equal than ${CompositeKey.COMPOSITE_KEY_CHILDREN_LIMIT} child nodes."
+        require(children.size <= COMPOSITE_KEY_CHILDREN_LIMIT) {
+            "CompositeKey must consist of less or equal than ${COMPOSITE_KEY_CHILDREN_LIMIT} child nodes."
         }
         // We should ensure threshold is positive, because smaller allowable weight for a node key is 1.
         require(threshold > 0) {

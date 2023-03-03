@@ -9,6 +9,7 @@ import net.corda.crypto.cipher.suite.toStringShort
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
@@ -43,7 +44,6 @@ import net.corda.utilities.debug
 import net.corda.v5.base.util.EncodingUtils.toBase58
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
@@ -378,8 +378,8 @@ class CryptoOpsClientImpl(
     // TODO Users who are using this API need to revisit to determine if they need to migrate to search ByFullIds
     fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
         logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${keyIds.joinToString()}])" }
-        require(keyIds.size <= KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
-            "The number of items exceeds ${KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT}"
+        require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+            "The number of items exceeds ${KEY_LOOKUP_INPUT_ITEMS_LIMIT}"
         }
 
         val request = createRequest(
@@ -392,7 +392,7 @@ class CryptoOpsClientImpl(
     @Suppress("MaxLineLength")
     fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
         logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${fullKeyIds.joinToString { it.toString() }}])" }
-        require(fullKeyIds.size <= KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds ${KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT}" }
+        require(fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds ${KEY_LOOKUP_INPUT_ITEMS_LIMIT}" }
 
         val request = createRequest(
             tenantId,

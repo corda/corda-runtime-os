@@ -12,10 +12,10 @@ import net.corda.crypto.cipher.suite.SigningAliasSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
+import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
-import net.corda.crypto.core.fullId
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStore
@@ -26,7 +26,6 @@ import net.corda.crypto.service.SigningService
 import net.corda.utilities.debug
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
@@ -272,7 +271,7 @@ class SigningServiceImpl(
         if (publicKey is CompositeKey) {
             val leafKeysIdsChunks = publicKey.leafKeys.map {
                 it.fullIdHash(schemeMetadata, digestService) to it
-            }.chunked(KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT)
+            }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
             for (chunk in leafKeysIdsChunks) {
                 val found = store.lookupByFullIds(
                     tenantId,
