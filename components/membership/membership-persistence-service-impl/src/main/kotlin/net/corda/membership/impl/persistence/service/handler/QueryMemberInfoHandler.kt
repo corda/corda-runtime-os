@@ -7,7 +7,6 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.membership.datamodel.MemberInfoEntity
-import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.virtualnode.toCorda
 
 internal class QueryMemberInfoHandler(
@@ -38,17 +37,18 @@ internal class QueryMemberInfoHandler(
                 }
             )
         } else {
-            logger.info("Querying for ${request.queryIdentities.size} MemberInfo(s).")
+            logger.info("Querying for ${request.queryIdentities.size} members MemberInfo(s).")
             MemberInfoQueryResponse(
                 transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-                    request.queryIdentities.mapNotNull { holdingIdentity ->
-                        em.find(
-                            MemberInfoEntity::class.java,
-                            MemberInfoEntityPrimaryKey(
-                                holdingIdentity.groupId,
-                                holdingIdentity.x500Name
-                            )
+                    request.queryIdentities.flatMap { holdingIdentity ->
+                        em.createQuery(
+                            "SELECT m FROM ${MemberInfoEntity::class.simpleName} " +
+                                    "m where m.groupId = :groupId and m.memberX500Name = :memberX500Name",
+                            MemberInfoEntity::class.java
                         )
+                            .setParameter("groupId", holdingIdentity.groupId)
+                            .setParameter("memberX500Name", holdingIdentity.x500Name)
+                            .resultList
                     }.map {
                         it.toPersistentMemberInfo(context.holdingIdentity)
                     }

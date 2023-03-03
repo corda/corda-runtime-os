@@ -4,7 +4,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -116,17 +115,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         approvedMember: HoldingIdentity,
         registrationRequestId: String
     ): MembershipPersistenceResult<MemberInfo> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
-
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String
-    ): MembershipPersistenceResult<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

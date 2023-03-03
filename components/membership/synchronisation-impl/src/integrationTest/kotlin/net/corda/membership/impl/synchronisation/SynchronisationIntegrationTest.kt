@@ -31,6 +31,7 @@ import net.corda.data.membership.p2p.WireGroupParameters
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.layeredpropertymap.toAvro
@@ -413,7 +414,8 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM
+            MEMBERSHIP_P2P_SUBSYSTEM,
+            MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(syncRequestSerializer.serialize(syncRequest))
 
@@ -595,7 +597,8 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM
+            MEMBERSHIP_P2P_SUBSYSTEM,
+            MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(membershipPackageSerializer.serialize(membershipPackage))
         updatesSender.publish(

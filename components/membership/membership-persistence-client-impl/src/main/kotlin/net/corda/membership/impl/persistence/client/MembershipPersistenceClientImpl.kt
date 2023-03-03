@@ -21,7 +21,6 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
-import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
@@ -203,6 +202,7 @@ class MembershipPersistenceClientImpl(
                         registrationId,
                         memberContext,
                         signature,
+                        isPending
                     )
                 }
             )
@@ -230,26 +230,6 @@ class MembershipPersistenceClientImpl(
             is UpdateMemberAndRegistrationRequestResponse -> MembershipPersistenceResult.Success(
                 memberInfoFactory.create(payload.memberInfo)
             )
-            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
-            else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
-        }
-    }
-
-    override fun setMemberAndRegistrationRequestAsDeclined(
-        viewOwningIdentity: HoldingIdentity,
-        declinedMember: HoldingIdentity,
-        registrationRequestId: String,
-    ): MembershipPersistenceResult<Unit> {
-        val result = MembershipPersistenceRequest(
-            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            UpdateMemberAndRegistrationRequestToDeclined(
-                declinedMember.toAvro(),
-                registrationRequestId
-            )
-        ).execute()
-
-        return when (val payload = result.payload) {
-            null -> MembershipPersistenceResult.success()
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
         }

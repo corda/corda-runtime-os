@@ -4,6 +4,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.cipher.suite.PublicKeyHash
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -97,7 +98,7 @@ class TestGroupReader @Activate constructor(
     private val group = "dummy_group"
     private val id = HoldingIdentity(name, group).shortHash.value
 
-    override fun lookup(): Collection<MemberInfo> {
+    override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
         val ecdhKey = cryptoOpsClient.generateKeyPair(
             id,
             PRE_AUTH,
@@ -122,21 +123,21 @@ class TestGroupReader @Activate constructor(
         )
     }
 
-    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun lookup(name: MemberX500Name): MemberInfo? {
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
     }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
