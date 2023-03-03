@@ -39,7 +39,8 @@
           "maximum": 2147483647,
           "default": 480000
         }
-      }
+      },
+      "additionalProperties": false
     },
     "session": {
       "description": "Settings for flow sessions",
@@ -74,7 +75,8 @@
           "maximum": 2147483647,
           "default": 480000
         }
-      }
+      },
+      "additionalProperties": false
     },
     "event": {
       "description": "Settings for external events within a flow",
@@ -95,7 +97,9 @@
           "maximum": 2147483647,
           "default": 5
         }
-      }
-    }
+      },
+      "additionalProperties": false
+    },
+    "additionalProperties": false
   }
 }
