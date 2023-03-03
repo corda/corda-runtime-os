@@ -21,6 +21,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTE
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
@@ -55,7 +56,6 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.KeyUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat
