@@ -91,6 +91,9 @@
             <column name="member_name" type="NVARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
+            <column name="is_pending" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
             <column name="status" type="NVARCHAR(64)">
                 <constraints nullable="false"/>
             </column>
@@ -107,7 +110,7 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="group_id, member_name"
+        <addPrimaryKey columnNames="group_id, member_name, is_pending"
                        constraintName="vnode_member_info_pkey"
                        tableName="vnode_member_info"/>
 
@@ -130,6 +133,9 @@
             <column name="member_name" type="NVARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
+            <column name="is_pending" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
             <column name="public_key" type="VARBINARY(1024)">
                 <constraints nullable="false"/>
             </column>
@@ -140,7 +146,7 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="group_id, member_name"
+        <addPrimaryKey columnNames="group_id, member_name, is_pending"
                        constraintName="vnode_member_signature_pkey"
                        tableName="vnode_member_signature"/>
 
