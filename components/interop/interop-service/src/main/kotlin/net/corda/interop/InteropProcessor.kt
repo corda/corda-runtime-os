@@ -11,6 +11,7 @@ import net.corda.interop.service.impl.InteropMessageTransformer
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.lang.NumberFormatException
 import java.nio.ByteBuffer
@@ -44,7 +45,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
                     "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
                         getRealHoldingIdentity(
                             unAuthMessage.header.destination
-                        )
+                        )?.x500Name.toString()
                     }"
                 )
                 getOutputRecord(header, unAuthMessage.payload, appMessage.key)?.let { outputRecord ->
@@ -107,8 +108,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         "${UUID.randomUUID()}"
     }
 
-    private fun getRealHoldingIdentity(recipientId: net.corda.data.identity.HoldingIdentity): String? {
-        val cache = mutableMapOf<String,String>()
+    private fun getRealHoldingIdentity(recipientId: net.corda.data.identity.HoldingIdentity): HoldingIdentity? {
+        val cache = mutableMapOf<String,HoldingIdentity>()
         return cache[recipientId.x500Name.toString()]
     }
 
