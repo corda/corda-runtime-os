@@ -1,4 +1,4 @@
-* @corda/http-rpc
+* @corda/rest
 # Build scripts should be audited by BLT
 *.gradle           @corda/blt
 gradle.properties  @corda/corda5-team-leads
