@@ -60,7 +60,8 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto> {
         entityManager.transaction {
             val operationStatuses = entityManager.createQuery(
-                "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId",
+                "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId " +
+                        "order by latestUpdateTimestamp desc",
                 VirtualNodeOperationEntity::class.java
             )
                 .setParameter("requestId", requestId)
