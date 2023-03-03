@@ -8,8 +8,6 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import java.util.Collections.unmodifiableList
-import java.util.Collections.unmodifiableMap
 import net.corda.common.json.serializers.JsonDeserializerAdaptor
 import net.corda.common.json.serializers.JsonSerializerAdaptor
 import net.corda.common.json.serializers.standardTypesModule
@@ -19,8 +17,9 @@ import net.corda.simulator.runtime.utils.publicKeyModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
-import net.corda.v5.application.marshalling.json.JsonWriter
 import net.corda.v5.crypto.SecureHash
+import java.util.Collections.unmodifiableList
+import java.util.Collections.unmodifiableMap
 
 /**
  * A simple JsonMarshallingService, without the caching that Corda uses.
