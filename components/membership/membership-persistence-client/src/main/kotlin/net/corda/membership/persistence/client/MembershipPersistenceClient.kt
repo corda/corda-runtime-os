@@ -51,7 +51,7 @@ interface MembershipPersistenceClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
         version: Long
-    ): MembershipPersistenceResult<Int>
+    ): MembershipPersistenceResult<Unit>
 
     /**
      * Create and persist the first version of group parameters. This method is expected to be used by an MGM to persist

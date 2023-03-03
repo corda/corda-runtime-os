@@ -60,7 +60,7 @@ class MtlsMgmClientCertificateKeeperTest {
             eq(mgmHoldingIdentity),
             eq(createdPropertyMap),
             any()
-        ) } doReturn MembershipPersistenceResult.Success(2)
+        ) } doReturn MembershipPersistenceResult.success()
     }
     private val savedGroupPolicy = mock<LayeredPropertyMap> {
         on { entries } doReturn mapOf("hello" to "world").entries

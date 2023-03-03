@@ -214,7 +214,7 @@ class MGMRegistrationServiceTest {
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
-        on { persistGroupPolicy(any(), any(), any()) } doReturn MembershipPersistenceResult.Success(2)
+        on { persistGroupPolicy(any(), any(), any()) } doReturn MembershipPersistenceResult.success()
         on {
             persistRegistrationRequest(
                 eq(mgm),
@@ -410,7 +410,7 @@ class MGMRegistrationServiceTest {
                         groupProperties.capture(),
                         eq(1)
                     )
-            ).thenReturn(MembershipPersistenceResult.Success(3))
+            ).thenReturn(MembershipPersistenceResult.success())
 
             registrationService.register(registrationRequest, mgm, properties)
 

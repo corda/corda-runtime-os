@@ -37,7 +37,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
             persistGroupPolicy(eq(testHoldingIdentity), eq(mockLayeredPropertyMap), any())
-        } doReturn MembershipPersistenceResult.Success(0)
+        } doReturn MembershipPersistenceResult.success()
 
         on {
             persistGroupParametersInitialSnapshot(eq(testHoldingIdentity))

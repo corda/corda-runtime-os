@@ -68,7 +68,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
         version: Long
-    ): MembershipPersistenceResult<Int> {
+    ): MembershipPersistenceResult<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

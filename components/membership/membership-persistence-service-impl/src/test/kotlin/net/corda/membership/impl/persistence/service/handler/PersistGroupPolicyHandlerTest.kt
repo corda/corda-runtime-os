@@ -8,7 +8,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
-import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupPolicyEntity
@@ -18,7 +17,6 @@ import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -127,8 +125,6 @@ class PersistGroupPolicyHandlerTest {
             )
         }
 
-        val result = handler.invoke(context, request)
-
-        assertThat(result).isEqualTo(PersistGroupPolicyResponse(1002))
+        handler.invoke(context, request)
     }
 }

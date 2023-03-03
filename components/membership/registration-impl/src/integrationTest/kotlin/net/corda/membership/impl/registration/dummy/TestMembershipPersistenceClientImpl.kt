@@ -32,7 +32,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor() : MembershipPe
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
         version: Long
-    ) = MembershipPersistenceResult.Success(1)
+    ) = MembershipPersistenceResult.success()
 
     override fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity

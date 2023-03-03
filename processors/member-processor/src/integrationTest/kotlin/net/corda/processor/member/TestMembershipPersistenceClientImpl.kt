@@ -44,7 +44,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
         version: Long
-    ) = MembershipPersistenceResult.Success(1)
+    ) = MembershipPersistenceResult.success()
 
     override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity) =
         MembershipPersistenceResult.Success(KeyValuePairList())
