@@ -14,7 +14,7 @@ cordapp {
 
 tasks.named('compileKotlin') {
     compilerOptions {
-        freeCompilerArgs.add '-Xstring-concat=inline'
+    //    freeCompilerArgs.add '-Xstring-concat=inline'
     }
 }
 
