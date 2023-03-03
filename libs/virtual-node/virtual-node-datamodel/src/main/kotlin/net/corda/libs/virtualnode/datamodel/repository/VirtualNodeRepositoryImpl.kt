@@ -1,7 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
 import net.corda.crypto.core.ShortHash
-import java.lang.IllegalArgumentException
 import java.time.Instant
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
@@ -17,6 +16,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
@@ -199,50 +199,41 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             .toVirtualNodeInfo()
     }
 
-    override fun rejectedOperation(
+    override fun createOrUpdateVirtualNodeOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         requestId: String,
         serializedRequest: String,
         requestTimestamp: Instant,
         reason: String,
-        operationType: VirtualNodeOperationType
-    ) {
-        entityManager.persist(
-            VirtualNodeOperationEntity(
-                UUID.randomUUID().toString(),
-                requestId,
-                serializedRequest,
-                VirtualNodeOperationState.VALIDATION_FAILED,
-                OperationType.from(operationType),
-                requestTimestamp,
-                errors = reason
-            )
-        )
-    }
-
-    override fun failedMigrationsOperation(
-        entityManager: EntityManager,
-        holdingIdentityShortHash: String,
-        requestId: String,
-        serializedRequest: String,
-        requestTimestamp: Instant,
-        reason: String,
-        operationType: VirtualNodeOperationType
-    ) {
+        operationType: VirtualNodeOperationType,
+        state: VirtualNodeOperationStateDto
+    ): VirtualNodeInfo {
         val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
-        val failedOperation = virtualNode.operationInProgress
-            ?: throw IllegalArgumentException("When failing migrations on a virtual node, there should be a current operation in progress")
+        virtualNode.operationInProgress?.let { operation ->
+            operation.latestUpdateTimestamp = Instant.now()
+            operation.state = VirtualNodeOperationState.fromDto(state)
+            operation.errors = reason
+            entityManager.merge(operation)
 
-        failedOperation.latestUpdateTimestamp = Instant.now()
-        failedOperation.state = VirtualNodeOperationState.MIGRATIONS_FAILED
-        failedOperation.errors = reason
-        virtualNode.operationInProgress = null
-
-        entityManager.merge(failedOperation)
-        entityManager.merge(virtualNode)
+            virtualNode.operationInProgress = null
+            return entityManager.merge(virtualNode).toVirtualNodeInfo()
+        } ?: run {
+            entityManager.persist(
+                VirtualNodeOperationEntity(
+                    UUID.randomUUID().toString(),
+                    requestId,
+                    serializedRequest,
+                    VirtualNodeOperationState.fromDto(state),
+                    OperationType.from(operationType),
+                    requestTimestamp,
+                    errors = reason
+                )
+            )
+            return virtualNode.toVirtualNodeInfo()
+        }
     }
 
     private fun findEntity(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeEntity? {

@@ -25,6 +25,14 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
+    upgradeTestingCpiV3 {
+        canBeConsumed = false
+        transitive = false
+    }
+    upgradeTestingCpiV4 {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 sourceSets {
@@ -77,6 +85,8 @@ dependencies {
     cpiWithoutChangelogs project(path: ':testing:cpbs:test-cordapp-without-changelogs', configuration: 'cordaCPB')
     upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
+    upgradeTestingCpiV3 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v3', configuration: 'cordaCPB')
+    upgradeTestingCpiV4 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v4', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     smokeTestImplementation project(':testing:test-utilities')
@@ -126,6 +136,20 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
     def upgradeTestingCpiV2Dir = "META-INF" + File.separator + "upgrade-testing-v2"
     from(upgradeTestingCpiV2) {
         into upgradeTestingCpiV2Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
+    }
+    // Put the test cordapp for upgrade testing (v3) into a folder
+    def upgradeTestingCpiV3 = configurations.upgradeTestingCpiV3
+    def upgradeTestingCpiV3Dir = "META-INF" + File.separator + "upgrade-testing-v3"
+    from(upgradeTestingCpiV3) {
+        into upgradeTestingCpiV3Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
+    }
+    // Put the test cordapp for upgrade testing (v4) into a folder
+    def upgradeTestingCpiV4 = configurations.upgradeTestingCpiV4
+    def upgradeTestingCpiV4Dir = "META-INF" + File.separator + "upgrade-testing-v4"
+    from(upgradeTestingCpiV4) {
+        into upgradeTestingCpiV4Dir
         rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "upgrade-testing-cordapp.cpb"
     }
 }

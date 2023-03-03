@@ -10,6 +10,7 @@ import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 
 /**
@@ -30,7 +31,7 @@ interface VirtualNodeRepository {
      * Find a virtual node operation by the given operation requestId
      * @throws VirtualNodeOperationNotFoundException
      */
-    fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String) : List<VirtualNodeOperationDto>
+    fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto>
 
     /**
      * Persist a holding identity with the given holdingId and CPI.
@@ -73,31 +74,19 @@ interface VirtualNodeRepository {
     ): VirtualNodeInfo
 
     /**
-     * Create a virtual node operation holding the details of a rejected request.
+     * Update a virtual node operation with failure details if associated with the given virtual node identified by
+     * [holdingIdentityShortHash]. Otherwise, create a standalone record for the operation.
      */
     @Suppress("LongParameterList")
-    fun rejectedOperation(
+    fun createOrUpdateVirtualNodeOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         requestId: String,
         serializedRequest: String,
         requestTimestamp: Instant,
         reason: String,
-        operationType: VirtualNodeOperationType
-    )
-
-    /**
-     * Update a virtual node operation with failure details caused by failure to run migrations.
-     */
-    @Suppress("LongParameterList")
-    fun failedMigrationsOperation(
-        entityManager: EntityManager,
-        holdingIdentityShortHash: String,
-        requestId: String,
-        serializedRequest: String,
-        requestTimestamp: Instant,
-        reason: String,
-        operationType: VirtualNodeOperationType
-    )
+        operationType: VirtualNodeOperationType,
+        state: VirtualNodeOperationStateDto
+    ): VirtualNodeInfo
 }
 
