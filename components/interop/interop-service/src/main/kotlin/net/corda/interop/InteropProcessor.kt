@@ -40,7 +40,13 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
             if (unAuthMessage != null && unAuthMessage is UnauthenticatedMessage && unAuthMessage.header.subsystem == SUBSYSTEM) {
                 val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
-                logger.info("The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${getRealHoldingIdentity(unAuthMessage.header.destination).values.firstOrNull()}")
+                logger.info(
+                    "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
+                        getRealHoldingIdentity(
+                            unAuthMessage.header.destination
+                        )
+                    }"
+                )
                 getOutputRecord(header, unAuthMessage.payload, appMessage.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
                 }
@@ -100,10 +106,10 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
     } catch (e: NumberFormatException) {
         "${UUID.randomUUID()}"
     }
-    private fun getRealHoldingIdentity(recipientId: net.corda.data.identity.HoldingIdentity): MutableMap<String, String> {
+
+    private fun getRealHoldingIdentity(recipientId: net.corda.data.identity.HoldingIdentity): String? {
         val cache = mutableMapOf<String,String>()
-        cache[recipientId.x500Name.toString()] = "O=Alice,L=London,C=GB"
-        return cache
+        return cache[recipientId.x500Name.toString()]
     }
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
