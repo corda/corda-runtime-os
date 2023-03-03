@@ -24,7 +24,6 @@ class FacadeToFlowMapperServiceImpl @Activate constructor(
         private val mapper = jacksonObjectMapper()
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun getFlowName(
         destinationIdentity: HoldingIdentity,
         facadeId: String,
@@ -59,14 +58,15 @@ class FacadeToFlowMapperServiceImpl @Activate constructor(
             checkNotNull(facadeFlowMapping) { "Failed to find the facade to flow mapping" }
             val facadeIdMap = facadeFlowMapping[facadeId]
             checkNotNull(facadeIdMap) { "Failed to find the facade to flow mapping for facadeId : $facadeId" }
-            val flowName = (facadeIdMap as MutableMap<String, String>)[facadeName]
+            val flowName = facadeIdMap[facadeName]
             checkNotNull(flowName) { "Failed to find the facade to flow mapping for facadeName : $facadeName" }
             return flowName.toString()
         }
     }
 
-    private fun getFacadeMapping(content: String): MutableMap<*, *> = try {
-        mapper.readValue(content, MutableMap::class.java)
+    @Suppress("UNCHECKED_CAST")
+    private fun getFacadeMapping(content: String): MutableMap<String, MutableMap<String, String>> = try {
+        mapper.readValue(content, MutableMap::class.java) as MutableMap<String, MutableMap<String, String>>
     } catch (e: Exception) {
         throw IllegalStateException("Unable to parse the facade to flow mapping : $e")
     }
