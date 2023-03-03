@@ -151,7 +151,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private fun withValidationFailure(reason: String, block: () -> Any?) {
         val result = block.invoke()
         verify(virtualNodeRepository, times(1)).rejectedOperation(
-            eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE), eq(VirtualNodeOperationStateDto.VALIDATION_FAILED)
+            eq(em),
+            eq(vnodeId),
+            eq(requestId),
+            eq(request.toString()),
+            any(),
+            eq(reason),
+            eq(VirtualNodeOperationType.UPGRADE),
+            eq(VirtualNodeOperationStateDto.VALIDATION_FAILED)
         )
         assertThat(result).isNull()
     }
@@ -159,7 +166,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private fun withMigrationFailure(reason: String, block: () -> Any?) {
         val result = block.invoke()
         verify(virtualNodeRepository, times(1)).failedOperation(
-            eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE), eq(VirtualNodeOperationStateDto.MIGRATIONS_FAILED)
+            eq(em),
+            eq(vnodeId),
+            eq(requestId),
+            eq(request.toString()),
+            any(),
+            eq(reason),
+            eq(VirtualNodeOperationType.UPGRADE),
+            eq(VirtualNodeOperationStateDto.MIGRATIONS_FAILED)
         )
         assertThat(result).isNull()
     }
@@ -167,7 +181,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private fun withLiquibaseDiffFailure(reason: String, block: () -> Any?) {
         val result = block.invoke()
         verify(virtualNodeRepository, times(1)).rejectedOperation(
-            eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE), eq(VirtualNodeOperationStateDto.LIQUIBASE_DIFF_CHECK_FAILED)
+            eq(em),
+            eq(vnodeId),
+            eq(requestId),
+            eq(request.toString()),
+            any(),
+            eq(reason),
+            eq(VirtualNodeOperationType.UPGRADE),
+            eq(VirtualNodeOperationStateDto.LIQUIBASE_DIFF_CHECK_FAILED)
         )
         assertThat(result).isNull()
     }
@@ -175,7 +196,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private fun withUnexpectedFailure(reason: String, block: () -> Any?) {
         val result = block.invoke()
         verify(virtualNodeRepository, times(1)).failedOperation(
-            eq(em), eq(vnodeId), eq(requestId), eq(request.toString()), any(), eq(reason), eq(VirtualNodeOperationType.UPGRADE), eq(VirtualNodeOperationStateDto.UNEXPECTED_FAILURE)
+            eq(em),
+            eq(vnodeId),
+            eq(requestId),
+            eq(request.toString()),
+            any(),
+            eq(reason),
+            eq(VirtualNodeOperationType.UPGRADE),
+            eq(VirtualNodeOperationStateDto.UNEXPECTED_FAILURE)
         )
         assertThat(result).isNull()
     }
@@ -357,7 +385,9 @@ class VirtualNodeUpgradeOperationHandlerTest {
         assertUpgradedVnodeInfoIsPublished(vnodeInfoCapture)
     }
 
-    private fun assertUpgradedVnodeInfoIsPublished(vnodeInfoCapture: KArgumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>) {
+    private fun assertUpgradedVnodeInfoIsPublished(
+        vnodeInfoCapture: KArgumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>
+    ) {
         val publishedRecordList = vnodeInfoCapture.firstValue
         assertThat(publishedRecordList).isNotNull
         assertThat(publishedRecordList).hasSize(1)
@@ -404,7 +434,13 @@ class VirtualNodeUpgradeOperationHandlerTest {
     @Test
     fun `liquibase diff checker fails with exception, operation is written for this failure`() {
         val requestTimestamp = Instant.now()
-        whenever(migrationUtility.areChangesetsDeployedOnVault(any(), any(), any())).thenThrow(LiquibaseDiffCheckFailedException("outer error", java.lang.Exception("Inner error")))
+        whenever(
+            migrationUtility.areChangesetsDeployedOnVault(
+                any(),
+                any(),
+                any()
+            )
+        ).thenThrow(LiquibaseDiffCheckFailedException("outer error", java.lang.Exception("Inner error")))
 
         whenever(virtualNodeRepository.find(em, ShortHash.Companion.of(vnodeId))).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)

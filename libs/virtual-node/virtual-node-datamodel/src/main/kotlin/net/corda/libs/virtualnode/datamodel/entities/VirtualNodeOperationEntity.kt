@@ -1,7 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.entities
 
 import java.io.Serializable
-import java.lang.Exception
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
