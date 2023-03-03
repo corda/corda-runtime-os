@@ -184,7 +184,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         return updatedVirtualNode.toVirtualNodeInfo()
     }
 
-    override fun completeOperation(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeInfo {
+    override fun completedOperation(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeInfo {
         val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
@@ -199,7 +199,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             .toVirtualNodeInfo()
     }
 
-    override fun createOrUpdateVirtualNodeOperation(
+    override fun rejectedOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         requestId: String,
@@ -208,18 +208,41 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         reason: String,
         operationType: VirtualNodeOperationType,
         state: VirtualNodeOperationStateDto
-    ): VirtualNodeInfo {
+    ) {
+        entityManager.persist(
+            VirtualNodeOperationEntity(
+                UUID.randomUUID().toString(),
+                requestId,
+                serializedRequest,
+                VirtualNodeOperationState.fromDto(state),
+                OperationType.from(operationType),
+                requestTimestamp,
+                errors = reason
+            )
+        )
+    }
+
+    override fun failedOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        requestId: String,
+        serializedRequest: String,
+        requestTimestamp: Instant,
+        reason: String,
+        operationType: VirtualNodeOperationType,
+        state: VirtualNodeOperationStateDto
+    ) {
         val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
+        // Update existing operation that's in progress otherwise create one. Remove operationInProgress as it is now finished with failure
         virtualNode.operationInProgress?.let { operation ->
             operation.latestUpdateTimestamp = Instant.now()
             operation.state = VirtualNodeOperationState.fromDto(state)
             operation.errors = reason
             entityManager.merge(operation)
-
             virtualNode.operationInProgress = null
-            return entityManager.merge(virtualNode).toVirtualNodeInfo()
+            entityManager.merge(virtualNode)
         } ?: run {
             entityManager.persist(
                 VirtualNodeOperationEntity(
@@ -232,7 +255,6 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
                     errors = reason
                 )
             )
-            return virtualNode.toVirtualNodeInfo()
         }
     }
 

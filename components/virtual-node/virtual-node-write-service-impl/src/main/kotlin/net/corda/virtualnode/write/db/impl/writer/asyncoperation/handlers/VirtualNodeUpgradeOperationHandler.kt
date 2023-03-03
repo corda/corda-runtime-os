@@ -59,6 +59,94 @@ internal class VirtualNodeUpgradeOperationHandler(
         }
     }
 
+    /**
+     * If migrations have failed, we do not roll back the changes to the VirtualNode entity. We remove the operationInProgress (since there
+     * is no longer an active operation). Some migrations could have run on the vault, while others may have failed. In this situation, the
+     * virtual node operator is restricted from transitioning the virtual node to "ACTIVE" state because the vault won't be in sync with
+     * the currently associated CPI. In this situation, it is up to DB admin to correct the vault using liquibase commands to manually run
+     * migrations. Alternatively, if the migrations failed due to some internal server error, the virtual node operator can re-trigger the
+     * upgrade and have corda re-attempt the migrations.
+     */
+    private fun handleMigrationsFailed(
+        request: VirtualNodeUpgradeRequest,
+        requestId: String,
+        requestTimestamp: Instant,
+        e: MigrationsFailedException
+    ) {
+        entityManagerFactory.createEntityManager().transaction { em ->
+            virtualNodeRepository.failedOperation(
+                em,
+                request.virtualNodeShortHash,
+                requestId,
+                request.toString(),
+                requestTimestamp,
+                e.reason,
+                VirtualNodeOperationType.UPGRADE,
+                VirtualNodeOperationStateDto.MIGRATIONS_FAILED
+            )
+        }
+    }
+
+    private fun handleValidationFailed(
+        request: VirtualNodeUpgradeRequest,
+        requestId: String,
+        requestTimestamp: Instant,
+        e: VirtualNodeUpgradeRejectedException
+    ) {
+        entityManagerFactory.createEntityManager().transaction { em ->
+            virtualNodeRepository.rejectedOperation(
+                em,
+                request.virtualNodeShortHash,
+                requestId,
+                request.toString(),
+                requestTimestamp,
+                e.reason,
+                VirtualNodeOperationType.UPGRADE,
+                VirtualNodeOperationStateDto.VALIDATION_FAILED
+            )
+        }
+    }
+
+    private fun handleLiquibaseDiffFunctionFailed(
+        request: VirtualNodeUpgradeRequest,
+        requestId: String,
+        requestTimestamp: Instant,
+        e: LiquibaseDiffCheckFailedException
+    ) {
+        entityManagerFactory.createEntityManager().transaction { em ->
+            virtualNodeRepository.rejectedOperation(
+                em,
+                request.virtualNodeShortHash,
+                requestId,
+                request.toString(),
+                requestTimestamp,
+                e.reason,
+                VirtualNodeOperationType.UPGRADE,
+                VirtualNodeOperationStateDto.LIQUIBASE_DIFF_CHECK_FAILED
+            )
+        }
+    }
+
+    private fun handleUnexpectedFailure(
+        request: VirtualNodeUpgradeRequest,
+        requestId: String,
+        requestTimestamp: Instant,
+        e: Exception
+    ) {
+        entityManagerFactory.createEntityManager().transaction { em ->
+            virtualNodeRepository.failedOperation(
+                em,
+                request.virtualNodeShortHash,
+                requestId,
+                request.toString(),
+                requestTimestamp,
+                e.message ?: e::class.java.canonicalName,
+                VirtualNodeOperationType.UPGRADE,
+                VirtualNodeOperationStateDto.UNEXPECTED_FAILURE
+            )
+        }
+    }
+
     private fun upgradeVirtualNodeCpi(
         requestTimestamp: Instant,
         requestId: String,
@@ -193,7 +281,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
     private fun completeVirtualNodeOperation(virtualNodeShortHash: String): VirtualNodeInfo {
         return entityManagerFactory.createEntityManager().transaction { em ->
-            virtualNodeRepository.completeOperation(em, virtualNodeShortHash)
+            virtualNodeRepository.completedOperation(em, virtualNodeShortHash)
         }
     }
 
@@ -201,64 +289,23 @@ internal class VirtualNodeUpgradeOperationHandler(
         when (e) {
             is VirtualNodeUpgradeRejectedException -> {
                 logger.info("Virtual node upgrade (request $requestId) validation failed: ${e.message}")
-                createOrUpdateVirtualNodeOperation(
-                    request, requestId, requestTimestamp, e.reason, VirtualNodeOperationStateDto.VALIDATION_FAILED
-                )
+                handleValidationFailed(request, requestId, requestTimestamp, e)
             }
 
             is MigrationsFailedException -> {
                 logger.warn("Virtual node upgrade (request $requestId) failed to run migrations: ${e.message}")
-                val vnode = createOrUpdateVirtualNodeOperation(
-                    request, requestId, requestTimestamp, e.reason, VirtualNodeOperationStateDto.MIGRATIONS_FAILED
-                )
-                publishVirtualNodeInfo(vnode)
+                handleMigrationsFailed(request, requestId, requestTimestamp, e)
             }
 
             is LiquibaseDiffCheckFailedException -> {
                 logger.warn("Unable to determine if vault for virtual node ${request.virtualNodeShortHash} is in sync with CPI.")
-                val vnode = createOrUpdateVirtualNodeOperation(
-                    request, requestId, requestTimestamp, e.reason, VirtualNodeOperationStateDto.LIQUIBASE_DIFF_CHECK_FAILED
-                )
-                publishVirtualNodeInfo(vnode)
+                handleLiquibaseDiffFunctionFailed(request, requestId, requestTimestamp, e)
             }
 
             else -> {
                 logger.warn("Virtual node upgrade (request $requestId) could not complete due to exception: ${e.message}")
-                val reason = e.message ?: "Unexpected failure"
-                val vnode = createOrUpdateVirtualNodeOperation(
-                    request, requestId, requestTimestamp, reason, VirtualNodeOperationStateDto.UNEXPECTED_FAILURE
-                )
-                publishVirtualNodeInfo(vnode)
+                handleUnexpectedFailure(request, requestId, requestTimestamp, e)
             }
-        }
-    }
-
-    /**
-     * If migrations have failed, we do not roll back the changes to the VirtualNode entity. We remove the operationInProgress (since there
-     * is no longer an active operation). Some migrations could have run on the vault, while others may have failed. In this situation, the
-     * virtual node operator is restricted from transitioning the virtual node to "ACTIVE" state because the vault won't be in sync with
-     * the currently associated CPI. In this situation, it is up to DB admin to correct the vault using liquibase commands to manually run
-     * migrations. Alternatively, if the migrations failed due to some internal server error, the virtual node operator can re-trigger the
-     * upgrade and have corda re-attempt the migrations.
-     */
-    private fun createOrUpdateVirtualNodeOperation(
-        request: VirtualNodeUpgradeRequest,
-        requestId: String,
-        requestTimestamp: Instant,
-        errorReason: String,
-        state: VirtualNodeOperationStateDto
-    ): VirtualNodeInfo {
-        return entityManagerFactory.createEntityManager().transaction { em ->
-            virtualNodeRepository.createOrUpdateVirtualNodeOperation(
-                em,
-                request.virtualNodeShortHash,
-                requestId,
-                request.toString(),
-                requestTimestamp,
-                errorReason,
-                VirtualNodeOperationType.UPGRADE,
-                state
-            )
         }
     }
 

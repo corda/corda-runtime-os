@@ -68,17 +68,16 @@ interface VirtualNodeRepository {
     /**
      * Complete an in-progress operation on a virtual node.
      */
-    fun completeOperation(
+    fun completedOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String
     ): VirtualNodeInfo
 
     /**
-     * Update a virtual node operation with failure details if associated with the given virtual node identified by
-     * [holdingIdentityShortHash]. Otherwise, create a standalone record for the operation.
+     * Create a virtual node operation holding the details of a rejected request.
      */
     @Suppress("LongParameterList")
-    fun createOrUpdateVirtualNodeOperation(
+    fun rejectedOperation(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
         requestId: String,
@@ -87,6 +86,21 @@ interface VirtualNodeRepository {
         reason: String,
         operationType: VirtualNodeOperationType,
         state: VirtualNodeOperationStateDto
-    ): VirtualNodeInfo
+    )
+
+    /**
+     * Update a virtual node operation with failure details caused by failure to run migrations.
+     */
+    @Suppress("LongParameterList")
+    fun failedOperation(
+        entityManager: EntityManager,
+        holdingIdentityShortHash: String,
+        requestId: String,
+        serializedRequest: String,
+        requestTimestamp: Instant,
+        reason: String,
+        operationType: VirtualNodeOperationType,
+        state: VirtualNodeOperationStateDto
+    )
 }
 
