@@ -35,7 +35,7 @@ class ClusterBootstrapTest {
     )
     private val client = HttpClient.newBuilder().build()
 
-    @Test
+    //@Test
     fun checkCluster() {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()

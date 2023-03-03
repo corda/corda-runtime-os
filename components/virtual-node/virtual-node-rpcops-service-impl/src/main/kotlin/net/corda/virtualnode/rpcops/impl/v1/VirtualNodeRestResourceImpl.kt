@@ -24,7 +24,6 @@ import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatus
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeOperationStatuses
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
