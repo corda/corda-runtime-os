@@ -1,6 +1,5 @@
 package org.example.crypto
 
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import java.io.InputStream
@@ -26,3 +25,6 @@ class QuadSha256Digest : DigestAlgorithm {
         return messageDigest.digest().sha256Bytes().sha256Bytes().sha256Bytes()
     }
 }
+
+private fun ByteArray.sha256Bytes(): ByteArray =
+    MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(this)
