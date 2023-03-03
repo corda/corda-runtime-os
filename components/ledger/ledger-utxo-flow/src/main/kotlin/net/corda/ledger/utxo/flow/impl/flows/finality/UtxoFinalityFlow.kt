@@ -48,7 +48,7 @@ class UtxoFinalityFlow(
     lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
 
     @CordaInject
-    private lateinit var visibilityChecker: VisibilityChecker
+    lateinit var visibilityChecker: VisibilityChecker
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {

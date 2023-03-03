@@ -40,6 +40,7 @@ import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -75,6 +76,7 @@ class UtxoFinalityFlowTest {
     private val flowEngine = mock<FlowEngine>()
     private val flowMessaging = mock<FlowMessaging>()
     private val virtualNodeSelectorService = mock<NotaryVirtualNodeSelectorService>()
+    private val visibilityChecker = mock<VisibilityChecker>()
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
@@ -244,6 +246,9 @@ class UtxoFinalityFlowTest {
         whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
 
         whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice1))).thenReturn(true)
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
 
         callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
@@ -911,6 +916,7 @@ class UtxoFinalityFlowTest {
         flow.persistenceService = persistenceService
         flow.transactionVerificationService = transactionVerificationService
         flow.virtualNodeSelectorService = virtualNodeSelectorService
+        flow.visibilityChecker = visibilityChecker
         flow.call()
     }
 

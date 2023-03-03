@@ -31,7 +31,7 @@ class UtxoReceiveFinalityFlow(
     }
 
     @CordaInject
-    private lateinit var visibilityChecker: VisibilityChecker
+    lateinit var visibilityChecker: VisibilityChecker
 
     override val log: Logger = UtxoReceiveFinalityFlow.log
 
