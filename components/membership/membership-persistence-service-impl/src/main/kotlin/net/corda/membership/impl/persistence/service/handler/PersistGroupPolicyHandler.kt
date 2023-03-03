@@ -29,17 +29,30 @@ internal class PersistGroupPolicyHandler(
     }
 
     override fun invoke(context: MembershipRequestContext, request: PersistGroupPolicy) {
+        if (request.version < 1) {
+            throw MembershipPersistenceException(
+                "Cannot update group policy: with version ${request.version} which is smaller than 1."
+            )
+        }
+
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            if (request.version > 1) {
-                em.find(GroupPolicyEntity::class.java, request.version, LockModeType.PESSIMISTIC_WRITE).let {
-                    val persistedProperties = keyValuePairListDeserializer.deserialize(it.properties)
-                    if (persistedProperties != request.properties.items) {
-                        throw MembershipPersistenceException("Cannot update group policy: items differ from original.")
-                    }
-                    return@transaction
+            em.find(GroupPolicyEntity::class.java, request.version, LockModeType.PESSIMISTIC_WRITE)?.let {
+                val persistedProperties = keyValuePairListDeserializer.deserialize(it.properties)
+                if (persistedProperties != request.properties) {
+                    throw MembershipPersistenceException(
+                        "Cannot update group policy: a group policy with version ${request.version} already exists."
+                    )
                 }
+                return@transaction
             }
 
+            if (request.version > 1) {
+                val previousVersion = request.version - 1
+                em.find(GroupPolicyEntity::class.java, previousVersion, LockModeType.PESSIMISTIC_WRITE)
+                    ?: throw MembershipPersistenceException(
+                        "Cannot update group policy: with version ${request.version}. No policy with version $previousVersion exists."
+                    )
+            }
             val entity = GroupPolicyEntity(
                 version = request.version,
                 createdAt = clock.instant(),
