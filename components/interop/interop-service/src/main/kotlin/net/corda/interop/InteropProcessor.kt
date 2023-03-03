@@ -11,6 +11,7 @@ import net.corda.interop.service.impl.InteropMessageTransformer
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.lang.NumberFormatException
@@ -41,16 +42,13 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
             if (unAuthMessage != null && unAuthMessage is UnauthenticatedMessage && unAuthMessage.header.subsystem == SUBSYSTEM) {
                 val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
-                val realHoldingIdentity = getRealHoldingIdentity(unAuthMessage.header.destination)
-                if (realHoldingIdentity != null) {
-                    logger.info(
-                        "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity " +
-                                "$realHoldingIdentity"
-                    )
-                } else {
-                    logger.info("Warning: The alias ${unAuthMessage.header.destination.x500Name} is not mapped to a real holding identity")
-                }
-
+                logger.info(
+                    "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
+                        getRealHoldingIdentity(
+                            unAuthMessage.header.destination
+                        )
+                    }"
+                )
                 getOutputRecord(header, unAuthMessage.payload, appMessage.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
                 }
@@ -111,9 +109,11 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         "${UUID.randomUUID()}"
     }
 
-    private fun getRealHoldingIdentity(recipientId: net.corda.data.identity.HoldingIdentity): HoldingIdentity? {
+    private fun getRealHoldingIdentity(recipientId: net.corda.data.identity.HoldingIdentity): HoldingIdentity {
         val cache = mutableMapOf<String, HoldingIdentity>()
+        // As the cache is empty returning hardcoded Alice from Gold for now
         return cache[recipientId.x500Name.toString()]
+            ?: HoldingIdentity(MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB"), "Gold")
     }
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
