@@ -12,6 +12,7 @@ import net.corda.serialization.InternalProxySerializer
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -255,13 +256,19 @@ class CachingCustomSerializerRegistry(
         return declaredSerializers.first()
     }
 
-    private val Class<*>.isCustomSerializationForbidden: Boolean get() = when {
-        isSubClassOf(PrivateKey::class.java) -> true
-        AMQPTypeIdentifiers.isPrimitive(this) -> true
-        isSubClassOf(CordaThrowable::class.java) -> false
-        allowedFor.any { it.isAssignableFrom(this) } -> false
-        isAnnotationPresent(CordaSerializable::class.java) -> true
-        else -> false
+    private val Class<*>.isCustomSerializationForbidden: Boolean get() {
+        val forbidden = true
+        val allowed = false
+
+        return when {
+            isSubClassOf(PrivateKey::class.java) -> forbidden
+            AMQPTypeIdentifiers.isPrimitive(this) -> forbidden
+            isSubClassOf(CordaThrowable::class.java) -> allowed
+            allowedFor.any { it.isAssignableFrom(this) } -> allowed
+            isAnnotationPresent(CordaSerializable::class.java) && isAnnotationPresent(DoNotImplement::class.java) -> allowed
+            isAnnotationPresent(CordaSerializable::class.java) && !isAnnotationPresent(DoNotImplement::class.java) -> forbidden
+            else -> allowed
+        }
     }
 }
 
