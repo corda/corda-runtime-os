@@ -33,19 +33,16 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
 
     override fun onNext(
         events: List<Record<String, AppMessage>>
-    ): List<Record<*, *>> {
-        val outputEvents = mutableListOf<Record<*, *>>()
-        events.forEach { record ->
-            val unAuthMessage = record.value?.message
-            //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
-            if (unAuthMessage != null && unAuthMessage is UnauthenticatedMessage && unAuthMessage.header.subsystem == SUBSYSTEM) {
-                val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
-                getOutputRecord(header, unAuthMessage.payload, record.key)?.let { outputRecord ->
-                    outputEvents.add(outputRecord)
-                }
-            }
-        }
-        return outputEvents
+    ): List<Record<*, *>> = events.mapNotNull { (_, key, value) ->
+        val unAuthMessage = value?.message
+        //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
+        if (unAuthMessage == null ||
+            unAuthMessage !is UnauthenticatedMessage ||
+            unAuthMessage.header.subsystem != SUBSYSTEM
+        ) return@mapNotNull null
+
+        val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
+        getOutputRecord(header, unAuthMessage.payload, key)
     }
 
     // Returns an OUTBOUND message to P2P layer, in the future it will pass a message to FlowProcessor
@@ -55,24 +52,27 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
         key: String
     ): Record<String, AppMessage>? {
         val interopMessage = cordaAvroDeserializer.deserialize(payload.array())
+
         //following logging is added just check serialisation/de-serialisation result and can be removed later
         logger.info("Processing message from p2p.in with subsystem $SUBSYSTEM. Key: $key, facade request: $interopMessage, header $header.")
-        return if (interopMessage != null) {
-            val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
-            logger.info("Converted interop message to facade request : $facadeRequest")
-            //TODO temporary logic for seed messages only, to process the first 10 messages as more is not required
-            // this check will be phased out as part of eliminating seed messages in CORE-10446
-            if (interopMessage.messageId.startsWith("seed-message")
-                && ((interopMessage.messageId.extractInt() ?: 0) > 10)) return null
-            val message: InteropMessage = InteropMessageTransformer.getInteropMessage(
-                interopMessage.messageId.incrementOrUuid(), facadeRequest)
-            logger.info("Converted facade request to interop message : $message")
-            val result = generateAppMessage(header, message, cordaAvroSerializer)
-            Record(Schemas.P2P.P2P_OUT_TOPIC, key, result)
-        } else {
+        if (interopMessage == null) {
             logger.warn("Fail to converted interop message to facade request: empty payload")
-            null
+            return null
         }
+
+        //TODO temporary logic for seed messages only, to process the first 10 messages as more is not required
+        // this check will be phased out as part of eliminating seed messages in CORE-10446
+        if (interopMessage.messageId.startsWith("seed-message")
+            && ((interopMessage.messageId.extractInt() ?: 0) > 10)) return null
+
+        val facadeRequest = InteropMessageTransformer.getFacadeRequest(interopMessage)
+        logger.info("Converted interop message to facade request : $facadeRequest")
+
+        val message: InteropMessage = InteropMessageTransformer.getInteropMessage(
+                interopMessage.messageId.incrementOrUuid(), facadeRequest)
+        logger.info("Converted facade request to interop message : $message")
+        val result = generateAppMessage(header, message, cordaAvroSerializer)
+        return Record(Schemas.P2P.P2P_OUT_TOPIC, key, result)
     }
 
     override val keyClass = String::class.java
