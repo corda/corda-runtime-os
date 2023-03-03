@@ -3,8 +3,8 @@ package net.corda.libs.cpi.datamodel.repository
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.entities.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import javax.persistence.EntityManager
 
