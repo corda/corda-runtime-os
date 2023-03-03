@@ -41,13 +41,18 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
             if (unAuthMessage != null && unAuthMessage is UnauthenticatedMessage && unAuthMessage.header.subsystem == SUBSYSTEM) {
                 val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
-                logger.info(
-                    "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
-                        getRealHoldingIdentity(
-                            unAuthMessage.header.destination
-                        )?.x500Name.toString()
-                    }"
-                )
+                if (getRealHoldingIdentity(unAuthMessage.header.destination) != null) {
+                    logger.info(
+                        "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
+                            getRealHoldingIdentity(
+                                unAuthMessage.header.destination
+                            )
+                        }"
+                    )
+                } else {
+                    logger.info("Warning: The alias ${unAuthMessage.header.destination.x500Name} is not mapped to a real holding identity")
+                }
+
                 getOutputRecord(header, unAuthMessage.payload, appMessage.key)?.let { outputRecord ->
                     outputEvents.add(outputRecord)
                 }
@@ -109,7 +114,7 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
     }
 
     private fun getRealHoldingIdentity(recipientId: net.corda.data.identity.HoldingIdentity): HoldingIdentity? {
-        val cache = mutableMapOf<String,HoldingIdentity>()
+        val cache = mutableMapOf<String, HoldingIdentity>()
         return cache[recipientId.x500Name.toString()]
     }
 
