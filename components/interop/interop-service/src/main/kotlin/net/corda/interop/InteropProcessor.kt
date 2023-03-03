@@ -41,13 +41,11 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             //TODO temporary using UnauthenticatedMessage instead of AuthenticatedMessage
             if (unAuthMessage != null && unAuthMessage is UnauthenticatedMessage && unAuthMessage.header.subsystem == SUBSYSTEM) {
                 val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
-                if (getRealHoldingIdentity(unAuthMessage.header.destination) != null) {
+                val realHoldingIdentity = getRealHoldingIdentity(unAuthMessage.header.destination)
+                if (realHoldingIdentity != null) {
                     logger.info(
-                        "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity ${
-                            getRealHoldingIdentity(
-                                unAuthMessage.header.destination
-                            )
-                        }"
+                        "The alias ${unAuthMessage.header.destination.x500Name} is mapped to the real holding identity " +
+                                "$realHoldingIdentity"
                     )
                 } else {
                     logger.info("Warning: The alias ${unAuthMessage.header.destination.x500Name} is not mapped to a real holding identity")
