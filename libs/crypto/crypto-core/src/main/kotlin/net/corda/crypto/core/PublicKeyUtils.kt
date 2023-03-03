@@ -1,11 +1,11 @@
 package net.corda.crypto.core
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.sha256Bytes
 import java.security.PublicKey
 
 // TODO we should end up with only having helpers all of them using `DigestService`/ `PlatformDigestService`
@@ -35,3 +35,5 @@ fun fullPublicKeyIdFromBytes(publicKey: ByteArray): String =
 
 fun PublicKey.fullId(): String =
     fullPublicKeyIdFromBytes(this.encoded)
+
+const val KEY_LOOKUP_INPUT_ITEMS_LIMIT = 20

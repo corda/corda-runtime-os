@@ -16,7 +16,7 @@ val Cpk.fileChecksum: String get() = metadata.fileChecksum.toString()
 
 fun newRandomSecureHash(): SecureHash {
     val random = Random()
-    return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+    return SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
 }
 
 fun CpiPersistence.updateMetadataAndCpksWithDefaults(

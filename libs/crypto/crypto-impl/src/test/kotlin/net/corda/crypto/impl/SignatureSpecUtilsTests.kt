@@ -5,7 +5,7 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec.Companion.ECDSA_SHA256
+import net.corda.v5.crypto.SignatureSpec.ECDSA_SHA256
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

@@ -45,6 +45,7 @@ dependencies {
 
     integrationTestImplementation project(':components:crypto:crypto-hes')
     integrationTestImplementation project(":libs:configuration:configuration-core")
+    integrationTestImplementation project(":libs:crypto:crypto-core")
     integrationTestImplementation project(":libs:crypto:crypto-flow")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
