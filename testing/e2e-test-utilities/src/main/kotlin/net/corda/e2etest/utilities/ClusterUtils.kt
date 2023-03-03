@@ -101,15 +101,16 @@ fun getOrCreateVirtualNodeFor(
                 condition { it.code == 202 }
                 failMessage("Failed to create the virtual node for '$x500'")
             }.toJson()
+
             val holdingId = createVNodeRequest["requestId"].textValue()
 
             // Wait for the vNode creation to propagate through the system before moving on
             eventually {
-                assertThat(
-                    vNodeList().toJson()["virtualNodes"].map {
-                        it["holdingIdentity"]["shortHash"].textValue()
-                    }.contains(holdingId)
-                )
+                val vNodeList=vNodeList().toJson()["virtualNodes"].map {
+                    it["holdingIdentity"]["shortHash"].textValue()
+                }
+
+                assertThat(vNodeList).contains(holdingId)
             }
 
             holdingId
