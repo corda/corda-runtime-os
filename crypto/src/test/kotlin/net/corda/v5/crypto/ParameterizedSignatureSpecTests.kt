@@ -10,7 +10,7 @@ class ParameterizedSignatureSpecTests {
     fun `Should throw IllegalArgumentException when initializing with blank signature name`() {
         assertThrows<IllegalArgumentException> {
             ParameterizedSignatureSpec(
-                signatureName = "  ",
+                "  ",
                 PSSParameterSpec(
                     "SHA-256",
                     "MGF1",

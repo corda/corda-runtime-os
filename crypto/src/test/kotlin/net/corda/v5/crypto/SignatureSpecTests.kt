@@ -7,9 +7,7 @@ class SignatureSpecTests {
     @Test
     fun `Should throw IllegalArgumentException when initializing with blank signature name`() {
         assertThrows<IllegalArgumentException> {
-            SignatureSpec(
-                signatureName = "  "
-            )
+            SignatureSpec(" ")
         }
     }
 }

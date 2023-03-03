@@ -14,10 +14,7 @@ class SecureHashTests {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
         val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHash(
-            algorithm = algorithm,
-            bytes = digest
-        )
+        val cut = SecureHash(algorithm, digest)
         assertEquals("CB00753F45A35E8BB5A03D699AC65007272C32AB0EDED1631A8B605A43FF5BED8086072BA1E7CC2358BAECA134C825A7", cut.toHexString())
     }
 
@@ -26,10 +23,7 @@ class SecureHashTests {
         val data = "Hello World!".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
         val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHash(
-            algorithm = algorithm,
-            bytes = digest
-        )
+        val cut = SecureHash(algorithm, digest)
         assertEquals(
             "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A",
             cut.toString()
@@ -41,10 +35,7 @@ class SecureHashTests {
         val data = "def".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
         val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHash(
-            algorithm = algorithm,
-            bytes = digest
-        )
+        val cut = SecureHash(algorithm, digest)
         assertEquals("180C325CCC", cut.prefixChars(10))
     }
 
@@ -56,7 +47,7 @@ class SecureHashTests {
             36, 45, 42, 121, 39, 35, -29, -3, 111, -48, 97, -7, -43, -49, -47, 59, -113, -106, 19, 88, -26, -83, -70, 74
         )
         val cut = SecureHash.parse(str)
-        assertEquals(DigestAlgorithmName.SHA2_384.name, cut.algorithm)
+        assertEquals(DigestAlgorithmName.SHA2_384.name, cut.getAlgorithm())
         assertArrayEquals(expectedBytes, cut.bytes)
     }
 
@@ -74,14 +65,8 @@ class SecureHashTests {
         val algorithm = DigestAlgorithmName.SHA2_384.name
         val digest1 = MessageDigest.getInstance(algorithm).digest(data)
         val digest2 = MessageDigest.getInstance(algorithm).digest(data)
-        val cut1 = SecureHash(
-            algorithm = algorithm,
-            bytes = digest1
-        )
-        val cut2 = SecureHash(
-            algorithm = algorithm,
-            bytes = digest2
-        )
+        val cut1 = SecureHash(algorithm, digest1)
+        val cut2 = SecureHash(algorithm, digest2)
         assertEquals(cut1, cut2)
     }
 
@@ -92,14 +77,8 @@ class SecureHashTests {
         val algorithm = DigestAlgorithmName.SHA2_384.name
         val digest1 = MessageDigest.getInstance(algorithm).digest(data1)
         val digest2 = MessageDigest.getInstance(algorithm).digest(data2)
-        val cut1 = SecureHash(
-            algorithm = algorithm,
-            bytes = digest1
-        )
-        val cut2 = SecureHash(
-            algorithm = algorithm,
-            bytes = digest2
-        )
+        val cut1 = SecureHash(algorithm, digest1)
+        val cut2 = SecureHash(algorithm, digest2)
         assertNotEquals(cut1, cut2)
     }
 
@@ -109,14 +88,8 @@ class SecureHashTests {
         val algorithm = DigestAlgorithmName.SHA2_384.name
         val digest1 = MessageDigest.getInstance(algorithm).digest(data)
         val digest2 = MessageDigest.getInstance(algorithm).digest(data)
-        val cut1 = SecureHash(
-            algorithm = algorithm,
-            bytes = digest1
-        )
-        val cut2 = SecureHash(
-            algorithm = "SHA2-384",
-            bytes = digest2
-        )
+        val cut1 = SecureHash(algorithm, digest1)
+        val cut2 = SecureHash("SHA2-384", digest2)
         assertNotEquals(cut1, cut2)
     }
 
@@ -125,10 +98,7 @@ class SecureHashTests {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
         val digest = MessageDigest.getInstance(algorithm).digest(data)
-        val cut = SecureHash(
-            algorithm = algorithm,
-            bytes = digest
-        )
+        val cut = SecureHash(algorithm, digest)
         assertFalse(cut.equals(digest))
     }
 }

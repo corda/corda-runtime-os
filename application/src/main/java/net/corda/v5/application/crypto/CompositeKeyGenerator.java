@@ -4,7 +4,6 @@ import net.corda.v5.crypto.CompositeKey;
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import java.security.PublicKey;
 import java.util.List;
 

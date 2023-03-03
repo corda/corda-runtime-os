@@ -11,6 +11,5 @@ public class DigestAlgorithmNameJavaApiTest {
         assertEquals("SHA-256D", DigestAlgorithmName.SHA2_256D.getName());
         assertEquals("SHA-384", DigestAlgorithmName.SHA2_384.getName());
         assertEquals("SHA-512", DigestAlgorithmName.SHA2_512.getName());
-        assertEquals("SHA-256", DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.getName());
     }
 }
