@@ -12,6 +12,8 @@ import net.corda.data.p2p.app.UnauthenticatedMessageHeader
 import net.corda.interop.service.InteropMemberRegistrationService
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.INTEROP_ALIAS_MAPPING
+import net.corda.membership.lib.MemberInfoExtension.Companion.INTEROP_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
@@ -75,6 +77,8 @@ class HardcodedInteropMemberRegistrationService @Activate constructor(
                 KeyValuePair(LEDGER_KEY_SIGNATURE_SPEC.format(0), "SHA256withECDSA"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                 KeyValuePair(PLATFORM_VERSION, "5000"),
+                KeyValuePair(INTEROP_ROLE, "interop"),
+                KeyValuePair(INTEROP_ALIAS_MAPPING, "O=Alice,L=London,C=GB"),// Incomplete value, missing GroupId for testing purposes
                 //TODO : Following info may not be required for interops group,
                 // need to investigate that LinkManager is happy without this info.
 //            KeyValuePair(MEMBER_CPI_NAME, "calculator.cpi"),
