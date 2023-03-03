@@ -40,6 +40,8 @@ class InteropProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFact
             unAuthMessage !is UnauthenticatedMessage ||
             unAuthMessage.header.subsystem != SUBSYSTEM
         ) return@mapNotNull null
+        //TODO consider checking SUBSYSTEM for other message types and log warning if they have SUBSYSTEM=Interop but
+        // they are of not the expected type (not UnauthenticatedMessage)
 
         val header = with(unAuthMessage.header) { CommonHeader(source, destination, null, messageId) }
         getOutputRecord(header, unAuthMessage.payload, key)
