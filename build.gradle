@@ -106,9 +106,8 @@ allprojects {
             artifacts {
                 archives javadocJar
             }
-
             tasks.withType(DokkaTask.class).configureEach {
-                moduleVersion.set(System.getenv("RELEASE_VERSION") :? "$cordaProductVersion.$cordaRuntimeRevision")
+                moduleVersion.set(System.getenv("RELEASE_VERSION") ?: "$cordaProductVersion.$cordaRuntimeRevision")
             }
         }
     }
