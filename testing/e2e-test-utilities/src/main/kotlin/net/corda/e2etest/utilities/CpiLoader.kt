@@ -81,7 +81,10 @@ object CpiLoader {
             // Read CPI
             return cpiPath.readAll().inputStream()
         } finally {
-            tempDirectory.deleteRecursively()
+            // only remove in a local environment, not in Jenkins where JENKINS_URL is always set
+            if (System.getenv("JENKINS_URL") == null) {
+                tempDirectory.deleteRecursively()
+            }
         }
     }
 
