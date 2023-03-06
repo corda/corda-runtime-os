@@ -97,7 +97,7 @@ class InteropServiceIntegrationTest {
         interopService.start()
         val aliceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val aliceGroupId = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-tokens\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
+        val payload = "{\"method\": \"org.corda.interop/platform/tokens/v1.0/reserve-token\", \"parameters\" : [ { \"abc\" : { \"type\" : \"string\", \"value\" : \"USD\" } } ] }"
         val publisher = publisherFactory.createPublisher(PublisherConfig(aliceX500Name), bootConfig)
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val interopMessageSerializer = cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }

@@ -1,29 +1,23 @@
 package net.corda.interop.service
 
-import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.interop.service.impl.FacadeToFlowMapperServiceImpl
+import net.corda.interop.service.impl.HardcodedFacadeToFlowMapperServiceImpl
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 
-
-internal class FacadeToFlowMapperServiceImplTest {
+internal class HardcodedFacadeToFlowMapperServiceImplTest {
 
     companion object {
         val ALICE_ALTER_EGO_X500 = "CN=Alice Alter Ego, O=Alice Alter Ego Corp, L=LDN, C=GB"
         val ALICE_ALTER_EGO_X500_NAME = MemberX500Name.parse(ALICE_ALTER_EGO_X500)
     }
 
-    lateinit var facadeToFlowMapperService: FacadeToFlowMapperServiceImpl
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
-    private val cpiInfoReadService = mock<CpiInfoReadService>()
+    lateinit var facadeToFlowMapperService: HardcodedFacadeToFlowMapperServiceImpl
     @BeforeEach
     internal fun setUp() {
-        facadeToFlowMapperService = FacadeToFlowMapperServiceImpl(virtualNodeInfoReadService, cpiInfoReadService)
+        facadeToFlowMapperService = HardcodedFacadeToFlowMapperServiceImpl()
     }
 
     @Test
