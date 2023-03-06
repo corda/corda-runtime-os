@@ -7,7 +7,7 @@ import net.corda.v5.ledger.utxo.VisibilityChecker
 fun UtxoSignedTransactionInternal.getVisibleStateIndexes(checker: VisibilityChecker): List<Int> {
     return outputStateAndRefs.withIndex().filter { (_, stateAndRef) ->
         val contract = stateAndRef.state.contractType.getConstructor().newInstance()
-        contract.isVisible(checker, stateAndRef.state.contractState)
+        contract.isVisible(stateAndRef.state.contractState, checker)
     }.map { it.index }
 }
 
