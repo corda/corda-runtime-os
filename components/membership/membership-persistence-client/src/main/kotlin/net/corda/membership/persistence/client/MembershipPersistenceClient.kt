@@ -75,13 +75,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param viewOwningIdentity The holding identity owning this view of the group parameters.
      * @param groupParameters The group parameters to persist.
      *
-     * @return Membership persistence result to indicate the result of the operation. In the case of success, the
-     * payload will be empty.
+     * @return The latest group parameters for that holding identity.
      */
     fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<Unit>
+    ): MembershipPersistenceResult<GroupParameters>
 
     /**
      * Adds notary information to an existing set of group parameters. This method is expected to be used by an MGM to

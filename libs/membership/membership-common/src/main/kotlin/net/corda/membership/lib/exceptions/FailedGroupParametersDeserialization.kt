@@ -1,4 +1,4 @@
-package net.corda.membership.lib
+package net.corda.membership.lib.exceptions
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

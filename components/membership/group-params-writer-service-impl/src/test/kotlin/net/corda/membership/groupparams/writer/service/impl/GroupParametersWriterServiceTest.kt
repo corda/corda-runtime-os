@@ -9,8 +9,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentGroupParameters
-import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -22,10 +20,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.EPOCH_KEY
-import net.corda.membership.lib.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MPV_KEY
-import net.corda.membership.lib.impl.GroupParametersImpl
+import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -33,6 +28,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -258,6 +254,10 @@ class GroupParametersWriterServiceTest {
 
     @Nested
     inner class WriterTests {
+        private inner class GroupParametersLayeredPropertyMapImpl(
+            private val map: LayeredPropertyMap
+        ) : LayeredPropertyMap by map
+
         @Test
         fun `put publishes records to kafka`() {
             postConfigChangedEvent()
@@ -267,15 +267,11 @@ class GroupParametersWriterServiceTest {
                 .doReturn(listOf(CompletableFuture.completedFuture(Unit)))
 
             val ownerId = viewOwner.shortHash.toString()
-            val params = LayeredPropertyMapMocks.create<GroupParametersImpl>(
-                sortedMapOf(
-                    MPV_KEY to "1",
-                    EPOCH_KEY to "2",
-                    MODIFIED_TIME_KEY to clock.instant().toString()
-                ),
-                emptyList()
-            )
-            writerService.put(viewOwner, params)
+            val groupParameters: UnsignedGroupParameters = mock {
+                on { bytes } doReturn serializedGroupParameters
+            }
+
+            writerService.put(viewOwner, groupParameters)
 
             val result = capturedPublishedList.firstValue
             assertSoftly {

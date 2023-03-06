@@ -161,7 +161,7 @@ class MembershipPersistenceClientImpl(
     override fun persistGroupParameters(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
-    ): MembershipPersistenceResult<Unit> {
+    ): MembershipPersistenceResult<GroupParameters> {
         logger.info("Persisting group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
@@ -174,9 +174,10 @@ class MembershipPersistenceClientImpl(
                 )
             )
         ).execute()
-        return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
-            null -> MembershipPersistenceResult.success()
-            else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
+        return when (val response = result.payload) {
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(groupParameters)
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
         }
     }
 

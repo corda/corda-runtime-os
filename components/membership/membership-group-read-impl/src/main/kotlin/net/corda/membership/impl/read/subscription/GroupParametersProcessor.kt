@@ -3,7 +3,7 @@ package net.corda.membership.impl.read.subscription
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.membership.impl.read.cache.MemberDataCache
-import net.corda.membership.lib.FailedGroupParametersDeserialization
+import net.corda.membership.lib.exceptions.FailedGroupParametersDeserialization
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record

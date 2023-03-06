@@ -47,7 +47,7 @@ class GroupParametersTest {
         mpv: Int = VALID_VALUE,
         epoch: Int = VALID_VALUE,
         time: Instant = modifiedTime
-    ) = LayeredPropertyMapMocks.create<GroupParametersImpl>(
+    ) = LayeredPropertyMapMocks.create<UnsignedGroupParametersImpl>(
         sortedMapOf(
             MPV_KEY to mpv.toString(),
             EPOCH_KEY to epoch.toString(),
@@ -92,7 +92,7 @@ class GroupParametersTest {
 
     @Test
     fun `exception is thrown when modified time is missing`() {
-        val params = LayeredPropertyMapMocks.create<GroupParametersImpl>(
+        val params = LayeredPropertyMapMocks.create<UnsignedGroupParametersImpl>(
             sortedMapOf(
                 MPV_KEY to VALID_VALUE.toString(),
                 EPOCH_KEY to VALID_VALUE.toString()
@@ -109,7 +109,7 @@ class GroupParametersTest {
     @Test
     fun `exception is thrown when epoch is missing`() {
         val ex = assertFailsWith<ValueNotFoundException> {
-            LayeredPropertyMapMocks.create<GroupParametersImpl>(
+            LayeredPropertyMapMocks.create<UnsignedGroupParametersImpl>(
                 sortedMapOf(
                     MPV_KEY to VALID_VALUE.toString(),
                     MODIFIED_TIME_KEY to modifiedTime.toString()
