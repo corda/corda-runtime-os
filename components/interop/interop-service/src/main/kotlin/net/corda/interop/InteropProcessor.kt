@@ -138,8 +138,12 @@ class InteropProcessor(
             null
 
     //The class gathers common fields of UnauthenticatedMessageHeader and AuthenticateMessageHeader
-    data class CommonHeader(val source: net.corda.data.identity.HoldingIdentity,
-                            val destination: net.corda.data.identity.HoldingIdentity,
-                            val ttl: Instant? = null, val messageId: String,
-                            val traceId: String? = null, val subsystem: String = SUBSYSTEM)
-    }
+    data class CommonHeader(
+        val source: net.corda.data.identity.HoldingIdentity,
+        val destination: net.corda.data.identity.HoldingIdentity,
+        val ttl: Instant? = null,
+        val messageId: String,
+        val traceId: String? = null,
+        val subsystem: String = SUBSYSTEM
+    )
+}
