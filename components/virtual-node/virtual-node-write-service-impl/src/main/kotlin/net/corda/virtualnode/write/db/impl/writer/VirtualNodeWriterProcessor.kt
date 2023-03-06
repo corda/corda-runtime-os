@@ -129,7 +129,7 @@ internal class VirtualNodeWriterProcessor(
                         return
                     }
 
-                    val cpiMetadataLite = oldVirtualNodeEntityRepository.getCPIMetadataById(
+                    val cpiMetadataLite = oldVirtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
