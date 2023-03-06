@@ -27,7 +27,7 @@ internal class CreateVirtualNodeOperationHandler(
         requestId: String,
         request: VirtualNodeCreateRequest
     ) {
-        val holdingId =request.holdingId.toCorda()
+        val holdingId = request.holdingId.toCorda()
         val x500Name = holdingId.x500Name.toString()
 
         logger.info("Create new Virtual Node: $x500Name and ${request.cpiFileChecksum}")

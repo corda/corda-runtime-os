@@ -10,7 +10,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.rpcops.factories.RequestFactory
 import net.corda.virtualnode.toAvro
 
-class RequestFactoryImpl(
+internal class RequestFactoryImpl(
     private val restContextProvider: RestContextProvider,
     private val clock: Clock
 ) : RequestFactory {

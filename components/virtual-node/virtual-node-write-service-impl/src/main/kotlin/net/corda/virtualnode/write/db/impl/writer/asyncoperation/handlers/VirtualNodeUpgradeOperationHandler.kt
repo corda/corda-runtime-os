@@ -59,8 +59,6 @@ internal class VirtualNodeUpgradeOperationHandler(
             logger.warn("Virtual node upgrade (request $requestId) failed to run migrations: ${e.message}")
             handleMigrationsFailed(request, requestId, requestTimestamp, e)
         }
-
-        return
     }
 
     /**

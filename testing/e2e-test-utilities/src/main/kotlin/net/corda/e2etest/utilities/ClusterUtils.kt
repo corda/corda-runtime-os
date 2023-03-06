@@ -106,7 +106,7 @@ fun getOrCreateVirtualNodeFor(
 
             // Wait for the vNode creation to propagate through the system before moving on
             eventually {
-                val vNodeList=vNodeList().toJson()["virtualNodes"].map {
+                val vNodeList = vNodeList().toJson()["virtualNodes"].map {
                     it["holdingIdentity"]["shortHash"].textValue()
                 }
 
