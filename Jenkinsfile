@@ -7,7 +7,7 @@ cordaPipeline(
     createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
-    defaltEmailsRecipients: [], // not to be merged back 
+    defaltEmailsRecipients: [], // not to be merged back to release/os/5.0
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true,
