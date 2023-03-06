@@ -68,19 +68,25 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
 
     @Volatile
     @VisibleForTesting
-    var connections: Cache<String, EntityManagerFactory>? = null
+    var connectionsCache: Cache<String, EntityManagerFactory>? = null
 
     override fun getEntityManagerFactory(tenantId: String): EntityManagerFactory  =
         if (CryptoTenants.isClusterTenant(tenantId)) {
             dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         } else {
-            connections!!.get(tenantId) { createEntityManagerFactory(tenantId) }
+            connectionsCache.let {
+                requireNotNull(it) {
+                    "${CryptoConnectionsFactoryImpl::connectionsCache::name} found null " +
+                        "Current component state is ${coordinator::status}"
+                }
+                it.get(tenantId) { createEntityManagerFactory(tenantId) }
+            }
         }
 
     private fun createEntityManagerFactory(tenantId: String) =
         dbConnectionManager.createEntityManagerFactory(
             connectionId = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(tenantId))?.cryptoDmlConnectionId
-                ?: throw throw IllegalStateException(
+                ?: throw IllegalStateException(
                     "virtual node for $tenantId is not registered."
                 ),
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
@@ -125,7 +131,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                                 + "maximumSize = ${newConfig.maximumSize}, expireAfterAccessMins = ${newConfig.expireAfterAccessMins}"
                     )
                     clearCache()
-                    connections = createConnectionsCache(newConfig)
+                    connectionsCache = createConnectionsCache(newConfig)
                     previousConfig = newConfig
                 }
                 updateStatus(LifecycleStatus.UP)
@@ -140,7 +146,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
     }
 
     private fun clearCache() {
-        connections?.let { cache ->
+        connectionsCache?.let { cache ->
             val values = cache.asMap().values
             cache.invalidateAll()
             cache.cleanUp()
@@ -158,7 +164,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
         configRegistration?.close()
         configRegistration = null
         clearCache()
-        connections = null
+        connectionsCache = null
         previousConfig = null
     }
 

@@ -65,13 +65,13 @@ class CryptoConnectionsFactoryTest {
     @Test
     fun `on receiving config update creates cache and changes status to UP`() {
         lifecycleTest.run {
-            assertNull(testClass.connections)
+            assertNull(testClass.connectionsCache)
             sendConfigUpdate<CryptoConnectionsFactory>(
                 mapOf(
                     BOOT_CONFIG to SmartConfigImpl.empty(),
                     CRYPTO_CONFIG to cryptoConnectionsFactoryConfig(5, 3))
             )
-            assertNotNull(testClass.connections)
+            assertNotNull(testClass.connectionsCache)
             assertEquals(LifecycleStatus.UP, testClass.coordinator.status)
         }
     }
@@ -82,7 +82,7 @@ class CryptoConnectionsFactoryTest {
          lifecycleTest.run {
             bringDependencyDown<DbConnectionManager>()
              assertEquals(LifecycleStatus.DOWN, testClass.coordinator.status)
-             assertNull(testClass.connections)
+             assertNull(testClass.connectionsCache)
          }
     }
 
@@ -91,14 +91,14 @@ class CryptoConnectionsFactoryTest {
     fun `on dependencies coming back UP and receiving config creates cache and changes status to UP`() {
         lifecycleTest.run {
             bringDependencyUp<DbConnectionManager>()
-            assertNull(testClass.connections)
+            assertNull(testClass.connectionsCache)
             assertEquals(LifecycleStatus.DOWN, testClass.coordinator.status)
             sendConfigUpdate<CryptoConnectionsFactory>(
                 mapOf(
                     BOOT_CONFIG to SmartConfigImpl.empty(),
                     CRYPTO_CONFIG to cryptoConnectionsFactoryConfig(5, 3))
             )
-            assertNotNull(testClass.connections)
+            assertNotNull(testClass.connectionsCache)
             assertEquals(LifecycleStatus.UP, testClass.coordinator.status)
         }
     }
@@ -107,13 +107,13 @@ class CryptoConnectionsFactoryTest {
     @Test
     fun `on different cache configuration updates cache`() {
         lifecycleTest.run {
-            val previousCache = testClass.connections
+            val previousCache = testClass.connectionsCache
             sendConfigUpdate<CryptoConnectionsFactory>(
                 mapOf(
                     BOOT_CONFIG to SmartConfigImpl.empty(),
                     CRYPTO_CONFIG to cryptoConnectionsFactoryConfig(5, 4))
             )
-            val nextCache = testClass.connections
+            val nextCache = testClass.connectionsCache
             assertNotNull(previousCache)
             assertNotNull(nextCache)
             assertNotEquals(previousCache, nextCache)
@@ -124,13 +124,13 @@ class CryptoConnectionsFactoryTest {
     @Test
     fun `on same cache configuration does not update cache`() {
         lifecycleTest.run {
-            val previousCache = testClass.connections
+            val previousCache = testClass.connectionsCache
             sendConfigUpdate<CryptoConnectionsFactory>(
                 mapOf(
                     BOOT_CONFIG to SmartConfigImpl.empty(),
                     CRYPTO_CONFIG to cryptoConnectionsFactoryConfig(5, 4))
             )
-            val nextCache = testClass.connections
+            val nextCache = testClass.connectionsCache
             assertNotNull(previousCache)
             assertNotNull(nextCache)
             assertEquals(previousCache, nextCache)
@@ -142,7 +142,7 @@ class CryptoConnectionsFactoryTest {
     fun `on stop closes resources and switches status to DOWN`() {
         val cryptoConnectionsFactory = lifecycleTest.testClass
         cryptoConnectionsFactory.stop()
-        assertNull(cryptoConnectionsFactory.connections)
+        assertNull(cryptoConnectionsFactory.connectionsCache)
         assertEquals(LifecycleStatus.DOWN, cryptoConnectionsFactory.coordinator.status)
     }
 }
