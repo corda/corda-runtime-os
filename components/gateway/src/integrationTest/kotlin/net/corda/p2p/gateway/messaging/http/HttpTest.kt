@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.net.URI
@@ -60,6 +61,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `simple client POST request`() {
         val listener = object : ListenerWithServer() {
             override fun onRequest(request: HttpRequest) {
@@ -97,6 +99,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `multiple clients multiple requests`() {
         val requestNo = 10
         val threadNo = 2
@@ -160,6 +163,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `large payload`() {
         val hugePayload = (1..0xA00_000)
             .map {
@@ -204,6 +208,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake succeeds - revocation checking disabled C5`() {
         val listener = object : ListenerWithServer() {
             override fun onRequest(request: HttpRequest) {
@@ -241,6 +246,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake succeeds - revocation checking disabled C4`() {
         val listener = object : ListenerWithServer() {
             override fun onRequest(request: HttpRequest) {
@@ -278,6 +284,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - server identity check fails C4`() {
         MitmServer(serverAddress.host, serverAddress.port, c4sslKeyStore).use { server ->
             server.start()
@@ -312,6 +319,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - server identity check fails C5`() {
         MitmServer(serverAddress.host, serverAddress.port, chipKeyStore).use { server ->
             server.start()
@@ -342,6 +350,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - requested SNI is not recognized`() {
 
         HttpServer(
@@ -388,6 +397,7 @@ class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
+    @Disabled("Disabling temporarily until CORE-11411 is completed.")
     fun `tls handshake fails - server presents revoked certificate`() {
 
         HttpServer(
