@@ -24,7 +24,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.debug
+import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
