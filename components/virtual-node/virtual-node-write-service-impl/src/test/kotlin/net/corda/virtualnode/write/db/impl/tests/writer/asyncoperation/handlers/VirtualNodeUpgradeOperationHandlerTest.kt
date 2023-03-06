@@ -51,11 +51,11 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val vnodeId = "123456789011"
 
     private val mockChangelog1 = mock<CpkDbChangeLog> { changelog ->
-        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA1","abc".toByteArray()), "cpk1"))
+        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA-256","abc".toByteArray()), "cpk1"))
         whenever(changelog.content).thenReturn( "dog.xml")
     }
     private val mockChangelog2 = mock<CpkDbChangeLog> { changelog ->
-        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA1","abc".toByteArray()),"cpk1"))
+        whenever(changelog.id).thenReturn(CpkDbChangeLogIdentifier(SecureHash("SHA-256","abc".toByteArray()),"cpk1"))
         whenever(changelog.content).thenReturn( "cat.xml")
     }
     private val cpkDbChangelogs = listOf(mockChangelog1, mockChangelog2)

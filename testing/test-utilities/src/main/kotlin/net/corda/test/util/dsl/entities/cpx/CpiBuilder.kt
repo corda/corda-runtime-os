@@ -112,7 +112,7 @@ class CpiBuilder(private val randomId: UUID = UUID.randomUUID()) {
         val randomCpkId = "${randomId}_${UUID.randomUUID()}"
         if (name == null) name = "name_$randomCpkId"
         if (version == null) version = "version_$randomCpkId"
-        if (signerSummaryHash == null) signerSummaryHash = SecureHash("SHA1","signerSummaryHash_$randomCpkId".toByteArray())
+        if (signerSummaryHash == null) signerSummaryHash = SecureHash("SHA-256","signerSummaryHash_$randomCpkId".toByteArray())
         if (fileChecksum == null) fileChecksum = "file_checksum_$randomCpkId"
         return CpiMetadataEntity(
             name!!,

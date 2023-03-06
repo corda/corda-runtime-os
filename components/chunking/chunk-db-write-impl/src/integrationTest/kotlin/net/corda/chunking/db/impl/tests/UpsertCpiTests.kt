@@ -58,7 +58,7 @@ class UpsertCpiTests {
         emConfig
     )
 
-    private val cpiSignerSummaryHash = SecureHash("SHA1","signerSummaryHash".toByteArray())
+    private val cpiSignerSummaryHash = SecureHash("SHA-256","signerSummaryHash".toByteArray())
 
     init {
         val dbChange = ClassloaderChangeLog(

@@ -59,7 +59,7 @@ class CpiEntitiesIntegrationTest {
         val cpkSignerSummaryHash = TestObject.genRandomChecksum().toString()
 
         val cpkData = CpkFileEntity(
-            SecureHash("SHA1", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk =
@@ -102,7 +102,7 @@ class CpiEntitiesIntegrationTest {
         val cpiId = UUID.randomUUID()
         val cpkId = UUID.randomUUID().toString()
         val cpkData = CpkFileEntity(
-            SecureHash("SHA1", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk =
@@ -128,7 +128,7 @@ class CpiEntitiesIntegrationTest {
         val cpkVer2 = "2.2.3"
         val cpk2SignerSummaryHash = TestObject.genRandomChecksum().toString()
         val cpkData2 = CpkFileEntity(
-            SecureHash("SHA1", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
+            SecureHash("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpkMetadataEntity2 = TestObject.createCpk(
@@ -195,7 +195,7 @@ class CpiEntitiesIntegrationTest {
         val cpkVer = "1.2.3"
         val cpkSignerSummaryHash = TestObject.genRandomChecksum().toString()
         val cpkData = CpkFileEntity(
-            SecureHash("SHA1", "cpk-checksum-$cpkId".toByteArray()).toString(),
+            SecureHash("SHA-256", "cpk-checksum-$cpkId".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk1 =
@@ -222,7 +222,7 @@ class CpiEntitiesIntegrationTest {
         val cpk2SignerSummaryHash = TestObject.genRandomChecksum().toString()
         // Create another CPK
         val cpkData2 = CpkFileEntity(
-            SecureHash("SHA1", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
+            SecureHash("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()).toString(),
             ByteArray(2000),
         )
         val cpiCpk2 =

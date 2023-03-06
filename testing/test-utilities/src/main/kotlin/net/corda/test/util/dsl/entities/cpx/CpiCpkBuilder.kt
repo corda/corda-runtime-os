@@ -126,14 +126,14 @@ class CpiCpkBuilder(
     @Suppress("ThrowsCount")
     fun build(): CpiCpkEntity {
         if (cpkFileChecksumSupplier.invoke() == null) cpkFileChecksumSupplier =
-            { SecureHash("SHA1", "cpk_file_checksum_$randomId".toByteArray()) }
+            { SecureHash("SHA-256", "cpk_file_checksum_$randomId".toByteArray()) }
         val cpk: CpkMetadataEntity = metadataEntity
             ?: metadata?.build() ?: CpkMetadataBuilder(cpkFileChecksumSupplier, randomId)
                 .cpkName(cpkName ?: "cpkName_$randomId")
                 .cpkVersion(cpkVersion ?: "cpkVersion_$randomId")
                 .cpkSignerSummaryHash(
                     cpkSignerSummaryHash ?: SecureHash(
-                        "SHA1",
+                        "SHA-256",
                         "cpkSignerSummaryHash_$randomId".toByteArray()
                     )
                 )

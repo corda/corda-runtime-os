@@ -12,17 +12,17 @@ import org.junit.jupiter.api.assertThrows
 class VirtualNodeDbChangeLogTest {
     private val masterFile1 = CpkDbChangeLog(
         CpkDbChangeLogIdentifier(
-            SecureHash("SHA1", "abc".toByteArray()),
+            SecureHash("SHA-256", "abc".toByteArray()),
             VirtualNodeDbChangeLog.MASTER_CHANGE_LOG
         ), "migration1"
     )
     private val otherFile1 = CpkDbChangeLog(
-        CpkDbChangeLogIdentifier(SecureHash("SHA1", "abc".toByteArray()), "another-one.xml"),
+        CpkDbChangeLogIdentifier(SecureHash("SHA-256", "abc".toByteArray()), "another-one.xml"),
         "migration2"
     )
     private val masterFile2 = CpkDbChangeLog(
         CpkDbChangeLogIdentifier(
-            SecureHash("SHA1", "abc".toByteArray()),
+            SecureHash("SHA-256", "abc".toByteArray()),
             VirtualNodeDbChangeLog.MASTER_CHANGE_LOG
         ), "migration3"
     )

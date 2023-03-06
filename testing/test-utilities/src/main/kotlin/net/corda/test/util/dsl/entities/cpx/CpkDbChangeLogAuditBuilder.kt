@@ -48,7 +48,7 @@ class CpkDbChangeLogAuditBuilder(
             CpkDbChangeLog(
                 CpkDbChangeLogIdentifier(
                     fileChecksumSupplier.invoke() ?: SecureHash(
-                        "SHA1",
+                        "SHA-256",
                         "file_checksum_$randomUUID".toByteArray()),
                     filePath ?: "file_path_$randomUUID"
                 ),

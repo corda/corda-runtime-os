@@ -31,7 +31,7 @@ class CpkDbChangeLogBuilder(
     fun build(): CpkDbChangeLog {
         return CpkDbChangeLog(
             CpkDbChangeLogIdentifier(
-                fileChecksumSupplier.invoke() ?: SecureHash("SHA1", "file_checksum_$randomUUID".toByteArray()),
+                fileChecksumSupplier.invoke() ?: SecureHash("SHA-256", "file_checksum_$randomUUID".toByteArray()),
                 filePath ?: "file_path_$randomUUID"
             ),
             "data_$randomUUID"

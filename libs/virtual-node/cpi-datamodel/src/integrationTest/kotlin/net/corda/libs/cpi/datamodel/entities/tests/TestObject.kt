@@ -11,7 +11,7 @@ import net.corda.v5.crypto.SecureHash
 
 object TestObject {
 
-    val SIGNER_SUMMARY_HASH = SecureHash("SHA1", "test-cpi-hash".toByteArray())
+    val SIGNER_SUMMARY_HASH = SecureHash("SHA-256", "test-cpi-hash".toByteArray())
 
     private fun genRandomChecksumString(): String {
         return "SHA-256:" + List(64) {
@@ -27,7 +27,7 @@ object TestObject {
         CpiMetadataEntity.create(
             CpiIdentifier(cpiName, cpiVersion, cpiSignerSummaryHash),
             "test-cpi-$id.cpi",
-            SecureHash("SHA1","test-cpi.cpi-$id-hash".toByteArray()),
+            SecureHash("SHA-256","test-cpi.cpi-$id-hash".toByteArray()),
             "{group-policy-json}",
             "group-id",
             "file-upload-request-id-$id",
@@ -38,7 +38,7 @@ object TestObject {
         CpiMetadataEntity.create(
             CpiIdentifier("test-cpi-$cpiId","1.0", SIGNER_SUMMARY_HASH),
             "test-cpi-$cpiId.cpi",
-            SecureHash("SHA1","test-cpi.cpi-$cpiId-hash".toByteArray()),
+            SecureHash("SHA-256","test-cpi.cpi-$cpiId-hash".toByteArray()),
             "{group-policy-json}",
             "group-id",
             "file-upload-request-id-$cpiId",
@@ -53,7 +53,7 @@ object TestObject {
     ) = CpkMetadataEntity(cpkFileChecksum, name, version, signerSummaryHash, "1.0", "{}")
 
     fun genRandomCpkFile() =
-        createCpkFile(SecureHash("SHA1", "cpk-checksum-${UUID.randomUUID()}".toByteArray()), ByteArray(2000))
+        createCpkFile(SecureHash("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()), ByteArray(2000))
 
     fun createCpkFile(
         fileChecksum: SecureHash,
@@ -81,7 +81,7 @@ object TestObject {
             val cpkId = "test-cpk-$cpkName.cpk"
             createCpiCpkEntity(
                 cpiName, cpiVersion, SIGNER_SUMMARY_HASH,
-                cpkId, "1.0", SecureHash("SHA1", "test-cpk-hash".toByteArray()).toString(),
+                cpkId, "1.0", SecureHash("SHA-256", "test-cpk-hash".toByteArray()).toString(),
                 "test-cpi-$id.cpk", cpkFileChecksum.toString()
             )
         }

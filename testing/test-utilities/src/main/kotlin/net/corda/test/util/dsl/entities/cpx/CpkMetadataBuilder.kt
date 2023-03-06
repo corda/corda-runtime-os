@@ -59,12 +59,12 @@ class CpkMetadataBuilder(
     fun build(): CpkMetadataEntity {
         return CpkMetadataEntity(
             (fileChecksumSupplier.invoke() ?: SecureHash(
-                "SHA1",
+                "SHA-256",
                 "cpk_file_checksum_$randomId".toByteArray()
             )).toString(),
             cpkName ?: "name_$randomId",
             cpkVersion ?: "version_$randomId",
-            (cpkSignerSummaryHash ?: SecureHash("SHA1", "signerSummaryHash_$randomId".toByteArray())).toString(),
+            (cpkSignerSummaryHash ?: SecureHash("SHA-256", "signerSummaryHash_$randomId".toByteArray())).toString(),
             formatVersion ?: "format_version_$randomId".take(12),
             serializedMetadata ?: "serialized_metadata_$randomId"
         )
