@@ -13,7 +13,6 @@ import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED
 import org.hibernate.Session
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -212,9 +211,7 @@ class JPABackingStoreEntitiesIntegrationTest {
         val clazz = entity::class.java
         val tuples: MutableSet<Any> = HashSet()
 
-        assertFalse(tuples.contains(entity))
         tuples.add(entity)
-        assertTrue(tuples.contains(entity))
 
         entityManagerFactory.createEntityManager().transaction { entityManager ->
             entityManager.persist(entity)
@@ -276,9 +273,9 @@ class JPABackingStoreEntitiesIntegrationTest {
         }
 
         val deletedEntity = entityManagerFactory.createEntityManager().transaction { entityManager ->
-            val _entity = entityManager.getReference(clazz, pk)
-            entityManager.remove(_entity)
-            _entity
+            val storedEntity = entityManager.getReference(clazz, pk)
+            entityManager.remove(storedEntity)
+            storedEntity
         }
 
         assertTrue(

@@ -86,8 +86,8 @@ dependencies {
 
 tasks.named('jar', Jar) {
     bnd '''\
-DynamicImport-Package: org.hibernate.proxy
-'''
+    DynamicImport-Package: org.hibernate.proxy
+    '''
 }
 
 tasks.register('backingStoreBenchmark', Test) {
