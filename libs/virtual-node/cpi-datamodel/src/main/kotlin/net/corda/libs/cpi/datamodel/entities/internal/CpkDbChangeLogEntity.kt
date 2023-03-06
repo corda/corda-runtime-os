@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel.entities
+package net.corda.libs.cpi.datamodel.entities.internal
 
 import java.io.Serializable
 import java.time.Instant
