@@ -88,7 +88,7 @@ class MembershipPersistenceRPCProcessorTest {
         const val DUMMY_ID = "rule-id"
         const val DUMMY_RULE = "corda.*"
         const val DUMMY_LABEL = "label1"
-        const val SERIAL = 5
+        const val SERIAL = 5L
         const val REASON = "test"
     }
 

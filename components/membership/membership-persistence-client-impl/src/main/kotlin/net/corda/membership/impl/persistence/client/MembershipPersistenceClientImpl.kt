@@ -376,13 +376,13 @@ class MembershipPersistenceClientImpl(
     }
 
     override fun suspendMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ): MembershipPersistenceResult<Unit> {
         TODO("Not yet implemented")
     }
 
     override fun activateMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ): MembershipPersistenceResult<Unit> {
         TODO("Not yet implemented")
     }

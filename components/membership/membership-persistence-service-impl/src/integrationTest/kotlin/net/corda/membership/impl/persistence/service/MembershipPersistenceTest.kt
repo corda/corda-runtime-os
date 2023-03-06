@@ -337,7 +337,7 @@ class MembershipPersistenceTest {
             }
 
             override fun suspendMember(
-                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
             ) = safeCall {
                 membershipPersistenceClient.suspendMember(
                     viewOwningIdentity, memberX500Name, serialNumber, reason
@@ -345,7 +345,7 @@ class MembershipPersistenceTest {
             }
 
             override fun activateMember(
-                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+                viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
             ) = safeCall {
                 membershipPersistenceClient.activateMember(
                     viewOwningIdentity, memberX500Name, serialNumber, reason

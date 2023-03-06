@@ -9,6 +9,6 @@ package net.corda.membership.rest.v1.types.request
  */
 data class SuspensionActivationParameters(
     val x500Name: String,
-    val serialNumber: Int? = null,
+    val serialNumber: Long? = null,
     val reason: String? = null,
 )

@@ -192,7 +192,7 @@ interface MGMResourceClient : Lifecycle {
     fun suspendMember(
         holdingIdentityShortHash: ShortHash,
         memberX500Name: MemberX500Name,
-        serialNumber: Int? = null,
+        serialNumber: Long? = null,
         reason: String? = null,
     )
 
@@ -212,7 +212,7 @@ interface MGMResourceClient : Lifecycle {
     fun activateMember(
         holdingIdentityShortHash: ShortHash,
         memberX500Name: MemberX500Name,
-        serialNumber: Int? = null,
+        serialNumber: Long? = null,
         reason: String? = null,
     )
 

@@ -97,7 +97,7 @@ class MGMResourceClientTest {
         const val RULE_LABEL = "rule-label"
         const val RULE_ID = "rule-id"
         const val REQUEST_ID = "b305129b-8c92-4092-b3a2-e6d452ce2b01"
-        const val SERIAL = 1
+        const val SERIAL = 1L
         const val REASON = "test"
 
         val RULE_TYPE = ApprovalRuleType.STANDARD

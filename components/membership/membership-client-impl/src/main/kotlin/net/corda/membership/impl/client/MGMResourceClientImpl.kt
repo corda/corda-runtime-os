@@ -145,11 +145,11 @@ class MGMResourceClientImpl @Activate constructor(
         )
 
         fun suspendMember(
-            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         )
 
         fun activateMember(
-            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         )
     }
 
@@ -229,11 +229,11 @@ class MGMResourceClientImpl @Activate constructor(
     ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, approve, reason)
 
     override fun suspendMember(
-        holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ) = impl.suspendMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
 
     override fun activateMember(
-        holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ) = impl.activateMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -340,11 +340,11 @@ class MGMResourceClientImpl @Activate constructor(
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun suspendMember(
-            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun activateMember(
-            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -535,13 +535,13 @@ class MGMResourceClientImpl @Activate constructor(
         }
 
         override fun suspendMember(
-            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) {
             TODO("Not yet implemented")
         }
 
         override fun activateMember(
-            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+            holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         ) {
             TODO("Not yet implemented")
         }

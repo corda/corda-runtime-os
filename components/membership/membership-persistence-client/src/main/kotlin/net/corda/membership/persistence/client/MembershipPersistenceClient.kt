@@ -269,7 +269,7 @@ interface MembershipPersistenceClient : Lifecycle {
     fun suspendMember(
         viewOwningIdentity: HoldingIdentity,
         memberX500Name: MemberX500Name,
-        serialNumber: Int?,
+        serialNumber: Long?,
         reason: String?,
     ): MembershipPersistenceResult<Unit>
 
@@ -284,7 +284,7 @@ interface MembershipPersistenceClient : Lifecycle {
     fun activateMember(
         viewOwningIdentity: HoldingIdentity,
         memberX500Name: MemberX500Name,
-        serialNumber: Int?,
+        serialNumber: Long?,
         reason: String?,
     ): MembershipPersistenceResult<Unit>
 }

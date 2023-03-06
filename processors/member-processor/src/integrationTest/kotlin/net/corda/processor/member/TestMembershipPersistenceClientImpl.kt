@@ -118,11 +118,11 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     ) = MembershipPersistenceResult.success()
 
     override fun suspendMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ) = MembershipPersistenceResult.success()
 
     override fun activateMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Int?, reason: String?
+        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ) = MembershipPersistenceResult.success()
 
     private val persistenceCoordinator =

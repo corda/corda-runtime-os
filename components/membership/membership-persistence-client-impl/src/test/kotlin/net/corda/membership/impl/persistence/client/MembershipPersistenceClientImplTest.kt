@@ -92,7 +92,7 @@ class MembershipPersistenceClientImplTest {
         const val RULE_ID = "rule-id"
         const val RULE_REGEX = "rule-regex"
         const val RULE_LABEL = "rule-label"
-        const val SERIAL = 5
+        const val SERIAL = 5L
         const val REASON = "test"
     }
 
