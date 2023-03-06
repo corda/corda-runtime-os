@@ -27,7 +27,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -149,7 +149,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         timestamp = Instant.now()
     )
 
-    private fun withRejectedOperation(state: VirtualNodeOperationStateDto, reason: String, block: () -> Any?) {
+    private fun withRejectedOperation(state: VirtualNodeOperationStateDto, reason: String, block: () -> Unit) {
         whenever(virtualNodeRepository.rejectedOperation(
             eq(em),
             eq(vnodeId),
@@ -161,11 +161,10 @@ class VirtualNodeUpgradeOperationHandlerTest {
             eq(state)
         )).thenReturn(noInProgressOpVnodeInfo)
 
-        val result = block.invoke()
-        assertThat(result).isNull()
+        block.invoke()
     }
 
-    private fun withFailedOperation(state: VirtualNodeOperationStateDto, reason: String, block: () -> Any?) {
+    private fun withFailedOperation(state: VirtualNodeOperationStateDto, reason: String, block: () -> Unit) {
         whenever(virtualNodeRepository.failedOperation(
             eq(em),
             eq(vnodeId),
@@ -177,8 +176,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
             eq(state)
         )).thenReturn(noInProgressOpVnodeInfo)
 
-        val result = block.invoke()
-        assertThat(result).isNull()
+        block.invoke()
     }
 
     @BeforeEach
