@@ -11,14 +11,14 @@ gradle/*           @corda/blt
 .github/**          @corda/blt
 CODEOWNERS         @corda/blt @corda/corda5-team-leads
 
-# Modules to be audited by HTTP RPC team
-/applications/workers/release/rpc-worker/     @corda/http-rpc
-/components/http-rpc-gateway-comp/            @corda/http-rpc
-/components/permissions/                      @corda/http-rpc
-/components/rbac-security-manager-service/    @corda/http-rpc
-/libs/http-rpc/                               @corda/http-rpc
-/libs/permissions/                            @corda/http-rpc
-/processors/rpc-processor/                    @corda/http-rpc
+# Modules to be audited by REST team
+/applications/workers/release/rest-worker/      @corda/rest
+/components/rest-gateway-comp/                  @corda/rest
+/components/permissions/                        @corda/rest
+/components/rbac-security-manager-service/      @corda/rest
+/libs/rest/                                     @corda/rest
+/libs/permissions/                              @corda/rest
+/processors/rest-processor/                     @corda/rest
 
 # Corda Helm chart for cluster management team
 /charts/corda/                                @corda/cluster-management

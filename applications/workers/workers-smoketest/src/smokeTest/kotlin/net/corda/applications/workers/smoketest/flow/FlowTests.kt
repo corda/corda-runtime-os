@@ -595,7 +595,7 @@ class FlowTests {
         requestBody.command = "crypto_get_default_signature_spec"
         requestBody.data = mapOf(
             "memberX500" to bobX500,
-            "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+            "digestName" to DigestAlgorithmName.SHA2_256.name
         )
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -647,7 +647,7 @@ class FlowTests {
         // Call get compatible signature specs api with public key and digest algorithm name
         requestBody.data = mapOf(
             "memberX500" to bobX500,
-            "digestName" to DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+            "digestName" to DigestAlgorithmName.SHA2_256.name
         )
 
         val requestId1 = startRpcFlow(bobHoldingId, requestBody)

@@ -45,7 +45,7 @@ object Helpers {
 
     private val random = Random(0)
     private fun newRandomSecureHash(): SecureHash {
-        return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        return SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     }
 
     fun mockTrivialCpk(mainBundle: String, name: String, version: String, fileChecksum: SecureHash = newRandomSecureHash()) =

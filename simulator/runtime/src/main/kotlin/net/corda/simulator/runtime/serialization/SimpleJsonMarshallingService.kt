@@ -1,13 +1,13 @@
 package net.corda.simulator.runtime.serialization
 
+import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import java.util.Collections.unmodifiableList
-import java.util.Collections.unmodifiableMap
 import net.corda.common.json.serializers.JsonDeserializerAdaptor
 import net.corda.common.json.serializers.JsonSerializerAdaptor
 import net.corda.common.json.serializers.standardTypesModule
@@ -17,6 +17,9 @@ import net.corda.simulator.runtime.utils.publicKeyModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
+import net.corda.v5.crypto.SecureHash
+import java.util.Collections.unmodifiableList
+import java.util.Collections.unmodifiableMap
 
 /**
  * A simple JsonMarshallingService, without the caching that Corda uses.
@@ -35,6 +38,8 @@ class SimpleJsonMarshallingService(
     init {
         val module = SimpleModule()
         module.addDeserializer(RequestData::class.java, RequestDataSerializer())
+        module.addSerializer(SecureHash::class.java, SecureHashSerializer)
+        module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
         objectMapper.registerModule(module)
         objectMapper.registerModule(standardTypesModule())
         objectMapper.registerModule(publicKeyModule())
@@ -97,4 +102,16 @@ class SimpleJsonMarshallingService(
         return true
     }
 
+}
+
+internal object SecureHashSerializer : com.fasterxml.jackson.databind.JsonSerializer<SecureHash>() {
+    override fun serialize(obj: SecureHash, generator: JsonGenerator, provider: SerializerProvider) {
+        generator.writeString(obj.toString())
+    }
+}
+
+internal object SecureHashDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<SecureHash>() {
+    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
+        return SecureHash.parse(parser.text)
+    }
 }

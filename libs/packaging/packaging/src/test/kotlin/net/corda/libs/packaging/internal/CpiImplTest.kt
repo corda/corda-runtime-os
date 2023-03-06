@@ -15,11 +15,11 @@ class CpiImplTest {
     fun `CPI identifiers without a signerSummaryHash and an identity compares correctly`() {
         val id1 = CpiIdentifier("a", "1.0", TestRandom.secureHash())
         val id2 = CpiIdentifier("a", "1.0",
-            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
+            SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32)))
         val id3 = CpiIdentifier(
             "a",
             "1.0",
-            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)),
+            SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32)),
         )
         var ids : NavigableSet<CpiIdentifier> = Collections.emptyNavigableSet()
         Assertions.assertDoesNotThrow {

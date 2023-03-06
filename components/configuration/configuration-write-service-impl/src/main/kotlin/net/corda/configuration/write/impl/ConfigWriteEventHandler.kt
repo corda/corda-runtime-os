@@ -64,8 +64,8 @@ internal class ConfigWriteEventHandler(
                         rpcSubscription =
                             rpcSubscriptionFactory.create(configMerger.getMessagingConfig(bootstrapConfig!!))
                                 .apply { start() }
-                        coordinator.updateStatus(LifecycleStatus.UP)
                     }
+                    coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }

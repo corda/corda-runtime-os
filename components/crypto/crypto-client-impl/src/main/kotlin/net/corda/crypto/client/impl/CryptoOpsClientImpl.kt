@@ -3,9 +3,13 @@ package net.corda.crypto.client.impl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.cipher.suite.publicKeyId
+import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.cipher.suite.toStringShort
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
@@ -40,12 +44,8 @@ import net.corda.utilities.debug
 import net.corda.v5.base.util.EncodingUtils.toBase58
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.publicKeyId
-import net.corda.v5.crypto.sha256Bytes
-import net.corda.v5.crypto.toStringShort
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -272,9 +272,9 @@ class CryptoOpsClientImpl(
         )
         val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
-            by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
-            bytes = response.bytes.array(),
-            context = response.context.toMap()
+            schemeMetadata.decodePublicKey(response!!.publicKey.array()),
+            response.bytes.array(),
+            response.context.toMap()
         )
     }
 
@@ -378,7 +378,9 @@ class CryptoOpsClientImpl(
     // TODO Users who are using this API need to revisit to determine if they need to migrate to search ByFullIds
     fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
         logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${keyIds.joinToString()}])" }
-        require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
+        require(keyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+            "The number of items exceeds ${KEY_LOOKUP_INPUT_ITEMS_LIMIT}"
+        }
 
         val request = createRequest(
             tenantId,
@@ -390,7 +392,7 @@ class CryptoOpsClientImpl(
     @Suppress("MaxLineLength")
     fun lookupKeysByFullIds(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
         logger.debug { "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${fullKeyIds.joinToString { it.toString() }}])" }
-        require(fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT" }
+        require(fullKeyIds.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) { "The number of items exceeds ${KEY_LOOKUP_INPUT_ITEMS_LIMIT}" }
 
         val request = createRequest(
             tenantId,
@@ -454,5 +456,5 @@ class CryptoOpsClientImpl(
 private fun PublicKey.fullId(keyEncodingService: KeyEncodingService, digestService: PlatformDigestService): SecureHash =
     digestService.hash(
         keyEncodingService.encodeAsByteArray(this),
-        DigestAlgorithmName.DEFAULT_ALGORITHM_NAME
+        DigestAlgorithmName.SHA2_256
     )

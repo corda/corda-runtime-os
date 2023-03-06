@@ -175,7 +175,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             streamingResults.use {
                 it.forEach { entity ->
                     // Do the reverse of [persist] particularly for data - if null, return zero bytes.
-                    val checksum = if (entity.checksum != null) SecureHash.parse(entity.checksum!!).toAvro() else null
+                    val checksum =
+                        if (entity.checksum != null) SecureHash.parse(entity.checksum!!).toAvro() else null
                     val data = if (entity.data != null) ByteBuffer.wrap(entity.data) else ByteBuffer.allocate(0)
                     val chunk = Chunk(
                         requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data,

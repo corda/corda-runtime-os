@@ -34,7 +34,7 @@ class CpiInfoDbReconcilerReaderTest {
     private val dummyCpkMetadata = CpkMetadata(
         CpkIdentifier(
             "SomeName",
-            "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+            "1.0", SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
         ),
         CpkManifest(CpkFormatVersion(2, 3)),
         "mainBundle.jar",
@@ -55,7 +55,7 @@ class CpiInfoDbReconcilerReaderTest {
             ),
         ),
         CpkType.CORDA_API,
-        SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
+        SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes)),
         emptySet(),
         Instant.now().truncatedTo(ChronoUnit.MILLIS)
     )

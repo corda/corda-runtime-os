@@ -1,12 +1,13 @@
 package net.corda.crypto.service.impl.infra
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.SigningKeyStatus
+import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
@@ -23,7 +24,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.sha256Bytes
 import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock

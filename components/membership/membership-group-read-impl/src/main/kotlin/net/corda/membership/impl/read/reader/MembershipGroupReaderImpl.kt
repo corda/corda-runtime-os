@@ -1,5 +1,6 @@
 package net.corda.membership.impl.read.reader
 
+import net.corda.crypto.cipher.suite.PublicKeyHash
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
@@ -9,7 +10,6 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity

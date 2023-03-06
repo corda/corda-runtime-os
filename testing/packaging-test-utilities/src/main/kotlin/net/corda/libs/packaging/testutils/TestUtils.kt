@@ -32,7 +32,7 @@ object TestUtils {
     /**
      * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
      */
-    private fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME) : SecureHash {
+    private fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256) : SecureHash {
         val md = MessageDigest.getInstance(algo.name)
         md.update(this)
         return SecureHash(algo.name, md.digest())

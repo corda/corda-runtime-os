@@ -8,13 +8,13 @@ import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.data.transaction.getBatchMerkleTreeDigestProvider
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestAlgorithmName
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestOptionsLeafPrefix
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestOptionsLeafPrefixB64
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestOptionsNodePrefix
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestOptionsNodePrefixB64
 import net.corda.ledger.common.data.transaction.batchMerkleTreeDigestProviderName
+import net.corda.ledger.common.data.transaction.getBatchMerkleTreeDigestProvider
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafPrefix
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsLeafPrefixB64
 import net.corda.ledger.common.data.transaction.rootMerkleTreeDigestOptionsNodePrefix
@@ -31,7 +31,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
+import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
