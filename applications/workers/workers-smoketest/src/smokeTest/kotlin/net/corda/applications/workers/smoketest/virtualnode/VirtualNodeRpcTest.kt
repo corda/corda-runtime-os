@@ -787,6 +787,8 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
+            eventuallyUpdateVirtualNodeState(bobHoldingId, "active", "ACTIVE")
+
             runReturnAStringFlow("upgrade-test-v4", bobHoldingId)
             runSimplePersistenceCheckFlow("Could persist egg", bobHoldingId)
 

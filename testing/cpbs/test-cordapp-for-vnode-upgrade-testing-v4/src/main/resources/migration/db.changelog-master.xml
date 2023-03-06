@@ -7,5 +7,5 @@
     <include file="migration/v2/remove-owner-and-fish-migration-v1.0.xml"/>
     <include file="migration/v2/dogs-migration-v1.0.xml"/>
     <include file="migration/v3/horse-migration-v1.0.xml"/>
-    <include file="migration/v3/deliberately-corrupt-migration-v1.0.xml"/>
+    <include file="migration/v3/fixed-the-corrupt-migration-v1.0.xml"/>
 </databaseChangeLog>
